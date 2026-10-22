@@ -14,6 +14,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/protocol/eventstream"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/rest"
 )
 
@@ -57,6 +58,14 @@ func decodeJSON(body []byte, v any) error {
 // Write encodes a successful response.
 func Write(w http.ResponseWriter, b *catalog.Binding, output any) {
 	resp := rest.Encode(w, b, output)
+	if stream, ok := resp.Structure.(*eventstream.Stream); ok {
+		w.Header().Set("Content-Type", "application/vnd.amazon.eventstream")
+		w.Header().Del("Content-Length")
+		w.WriteHeader(resp.Status)
+		_, _ = stream.WriteTo(w)
+		return
+	}
+
 	body := resp.Payload
 	if resp.Document || resp.Structure != nil {
 		document := output

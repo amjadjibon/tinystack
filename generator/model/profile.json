@@ -30153,7 +30153,9 @@
       "InvokeModel",
       "Converse",
       "CountTokens",
-      "ApplyGuardrail"
+      "ApplyGuardrail",
+      "InvokeModelWithResponseStream",
+      "ConverseStream"
     ],
     "shapes": {
       "InvokeModelRequest": [
@@ -30466,6 +30468,25 @@
       ],
       "GuardrailOutputContent": [
         "text"
+      ],
+      "InvokeModelWithResponseStreamRequest": [
+        "body",
+        "contentType",
+        "accept",
+        "modelId"
+      ],
+      "InvokeModelWithResponseStreamResponse": [
+        "body",
+        "contentType"
+      ],
+      "ConverseStreamRequest": [
+        "modelId",
+        "messages",
+        "inferenceConfig",
+        "toolConfig"
+      ],
+      "ConverseStreamResponse": [
+        "stream"
       ]
     }
   },

@@ -11,6 +11,7 @@ func TestIAMModelMappings(t *testing.T) {
 	tests := []struct{ service, operation, want string }{
 		{"s3", "ListObjectsV2", "s3:ListBucket"},
 		{"bedrockruntime", "Converse", "bedrock:InvokeModel"},
+		{"bedrockruntime", "ConverseStream", "bedrock:InvokeModelWithResponseStream"},
 		{"bedrockruntime", "CountTokens", "bedrock:CountTokens"},
 		{"s3", "HeadObject", "s3:GetObject"},
 		{"s3", "UploadPart", "s3:PutObject"},

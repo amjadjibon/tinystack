@@ -541,6 +541,12 @@ func (g *generator) emit(id string) error {
 		return fmt.Errorf("%s: %w", id, guardErr)
 	}
 
+	if _, streaming := s.Traits[traitStreaming]; streaming && s.Type == shapeUnion {
+		g.imports["github.com/amjadjibon/tinystack/internal/aws/protocol/eventstream"] = true
+		fmt.Fprintf(&g.out, "type %s = eventstream.Stream\n\n", short(id))
+		return nil
+	}
+
 	switch s.Type {
 	case shapeList:
 		if guardErr := checkTraits(s.Member.Traits, g.rest); guardErr != nil {

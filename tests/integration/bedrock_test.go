@@ -538,21 +538,6 @@ func TestBedrockNativeModels(t *testing.T) {
 
 		bedrockError(t, err, code)
 	}
-
-	_, err := r.InvokeModelWithResponseStream(
-		ctx,
-		&runtime.InvokeModelWithResponseStreamInput{
-			ModelId:     new(bedrockClaude),
-			Body:        []byte(cases[0].body),
-			ContentType: new("application/json"),
-		},
-	)
-	bedrockError(t, err, "NotImplemented")
-	_, err = r.ConverseStream(
-		ctx,
-		&runtime.ConverseStreamInput{ModelId: new(bedrockClaude), Messages: bedrockMessages("hello")},
-	)
-	bedrockError(t, err, "NotImplemented")
 }
 
 func TestBedrockFixtureResetAndValidation(t *testing.T) {

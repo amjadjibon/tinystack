@@ -53,7 +53,9 @@ const (
 var iamOverrides = map[string]map[string]string{
 	// Converse uses the same permission as InvokeModel.
 	// https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html
-	"bedrockruntime": {"Converse": "InvokeModel"},
+	// Streaming Converse shares the native streaming invocation permission.
+	// https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_ConverseStream.html
+	"bedrockruntime": {"Converse": "InvokeModel", "ConverseStream": "InvokeModelWithResponseStream"},
 	// https://docs.aws.amazon.com/service-authorization/latest/reference/list_s3.html
 	"s3": {
 		"ListObjects":                        iamListBucket,

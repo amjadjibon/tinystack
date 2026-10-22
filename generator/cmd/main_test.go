@@ -442,3 +442,21 @@ func TestOperationTraitsDropHTTPForNonREST(t *testing.T) {
 		t.Error("operationTraits modified its input")
 	}
 }
+
+func TestStreamingUnion(t *testing.T) {
+	g := &generator{
+		rest: true,
+		model: model{Shapes: map[string]shape{"test#Events": {
+			Type: shapeUnion, Traits: map[string]json.RawMessage{traitStreaming: json.RawMessage(`{}`)},
+		}}},
+		seen: map[string]bool{}, imports: map[string]bool{},
+	}
+	if err := g.emit("test#Events"); err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(g.out.String(), "type Events = eventstream.Stream") ||
+		!g.imports["github.com/amjadjibon/tinystack/internal/aws/protocol/eventstream"] {
+		t.Fatalf("streaming union: %s", g.out.String())
+	}
+}

@@ -4,6 +4,7 @@ package bedrockruntime
 import (
 	"context"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/protocol/eventstream"
 )
 
 type InvokeModelRequest struct {
@@ -385,15 +386,44 @@ type ApplyGuardrailResponse struct {
 	GuardrailCoverage *GuardrailCoverage       `json:"guardrailCoverage,omitempty"`
 }
 
+type InvokeModelWithResponseStreamRequest struct {
+	Body        []byte  `json:"-"`
+	ContentType *string `json:"-"`
+	Accept      *string `json:"-"`
+	ModelId     *string `json:"-"`
+}
+
+type ResponseStream = eventstream.Stream
+
+type InvokeModelWithResponseStreamResponse struct {
+	Body        *ResponseStream `json:"-"`
+	ContentType *string         `json:"-"`
+}
+
+type ConverseStreamRequest struct {
+	ModelId         *string                 `json:"-"`
+	Messages        []Message               `json:"messages,omitempty"`
+	InferenceConfig *InferenceConfiguration `json:"inferenceConfig,omitempty"`
+	ToolConfig      *ToolConfiguration      `json:"toolConfig,omitempty"`
+}
+
+type ConverseStreamOutput = eventstream.Stream
+
+type ConverseStreamResponse struct {
+	Stream *ConverseStreamOutput `json:"-"`
+}
+
 type API interface {
 	InvokeModel(context.Context, *InvokeModelRequest) (*InvokeModelResponse, error)
 	Converse(context.Context, *ConverseRequest) (*ConverseResponse, error)
 	CountTokens(context.Context, *CountTokensRequest) (*CountTokensResponse, error)
 	ApplyGuardrail(context.Context, *ApplyGuardrailRequest) (*ApplyGuardrailResponse, error)
+	InvokeModelWithResponseStream(context.Context, *InvokeModelWithResponseStreamRequest) (*InvokeModelWithResponseStreamResponse, error)
+	ConverseStream(context.Context, *ConverseStreamRequest) (*ConverseStreamResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "bedrockruntime", SigningName: "bedrock", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "bedrock", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"AccessDeniedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "InternalServerException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "ModelErrorException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 424}, "ModelNotReadyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "ModelTimeoutException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 408}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServiceQuotaExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ServiceUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 503}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "ValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "bedrockruntime", SigningName: "bedrock", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "bedrock", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"AccessDeniedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "InternalServerException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "ModelErrorException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 424}, "ModelNotReadyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "ModelStreamErrorException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 424}, "ModelTimeoutException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 408}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServiceQuotaExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ServiceUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 503}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "ValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"InvokeModel": {Name: "InvokeModel", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "bedrock:InvokeModel", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Accept": catalog.MemberBinding{Location: "header", Name: "Accept"}, "Body": catalog.MemberBinding{Location: "payload", Name: "body"}, "ContentType": catalog.MemberBinding{Location: "header", Name: "Content-Type"}, "GuardrailIdentifier": catalog.MemberBinding{Location: "unsupported:header", Name: "X-Amzn-Bedrock-GuardrailIdentifier"}, "GuardrailVersion": catalog.MemberBinding{Location: "unsupported:header", Name: "X-Amzn-Bedrock-GuardrailVersion"}, "ModelId": catalog.MemberBinding{Location: "label", Name: "modelId"}, "PerformanceConfigLatency": catalog.MemberBinding{Location: "unsupported:header", Name: "X-Amzn-Bedrock-PerformanceConfig-Latency"}, "RequestMetadata": catalog.MemberBinding{Location: "unsupported:header", Name: "X-Amzn-Bedrock-Request-Metadata"}, "ServiceTier": catalog.MemberBinding{Location: "unsupported:header", Name: "X-Amzn-Bedrock-Service-Tier"}, "Trace": catalog.MemberBinding{Location: "unsupported:header", Name: "X-Amzn-Bedrock-Trace"}}, Output: map[string]catalog.MemberBinding{"Body": catalog.MemberBinding{Location: "payload", Name: "body"}, "ContentType": catalog.MemberBinding{Location: "header", Name: "Content-Type"}, "PerformanceConfigLatency": catalog.MemberBinding{Location: "header", Name: "X-Amzn-Bedrock-PerformanceConfig-Latency"}, "ServiceTier": catalog.MemberBinding{Location: "header", Name: "X-Amzn-Bedrock-Service-Tier"}}, Method: "POST", URI: "/model/{modelId}/invoke", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &InvokeModelRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.InvokeModel(ctx, input.(*InvokeModelRequest))
 		}},
@@ -403,6 +433,12 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ApplyGuardrail": {Name: "ApplyGuardrail", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "bedrock:ApplyGuardrail", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Content": catalog.MemberBinding{Location: "document", Name: "content"}, "GuardrailIdentifier": catalog.MemberBinding{Location: "label", Name: "guardrailIdentifier"}, "GuardrailVersion": catalog.MemberBinding{Location: "label", Name: "guardrailVersion"}, "Source": catalog.MemberBinding{Location: "document", Name: "source"}}, Output: map[string]catalog.MemberBinding{"Action": catalog.MemberBinding{Location: "document", Name: "action"}, "ActionReason": catalog.MemberBinding{Location: "document", Name: "actionReason"}, "Assessments": catalog.MemberBinding{Location: "document", Name: "assessments"}, "GuardrailCoverage": catalog.MemberBinding{Location: "document", Name: "guardrailCoverage"}, "Outputs": catalog.MemberBinding{Location: "document", Name: "outputs"}, "Usage": catalog.MemberBinding{Location: "document", Name: "usage"}}, Method: "POST", URI: "/guardrail/{guardrailIdentifier}/version/{guardrailVersion}/apply", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ApplyGuardrailRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ApplyGuardrail(ctx, input.(*ApplyGuardrailRequest))
+		}},
+		"InvokeModelWithResponseStream": {Name: "InvokeModelWithResponseStream", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "bedrock:InvokeModelWithResponseStream", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Accept": catalog.MemberBinding{Location: "header", Name: "X-Amzn-Bedrock-Accept"}, "Body": catalog.MemberBinding{Location: "payload", Name: "body"}, "ContentType": catalog.MemberBinding{Location: "header", Name: "Content-Type"}, "GuardrailIdentifier": catalog.MemberBinding{Location: "unsupported:header", Name: "X-Amzn-Bedrock-GuardrailIdentifier"}, "GuardrailVersion": catalog.MemberBinding{Location: "unsupported:header", Name: "X-Amzn-Bedrock-GuardrailVersion"}, "ModelId": catalog.MemberBinding{Location: "label", Name: "modelId"}, "PerformanceConfigLatency": catalog.MemberBinding{Location: "unsupported:header", Name: "X-Amzn-Bedrock-PerformanceConfig-Latency"}, "RequestMetadata": catalog.MemberBinding{Location: "unsupported:header", Name: "X-Amzn-Bedrock-Request-Metadata"}, "ServiceTier": catalog.MemberBinding{Location: "unsupported:header", Name: "X-Amzn-Bedrock-Service-Tier"}, "Trace": catalog.MemberBinding{Location: "unsupported:header", Name: "X-Amzn-Bedrock-Trace"}}, Output: map[string]catalog.MemberBinding{"Body": catalog.MemberBinding{Location: "payload", Name: "body"}, "ContentType": catalog.MemberBinding{Location: "header", Name: "X-Amzn-Bedrock-Content-Type"}}, Method: "POST", URI: "/model/{modelId}/invoke-with-response-stream", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &InvokeModelWithResponseStreamRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.InvokeModelWithResponseStream(ctx, input.(*InvokeModelWithResponseStreamRequest))
+		}},
+		"ConverseStream": {Name: "ConverseStream", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "bedrock:InvokeModelWithResponseStream", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"InferenceConfig": catalog.MemberBinding{Location: "document", Name: "inferenceConfig"}, "Messages": catalog.MemberBinding{Location: "document", Name: "messages"}, "ModelId": catalog.MemberBinding{Location: "label", Name: "modelId"}, "ToolConfig": catalog.MemberBinding{Location: "document", Name: "toolConfig"}}, Output: map[string]catalog.MemberBinding{"Stream": catalog.MemberBinding{Location: "payload", Name: "stream"}}, Method: "POST", URI: "/model/{modelId}/converse-stream", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ConverseStreamRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ConverseStream(ctx, input.(*ConverseStreamRequest))
 		}},
 	}}
 }

@@ -50,7 +50,7 @@ func (f *Fixture) validate() error {
 		}
 	}
 
-	if !slices.Contains([]string{"", stopEndTurn, stopMaxTokens, "stop_sequence", stopToolUse}, f.StopReason) {
+	if !slices.Contains([]string{"", stopEndTurn, stopMaxTokens, stopSequence, stopToolUse}, f.StopReason) {
 		return fmt.Errorf("unsupported stopReason")
 	}
 

@@ -76,11 +76,11 @@ func TestLocationPinnedIdentityProtocolBindingsAndProvenance(t *testing.T) {
 		"ResourceNotFoundException": 404,
 		"ValidationException":       400,
 	} {
-		shape := m.Shapes["com.amazonaws.location#"+name]
+		errorShape := m.Shapes["com.amazonaws.location#"+name]
 		var status int
-		json.Unmarshal(shape.Traits["smithy.api#httpError"], &status)
+		json.Unmarshal(errorShape.Traits["smithy.api#httpError"], &status)
 		var messageName string
-		json.Unmarshal(shape.Members["Message"].Traits["smithy.api#jsonName"], &messageName)
+		json.Unmarshal(errorShape.Members["Message"].Traits["smithy.api#jsonName"], &messageName)
 		if status != want || messageName != "message" {
 			t.Fatal(name, status, messageName)
 		}

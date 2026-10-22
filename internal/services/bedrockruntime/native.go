@@ -125,7 +125,7 @@ func parseNative(model *bedrock.Model, body []byte) (*nativeRequest, error) {
 	out := &nativeRequest{Dimension: model.Dimension}
 	var messages []api.Message
 	switch model.Family {
-	case "anthropic":
+	case familyAnthropic:
 		var in anthropicInput
 		if err := strictJSON(body, &in); err != nil {
 			return nil, err
@@ -142,7 +142,7 @@ func parseNative(model *bedrock.Model, body []byte) (*nativeRequest, error) {
 		}
 
 		out.MaxTokens = in.MaxTokens
-	case "nova":
+	case familyNova:
 		var in novaInput
 		if err := strictJSON(body, &in); err != nil {
 			return nil, err
@@ -157,7 +157,7 @@ func parseNative(model *bedrock.Model, body []byte) (*nativeRequest, error) {
 		if in.Config != nil {
 			out.MaxTokens = in.Config.MaxTokens
 		}
-	case "titan":
+	case familyTitan:
 		var in titanInput
 		if err := strictJSON(body, &in); err != nil {
 			return nil, err
@@ -167,7 +167,7 @@ func parseNative(model *bedrock.Model, body []byte) (*nativeRequest, error) {
 		if in.Config != nil {
 			out.MaxTokens = in.Config.MaxTokens
 		}
-	case "llama":
+	case familyLlama:
 		var in llamaInput
 		if err := strictJSON(body, &in); err != nil {
 			return nil, err
@@ -261,9 +261,8 @@ func embedding(text string, dimension int) []float64 {
 
 // InvokeModel validates a provider-native request and returns deterministic JSON.
 func (s *Service) InvokeModel(ctx context.Context, in *api.InvokeModelRequest) (*api.InvokeModelResponse, error) {
-	if common.Value(in.ContentType) != "application/json" ||
-		(in.Accept != nil && *in.Accept != "application/json" && *in.Accept != "*/*") {
-		return nil, invalid("Only application/json is supported.")
+	if err := validateNativeHeaders(in.ContentType, in.Accept); err != nil {
+		return nil, err
 	}
 
 	model, err := s.control.Resolve(ctx, common.Value(in.ModelId))
@@ -280,8 +279,8 @@ func (s *Service) InvokeModel(ctx context.Context, in *api.InvokeModelRequest) (
 	if model.Dimension > 0 {
 		if model.Family == "titan-embed" {
 			body = map[string]any{
-				"embedding":           embedding(parsed.Last, parsed.Dimension),
-				"inputTextTokenCount": tokenCount(parsed.Last),
+				"embedding":          embedding(parsed.Last, parsed.Dimension),
+				fieldInputTextTokens: tokenCount(parsed.Last),
 			}
 		} else {
 			vectors := make([][]float64, len(parsed.Texts))
@@ -308,45 +307,45 @@ func (s *Service) InvokeModel(ctx context.Context, in *api.InvokeModelRequest) (
 
 		input, output := tokenCount(parsed.All), tokenCount(out.Text)
 		switch model.Family {
-		case "anthropic":
+		case familyAnthropic:
 			body = map[string]any{
 				"id":            "msg_tinystack",
-				"type":          fieldMessage,
-				"role":          roleAssistant,
+				fieldType:       fieldMessage,
+				fieldRole:       roleAssistant,
 				"model":         model.ID,
-				"content":       []any{map[string]any{"type": fieldText, fieldText: out.Text}},
-				"stop_reason":   out.Stop,
-				"stop_sequence": nil,
-				"usage":         map[string]any{"input_tokens": input, "output_tokens": output},
+				fieldContent:    []any{map[string]any{fieldType: fieldText, fieldText: out.Text}},
+				fieldStopReason: out.Stop,
+				stopSequence:    nil,
+				fieldUsage:      map[string]any{"input_tokens": input, fieldOutputTokens: output},
 			}
-		case "nova":
+		case familyNova:
 			body = map[string]any{
 				"output": map[string]any{
 					fieldMessage: map[string]any{
-						"role":    roleAssistant,
-						"content": []any{map[string]any{fieldText: out.Text}},
+						fieldRole:    roleAssistant,
+						fieldContent: []any{map[string]any{fieldText: out.Text}},
 					},
 				},
-				"stopReason": out.Stop,
-				"usage": map[string]any{
+				fieldConverseStop: out.Stop,
+				fieldUsage: map[string]any{
 					"inputTokens":  input,
 					"outputTokens": output,
 					"totalTokens":  input + output,
 				},
 			}
-		case "titan":
+		case familyTitan:
 			reason := "FINISH"
 			if out.Stop == stopMaxTokens {
 				reason = "LENGTH"
 			}
 
 			body = map[string]any{
-				"inputTextTokenCount": input,
+				fieldInputTextTokens: input,
 				"results": []any{
 					map[string]any{"tokenCount": output, "outputText": out.Text, "completionReason": reason},
 				},
 			}
-		case "llama":
+		case familyLlama:
 			reason := "stop"
 			if out.Stop == stopMaxTokens {
 				reason = "length"
@@ -356,7 +355,7 @@ func (s *Service) InvokeModel(ctx context.Context, in *api.InvokeModelRequest) (
 				"generation":             out.Text,
 				"prompt_token_count":     input,
 				"generation_token_count": output,
-				"stop_reason":            reason,
+				fieldStopReason:          reason,
 			}
 		}
 	}
@@ -402,4 +401,13 @@ func (s *Service) CountTokens(ctx context.Context, in *api.CountTokensRequest) (
 	}
 
 	return &api.CountTokensResponse{InputTokens: new(tokenCount(all))}, nil
+}
+
+func validateNativeHeaders(contentType, accept *string) error {
+	if common.Value(contentType) != "application/json" ||
+		(accept != nil && *accept != "application/json" && *accept != "*/*") {
+		return invalid("Only application/json is supported.")
+	}
+
+	return nil
 }
