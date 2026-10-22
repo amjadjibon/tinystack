@@ -69,6 +69,11 @@
       "title": "Optional DNS listener",
       "summary": "Opt-in UDP/TCP split DNS for AWS endpoint and resource names, default-account Route 53 records, and upstream forwarding. HTTP gateway; default HTTPS clients need a trusted TLS reverse proxy and port mapping.",
       "reference": "guides/dns.md"
+    },
+    {
+      "title": "Instance and container metadata",
+      "summary": "EC2 IMDSv1/v2 under /_tinystack/imds and an optional dedicated /latest listener, with explicit instance selection and STS instance-profile credentials. Verify mode requires the dedicated listener for IMDS credentials. Docker ECS tasks receive host-reachable metadata v4 and task-role credential endpoints; tokens are removed when tasks stop.",
+      "reference": "guides/metadata.md"
     }
   ],
   "services": {

@@ -13,7 +13,7 @@ Model networking and instance lifecycle for SDK and infrastructure tests.
 | API version | `2016-11-15` |
 | Scope | Account and region |
 | Execution | Records only |
-| Selected operations | 124 of 807 in the pinned model |
+| Selected operations | 125 of 807 in the pinned model |
 
 ## Implemented behavior
 
@@ -141,6 +141,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `GetManagedPrefixListAssociations` | `POST /` |
 | `GetManagedPrefixListEntries` | `POST /` |
 | `ImportKeyPair` | `POST /` |
+| `ModifyInstanceMetadataOptions` | `POST /` |
 | `ModifyLaunchTemplate` | `POST /` |
 | `ModifyManagedPrefixList` | `POST /` |
 | `ModifyNetworkInterfaceAttribute` | `POST /` |
@@ -170,7 +171,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "683 modeled operations outside the implementation"
+??? info "682 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -741,7 +742,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ModifyInstanceEventWindow`
     - `ModifyInstanceMaintenanceOptions`
     - `ModifyInstanceMetadataDefaults`
-    - `ModifyInstanceMetadataOptions`
     - `ModifyInstanceNetworkPerformanceOptions`
     - `ModifyInstancePlacement`
     - `ModifyIpam`

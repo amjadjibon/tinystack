@@ -80,6 +80,7 @@ nav:
       - CloudFormation resource types: guides/cloudformation-resources.md
       - Event-driven workflows: guides/events.md
       - Docker runtimes: guides/runtimes.md
+      - Instance and container metadata: guides/metadata.md
       - Lambda hot reload: guides/lambda-hot-reload.md
       - IoT devices: guides/iot.md
       - Console and diagnostics: guides/diagnostics.md
