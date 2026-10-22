@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"log/slog"
 	"net"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/inithooks"
+	"github.com/amjadjibon/tinystack/internal/localtls"
 	"github.com/amjadjibon/tinystack/internal/services/dockercli"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/lambda/docker"
@@ -41,7 +43,7 @@ func Run(ctx context.Context, cfg config.Config, logger *slog.Logger) error {
 	hooks := inithooks.New(cfg, logger)
 	// Nothing listens yet, so boot scripts cannot reach TinyStack itself.
 	hooks.Run(ctx, inithooks.Boot)
-	store, closeStore, err := openStore(ctx, cfg.Storage.Mode, cfg.Storage.Path)
+	store, closeStore, err := openStore(ctx, &cfg)
 	if err != nil {
 		return err
 	}
@@ -119,14 +121,29 @@ func serve(ctx context.Context, cfg config.Config, tinystack *App, logger *slog.
 		return err
 	}
 
-	server := &http.Server{
-		Handler:           tinystack.Gateway,
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       30 * time.Second,
-		// Synchronous Lambda invocations may run for the 15-minute
-		// maximum function timeout.
-		WriteTimeout: 16 * time.Minute,
-		IdleTimeout:  60 * time.Second,
+	defer func() { _ = listener.Close() }()
+	server := gatewayServer(tinystack.Gateway)
+	defer func() { _ = server.Close() }()
+	var httpsServer *http.Server
+	httpsDone := make(chan error, 1)
+	if cfg.TLS.Enabled {
+		tlsConfig, tlsErr := gatewayTLS(&cfg)
+		if tlsErr != nil {
+			return tlsErr
+		}
+
+		secure, tlsErr := listenConfig.Listen(ctx, "tcp", cfg.TLS.Address)
+		if tlsErr != nil {
+			return tlsErr
+		}
+
+		defer func() { _ = secure.Close() }()
+		httpsServer = gatewayServer(tinystack.Gateway)
+		defer func() { _ = httpsServer.Close() }()
+		tinystack.StopOnShutdown(httpsServer)
+		secure = tls.NewListener(secure, tlsConfig)
+		go func() { httpsDone <- httpsServer.Serve(secure) }()
+		logger.Info("https ready", "endpoint", "https://"+secure.Addr().String())
 	}
 
 	tinystack.StopOnShutdown(server)
@@ -199,6 +216,7 @@ func serve(ctx context.Context, cfg config.Config, tinystack *App, logger *slog.
 			WriteTimeout:      30 * time.Second,
 			IdleTimeout:       60 * time.Second,
 		}
+
 		tinystack.StopOnShutdown(imdsServer)
 		go func() { imdsDone <- imdsServer.Serve(imdsListener) }()
 		logger.Info("imds ready", "address", imdsListener.Addr().String())
@@ -228,6 +246,8 @@ func serve(ctx context.Context, cfg config.Config, tinystack *App, logger *slog.
 		return err
 	case err = <-consoleDone:
 		return err
+	case err = <-httpsDone:
+		return err
 	case err = <-imdsDone:
 		return err
 	case <-signalCtx.Done():
@@ -245,6 +265,16 @@ func serve(ctx context.Context, cfg config.Config, tinystack *App, logger *slog.
 		_ = consoleServer.Shutdown(shutdown)
 	}
 
+	if httpsServer != nil {
+		if tlsErr := httpsServer.Shutdown(shutdown); tlsErr != nil {
+			return tlsErr
+		}
+
+		if tlsErr := <-httpsDone; !errors.Is(tlsErr, http.ErrServerClosed) {
+			return tlsErr
+		}
+	}
+
 	if guardErr := server.Shutdown(shutdown); guardErr != nil {
 		closeErr := server.Close()
 		return errors.Join(guardErr, closeErr)
@@ -256,4 +286,43 @@ func serve(ctx context.Context, cfg config.Config, tinystack *App, logger *slog.
 	}
 
 	return err
+}
+
+// gatewayServer serves the AWS gateway with the timeouts its HTTP and HTTPS
+// listeners share.
+func gatewayServer(handler http.Handler) *http.Server {
+	return &http.Server{
+		Handler:           handler,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		// Synchronous Lambda invocations may run for the 15-minute
+		// maximum function timeout.
+		WriteTimeout: 16 * time.Minute,
+		IdleTimeout:  60 * time.Second,
+	}
+}
+
+// gatewayTLS serves the configured certificate pair, or else leaves issued by
+// the local CA in the data directory.
+func gatewayTLS(cfg *config.Config) (*tls.Config, error) {
+	if cfg.TLS.CertFile != "" {
+		pair, err := tls.LoadX509KeyPair(cfg.TLS.CertFile, cfg.TLS.KeyFile)
+		if err != nil {
+			return nil, err
+		}
+
+		return &tls.Config{MinVersion: tls.VersionTLS12, Certificates: []tls.Certificate{pair}}, nil
+	}
+
+	dir, err := cfg.DataDir()
+	if err != nil {
+		return nil, err
+	}
+
+	authority, err := localtls.Load(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	return authority.Config(cfg.TLS.Names)
 }

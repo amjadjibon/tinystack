@@ -205,6 +205,18 @@ type AccountConfig struct {
 }
 
 type Config struct {
+	// TLS serves the AWS gateway over HTTPS without changing system trust.
+	TLS struct {
+		// Address is the HTTPS host:port, defaulting to loopback port 4443.
+		Address string `yaml:"address"`
+		// CertFile and KeyFile supply a PEM server certificate chain and key instead of the local CA.
+		CertFile string `yaml:"cert_file"`
+		KeyFile  string `yaml:"key_file"`
+		// Names adds DNS names (including single-label wildcards) or IP SANs to generated certificates.
+		Names []string `yaml:"names"`
+		// Enabled turns on the HTTPS listener; false by default.
+		Enabled bool `yaml:"enabled"`
+	} `yaml:"tls"`
 	DNS struct {
 		Address   string   `yaml:"address"`
 		Upstreams []string `yaml:"upstreams"`
@@ -300,6 +312,7 @@ type Config struct {
 func Default() Config {
 	var c Config
 	c.Accounts = map[string]AccountConfig{}
+	c.TLS.Address = "127.0.0.1:4443"
 	c.DNS.Address = "127.0.0.1:53"
 	c.Server.Host = "127.0.0.1"
 	c.Server.Port = 4566
@@ -364,6 +377,10 @@ func Load(file string) (Config, error) {
 }
 
 func (c *Config) Validate() error {
+	if err := c.validateTLS(); err != nil {
+		return err
+	}
+
 	if err := faults.Validate(c.Faults); err != nil {
 		return err
 	}
