@@ -35,7 +35,7 @@ func TestHandler(t *testing.T) {
 	api := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = io.WriteString(w, "api "+r.URL.Path)
 	})
-	h, err := Handler(files, api)
+	h, err := Handler(files, api, "127.0.0.1:4567")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +91,7 @@ func TestHandler(t *testing.T) {
 }
 
 func TestHandlerNeedsShell(t *testing.T) {
-	if _, err := Handler(fstest.MapFS{}, http.NotFoundHandler()); err == nil {
+	if _, err := Handler(fstest.MapFS{}, http.NotFoundHandler(), "127.0.0.1:4567"); err == nil {
 		t.Fatal("built a console without its shell page")
 	}
 }

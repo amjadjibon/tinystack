@@ -15,17 +15,25 @@ import (
 )
 
 // Handler serves files, the console's build with every file stored gzipped as
-// name.gz, and sends /_tinystack/ paths to api. Paths that name no file are the
-// app's routes and get its shell page.
-func Handler(files fs.FS, api http.Handler) (http.Handler, error) {
+// name.gz, and sends /_tinystack/ paths to api. In the console build, /mcp is
+// the MCP server for the console listening on address. Paths that name no file
+// are the app's routes and get its shell page.
+func Handler(files fs.FS, api http.Handler, address string) (http.Handler, error) {
 	shell, err := gunzip(files, "_shell.html.gz")
 	if err != nil {
 		return nil, err
 	}
 
+	mcp := mcpHandler(api, address)
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/_tinystack/") {
 			api.ServeHTTP(w, r)
+			return
+		}
+
+		if mcp != nil && r.URL.Path == "/mcp" {
+			mcp.ServeHTTP(w, r)
 			return
 		}
 

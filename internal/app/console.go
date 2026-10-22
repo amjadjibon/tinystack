@@ -15,7 +15,7 @@ import (
 func newConsole(
 	ctx context.Context, address string, files fs.FS, api http.Handler,
 ) (*http.Server, net.Listener, error) {
-	h, err := console.Handler(files, api)
+	h, err := console.Handler(files, api, address)
 	if err != nil {
 		return nil, nil, err
 	}
