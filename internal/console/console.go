@@ -49,6 +49,7 @@ func Handler(files fs.FS, api http.Handler) (http.Handler, error) {
 			h.Add("Vary", "Accept-Encoding")
 			if acceptsGzip(r) {
 				h.Set("Content-Encoding", "gzip")
+				// #nosec G703 -- files is the console build's fs.FS and the cleaned name exists in it.
 				http.ServeFileFS(w, r, files, compressed)
 				return
 			}
