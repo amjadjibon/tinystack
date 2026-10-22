@@ -5771,6 +5771,7 @@
       "RebootInstances",
       "TerminateInstances",
       "DescribeInstanceStatus",
+      "ModifyInstanceMetadataOptions",
       "DescribeImages",
       "CreateLaunchTemplate",
       "CreateLaunchTemplateVersion",
@@ -6296,7 +6297,8 @@
         "PrivateIpAddress",
         "ClientToken",
         "LaunchTemplate",
-        "IamInstanceProfile"
+        "IamInstanceProfile",
+        "MetadataOptions"
       ],
       "RunInstancesMonitoringEnabled": [
         "Enabled"
@@ -6344,7 +6346,8 @@
         "PrivateIpAddress",
         "PublicIpAddress",
         "IamInstanceProfile",
-        "NetworkInterfaces"
+        "NetworkInterfaces",
+        "MetadataOptions"
       ],
       "InstanceState": [
         "Code",
@@ -7917,6 +7920,34 @@
         "Managed",
         "Principal",
         "HiddenByDefault"
+      ],
+      "ModifyInstanceMetadataOptionsRequest": [
+        "DryRun",
+        "HttpEndpoint",
+        "HttpProtocolIpv6",
+        "HttpPutResponseHopLimit",
+        "HttpTokens",
+        "InstanceId",
+        "InstanceMetadataTags"
+      ],
+      "ModifyInstanceMetadataOptionsResult": [
+        "InstanceId",
+        "InstanceMetadataOptions"
+      ],
+      "InstanceMetadataOptionsRequest": [
+        "HttpEndpoint",
+        "HttpProtocolIpv6",
+        "HttpPutResponseHopLimit",
+        "HttpTokens",
+        "InstanceMetadataTags"
+      ],
+      "InstanceMetadataOptionsResponse": [
+        "HttpEndpoint",
+        "HttpProtocolIpv6",
+        "HttpPutResponseHopLimit",
+        "HttpTokens",
+        "InstanceMetadataTags",
+        "State"
       ]
     }
   },

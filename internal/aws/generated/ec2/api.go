@@ -565,6 +565,14 @@ type IamInstanceProfileSpecification struct {
 	Name *string `json:"Name,omitempty" ec2:"Name,name"`
 }
 
+type InstanceMetadataOptionsRequest struct {
+	HttpEndpoint            *string `json:"HttpEndpoint,omitempty" ec2:"HttpEndpoint,HttpEndpoint"`
+	HttpProtocolIpv6        *string `json:"HttpProtocolIpv6,omitempty" ec2:"HttpProtocolIpv6,HttpProtocolIpv6"`
+	HttpPutResponseHopLimit *int64  `json:"HttpPutResponseHopLimit,omitempty" ec2:"HttpPutResponseHopLimit,HttpPutResponseHopLimit"`
+	HttpTokens              *string `json:"HttpTokens,omitempty" ec2:"HttpTokens,HttpTokens"`
+	InstanceMetadataTags    *string `json:"InstanceMetadataTags,omitempty" ec2:"InstanceMetadataTags,InstanceMetadataTags"`
+}
+
 type RunInstancesRequest struct {
 	ImageId                           *string                          `json:"ImageId,omitempty" ec2:"ImageId,ImageId"`
 	InstanceType                      *string                          `json:"InstanceType,omitempty" ec2:"InstanceType,InstanceType"`
@@ -585,6 +593,7 @@ type RunInstancesRequest struct {
 	ClientToken                       *string                          `json:"ClientToken,omitempty" ec2:"ClientToken,clientToken"`
 	LaunchTemplate                    *LaunchTemplateSpecification     `json:"LaunchTemplate,omitempty" ec2:"LaunchTemplate,LaunchTemplate"`
 	IamInstanceProfile                *IamInstanceProfileSpecification `json:"IamInstanceProfile,omitempty" ec2:"IamInstanceProfile,iamInstanceProfile"`
+	MetadataOptions                   *InstanceMetadataOptionsRequest  `json:"MetadataOptions,omitempty" ec2:"MetadataOptions,MetadataOptions"`
 }
 
 type StateReason struct {
@@ -688,39 +697,49 @@ type InstanceNetworkInterface struct {
 	Operator                        *OperatorResponse                        `json:"Operator,omitempty" ec2:"Operator,operator"`
 }
 
+type InstanceMetadataOptionsResponse struct {
+	HttpEndpoint            *string `json:"HttpEndpoint,omitempty" ec2:"HttpEndpoint,httpEndpoint"`
+	HttpProtocolIpv6        *string `json:"HttpProtocolIpv6,omitempty" ec2:"HttpProtocolIpv6,httpProtocolIpv6"`
+	HttpPutResponseHopLimit *int64  `json:"HttpPutResponseHopLimit,omitempty" ec2:"HttpPutResponseHopLimit,httpPutResponseHopLimit"`
+	HttpTokens              *string `json:"HttpTokens,omitempty" ec2:"HttpTokens,httpTokens"`
+	InstanceMetadataTags    *string `json:"InstanceMetadataTags,omitempty" ec2:"InstanceMetadataTags,instanceMetadataTags"`
+	State                   *string `json:"State,omitempty" ec2:"State,state"`
+}
+
 type Instance struct {
-	Architecture          *string                    `json:"Architecture,omitempty" ec2:"Architecture,architecture"`
-	ClientToken           *string                    `json:"ClientToken,omitempty" ec2:"ClientToken,clientToken"`
-	EbsOptimized          *bool                      `json:"EbsOptimized,omitempty" ec2:"EbsOptimized,ebsOptimized"`
-	EnaSupport            *bool                      `json:"EnaSupport,omitempty" ec2:"EnaSupport,enaSupport"`
-	Hypervisor            *string                    `json:"Hypervisor,omitempty" ec2:"Hypervisor,hypervisor"`
-	RootDeviceName        *string                    `json:"RootDeviceName,omitempty" ec2:"RootDeviceName,rootDeviceName"`
-	RootDeviceType        *string                    `json:"RootDeviceType,omitempty" ec2:"RootDeviceType,rootDeviceType"`
-	SecurityGroups        []GroupIdentifier          `json:"SecurityGroups,omitempty" ec2:"GroupSet,groupSet,member=item"`
-	SourceDestCheck       *bool                      `json:"SourceDestCheck,omitempty" ec2:"SourceDestCheck,sourceDestCheck"`
-	StateReason           *StateReason               `json:"StateReason,omitempty" ec2:"StateReason,stateReason"`
-	Tags                  []Tag                      `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
-	VirtualizationType    *string                    `json:"VirtualizationType,omitempty" ec2:"VirtualizationType,virtualizationType"`
-	PlatformDetails       *string                    `json:"PlatformDetails,omitempty" ec2:"PlatformDetails,platformDetails"`
-	UsageOperation        *string                    `json:"UsageOperation,omitempty" ec2:"UsageOperation,usageOperation"`
-	InstanceId            *string                    `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
-	ImageId               *string                    `json:"ImageId,omitempty" ec2:"ImageId,imageId"`
-	State                 *InstanceState             `json:"State,omitempty" ec2:"InstanceState,instanceState"`
-	PrivateDnsName        *string                    `json:"PrivateDnsName,omitempty" ec2:"PrivateDnsName,privateDnsName"`
-	PublicDnsName         *string                    `json:"PublicDnsName,omitempty" ec2:"DnsName,dnsName"`
-	StateTransitionReason *string                    `json:"StateTransitionReason,omitempty" ec2:"Reason,reason"`
-	KeyName               *string                    `json:"KeyName,omitempty" ec2:"KeyName,keyName"`
-	AmiLaunchIndex        *int64                     `json:"AmiLaunchIndex,omitempty" ec2:"AmiLaunchIndex,amiLaunchIndex"`
-	InstanceType          *string                    `json:"InstanceType,omitempty" ec2:"InstanceType,instanceType"`
-	LaunchTime            *time.Time                 `json:"LaunchTime,omitempty" ec2:"LaunchTime,launchTime"`
-	Placement             *Placement                 `json:"Placement,omitempty" ec2:"Placement,placement"`
-	Monitoring            *Monitoring                `json:"Monitoring,omitempty" ec2:"Monitoring,monitoring"`
-	SubnetId              *string                    `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
-	VpcId                 *string                    `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
-	PrivateIpAddress      *string                    `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,privateIpAddress"`
-	PublicIpAddress       *string                    `json:"PublicIpAddress,omitempty" ec2:"IpAddress,ipAddress"`
-	IamInstanceProfile    *IamInstanceProfile        `json:"IamInstanceProfile,omitempty" ec2:"IamInstanceProfile,iamInstanceProfile"`
-	NetworkInterfaces     []InstanceNetworkInterface `json:"NetworkInterfaces,omitempty" ec2:"NetworkInterfaceSet,networkInterfaceSet,member=item"`
+	Architecture          *string                          `json:"Architecture,omitempty" ec2:"Architecture,architecture"`
+	ClientToken           *string                          `json:"ClientToken,omitempty" ec2:"ClientToken,clientToken"`
+	EbsOptimized          *bool                            `json:"EbsOptimized,omitempty" ec2:"EbsOptimized,ebsOptimized"`
+	EnaSupport            *bool                            `json:"EnaSupport,omitempty" ec2:"EnaSupport,enaSupport"`
+	Hypervisor            *string                          `json:"Hypervisor,omitempty" ec2:"Hypervisor,hypervisor"`
+	RootDeviceName        *string                          `json:"RootDeviceName,omitempty" ec2:"RootDeviceName,rootDeviceName"`
+	RootDeviceType        *string                          `json:"RootDeviceType,omitempty" ec2:"RootDeviceType,rootDeviceType"`
+	SecurityGroups        []GroupIdentifier                `json:"SecurityGroups,omitempty" ec2:"GroupSet,groupSet,member=item"`
+	SourceDestCheck       *bool                            `json:"SourceDestCheck,omitempty" ec2:"SourceDestCheck,sourceDestCheck"`
+	StateReason           *StateReason                     `json:"StateReason,omitempty" ec2:"StateReason,stateReason"`
+	Tags                  []Tag                            `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	VirtualizationType    *string                          `json:"VirtualizationType,omitempty" ec2:"VirtualizationType,virtualizationType"`
+	PlatformDetails       *string                          `json:"PlatformDetails,omitempty" ec2:"PlatformDetails,platformDetails"`
+	UsageOperation        *string                          `json:"UsageOperation,omitempty" ec2:"UsageOperation,usageOperation"`
+	InstanceId            *string                          `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	ImageId               *string                          `json:"ImageId,omitempty" ec2:"ImageId,imageId"`
+	State                 *InstanceState                   `json:"State,omitempty" ec2:"InstanceState,instanceState"`
+	PrivateDnsName        *string                          `json:"PrivateDnsName,omitempty" ec2:"PrivateDnsName,privateDnsName"`
+	PublicDnsName         *string                          `json:"PublicDnsName,omitempty" ec2:"DnsName,dnsName"`
+	StateTransitionReason *string                          `json:"StateTransitionReason,omitempty" ec2:"Reason,reason"`
+	KeyName               *string                          `json:"KeyName,omitempty" ec2:"KeyName,keyName"`
+	AmiLaunchIndex        *int64                           `json:"AmiLaunchIndex,omitempty" ec2:"AmiLaunchIndex,amiLaunchIndex"`
+	InstanceType          *string                          `json:"InstanceType,omitempty" ec2:"InstanceType,instanceType"`
+	LaunchTime            *time.Time                       `json:"LaunchTime,omitempty" ec2:"LaunchTime,launchTime"`
+	Placement             *Placement                       `json:"Placement,omitempty" ec2:"Placement,placement"`
+	Monitoring            *Monitoring                      `json:"Monitoring,omitempty" ec2:"Monitoring,monitoring"`
+	SubnetId              *string                          `json:"SubnetId,omitempty" ec2:"SubnetId,subnetId"`
+	VpcId                 *string                          `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	PrivateIpAddress      *string                          `json:"PrivateIpAddress,omitempty" ec2:"PrivateIpAddress,privateIpAddress"`
+	PublicIpAddress       *string                          `json:"PublicIpAddress,omitempty" ec2:"IpAddress,ipAddress"`
+	IamInstanceProfile    *IamInstanceProfile              `json:"IamInstanceProfile,omitempty" ec2:"IamInstanceProfile,iamInstanceProfile"`
+	NetworkInterfaces     []InstanceNetworkInterface       `json:"NetworkInterfaces,omitempty" ec2:"NetworkInterfaceSet,networkInterfaceSet,member=item"`
+	MetadataOptions       *InstanceMetadataOptionsResponse `json:"MetadataOptions,omitempty" ec2:"MetadataOptions,metadataOptions"`
 }
 
 type Reservation struct {
@@ -814,6 +833,21 @@ type InstanceStatus struct {
 type DescribeInstanceStatusResult struct {
 	InstanceStatuses []InstanceStatus `json:"InstanceStatuses,omitempty" ec2:"InstanceStatusSet,instanceStatusSet,member=item"`
 	NextToken        *string          `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type ModifyInstanceMetadataOptionsRequest struct {
+	DryRun                  *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	HttpEndpoint            *string `json:"HttpEndpoint,omitempty" ec2:"HttpEndpoint,HttpEndpoint"`
+	HttpProtocolIpv6        *string `json:"HttpProtocolIpv6,omitempty" ec2:"HttpProtocolIpv6,HttpProtocolIpv6"`
+	HttpPutResponseHopLimit *int64  `json:"HttpPutResponseHopLimit,omitempty" ec2:"HttpPutResponseHopLimit,HttpPutResponseHopLimit"`
+	HttpTokens              *string `json:"HttpTokens,omitempty" ec2:"HttpTokens,HttpTokens"`
+	InstanceId              *string `json:"InstanceId,omitempty" ec2:"InstanceId,InstanceId"`
+	InstanceMetadataTags    *string `json:"InstanceMetadataTags,omitempty" ec2:"InstanceMetadataTags,InstanceMetadataTags"`
+}
+
+type ModifyInstanceMetadataOptionsResult struct {
+	InstanceId              *string                          `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	InstanceMetadataOptions *InstanceMetadataOptionsResponse `json:"InstanceMetadataOptions,omitempty" ec2:"InstanceMetadataOptions,instanceMetadataOptions"`
 }
 
 type DescribeImagesRequest struct {
@@ -2497,6 +2531,7 @@ type API interface {
 	RebootInstances(context.Context, *RebootInstancesRequest) (*RebootInstancesOutput, error)
 	TerminateInstances(context.Context, *TerminateInstancesRequest) (*TerminateInstancesResult, error)
 	DescribeInstanceStatus(context.Context, *DescribeInstanceStatusRequest) (*DescribeInstanceStatusResult, error)
+	ModifyInstanceMetadataOptions(context.Context, *ModifyInstanceMetadataOptionsRequest) (*ModifyInstanceMetadataOptionsResult, error)
 	DescribeImages(context.Context, *DescribeImagesRequest) (*DescribeImagesResult, error)
 	CreateLaunchTemplate(context.Context, *CreateLaunchTemplateRequest) (*CreateLaunchTemplateResult, error)
 	CreateLaunchTemplateVersion(context.Context, *CreateLaunchTemplateVersionRequest) (*CreateLaunchTemplateVersionResult, error)
@@ -2686,6 +2721,9 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DescribeInstanceStatus": {Name: "DescribeInstanceStatus", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeInstanceStatus", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeInstanceStatus", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeInstanceStatusRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DescribeInstanceStatus(ctx, input.(*DescribeInstanceStatusRequest))
+		}},
+		"ModifyInstanceMetadataOptions": {Name: "ModifyInstanceMetadataOptions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:ModifyInstanceMetadataOptions", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifyInstanceMetadataOptions", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifyInstanceMetadataOptionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifyInstanceMetadataOptions(ctx, input.(*ModifyInstanceMetadataOptionsRequest))
 		}},
 		"DescribeImages": {Name: "DescribeImages", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeImages", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeImages", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeImagesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DescribeImages(ctx, input.(*DescribeImagesRequest))

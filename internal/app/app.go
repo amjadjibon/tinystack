@@ -6,10 +6,12 @@ package app
 import (
 	"context"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -121,6 +123,7 @@ import (
 	dnsserver "github.com/amjadjibon/tinystack/internal/dns"
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	"github.com/amjadjibon/tinystack/internal/inithooks"
+	"github.com/amjadjibon/tinystack/internal/metadata"
 	"github.com/amjadjibon/tinystack/internal/services/account"
 	"github.com/amjadjibon/tinystack/internal/services/acm"
 	"github.com/amjadjibon/tinystack/internal/services/acmpca"
@@ -232,6 +235,8 @@ type App struct {
 	// Gateway serves every service's operations and TinyStack's own
 	// /_tinystack/ endpoints.
 	Gateway *gateway.Server
+	// Metadata serves EC2 IMDS and ECS Task Metadata v4.
+	Metadata *metadata.Service
 	// IoT accepts MQTT connections on listeners the caller opens.
 	IoT *iot.Service
 	// Init runs the init scripts and reports how they went. Run runs the
@@ -353,6 +358,7 @@ func build(
 	identities := cognitoidp.New(store, functions, deliveries)
 	registry := ecr.New(store)
 	containers := ecs.New(store)
+	containers.UseEndpoint("http://" + net.JoinHostPort("host.docker.internal", strconv.Itoa(cfg.Server.Port)))
 	if cfg.ECS.Containers == config.ContainersDocker {
 		containers.UseRuntime(ecsdocker.New(), logGroups.Append, logger)
 	}
@@ -762,6 +768,17 @@ func build(
 	handler.HandlePath("/_aws/sns/sms-messages", delivery.SMSMessagesHandler(deliveries))
 	handler.Handle("iot/root-ca.pem", things.RootCA())
 	handler.Handle("reset", http.HandlerFunc(a.serveReset))
+
+	metaService := metadata.New(
+		network, containers,
+		metadata.WithAssumeRole(tokens.AssumeRoleForService),
+		metadata.WithInstanceProfiles(roles.InstanceProfileOf),
+		metadata.WithDefaultInstanceID(cfg.Metadata.IMDS.DefaultInstanceID),
+		metadata.WithVerifyIdentity(cfg.Identity.Mode == config.IdentityVerify),
+	)
+	a.Metadata = metaService
+	handler.HandlePath("/_tinystack/imds/", metaService.IMDSHandler())
+	handler.HandlePath("/_tinystack/ecs/", metaService.ECSHandler())
 	// LocalStack's path answers the same, for tools that wait on it. Scripts
 	// must end before the services they call stop, so this stop is registered last.
 	for _, prefix := range []string{"/_tinystack/init", "/_localstack/init"} {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"path"
 	"regexp"
@@ -268,6 +269,15 @@ type Config struct {
 		// empty turns them off.
 		LocalStackDir string `yaml:"localstack_dir"`
 	} `yaml:"init"`
+	// Metadata configures instance and container metadata endpoints.
+	Metadata struct {
+		IMDS struct {
+			// Address enables a dedicated IMDS listener; empty turns it off.
+			Address string `yaml:"address"`
+			// DefaultInstanceID selects an instance when the request does not name one.
+			DefaultInstanceID string `yaml:"default_instance_id"`
+		} `yaml:"imds"`
+	} `yaml:"metadata"`
 	Server struct {
 		Host string `yaml:"host"`
 		Port int    `yaml:"port"`
@@ -425,6 +435,12 @@ func (c *Config) Validate() error {
 	for key, secret := range c.Identity.SecretKeys {
 		if key == "" || secret == "" {
 			return fmt.Errorf("invalid secret key for %q", key)
+		}
+	}
+
+	if c.Metadata.IMDS.Address != "" {
+		if _, _, err := net.SplitHostPort(c.Metadata.IMDS.Address); err != nil {
+			return fmt.Errorf("metadata.imds.address must be host:port: %w", err)
 		}
 	}
 

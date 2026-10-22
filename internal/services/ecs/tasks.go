@@ -28,6 +28,8 @@ const (
 
 // task is a task's record. It settles in its desired status at once.
 type task struct {
+	// Metadata contains running containers, indexed by their authorization tokens.
+	Metadata         map[string]ContainerMetadata `json:",omitempty"`
 	Created          time.Time
 	Stopped          time.Time `json:",omitzero"`
 	Overrides        *api.TaskOverride
@@ -364,6 +366,12 @@ func (s *Service) stop(tx storage.WriteTx, scope request.Scope, t *task, code, r
 	if t.Last == stopped {
 		return nil
 	}
+
+	for token := range t.Metadata {
+		tx.Delete("aws/ecs/metadata/" + token)
+	}
+
+	t.Metadata = nil
 
 	t.Desired, t.Last, t.StopCode, t.StoppedReason = stopped, stopped, code, reason
 	t.Stopped = s.now().UTC()

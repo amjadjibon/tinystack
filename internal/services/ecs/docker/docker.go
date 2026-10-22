@@ -39,7 +39,7 @@ func New() *Runtime {
 }
 
 func (r *Runtime) Start(ctx context.Context, spec *ecs.ContainerSpec) (ecs.Started, error) {
-	args := []string{"run", "-d"}
+	args := []string{"run", "-d", "--add-host=host.docker.internal:host-gateway"}
 	for _, k := range slices.Sorted(maps.Keys(spec.Labels)) {
 		args = append(args, "--label", k+"="+spec.Labels[k])
 	}

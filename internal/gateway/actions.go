@@ -227,7 +227,7 @@ var consoleSFNOperations = strings.Fields(`
 
 var consoleEC2Operations = strings.Fields(`
  DescribeAvailabilityZones DescribeImages DescribeInstances DescribeInstanceStatus
- RunInstances StartInstances StopInstances RebootInstances TerminateInstances
+ RunInstances StartInstances StopInstances RebootInstances TerminateInstances ModifyInstanceMetadataOptions
  DescribeIamInstanceProfileAssociations AssociateIamInstanceProfile ReplaceIamInstanceProfileAssociation
  DisassociateIamInstanceProfile DescribeKeyPairs CreateKeyPair ImportKeyPair DeleteKeyPair
  DescribeVpcs CreateVpc DeleteVpc DescribeVpcAttribute ModifyVpcAttribute

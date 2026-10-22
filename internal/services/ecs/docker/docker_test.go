@@ -6,7 +6,9 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -86,5 +88,31 @@ func TestDockerRuntime(t *testing.T) {
 	r.Remove(ctx, job.ID)
 	if _, _, err = r.State(ctx, job.ID); !errors.Is(err, ecs.ErrGone) {
 		t.Fatalf("state after remove = %v", err)
+	}
+}
+
+func TestRuntimeAddsDockerHostGateway(t *testing.T) {
+	dir := t.TempDir()
+	argsPath := filepath.Join(dir, "arguments")
+	script := "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$TINYSTACK_TEST_DOCKER_ARGS\"\nprintf 'fake-container\\n'\n"
+	if err := os.WriteFile(filepath.Join(dir, "docker"), []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("TINYSTACK_TEST_DOCKER_ARGS", argsPath)
+	r := New()
+	defer r.Close()
+	if _, err := r.Start(context.Background(), &ecs.ContainerSpec{Image: "test-image"}); err != nil {
+		t.Fatal(err)
+	}
+
+	args, err := os.ReadFile(argsPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(string(args), "--add-host=host.docker.internal:host-gateway\n") {
+		t.Fatalf("Docker host mapping missing: %s", args)
 	}
 }

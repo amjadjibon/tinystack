@@ -183,6 +183,27 @@ func serve(ctx context.Context, cfg config.Config, tinystack *App, logger *slog.
 		logger.Info("console ready", "url", "http://"+consoleListener.Addr().String())
 	}
 
+	var imdsServer *http.Server
+	imdsDone := make(chan error, 1)
+	if cfg.Metadata.IMDS.Address != "" && tinystack.Metadata != nil {
+		imdsListener, imdsErr := listenConfig.Listen(ctx, "tcp", cfg.Metadata.IMDS.Address)
+		if imdsErr != nil {
+			_ = listener.Close()
+			return imdsErr
+		}
+
+		imdsServer = &http.Server{
+			Handler:           tinystack.Metadata.IMDSHandler(),
+			ReadHeaderTimeout: 5 * time.Second,
+			ReadTimeout:       30 * time.Second,
+			WriteTimeout:      30 * time.Second,
+			IdleTimeout:       60 * time.Second,
+		}
+		tinystack.StopOnShutdown(imdsServer)
+		go func() { imdsDone <- imdsServer.Serve(imdsListener) }()
+		logger.Info("imds ready", "address", imdsListener.Addr().String())
+	}
+
 	signalCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	done := make(chan error, 1)
@@ -206,6 +227,8 @@ func serve(ctx context.Context, cfg config.Config, tinystack *App, logger *slog.
 
 		return err
 	case err = <-consoleDone:
+		return err
+	case err = <-imdsDone:
 		return err
 	case <-signalCtx.Done():
 	}

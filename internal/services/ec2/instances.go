@@ -41,6 +41,14 @@ var stateCodes = map[string]int64{
 	statePending: 0, stateRunning: 16, stateShuttingDown: 32, stateTerminated: 48, stateStopping: 64, stateStopped: 80,
 }
 
+const (
+	monitoringDisabled          = "disabled"
+	metadataDisabled            = "disabled"
+	metadataEnabled             = "enabled"
+	metadataTokensOptional      = "optional"
+	metadataOptionsStateApplied = "applied"
+)
+
 // families maps the instance type families TinyStack accepts to their
 // architecture; any size in sizes is accepted with each.
 var (
@@ -60,20 +68,22 @@ var (
 // transitional state (pending, stopping, shutting-down) on the way.
 type instance struct {
 	// Profile is the instance's IAM instance profile association, if any.
-	Profile     *profileAssociation `json:",omitempty"`
-	LaunchTime  time.Time
-	Changed     time.Time         // when State last changed
-	Tags        map[string]string `json:",omitempty"`
-	ID          string
-	Reservation string
-	ImageID     string
-	Type        string
-	KeyName     string `json:",omitempty"`
-	SubnetID    string
-	VPCID       string
-	Zone        string
-	PrivateIP   string `json:",omitempty"`
-	PublicIP    string `json:",omitempty"`
+	Profile *profileAssociation `json:",omitempty"`
+	// MetadataOptions controls access to the instance metadata service.
+	MetadataOptions *instanceMetadataOptions `json:",omitempty"`
+	LaunchTime      time.Time
+	Changed         time.Time         // when State last changed
+	Tags            map[string]string `json:",omitempty"`
+	ID              string
+	Reservation     string
+	ImageID         string
+	Type            string
+	KeyName         string `json:",omitempty"`
+	SubnetID        string
+	VPCID           string
+	Zone            string
+	PrivateIP       string `json:",omitempty"`
+	PublicIP        string `json:",omitempty"`
 	// AddressID is the Elastic IP address that is PublicIP, if any.
 	AddressID   string `json:",omitempty"`
 	State       string
@@ -89,6 +99,15 @@ type instance struct {
 	// NoTerminate is the disableApiTermination attribute.
 	NoTerminate bool
 	Monitoring  bool
+}
+
+type instanceMetadataOptions struct {
+	HttpTokens              string `json:",omitempty"`
+	HttpEndpoint            string `json:",omitempty"`
+	HttpProtocolIpv6        string `json:",omitempty"`
+	InstanceMetadataTags    string `json:",omitempty"`
+	State                   string `json:",omitempty"`
+	HttpPutResponseHopLimit int64  `json:",omitempty"`
 }
 
 // groupRef is a security group as an instance records it at launch.
@@ -215,7 +234,7 @@ func dnsName(region, ip string, public bool) string {
 // instanceOutput describes an instance in state, its settled state unless an
 // operation reports a transitional one.
 func instanceOutput(scope request.Scope, i *instance, state string) api.Instance {
-	monitoring := "disabled"
+	monitoring := monitoringDisabled
 	if i.Monitoring {
 		monitoring = "enabled"
 	}
@@ -259,7 +278,52 @@ func instanceOutput(scope request.Scope, i *instance, state string) api.Instance
 		}
 	}
 
+	out.MetadataOptions = i.metadataOptionsOutput()
+
 	return out
+}
+
+func (i *instance) metadataOptionsOutput() *api.InstanceMetadataOptionsResponse {
+	tokens := metadataTokensOptional
+	endpoint := metadataEnabled
+	state := metadataOptionsStateApplied
+	hopLimit := int64(1)
+	tags := metadataDisabled
+	ipv6 := metadataDisabled
+	if i.MetadataOptions != nil {
+		if i.MetadataOptions.HttpTokens != "" {
+			tokens = i.MetadataOptions.HttpTokens
+		}
+
+		if i.MetadataOptions.HttpEndpoint != "" {
+			endpoint = i.MetadataOptions.HttpEndpoint
+		}
+
+		if i.MetadataOptions.State != "" {
+			state = i.MetadataOptions.State
+		}
+
+		if i.MetadataOptions.HttpPutResponseHopLimit != 0 {
+			hopLimit = i.MetadataOptions.HttpPutResponseHopLimit
+		}
+
+		if i.MetadataOptions.InstanceMetadataTags != "" {
+			tags = i.MetadataOptions.InstanceMetadataTags
+		}
+
+		if i.MetadataOptions.HttpProtocolIpv6 != "" {
+			ipv6 = i.MetadataOptions.HttpProtocolIpv6
+		}
+	}
+
+	return &api.InstanceMetadataOptionsResponse{
+		HttpTokens:              new(tokens),
+		HttpEndpoint:            new(endpoint),
+		HttpPutResponseHopLimit: new(hopLimit),
+		HttpProtocolIpv6:        new(ipv6),
+		InstanceMetadataTags:    new(tags),
+		State:                   new(state),
+	}
 }
 
 func instanceValues(scope request.Scope, i *instance) values {
@@ -311,6 +375,13 @@ type launch struct {
 // checkLaunch validates the parts of a RunInstances request that need no
 // stored state.
 func checkLaunch(region string, in *api.RunInstancesRequest) (*launch, error) {
+	if m := in.MetadataOptions; m != nil {
+		if err := validateMetadataOptions(m.HttpTokens, m.HttpEndpoint, m.HttpProtocolIpv6, m.InstanceMetadataTags,
+			m.HttpPutResponseHopLimit); err != nil {
+			return nil, err
+		}
+	}
+
 	l := &launch{
 		min:         common.Value(in.MinCount),
 		max:         common.Value(in.MaxCount),
@@ -608,6 +679,7 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 			switch {
 			case !i.visible(now):
 				tx.Delete(scope.Key("ec2", kindInstance, i.ID))
+				tx.Delete("aws/ec2/instances/" + i.ID)
 			case token != "" && i.ClientToken == token:
 				if out == nil {
 					out = reservation(scope, i.Reservation, nil)
@@ -681,6 +753,17 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 				}
 			}
 
+			if in.MetadataOptions != nil {
+				i.MetadataOptions = &instanceMetadataOptions{
+					HttpTokens:              common.Value(in.MetadataOptions.HttpTokens),
+					HttpEndpoint:            common.Value(in.MetadataOptions.HttpEndpoint),
+					HttpPutResponseHopLimit: common.Value(in.MetadataOptions.HttpPutResponseHopLimit),
+					HttpProtocolIpv6:        common.Value(in.MetadataOptions.HttpProtocolIpv6),
+					InstanceMetadataTags:    common.Value(in.MetadataOptions.InstanceMetadataTags),
+					State:                   metadataOptionsStateApplied,
+				}
+			}
+
 			ip, ipErr := ips.take(common.Value(in.PrivateIpAddress))
 			if ipErr != nil {
 				return ipErr
@@ -689,6 +772,10 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 			i.PrivateIP = ip
 			if sn.MapPublicIP {
 				i.PublicIP = publicIP()
+			}
+
+			if indexErr := storage.Write(tx, "aws/ec2/instances/"+i.ID, scope); indexErr != nil {
+				return indexErr
 			}
 
 			if writeErr := storage.Write(tx, scope.Key("ec2", kindInstance, i.ID), i); writeErr != nil {
@@ -1051,4 +1138,104 @@ func (s *Service) DescribeInstanceStatus(
 	}
 
 	return out, nil
+}
+
+func (s *Service) ModifyInstanceMetadataOptions(
+	ctx context.Context,
+	in *api.ModifyInstanceMetadataOptionsRequest,
+) (*api.ModifyInstanceMetadataOptionsResult, error) {
+	if _, err := caller(ctx, in.DryRun); err != nil {
+		return nil, err
+	}
+
+	if err := validateMetadataOptions(in.HttpTokens, in.HttpEndpoint, in.HttpProtocolIpv6, in.InstanceMetadataTags,
+		in.HttpPutResponseHopLimit); err != nil {
+		return nil, err
+	}
+
+	id := common.Value(in.InstanceId)
+	if id == "" {
+		return nil, awserror.New("MissingParameter", "The request must contain the parameter InstanceId")
+	}
+
+	var out *api.ModifyInstanceMetadataOptionsResult
+	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
+		inst, found, readErr := storage.Read[instance](tx, scope.Key("ec2", kindInstance, id))
+		if readErr != nil {
+			return readErr
+		}
+
+		if !found || !inst.visible(s.now().UTC()) {
+			return instanceNotFound(id)
+		}
+
+		if inst.MetadataOptions == nil {
+			inst.MetadataOptions = &instanceMetadataOptions{
+				HttpTokens: metadataTokensOptional,
+				State:      metadataOptionsStateApplied,
+			}
+		}
+
+		if in.HttpTokens != nil {
+			inst.MetadataOptions.HttpTokens = *in.HttpTokens
+		}
+
+		if in.HttpEndpoint != nil {
+			inst.MetadataOptions.HttpEndpoint = *in.HttpEndpoint
+		}
+
+		if in.HttpPutResponseHopLimit != nil {
+			inst.MetadataOptions.HttpPutResponseHopLimit = *in.HttpPutResponseHopLimit
+		}
+
+		if in.HttpProtocolIpv6 != nil {
+			inst.MetadataOptions.HttpProtocolIpv6 = *in.HttpProtocolIpv6
+		}
+
+		if in.InstanceMetadataTags != nil {
+			inst.MetadataOptions.InstanceMetadataTags = *in.InstanceMetadataTags
+		}
+
+		inst.MetadataOptions.State = metadataOptionsStateApplied
+		if err := storage.Write(tx, scope.Key("ec2", kindInstance, id), inst); err != nil {
+			return err
+		}
+
+		out = &api.ModifyInstanceMetadataOptionsResult{
+			InstanceId:              new(id),
+			InstanceMetadataOptions: inst.metadataOptionsOutput(),
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+// validateMetadataOptions rejects settings the local listener cannot implement.
+func validateMetadataOptions(tokens, endpoint, ipv6, tags *string, hopLimit *int64) error {
+	if tokens != nil && *tokens != metadataTokensOptional && *tokens != "required" {
+		return invalidParameter("HttpTokens must be optional or required")
+	}
+
+	if endpoint != nil && *endpoint != metadataEnabled && *endpoint != metadataDisabled {
+		return invalidParameter("HttpEndpoint must be enabled or disabled")
+	}
+
+	if ipv6 != nil && *ipv6 != metadataDisabled {
+		return invalidParameter("HttpProtocolIpv6 supports only disabled")
+	}
+
+	if tags != nil && *tags != metadataDisabled {
+		return invalidParameter("InstanceMetadataTags supports only disabled")
+	}
+
+	if hopLimit != nil && (*hopLimit < 1 || *hopLimit > 64) {
+		return invalidParameter("HttpPutResponseHopLimit must be between 1 and 64")
+	}
+
+	return nil
 }

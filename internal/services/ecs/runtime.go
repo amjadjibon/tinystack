@@ -2,8 +2,11 @@ package ecs
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"log/slog"
+	"strconv"
 	"strings"
 	"time"
 
@@ -43,6 +46,9 @@ type Runtime interface {
 
 // ContainerSpec is a container of a task, from its definition and overrides.
 type ContainerSpec struct {
+	// Metadata is committed with the started container.
+	Metadata         *ContainerMetadata
+	MetadataToken    string
 	Environment      map[string]string
 	Labels           map[string]string
 	Name             string
@@ -172,7 +178,7 @@ func (s *Service) advance(ctx context.Context, k string) error {
 // launch starts a pending task's containers and records them, or stops the task
 // when one fails to start.
 func (s *Service) launch(ctx context.Context, scope request.Scope, t *task, def *taskDef) error {
-	specs, err := containerSpecs(scope, t, def)
+	specs, err := s.containerSpecs(scope, t, def)
 	var started []Started
 	for i := 0; err == nil && i < len(specs); i++ {
 		var st Started
@@ -208,11 +214,30 @@ func (s *Service) launch(ctx context.Context, scope request.Scope, t *task, def 
 			return s.replace(tx, scope, c, cur)
 		}
 
+		cur.Metadata = make(map[string]ContainerMetadata)
 		cur.Last = running
 		cur.Version++
 		for i := range cur.Containers {
 			ct := &cur.Containers[i]
 			ct.RuntimeId, ct.LastStatus = new(started[i].ID), new(running)
+			if specs[i].Metadata != nil {
+				rec := *specs[i].Metadata
+				rec.DockerID = started[i].ID
+				rec.Ports = nil
+				for _, p := range started[i].Ports {
+					rec.Ports = append(
+						rec.Ports,
+						MetadataPortMapping{ContainerPort: p.Container, HostPort: p.Host, Protocol: p.Protocol},
+					)
+				}
+
+				cur.Metadata[specs[i].MetadataToken] = rec
+				if writeErr := storage.Write(tx, "aws/ecs/metadata/"+specs[i].MetadataToken,
+					taskKey(scope, cur.Cluster, cur.ID)); writeErr != nil {
+					return writeErr
+				}
+			}
+
 			ct.NetworkBindings = []api.NetworkBinding{}
 			for _, p := range started[i].Ports {
 				ct.NetworkBindings = append(ct.NetworkBindings, api.NetworkBinding{
@@ -222,9 +247,15 @@ func (s *Service) launch(ctx context.Context, scope request.Scope, t *task, def 
 			}
 		}
 
+		if writeErr := storage.Write(tx, taskKey(scope, cur.Cluster, cur.ID), cur); writeErr != nil {
+			return writeErr
+		}
+
 		kept = true
-		return storage.Write(tx, taskKey(scope, cur.Cluster, cur.ID), cur)
+		return nil
 	})
+
+	kept = kept && updateErr == nil
 	if !kept {
 		for _, st := range started {
 			s.runtime.Remove(context.WithoutCancel(ctx), st.ID)
@@ -236,7 +267,11 @@ func (s *Service) launch(ctx context.Context, scope request.Scope, t *task, def 
 
 // containerSpecs describes the containers of t, failing for the definition
 // features the runtime does not provide.
-func containerSpecs(scope request.Scope, t *task, def *taskDef) ([]ContainerSpec, error) {
+func (s *Service) containerSpecs(
+	scope request.Scope,
+	t *task,
+	def *taskDef,
+) ([]ContainerSpec, error) {
 	specs := make([]ContainerSpec, 0, len(def.Def.ContainerDefinitions))
 	for i := range def.Def.ContainerDefinitions {
 		d := &def.Def.ContainerDefinitions[i]
@@ -299,6 +334,54 @@ func containerSpecs(scope request.Scope, t *task, def *taskDef) ([]ContainerSpec
 				spec.Ports,
 				PortSpec{Container: common.Value(p.ContainerPort), Host: host, Protocol: protocol},
 			)
+		}
+
+		if s.endpoint != "" {
+			b := make([]byte, 16)
+			if _, err := rand.Read(b); err != nil {
+				return nil, err
+			}
+
+			token := hex.EncodeToString(b)
+
+			spec.Environment["ECS_CONTAINER_METADATA_URI_V4"] = s.endpoint + "/_tinystack/ecs/v4/" + token
+			spec.Environment["AWS_CONTAINER_CREDENTIALS_FULL_URI"] = s.endpoint + "/_tinystack/ecs/credentials"
+			spec.Environment["AWS_CONTAINER_AUTHORIZATION_TOKEN"] = token
+
+			var revision string
+			if def != nil && def.Def.Revision != nil {
+				revision = strconv.FormatInt(*def.Def.Revision, 10)
+			}
+
+			var ports []MetadataPortMapping
+			for _, p := range spec.Ports {
+				ports = append(ports, MetadataPortMapping{
+					ContainerPort: p.Container,
+					HostPort:      p.Host,
+					Protocol:      p.Protocol,
+				})
+			}
+
+			metaRec := ContainerMetadata{
+				Scope:         scope,
+				Cluster:       t.Cluster,
+				TaskID:        t.ID,
+				TaskARN:       taskARN(scope, t.Cluster, t.ID),
+				Family:        t.Family,
+				Revision:      revision,
+				ContainerName: spec.Name,
+				Image:         spec.Image,
+				TaskRoleARN:   common.Value(def.Def.TaskRoleArn),
+				CreatedAt:     t.Created,
+				StartedAt:     s.now().UTC(),
+				CPU:           d.Cpu,
+				Memory:        d.Memory,
+				Ports:         ports,
+				Labels:        spec.Labels,
+			}
+
+			spec.Metadata = &metaRec
+			spec.MetadataToken = token
 		}
 
 		specs = append(specs, spec)

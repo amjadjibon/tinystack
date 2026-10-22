@@ -60,9 +60,10 @@ type Service struct {
 	bg        *background.Group
 	// busy holds the index keys the runner is advancing, and cursors the time
 	// of the last log line shipped from each container.
-	busy    map[string]bool
-	cursors map[string]time.Time
-	mu      sync.Mutex
+	busy     map[string]bool
+	cursors  map[string]time.Time
+	endpoint string
+	mu       sync.Mutex
 }
 
 func New(store storage.Store) *Service {
@@ -70,6 +71,11 @@ func New(store storage.Store) *Service {
 		bg: background.New(), store: store, now: time.Now, busy: map[string]bool{},
 		cursors: map[string]time.Time{},
 	}
+}
+
+// UseEndpoint sets the base URL task containers use to reach TinyStack for metadata and credentials.
+func (s *Service) UseEndpoint(endpoint string) {
+	s.endpoint = strings.TrimRight(endpoint, "/")
 }
 
 // Stop ends the runner and removes every container the runtime started.
