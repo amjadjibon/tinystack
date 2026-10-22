@@ -246,6 +246,26 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 			obj.Tags = tags
 		}
 
+		targetMeta, _, readErr := storage.Read[bucketMeta](tx, target)
+		if readErr != nil {
+			return readErr
+		}
+
+		obj.ObjectLockMode = ""
+		obj.ObjectLockRetainUntilDate = nil
+		obj.ObjectLockLegalHoldStatus = ""
+		lockErr := applyObjectLock(
+			targetMeta,
+			&obj,
+			in.ObjectLockMode,
+			in.ObjectLockRetainUntilDate,
+			in.ObjectLockLegalHoldStatus,
+			s.now(),
+		)
+		if lockErr != nil {
+			return lockErr
+		}
+
 		var cfgErr error
 		if cfg, cfgErr = notifications(tx, target); cfgErr != nil {
 			return cfgErr

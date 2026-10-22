@@ -116,6 +116,9 @@ type bucketMeta struct {
 	PublicAccessBlock *api.PublicAccessBlockConfiguration    `json:",omitempty"`
 	Lifecycle         *lifecycle                             `json:",omitempty"`
 	Website           *api.WebsiteConfiguration              `json:",omitempty"`
+	// ObjectLock is the bucket's Object Lock configuration, set only on
+	// buckets created with Object Lock enabled.
+	ObjectLock *api.ObjectLockConfiguration `json:",omitempty"`
 	// Versioning is "", "Enabled", or "Suspended".
 	Versioning string `json:",omitempty"`
 	// Policy is the bucket policy, evaluated by the gateway.
@@ -283,6 +286,13 @@ func (s *Service) CreateBucket(ctx context.Context, in *api.CreateBucketRequest)
 		}
 
 		meta := bucketMeta{CreatedAt: now}
+		if common.Value(in.ObjectLockEnabledForBucket) {
+			meta.Versioning = versioningEnabled
+			meta.ObjectLock = &api.ObjectLockConfiguration{
+				ObjectLockEnabled: new(lockEnabled),
+			}
+		}
+
 		newBucketAccess(&meta)
 		return writeJSON(tx, m.AccountID+"/"+m.Region+"/s3/"+name, &meta)
 	})

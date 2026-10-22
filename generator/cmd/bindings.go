@@ -79,12 +79,12 @@ func compileBinding(
 		return catalog.Binding{}, fmt.Errorf("invalid HTTP trait")
 	}
 
-	in, err := memberBindings(m.Shapes[op.Input.Target].Members, fields(op.Input.Target), true)
+	in, err := memberBindings(&m, m.Shapes[op.Input.Target].Members, fields(op.Input.Target), true)
 	if err != nil {
 		return catalog.Binding{}, err
 	}
 
-	out, err := memberBindings(m.Shapes[op.Output.Target].Members, fields(op.Output.Target), false)
+	out, err := memberBindings(&m, m.Shapes[op.Output.Target].Members, fields(op.Output.Target), false)
 	if err != nil {
 		return catalog.Binding{}, err
 	}
@@ -111,6 +111,7 @@ const (
 // query members the profile leaves out are recorded as unsupported, so a
 // request that sets them fails instead of being silently ignored.
 func memberBindings(
+	m *model,
 	members map[string]reference,
 	selected []string,
 	input bool,
@@ -165,6 +166,10 @@ func memberBindings(
 					return nil, guardErr
 				}
 			}
+
+			if location == locHeader {
+				binding.Format = headerTimestampFormat(m, member)
+			}
 		}
 
 		switch {
@@ -177,4 +182,25 @@ func memberBindings(
 	}
 
 	return bindings, nil
+}
+
+// headerTimestampFormat returns a timestamp header member's format, from the
+// member or its target, when it is not the HTTP date that headers default to.
+func headerTimestampFormat(m *model, member reference) string {
+	target := m.Shapes[member.Target]
+	if target.Type != shapeTimestamp {
+		return ""
+	}
+
+	raw, ok := member.Traits[traitTimestampFormat]
+	if !ok {
+		raw = target.Traits[traitTimestampFormat]
+	}
+
+	var layout string
+	if json.Unmarshal(raw, &layout) != nil || layout == "http-date" {
+		return ""
+	}
+
+	return layout
 }

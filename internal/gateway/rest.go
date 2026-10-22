@@ -234,6 +234,12 @@ func (s *Server) restOperation(r *http.Request, c *call) (map[string]string, err
 
 	// A presigned URL's signature parameters belong to no operation.
 	query := r.URL.Query()
+	if c.service.SigningName == "s3" && r.Method == http.MethodPost &&
+		len(segments) == 1 && len(query) == 0 &&
+		strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "multipart/form-data") {
+		c.meta.Operation = opPostObject
+		return map[string]string{"Bucket": segments[0]}, nil
+	}
 	for k := range query {
 		if sigv4.QueryParameter(k) {
 			delete(query, k)

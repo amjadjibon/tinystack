@@ -34,18 +34,20 @@ const (
 )
 
 const (
-	requestExpired = "RequestExpired"
-	accessDenied   = "AccessDenied"
+	requestExpired        = "RequestExpired"
+	accessDenied          = "AccessDenied"
+	signatureDoesNotMatch = "SignatureDoesNotMatch"
+	opPostObject          = "PostObject"
 )
 
 // authCodes are the error codes each protocol family's services use for
 // authentication failures.
 var authCodes = map[string][5]string{
 	catalog.RESTXML: {
-		accessDenied, "InvalidAccessKeyId", "SignatureDoesNotMatch", "RequestTimeTooSkewed", "ExpiredToken",
+		accessDenied, "InvalidAccessKeyId", signatureDoesNotMatch, "RequestTimeTooSkewed", "ExpiredToken",
 	},
 	catalog.AWSQuery: {
-		"MissingAuthenticationToken", "InvalidClientTokenId", "SignatureDoesNotMatch", requestExpired, "ExpiredToken",
+		"MissingAuthenticationToken", "InvalidClientTokenId", signatureDoesNotMatch, requestExpired, "ExpiredToken",
 	},
 	catalog.EC2Query: {
 		"MissingAuthenticationToken", "AuthFailure", "AuthFailure", requestExpired, requestExpired,
@@ -116,6 +118,10 @@ func signature(r *http.Request) (a *sigv4.Authorization, signed bool, err error)
 // It runs once the service is known, so S3 can use its path and payload rules.
 func (s *Server) authenticate(w http.ResponseWriter, r *http.Request, c *call) error {
 	if s.cfg.Identity.Mode != config.IdentityVerify {
+		return nil
+	}
+
+	if c.meta.Operation == opPostObject {
 		return nil
 	}
 

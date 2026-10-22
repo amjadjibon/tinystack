@@ -25,13 +25,19 @@ import (
 const minMultipartPart = 5 << 20
 
 type upload struct {
-	Metadata    map[string]string
-	Key         string
-	ContentType string
+	Metadata map[string]string
+	// ObjectLockRetainUntilDate is when retention expires.
+	ObjectLockRetainUntilDate *time.Time `json:",omitempty"`
+	Key                       string
+	ContentType               string
 	// ChecksumAlgorithm and ChecksumType are what the upload was created with, or the default.
 	ChecksumAlgorithm string `json:",omitempty"`
 	ChecksumType      string `json:",omitempty"`
-	Initiated         int64
+	// ObjectLockMode is the lock mode: "GOVERNANCE" or "COMPLIANCE".
+	ObjectLockMode string `json:",omitempty"`
+	// ObjectLockLegalHoldStatus is the legal hold status: "ON" or "OFF".
+	ObjectLockLegalHoldStatus string `json:",omitempty"`
+	Initiated                 int64
 }
 
 // kind returns the upload's checksum algorithm and type.
@@ -149,6 +155,27 @@ func (s *Service) CreateMultipartUpload(
 		if resolveErr != nil {
 			return resolveErr
 		}
+
+		meta, _, readErr := storage.Read[bucketMeta](tx, bucket)
+		if readErr != nil {
+			return readErr
+		}
+
+		var dummy object
+		if lockErr := applyObjectLock(
+			meta,
+			&dummy,
+			in.ObjectLockMode,
+			in.ObjectLockRetainUntilDate,
+			in.ObjectLockLegalHoldStatus,
+			s.now(),
+		); lockErr != nil {
+			return lockErr
+		}
+
+		u.ObjectLockMode = dummy.ObjectLockMode
+		u.ObjectLockRetainUntilDate = dummy.ObjectLockRetainUntilDate
+		u.ObjectLockLegalHoldStatus = dummy.ObjectLockLegalHoldStatus
 
 		return writeJSON(tx, uploadKey(bucket, id), &u)
 	})
@@ -442,6 +469,9 @@ func (s *Service) CompleteMultipartUpload(
 		obj := object{
 			ETag: etag, ContentType: u.ContentType, Metadata: u.Metadata,
 			Size: size, LastModified: s.now().UnixMilli(), Checksum: stored,
+			ObjectLockMode:            u.ObjectLockMode,
+			ObjectLockRetainUntilDate: u.ObjectLockRetainUntilDate,
+			ObjectLockLegalHoldStatus: u.ObjectLockLegalHoldStatus,
 		}
 
 		status, writeErr := putCurrent(tx, bucket, *in.Key, &obj, blob.Record())
@@ -657,7 +687,8 @@ func (s *Service) ListMultipartUploads(
 		})
 		seen := map[string]bool{}
 		count := int64(0)
-		for _, it := range items {
+		for i := range items {
+			it := &items[i]
 			if d := common.Value(in.Delimiter); d != "" {
 				if pos := strings.Index(it.u.Key[len(common.Value(in.Prefix)):], d); pos >= 0 {
 					prefix := it.u.Key[:len(common.Value(in.Prefix))+pos+len(d)]

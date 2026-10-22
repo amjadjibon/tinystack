@@ -188,8 +188,8 @@ func Verify(r *http.Request, a *Authorization, secret, payloadHash string, s3 bo
 		[]string{Algorithm, signedAt.Format(timeFormat), a.scope(), hex.EncodeToString(digest[:])},
 		"\n",
 	)
-	key := signingKey(secret, a.Date, a.Region, a.Service)
-	want := hex.EncodeToString(hmacSHA256(key, stringToSign))
+	key := SigningKey(secret, a.Date, a.Region, a.Service)
+	want := hex.EncodeToString(HMACSHA256(key, stringToSign))
 	if !hmac.Equal([]byte(want), []byte(a.Signature)) {
 		return ErrMismatch
 	}
@@ -328,15 +328,16 @@ func escape(s string, encodeSlash bool) string {
 	return b.String()
 }
 
-// signingKey derives the SigV4 signing key for a credential scope.
-func signingKey(secret, date, region, service string) []byte {
-	key := hmacSHA256([]byte("AWS4"+secret), date)
-	key = hmacSHA256(key, region)
-	key = hmacSHA256(key, service)
-	return hmacSHA256(key, terminator)
+// SigningKey derives the SigV4 signing key for a credential scope.
+func SigningKey(secret, date, region, service string) []byte {
+	key := HMACSHA256([]byte("AWS4"+secret), date)
+	key = HMACSHA256(key, region)
+	key = HMACSHA256(key, service)
+	return HMACSHA256(key, terminator)
 }
 
-func hmacSHA256(key []byte, data string) []byte {
+// HMACSHA256 computes HMAC-SHA256.
+func HMACSHA256(key []byte, data string) []byte {
 	h := hmac.New(sha256.New, key)
 	h.Write([]byte(data))
 	return h.Sum(nil)

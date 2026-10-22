@@ -33,8 +33,9 @@ type Binding struct {
 // httpResponseCode), or "document" for body members.
 // "unsupported:header", "unsupported:query", and "unsupported:prefix" mark
 // modeled inputs the profile does not implement; requests that set them must
-// fail instead of being ignored.
-type MemberBinding struct{ Location, Name string }
+// fail instead of being ignored. Format is a header timestamp's
+// smithy.api#timestampFormat when it is not the HTTP date default.
+type MemberBinding struct{ Location, Name, Format string }
 
 // ErrorBinding carries modeled wire facts for one error code. MessageMember is
 // the modeled message member name JSON error bodies use ("message" or

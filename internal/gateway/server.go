@@ -930,6 +930,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if c.meta.Operation == opPostObject {
+		s.serveS3PostUpload(w, r, c)
+		return
+	}
+
 	op, input, err := s.decode(w, r, c, contentType)
 	if err != nil {
 		s.fail(w, c, err)

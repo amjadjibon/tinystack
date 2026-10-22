@@ -12,6 +12,8 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
+const actionBypassGovernanceRetention = "s3:BypassGovernanceRetention" // #nosec G101
+
 // AuthorizationResources separates bucket, object, copy, and multi-delete targets.
 func (s *Service) authorizationTargets(
 	ctx context.Context,
@@ -63,6 +65,16 @@ func (s *Service) authorizationTargets(
 					out,
 					catalog.AuthorizationResource{ARN: base + "/" + common.Value(object.Key), Action: action},
 				)
+				if common.Value(in.BypassGovernanceRetention) {
+					versions = append(versions, common.Value(object.VersionId))
+					out = append(
+						out,
+						catalog.AuthorizationResource{
+							ARN:    base + "/" + common.Value(object.Key),
+							Action: actionBypassGovernanceRetention,
+						},
+					)
+				}
 			}
 		}
 
@@ -91,6 +103,15 @@ func (s *Service) authorizationTargets(
 
 	out := []catalog.AuthorizationResource{{ARN: base + "/" + key, Action: action}}
 	versions := []string{catalog.InputString(input, "VersionId")}
+	if in, ok := input.(*api.DeleteObjectRequest); ok && common.Value(in.BypassGovernanceRetention) {
+		out = append(out, catalog.AuthorizationResource{ARN: base + "/" + key, Action: actionBypassGovernanceRetention})
+		versions = append(versions, common.Value(in.VersionId))
+	}
+
+	if in, ok := input.(*api.PutObjectRetentionRequest); ok && common.Value(in.BypassGovernanceRetention) {
+		out = append(out, catalog.AuthorizationResource{ARN: base + "/" + key, Action: actionBypassGovernanceRetention})
+		versions = append(versions, common.Value(in.VersionId))
+	}
 	if operation == "CopyObject" || operation == "UploadPartCopy" {
 		source, err := url.QueryUnescape(catalog.InputString(input, "CopySource"))
 		if err != nil {

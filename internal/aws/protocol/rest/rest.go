@@ -546,7 +546,9 @@ func setScalar(f reflect.Value, s, name string) error {
 	case elem.Type() == timeType:
 		t, err := http.ParseTime(s)
 		if err != nil {
-			return invalid("%s must be an HTTP date", name)
+			if t, err = time.Parse(time.RFC3339, s); err != nil {
+				return invalid("%s must be an HTTP date or ISO 8601 timestamp", name)
+			}
 		}
 
 		elem.Set(reflect.ValueOf(t))
@@ -599,9 +601,13 @@ func setPayload(f reflect.Value, body []byte, document func([]byte, any) error) 
 	return nil
 }
 
-func formatScalar(v reflect.Value) string {
+func formatHeader(mb catalog.MemberBinding, v reflect.Value) string {
 	if v.Type() == timeType {
 		t, _ := v.Interface().(time.Time)
+		if mb.Format == "date-time" {
+			return t.UTC().Format(time.RFC3339)
+		}
+
 		return t.UTC().Format(http.TimeFormat)
 	}
 
@@ -638,7 +644,7 @@ func Encode(w http.ResponseWriter, b *catalog.Binding, output any) Response {
 		switch mb.Location {
 		case locationHeader:
 			if !f.IsNil() {
-				w.Header().Set(mb.Name, formatScalar(f.Elem()))
+				w.Header().Set(mb.Name, formatHeader(mb, f.Elem()))
 			}
 		case locationPrefix:
 			for k, val := range f.Interface().(map[string]string) {

@@ -231,7 +231,12 @@ func deleteCurrent(tx storage.WriteTx, bucket, key string, now int64) (removal, 
 // deleteVersion permanently deletes one version of key. Deleting the current
 // version, or the delete marker hiding the key, makes the next version current.
 // A version that does not exist is not an error.
-func deleteVersion(tx storage.WriteTx, bucket, key, version string) (removal, error) {
+func deleteVersion(
+	tx storage.WriteTx,
+	bucket, key, version string,
+	bypassGovernance bool,
+	now time.Time,
+) (removal, error) {
 	out := removal{version: version}
 	h, err := history(tx, bucket, key)
 	if err != nil {
@@ -244,6 +249,10 @@ func deleteVersion(tx storage.WriteTx, bucket, key, version string) (removal, er
 	case err != nil:
 		return out, err
 	case found && versionOf(&current) == version:
+		if lockErr := checkLock(&current, bypassGovernance, now); lockErr != nil {
+			return out, lockErr
+		}
+
 		tx.Delete(bucket + "/o/" + key)
 		tx.Delete(bucket + "/db/" + key)
 		out.removed = true
@@ -251,6 +260,12 @@ func deleteVersion(tx storage.WriteTx, bucket, key, version string) (removal, er
 		i := slices.IndexFunc(h, func(o object) bool { return versionOf(&o) == version })
 		if i < 0 {
 			return out, nil
+		}
+
+		if !h[i].DeleteMarker {
+			if lockErr := checkLock(&h[i], bypassGovernance, now); lockErr != nil {
+				return out, lockErr
+			}
 		}
 
 		out.marker, out.removed = h[i].DeleteMarker, true
@@ -355,7 +370,18 @@ func (s *Service) PutBucketVersioning(
 		return nil, fail(http.StatusBadRequest, "MalformedXML", "The XML you provided was not well-formed.")
 	}
 
-	err := s.updateBucket(ctx, in.Bucket, in.ExpectedBucketOwner, func(meta *bucketMeta) { meta.Versioning = status })
+	err := s.editBucket(ctx, in.Bucket, in.ExpectedBucketOwner, func(meta *bucketMeta) error {
+		if meta.ObjectLock != nil && status == versioningSuspended {
+			return fail(
+				http.StatusBadRequest,
+				"InvalidBucketState",
+				"An Object Lock configuration is present on this bucket, so the versioning state cannot be changed.",
+			)
+		}
+
+		meta.Versioning = status
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -585,7 +611,8 @@ func (s *Service) ListObjectVersions(
 	}
 
 	owner := &api.Owner{ID: new(canonicalID(m.AccountID))}
-	for _, e := range p.entries {
+	for i := range p.entries {
+		e := &p.entries[i]
 		modified := new(time.UnixMilli(e.obj.LastModified).UTC())
 		if e.obj.DeleteMarker {
 			out.DeleteMarkers = append(out.DeleteMarkers, api.DeleteMarkerEntry{

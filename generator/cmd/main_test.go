@@ -257,8 +257,8 @@ func TestRESTXMLFixture(t *testing.T) {
 		`xml:"Names>Name,omitempty"`,
 		`When *time.Time`,
 		`Protocols: []string{"restXml"}`,
-		`"Owner": catalog.MemberBinding{Location: "unsupported:header", Name: "x-owner"}`,
-		`"Meta": catalog.MemberBinding{Location: "prefix", Name: "x-meta-"}`,
+		`"Owner": catalog.MemberBinding{Location: "unsupported:header", Name: "x-owner", Format: ""}`,
+		`"Meta": catalog.MemberBinding{Location: "prefix", Name: "x-meta-", Format: ""}`,
 		`URI: "/{Bucket}?list"`,
 		`xml:"http://www.w3.org/2001/XMLSchema-instance type,attr,omitempty"`,
 	} {
@@ -305,11 +305,11 @@ func TestRESTJSONFixture(t *testing.T) {
 		`Protocols: []string{"restJson1"}`,
 		// Smithy's default success code applies when the http trait has none.
 		`StatusCode: 200`,
-		`"Status": catalog.MemberBinding{Location: "status", Name: "Status"}`,
-		`"Mode": catalog.MemberBinding{Location: "unsupported:header", Name: "X-Mode"}`,
+		`"Status": catalog.MemberBinding{Location: "status", Name: "Status", Format: ""}`,
+		`"Mode": catalog.MemberBinding{Location: "unsupported:header", Name: "X-Mode", Format: ""}`,
 		// Smithy ignores httpQuery on output members, which are then document members.
 		`Next *string ` + "`" + `json:"Next,omitempty"` + "`",
-		`"Next": catalog.MemberBinding{Location: "document", Name: "Next"}`,
+		`"Next": catalog.MemberBinding{Location: "document", Name: "Next", Format: ""}`,
 		// REST JSON honors jsonName, and date-time timestamps are ISO 8601 text.
 		`Since *time.Time ` + "`" + `json:"since,omitempty"` + "`",
 		`"Missing": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}`,

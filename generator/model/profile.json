@@ -15635,13 +15635,20 @@
       "GetBucketAcl",
       "PutBucketAcl",
       "GetObjectAcl",
-      "PutObjectAcl"
+      "PutObjectAcl",
+      "PutObjectLockConfiguration",
+      "GetObjectLockConfiguration",
+      "PutObjectRetention",
+      "GetObjectRetention",
+      "PutObjectLegalHold",
+      "GetObjectLegalHold"
     ],
     "shapes": {
       "CreateBucketRequest": [
         "Bucket",
         "CreateBucketConfiguration",
-        "ACL"
+        "ACL",
+        "ObjectLockEnabledForBucket"
       ],
       "CreateBucketConfiguration": [
         "LocationConstraint"
@@ -15700,7 +15707,10 @@
         "ChecksumCRC64NVME",
         "ChecksumSHA1",
         "ChecksumSHA256",
-        "Tagging"
+        "Tagging",
+        "ObjectLockMode",
+        "ObjectLockRetainUntilDate",
+        "ObjectLockLegalHoldStatus"
       ],
       "PutObjectOutput": [
         "ETag",
@@ -15739,7 +15749,10 @@
         "ChecksumCRC64NVME",
         "ChecksumSHA1",
         "ChecksumSHA256",
-        "ChecksumType"
+        "ChecksumType",
+        "ObjectLockMode",
+        "ObjectLockRetainUntilDate",
+        "ObjectLockLegalHoldStatus"
       ],
       "HeadObjectRequest": [
         "Bucket",
@@ -15764,13 +15777,17 @@
         "ChecksumCRC64NVME",
         "ChecksumSHA1",
         "ChecksumSHA256",
-        "ChecksumType"
+        "ChecksumType",
+        "ObjectLockMode",
+        "ObjectLockRetainUntilDate",
+        "ObjectLockLegalHoldStatus"
       ],
       "DeleteObjectRequest": [
         "Bucket",
         "Key",
         "ExpectedBucketOwner",
-        "VersionId"
+        "VersionId",
+        "BypassGovernanceRetention"
       ],
       "DeleteObjectOutput": [
         "VersionId",
@@ -15842,7 +15859,10 @@
         "ServerSideEncryption",
         "ExpectedBucketOwner",
         "ChecksumAlgorithm",
-        "ChecksumType"
+        "ChecksumType",
+        "ObjectLockMode",
+        "ObjectLockRetainUntilDate",
+        "ObjectLockLegalHoldStatus"
       ],
       "CreateMultipartUploadOutput": [
         "Bucket",
@@ -16010,7 +16030,10 @@
         "ServerSideEncryption",
         "ExpectedBucketOwner",
         "ExpectedSourceBucketOwner",
-        "ChecksumAlgorithm"
+        "ChecksumAlgorithm",
+        "ObjectLockMode",
+        "ObjectLockRetainUntilDate",
+        "ObjectLockLegalHoldStatus"
       ],
       "CopyObjectOutput": [
         "CopyObjectResult",
@@ -16118,7 +16141,8 @@
         "Bucket",
         "Delete",
         "ExpectedBucketOwner",
-        "ChecksumAlgorithm"
+        "ChecksumAlgorithm",
+        "BypassGovernanceRetention"
       ],
       "Delete": [
         "Objects",
@@ -16460,6 +16484,73 @@
         "Key",
         "VersionId",
         "ExpectedBucketOwner"
+      ],
+      "PutObjectLockConfigurationRequest": [
+        "Bucket",
+        "ObjectLockConfiguration",
+        "ExpectedBucketOwner"
+      ],
+      "PutObjectLockConfigurationOutput": [],
+      "GetObjectLockConfigurationRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "GetObjectLockConfigurationOutput": [
+        "ObjectLockConfiguration"
+      ],
+      "ObjectLockConfiguration": [
+        "ObjectLockEnabled",
+        "Rule"
+      ],
+      "ObjectLockRule": [
+        "DefaultRetention"
+      ],
+      "DefaultRetention": [
+        "Days",
+        "Mode",
+        "Years"
+      ],
+      "PutObjectRetentionRequest": [
+        "Bucket",
+        "Key",
+        "Retention",
+        "VersionId",
+        "BypassGovernanceRetention",
+        "ExpectedBucketOwner"
+      ],
+      "PutObjectRetentionOutput": [],
+      "GetObjectRetentionRequest": [
+        "Bucket",
+        "Key",
+        "VersionId",
+        "ExpectedBucketOwner"
+      ],
+      "GetObjectRetentionOutput": [
+        "Retention"
+      ],
+      "ObjectLockRetention": [
+        "Mode",
+        "RetainUntilDate"
+      ],
+      "PutObjectLegalHoldRequest": [
+        "Bucket",
+        "Key",
+        "LegalHold",
+        "VersionId",
+        "ExpectedBucketOwner"
+      ],
+      "PutObjectLegalHoldOutput": [],
+      "GetObjectLegalHoldRequest": [
+        "Bucket",
+        "Key",
+        "VersionId",
+        "ExpectedBucketOwner"
+      ],
+      "GetObjectLegalHoldOutput": [
+        "LegalHold"
+      ],
+      "ObjectLockLegalHold": [
+        "Status"
       ]
     }
   },

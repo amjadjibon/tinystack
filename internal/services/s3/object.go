@@ -40,13 +40,19 @@ type object struct {
 	Metadata map[string]string `json:",omitempty"`
 	Tags     map[string]string `json:",omitempty"`
 	// Checksum is the stored checksum, absent on objects written before it was kept.
-	Checksum    *checksum `json:",omitempty"`
-	ETag        string
-	ContentType string
+	Checksum *checksum `json:",omitempty"`
+	// ObjectLockRetainUntilDate is when retention expires.
+	ObjectLockRetainUntilDate *time.Time `json:",omitempty"`
+	ETag                      string
+	ContentType               string
 	// VersionID is empty for the null version.
-	VersionID    string `json:",omitempty"`
-	Size         int64
-	LastModified int64
+	VersionID string `json:",omitempty"`
+	// ObjectLockMode is the lock mode: "GOVERNANCE" or "COMPLIANCE".
+	ObjectLockMode string `json:",omitempty"`
+	// ObjectLockLegalHoldStatus is the legal hold status: "ON" or "OFF".
+	ObjectLockLegalHoldStatus string `json:",omitempty"`
+	Size                      int64
+	LastModified              int64
 	// DeleteMarker marks a delete marker, which only a history record holds.
 	DeleteMarker bool `json:",omitempty"`
 }
@@ -217,6 +223,22 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 		key, resolveErr := resolve(tx, m, in.Bucket, in.ExpectedBucketOwner)
 		if resolveErr != nil {
 			return resolveErr
+		}
+
+		meta, _, readErr := storage.Read[bucketMeta](tx, key)
+		if readErr != nil {
+			return readErr
+		}
+
+		if lockErr := applyObjectLock(
+			meta,
+			&obj,
+			in.ObjectLockMode,
+			in.ObjectLockRetainUntilDate,
+			in.ObjectLockLegalHoldStatus,
+			s.now(),
+		); lockErr != nil {
+			return lockErr
 		}
 
 		var cfgErr error
@@ -395,6 +417,18 @@ func (s *Service) GetObject(ctx context.Context, in *api.GetObjectRequest) (*api
 		Metadata:      obj.Metadata,
 	}
 
+	if obj.ObjectLockMode != "" {
+		out.ObjectLockMode = new(obj.ObjectLockMode)
+	}
+
+	if obj.ObjectLockRetainUntilDate != nil {
+		out.ObjectLockRetainUntilDate = obj.ObjectLockRetainUntilDate
+	}
+
+	if obj.ObjectLockLegalHoldStatus != "" {
+		out.ObjectLockLegalHoldStatus = new(obj.ObjectLockLegalHoldStatus)
+	}
+
 	if len(obj.Tags) > 0 {
 		out.TagCount = new(int64(len(obj.Tags)))
 	}
@@ -452,6 +486,18 @@ func (s *Service) HeadObject(ctx context.Context, in *api.HeadObjectRequest) (*a
 		Metadata:      obj.Metadata,
 	}
 
+	if obj.ObjectLockMode != "" {
+		out.ObjectLockMode = new(obj.ObjectLockMode)
+	}
+
+	if obj.ObjectLockRetainUntilDate != nil {
+		out.ObjectLockRetainUntilDate = obj.ObjectLockRetainUntilDate
+	}
+
+	if obj.ObjectLockLegalHoldStatus != "" {
+		out.ObjectLockLegalHoldStatus = new(obj.ObjectLockLegalHoldStatus)
+	}
+
 	if in.Range != nil {
 		interval, rangeErr := parseRange(*in.Range, obj.Size)
 		if rangeErr != nil {
@@ -490,7 +536,14 @@ func (s *Service) DeleteObject(ctx context.Context, in *api.DeleteObjectRequest)
 
 		var deleteErr error
 		if in.VersionId != nil {
-			r, deleteErr = deleteVersion(tx, key, *in.Key, *in.VersionId)
+			r, deleteErr = deleteVersion(
+				tx,
+				key,
+				*in.Key,
+				*in.VersionId,
+				common.Value(in.BypassGovernanceRetention),
+				s.now(),
+			)
 		} else {
 			r, deleteErr = deleteCurrent(tx, key, *in.Key, s.now().UnixMilli())
 		}
@@ -567,12 +620,27 @@ func (s *Service) DeleteObjects(ctx context.Context, in *api.DeleteObjectsReques
 			var r removal
 			var deleteErr error
 			if o.VersionId != nil {
-				r, deleteErr = deleteVersion(tx, key, *o.Key, *o.VersionId)
+				r, deleteErr = deleteVersion(
+					tx,
+					key,
+					*o.Key,
+					*o.VersionId,
+					common.Value(in.BypassGovernanceRetention),
+					s.now(),
+				)
 			} else {
 				r, deleteErr = deleteCurrent(tx, key, *o.Key, now)
 			}
 
 			if deleteErr != nil {
+				if e := awserror.From(deleteErr); e.Code == "AccessDenied" {
+					out.Errors = append(out.Errors, api.Error{
+						Key: o.Key, VersionId: o.VersionId, Code: new(e.Code), Message: new(e.Message),
+					})
+
+					continue
+				}
+
 				return deleteErr
 			}
 
