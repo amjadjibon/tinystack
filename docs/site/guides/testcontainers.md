@@ -1,6 +1,6 @@
 # Testcontainers
 
-TinyStack provides dedicated Testcontainers modules for both Go and Python to run TinyStack in Docker for
+TinyStack provides dedicated Testcontainers modules for Go, Python, Java, and Node.js to run TinyStack in Docker for
 integration testing while keeping Docker dependencies out of the core application.
 
 ## Build an image first
@@ -12,7 +12,14 @@ repository root:
 docker build --target headless -t tinystack:test .
 ```
 
-Once published, the registry image can be used with both Go and Python modules.
+Once published, the registry image can be used with all modules.
+
+With Colima, the Java and Node libraries mount the host's socket path into their reaper container (Ryuk), where it
+does not exist. Point them at the socket inside the VM:
+
+```sh
+export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
+```
 
 ## Go module
 
@@ -157,12 +164,131 @@ with TinyStackContainer("tinystack:test") as tinystack:
 - **Health check:** Uses `HttpWaitStrategy` to poll `GET /_tinystack/health` until HTTP 200 is returned, with a 120-second timeout.
 - **`get_endpoint_url()`:** Returns `http://<host>:<mapped_port>`.
 - **`get_client(service_name, region_name="us-east-1", **kwargs)`:** Returns a `boto3` client configured with `endpoint_url`, `region_name`, and dummy AWS credentials (`test`/`test`).
-- **`reset(init=False)`:** Sends a `POST` request to `/_tinystack/reset` with a 60-second timeout, resetting all state. Pass `init=True` (`POST /_tinystack/reset?init=1`) to re-execute ready-stage init scripts. Non-2xx responses raise a `RuntimeError`.
-
+- **`reset(init=False)`:** Sends a `POST` request to `/_tinystack/reset` with a 60-second timeout, resetting all state. Pass `init=True` (`POST /_tinystack/reset?init=1`) to re-execute ready-stage init scripts. Non-2xx responses raise a `RuntimeError`.\n
 ### Run the Python test suite
 
 ```sh
 task test:testcontainers:python
+```
+
+Tests run against Docker, building or reusing the headless image. Tests skip cleanly when Docker is unavailable.
+
+## Java module
+
+The `com.amjadjibon.tinystack:testcontainers-tinystack` Maven artifact provides the `TinyStackContainer` class extending `org.testcontainers.containers.GenericContainer`.
+
+### Maven dependency
+
+```xml
+<dependency>
+    <groupId>com.amjadjibon.tinystack</groupId>
+    <artifactId>testcontainers-tinystack</artifactId>
+    <version>0.1.0</version>
+    <scope>test</scope>
+</dependency>
+```
+
+### Use with AWS SDK for Java v2
+
+```java
+import com.amjadjibon.tinystack.testcontainers.TinyStackContainer;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+
+try (TinyStackContainer container = new TinyStackContainer("tinystack:test")) {
+    container.start();
+
+    S3Client s3 = S3Client.builder()
+            .endpointOverride(container.getEndpointOverride())
+            .region(Region.of(container.getRegion()))
+            .credentialsProvider(StaticCredentialsProvider.create(
+                    AwsBasicCredentials.create(container.getAccessKey(), container.getSecretKey())))
+            .forcePathStyle(true)
+            .build();
+
+    s3.createBucket(b -> b.bucket("uploads"));
+
+    // Reset container state
+    container.reset();
+}
+```
+
+### Configuration and features
+
+- **Requirements:** Java 17+. The module's `./mvnw` downloads Maven on first use.
+- **Image resolution:** Defaults to `ghcr.io/amjadjibon/tinystack:latest`, or resolves `TINYSTACK_IMAGE` from the environment if unset, or accepts an explicit Docker image string in constructor.
+- **Command & ports:** Exposes port `4566` and starts with `start --host 0.0.0.0 --port 4566`.
+- **Health check:** Uses `HttpWaitStrategy` on `/_tinystack/health` with a 120-second startup timeout.
+- **Getters:** `getEndpointUrl()`, `getEndpointOverride()`, `getRegion()` (`"us-east-1"`), `getAccessKey()` (`"test"`), and `getSecretKey()` (`"test"`).
+- **Options:**
+  - `withConfig(Path path)`: Mounts custom YAML configuration to `/etc/tinystack/config.yaml` and sets `--config /etc/tinystack/config.yaml`.
+  - `withInitScripts(String stage, Path... files)`: Mounts lifecycle init scripts to `/etc/tinystack/init/<stage>.d/`.
+  - `withReadyScriptsComplete()`: Adds a wait strategy waiting for `/_tinystack/init/ready` to complete with status `SUCCESSFUL`.
+- **Reset:** `reset()` and `reset(boolean init)` make a POST request to `/_tinystack/reset` or `/_tinystack/reset?init=1`.
+
+### Run the Java test suite
+
+```sh
+task test:testcontainers:java
+```
+
+Tests run against Docker, building or reusing the headless image. Tests skip cleanly when Docker is unavailable.
+
+## Node.js module
+
+The `testcontainers-tinystack` npm package provides `TinyStackContainer` and `StartedTinyStackContainer` built on the official `testcontainers` library.
+
+### Installation
+
+```sh
+npm install --save-dev testcontainers-tinystack
+```
+
+### Use with AWS SDK for JavaScript v3
+
+```typescript
+import { TinyStackContainer } from "testcontainers-tinystack";
+import { S3Client, CreateBucketCommand } from "@aws-sdk/client-s3";
+
+const container = await new TinyStackContainer("tinystack:test").start();
+
+const s3 = new S3Client({
+  endpoint: container.getEndpointUrl(),
+  region: container.getRegion(),
+  credentials: {
+    accessKeyId: container.getAccessKey(),
+    secretAccessKey: container.getSecretKey(),
+  },
+  forcePathStyle: true,
+});
+
+await s3.send(new CreateBucketCommand({ Bucket: "uploads" }));
+
+// Reset container state
+await container.reset();
+
+await container.stop();
+```
+
+### Configuration and features
+
+- **Requirements:** Node.js 18+ and npm 9+.
+- **Image resolution:** Defaults to `ghcr.io/amjadjibon/tinystack:latest`, or resolves `TINYSTACK_IMAGE` from the environment if unset, or accepts an explicit Docker image string in constructor.
+- **Command & ports:** Exposes port `4566` and starts with `start --host 0.0.0.0 --port 4566`.
+- **Health check:** Uses `Wait.forHttp("/_tinystack/health", 4566)` with a 120-second startup timeout.
+- **Getters on started container:** `getEndpointUrl()`, `getRegion()` (`"us-east-1"`), `getAccessKey()` (`"test"`), `getSecretKey()` (`"test"`), `getHost()`, and `getMappedPort(4566)`.
+- **Options:**
+  - `withConfig(filePath)`: Mounts custom YAML configuration to `/etc/tinystack/config.yaml` and sets `--config /etc/tinystack/config.yaml`.
+  - `withInitScripts(stage, ...filePaths)`: Mounts lifecycle init scripts to `/etc/tinystack/init/<stage>.d/`.
+  - `withReadyScriptsComplete()`: Adds a wait strategy waiting for `/_tinystack/init/ready` to complete with status `SUCCESSFUL`.
+- **Reset:** `reset(init?: boolean)` makes a POST request to `/_tinystack/reset` or `/_tinystack/reset?init=1`.
+
+### Run the Node.js test suite
+
+```sh
+task test:testcontainers:node
 ```
 
 Tests run against Docker, building or reusing the headless image. Tests skip cleanly when Docker is unavailable.
