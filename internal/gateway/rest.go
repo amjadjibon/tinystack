@@ -196,7 +196,8 @@ func virtualBucket(host string) string {
 		return bucket
 	}
 
-	if !strings.HasSuffix(host, ".amazonaws.com") {
+	if !strings.HasSuffix(host, ".amazonaws.com") && !strings.HasSuffix(host, ".amazonaws.com.cn") &&
+		!strings.HasSuffix(host, ".api.aws") {
 		return ""
 	}
 

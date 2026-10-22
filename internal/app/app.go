@@ -13,6 +13,8 @@ import (
 	"strings"
 	"sync"
 
+	wiredns "github.com/miekg/dns"
+
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	accountapi "github.com/amjadjibon/tinystack/internal/aws/generated/account"
 	acmapi "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
@@ -116,6 +118,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/delivery"
+	dnsserver "github.com/amjadjibon/tinystack/internal/dns"
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	"github.com/amjadjibon/tinystack/internal/inithooks"
 	"github.com/amjadjibon/tinystack/internal/services/account"
@@ -765,6 +768,18 @@ func build(
 		for _, path := range inithooks.Paths(prefix) {
 			handler.HandlePath(path, hooks)
 		}
+	}
+
+	if cfg.DNS.Enabled {
+		listener, dnsErr := dnsserver.Start(ctx, cfg.DNS.Address, cfg.Server.Host, cfg.DNS.Upstreams,
+			func(ctx context.Context, name string, kind uint16) ([]wiredns.RR, bool, error) {
+				return dns.LookupDNS(ctx, cfg.Defaults.Account, name, kind)
+			})
+		if dnsErr != nil {
+			return nil, dnsErr
+		}
+
+		a.onStop(listener.Stop)
 	}
 
 	a.onStop(hooks.Stop)

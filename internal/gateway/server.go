@@ -357,12 +357,24 @@ func (s *Server) identify(r *http.Request, m *request.Metadata) (string, error) 
 		host = h
 	}
 
-	// "<service>.<region>.amazonaws.com", or "<bucket>.s3.<region>.amazonaws.com"
-	// for S3 virtual-hosted addressing.
-	if trimmed, ok := strings.CutSuffix(host, ".amazonaws.com"); ok {
-		if parts := strings.Split(trimmed, "."); len(parts) >= 2 {
+	host = strings.ToLower(strings.TrimSuffix(host, "."))
+	for _, suffix := range []string{".amazonaws.com.cn", ".amazonaws.com", ".api.aws"} {
+		trimmed, ok := strings.CutSuffix(host, suffix)
+		if !ok {
+			continue
+		}
+
+		parts := strings.Split(trimmed, ".")
+		m.Service = parts[0]
+		if len(parts) >= 2 {
 			m.Service, m.Region = parts[len(parts)-2], parts[len(parts)-1]
 		}
+
+		if parts[len(parts)-1] == "s3" {
+			m.Service, m.Region = "s3", s.cfg.Defaults.Region
+		}
+
+		break
 	}
 
 	a, signed, err := signature(r)

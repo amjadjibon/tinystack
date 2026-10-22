@@ -13,7 +13,7 @@ import (
 func newStartCommand() *cobra.Command {
 	var configPath, host, initDir, authorization string
 	var port, consolePort int
-	var executor, python, node string
+	var executor, python, node, dnsAddress string
 	start := &cobra.Command{
 		Use:   "start",
 		Short: "Run the local AWS endpoint in the foreground",
@@ -48,6 +48,11 @@ func newStartCommand() *cobra.Command {
 
 			if cmd.Flags().Changed("lambda-local-node") {
 				cfg.Lambda.Local.Node = node
+			}
+
+			if cmd.Flags().Changed("dns-address") {
+				cfg.DNS.Enabled = true
+				cfg.DNS.Address = dnsAddress
 			}
 
 			if cmd.Flags().Changed("host") {
@@ -91,6 +96,7 @@ func newStartCommand() *cobra.Command {
 	start.Flags().
 		StringVar(&authorization, "authorization", config.AuthorizationOff, "IAM authorization: off, soft or enforce")
 	start.Flags().StringVar(&configPath, "config", "", "YAML configuration path")
+	start.Flags().StringVar(&dnsAddress, "dns-address", "127.0.0.1:53", "enable DNS on this UDP/TCP address")
 	start.Flags().StringVar(&host, "host", "127.0.0.1", "listen host")
 	start.Flags().IntVar(&port, "port", 4566, "listen port")
 	start.Flags().IntVar(&consolePort, "console-port", 4567, "web console port (0 turns it off)")

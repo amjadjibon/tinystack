@@ -114,6 +114,7 @@ require (
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/go-sql-driver/mysql v1.10.1
 	github.com/lib/pq v1.10.9
+	github.com/miekg/dns v1.1.73
 	github.com/mochi-mqtt/server/v2 v2.7.9
 	github.com/recolabs/gnata v0.5.2
 	github.com/spf13/cobra v1.10.2

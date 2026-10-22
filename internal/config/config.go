@@ -204,6 +204,11 @@ type AccountConfig struct {
 }
 
 type Config struct {
+	DNS struct {
+		Address   string   `yaml:"address"`
+		Upstreams []string `yaml:"upstreams"`
+		Enabled   bool     `yaml:"enabled"`
+	} `yaml:"dns"`
 	Accounts map[string]AccountConfig `yaml:"accounts"`
 	Faults   []faults.Rule            `yaml:"faults"`
 	Identity struct {
@@ -285,6 +290,7 @@ type Config struct {
 func Default() Config {
 	var c Config
 	c.Accounts = map[string]AccountConfig{}
+	c.DNS.Address = "127.0.0.1:53"
 	c.Server.Host = "127.0.0.1"
 	c.Server.Port = 4566
 	c.Server.ConsolePort = 4567
