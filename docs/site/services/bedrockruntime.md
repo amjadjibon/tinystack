@@ -13,7 +13,7 @@ Return predictable text, tool-use fixtures and hash-derived embeddings without n
 | API version | `2023-09-30` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 4 of 11 in the pinned model |
+| Selected operations | 6 of 11 in the pinned model |
 
 ## Implemented behavior
 
@@ -21,7 +21,7 @@ See the [implemented feature catalogue](catalogue.md#amazon-bedrock-runtime) for
 
 ## Limitations and future work
 
-- InvokeModelWithResponseStream and ConverseStream return NotImplemented: the protocol layer has no AWS event-stream encoder. No bidirectional streaming or asynchronous inference.
+- No bidirectional streaming or asynchronous inference. Response streaming is deterministic and finite; embedding models reject native response streaming. No simulated mid-stream model failures.
 - Only text inputs and declared token limits are supported. Sampling controls, multimodal inputs, prompt management, reasoning and tool-result conversations are unsupported. Tool-use fixtures require a matching Converse toolConfig.
 - Token counts are whitespace-word estimates; latencyMs is zero. Embeddings are SHA-256-derived test vectors, not semantic embeddings. No real model inference or network access.
 - ApplyGuardrail performs case-insensitive literal substring matching of custom words only; it is explicitly invoked and does not run automatically during inference.
@@ -40,20 +40,20 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | --- | --- |
 | `ApplyGuardrail` | `POST /guardrail/{guardrailIdentifier}/version/{guardrailVersion}/apply` |
 | `Converse` | `POST /model/{modelId}/converse` |
+| `ConverseStream` | `POST /model/{modelId}/converse-stream` |
 | `CountTokens` | `POST /model/{modelId}/count-tokens` |
 | `InvokeModel` | `POST /model/{modelId}/invoke` |
+| `InvokeModelWithResponseStream` | `POST /model/{modelId}/invoke-with-response-stream` |
 
 ## Operations not implemented
 
-??? info "7 modeled operations outside the implementation"
+??? info "5 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
-    - `ConverseStream`
     - `GetAsyncInvoke`
     - `InvokeGuardrailChecks`
     - `InvokeModelWithBidirectionalStream`
-    - `InvokeModelWithResponseStream`
     - `ListAsyncInvokes`
     - `StartAsyncInvoke`
 

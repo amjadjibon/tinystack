@@ -2451,13 +2451,14 @@
       "scope": "Account and Region; fixtures are default-account-wide",
       "summary": "Return predictable text, tool-use fixtures and hash-derived embeddings without network calls.",
       "features": [
-        "Four REST JSON operations: InvokeModel, Converse, CountTokens and ApplyGuardrail",
+        "Six REST JSON operations: InvokeModel, InvokeModelWithResponseStream, Converse, ConverseStream, CountTokens and ApplyGuardrail",
         "Provider-native Anthropic messages, Titan text/embeddings, Nova messages, Llama prompts and Cohere embeddings; normalized deterministic vectors, usage estimates and maximum-token truncation",
+        "AWS event-stream response frames flushed individually: provider-native Anthropic, Titan, Nova and Llama text deltas with invocation metrics; ConverseStream message/block lifecycle, tool-use fixtures, usage and latency metadata",
         "Default reply is TinyStack: followed by the last user message. Stored substring/regex fixtures select text, stop reason and optional Converse tool use; reset clears fixtures",
         "Control-plane model IDs, system profile IDs/ARNs and application profile IDs/ARNs resolve locally; unknown identifiers and unsupported request fields fail explicitly"
       ],
       "gaps": [
-        "InvokeModelWithResponseStream and ConverseStream return NotImplemented: the protocol layer has no AWS event-stream encoder. No bidirectional streaming or asynchronous inference.",
+        "No bidirectional streaming or asynchronous inference. Response streaming is deterministic and finite; embedding models reject native response streaming. No simulated mid-stream model failures.",
         "Only text inputs and declared token limits are supported. Sampling controls, multimodal inputs, prompt management, reasoning and tool-result conversations are unsupported. Tool-use fixtures require a matching Converse toolConfig.",
         "Token counts are whitespace-word estimates; latencyMs is zero. Embeddings are SHA-256-derived test vectors, not semantic embeddings. No real model inference or network access.",
         "ApplyGuardrail performs case-insensitive literal substring matching of custom words only; it is explicitly invoked and does not run automatically during inference."
