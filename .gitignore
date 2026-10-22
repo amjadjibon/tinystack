@@ -36,6 +36,12 @@ go.work
 dist/
 .pytest_cache/
 
+# Java and Maven
+target/
+
+# Node
+node_modules/
+
 # Task
 .task/
 

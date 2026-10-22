@@ -85,6 +85,18 @@ tasks:
       - .venv/bin/pip install -q -e '.[test]'
       - .venv/bin/pytest -v
 
+  test:testcontainers:java:
+    desc: "Test the separate Java Testcontainers module (requires Docker and JDK 17+; builds the image unless TINYSTACK_IMAGE is set)"
+    dir: testcontainers-java
+    cmds:
+      - ./mvnw -q test
+
+  test:testcontainers:node:
+    desc: "Test the separate Node Testcontainers module (requires Docker and npm; builds the image unless TINYSTACK_IMAGE is set)"
+    dir: testcontainers-node
+    cmds:
+      - npm test
+
   lint:testcontainers:
     desc: "Vet and lint the separate Go Testcontainers module"
     dir: testcontainers
