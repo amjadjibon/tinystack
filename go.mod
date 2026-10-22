@@ -12,6 +12,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/acm v1.50.4
 	github.com/aws/aws-sdk-go-v2/service/acmpca v1.56.4
 	github.com/aws/aws-sdk-go-v2/service/apigateway v1.52.1
+	github.com/aws/aws-sdk-go-v2/service/apigatewaymanagementapi v1.29.1
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.46.1
 	github.com/aws/aws-sdk-go-v2/service/appconfig v1.54.4
 	github.com/aws/aws-sdk-go-v2/service/appconfigdata v1.32.4

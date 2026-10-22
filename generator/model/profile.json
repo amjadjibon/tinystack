@@ -772,11 +772,15 @@
       "DeleteCorsConfiguration",
       "GetTags",
       "TagResource",
-      "UntagResource"
+      "UntagResource",
+      "CreateRouteResponse",
+      "GetRouteResponse",
+      "GetRouteResponses",
+      "UpdateRouteResponse",
+      "DeleteRouteResponse"
     ],
     "shapes": {
       "CreateApiRequest": [
-        "ApiKeySelectionExpression",
         "CorsConfiguration",
         "Description",
         "DisableExecuteApiEndpoint",
@@ -790,7 +794,6 @@
         "Tags"
       ],
       "UpdateApiRequest": [
-        "ApiKeySelectionExpression",
         "ApiId",
         "CorsConfiguration",
         "Description",
@@ -894,6 +897,17 @@
         "IdentitySource",
         "JwtConfiguration",
         "Name"
+      ],
+      "CreateRouteResponseRequest": [
+        "ApiId",
+        "RouteId",
+        "RouteResponseKey"
+      ],
+      "UpdateRouteResponseRequest": [
+        "ApiId",
+        "RouteId",
+        "RouteResponseKey",
+        "RouteResponseId"
       ]
     }
   },
@@ -31335,6 +31349,25 @@
       ],
       "RollbackTransactionResponse": [
         "transactionStatus"
+      ]
+    }
+  },
+  "apigatewaymanagementapi": {
+    "operations": [
+      "PostToConnection",
+      "GetConnection",
+      "DeleteConnection"
+    ],
+    "shapes": {
+      "PostToConnectionRequest": [
+        "ConnectionId",
+        "Data"
+      ],
+      "GetConnectionRequest": [
+        "ConnectionId"
+      ],
+      "DeleteConnectionRequest": [
+        "ConnectionId"
       ]
     }
   }

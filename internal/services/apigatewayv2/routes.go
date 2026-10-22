@@ -75,12 +75,17 @@ func integrationID(target string) string {
 // checkRoute validates a route's key, target, and authorization against the
 // API's integrations and authorizers.
 func checkRoute(tx storage.ReadTx, scope request.Scope, apiID string, r *api.Route) error {
-	if checkErr := checkRouteKey(common.Value(r.RouteKey)); checkErr != nil {
+	a, loadErr := loadAPI(tx, scope, &apiID)
+	if loadErr != nil {
+		return loadErr
+	}
+
+	if checkErr := checkProtocolRoute(a, r); checkErr != nil {
 		return checkErr
 	}
 
 	if common.Value(r.ApiKeyRequired) {
-		return badRequest("API keys are not supported by HTTP APIs.")
+		return badRequest("API keys are not supported.")
 	}
 
 	if r.Target != nil && *r.Target != "" {
@@ -151,6 +156,10 @@ func (s *Service) CreateRoute(ctx context.Context, in *api.CreateRouteRequest) (
 			return loadErr
 		}
 
+		if common.Value(a.ProtocolType) == protocolHTTP && in.ApiKeyRequired != nil {
+			return badRequest("ApiKeyRequired is only supported for WebSocket APIs.")
+		}
+
 		if checkErr := checkRoute(tx, m.Scope, *a.ApiId, r); checkErr != nil {
 			return checkErr
 		}
@@ -205,6 +214,9 @@ func (s *Service) changeRoute(
 			}
 		} else {
 			tx.Delete(key)
+			for _, responseKey := range tx.Keys(owned(m.Scope, kindRouteResponse, *a.ApiId, *r.RouteId) + "/") {
+				tx.Delete(responseKey)
+			}
 		}
 
 		return s.deploy(tx, m.Scope, *a.ApiId, s.now().UTC())
@@ -291,6 +303,20 @@ func (s *Service) GetRoutes(ctx context.Context, in *api.GetRoutesRequest) (*api
 func (s *Service) UpdateRoute(ctx context.Context, in *api.UpdateRouteRequest) (*api.UpdateRouteResult, error) {
 	r, err := s.changeRoute(ctx, in.ApiId, in.RouteId,
 		func(tx storage.WriteTx, scope request.Scope, r *api.Route) (bool, error) {
+			a, loadErr := loadAPI(tx, scope, in.ApiId)
+			if loadErr != nil {
+				return false, loadErr
+			}
+
+			if common.Value(a.ProtocolType) == protocolHTTP && in.ApiKeyRequired != nil {
+				return false, badRequest("ApiKeyRequired is only supported for WebSocket APIs.")
+			}
+
+			if common.Value(a.ProtocolType) == protocolWebSocket &&
+				(in.AuthorizationScopes != nil || in.AuthorizerId != nil) {
+				return false, badRequest("WebSocket authorizers and authorization scopes are not supported.")
+			}
+
 			r.RouteKey, r.ApiKeyRequired = common.OrElse(
 				in.RouteKey,
 				r.RouteKey,

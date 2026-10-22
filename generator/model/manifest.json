@@ -398,6 +398,10 @@
     "rdsdata": {
       "path": "codegen/sdk-codegen/aws-models/rds-data.json",
       "sha256": "a12dcb92728cacec7533d846d9d1ac3618ed1a6f69186b3b6b425530784200cf"
+    },
+    "apigatewaymanagementapi": {
+      "path": "codegen/sdk-codegen/aws-models/apigatewaymanagementapi.json",
+      "sha256": "0db05e9213885f101f0b25f6ff69d9452aac1397473934b06eef1688506d9d79"
     }
   }
 }

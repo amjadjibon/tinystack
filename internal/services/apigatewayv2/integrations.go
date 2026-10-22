@@ -100,14 +100,24 @@ func (s *Service) CreateIntegration(
 		i.IntegrationMethod = new("POST")
 	}
 
-	if checkErr := checkIntegration(i); checkErr != nil {
-		return nil, checkErr
-	}
-
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		a, loadErr := loadAPI(tx, m.Scope, in.ApiId)
 		if loadErr != nil {
 			return loadErr
+		}
+
+		if common.Value(a.ProtocolType) == protocolWebSocket {
+			if in.PayloadFormatVersion != nil {
+				return badRequest("PayloadFormatVersion is only supported for HTTP APIs.")
+			}
+			i.PayloadFormatVersion = nil
+			if in.TimeoutInMillis == nil {
+				i.TimeoutInMillis = new(int64(29000))
+			}
+		}
+
+		if checkErr := checkProtocolIntegration(a, i); checkErr != nil {
+			return checkErr
 		}
 
 		if writeErr := storage.Write(
@@ -248,7 +258,7 @@ func (s *Service) UpdateIntegration(
 	in *api.UpdateIntegrationRequest,
 ) (*api.UpdateIntegrationResult, error) {
 	i, err := s.changeIntegration(ctx, in.ApiId, in.IntegrationId,
-		func(_ storage.WriteTx, _ request.Scope, i *api.Integration) (bool, error) {
+		func(tx storage.WriteTx, scope request.Scope, i *api.Integration) (bool, error) {
 			i.IntegrationType = common.OrElse(in.IntegrationType, i.IntegrationType)
 			i.IntegrationUri = common.OrElse(in.IntegrationUri, i.IntegrationUri)
 			i.IntegrationMethod = common.OrElse(in.IntegrationMethod, i.IntegrationMethod)
@@ -261,7 +271,12 @@ func (s *Service) UpdateIntegration(
 			)
 			i.TimeoutInMillis = common.OrElse(in.TimeoutInMillis, i.TimeoutInMillis)
 			i.PayloadFormatVersion = common.OrElse(in.PayloadFormatVersion, i.PayloadFormatVersion)
-			return true, checkIntegration(i)
+			a, loadErr := loadAPI(tx, scope, in.ApiId)
+			if loadErr != nil {
+				return false, loadErr
+			}
+
+			return true, checkProtocolIntegration(a, i)
 		})
 	if err != nil {
 		return nil, err

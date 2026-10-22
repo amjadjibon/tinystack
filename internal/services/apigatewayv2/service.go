@@ -1,5 +1,5 @@
-// Package apigatewayv2 implements API Gateway HTTP APIs without HTTP
-// dependencies: the management API, and the APIs themselves, which the
+// Package apigatewayv2 implements API Gateway HTTP and WebSocket APIs:
+// the control plane and APIs themselves, which the
 // gateway's execute-api endpoint runs through Execute. Resources belong to an
 // account and region:
 //
@@ -18,6 +18,7 @@ package apigatewayv2
 import (
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -34,35 +35,46 @@ import (
 )
 
 const (
-	service         = "apigatewayv2"
-	kindAPI         = "api"
-	kindRoute       = "route"
-	kindIntegration = "integration"
-	kindAuthorizer  = "authorizer"
-	kindDeployment  = "deployment"
-	kindStage       = "stage"
-	defaultStage    = "$default"
-	defaultRoute    = "$default"
-	protocolHTTP    = "HTTP"
+	service           = "apigatewayv2"
+	kindAPI           = "api"
+	kindRoute         = "route"
+	kindIntegration   = "integration"
+	kindAuthorizer    = "authorizer"
+	kindDeployment    = "deployment"
+	kindStage         = "stage"
+	defaultStage      = "$default"
+	defaultRoute      = "$default"
+	protocolHTTP      = "HTTP"
+	protocolWebSocket = "WEBSOCKET"
+	kindRouteResponse = "route-response"
 )
 
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store     storage.Store
-	functions *lambda.Service
-	logs      *logs.Service
-	verifier  *proxy.Verifier
-	now       func() time.Time
+	connections map[string]*connection
+	store       storage.Store
+	functions   *lambda.Service
+	logs        *logs.Service
+	verifier    *proxy.Verifier
+	now         func() time.Time
 	// authorizer checks Lambda proxy integrations against the function's resource policy;
 	// see UseServiceAuthorizer.
-	authorizer catalog.ServiceAuthorizer
-	metrics    awsmetrics.Meter
+	authorizer      catalog.ServiceAuthorizer
+	metrics         awsmetrics.Meter
+	connectionsMu   sync.Mutex
+	connectionGroup sync.WaitGroup
+	stopped         bool
 }
 
 func New(store storage.Store, functions *lambda.Service, logGroups *logs.Service) *Service {
 	return &Service{
-		store: store, functions: functions, logs: logGroups, verifier: proxy.NewVerifier(), now: time.Now,
+		connections: map[string]*connection{},
+		store:       store,
+		functions:   functions,
+		logs:        logGroups,
+		verifier:    proxy.NewVerifier(),
+		now:         time.Now,
 	}
 }
 

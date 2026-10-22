@@ -106,6 +106,10 @@ func (s *Service) CreateAuthorizer(
 			return loadErr
 		}
 
+		if common.Value(api.ProtocolType) == protocolWebSocket {
+			return badRequest("WebSocket authorizers are not supported.")
+		}
+
 		if writeErr := storage.Write(
 			tx,
 			owned(m.Scope, kindAuthorizer, *api.ApiId, *a.AuthorizerId),

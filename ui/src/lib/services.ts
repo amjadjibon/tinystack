@@ -212,8 +212,13 @@ const catalog: Record<string, ServiceInfo> = {
 		category: networking,
 		icon: "apigateway",
 	},
+	apigatewaymanagementapi: {
+		title: "API Gateway Management",
+		category: networking,
+		icon: "apigateway",
+	},
 	apigatewayv2: {
-		title: "API Gateway (HTTP APIs)",
+		title: "API Gateway (HTTP and WebSocket APIs)",
 		category: networking,
 		icon: "apigateway",
 	},

@@ -83,6 +83,8 @@ type Socket interface {
 	// Accept completes the handshake, choosing subprotocol if the client
 	// offered it. Call it before Receive and Send.
 	Accept(subprotocol string) error
+	// SetReadLimit limits the size of an incoming message after Accept.
+	SetReadLimit(bytes int64)
 	// Receive returns the next message.
 	Receive(ctx context.Context) ([]byte, error)
 	// Send sends a text message. It may be called concurrently with Receive.

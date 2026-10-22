@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"regexp"
 	"slices"
+	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -15,7 +16,6 @@ import (
 
 const (
 	routeSelection = "$request.method $request.path"
-	apiKeyHeader   = "$request.header.x-api-key"
 	ipv4           = "ipv4"
 )
 
@@ -59,10 +59,8 @@ func checkCors(c *api.Cors) error {
 var apiName = regexp.MustCompile(`^.{1,128}$`)
 
 // checkAPI validates the settings CreateApi and UpdateApi share.
-func checkAPI(name, selection, keySelection, ipType *string, cors *api.Cors) error {
+func checkAPI(name, selection, ipType *string, cors *api.Cors) error {
 	switch {
-	case keySelection != nil && *keySelection != apiKeyHeader && *keySelection != "$context.authorizer.usageIdentifierKey":
-		return badRequest("Invalid ApiKeySelectionExpression %s.", *keySelection)
 	case name != nil && !apiName.MatchString(*name):
 		return badRequest("Name must be 1 to 128 characters.")
 	case selection != nil && *selection != routeSelection:
@@ -95,14 +93,14 @@ func (s *Service) CreateApi(ctx context.Context, in *api.CreateApiRequest) (*api
 	switch {
 	case common.Value(in.Name) == "":
 		return nil, badRequest("Name is required.")
-	case common.Value(in.ProtocolType) != protocolHTTP:
-		return nil, badRequest("TinyStack supports HTTP APIs only: ProtocolType must be HTTP.")
+	case common.Value(in.ProtocolType) != protocolHTTP && common.Value(in.ProtocolType) != protocolWebSocket:
+		return nil, badRequest("ProtocolType must be HTTP or WEBSOCKET.")
 	case in.RouteKey != nil && in.Target == nil:
 		return nil, badRequest("RouteKey can only be set with Target.")
 	}
 
-	checkErr := checkAPI(in.Name, in.RouteSelectionExpression, in.ApiKeySelectionExpression, in.IpAddressType,
-		in.CorsConfiguration)
+	checkErr := checkProtocolAPI(common.Value(in.ProtocolType), in.Name, in.RouteSelectionExpression,
+		in.IpAddressType, in.CorsConfiguration, in.Target, in.RouteKey)
 	if checkErr != nil {
 		return nil, checkErr
 	}
@@ -114,13 +112,17 @@ func (s *Service) CreateApi(ctx context.Context, in *api.CreateApiRequest) (*api
 	now := s.now().UTC()
 	id := common.RandomID(10)
 	a := &api.Api{
-		ApiId: new(id), Name: in.Name, ProtocolType: new(protocolHTTP), Description: in.Description,
-		ApiEndpoint:               new(endpoint(m.Endpoint, id)),
-		ApiKeySelectionExpression: common.OrElse(in.ApiKeySelectionExpression, new(apiKeyHeader)),
-		RouteSelectionExpression:  new(routeSelection), CorsConfiguration: in.CorsConfiguration,
+		ApiId: new(id), Name: in.Name, ProtocolType: in.ProtocolType, Description: in.Description,
+		ApiEndpoint:              new(endpoint(m.Endpoint, id)),
+		RouteSelectionExpression: new(routeSelection), CorsConfiguration: in.CorsConfiguration,
 		DisableExecuteApiEndpoint: new(common.Value(in.DisableExecuteApiEndpoint)), Version: in.Version,
 		IpAddressType: new(ipv4), CreatedDate: &now, Tags: common.CloneTags(in.Tags),
 	}
+	if common.Value(in.ProtocolType) == protocolWebSocket {
+		a.RouteSelectionExpression = in.RouteSelectionExpression
+		a.ApiEndpoint = new(strings.Replace(*a.ApiEndpoint, "http", "ws", 1))
+	}
+
 	if in.IpAddressType != nil {
 		a.IpAddressType = in.IpAddressType
 	}
@@ -272,12 +274,6 @@ func (s *Service) UpdateApi(ctx context.Context, in *api.UpdateApiRequest) (*api
 		return nil, err
 	}
 
-	checkErr := checkAPI(in.Name, in.RouteSelectionExpression, in.ApiKeySelectionExpression, in.IpAddressType,
-		in.CorsConfiguration)
-	if checkErr != nil {
-		return nil, checkErr
-	}
-
 	var a *api.Api
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		var loadErr error
@@ -285,6 +281,13 @@ func (s *Service) UpdateApi(ctx context.Context, in *api.UpdateApiRequest) (*api
 			return loadErr
 		}
 
+		if checkErr := checkProtocolAPI(common.Value(a.ProtocolType), in.Name,
+			common.OrElse(in.RouteSelectionExpression, a.RouteSelectionExpression),
+			in.IpAddressType, in.CorsConfiguration, in.Target, in.RouteKey); checkErr != nil {
+			return checkErr
+		}
+
+		a.RouteSelectionExpression = common.OrElse(in.RouteSelectionExpression, a.RouteSelectionExpression)
 		a.Name, a.Description = common.OrElse(in.Name, a.Name), common.OrElse(in.Description, a.Description)
 		a.CorsConfiguration = common.OrElse(in.CorsConfiguration, a.CorsConfiguration)
 		a.DisableExecuteApiEndpoint = common.OrElse(in.DisableExecuteApiEndpoint, a.DisableExecuteApiEndpoint)
@@ -295,7 +298,6 @@ func (s *Service) UpdateApi(ctx context.Context, in *api.UpdateApiRequest) (*api
 			in.IpAddressType,
 			a.IpAddressType,
 		)
-		a.ApiKeySelectionExpression = common.OrElse(in.ApiKeySelectionExpression, a.ApiKeySelectionExpression)
 		if in.Target != nil || in.RouteKey != nil {
 			if quickErr := s.quickUpdate(tx, m.Scope, *a.ApiId, in.Target, in.RouteKey); quickErr != nil {
 				return quickErr
@@ -367,7 +369,9 @@ func (s *Service) DeleteApi(ctx context.Context, in *api.DeleteApiRequest) (*api
 			return loadErr
 		}
 
-		for _, kind := range []string{kindRoute, kindIntegration, kindAuthorizer, kindDeployment, kindStage} {
+		for _, kind := range []string{
+			kindRoute, kindIntegration, kindAuthorizer, kindDeployment, kindStage, kindRouteResponse,
+		} {
 			for _, k := range tx.Keys(m.Prefix(service, kind) + *a.ApiId + "/") {
 				tx.Delete(k)
 			}
@@ -397,6 +401,10 @@ func (s *Service) DeleteCorsConfiguration(
 		a, loadErr := loadAPI(tx, m.Scope, in.ApiId)
 		if loadErr != nil {
 			return loadErr
+		}
+
+		if common.Value(a.ProtocolType) == protocolWebSocket {
+			return badRequest("CORS is only supported for HTTP APIs.")
 		}
 
 		a.CorsConfiguration = nil

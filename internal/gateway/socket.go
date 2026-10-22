@@ -11,6 +11,7 @@ import (
 
 	"github.com/coder/websocket"
 
+	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/execute"
 )
 
@@ -30,8 +31,14 @@ func upgrade(r *http.Request) bool {
 	return r.Method == http.MethodGet && strings.EqualFold(r.Header.Get("Upgrade"), "websocket")
 }
 
-// serveSocket runs a WebSocket connection to a GraphQL API.
-func (s *Server) serveSocket(w http.ResponseWriter, r *http.Request, id string, req *execute.Request) {
+// serveSocket dispatches a WebSocket connection to a matching API handler.
+func (s *Server) serveSocket(
+	w http.ResponseWriter,
+	r *http.Request,
+	id string,
+	req *execute.Request,
+	handlers ...execute.SocketHandler,
+) {
 	u, err := url.Parse(req.Endpoint)
 	if err != nil {
 		writeExecute(w, execute.Message(http.StatusBadRequest, "Bad Request"))
@@ -39,7 +46,13 @@ func (s *Server) serveSocket(w http.ResponseWriter, r *http.Request, id string, 
 	}
 
 	sock := &socket{server: s, w: w, r: r, prefix: u.Path}
-	found, err := s.graphQL.Connect(r.Context(), id, req, sock)
+	found := false
+	for _, handler := range handlers {
+		found, err = handler.Connect(r.Context(), id, req, sock)
+		if found || err != nil {
+			break
+		}
+	}
 	if sock.conn != nil {
 		if err != nil {
 			s.logger.Warn("api connection failed", "api", id, "error", err)
@@ -54,7 +67,8 @@ func (s *Server) serveSocket(w http.ResponseWriter, r *http.Request, id string, 
 	switch {
 	case err != nil:
 		s.logger.Warn("api connection failed", "api", id, "error", err)
-		writeExecute(w, execute.Message(http.StatusInternalServerError, "Internal Server Error"))
+		e := awserror.From(err)
+		writeExecute(w, execute.Message(e.StatusCode, e.Message))
 	case !found:
 		writeExecute(w, execute.Message(http.StatusNotFound, "Not Found"))
 	}
@@ -68,9 +82,10 @@ func (k *socket) Accept(subprotocol string) error {
 		return err
 	}
 
-	// AppSync accepts connections from any origin.
+	// Local APIs accept connections from any origin.
 	conn, err := websocket.Accept(k.w, k.r, &websocket.AcceptOptions{
-		Subprotocols: []string{subprotocol}, InsecureSkipVerify: true,
+		InsecureSkipVerify: true,
+		Subprotocols:       socketProtocols(subprotocol),
 	})
 	if err != nil {
 		return err
@@ -82,7 +97,12 @@ func (k *socket) Accept(subprotocol string) error {
 }
 
 func (k *socket) Receive(ctx context.Context) ([]byte, error) {
-	_, message, err := k.conn.Read(ctx)
+	kind, message, err := k.conn.Read(ctx)
+	if err == nil && kind != websocket.MessageText {
+		_ = k.conn.Close(websocket.StatusUnsupportedData, "binary messages are not supported")
+		return nil, errors.New("binary messages are not supported")
+	}
+
 	return message, err
 }
 
@@ -105,3 +125,13 @@ func (k *socket) Caller(ctx context.Context, header http.Header, path string, bo
 	r.Host = host
 	return k.server.caller(nil, r)
 }
+
+func socketProtocols(protocol string) []string {
+	if protocol == "" {
+		return nil
+	}
+
+	return []string{protocol}
+}
+
+func (k *socket) SetReadLimit(limit int64) { k.conn.SetReadLimit(limit) }

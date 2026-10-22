@@ -43,15 +43,26 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				stages = append(stages, strings.TrimPrefix(k, stagePrefix))
 			}
 
+			resourceType := "http-api"
+			if common.Value(a.ProtocolType) == protocolWebSocket {
+				resourceType = "websocket-api"
+			}
+
 			out = append(out, catalog.Resource{
-				Type:    "http-api",
+				Type:    resourceType,
 				Account: account,
 				Region:  region,
 				Name:    common.Value(a.Name),
 				ARN:     apiARN(scope, *a.ApiId),
 				Tags:    a.Tags,
 				Details: map[string]any{
-					"ApiId": *a.ApiId, "Endpoint": common.Value(a.ApiEndpoint), "Routes": keys, "Stages": stages,
+					"ProtocolType": common.Value(
+						a.ProtocolType,
+					),
+					"ApiId":    *a.ApiId,
+					"Endpoint": common.Value(a.ApiEndpoint),
+					"Routes":   keys,
+					"Stages":   stages,
 				},
 			})
 		}

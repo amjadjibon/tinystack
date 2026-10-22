@@ -22,6 +22,7 @@ import (
 	acmapi "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
 	acmpcaapi "github.com/amjadjibon/tinystack/internal/aws/generated/acmpca"
 	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
+	apigatewaymanagementapiapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewaymanagementapi"
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	appconfigapi "github.com/amjadjibon/tinystack/internal/aws/generated/appconfig"
 	appconfigdataapi "github.com/amjadjibon/tinystack/internal/aws/generated/appconfigdata"
@@ -129,6 +130,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/acmpca"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
+	"github.com/amjadjibon/tinystack/internal/services/apigatewaymanagementapi"
 	"github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/services/appconfig"
 	"github.com/amjadjibon/tinystack/internal/services/applicationautoscaling"
@@ -367,6 +369,9 @@ func build(
 	a.onStop(containers.Stop)
 	a.onReset(containers.Reset)
 	httpAPIs := apigatewayv2.New(store, functions, logGroups)
+	connectionAPI := apigatewaymanagementapi.New(httpAPIs)
+	a.onStop(httpAPIs.Stop)
+	a.onReset(httpAPIs.Reset)
 	restAPIs := apigateway.New(store, functions, logGroups, identities)
 	graphQL := appsync.New(store, functions, identities)
 	// Stop closes real-time connections, which shutdown leaves open.
@@ -591,6 +596,7 @@ func build(
 		rdsapi.Descriptor(databases),
 		rdsdataapi.Descriptor(dataAPI),
 		apigatewayv2api.Descriptor(httpAPIs),
+		apigatewaymanagementapiapi.Descriptor(connectionAPI),
 		apigatewayapi.Descriptor(restAPIs),
 		appsyncapi.Descriptor(graphQL),
 		sfnapi.Descriptor(workflows),
@@ -728,7 +734,7 @@ func build(
 	handler.UseHosted(identities)
 	handler.UseRegistry(registry)
 	handler.UseCORS(buckets.CORS)
-	handler.UseAPIs(httpAPIs, restAPIs)
+	handler.UseAPIs(connectionAPI, httpAPIs, restAPIs)
 	handler.UseDomains(restAPIs.Domains())
 	handler.UseLoadBalancers(balancers)
 	handler.UseFunctionURLs(functions.URLs())

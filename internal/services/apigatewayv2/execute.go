@@ -111,6 +111,9 @@ func (c *call) resolveStage(tx storage.ReadTx) error {
 // run answers the request.
 func (s *Service) run(ctx context.Context, c *call) *execute.Response {
 	r := c.req
+	if common.Value(c.api.ProtocolType) == protocolWebSocket {
+		return execute.Message(http.StatusBadRequest, "WebSocket upgrade required")
+	}
 	if common.Value(c.api.DisableExecuteApiEndpoint) {
 		return execute.Message(http.StatusForbidden, "Forbidden")
 	}

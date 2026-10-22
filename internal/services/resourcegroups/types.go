@@ -117,6 +117,7 @@ var typeNames = map[string]string{
 	"redshift/parametergroup":                "ClusterParameterGroup",
 	"memorydb/acl":                           "ACL",
 	"memorydb/subnetgroup":                   "SubnetGroup",
+	"apigatewayv2/websocket-api":             "Api",
 	"apigatewayv2/http-api":                  "Api",
 	"appsync/graphql-api":                    "GraphQLApi",
 	"athena/workgroup":                       "WorkGroup",

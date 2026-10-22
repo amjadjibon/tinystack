@@ -229,7 +229,7 @@ func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 		RawQuery: r.URL.RawQuery, Host: r.Host, Endpoint: endpoint, SourceIP: sourceIP, Protocol: r.Proto,
 	}
 	if graphQL && upgrade(r) {
-		s.serveSocket(w, r, id, req)
+		s.serveSocket(w, r, id, req, s.graphQL)
 		return true
 	}
 
@@ -283,6 +283,20 @@ func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 		return s.authorizeTargets(ctx, r, c, &catalog.Operation{
 			Name: operation, IAMAction: targets[0].Action,
 		}, nil, targets)
+	}
+
+	if upgrade(r) {
+		var sockets []execute.SocketHandler
+		for _, handler := range handlers {
+			if socketHandler, ok := handler.(execute.SocketHandler); ok {
+				sockets = append(sockets, socketHandler)
+			}
+		}
+
+		if len(sockets) > 0 {
+			s.serveSocket(w, r, id, req, sockets...)
+			return true
+		}
 	}
 
 	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxExecuteBody))

@@ -17,6 +17,7 @@ const deployed = "DEPLOYED"
 // deployment is a deployment's description and the snapshot of the API that
 // stages serving it run.
 type deployment struct {
+	Responses    map[string]bool
 	Integrations map[string]api.Integration
 	Authorizers  map[string]api.Authorizer
 	Deployment   api.Deployment
@@ -38,6 +39,13 @@ func snapshot(tx storage.ReadTx, scope request.Scope, apiID string, now time.Tim
 		},
 		Integrations: map[string]api.Integration{}, Authorizers: map[string]api.Authorizer{},
 	}
+	d.Responses = map[string]bool{}
+	prefix := scope.Prefix(service, kindRouteResponse) + apiID + "/"
+	for _, key := range tx.Keys(prefix) {
+		routeID, _, _ := strings.Cut(strings.TrimPrefix(key, prefix), "/")
+		d.Responses[routeID] = true
+	}
+
 	routes, err := storage.Records[api.Route](tx, scope.Prefix(service, kindRoute)+apiID+"/")
 	if err != nil {
 		return nil, err
@@ -154,6 +162,20 @@ var (
 
 // checkStage validates a stage's access log settings and deployment.
 func checkStage(tx storage.ReadTx, scope request.Scope, apiID string, st *api.Stage) error {
+	a, err := loadAPI(tx, scope, &apiID)
+	if err != nil {
+		return err
+	}
+
+	if common.Value(a.ProtocolType) == protocolWebSocket {
+		settings := st.DefaultRouteSettings
+		if st.AccessLogSettings != nil || len(st.RouteSettings) != 0 || (settings != nil &&
+			(common.Value(settings.DetailedMetricsEnabled) || settings.ThrottlingBurstLimit != nil ||
+				settings.ThrottlingRateLimit != nil)) {
+			return badRequest("WebSocket access logs, metrics and throttling settings are not supported.")
+		}
+	}
+
 	if logs := st.AccessLogSettings; logs != nil && (logs.DestinationArn != nil || logs.Format != nil) {
 		if !logGroup.MatchString(common.Value(logs.DestinationArn)) || common.Value(logs.Format) == "" {
 			return badRequest("AccessLogSettings need a CloudWatch Logs log group ARN and a format.")
