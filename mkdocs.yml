@@ -208,7 +208,8 @@ nav:
           - "AWS Database Migration Service": services/databasemigrationservice.md
           - "AWS Transfer Family": services/transfer.md
       - "Networking & Content Delivery":
-          - "API Gateway HTTP APIs": services/apigatewayv2.md
+          - "API Gateway HTTP and WebSocket APIs": services/apigatewayv2.md
+          - "API Gateway Management API": services/apigatewaymanagementapi.md
           - "API Gateway REST APIs": services/apigateway.md
           - "Amazon Route 53 Resolver": services/route53resolver.md
           - "Cloud Map": services/servicediscovery.md
