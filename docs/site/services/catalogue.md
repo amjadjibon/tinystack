@@ -11,6 +11,7 @@ feature manages records or needs a Docker runtime.
 
 | Feature | Implemented behavior | Reference |
 | --- | --- | --- |
+| HTTPS and local CA | Optional HTTPS gateway with a persisted ECDSA P-256 local CA, a leaf per requested AWS, LocalStack or localhost name, extra DNS/IP names, supplied certificate/key support, and CA PEM export. Trust, DNS and port forwarding remain manual. | [Details](../guides/tls.md) |
 | Fault injection | Ordered gateway rules inject protocol-correct AWS errors and cancellable latency by service, operation, Region and account, with probability, startup configuration, reset restoration, diagnostics and LocalStack Chaos API aliases. | [Details](../guides/fault-injection.md) |
 | AWS wire protocols | AWS JSON 1.0/1.1, AWS Query, EC2 Query, REST XML/JSON, and Smithy RPC v2 CBOR through generated bindings. | [Details](../architecture/request-flow.md) |
 | Identity and resource scope | Configured access-key accounts, 12-digit access keys that are their own account ID, IAM/STS credential lookup, regional and account-wide scopes, optional SigV4 verification, and identity-policy evaluation with off, soft and enforce modes. | [Details](../architecture/identity.md) |

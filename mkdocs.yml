@@ -89,6 +89,7 @@ nav:
       - Console MCP server: guides/mcp.md
       - Init hooks and reset: guides/init-hooks.md
       - DNS listener: guides/dns.md
+      - HTTPS and local CA: guides/tls.md
       - Fault injection: guides/fault-injection.md
       - Cost fixtures and queries: guides/costs.md
       - Predictable Bedrock inference: guides/bedrock.md

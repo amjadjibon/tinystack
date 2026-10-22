@@ -30,7 +30,7 @@ With a configured prefix domain, route `<prefix>.auth.<region>.amazoncognito.com
 header; custom domains work the same way. The hosted endpoints then live at the domain root, for example
 `https://signin.local.test:18080/oauth2/authorize`. This is Host routing; TinyStack does not provision DNS,
 CloudFront, or an ACM certificate. HTTPS clients need an actual TLS listener around the gateway.
-The standalone CLI gateway is HTTP; this wave does not add CLI TLS configuration or trust forwarded scheme headers.
+The standalone CLI gateway supports optional TLS; see [HTTPS and the local CA](../guides/tls.md). It does not trust forwarded scheme headers.
 Discovery remains under `/<pool-id>/.well-known/`; on a configured domain it advertises root hosted endpoints
 while retaining the path-form issuer. For HTTP testing, use the path-form issuer on localhost.
 

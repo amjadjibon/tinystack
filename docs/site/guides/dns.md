@@ -33,17 +33,14 @@ SERVFAIL. No queries are sent to AWS by TinyStack itself.
 
 ## HTTP, ports, and certificates
 
-The AWS gateway is HTTP-only; TinyStack has no HTTPS counterpart to port 4566.
+The AWS gateway has an optional [HTTPS listener with a local CA](tls.md).
 DNS changes addresses, **not ports or schemes**. SDKs and CLIs normally use HTTPS
-on port 443, so DNS alone does not make an unmodified default client work.
+on port 443. Enable TLS, export and trust its CA, and arrange for port 443 to
+reach the TLS listener (default 4443) to use default SDK endpoints. Binding 443
+may require privileges; port forwarding is a manual alternative.
 For local HTTP clients, select HTTP and arrange port 80 forwarding to the
 TinyStack HTTP port (or configure `server.port: 80`). Preserve the original Host
-header. For default HTTPS clients, run your own TLS reverse proxy on port 443,
-forwarding to TinyStack and preserving Host. Its certificate must cover the
-requested AWS hostname; nested resource names require appropriate SANs because
-a wildcard covers only one label. Configure AWS CLI's `AWS_CA_BUNDLE` with your
-local CA certificate; SDK trust configuration varies by language. TinyStack does
-not generate or install certificates, change system trust, or configure proxies.
+header. TinyStack never changes system trust, DNS settings or port forwarding.
 Never disable certificate verification as a substitute for a trusted local CA.
 
 ## macOS split DNS
