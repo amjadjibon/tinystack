@@ -131,12 +131,15 @@
         "Bucket lifecycle and encryption configuration are stored",
         "AWS-style console for scoped bucket creation, empty/delete, folder and object browsing, uploads/downloads/copies, version deletion, object tags and bucket configuration",
         "Bucket policies participate in gateway soft/enforce authorization, including cross-account bucket/object access and owning-root policy recovery",
-        "With authorization on, notification destinations (SQS, SNS, Lambda) need their resource policy to allow s3.amazonaws.com for the bucket (aws:SourceArn, aws:SourceAccount); enforce mode fails PutBucketNotificationConfiguration with InvalidArgument, unless SkipDestinationValidation is set, and denies later deliveries, while soft mode records the denied check"
+        "With authorization on, notification destinations (SQS, SNS, Lambda) need their resource policy to allow s3.amazonaws.com for the bucket (aws:SourceArn, aws:SourceAccount); enforce mode fails PutBucketNotificationConfiguration with InvalidArgument, unless SkipDestinationValidation is set, and denies later deliveries, while soft mode records the denied check",
+        "Object Lock at bucket creation or on a versioned bucket: GOVERNANCE and COMPLIANCE retention, legal hold and default bucket retention; deleting a locked version fails AccessDenied, COMPLIANCE retention cannot be shortened, and GOVERNANCE is bypassed with x-amz-bypass-governance-retention (s3:BypassGovernanceRetention when authorization is on)",
+        "Browser POST uploads (multipart/form-data to the bucket): ${filename} keys, policy expiration and eq/starts-with/content-length-range conditions, every field covered by the policy, SigV4 policy signatures in verify mode, success_action_status 200/201/204 and success_action_redirect; the upload is authorized and stored as PutObject"
       ],
       "gaps": [
         "Lifecycle rules do not expire or transition objects",
         "Encryption settings are metadata; objects are not encrypted as an AWS S3 data plane would encrypt them, and writes asking for aws:kms are accepted and stored like AES256 objects (aws:kms:dsse is rejected)",
-        "No website endpoint, POST uploads or general ACL evaluation; resource policies do not govern in-process reads",
+        "No website endpoint or general ACL evaluation; resource policies do not govern in-process reads",
+        "POST form fields other than key, Content-Type, x-amz-meta-*, Object Lock, success_action_* and signature fields (acl, tagging, storage class, encryption, cache headers) return NotImplemented; SigV2 POST signatures are unsupported",
         "Generated in-process PutObject/UploadPart byte-slice shapes, in-process reads (e.g. Lambda runtime Object() helper), and console download and preview buffers still buffer bytes in memory",
         "Verify-mode SigV4 authentication spools upload payloads to temporary files only when verifying signed hexadecimal or empty payload hashes; UNSIGNED-PAYLOAD, supported unsigned-trailer forms (STREAMING-UNSIGNED-PAYLOAD-TRAILER), and usual presigned S3 uploads stream without that spool",
         "Signed aws-chunked payloads (STREAMING-AWS4-HMAC-SHA256-*) remain unsupported and return NotImplemented",
