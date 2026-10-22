@@ -313,6 +313,11 @@ func (s *Service) processStreamBatch(
 	}
 
 	result, _, _, err := s.run(ctx, scope, mp.FunctionName, mp.Qualifier, payload)
+	if len(batch) > 0 {
+		// Records are in arrival order, so the last is the newest.
+		s.publishIteratorAge(scope, mp.FunctionName, mp.Qualifier, batch[len(batch)-1].arrival())
+	}
+
 	failure := invokeError(result, err)
 	s.deliveries.Add(delivery.ViaEventSourceMapping, mp.EventSourceArn, mp.functionARN(scope), payload, failure)
 	if failure != nil {
@@ -378,7 +383,7 @@ func (s *Service) recordCursor(ctx context.Context, scope request.Scope, id, cur
 
 // arrival is when a stream record was written.
 func (r *streamRecord) arrival() time.Time {
-	if r.Dynamodb == nil {
+	if r.Dynamodb == nil || common.Value(r.Dynamodb.ApproximateCreationDateTime) <= 0 {
 		return time.Time{}
 	}
 

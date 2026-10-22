@@ -18,8 +18,10 @@ const (
 	metricDuration         = "Duration"
 	metricThrottles        = "Throttles"
 	metricConcurrent       = "ConcurrentExecutions"
+	metricIteratorAge      = "IteratorAge"
 
 	dimensionFunction = "FunctionName"
+	dimensionResource = "Resource"
 )
 
 // UseMetrics has the service report its AWS/Lambda metrics to sink. Call it before serving requests.
@@ -39,7 +41,7 @@ func (s *Service) publish(scope request.Scope, name, qualifier string, data ...a
 	}
 
 	resource := []awsmetrics.Dimension{
-		{Name: dimensionFunction, Value: name}, {Name: "Resource", Value: name + ":" + qualifier},
+		{Name: dimensionFunction, Value: name}, {Name: dimensionResource, Value: name + ":" + qualifier},
 	}
 	all := make([]awsmetrics.Datum, 0, 2*len(data))
 	for _, d := range data {
@@ -73,4 +75,21 @@ func (s *Service) publishInvocation(
 			Name: metricDuration, Unit: awsmetrics.Milliseconds, Value: float64(duration.Microseconds()) / 1000,
 		},
 	)
+}
+
+func (s *Service) publishIteratorAge(scope request.Scope, name, qualifier string, arrival time.Time) {
+	if arrival.IsZero() {
+		return
+	}
+
+	age := s.now().Sub(arrival)
+	if age < 0 {
+		age = 0
+	}
+
+	s.publish(scope, name, qualifier, awsmetrics.Datum{
+		Name:  metricIteratorAge,
+		Unit:  awsmetrics.Milliseconds,
+		Value: float64(age.Microseconds()) / 1000,
+	})
 }

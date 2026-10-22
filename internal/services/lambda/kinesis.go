@@ -114,6 +114,15 @@ func (r *kinesisRecord) document() []byte {
 	return doc
 }
 
+// arrival is when a Kinesis record was written.
+func (r *kinesisRecord) arrival() time.Time {
+	if r.Kinesis.ApproximateArrivalTimestamp <= 0 {
+		return time.Time{}
+	}
+
+	return time.Unix(0, int64(r.Kinesis.ApproximateArrivalTimestamp*float64(time.Second)))
+}
+
 // ready reports whether a shard's parents are read to their end, so its
 // records come after theirs.
 func ready(sh *kinesis.Shard, cursors map[string]string, known map[string]bool) bool {
@@ -301,6 +310,11 @@ func (s *Service) processKinesisBatch(
 	}
 
 	result, _, _, err := s.run(ctx, scope, mp.FunctionName, mp.Qualifier, payload)
+	if len(batch) > 0 {
+		// Records are in arrival order, so the last is the newest.
+		s.publishIteratorAge(scope, mp.FunctionName, mp.Qualifier, batch[len(batch)-1].arrival())
+	}
+
 	failure := invokeError(result, err)
 	s.deliveries.Add(delivery.ViaEventSourceMapping, mp.EventSourceArn, mp.functionARN(scope), payload, failure)
 	if failure != nil {

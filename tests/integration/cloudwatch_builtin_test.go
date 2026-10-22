@@ -700,3 +700,109 @@ func TestBuiltinSNSAndKinesisMetrics(t *testing.T) {
 	expectBuiltin(t, c, "AWS/Kinesis", "IncomingBytes", "Bytes", stream, float64(len("one")+len("two")+len("three")+3))
 	expectBuiltin(t, c, "AWS/Kinesis", "GetRecords.Records", "Count", stream, 3)
 }
+
+func TestBuiltinLambdaIteratorAge(t *testing.T) {
+	s := server(t)
+	c := cloudwatchClient(s)
+	functions := lambdaClient(s, "test")
+	k := kinesisClient(s)
+	d := client(s, "test", "us-east-1")
+	q := sqsClient(s, "test")
+	ctx := context.Background()
+
+	createFunction(t, functions, "kinesis-stream-func", "app.echo")
+	if _, err := k.CreateStream(ctx, &kinesis.CreateStreamInput{
+		StreamName: new("kinesis-events"), ShardCount: new(int32(1)),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	summary, err := k.DescribeStreamSummary(ctx, &kinesis.DescribeStreamSummaryInput{StreamName: new("kinesis-events")})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = k.PutRecord(ctx, &kinesis.PutRecordInput{
+		StreamName: new("kinesis-events"), PartitionKey: new("k1"), Data: []byte("kinesis-payload"),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = functions.CreateEventSourceMapping(ctx, &sdklambda.CreateEventSourceMappingInput{
+		FunctionName: new("kinesis-stream-func"), EventSourceArn: summary.StreamDescriptionSummary.StreamARN,
+		StartingPosition: lambdatypes.EventSourcePositionTrimHorizon,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	kinesisDims := dimensions("FunctionName", "kinesis-stream-func")
+	kinesisAge := builtinMetric(
+		t, c, "AWS/Lambda", "IteratorAge", kinesisDims, func(b builtin) bool { return b.count > 0 },
+	)
+	if kinesisAge.unit != "Milliseconds" || kinesisAge.sum < 0 {
+		t.Fatalf("kinesis IteratorAge = %+v", kinesisAge)
+	}
+
+	createFunction(t, functions, "dynamo-stream-func", "app.echo")
+	tableOut, err := d.CreateTable(ctx, &dynamodb.CreateTableInput{
+		TableName:   new("dynamo-events"),
+		BillingMode: ddbtypes.BillingModePayPerRequest,
+		AttributeDefinitions: []ddbtypes.AttributeDefinition{
+			{AttributeName: new("PK"), AttributeType: ddbtypes.ScalarAttributeTypeS},
+		},
+		KeySchema: []ddbtypes.KeySchemaElement{{AttributeName: new("PK"), KeyType: ddbtypes.KeyTypeHash}},
+		StreamSpecification: &ddbtypes.StreamSpecification{
+			StreamEnabled:  new(true),
+			StreamViewType: ddbtypes.StreamViewTypeNewAndOldImages,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = d.PutItem(ctx, &dynamodb.PutItemInput{
+		TableName: new("dynamo-events"),
+		Item: map[string]ddbtypes.AttributeValue{
+			"PK": &ddbtypes.AttributeValueMemberS{Value: "row-1"},
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = functions.CreateEventSourceMapping(ctx, &sdklambda.CreateEventSourceMappingInput{
+		FunctionName: new("dynamo-stream-func"), EventSourceArn: tableOut.TableDescription.LatestStreamArn,
+		StartingPosition: lambdatypes.EventSourcePositionTrimHorizon,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	dynamoDims := dimensions("FunctionName", "dynamo-stream-func")
+	dynamoAge := builtinMetric(
+		t, c, "AWS/Lambda", "IteratorAge", dynamoDims, func(b builtin) bool { return b.count > 0 },
+	)
+	if dynamoAge.unit != "Milliseconds" || dynamoAge.sum < 0 {
+		t.Fatalf("dynamodb IteratorAge = %+v", dynamoAge)
+	}
+
+	createFunction(t, functions, "sqs-stream-func", "app.echo")
+	queueURL, sqsARN := queueARN(t, q, "sqs-events")
+	if _, err = functions.CreateEventSourceMapping(ctx, &sdklambda.CreateEventSourceMappingInput{
+		FunctionName: new("sqs-stream-func"), EventSourceArn: new(sqsARN),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = q.SendMessage(ctx, &sqs.SendMessageInput{
+		QueueUrl: &queueURL, MessageBody: new("sqs-payload"),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	sqsDims := dimensions("FunctionName", "sqs-stream-func")
+	expectBuiltin(t, c, "AWS/Lambda", "Invocations", "Count", sqsDims, 1)
+
+	sqsAge := builtinMetric(t, c, "AWS/Lambda", "IteratorAge", sqsDims, func(builtin) bool { return true })
+	if sqsAge.count != 0 {
+		t.Fatalf("IteratorAge reported for SQS mapping: %+v", sqsAge)
+	}
+}
