@@ -511,6 +511,65 @@ func TestBuiltinAPIGatewayMetrics(t *testing.T) {
 		t.Fatalf("%+v %+v", latency, integration)
 	}
 
+	// Detailed method metrics are not published when not enabled.
+	okMethod := dimensions("ApiName", "shop", "Method", "GET", "Resource", "/ok", "Stage", "prod")
+	brokenMethod := dimensions("ApiName", "shop", "Method", "GET", "Resource", "/broken", "Stage", "prod")
+	if b := builtinMetric(t, c, "AWS/ApiGateway", "Count", okMethod, func(builtin) bool { return true }); b.count != 0 {
+		t.Fatalf("per-method metric published when not enabled: %+v", b)
+	}
+
+	// Enabled via */*.
+	if _, err = rest.UpdateStage(ctx, &restapi.UpdateStageInput{
+		RestApiId: api.Id, StageName: new("prod"), PatchOperations: []resttypes.PatchOperation{{
+			Op: resttypes.OpReplace, Path: new("/*/*/metrics/enabled"), Value: new("true"),
+		}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	call(t, s, "GET", id, "/prod/ok", nil, "")
+	call(t, s, "GET", id, "/prod/broken", nil, "")
+	expectBuiltin(t, c, "AWS/ApiGateway", "Count", "Count", okMethod, 1)
+	expectBuiltin(t, c, "AWS/ApiGateway", "Count", "Count", brokenMethod, 1)
+	expectBuiltin(t, c, "AWS/ApiGateway", "5XXError", "Count", brokenMethod, 1)
+
+	// Disabled override: specific method setting overrides */*.
+	if _, err = rest.UpdateStage(ctx, &restapi.UpdateStageInput{
+		RestApiId: api.Id, StageName: new("prod"), PatchOperations: []resttypes.PatchOperation{{
+			Op: resttypes.OpReplace, Path: new("/~1ok/GET/metrics/enabled"), Value: new("false"),
+		}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	call(t, s, "GET", id, "/prod/ok", nil, "")
+	call(t, s, "GET", id, "/prod/broken", nil, "")
+	expectBuiltin(t, c, "AWS/ApiGateway", "Count", "Count", brokenMethod, 2)
+	if b := builtinMetric(
+		t, c, "AWS/ApiGateway", "Count", okMethod, func(builtin) bool { return true },
+	); b.count != 1 {
+		t.Fatalf("disabled override published method metric: %+v", b)
+	}
+
+	// Enabled via a specific method when */* is disabled.
+	if _, err = rest.UpdateStage(ctx, &restapi.UpdateStageInput{
+		RestApiId: api.Id, StageName: new("prod"), PatchOperations: []resttypes.PatchOperation{
+			{Op: resttypes.OpReplace, Path: new("/*/*/metrics/enabled"), Value: new("false")},
+			{Op: resttypes.OpReplace, Path: new("/~1ok/GET/metrics/enabled"), Value: new("true")},
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	call(t, s, "GET", id, "/prod/ok", nil, "")
+	call(t, s, "GET", id, "/prod/broken", nil, "")
+	expectBuiltin(t, c, "AWS/ApiGateway", "Count", "Count", okMethod, 2)
+	if b := builtinMetric(
+		t, c, "AWS/ApiGateway", "Count", brokenMethod, func(builtin) bool { return true },
+	); b.count != 2 {
+		t.Fatalf("un-enabled method published metric: %+v", b)
+	}
+
 	// An HTTP API reports under ApiId, with the lower-case error metrics.
 	http2 := apigwClient(s)
 	quick, err := http2.CreateApi(ctx, &apigw.CreateApiInput{

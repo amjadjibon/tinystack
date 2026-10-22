@@ -1,9 +1,11 @@
 package apigateway
 
 import (
+	"strings"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/execute"
+	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/awsmetrics"
 )
@@ -49,15 +51,37 @@ func (s *Service) publish(c *call, resp *execute.Response, started time.Time, in
 		})
 	}
 
-	all := make([]awsmetrics.Datum, 0, 2*len(data))
+	sets := [][]awsmetrics.Dimension{{apiDim}, {apiDim, stage}}
+	if c.resource != nil && c.method != nil {
+		resource, method := common.Value(c.resource.Path), common.Value(c.method.HttpMethod)
+		if detailedMetrics(c.stage, resource, method) {
+			sets = append(sets, []awsmetrics.Dimension{
+				apiDim, {Name: "Method", Value: method}, {Name: "Resource", Value: resource}, stage,
+			})
+		}
+	}
+
+	all := make([]awsmetrics.Datum, 0, len(sets)*len(data))
 	for _, d := range data {
-		d.Dimensions = []awsmetrics.Dimension{apiDim}
-		all = append(all, d)
-		d.Dimensions = []awsmetrics.Dimension{apiDim, stage}
-		all = append(all, d)
+		for _, dims := range sets {
+			d.Dimensions = dims
+			all = append(all, d)
+		}
 	}
 
 	s.metrics.Publish(c.scope, metricNamespace, all...)
+}
+
+// detailedMetrics reports whether the stage enables per-method metrics for the method: its own setting, keyed by
+// the resource path without the leading slash, wins over the stage-wide "*/*" one.
+func detailedMetrics(st *api.Stage, resource, method string) bool {
+	for _, key := range []string{strings.TrimPrefix(resource, "/") + "/" + method, "*/*"} {
+		if ms, ok := st.MethodSettings[key]; ok && ms.MetricsEnabled != nil {
+			return *ms.MetricsEnabled
+		}
+	}
+
+	return false
 }
 
 func milliseconds(d time.Duration) float64 { return float64(d.Microseconds()) / 1000 }

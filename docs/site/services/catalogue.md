@@ -1259,7 +1259,7 @@ Manage and invoke REST APIs with deployments, stages, proxy integrations, and au
 - With authorization on, Lambda proxy integrations without a credentials role need the function policy to allow apigateway.amazonaws.com with the method's execute-api ARN as aws:SourceArn; a denied invocation answers 500 Internal server error in enforce mode and is recorded in soft mode.
 - A credentials role must trust apigateway.amazonaws.com for the method's execute-api ARN and its policies must allow lambda:InvokeFunction; the same 500 reports a denial.
 - Lambda authorizers are invoked as apigateway.amazonaws.com, which the function policy must allow with arn:aws:execute-api:<region>:<account>:<api-id>/authorizers/<authorizer-id> as aws:SourceArn, or as the authorizer's credentials role, whose trust policy must allow it for that source; a denied invocation answers 500.
-- AWS/ApiGateway metrics for requests to a deployed stage, with dimensions ApiName and ApiName with Stage: Count, 4XXError, 5XXError, Latency and IntegrationLatency (Milliseconds; only for requests that reached the integration).
+- AWS/ApiGateway metrics for requests to a deployed stage, with dimensions ApiName, ApiName with Stage, and per-method dimensions {ApiName, Method, Resource, Stage} when detailed metrics are enabled on the stage: Count, 4XXError, 5XXError, Latency and IntegrationLatency (Milliseconds; only for requests that reached the integration).
 
 [Supported operations](apigateway.md#supported-operations) · [Limitations](apigateway.md#limitations-and-future-work)
 
