@@ -212,6 +212,7 @@ nav:
           - "Resource Groups Tagging API": services/resourcegroupstaggingapi.md
           - "Systems Manager": services/ssm.md
       - "Migration & Modernization":
+          - "AWS DataSync": services/datasync.md
           - "AWS Database Migration Service": services/databasemigrationservice.md
           - "AWS Transfer Family": services/transfer.md
       - "Networking & Content Delivery":

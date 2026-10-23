@@ -82,6 +82,37 @@
     }
   ],
   "services": {
+    "datasync": {
+      "title": "AWS DataSync",
+      "category": "Migration & Modernization",
+      "scope": "Account and Region",
+      "summary": "Store S3 and EFS locations and Basic tasks; execute persistent, queued local S3-to-S3 copies with filtering, deletion and verification.",
+      "features": [
+        "Twenty JSON 1.1 operations at the pinned model; generated InvalidRequestException input constraint validation",
+        "S3 locations validate existing buckets and IAM roles, store storage class and prefixes, and expose AWS location ARNs and URIs",
+        "EFS location records validate file systems, access points, IAM roles, subnets and security groups; access points and roles require TLS1_2",
+        "Task create, describe, list, update and delete with stored options, includes, excludes, schedules and validated CloudWatch log group references",
+        "LocationUri, LocationType, CreationTime and task LocationId list filters, explicit unsupported operator errors and key-order pagination",
+        "Real S3-to-S3 task executions use an interruptible background queue, progress persisted after each batch of up to 100 objects, and one active execution per task",
+        "CHANGED compares size and ETag; ALL copies every selected object; NEVER skips existing destinations; REMOVE deletes selected destination objects absent at source",
+        "SIMPLE_PATTERN filters support pipe alternatives and wildcard matching, including AWS rightmost-only include wildcards; exclusions take precedence",
+        "Verification compares object contents, with NONE, ONLY_FILES_TRANSFERRED and POINT_IN_TIME_CONSISTENT modes and execution counters and phase results",
+        "Tags on locations, tasks and executions, Resource Groups Tagging API integration and resource inventory",
+        "CloudFormation AWS::DataSync::LocationS3, AWS::DataSync::LocationEFS and AWS::DataSync::Task with documented replacement properties",
+        "Terraform aws_datasync_location_s3 and aws_datasync_task lifecycle coverage and datasync endpoint override"
+      ],
+      "gaps": [
+        "Agents require real appliance activation; agents, NFS and SMB locations (required agent references), HDFS, FSx, object storage and Azure Blob locations are unsupported",
+        "Storage system discovery, Enhanced mode, manifests, task reports and UpdateTaskExecution are unsupported",
+        "EFS locations are records only; StartTaskExecution explicitly rejects any non-S3 location",
+        "Schedules, LogLevel and filesystem metadata options are stored only: no scheduled execution, CloudWatch log delivery or filesystem metadata application; bandwidth throttling is rejected except the unlimited -1 default",
+        "No distributed S3 snapshot: concurrent source changes can fail verification; cancellation or a process interruption may leave copies from the current batch of up to 100 objects applied before progress commits, and restart repeats that batch",
+        "No S3 access-point or Outposts locations, multipart copy, remote AWS access or IAM role assumption; S3 service local object size and storage behavior apply",
+        "Queue processing is FIFO per task using persisted sequence keys; progress counters model selected objects and bytes, with no network compression or measured phase durations"
+      ],
+      "execution": "Background local S3-to-S3 copies; EFS locations and schedules are records only",
+      "package": "datasync"
+    },
     "dynamodb": {
       "title": "DynamoDB",
       "category": "Database",
