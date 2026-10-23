@@ -2727,6 +2727,34 @@
       ],
       "execution": "Records only",
       "package": "networkfirewall"
+    },
+    "inspector2": {
+      "title": "Amazon Inspector",
+      "category": "Security, Identity & Compliance",
+      "scope": "Account and Region",
+      "summary": "Records-only scanning state, configuration and findings filters. No scanning is performed; findings and coverage remain empty.",
+      "features": [
+        "Eighteen of 81 pinned REST JSON operations, with generated model constraint validation returning ValidationException",
+        "Enable, Disable and BatchGetAccountStatus for EC2, ECR, LAMBDA, LAMBDA_CODE and CODE_REPOSITORY, restricted to the caller account; foreign accountIds fail explicitly",
+        "ENABLING becomes ENABLED and DISABLING becomes DISABLED inside the same transaction; Enable and Disable return the final state immediately. Overall account status is ENABLED while any scan type is enabled; Disable without resourceTypes disables all types; Enable clientToken responses are persisted indefinitely, with conflicting resourceTypes rejected",
+        "GetConfiguration and UpdateConfiguration record ECR rescan duration and EC2 scan mode. Defaults are DAYS_14 and EC2_HYBRID, matching https://docs.aws.amazon.com/inspector/latest/user/scanning-resources.html; updates become SUCCESS immediately, with no scanner side effects",
+        "CreateFilter, ListFilters, UpdateFilter and DeleteFilter store NONE/SUPPRESS filters, names, descriptions, reasons and supported FilterCriteria. Model constraints and range ordering are validated; lists paginate in storage key order",
+        "ListFindings, ListCoverage, ListFindingAggregations and BatchGetFindingDetails return empty results. ListCoverageStatistics returns zero totalCounts and no groups; ListUsageTotals returns the caller account with an empty usage list (zero usage)",
+        "TagResource, UntagResource and ListTagsForResource for filters, resource inventory and Resource Groups Tagging API integration",
+        "CloudFormation AWS::InspectorV2::Filter and Terraform aws_inspector2_enabler / aws_inspector2_filter with the inspector2 endpoint key",
+        "SQLite restart preserves scan settings, configuration, filters and tags"
+      ],
+      "gaps": [
+        "No scanners, vulnerability evaluation, findings generation, suppression execution or resource discovery: enabling scans never produces findings or coverage. No finding or coverage records are invented",
+        "No delegated administrator, members, organization configuration or configuration inheritance; only the caller account is supported",
+        "No CIS scans or AWS::InspectorV2::CisScanConfiguration, SBOM or findings exports, vulnerability search, encryption keys, code security operations, connectors, deep inspection or newer multi-cloud behavior",
+        "Code-security and multi-cloud FilterCriteria / CoverageFilterCriteria members and aggregation request members are not whitelisted and fail NotImplemented. Only the existing AWS account, AMI, ECR container, EC2 instance, finding type, image layer, package, repository, title, Lambda layer and Lambda function aggregation types are supported",
+        "ListAccountPermissions is not implemented: TinyStack does not invent effective Inspector permissions",
+        "Only ECR rescanDuration and EC2 scanMode configuration members are supported; pull-date rescan settings and VM scanner activation fail explicitly",
+        "CloudFormation updates a filter's Description in place and replaces the filter only when Description is removed, since UpdateFilter cannot clear it"
+      ],
+      "execution": "Records only",
+      "package": "inspector2"
     }
   },
   "future": {
@@ -2807,12 +2835,6 @@
       "slice": "Implement `GetInstanceIdentityDocument`, `GetIamSecurityCredentials`, `GetMetadata`.",
       "features": "- [ ] `GetInstanceIdentityDocument` \u2014 serve the corresponding IMDS HTTP path.\n- [ ] `GetIamSecurityCredentials` \u2014 serve the corresponding IMDS HTTP path.\n- [ ] `GetMetadata` \u2014 serve the corresponding IMDS HTTP path.\n- [ ] `GetUserData` \u2014 serve the corresponding IMDS HTTP path.",
       "acceptance": "Call `/latest/` metadata routes over HTTP. Check IMDSv2 token issuance, credential and identity paths, expiry, and instance isolation."
-    },
-    "inspector2": {
-      "title": "Amazon Inspector",
-      "state": "Proposed",
-      "slice": "Implement `ListFindings`, `ListCoverage`, `CreateFilter`.",
-      "features": "- [ ] `ListFindings`\n- [ ] `ListCoverage`\n- [ ] `CreateFilter`\n- [ ] `GetConfiguration`"
     },
     "iotwireless": {
       "title": "IoT Wireless",

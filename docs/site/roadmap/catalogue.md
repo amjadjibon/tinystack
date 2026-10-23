@@ -15,7 +15,6 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [AWS Resource Access Manager cross-account access and invitations runtime](services/ram-runtime.md) | Proposed | Extend records-only resource shares to cross-account invitations, managed permissions, and real cross-account resource access. |
 | [AWS Signer](services/signer.md) | Proposed | Implement `StartSigningJob`, `DescribeSigningJob`, `ListSigningJobs`. |
 | [AWS X-Ray trace ingestion and telemetry runtime](services/xray-runtime.md) | Proposed | Extend records-only groups and sampling rules to trace ingestion, telemetry processing, and service map analysis. |
-| [Amazon Inspector](services/inspector2.md) | Proposed | Implement `ListFindings`, `ListCoverage`, `CreateFilter`. |
 | [Amazon Location runtime and broader records](services/location-runtime.md) | Proposed | Implement device-position ingestion, retrieval/history and tracker consumer associations with explicit runtime semantics. |
 | [Amazon MQ configuration, users and runtime](services/mq-runtime.md) | Future extensions | Broker records and tags are implemented. Configuration/user APIs and a real messaging runtime require separate slices. |
 | [Amazon MSK configuration, security and runtime](services/msk-runtime.md) | Future extensions | Provisioned Standard cluster records, enhanced monitoring and tags are implemented. Configuration, security, further mutations and broker runtime require separate slices. |

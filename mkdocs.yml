@@ -229,6 +229,7 @@ nav:
           - "AWS Resource Access Manager": services/ram.md
           - "AWS Security Hub": services/securityhub.md
           - "AWS Signer": services/signer.md
+          - "Amazon Inspector": services/inspector2.md
           - "Amazon Verified Permissions": services/verifiedpermissions.md
           - "Certificate Manager": services/acm.md
           - "Cognito identity pools": services/cognitoidentity.md
@@ -257,7 +258,6 @@ nav:
           - "AWS Resource Access Manager cross-account access and invitations runtime": roadmap/services/ram-runtime.md
           - "AWS Signer": roadmap/services/signer.md
           - "AWS X-Ray trace ingestion and telemetry runtime": roadmap/services/xray-runtime.md
-          - "Amazon Inspector": roadmap/services/inspector2.md
           - "Amazon Location runtime and broader records": roadmap/services/location-runtime.md
           - "Amazon MQ configuration, users and runtime": roadmap/services/mq-runtime.md
           - "Amazon MSK configuration, security and runtime": roadmap/services/msk-runtime.md
