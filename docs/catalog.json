@@ -2727,6 +2727,34 @@
       "execution": "Records only",
       "package": "servicecatalog"
     },
+    "globalaccelerator": {
+      "title": "AWS Global Accelerator",
+      "category": "Networking & Content Delivery",
+      "scope": "Account (global)",
+      "summary": "Store standard accelerators, listeners and regional endpoint groups with local endpoint validation, CloudFormation and Terraform support; no traffic forwarding.",
+      "features": [
+        "Twenty-two pinned AWS JSON 1.1 operations for standard accelerator lifecycle, attributes, listeners, endpoint groups, endpoint membership and accelerator tags; generated InvalidArgumentException model validation",
+        "Account-global records use request.GlobalScope with an empty Region. Like IAM and Route 53, requests signed in any Region share the same records. AWS serves its global API only in us-west-2; use us-west-2 for SDK/provider compatibility (https://docs.aws.amazon.com/global-accelerator/latest/api/API_UpdateAccelerator.html)",
+        "CreateAccelerator and UpdateAccelerator return IN_PROGRESS snapshots and atomically persist DEPLOYED; all later Describe/List calls and restarts see DEPLOYED without timers or health probes",
+        "Deterministic allocation uses the lowest free slot 1..254 per account: 192.0.2.<slot> and 198.51.100.<slot>, plus 2001:db8::<2*slot+1 in hex> and 2001:db8::<2*slot+2 in hex> for DUAL_STACK. Addresses are unique among live accelerators in an account, remain stable through disable/type updates/restart and may be reused after deletion. Exhausting the 254-slot local documentation address pool returns LimitExceededException; this is a TinyStack fixture capacity, not an AWS quota",
+        "DNS labels are a followed by 16 hex digits derived from SHA-256 of the ARN, ending .awsglobalaccelerator.com; dual-stack adds .dualstack.awsglobalaccelerator.com. The a prefix follows AWS documentation (https://docs.aws.amazon.com/global-accelerator/latest/api/API_Accelerator.html)",
+        "Accelerators must be disabled and have no listeners before deletion. Listeners must have no endpoint groups before deletion. Port ranges must not overlap within a listener or across listeners of the same accelerator and protocol",
+        "One endpoint group per Region per listener; endpoint IDs are checked via exported EC2/ELBv2 methods in the endpoint group Region and account. Supports existing application/network load balancer ARNs, running EC2 instance IDs and Elastic IP allocation IDs; missing references fail explicitly",
+        "Endpoint descriptions remain INITIAL (unprobed); HealthReason is absent/null. AWS health states are INITIAL, HEALTHY and UNHEALTHY (https://docs.aws.amazon.com/global-accelerator/latest/api/API_EndpointDescription.html). Weight, client IP preservation, port overrides, health configuration and traffic dial are stored; interval must be 10 or 30 seconds",
+        "Flow log attributes require an existing local S3 bucket in the same account (any Region); enabling requires bucket and prefix. No log objects are written and S3 delivery policies are not evaluated",
+        "Create idempotency tokens persist with their resource and reject reuse with different parameters. List operations page in storage key order. Tags live in accelerator records and integrate with inventory, Resource Groups and Resource Groups Tagging",
+        "CloudFormation AWS::GlobalAccelerator::Accelerator, AWS::GlobalAccelerator::Listener and AWS::GlobalAccelerator::EndpointGroup; supported mutable properties update in place, Listener.AcceleratorArn and EndpointGroup.ListenerArn/EndpointGroupRegion replace resources",
+        "Terraform globalaccelerator endpoint key and aws_globalaccelerator_accelerator, aws_globalaccelerator_listener and aws_globalaccelerator_endpoint_group lifecycle case using a dedicated local Elastic IP; SDK v2 and SQLite restart coverage"
+      ],
+      "gaps": [
+        "Records only: static documentation IPs and DNS names do not resolve or forward traffic; no anycast networking, listener sockets, endpoint probing, flow-log delivery or data plane",
+        "Custom routing accelerators/listeners/groups, cross-account attachments/endpoints, and BYOIP lifecycle operations are not whitelisted; CreateAccelerator.IpAddresses and endpoint AttachmentArn fail explicitly as unsupported inputs. Terraform provider v5.100.0 unconditionally requests unsupported ListCrossAccountResources for ARN endpoints, even same-account load balancers; the Terraform case uses an Elastic IP endpoint to avoid that unsupported API",
+        "Accelerator event history, AWS deployment timing and AWS network-zone topology are not simulated; network zone labels zone-1 and zone-2 are local fixtures",
+        "Client IP preservation and endpoint compatibility settings are stored; no packets, routing policies, security-group reachability or load balancer TLS traffic behavior is executed"
+      ],
+      "execution": "Records only",
+      "package": "globalaccelerator"
+    },
     "accessanalyzer": {
       "title": "IAM Access Analyzer",
       "category": "Security, Identity & Compliance",

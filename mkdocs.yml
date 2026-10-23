@@ -217,6 +217,7 @@ nav:
           - "API Gateway HTTP and WebSocket APIs": services/apigatewayv2.md
           - "API Gateway Management API": services/apigatewaymanagementapi.md
           - "API Gateway REST APIs": services/apigateway.md
+          - "AWS Global Accelerator": services/globalaccelerator.md
           - "Amazon Route 53 Resolver": services/route53resolver.md
           - "Cloud Map": services/servicediscovery.md
           - "CloudFront": services/cloudfront.md

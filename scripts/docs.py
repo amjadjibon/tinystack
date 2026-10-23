@@ -74,6 +74,7 @@ def service_page(key, info, profile, manifest):
     unsupported = sorted(modeled.keys() - enabled)
     scope = "Account-wide" if key in {
         "iam", "route53", "cloudfront", "account", "budgets", "costexplorer", "costandusagereportservice",
+        "globalaccelerator",
     } else "Account and region"
     rows = []
     for name in sorted(enabled):
