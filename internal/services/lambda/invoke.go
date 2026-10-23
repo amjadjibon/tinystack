@@ -45,11 +45,16 @@ func (s *Service) prepare(ctx context.Context, scope request.Scope, name, qualif
 	var fn *function
 	var code []byte
 	var layers [][]byte
+	poolARN := ""
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		var codeKey string
 		var loadErr error
 		if fn, codeKey, loadErr = resolveRouted(tx, scope, name, qualifier, true); loadErr != nil {
 			return loadErr
+		}
+
+		if _, ok := tx.Get(provisionedKey(scope, name, qualifier)); ok {
+			poolARN = qualifiedARN(scope, name, qualifier)
 		}
 
 		code, _ = tx.Get(codeKey)
@@ -85,6 +90,10 @@ func (s *Service) prepare(ctx context.Context, scope request.Scope, name, qualif
 		env[k] = v
 	}
 
+	if poolARN == "" {
+		poolARN = fn.arn(scope)
+	}
+
 	metadata, _ := request.FromContext(ctx)
 	clientContext, _ := ctx.Value(clientContextKey{}).(string)
 	return &Function{
@@ -93,7 +102,7 @@ func (s *Service) prepare(ctx context.Context, scope request.Scope, name, qualif
 		TraceID:       metadata.TraceID,
 		ClientContext: clientContext,
 		Environment:   env,
-		ARN:           fn.arn(scope),
+		ARN:           poolARN,
 		Name:          fn.Name,
 		Version:       fn.version(),
 		Region:        scope.Region,
@@ -101,6 +110,7 @@ func (s *Service) prepare(ctx context.Context, scope request.Scope, name, qualif
 		Handler:       fn.Handler,
 		PackageType:   fn.PackageType,
 		ImageURI:      fn.ImageURI,
+		ImageConfig:   fn.ImageConfig,
 		Architecture:  fn.Architecture,
 		Revision:      fn.CodeSha256 + "/" + fn.LastModified + "/" + fn.RevisionID,
 		Code:          code,

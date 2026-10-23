@@ -3,6 +3,7 @@ package lambda
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"strconv"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -23,11 +24,14 @@ const (
 	statusReady = "READY"
 )
 
-// provisioned is a provisioned concurrency configuration, which TinyStack
-// allocates at once: no environment is started before an invocation.
+// provisioned tracks allocation and initialization of reusable environments.
 type provisioned struct {
+	Status       string
+	StatusReason string
+	Token        string
 	Qualifier    string
 	LastModified string
+	Allocated    int64
 	Requested    int64
 }
 
@@ -218,15 +222,15 @@ func (p *provisioned) item(scope request.Scope, name string) api.ProvisionedConc
 	return api.ProvisionedConcurrencyConfigListItem{
 		FunctionArn:                              new(qualifiedARN(scope, name, p.Qualifier)),
 		RequestedProvisionedConcurrentExecutions: new(p.Requested),
-		AllocatedProvisionedConcurrentExecutions: new(p.Requested),
-		AvailableProvisionedConcurrentExecutions: new(p.Requested),
-		Status:                                   new(statusReady),
+		AllocatedProvisionedConcurrentExecutions: new(p.Allocated),
+		AvailableProvisionedConcurrentExecutions: new(p.Allocated),
+		Status:                                   new(p.Status),
+		StatusReason:                             new(p.StatusReason),
 		LastModified:                             new(p.LastModified),
 	}
 }
 
-// PutProvisionedConcurrencyConfig records provisioned concurrency for a
-// version or alias, which is READY at once.
+// PutProvisionedConcurrencyConfig initializes environments in the background.
 func (s *Service) PutProvisionedConcurrencyConfig(
 	ctx context.Context,
 	in *api.PutProvisionedConcurrencyConfigRequest,
@@ -241,23 +245,43 @@ func (s *Service) PutProvisionedConcurrencyConfig(
 		return nil, invalid("ProvisionedConcurrentExecutions must be from 1 to %d", maxReserved)
 	}
 
-	p := provisioned{Requested: n, LastModified: s.now().UTC().Format(timeFormat)}
+	s.warmMu.Lock()
+	defer s.warmMu.Unlock()
+	p := provisioned{
+		Requested: n, LastModified: s.now().UTC().Format(timeFormat),
+		Status: "IN_PROGRESS", Token: common.RandomID(32),
+	}
+	var name string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		name, q, resolveErr := provisionedTarget(tx, &m, in.FunctionName, in.Qualifier)
+		resolved, q, resolveErr := provisionedTarget(tx, &m, in.FunctionName, in.Qualifier)
 		if resolveErr != nil {
 			return resolveErr
 		}
 
-		p.Qualifier = q
+		a, found, aliasErr := loadAlias(tx, m.Scope, resolved, q)
+		if aliasErr != nil {
+			return aliasErr
+		}
+
+		if found && len(a.Weights) > 0 {
+			return invalid("Provisioned concurrency does not support weighted aliases")
+		}
+
+		name, p.Qualifier = resolved, q
 		return writeJSON(tx, provisionedKey(m.Scope, name, q), &p)
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	s.runtime.Release(qualifiedARN(m.Scope, name, p.Qualifier))
+	s.queueWarm(ctx, m.Scope, name, &p)
 	return &api.PutProvisionedConcurrencyConfigResponse{
-		RequestedProvisionedConcurrentExecutions: new(n), AllocatedProvisionedConcurrentExecutions: new(n),
-		AvailableProvisionedConcurrentExecutions: new(n), Status: new(statusReady), LastModified: new(p.LastModified),
+		RequestedProvisionedConcurrentExecutions: new(n),
+		AllocatedProvisionedConcurrentExecutions: new(int64(0)),
+		AvailableProvisionedConcurrentExecutions: new(int64(0)),
+		Status:                                   new(p.Status),
+		LastModified:                             new(p.LastModified),
 	}, nil
 }
 
@@ -291,9 +315,10 @@ func (s *Service) GetProvisionedConcurrencyConfig(
 
 	return &api.GetProvisionedConcurrencyConfigResponse{
 		RequestedProvisionedConcurrentExecutions: new(p.Requested),
-		AllocatedProvisionedConcurrentExecutions: new(p.Requested),
-		AvailableProvisionedConcurrentExecutions: new(p.Requested),
-		Status:                                   new(statusReady), LastModified: new(p.LastModified),
+		AllocatedProvisionedConcurrentExecutions: new(p.Allocated),
+		AvailableProvisionedConcurrentExecutions: new(p.Allocated),
+		StatusReason:                             new(p.StatusReason),
+		Status:                                   new(p.Status), LastModified: new(p.LastModified),
 	}, nil
 }
 
@@ -301,6 +326,9 @@ func (s *Service) DeleteProvisionedConcurrencyConfig(
 	ctx context.Context,
 	in *api.DeleteProvisionedConcurrencyConfigRequest,
 ) (*api.DeleteProvisionedConcurrencyConfigOutput, error) {
+	s.warmMu.Lock()
+	defer s.warmMu.Unlock()
+	var arn string
 	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
@@ -312,6 +340,7 @@ func (s *Service) DeleteProvisionedConcurrencyConfig(
 			return resolveErr
 		}
 
+		arn = qualifiedARN(m.Scope, name, q)
 		tx.Delete(provisionedKey(m.Scope, name, q))
 		return nil
 	})
@@ -319,6 +348,7 @@ func (s *Service) DeleteProvisionedConcurrencyConfig(
 		return nil, err
 	}
 
+	s.runtime.Release(arn)
 	return &api.DeleteProvisionedConcurrencyConfigOutput{}, nil
 }
 
@@ -381,4 +411,60 @@ func (s *Service) ListProvisionedConcurrencyConfigs(
 	}
 
 	return out, nil
+}
+
+// queueWarm is called with warmMu held, after committing the configuration. Warm jobs run one at a time
+// without warmMu, so API calls never wait on container or process startup; a job whose configuration was
+// replaced, deleted or reset meanwhile releases what it started instead of recording it.
+func (s *Service) queueWarm(ctx context.Context, scope request.Scope, name string, p *provisioned) {
+	metadata, _ := request.FromContext(ctx)
+	epoch := s.warmEpoch
+	s.bg.Go(func(bgctx context.Context) {
+		bgctx = request.WithMetadata(bgctx, metadata)
+		s.warmJobs.Lock()
+		defer s.warmJobs.Unlock()
+		key := provisionedKey(scope, name, p.Qualifier)
+		arn := qualifiedARN(scope, name, p.Qualifier)
+		var current provisioned
+		readErr := s.store.View(bgctx, func(tx storage.ReadTx) error {
+			_, err := readJSON(tx, key, &current)
+			return err
+		})
+		if readErr != nil || current.Token != p.Token {
+			return
+		}
+
+		fn, startErr := s.prepare(bgctx, scope, name, p.Qualifier)
+		if startErr == nil {
+			if runtime, ok := s.runtime.(WarmRuntime); ok {
+				startErr = runtime.Warm(bgctx, fn, int(p.Requested))
+			} else {
+				startErr = fmt.Errorf("configured runtime does not support warm reuse")
+			}
+		}
+
+		s.warmMu.Lock()
+		defer s.warmMu.Unlock()
+		stale := epoch != s.warmEpoch
+		if !stale {
+			err := s.store.Update(bgctx, func(tx storage.WriteTx) error {
+				if found, err := readJSON(tx, key, &current); err != nil || !found || current.Token != p.Token {
+					stale = true
+					return err
+				}
+
+				current.Status, current.Allocated = statusReady, p.Requested
+				if startErr != nil {
+					current.Status, current.StatusReason, current.Allocated = "FAILED", startErr.Error(), 0
+				}
+
+				return writeJSON(tx, key, &current)
+			})
+			stale = stale || err != nil
+		}
+
+		if stale || startErr != nil {
+			s.runtime.Release(arn)
+		}
+	})
 }

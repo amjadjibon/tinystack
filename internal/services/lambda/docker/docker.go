@@ -61,9 +61,10 @@ type pool struct {
 
 type container struct {
 	// since is the daemon time of the last log line an invocation took.
-	since    time.Time
-	id       string
-	endpoint string
+	since       time.Time
+	id          string
+	endpoint    string
+	provisioned bool
 }
 
 func New() *Runtime {
@@ -100,8 +101,16 @@ func (r *Runtime) acquire(ctx context.Context, fn *lambda.Function) (*container,
 	}
 
 	if n := len(p.idle); n > 0 {
-		c := p.idle[n-1]
-		p.idle = p.idle[:n-1]
+		index := n - 1
+		for i, candidate := range p.idle {
+			if candidate.provisioned {
+				index = i
+				break
+			}
+		}
+
+		c := p.idle[index]
+		p.idle = slices.Delete(p.idle, index, index+1)
 		p.busy[c] = true
 		r.mu.Unlock()
 		return c, nil
@@ -148,10 +157,13 @@ func (r *Runtime) Release(arn string) {
 	delete(r.pools, arn)
 	r.mu.Unlock()
 	if p != nil {
+		var wg sync.WaitGroup
 		for _, c := range p.idle {
-			go remove(context.Background(), c)
+			wg.Go(func() { remove(context.Background(), c) })
 		}
+
 		// Busy containers are removed when their invocation returns.
+		wg.Wait()
 	}
 }
 
@@ -242,7 +254,55 @@ func start(ctx context.Context, client *http.Client, fn *lambda.Function) (*cont
 		}
 	}
 
+	var command []string
+	if config := fn.ImageConfig; config != nil {
+		if config.WorkingDirectory != nil {
+			args = append(args, "--workdir", *config.WorkingDirectory)
+		}
+
+		if config.EntryPoint != nil || config.Command != nil {
+			raw, err := dockercli.Run(ctx, nil, "image", "inspect", "--format", "{{json .Config}}", image)
+			if err != nil {
+				if _, pullErr := dockercli.Run(ctx, nil, "pull", image); pullErr != nil {
+					return nil, pullErr
+				}
+
+				raw, err = dockercli.Run(ctx, nil, "image", "inspect", "--format", "{{json .Config}}", image)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			var defaults struct {
+				Entrypoint []string
+				Cmd        []string
+			}
+			if err := json.Unmarshal([]byte(raw), &defaults); err != nil {
+				return nil, err
+			}
+
+			entrypoint := defaults.Entrypoint
+			command = defaults.Cmd
+			if config.EntryPoint != nil {
+				entrypoint = config.EntryPoint
+			}
+
+			if config.Command != nil {
+				command = config.Command
+			}
+
+			executable := ""
+			if len(entrypoint) > 0 {
+				executable = entrypoint[0]
+				command = append(slices.Clone(entrypoint[1:]), command...)
+			}
+
+			args = append(args, "--entrypoint", executable)
+		}
+	}
+
 	args = append(args, image)
+	args = append(args, command...)
 	if fn.PackageType == "Zip" {
 		args = append(args, fn.Handler)
 	}
@@ -537,4 +597,46 @@ func isError(body []byte) bool {
 	var kind, message string
 	return json.Unmarshal(doc["errorType"], &kind) == nil && kind != "" &&
 		json.Unmarshal(doc["errorMessage"], &message) == nil
+}
+
+// Warm starts count containers without invoking their handlers.
+func (r *Runtime) Warm(ctx context.Context, fn *lambda.Function, count int) error {
+	if fn.HotReloadPath != "" {
+		stamp, err := fingerprint(fn.HotReloadPath)
+		if err != nil {
+			return err
+		}
+
+		copyFn := *fn
+		copyFn.Revision += "/" + stamp
+		fn = &copyFn
+	}
+
+	var all []*container
+	for range count {
+		c, err := r.acquire(ctx, fn)
+		if err != nil {
+			//nolint:contextcheck // Runtime.Release has no context; removal outlives the allocation.
+			r.Release(fn.ARN)
+			for _, started := range all {
+				r.release(ctx, fn, started, false)
+			}
+
+			return err
+		}
+
+		all = append(all, c)
+	}
+
+	r.mu.Lock()
+	for _, c := range all {
+		c.provisioned = true
+	}
+
+	r.mu.Unlock()
+	for _, c := range all {
+		r.release(ctx, fn, c, true)
+	}
+
+	return nil
 }

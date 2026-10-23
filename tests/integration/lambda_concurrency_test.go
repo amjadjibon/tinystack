@@ -78,8 +78,8 @@ func TestLambdaProvisionedConcurrency(t *testing.T) {
 			FunctionName: aws.String("warm"), Qualifier: aws.String(qualifier),
 			ProvisionedConcurrentExecutions: aws.Int32(2),
 		})
-		if putErr != nil || out.Status != lambdatypes.ProvisionedConcurrencyStatusEnumReady ||
-			aws.ToInt32(out.AvailableProvisionedConcurrentExecutions) != 2 {
+		if putErr != nil || out.Status != lambdatypes.ProvisionedConcurrencyStatusEnumInProgress ||
+			aws.ToInt32(out.AvailableProvisionedConcurrentExecutions) != 0 {
 			t.Fatalf("%s: %+v %v", qualifier, out, putErr)
 		}
 	}

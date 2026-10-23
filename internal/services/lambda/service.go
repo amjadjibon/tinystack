@@ -93,10 +93,13 @@ type Service struct {
 	pollers map[string]*poller
 	// running counts each function's invocations in flight, which its
 	// reserved concurrency caps; slots guards it.
-	running map[string]int
-	checked eventsource.ReadCache
-	mu      sync.Mutex
-	slots   sync.Mutex
+	running   map[string]int
+	checked   eventsource.ReadCache
+	mu        sync.Mutex
+	slots     sync.Mutex
+	warmMu    sync.Mutex
+	warmJobs  sync.Mutex
+	warmEpoch uint64
 }
 
 // New returns a Lambda service that runs code with runtime, reads SQS and
@@ -184,6 +187,9 @@ func (s *Service) Stop() {
 // environments, so nothing keeps running for functions that no longer exist.
 // Call it before the store is cleared.
 func (s *Service) Reset(ctx context.Context) {
+	s.warmMu.Lock()
+	defer s.warmMu.Unlock()
+	s.warmEpoch++
 	s.mu.Lock()
 	ids := slices.Collect(maps.Keys(s.pollers))
 	s.mu.Unlock()
@@ -198,6 +204,7 @@ func (s *Service) Reset(ctx context.Context) {
 // function is the stored configuration of one function: $LATEST, or a
 // published version, which never changes.
 type function struct {
+	ImageConfig   *api.ImageConfig  `json:",omitempty"`
 	Environment   map[string]string `json:",omitempty"`
 	Tags          map[string]string `json:",omitempty"`
 	Name          string
@@ -427,6 +434,10 @@ func (fn *function) configuration(scope request.Scope) api.FunctionConfiguration
 		Architectures:    []string{archX86},
 	}
 
+	if fn.ImageConfig != nil {
+		cfg.ImageConfigResponse = &api.ImageConfigResponse{ImageConfig: fn.ImageConfig}
+	}
+
 	if fn.DeadLetterARN != "" {
 		cfg.DeadLetterConfig = &api.DeadLetterConfig{TargetArn: new(fn.DeadLetterARN)}
 	}
@@ -513,6 +524,7 @@ func checkZip(code []byte) error {
 // settings are the configuration fields CreateFunction and
 // UpdateFunctionConfiguration share; a nil field keeps its current value.
 type settings struct {
+	ImageConfig      *api.ImageConfig
 	Environment      *api.Environment
 	DeadLetterConfig *api.DeadLetterConfig
 	Role             *string
@@ -525,6 +537,14 @@ type settings struct {
 
 // configure validates and applies c to fn.
 func (fn *function) configure(c *settings) error {
+	if c.ImageConfig != nil {
+		if fn.PackageType != packageImage {
+			return invalid("ImageConfig is only supported for Image functions")
+		}
+
+		fn.ImageConfig = c.ImageConfig
+	}
+
 	if c.DeadLetterConfig != nil {
 		arn := common.Value(c.DeadLetterConfig.TargetArn)
 		if err := checkDeadLetterARN(arn); err != nil {
@@ -677,6 +697,7 @@ func newFunction(in *api.CreateFunctionRequest, zipFile []byte, directory string
 	}
 
 	err := fn.configure(&settings{
+		ImageConfig:      in.ImageConfig,
 		DeadLetterConfig: in.DeadLetterConfig,
 		Role:             in.Role,
 		Handler:          in.Handler,

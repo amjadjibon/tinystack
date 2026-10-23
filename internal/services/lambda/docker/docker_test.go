@@ -11,10 +11,13 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
+	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/dockercli"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 )
@@ -238,5 +241,66 @@ func TestDockerHotReload(t *testing.T) {
 		}
 
 		previous = id
+	}
+}
+
+func TestDockerImageConfigAndWarm(t *testing.T) {
+	if os.Getenv("TINYSTACK_DOCKER_TESTS") != "1" {
+		t.Skip("set TINYSTACK_DOCKER_TESTS=1 to run functions in Docker")
+	}
+
+	ctx := context.Background()
+	image := "tinystack-lambda-l1-" + common.RandomID(16)
+	archive, err := tarball(deployment(t, map[string]string{
+		"Dockerfile": "FROM public.ecr.aws/lambda/python:3.14\nCOPY app.py /var/task/app.py\nCMD [\"app.wrong\"]\n",
+		"app.py":     "import os\ndef handler(e,c): return os.getcwd()\n",
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = dockercli.Run(ctx, archive, "build", "-t", image, "-"); err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() { _, _ = dockercli.Run(ctx, nil, "image", "rm", image) }()
+	r := New()
+	defer r.Close()
+	fn := &lambda.Function{
+		ARN: "arn:aws:lambda:us-east-1:000000000000:function:image-config:1", Revision: "1",
+		PackageType: "Image", ImageURI: image, Timeout: 10 * time.Second,
+		ImageConfig: &api.ImageConfig{
+			EntryPoint: []string{"/bin/sh", "/lambda-entrypoint.sh"},
+			Command:    []string{"app.handler"}, WorkingDirectory: new("/tmp"),
+		},
+	}
+	if err = r.Warm(ctx, fn, 2); err != nil {
+		t.Fatal(err)
+	}
+
+	r.mu.Lock()
+	started := slices.Clone(r.pools[fn.ARN].idle)
+	r.mu.Unlock()
+	if len(started) != 2 {
+		t.Fatalf("warm containers: %d", len(started))
+	}
+
+	result, err := r.Invoke(ctx, fn, []byte(`{}`))
+	if err != nil || result.Error || string(result.Payload) != `"/tmp"` {
+		t.Fatalf("image invocation: %s %v", result.Payload, err)
+	}
+
+	r.mu.Lock()
+	reused := slices.Contains(started, r.pools[fn.ARN].idle[1])
+	r.mu.Unlock()
+	if !reused {
+		t.Fatal("invocation did not reuse a prestarted container")
+	}
+
+	r.Reset()
+	for _, c := range started {
+		if _, err = dockercli.Run(ctx, nil, "inspect", c.id); err == nil {
+			t.Fatalf("container survived reset: %s", c.id)
+		}
 	}
 }

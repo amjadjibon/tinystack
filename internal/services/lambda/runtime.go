@@ -5,10 +5,13 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 )
 
 // Function is what a Runtime needs to run one function.
 type Function struct {
+	ImageConfig *api.ImageConfig
 	Environment map[string]string
 	// Invocation metadata is not part of the environment revision.
 	Endpoint        string
@@ -60,6 +63,12 @@ type Runtime interface {
 	Release(arn string)
 	// Close discards every environment.
 	Close()
+}
+
+// WarmRuntime pre-starts reusable environments without invoking the handler.
+type WarmRuntime interface {
+	Runtime
+	Warm(context.Context, *Function, int) error
 }
 
 // DirectoryRuntime opts into running live host directories. Other runtimes

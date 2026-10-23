@@ -63,6 +63,7 @@ func (s *Service) UpdateFunctionConfiguration(
 		}
 
 		return nil, fn.configure(&settings{
+			ImageConfig:      in.ImageConfig,
 			DeadLetterConfig: in.DeadLetterConfig,
 			Role:             in.Role,
 			Handler:          in.Handler,

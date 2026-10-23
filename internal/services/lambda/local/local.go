@@ -63,20 +63,23 @@ type pool struct {
 }
 
 type environmentProcess struct {
-	cmd       *exec.Cmd
-	server    *http.Server
-	log       *os.File
-	done      chan struct{}
-	jobs      chan *invocation
-	initError chan lambda.Result
-	active    *invocation
-	expiry    *time.Timer
-	root      string
-	prefix    string
-	offset    int64
-	mu        sync.Mutex
-	killOnce  sync.Once
-	closeOnce sync.Once
+	cmd         *exec.Cmd
+	server      *http.Server
+	log         *os.File
+	done        chan struct{}
+	ready       chan struct{}
+	jobs        chan *invocation
+	initError   chan lambda.Result
+	active      *invocation
+	expiry      *time.Timer
+	root        string
+	prefix      string
+	offset      int64
+	mu          sync.Mutex
+	killOnce    sync.Once
+	closeOnce   sync.Once
+	provisioned bool
+	readyOnce   sync.Once
 }
 
 type invocation struct {
@@ -129,23 +132,29 @@ func (r *Runtime) acquire(ctx context.Context, fn *lambda.Function) (*environmen
 		r.pools[fn.ARN] = p
 	}
 
-	for e, busy := range p.environments {
-		if busy {
-			continue
-		}
+	for _, reserved := range []bool{true, false} {
+		for e, busy := range p.environments {
+			if e.provisioned != reserved {
+				continue
+			}
 
-		if e.expiry != nil {
-			e.expiry.Stop()
-		}
+			if busy {
+				continue
+			}
 
-		select {
-		case <-e.done:
-			delete(p.environments, e)
-			e.close()
-		default:
-			p.environments[e] = true
-			r.mu.Unlock()
-			return e, nil
+			if e.expiry != nil {
+				e.expiry.Stop()
+			}
+
+			select {
+			case <-e.done:
+				delete(p.environments, e)
+				e.close()
+			default:
+				p.environments[e] = true
+				r.mu.Unlock()
+				return e, nil
+			}
 		}
 	}
 
@@ -177,6 +186,10 @@ func (r *Runtime) release(fn *lambda.Function, e *environmentProcess, healthy bo
 	p := r.pools[fn.ARN]
 	if p != nil && p.revision == fn.Revision && p.environments[e] && healthy && !r.closed {
 		p.environments[e] = false
+		if e.provisioned {
+			return
+		}
+
 		var expiry *time.Timer
 		expiry = time.AfterFunc(idleLifetime, func() {
 			r.mu.Lock()
@@ -284,8 +297,13 @@ func (r *Runtime) start(ctx context.Context, fn *lambda.Function) (_ *environmen
 	}
 
 	e := &environmentProcess{
-		root: root, log: logFile, prefix: "/" + common.RandomID(64),
-		done: make(chan struct{}), jobs: make(chan *invocation, 1), initError: make(chan lambda.Result, 1),
+		root:      root,
+		log:       logFile,
+		prefix:    "/" + common.RandomID(64),
+		ready:     make(chan struct{}),
+		done:      make(chan struct{}),
+		jobs:      make(chan *invocation, 1),
+		initError: make(chan lambda.Result, 1),
 	}
 
 	e.server = &http.Server{Handler: http.HandlerFunc(e.serve), ReadHeaderTimeout: 5 * time.Second}
@@ -471,6 +489,7 @@ func (e *environmentProcess) serve(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if route == "invocation/next" && req.Method == http.MethodGet {
+		e.readyOnce.Do(func() { close(e.ready) })
 		select {
 		case job := <-e.jobs:
 			e.mu.Lock()
@@ -545,4 +564,60 @@ func (e *environmentProcess) serve(w http.ResponseWriter, req *http.Request) {
 	e.active = nil
 	job.result <- result
 	w.WriteHeader(http.StatusAccepted)
+}
+
+// Warm starts processes and waits until handler initialization completes.
+func (r *Runtime) Warm(ctx context.Context, fn *lambda.Function, count int) error {
+	if fn.HotReloadPath != "" {
+		stamp, err := fingerprint(fn.HotReloadPath)
+		if err != nil {
+			return err
+		}
+
+		copyFn := *fn
+		copyFn.Revision += "/" + stamp
+		fn = &copyFn
+	}
+
+	_, managed := lambda.Image(fn.Runtime)
+	if fn.PackageType == "Image" || !managed ||
+		(!strings.HasPrefix(fn.Runtime, "python3.") && !strings.HasPrefix(fn.Runtime, "nodejs")) {
+		return fmt.Errorf("local Lambda cannot warm runtime %q with package %s", fn.Runtime, fn.PackageType)
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, max(10*time.Second, fn.Timeout)*time.Duration(count))
+	defer cancel()
+	var all []*environmentProcess
+	for range count {
+		e, err := r.acquire(ctx, fn)
+		if err != nil {
+			r.Release(fn.ARN)
+			return err
+		}
+
+		all = append(all, e)
+		select {
+		case <-e.ready:
+		case result := <-e.initError:
+			r.Release(fn.ARN)
+			return fmt.Errorf("initialization failed: %s", result.Payload)
+		case <-e.done:
+			r.Release(fn.ARN)
+			return errors.New("runtime exited during initialization")
+		case <-ctx.Done():
+			r.Release(fn.ARN)
+			return ctx.Err()
+		}
+	}
+
+	r.mu.Lock()
+	for _, e := range all {
+		e.provisioned = true
+	}
+
+	r.mu.Unlock()
+	for _, e := range all {
+		r.release(fn, e, true)
+	}
+	return nil
 }

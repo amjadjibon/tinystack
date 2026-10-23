@@ -213,12 +213,15 @@ func (s *Service) changeAlias(
 	function, name *string,
 	change func(storage.WriteTx, request.Scope, *alias) (bool, error),
 ) (*api.AliasConfiguration, error) {
+	s.warmMu.Lock()
+	defer s.warmMu.Unlock()
 	m, fn, err := aliasRequest(ctx, function, name)
 	if err != nil {
 		return nil, err
 	}
 
 	var a *alias
+	var p provisioned
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		var found bool
 		var loadErr error
@@ -240,10 +243,30 @@ func (s *Service) changeAlias(
 			return nil
 		}
 
+		key := provisionedKey(m.Scope, fn, a.Name)
+		if found, readErr := readJSON(tx, key, &p); readErr != nil {
+			return readErr
+		} else if found {
+			if len(a.Weights) > 0 {
+				return invalid("Provisioned concurrency does not support weighted aliases")
+			}
+
+			p.Status, p.StatusReason, p.Allocated = "IN_PROGRESS", "", 0
+			p.Token = common.RandomID(32)
+			if writeErr := writeJSON(tx, key, &p); writeErr != nil {
+				return writeErr
+			}
+		}
+
 		return writeJSON(tx, aliasKey(m.Scope, fn, a.Name), a)
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	s.runtime.Release(qualifiedARN(m.Scope, fn, a.Name))
+	if p.Token != "" {
+		s.queueWarm(ctx, m.Scope, fn, &p)
 	}
 
 	return a.configuration(m.Scope), nil

@@ -278,6 +278,8 @@ func (s *Service) ListVersionsByFunction(
 
 // deleteVersion deletes a published version that no alias points to.
 func (s *Service) deleteVersion(ctx context.Context, scope request.Scope, name, version string) error {
+	s.warmMu.Lock()
+	defer s.warmMu.Unlock()
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, _, loadErr := resolve(tx, scope, name, version); loadErr != nil {
 			return loadErr
@@ -317,6 +319,8 @@ func (s *Service) deleteVersion(ctx context.Context, scope request.Scope, name, 
 
 // deleteFunction deletes a function with its versions and aliases.
 func (s *Service) deleteFunction(ctx context.Context, scope request.Scope, name string) error {
+	s.warmMu.Lock()
+	defer s.warmMu.Unlock()
 	arns := []string{functionARN(scope, name)}
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, _, loadErr := resolve(tx, scope, name, ""); loadErr != nil {
@@ -333,6 +337,13 @@ func (s *Service) deleteFunction(ctx context.Context, scope request.Scope, name 
 		kinds := []string{kindVersion, kindVersionCode, kindAlias, kindPolicy, kindProvisioned, kindInvokeConfig}
 		for _, kind := range kinds {
 			for _, k := range tx.Keys(scope.Key("lambda", kind, name+"/")) {
+				if kind == kindAlias || kind == kindProvisioned {
+					arns = append(
+						arns,
+						qualifiedARN(scope, name, strings.TrimPrefix(k, scope.Key("lambda", kind, name+"/"))),
+					)
+				}
+
 				if kind == kindVersion {
 					v, _, loadErr := loadFunction(tx, k)
 					if loadErr != nil {

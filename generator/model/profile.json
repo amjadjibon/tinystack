@@ -14390,7 +14390,8 @@
         "Tags",
         "Publish",
         "Layers",
-        "DeadLetterConfig"
+        "DeadLetterConfig",
+        "ImageConfig"
       ],
       "FunctionCode": [
         "ZipFile",
@@ -14422,7 +14423,8 @@
         "RevisionId",
         "LastUpdateStatus",
         "Layers",
-        "DeadLetterConfig"
+        "DeadLetterConfig",
+        "ImageConfigResponse"
       ],
       "EnvironmentResponse": [
         "Variables"
@@ -14572,7 +14574,8 @@
         "Runtime",
         "RevisionId",
         "Layers",
-        "DeadLetterConfig"
+        "DeadLetterConfig",
+        "ImageConfig"
       ],
       "PublishVersionRequest": [
         "FunctionName",
@@ -14674,7 +14677,8 @@
         "AllocatedProvisionedConcurrentExecutions",
         "AvailableProvisionedConcurrentExecutions",
         "Status",
-        "LastModified"
+        "LastModified",
+        "StatusReason"
       ],
       "GetProvisionedConcurrencyConfigRequest": [
         "FunctionName",
@@ -14685,7 +14689,8 @@
         "AvailableProvisionedConcurrentExecutions",
         "AllocatedProvisionedConcurrentExecutions",
         "Status",
-        "LastModified"
+        "LastModified",
+        "StatusReason"
       ],
       "ListProvisionedConcurrencyConfigsRequest": [
         "FunctionName",
@@ -14702,7 +14707,8 @@
         "AvailableProvisionedConcurrentExecutions",
         "AllocatedProvisionedConcurrentExecutions",
         "Status",
-        "LastModified"
+        "LastModified",
+        "StatusReason"
       ],
       "DeleteProvisionedConcurrencyConfigRequest": [
         "FunctionName",
@@ -14935,6 +14941,14 @@
       ],
       "DeadLetterConfig": [
         "TargetArn"
+      ],
+      "ImageConfig": [
+        "EntryPoint",
+        "Command",
+        "WorkingDirectory"
+      ],
+      "ImageConfigResponse": [
+        "ImageConfig"
       ]
     }
   },
