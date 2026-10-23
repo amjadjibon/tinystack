@@ -425,7 +425,7 @@ func (v *CancelTaskExecutionRequest) Validate(path string) error {
 		if err := validation.Length(path+"TaskExecutionArn", utf8.RuneCountInString((*v.TaskExecutionArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"TaskExecutionArn", (*v.TaskExecutionArn), pattern0, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:task/task-[0-9a-f]{17}/execution/exec-[0-9a-f]{17}$"); err != nil {
+		if err := validation.Pattern(path+"TaskExecutionArn", (*v.TaskExecutionArn), pattern0, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:task/task-[0-9a-f]{17}/execution/exec-[0-9a-f]{17}$"); err != nil {
 			return err
 		}
 	}
@@ -437,7 +437,7 @@ func (v *CreateLocationEfsRequest) Validate(path string) error {
 		if err := validation.Length(path+"Subdirectory", utf8.RuneCountInString((*v.Subdirectory)), new(int64(0)), new(int64(4096))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Subdirectory", (*v.Subdirectory), pattern1, "", "^[a-zA-Z0-9_\\-\\+\\./\\(\\)\\p{Zs}]*$"); err != nil {
+		if err := validation.Pattern(path+"Subdirectory", (*v.Subdirectory), pattern1, nil, "^[a-zA-Z0-9_\\-\\+\\./\\(\\)\\p{Zs}]*$"); err != nil {
 			return err
 		}
 	}
@@ -448,7 +448,7 @@ func (v *CreateLocationEfsRequest) Validate(path string) error {
 		if err := validation.Length(path+"EfsFilesystemArn", utf8.RuneCountInString((*v.EfsFilesystemArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"EfsFilesystemArn", (*v.EfsFilesystemArn), pattern2, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):elasticfilesystem:[a-z\\-0-9]+:[0-9]{12}:file-system/fs-[0-9a-f]{8,40}$"); err != nil {
+		if err := validation.Pattern(path+"EfsFilesystemArn", (*v.EfsFilesystemArn), pattern2, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):elasticfilesystem:[a-z\\-0-9]+:[0-9]{12}:file-system/fs-[0-9a-f]{8,40}$"); err != nil {
 			return err
 		}
 	}
@@ -474,7 +474,7 @@ func (v *CreateLocationEfsRequest) Validate(path string) error {
 		if err := validation.Length(path+"AccessPointArn", utf8.RuneCountInString((*v.AccessPointArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"AccessPointArn", (*v.AccessPointArn), pattern3, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):elasticfilesystem:[a-z\\-0-9]+:[0-9]{12}:access-point/fsap-[0-9a-f]{8,40}$"); err != nil {
+		if err := validation.Pattern(path+"AccessPointArn", (*v.AccessPointArn), pattern3, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):elasticfilesystem:[a-z\\-0-9]+:[0-9]{12}:access-point/fsap-[0-9a-f]{8,40}$"); err != nil {
 			return err
 		}
 	}
@@ -482,7 +482,7 @@ func (v *CreateLocationEfsRequest) Validate(path string) error {
 		if err := validation.Length(path+"FileSystemAccessRoleArn", utf8.RuneCountInString((*v.FileSystemAccessRoleArn)), new(int64(0)), new(int64(2048))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FileSystemAccessRoleArn", (*v.FileSystemAccessRoleArn), pattern4, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):iam::[0-9]{12}:role/.*$"); err != nil {
+		if err := validation.Pattern(path+"FileSystemAccessRoleArn", (*v.FileSystemAccessRoleArn), pattern4, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):iam::[0-9]{12}:role/.*$"); err != nil {
 			return err
 		}
 	}
@@ -499,7 +499,7 @@ func (v *CreateLocationS3Request) Validate(path string) error {
 		if err := validation.Length(path+"Subdirectory", utf8.RuneCountInString((*v.Subdirectory)), new(int64(0)), new(int64(4096))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Subdirectory", (*v.Subdirectory), pattern1, "", "^[a-zA-Z0-9_\\-\\+\\./\\(\\)\\p{Zs}]*$"); err != nil {
+		if err := validation.Pattern(path+"Subdirectory", (*v.Subdirectory), pattern1, nil, "^[a-zA-Z0-9_\\-\\+\\./\\(\\)\\p{Zs}]*$"); err != nil {
 			return err
 		}
 	}
@@ -510,7 +510,7 @@ func (v *CreateLocationS3Request) Validate(path string) error {
 		if err := validation.Length(path+"S3BucketArn", utf8.RuneCountInString((*v.S3BucketArn)), new(int64(0)), new(int64(268))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"S3BucketArn", (*v.S3BucketArn), pattern5, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):s3:[a-z\\-0-9]*:[0-9]{12}:accesspoint[/:][a-zA-Z0-9\\-.]{1,63}$|^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):s3-outposts:[a-z\\-0-9]+:[0-9]{12}:outpost[/:][a-zA-Z0-9\\-]{1,63}[/:]accesspoint[/:][a-zA-Z0-9\\-]{1,63}$|^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):s3:::[a-zA-Z0-9.\\-_]{1,255}$"); err != nil {
+		if err := validation.Pattern(path+"S3BucketArn", (*v.S3BucketArn), pattern5, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):s3:[a-z\\-0-9]*:[0-9]{12}:accesspoint[/:][a-zA-Z0-9\\-.]{1,63}$|^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):s3-outposts:[a-z\\-0-9]+:[0-9]{12}:outpost[/:][a-zA-Z0-9\\-]{1,63}[/:]accesspoint[/:][a-zA-Z0-9\\-]{1,63}$|^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):s3:::[a-zA-Z0-9.\\-_]{1,255}$"); err != nil {
 			return err
 		}
 	}
@@ -548,7 +548,7 @@ func (v *CreateTaskRequest) Validate(path string) error {
 		if err := validation.Length(path+"SourceLocationArn", utf8.RuneCountInString((*v.SourceLocationArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"SourceLocationArn", (*v.SourceLocationArn), pattern6, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:location/loc-[0-9a-z]{17}$"); err != nil {
+		if err := validation.Pattern(path+"SourceLocationArn", (*v.SourceLocationArn), pattern6, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:location/loc-[0-9a-z]{17}$"); err != nil {
 			return err
 		}
 	}
@@ -559,7 +559,7 @@ func (v *CreateTaskRequest) Validate(path string) error {
 		if err := validation.Length(path+"DestinationLocationArn", utf8.RuneCountInString((*v.DestinationLocationArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"DestinationLocationArn", (*v.DestinationLocationArn), pattern6, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:location/loc-[0-9a-z]{17}$"); err != nil {
+		if err := validation.Pattern(path+"DestinationLocationArn", (*v.DestinationLocationArn), pattern6, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:location/loc-[0-9a-z]{17}$"); err != nil {
 			return err
 		}
 	}
@@ -567,7 +567,7 @@ func (v *CreateTaskRequest) Validate(path string) error {
 		if err := validation.Length(path+"CloudWatchLogGroupArn", utf8.RuneCountInString((*v.CloudWatchLogGroupArn)), new(int64(0)), new(int64(562))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"CloudWatchLogGroupArn", (*v.CloudWatchLogGroupArn), pattern7, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):logs:[a-z\\-0-9]+:[0-9]{12}:log-group:([^:\\*]*)(:\\*)?$"); err != nil {
+		if err := validation.Pattern(path+"CloudWatchLogGroupArn", (*v.CloudWatchLogGroupArn), pattern7, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):logs:[a-z\\-0-9]+:[0-9]{12}:log-group:([^:\\*]*)(:\\*)?$"); err != nil {
 			return err
 		}
 	}
@@ -575,7 +575,7 @@ func (v *CreateTaskRequest) Validate(path string) error {
 		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(0)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Name", (*v.Name), pattern8, "", "^[a-zA-Z0-9\\s+=._:@/-]+$"); err != nil {
+		if err := validation.Pattern(path+"Name", (*v.Name), pattern8, nil, "^[a-zA-Z0-9\\s+=._:@/-]+$"); err != nil {
 			return err
 		}
 	}
@@ -635,7 +635,7 @@ func (v *DeleteLocationRequest) Validate(path string) error {
 		if err := validation.Length(path+"LocationArn", utf8.RuneCountInString((*v.LocationArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"LocationArn", (*v.LocationArn), pattern6, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:location/loc-[0-9a-z]{17}$"); err != nil {
+		if err := validation.Pattern(path+"LocationArn", (*v.LocationArn), pattern6, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:location/loc-[0-9a-z]{17}$"); err != nil {
 			return err
 		}
 	}
@@ -650,7 +650,7 @@ func (v *DeleteTaskRequest) Validate(path string) error {
 		if err := validation.Length(path+"TaskArn", utf8.RuneCountInString((*v.TaskArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"TaskArn", (*v.TaskArn), pattern9, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:task/task-[0-9a-f]{17}$"); err != nil {
+		if err := validation.Pattern(path+"TaskArn", (*v.TaskArn), pattern9, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:task/task-[0-9a-f]{17}$"); err != nil {
 			return err
 		}
 	}
@@ -665,7 +665,7 @@ func (v *DescribeLocationEfsRequest) Validate(path string) error {
 		if err := validation.Length(path+"LocationArn", utf8.RuneCountInString((*v.LocationArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"LocationArn", (*v.LocationArn), pattern6, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:location/loc-[0-9a-z]{17}$"); err != nil {
+		if err := validation.Pattern(path+"LocationArn", (*v.LocationArn), pattern6, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:location/loc-[0-9a-z]{17}$"); err != nil {
 			return err
 		}
 	}
@@ -680,7 +680,7 @@ func (v *DescribeLocationS3Request) Validate(path string) error {
 		if err := validation.Length(path+"LocationArn", utf8.RuneCountInString((*v.LocationArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"LocationArn", (*v.LocationArn), pattern6, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:location/loc-[0-9a-z]{17}$"); err != nil {
+		if err := validation.Pattern(path+"LocationArn", (*v.LocationArn), pattern6, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:location/loc-[0-9a-z]{17}$"); err != nil {
 			return err
 		}
 	}
@@ -695,7 +695,7 @@ func (v *DescribeTaskExecutionRequest) Validate(path string) error {
 		if err := validation.Length(path+"TaskExecutionArn", utf8.RuneCountInString((*v.TaskExecutionArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"TaskExecutionArn", (*v.TaskExecutionArn), pattern0, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:task/task-[0-9a-f]{17}/execution/exec-[0-9a-f]{17}$"); err != nil {
+		if err := validation.Pattern(path+"TaskExecutionArn", (*v.TaskExecutionArn), pattern0, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:task/task-[0-9a-f]{17}/execution/exec-[0-9a-f]{17}$"); err != nil {
 			return err
 		}
 	}
@@ -710,7 +710,7 @@ func (v *DescribeTaskRequest) Validate(path string) error {
 		if err := validation.Length(path+"TaskArn", utf8.RuneCountInString((*v.TaskArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"TaskArn", (*v.TaskArn), pattern9, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:task/task-[0-9a-f]{17}$"); err != nil {
+		if err := validation.Pattern(path+"TaskArn", (*v.TaskArn), pattern9, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:task/task-[0-9a-f]{17}$"); err != nil {
 			return err
 		}
 	}
@@ -725,7 +725,7 @@ func (v *Ec2Config) Validate(path string) error {
 		if err := validation.Length(path+"SubnetArn", utf8.RuneCountInString((*v.SubnetArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"SubnetArn", (*v.SubnetArn), pattern10, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):ec2:[a-z\\-0-9]*:[0-9]{12}:subnet/subnet-[a-f0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"SubnetArn", (*v.SubnetArn), pattern10, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):ec2:[a-z\\-0-9]*:[0-9]{12}:subnet/subnet-[a-f0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -740,7 +740,7 @@ func (v *Ec2Config) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"SecurityGroupArns", i0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"SecurityGroupArns", i0), e0, pattern11, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):ec2:[a-z\\-0-9]*:[0-9]{12}:security-group/sg-[a-f0-9]+$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"SecurityGroupArns", i0), e0, pattern11, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):ec2:[a-z\\-0-9]*:[0-9]{12}:security-group/sg-[a-f0-9]+$"); err != nil {
 				return err
 			}
 		}
@@ -753,7 +753,7 @@ func (v *FilterRule) Validate(path string) error {
 		if err := validation.Length(path+"FilterType", utf8.RuneCountInString((*v.FilterType)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FilterType", (*v.FilterType), pattern12, "", "^[A-Z0-9_]+$"); err != nil {
+		if err := validation.Pattern(path+"FilterType", (*v.FilterType), pattern12, nil, "^[A-Z0-9_]+$"); err != nil {
 			return err
 		}
 		if err := validation.Enum(path+"FilterType", (*v.FilterType), enum3); err != nil {
@@ -764,7 +764,7 @@ func (v *FilterRule) Validate(path string) error {
 		if err := validation.Length(path+"Value", utf8.RuneCountInString((*v.Value)), new(int64(0)), new(int64(102400))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Value", (*v.Value), pattern13, "", "^[^\\x00]+$"); err != nil {
+		if err := validation.Pattern(path+"Value", (*v.Value), pattern13, nil, "^[^\\x00]+$"); err != nil {
 			return err
 		}
 	}
@@ -781,7 +781,7 @@ func (v *ListLocationsRequest) Validate(path string) error {
 		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(65535))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern14, "", "^[a-zA-Z0-9=_-]+$"); err != nil {
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern14, nil, "^[a-zA-Z0-9=_-]+$"); err != nil {
 			return err
 		}
 	}
@@ -803,7 +803,7 @@ func (v *ListTagsForResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern15, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:(((agent|task|location)/(agent|task|loc)-[a-z0-9]{17}(/execution/exec-[a-f0-9]{17})?)|(system/storage-system-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(/job/discovery-job-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})?))$"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern15, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:(((agent|task|location)/(agent|task|loc)-[a-z0-9]{17}(/execution/exec-[a-f0-9]{17})?)|(system/storage-system-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(/job/discovery-job-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})?))$"); err != nil {
 			return err
 		}
 	}
@@ -816,7 +816,7 @@ func (v *ListTagsForResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(65535))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern14, "", "^[a-zA-Z0-9=_-]+$"); err != nil {
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern14, nil, "^[a-zA-Z0-9=_-]+$"); err != nil {
 			return err
 		}
 	}
@@ -828,7 +828,7 @@ func (v *ListTaskExecutionsRequest) Validate(path string) error {
 		if err := validation.Length(path+"TaskArn", utf8.RuneCountInString((*v.TaskArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"TaskArn", (*v.TaskArn), pattern9, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:task/task-[0-9a-f]{17}$"); err != nil {
+		if err := validation.Pattern(path+"TaskArn", (*v.TaskArn), pattern9, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:task/task-[0-9a-f]{17}$"); err != nil {
 			return err
 		}
 	}
@@ -841,7 +841,7 @@ func (v *ListTaskExecutionsRequest) Validate(path string) error {
 		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(65535))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern14, "", "^[a-zA-Z0-9=_-]+$"); err != nil {
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern14, nil, "^[a-zA-Z0-9=_-]+$"); err != nil {
 			return err
 		}
 	}
@@ -858,7 +858,7 @@ func (v *ListTasksRequest) Validate(path string) error {
 		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(65535))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern14, "", "^[a-zA-Z0-9=_-]+$"); err != nil {
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern14, nil, "^[a-zA-Z0-9=_-]+$"); err != nil {
 			return err
 		}
 	}
@@ -889,7 +889,7 @@ func (v *LocationFilter) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"Values", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(255))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"Values", i0), e0, pattern16, "", "^[0-9a-zA-Z_\\ \\-\\:\\*\\.\\\\/\\?-]*$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"Values", i0), e0, pattern16, nil, "^[0-9a-zA-Z_\\ \\-\\:\\*\\.\\\\/\\?-]*$"); err != nil {
 				return err
 			}
 		}
@@ -997,7 +997,7 @@ func (v *S3Config) Validate(path string) error {
 		if err := validation.Length(path+"BucketAccessRoleArn", utf8.RuneCountInString((*v.BucketAccessRoleArn)), new(int64(0)), new(int64(2048))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"BucketAccessRoleArn", (*v.BucketAccessRoleArn), pattern4, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):iam::[0-9]{12}:role/.*$"); err != nil {
+		if err := validation.Pattern(path+"BucketAccessRoleArn", (*v.BucketAccessRoleArn), pattern4, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):iam::[0-9]{12}:role/.*$"); err != nil {
 			return err
 		}
 	}
@@ -1012,7 +1012,7 @@ func (v *StartTaskExecutionRequest) Validate(path string) error {
 		if err := validation.Length(path+"TaskArn", utf8.RuneCountInString((*v.TaskArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"TaskArn", (*v.TaskArn), pattern9, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:task/task-[0-9a-f]{17}$"); err != nil {
+		if err := validation.Pattern(path+"TaskArn", (*v.TaskArn), pattern9, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:task/task-[0-9a-f]{17}$"); err != nil {
 			return err
 		}
 	}
@@ -1062,7 +1062,7 @@ func (v *TagListEntry) Validate(path string) error {
 		if err := validation.Length(path+"Key", utf8.RuneCountInString((*v.Key)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Key", (*v.Key), pattern17, "", "^[a-zA-Z0-9\\s+=._:/-]+$"); err != nil {
+		if err := validation.Pattern(path+"Key", (*v.Key), pattern17, nil, "^[a-zA-Z0-9\\s+=._:/-]+$"); err != nil {
 			return err
 		}
 	}
@@ -1070,7 +1070,7 @@ func (v *TagListEntry) Validate(path string) error {
 		if err := validation.Length(path+"Value", utf8.RuneCountInString((*v.Value)), new(int64(0)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Value", (*v.Value), pattern8, "", "^[a-zA-Z0-9\\s+=._:@/-]+$"); err != nil {
+		if err := validation.Pattern(path+"Value", (*v.Value), pattern8, nil, "^[a-zA-Z0-9\\s+=._:@/-]+$"); err != nil {
 			return err
 		}
 	}
@@ -1085,7 +1085,7 @@ func (v *TagResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern15, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:(((agent|task|location)/(agent|task|loc)-[a-z0-9]{17}(/execution/exec-[a-f0-9]{17})?)|(system/storage-system-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(/job/discovery-job-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})?))$"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern15, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:(((agent|task|location)/(agent|task|loc)-[a-z0-9]{17}(/execution/exec-[a-f0-9]{17})?)|(system/storage-system-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(/job/discovery-job-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})?))$"); err != nil {
 			return err
 		}
 	}
@@ -1122,7 +1122,7 @@ func (v *TaskFilter) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"Values", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(255))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"Values", i0), e0, pattern16, "", "^[0-9a-zA-Z_\\ \\-\\:\\*\\.\\\\/\\?-]*$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"Values", i0), e0, pattern16, nil, "^[0-9a-zA-Z_\\ \\-\\:\\*\\.\\\\/\\?-]*$"); err != nil {
 				return err
 			}
 		}
@@ -1146,7 +1146,7 @@ func (v *TaskSchedule) Validate(path string) error {
 		if err := validation.Length(path+"ScheduleExpression", utf8.RuneCountInString((*v.ScheduleExpression)), new(int64(0)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ScheduleExpression", (*v.ScheduleExpression), pattern18, "", "^[a-zA-Z0-9\\ \\_\\*\\?\\,\\|\\^\\-\\/\\#\\s\\(\\)\\+]*$"); err != nil {
+		if err := validation.Pattern(path+"ScheduleExpression", (*v.ScheduleExpression), pattern18, nil, "^[a-zA-Z0-9\\ \\_\\*\\?\\,\\|\\^\\-\\/\\#\\s\\(\\)\\+]*$"); err != nil {
 			return err
 		}
 	}
@@ -1166,7 +1166,7 @@ func (v *UntagResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern15, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:(((agent|task|location)/(agent|task|loc)-[a-z0-9]{17}(/execution/exec-[a-f0-9]{17})?)|(system/storage-system-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(/job/discovery-job-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})?))$"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern15, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:(((agent|task|location)/(agent|task|loc)-[a-z0-9]{17}(/execution/exec-[a-f0-9]{17})?)|(system/storage-system-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}(/job/discovery-job-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})?))$"); err != nil {
 			return err
 		}
 	}
@@ -1181,7 +1181,7 @@ func (v *UntagResourceRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"Keys", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(256))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"Keys", i0), e0, pattern17, "", "^[a-zA-Z0-9\\s+=._:/-]+$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"Keys", i0), e0, pattern17, nil, "^[a-zA-Z0-9\\s+=._:/-]+$"); err != nil {
 				return err
 			}
 		}
@@ -1197,7 +1197,7 @@ func (v *UpdateLocationEfsRequest) Validate(path string) error {
 		if err := validation.Length(path+"LocationArn", utf8.RuneCountInString((*v.LocationArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"LocationArn", (*v.LocationArn), pattern6, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:location/loc-[0-9a-z]{17}$"); err != nil {
+		if err := validation.Pattern(path+"LocationArn", (*v.LocationArn), pattern6, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:location/loc-[0-9a-z]{17}$"); err != nil {
 			return err
 		}
 	}
@@ -1205,7 +1205,7 @@ func (v *UpdateLocationEfsRequest) Validate(path string) error {
 		if err := validation.Length(path+"Subdirectory", utf8.RuneCountInString((*v.Subdirectory)), new(int64(0)), new(int64(4096))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Subdirectory", (*v.Subdirectory), pattern1, "", "^[a-zA-Z0-9_\\-\\+\\./\\(\\)\\p{Zs}]*$"); err != nil {
+		if err := validation.Pattern(path+"Subdirectory", (*v.Subdirectory), pattern1, nil, "^[a-zA-Z0-9_\\-\\+\\./\\(\\)\\p{Zs}]*$"); err != nil {
 			return err
 		}
 	}
@@ -1213,7 +1213,7 @@ func (v *UpdateLocationEfsRequest) Validate(path string) error {
 		if err := validation.Length(path+"AccessPointArn", utf8.RuneCountInString((*v.AccessPointArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"AccessPointArn", (*v.AccessPointArn), pattern19, "", "^(^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):elasticfilesystem:[a-z\\-0-9]+:[0-9]{12}:access-point/fsap-[0-9a-f]{8,40}$)|(^$)$"); err != nil {
+		if err := validation.Pattern(path+"AccessPointArn", (*v.AccessPointArn), pattern19, nil, "^(^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):elasticfilesystem:[a-z\\-0-9]+:[0-9]{12}:access-point/fsap-[0-9a-f]{8,40}$)|(^$)$"); err != nil {
 			return err
 		}
 	}
@@ -1221,7 +1221,7 @@ func (v *UpdateLocationEfsRequest) Validate(path string) error {
 		if err := validation.Length(path+"FileSystemAccessRoleArn", utf8.RuneCountInString((*v.FileSystemAccessRoleArn)), new(int64(0)), new(int64(2048))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FileSystemAccessRoleArn", (*v.FileSystemAccessRoleArn), pattern20, "", "^(^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):iam::[0-9]{12}:role/.*$)|(^$)$"); err != nil {
+		if err := validation.Pattern(path+"FileSystemAccessRoleArn", (*v.FileSystemAccessRoleArn), pattern20, nil, "^(^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):iam::[0-9]{12}:role/.*$)|(^$)$"); err != nil {
 			return err
 		}
 	}
@@ -1241,7 +1241,7 @@ func (v *UpdateLocationS3Request) Validate(path string) error {
 		if err := validation.Length(path+"LocationArn", utf8.RuneCountInString((*v.LocationArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"LocationArn", (*v.LocationArn), pattern6, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:location/loc-[0-9a-z]{17}$"); err != nil {
+		if err := validation.Pattern(path+"LocationArn", (*v.LocationArn), pattern6, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:location/loc-[0-9a-z]{17}$"); err != nil {
 			return err
 		}
 	}
@@ -1249,7 +1249,7 @@ func (v *UpdateLocationS3Request) Validate(path string) error {
 		if err := validation.Length(path+"Subdirectory", utf8.RuneCountInString((*v.Subdirectory)), new(int64(0)), new(int64(4096))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Subdirectory", (*v.Subdirectory), pattern1, "", "^[a-zA-Z0-9_\\-\\+\\./\\(\\)\\p{Zs}]*$"); err != nil {
+		if err := validation.Pattern(path+"Subdirectory", (*v.Subdirectory), pattern1, nil, "^[a-zA-Z0-9_\\-\\+\\./\\(\\)\\p{Zs}]*$"); err != nil {
 			return err
 		}
 	}
@@ -1274,7 +1274,7 @@ func (v *UpdateTaskRequest) Validate(path string) error {
 		if err := validation.Length(path+"TaskArn", utf8.RuneCountInString((*v.TaskArn)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"TaskArn", (*v.TaskArn), pattern9, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:task/task-[0-9a-f]{17}$"); err != nil {
+		if err := validation.Pattern(path+"TaskArn", (*v.TaskArn), pattern9, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):datasync:[a-z\\-0-9]+:[0-9]{12}:task/task-[0-9a-f]{17}$"); err != nil {
 			return err
 		}
 	}
@@ -1302,7 +1302,7 @@ func (v *UpdateTaskRequest) Validate(path string) error {
 		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(0)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Name", (*v.Name), pattern8, "", "^[a-zA-Z0-9\\s+=._:@/-]+$"); err != nil {
+		if err := validation.Pattern(path+"Name", (*v.Name), pattern8, nil, "^[a-zA-Z0-9\\s+=._:@/-]+$"); err != nil {
 			return err
 		}
 	}
@@ -1310,7 +1310,7 @@ func (v *UpdateTaskRequest) Validate(path string) error {
 		if err := validation.Length(path+"CloudWatchLogGroupArn", utf8.RuneCountInString((*v.CloudWatchLogGroupArn)), new(int64(0)), new(int64(562))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"CloudWatchLogGroupArn", (*v.CloudWatchLogGroupArn), pattern7, "", "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):logs:[a-z\\-0-9]+:[0-9]{12}:log-group:([^:\\*]*)(:\\*)?$"); err != nil {
+		if err := validation.Pattern(path+"CloudWatchLogGroupArn", (*v.CloudWatchLogGroupArn), pattern7, nil, "^arn:(aws|aws-cn|aws-us-gov|aws-eusc|aws-iso|aws-iso-b):logs:[a-z\\-0-9]+:[0-9]{12}:log-group:([^:\\*]*)(:\\*)?$"); err != nil {
 			return err
 		}
 	}

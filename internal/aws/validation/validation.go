@@ -62,10 +62,10 @@ func Range(path string, v float64, minimum, maximum *float64) error {
 	return nil
 }
 
-// Pattern checks a string against the model pattern, which source holds as written. A leading negative lookahead
-// such as ^(?!aws:), which Go's regexp cannot express, is passed as excluded and checked as a prefix.
-func Pattern(path, v string, re *regexp.Regexp, excluded, source string) error {
-	if (excluded != "" && strings.HasPrefix(v, excluded)) || !re.MatchString(v) {
+// Pattern checks a string against the model pattern, which source holds as written. Lookarounds such as ^(?!aws:),
+// which Go's regexp cannot express, become reject, an expression the string must not match (nil when none).
+func Pattern(path, v string, re, reject *regexp.Regexp, source string) error {
+	if !re.MatchString(v) || (reject != nil && reject.MatchString(v)) {
 		return fail(path, "satisfy regular expression pattern: "+source)
 	}
 

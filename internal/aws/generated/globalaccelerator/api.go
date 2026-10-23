@@ -422,7 +422,7 @@ func (v *CreateEndpointGroupRequest) Validate(path string) error {
 		if err := validation.Length(path+"HealthCheckPath", utf8.RuneCountInString((*v.HealthCheckPath)), new(int64(0)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"HealthCheckPath", (*v.HealthCheckPath), pattern0, "", "^/[-a-zA-Z0-9@:%_\\\\+.~#?&/=]*$"); err != nil {
+		if err := validation.Pattern(path+"HealthCheckPath", (*v.HealthCheckPath), pattern0, nil, "^/[-a-zA-Z0-9@:%_\\\\+.~#?&/=]*$"); err != nil {
 			return err
 		}
 	}
@@ -885,7 +885,7 @@ func (v *UpdateEndpointGroupRequest) Validate(path string) error {
 		if err := validation.Length(path+"HealthCheckPath", utf8.RuneCountInString((*v.HealthCheckPath)), new(int64(0)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"HealthCheckPath", (*v.HealthCheckPath), pattern0, "", "^/[-a-zA-Z0-9@:%_\\\\+.~#?&/=]*$"); err != nil {
+		if err := validation.Pattern(path+"HealthCheckPath", (*v.HealthCheckPath), pattern0, nil, "^/[-a-zA-Z0-9@:%_\\\\+.~#?&/=]*$"); err != nil {
 			return err
 		}
 	}

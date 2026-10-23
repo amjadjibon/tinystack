@@ -441,7 +441,7 @@ func (v *ApplyArchiveRuleRequest) Validate(path string) error {
 		return err
 	}
 	if v.AnalyzerArn != nil {
-		if err := validation.Pattern(path+"analyzerArn", (*v.AnalyzerArn), pattern0, "", "^[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:analyzer/.{1,255}$"); err != nil {
+		if err := validation.Pattern(path+"analyzerArn", (*v.AnalyzerArn), pattern0, nil, "^[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:analyzer/.{1,255}$"); err != nil {
 			return err
 		}
 	}
@@ -452,7 +452,7 @@ func (v *ApplyArchiveRuleRequest) Validate(path string) error {
 		if err := validation.Length(path+"ruleName", utf8.RuneCountInString((*v.RuleName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ruleName", (*v.RuleName), pattern1, "", "^[A-Za-z][A-Za-z0-9_.-]*$"); err != nil {
+		if err := validation.Pattern(path+"ruleName", (*v.RuleName), pattern1, nil, "^[A-Za-z][A-Za-z0-9_.-]*$"); err != nil {
 			return err
 		}
 	}
@@ -467,7 +467,7 @@ func (v *CreateAnalyzerRequest) Validate(path string) error {
 		if err := validation.Length(path+"analyzerName", utf8.RuneCountInString((*v.AnalyzerName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"analyzerName", (*v.AnalyzerName), pattern2, "", "^[A-Za-z_][A-Za-z0-9_.-]*$"); err != nil {
+		if err := validation.Pattern(path+"analyzerName", (*v.AnalyzerName), pattern2, nil, "^[A-Za-z_][A-Za-z0-9_.-]*$"); err != nil {
 			return err
 		}
 	}
@@ -502,7 +502,7 @@ func (v *CreateArchiveRuleRequest) Validate(path string) error {
 		if err := validation.Length(path+"analyzerName", utf8.RuneCountInString((*v.AnalyzerName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"analyzerName", (*v.AnalyzerName), pattern2, "", "^[A-Za-z_][A-Za-z0-9_.-]*$"); err != nil {
+		if err := validation.Pattern(path+"analyzerName", (*v.AnalyzerName), pattern2, nil, "^[A-Za-z_][A-Za-z0-9_.-]*$"); err != nil {
 			return err
 		}
 	}
@@ -523,7 +523,7 @@ func (v *CreateArchiveRuleRequest) Validate(path string) error {
 		if err := validation.Length(path+"ruleName", utf8.RuneCountInString((*v.RuleName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ruleName", (*v.RuleName), pattern1, "", "^[A-Za-z][A-Za-z0-9_.-]*$"); err != nil {
+		if err := validation.Pattern(path+"ruleName", (*v.RuleName), pattern1, nil, "^[A-Za-z][A-Za-z0-9_.-]*$"); err != nil {
 			return err
 		}
 	}
@@ -557,7 +557,7 @@ func (v *DeleteAnalyzerRequest) Validate(path string) error {
 		if err := validation.Length(path+"analyzerName", utf8.RuneCountInString((*v.AnalyzerName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"analyzerName", (*v.AnalyzerName), pattern2, "", "^[A-Za-z_][A-Za-z0-9_.-]*$"); err != nil {
+		if err := validation.Pattern(path+"analyzerName", (*v.AnalyzerName), pattern2, nil, "^[A-Za-z_][A-Za-z0-9_.-]*$"); err != nil {
 			return err
 		}
 	}
@@ -572,7 +572,7 @@ func (v *DeleteArchiveRuleRequest) Validate(path string) error {
 		if err := validation.Length(path+"analyzerName", utf8.RuneCountInString((*v.AnalyzerName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"analyzerName", (*v.AnalyzerName), pattern2, "", "^[A-Za-z_][A-Za-z0-9_.-]*$"); err != nil {
+		if err := validation.Pattern(path+"analyzerName", (*v.AnalyzerName), pattern2, nil, "^[A-Za-z_][A-Za-z0-9_.-]*$"); err != nil {
 			return err
 		}
 	}
@@ -583,7 +583,7 @@ func (v *DeleteArchiveRuleRequest) Validate(path string) error {
 		if err := validation.Length(path+"ruleName", utf8.RuneCountInString((*v.RuleName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ruleName", (*v.RuleName), pattern1, "", "^[A-Za-z][A-Za-z0-9_.-]*$"); err != nil {
+		if err := validation.Pattern(path+"ruleName", (*v.RuleName), pattern1, nil, "^[A-Za-z][A-Za-z0-9_.-]*$"); err != nil {
 			return err
 		}
 	}
@@ -598,7 +598,7 @@ func (v *GetAnalyzerRequest) Validate(path string) error {
 		if err := validation.Length(path+"analyzerName", utf8.RuneCountInString((*v.AnalyzerName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"analyzerName", (*v.AnalyzerName), pattern2, "", "^[A-Za-z_][A-Za-z0-9_.-]*$"); err != nil {
+		if err := validation.Pattern(path+"analyzerName", (*v.AnalyzerName), pattern2, nil, "^[A-Za-z_][A-Za-z0-9_.-]*$"); err != nil {
 			return err
 		}
 	}
@@ -613,7 +613,7 @@ func (v *GetArchiveRuleRequest) Validate(path string) error {
 		if err := validation.Length(path+"analyzerName", utf8.RuneCountInString((*v.AnalyzerName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"analyzerName", (*v.AnalyzerName), pattern2, "", "^[A-Za-z_][A-Za-z0-9_.-]*$"); err != nil {
+		if err := validation.Pattern(path+"analyzerName", (*v.AnalyzerName), pattern2, nil, "^[A-Za-z_][A-Za-z0-9_.-]*$"); err != nil {
 			return err
 		}
 	}
@@ -624,7 +624,7 @@ func (v *GetArchiveRuleRequest) Validate(path string) error {
 		if err := validation.Length(path+"ruleName", utf8.RuneCountInString((*v.RuleName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ruleName", (*v.RuleName), pattern1, "", "^[A-Za-z][A-Za-z0-9_.-]*$"); err != nil {
+		if err := validation.Pattern(path+"ruleName", (*v.RuleName), pattern1, nil, "^[A-Za-z][A-Za-z0-9_.-]*$"); err != nil {
 			return err
 		}
 	}
@@ -636,7 +636,7 @@ func (v *GetFindingRequest) Validate(path string) error {
 		return err
 	}
 	if v.AnalyzerArn != nil {
-		if err := validation.Pattern(path+"analyzerArn", (*v.AnalyzerArn), pattern0, "", "^[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:analyzer/.{1,255}$"); err != nil {
+		if err := validation.Pattern(path+"analyzerArn", (*v.AnalyzerArn), pattern0, nil, "^[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:analyzer/.{1,255}$"); err != nil {
 			return err
 		}
 	}
@@ -651,7 +651,7 @@ func (v *GetFindingV2Request) Validate(path string) error {
 		return err
 	}
 	if v.AnalyzerArn != nil {
-		if err := validation.Pattern(path+"analyzerArn", (*v.AnalyzerArn), pattern0, "", "^[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:analyzer/.{1,255}$"); err != nil {
+		if err := validation.Pattern(path+"analyzerArn", (*v.AnalyzerArn), pattern0, nil, "^[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:analyzer/.{1,255}$"); err != nil {
 			return err
 		}
 	}
@@ -679,7 +679,7 @@ func (v *InlineArchiveRule) Validate(path string) error {
 		if err := validation.Length(path+"ruleName", utf8.RuneCountInString((*v.RuleName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ruleName", (*v.RuleName), pattern1, "", "^[A-Za-z][A-Za-z0-9_.-]*$"); err != nil {
+		if err := validation.Pattern(path+"ruleName", (*v.RuleName), pattern1, nil, "^[A-Za-z][A-Za-z0-9_.-]*$"); err != nil {
 			return err
 		}
 	}
@@ -734,7 +734,7 @@ func (v *ListArchiveRulesRequest) Validate(path string) error {
 		if err := validation.Length(path+"analyzerName", utf8.RuneCountInString((*v.AnalyzerName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"analyzerName", (*v.AnalyzerName), pattern2, "", "^[A-Za-z_][A-Za-z0-9_.-]*$"); err != nil {
+		if err := validation.Pattern(path+"analyzerName", (*v.AnalyzerName), pattern2, nil, "^[A-Za-z_][A-Za-z0-9_.-]*$"); err != nil {
 			return err
 		}
 	}
@@ -746,7 +746,7 @@ func (v *ListFindingsRequest) Validate(path string) error {
 		return err
 	}
 	if v.AnalyzerArn != nil {
-		if err := validation.Pattern(path+"analyzerArn", (*v.AnalyzerArn), pattern0, "", "^[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:analyzer/.{1,255}$"); err != nil {
+		if err := validation.Pattern(path+"analyzerArn", (*v.AnalyzerArn), pattern0, nil, "^[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:analyzer/.{1,255}$"); err != nil {
 			return err
 		}
 	}
@@ -770,7 +770,7 @@ func (v *ListFindingsV2Request) Validate(path string) error {
 		return err
 	}
 	if v.AnalyzerArn != nil {
-		if err := validation.Pattern(path+"analyzerArn", (*v.AnalyzerArn), pattern0, "", "^[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:analyzer/.{1,255}$"); err != nil {
+		if err := validation.Pattern(path+"analyzerArn", (*v.AnalyzerArn), pattern0, nil, "^[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:analyzer/.{1,255}$"); err != nil {
 			return err
 		}
 	}
@@ -842,7 +842,7 @@ func (v *UpdateAnalyzerRequest) Validate(path string) error {
 		if err := validation.Length(path+"analyzerName", utf8.RuneCountInString((*v.AnalyzerName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"analyzerName", (*v.AnalyzerName), pattern2, "", "^[A-Za-z_][A-Za-z0-9_.-]*$"); err != nil {
+		if err := validation.Pattern(path+"analyzerName", (*v.AnalyzerName), pattern2, nil, "^[A-Za-z_][A-Za-z0-9_.-]*$"); err != nil {
 			return err
 		}
 	}
@@ -862,7 +862,7 @@ func (v *UpdateArchiveRuleRequest) Validate(path string) error {
 		if err := validation.Length(path+"analyzerName", utf8.RuneCountInString((*v.AnalyzerName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"analyzerName", (*v.AnalyzerName), pattern2, "", "^[A-Za-z_][A-Za-z0-9_.-]*$"); err != nil {
+		if err := validation.Pattern(path+"analyzerName", (*v.AnalyzerName), pattern2, nil, "^[A-Za-z_][A-Za-z0-9_.-]*$"); err != nil {
 			return err
 		}
 	}
@@ -883,7 +883,7 @@ func (v *UpdateArchiveRuleRequest) Validate(path string) error {
 		if err := validation.Length(path+"ruleName", utf8.RuneCountInString((*v.RuleName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ruleName", (*v.RuleName), pattern1, "", "^[A-Za-z][A-Za-z0-9_.-]*$"); err != nil {
+		if err := validation.Pattern(path+"ruleName", (*v.RuleName), pattern1, nil, "^[A-Za-z][A-Za-z0-9_.-]*$"); err != nil {
 			return err
 		}
 	}
@@ -895,12 +895,12 @@ func (v *UpdateFindingsRequest) Validate(path string) error {
 		return err
 	}
 	if v.AnalyzerArn != nil {
-		if err := validation.Pattern(path+"analyzerArn", (*v.AnalyzerArn), pattern0, "", "^[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:analyzer/.{1,255}$"); err != nil {
+		if err := validation.Pattern(path+"analyzerArn", (*v.AnalyzerArn), pattern0, nil, "^[^:]*:[^:]*:[^:]*:[^:]*:[^:]*:analyzer/.{1,255}$"); err != nil {
 			return err
 		}
 	}
 	if v.ResourceArn != nil {
-		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern3, "", "^arn:[^:]*:[^:]*:[^:]*:[^:]*:.*$"); err != nil {
+		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern3, nil, "^arn:[^:]*:[^:]*:[^:]*:[^:]*:.*$"); err != nil {
 			return err
 		}
 	}

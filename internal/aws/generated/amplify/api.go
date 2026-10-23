@@ -622,25 +622,27 @@ var enum3 = []string{"WEB", "WEB_COMPUTE", "WEB_DYNAMIC"}
 
 var pattern4 = regexp.MustCompile("^[a-zA-Z+-=._:/]+$")
 
-var pattern5 = regexp.MustCompile("^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$")
+var pattern5 = regexp.MustCompile("^aws:")
 
-var pattern6 = regexp.MustCompile("^d[a-z0-9]+$")
+var pattern6 = regexp.MustCompile("^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$")
 
-var pattern7 = regexp.MustCompile("^\\d*$")
+var pattern7 = regexp.MustCompile("^d[a-z0-9]+$")
 
-var pattern8 = regexp.MustCompile("^(([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)\\.)+([A-Za-z0-9][A-Za-z0-9-]{0,61}[A-Za-z0-9])(\\.)?$")
+var pattern8 = regexp.MustCompile("^\\d*$")
 
-var pattern9 = regexp.MustCompile("^$|^arn:aws:iam::\\d{12}:role.+$")
+var pattern9 = regexp.MustCompile("^(([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)\\.)+([A-Za-z0-9][A-Za-z0-9-]{0,61}[A-Za-z0-9])(\\.)?$")
 
-var pattern10 = regexp.MustCompile("^.{3,7}$")
+var pattern10 = regexp.MustCompile("^$|^arn:aws:iam::\\d{12}:role.+$")
 
-var pattern11 = regexp.MustCompile("^[0-9]+$")
+var pattern11 = regexp.MustCompile("^.{3,7}$")
+
+var pattern12 = regexp.MustCompile("^[0-9]+$")
 
 var enum4 = []string{"LARGE_16GB", "STANDARD_8GB", "XLARGE_72GB"}
 
-var pattern12 = regexp.MustCompile("^arn:aws:amplify:")
+var pattern13 = regexp.MustCompile("^arn:aws:amplify:")
 
-var pattern13 = regexp.MustCompile("^(s3|https|http)://")
+var pattern14 = regexp.MustCompile("^(s3|https|http)://")
 
 var enum5 = []string{"BUCKET_PREFIX", "ZIP"}
 
@@ -656,7 +658,7 @@ func (v *AutoBranchCreationConfig) Validate(path string) error {
 		if err := validation.Length(path+"framework", utf8.RuneCountInString((*v.Framework)), new(int64(0)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"framework", (*v.Framework), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"framework", (*v.Framework), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -665,13 +667,13 @@ func (v *AutoBranchCreationConfig) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(255))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), k0, pattern0, "", "^(?s)"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), k0, pattern0, nil, "^(?s)"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(5500))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), e0, pattern0, "", "^(?s)"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), e0, pattern0, nil, "^(?s)"); err != nil {
 				return err
 			}
 		}
@@ -680,7 +682,7 @@ func (v *AutoBranchCreationConfig) Validate(path string) error {
 		if err := validation.Length(path+"basicAuthCredentials", utf8.RuneCountInString((*v.BasicAuthCredentials)), new(int64(0)), new(int64(2000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"basicAuthCredentials", (*v.BasicAuthCredentials), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"basicAuthCredentials", (*v.BasicAuthCredentials), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -688,7 +690,7 @@ func (v *AutoBranchCreationConfig) Validate(path string) error {
 		if err := validation.Length(path+"buildSpec", utf8.RuneCountInString((*v.BuildSpec)), new(int64(1)), new(int64(25000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"buildSpec", (*v.BuildSpec), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"buildSpec", (*v.BuildSpec), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -696,7 +698,7 @@ func (v *AutoBranchCreationConfig) Validate(path string) error {
 		if err := validation.Length(path+"pullRequestEnvironmentName", utf8.RuneCountInString((*v.PullRequestEnvironmentName)), new(int64(0)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"pullRequestEnvironmentName", (*v.PullRequestEnvironmentName), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"pullRequestEnvironmentName", (*v.PullRequestEnvironmentName), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -708,7 +710,7 @@ func (v *Backend) Validate(path string) error {
 		if err := validation.Length(path+"stackArn", utf8.RuneCountInString((*v.StackArn)), new(int64(20)), new(int64(2048))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"stackArn", (*v.StackArn), pattern2, "", "^arn:aws:cloudformation:[a-z0-9-]+:\\d{12}:stack/.+/.+$"); err != nil {
+		if err := validation.Pattern(path+"stackArn", (*v.StackArn), pattern2, nil, "^arn:aws:cloudformation:[a-z0-9-]+:\\d{12}:stack/.+/.+$"); err != nil {
 			return err
 		}
 	}
@@ -740,7 +742,7 @@ func (v *CertificateSettings) Validate(path string) error {
 		if err := validation.Length(path+"customCertificateArn", utf8.RuneCountInString((*v.CustomCertificateArn)), new(int64(0)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"customCertificateArn", (*v.CustomCertificateArn), pattern3, "", "^arn:aws:acm:[a-z0-9-]+:\\d{12}:certificate\\/.+$"); err != nil {
+		if err := validation.Pattern(path+"customCertificateArn", (*v.CustomCertificateArn), pattern3, nil, "^arn:aws:acm:[a-z0-9-]+:\\d{12}:certificate\\/.+$"); err != nil {
 			return err
 		}
 	}
@@ -755,7 +757,7 @@ func (v *CreateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"name", (*v.Name), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"name", (*v.Name), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -763,7 +765,7 @@ func (v *CreateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"description", (*v.Description), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"description", (*v.Description), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -771,7 +773,7 @@ func (v *CreateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"repository", utf8.RuneCountInString((*v.Repository)), new(int64(0)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"repository", (*v.Repository), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"repository", (*v.Repository), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -784,7 +786,7 @@ func (v *CreateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"computeRoleArn", utf8.RuneCountInString((*v.ComputeRoleArn)), new(int64(0)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"computeRoleArn", (*v.ComputeRoleArn), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"computeRoleArn", (*v.ComputeRoleArn), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -792,7 +794,7 @@ func (v *CreateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"iamServiceRoleArn", utf8.RuneCountInString((*v.IamServiceRoleArn)), new(int64(0)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"iamServiceRoleArn", (*v.IamServiceRoleArn), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"iamServiceRoleArn", (*v.IamServiceRoleArn), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -800,7 +802,7 @@ func (v *CreateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"oauthToken", utf8.RuneCountInString((*v.OauthToken)), new(int64(0)), new(int64(4096))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"oauthToken", (*v.OauthToken), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"oauthToken", (*v.OauthToken), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -808,7 +810,7 @@ func (v *CreateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"accessToken", utf8.RuneCountInString((*v.AccessToken)), new(int64(1)), new(int64(4096))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"accessToken", (*v.AccessToken), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"accessToken", (*v.AccessToken), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -817,13 +819,13 @@ func (v *CreateAppRequest) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(255))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), k0, pattern0, "", "^(?s)"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), k0, pattern0, nil, "^(?s)"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(5500))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), e0, pattern0, "", "^(?s)"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), e0, pattern0, nil, "^(?s)"); err != nil {
 				return err
 			}
 		}
@@ -832,7 +834,7 @@ func (v *CreateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"basicAuthCredentials", utf8.RuneCountInString((*v.BasicAuthCredentials)), new(int64(0)), new(int64(2000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"basicAuthCredentials", (*v.BasicAuthCredentials), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"basicAuthCredentials", (*v.BasicAuthCredentials), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -851,13 +853,13 @@ func (v *CreateAppRequest) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"tags", k0), k0, pattern4, "aws:", "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"tags", k0), k0, pattern4, pattern5, "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(256))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"tags", k0), e0, pattern5, "", "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"tags", k0), e0, pattern6, nil, "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
 				return err
 			}
 		}
@@ -866,7 +868,7 @@ func (v *CreateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"buildSpec", utf8.RuneCountInString((*v.BuildSpec)), new(int64(1)), new(int64(25000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"buildSpec", (*v.BuildSpec), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"buildSpec", (*v.BuildSpec), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -874,7 +876,7 @@ func (v *CreateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"customHeaders", utf8.RuneCountInString((*v.CustomHeaders)), new(int64(0)), new(int64(25000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"customHeaders", (*v.CustomHeaders), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"customHeaders", (*v.CustomHeaders), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -883,7 +885,7 @@ func (v *CreateAppRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"autoBranchCreationPatterns", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(2048))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"autoBranchCreationPatterns", i0), e0, pattern1, "", "^(?s).+$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"autoBranchCreationPatterns", i0), e0, pattern1, nil, "^(?s).+$"); err != nil {
 				return err
 			}
 		}
@@ -914,7 +916,7 @@ func (v *CreateBackendEnvironmentRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -925,7 +927,7 @@ func (v *CreateBackendEnvironmentRequest) Validate(path string) error {
 		if err := validation.Length(path+"environmentName", utf8.RuneCountInString((*v.EnvironmentName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"environmentName", (*v.EnvironmentName), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"environmentName", (*v.EnvironmentName), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -933,7 +935,7 @@ func (v *CreateBackendEnvironmentRequest) Validate(path string) error {
 		if err := validation.Length(path+"stackName", utf8.RuneCountInString((*v.StackName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"stackName", (*v.StackName), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"stackName", (*v.StackName), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -941,7 +943,7 @@ func (v *CreateBackendEnvironmentRequest) Validate(path string) error {
 		if err := validation.Length(path+"deploymentArtifacts", utf8.RuneCountInString((*v.DeploymentArtifacts)), new(int64(1)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"deploymentArtifacts", (*v.DeploymentArtifacts), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"deploymentArtifacts", (*v.DeploymentArtifacts), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -956,7 +958,7 @@ func (v *CreateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -967,7 +969,7 @@ func (v *CreateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -975,7 +977,7 @@ func (v *CreateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"description", (*v.Description), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"description", (*v.Description), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -988,7 +990,7 @@ func (v *CreateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"framework", utf8.RuneCountInString((*v.Framework)), new(int64(0)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"framework", (*v.Framework), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"framework", (*v.Framework), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -997,13 +999,13 @@ func (v *CreateBranchRequest) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(255))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), k0, pattern0, "", "^(?s)"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), k0, pattern0, nil, "^(?s)"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(5500))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), e0, pattern0, "", "^(?s)"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), e0, pattern0, nil, "^(?s)"); err != nil {
 				return err
 			}
 		}
@@ -1012,7 +1014,7 @@ func (v *CreateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"basicAuthCredentials", utf8.RuneCountInString((*v.BasicAuthCredentials)), new(int64(0)), new(int64(2000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"basicAuthCredentials", (*v.BasicAuthCredentials), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"basicAuthCredentials", (*v.BasicAuthCredentials), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -1024,13 +1026,13 @@ func (v *CreateBranchRequest) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"tags", k0), k0, pattern4, "aws:", "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"tags", k0), k0, pattern4, pattern5, "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(256))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"tags", k0), e0, pattern5, "", "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"tags", k0), e0, pattern6, nil, "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
 				return err
 			}
 		}
@@ -1039,7 +1041,7 @@ func (v *CreateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"buildSpec", utf8.RuneCountInString((*v.BuildSpec)), new(int64(1)), new(int64(25000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"buildSpec", (*v.BuildSpec), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"buildSpec", (*v.BuildSpec), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -1047,7 +1049,7 @@ func (v *CreateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"ttl", utf8.RuneCountInString((*v.Ttl)), new(int64(0)), new(int64(32))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ttl", (*v.Ttl), pattern7, "", "^\\d*$"); err != nil {
+		if err := validation.Pattern(path+"ttl", (*v.Ttl), pattern8, nil, "^\\d*$"); err != nil {
 			return err
 		}
 	}
@@ -1055,7 +1057,7 @@ func (v *CreateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"displayName", utf8.RuneCountInString((*v.DisplayName)), new(int64(0)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"displayName", (*v.DisplayName), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"displayName", (*v.DisplayName), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -1063,7 +1065,7 @@ func (v *CreateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"pullRequestEnvironmentName", utf8.RuneCountInString((*v.PullRequestEnvironmentName)), new(int64(0)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"pullRequestEnvironmentName", (*v.PullRequestEnvironmentName), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"pullRequestEnvironmentName", (*v.PullRequestEnvironmentName), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -1071,7 +1073,7 @@ func (v *CreateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"backendEnvironmentArn", utf8.RuneCountInString((*v.BackendEnvironmentArn)), new(int64(0)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"backendEnvironmentArn", (*v.BackendEnvironmentArn), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"backendEnvironmentArn", (*v.BackendEnvironmentArn), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -1084,7 +1086,7 @@ func (v *CreateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"computeRoleArn", utf8.RuneCountInString((*v.ComputeRoleArn)), new(int64(0)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"computeRoleArn", (*v.ComputeRoleArn), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"computeRoleArn", (*v.ComputeRoleArn), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -1099,7 +1101,7 @@ func (v *CreateDeploymentRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1110,7 +1112,7 @@ func (v *CreateDeploymentRequest) Validate(path string) error {
 		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -1119,13 +1121,13 @@ func (v *CreateDeploymentRequest) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"fileMap", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(255))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"fileMap", k0), k0, pattern0, "", "^(?s)"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"fileMap", k0), k0, pattern0, nil, "^(?s)"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"fileMap", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(32))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"fileMap", k0), e0, pattern0, "", "^(?s)"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"fileMap", k0), e0, pattern0, nil, "^(?s)"); err != nil {
 				return err
 			}
 		}
@@ -1141,7 +1143,7 @@ func (v *CreateDomainAssociationRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1152,7 +1154,7 @@ func (v *CreateDomainAssociationRequest) Validate(path string) error {
 		if err := validation.Length(path+"domainName", utf8.RuneCountInString((*v.DomainName)), new(int64(0)), new(int64(64))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"domainName", (*v.DomainName), pattern8, "", "^(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])(\\.)?$"); err != nil {
+		if err := validation.Pattern(path+"domainName", (*v.DomainName), pattern9, nil, "^(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])(\\.)?$"); err != nil {
 			return err
 		}
 	}
@@ -1174,7 +1176,7 @@ func (v *CreateDomainAssociationRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"autoSubDomainCreationPatterns", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(2048))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"autoSubDomainCreationPatterns", i0), e0, pattern1, "", "^(?s).+$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"autoSubDomainCreationPatterns", i0), e0, pattern1, nil, "^(?s).+$"); err != nil {
 				return err
 			}
 		}
@@ -1183,7 +1185,7 @@ func (v *CreateDomainAssociationRequest) Validate(path string) error {
 		if err := validation.Length(path+"autoSubDomainIAMRole", utf8.RuneCountInString((*v.AutoSubDomainIAMRole)), new(int64(0)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"autoSubDomainIAMRole", (*v.AutoSubDomainIAMRole), pattern9, "", "^$|^arn:aws:iam::\\d{12}:role.+$"); err != nil {
+		if err := validation.Pattern(path+"autoSubDomainIAMRole", (*v.AutoSubDomainIAMRole), pattern10, nil, "^$|^arn:aws:iam::\\d{12}:role.+$"); err != nil {
 			return err
 		}
 	}
@@ -1203,7 +1205,7 @@ func (v *CreateWebhookRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1214,7 +1216,7 @@ func (v *CreateWebhookRequest) Validate(path string) error {
 		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -1222,7 +1224,7 @@ func (v *CreateWebhookRequest) Validate(path string) error {
 		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"description", (*v.Description), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"description", (*v.Description), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -1237,7 +1239,7 @@ func (v *CustomRule) Validate(path string) error {
 		if err := validation.Length(path+"source", utf8.RuneCountInString((*v.Source)), new(int64(1)), new(int64(2048))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"source", (*v.Source), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"source", (*v.Source), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -1248,7 +1250,7 @@ func (v *CustomRule) Validate(path string) error {
 		if err := validation.Length(path+"target", utf8.RuneCountInString((*v.Target)), new(int64(1)), new(int64(2048))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"target", (*v.Target), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"target", (*v.Target), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -1256,7 +1258,7 @@ func (v *CustomRule) Validate(path string) error {
 		if err := validation.Length(path+"status", utf8.RuneCountInString((*v.Status)), new(int64(3)), new(int64(7))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"status", (*v.Status), pattern10, "", "^.{3,7}$"); err != nil {
+		if err := validation.Pattern(path+"status", (*v.Status), pattern11, nil, "^.{3,7}$"); err != nil {
 			return err
 		}
 	}
@@ -1264,7 +1266,7 @@ func (v *CustomRule) Validate(path string) error {
 		if err := validation.Length(path+"condition", utf8.RuneCountInString((*v.Condition)), new(int64(0)), new(int64(2048))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"condition", (*v.Condition), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"condition", (*v.Condition), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -1279,7 +1281,7 @@ func (v *DeleteAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1294,7 +1296,7 @@ func (v *DeleteBackendEnvironmentRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1305,7 +1307,7 @@ func (v *DeleteBackendEnvironmentRequest) Validate(path string) error {
 		if err := validation.Length(path+"environmentName", utf8.RuneCountInString((*v.EnvironmentName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"environmentName", (*v.EnvironmentName), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"environmentName", (*v.EnvironmentName), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -1320,7 +1322,7 @@ func (v *DeleteBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1331,7 +1333,7 @@ func (v *DeleteBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -1346,7 +1348,7 @@ func (v *DeleteDomainAssociationRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1357,7 +1359,7 @@ func (v *DeleteDomainAssociationRequest) Validate(path string) error {
 		if err := validation.Length(path+"domainName", utf8.RuneCountInString((*v.DomainName)), new(int64(0)), new(int64(64))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"domainName", (*v.DomainName), pattern8, "", "^(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])(\\.)?$"); err != nil {
+		if err := validation.Pattern(path+"domainName", (*v.DomainName), pattern9, nil, "^(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])(\\.)?$"); err != nil {
 			return err
 		}
 	}
@@ -1372,7 +1374,7 @@ func (v *DeleteJobRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1383,7 +1385,7 @@ func (v *DeleteJobRequest) Validate(path string) error {
 		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -1394,7 +1396,7 @@ func (v *DeleteJobRequest) Validate(path string) error {
 		if err := validation.Length(path+"jobId", utf8.RuneCountInString((*v.JobId)), new(int64(0)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"jobId", (*v.JobId), pattern11, "", "^[0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"jobId", (*v.JobId), pattern12, nil, "^[0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1409,7 +1411,7 @@ func (v *DeleteWebhookRequest) Validate(path string) error {
 		if err := validation.Length(path+"webhookId", utf8.RuneCountInString((*v.WebhookId)), new(int64(0)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"webhookId", (*v.WebhookId), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"webhookId", (*v.WebhookId), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -1424,7 +1426,7 @@ func (v *GetAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1439,7 +1441,7 @@ func (v *GetBackendEnvironmentRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1450,7 +1452,7 @@ func (v *GetBackendEnvironmentRequest) Validate(path string) error {
 		if err := validation.Length(path+"environmentName", utf8.RuneCountInString((*v.EnvironmentName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"environmentName", (*v.EnvironmentName), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"environmentName", (*v.EnvironmentName), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -1465,7 +1467,7 @@ func (v *GetBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1476,7 +1478,7 @@ func (v *GetBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -1491,7 +1493,7 @@ func (v *GetDomainAssociationRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1502,7 +1504,7 @@ func (v *GetDomainAssociationRequest) Validate(path string) error {
 		if err := validation.Length(path+"domainName", utf8.RuneCountInString((*v.DomainName)), new(int64(0)), new(int64(64))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"domainName", (*v.DomainName), pattern8, "", "^(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])(\\.)?$"); err != nil {
+		if err := validation.Pattern(path+"domainName", (*v.DomainName), pattern9, nil, "^(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])(\\.)?$"); err != nil {
 			return err
 		}
 	}
@@ -1517,7 +1519,7 @@ func (v *GetJobRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1528,7 +1530,7 @@ func (v *GetJobRequest) Validate(path string) error {
 		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -1539,7 +1541,7 @@ func (v *GetJobRequest) Validate(path string) error {
 		if err := validation.Length(path+"jobId", utf8.RuneCountInString((*v.JobId)), new(int64(0)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"jobId", (*v.JobId), pattern11, "", "^[0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"jobId", (*v.JobId), pattern12, nil, "^[0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1554,7 +1556,7 @@ func (v *GetWebhookRequest) Validate(path string) error {
 		if err := validation.Length(path+"webhookId", utf8.RuneCountInString((*v.WebhookId)), new(int64(0)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"webhookId", (*v.WebhookId), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"webhookId", (*v.WebhookId), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -1578,7 +1580,7 @@ func (v *ListAppsRequest) Validate(path string) error {
 		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(2000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -1598,7 +1600,7 @@ func (v *ListBackendEnvironmentsRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1606,7 +1608,7 @@ func (v *ListBackendEnvironmentsRequest) Validate(path string) error {
 		if err := validation.Length(path+"environmentName", utf8.RuneCountInString((*v.EnvironmentName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"environmentName", (*v.EnvironmentName), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"environmentName", (*v.EnvironmentName), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -1614,7 +1616,7 @@ func (v *ListBackendEnvironmentsRequest) Validate(path string) error {
 		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(2000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -1634,7 +1636,7 @@ func (v *ListBranchesRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1642,7 +1644,7 @@ func (v *ListBranchesRequest) Validate(path string) error {
 		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(2000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -1662,7 +1664,7 @@ func (v *ListDomainAssociationsRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1670,7 +1672,7 @@ func (v *ListDomainAssociationsRequest) Validate(path string) error {
 		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(2000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -1690,7 +1692,7 @@ func (v *ListJobsRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1701,7 +1703,7 @@ func (v *ListJobsRequest) Validate(path string) error {
 		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -1709,7 +1711,7 @@ func (v *ListJobsRequest) Validate(path string) error {
 		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(2000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -1729,7 +1731,7 @@ func (v *ListTagsForResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"resourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(0)), new(int64(2048))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern12, "", "^arn:aws:amplify:"); err != nil {
+		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern13, nil, "^arn:aws:amplify:"); err != nil {
 			return err
 		}
 	}
@@ -1744,7 +1746,7 @@ func (v *ListWebhooksRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1752,7 +1754,7 @@ func (v *ListWebhooksRequest) Validate(path string) error {
 		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(2000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -1772,7 +1774,7 @@ func (v *StartDeploymentRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1783,7 +1785,7 @@ func (v *StartDeploymentRequest) Validate(path string) error {
 		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -1791,7 +1793,7 @@ func (v *StartDeploymentRequest) Validate(path string) error {
 		if err := validation.Length(path+"jobId", utf8.RuneCountInString((*v.JobId)), new(int64(0)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"jobId", (*v.JobId), pattern11, "", "^[0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"jobId", (*v.JobId), pattern12, nil, "^[0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1799,7 +1801,7 @@ func (v *StartDeploymentRequest) Validate(path string) error {
 		if err := validation.Length(path+"sourceUrl", utf8.RuneCountInString((*v.SourceUrl)), new(int64(0)), new(int64(3000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"sourceUrl", (*v.SourceUrl), pattern13, "", "^(s3|https|http)://"); err != nil {
+		if err := validation.Pattern(path+"sourceUrl", (*v.SourceUrl), pattern14, nil, "^(s3|https|http)://"); err != nil {
 			return err
 		}
 	}
@@ -1819,7 +1821,7 @@ func (v *StartJobRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1830,7 +1832,7 @@ func (v *StartJobRequest) Validate(path string) error {
 		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -1838,7 +1840,7 @@ func (v *StartJobRequest) Validate(path string) error {
 		if err := validation.Length(path+"jobId", utf8.RuneCountInString((*v.JobId)), new(int64(0)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"jobId", (*v.JobId), pattern11, "", "^[0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"jobId", (*v.JobId), pattern12, nil, "^[0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1857,7 +1859,7 @@ func (v *StartJobRequest) Validate(path string) error {
 		if err := validation.Length(path+"jobReason", utf8.RuneCountInString((*v.JobReason)), new(int64(0)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"jobReason", (*v.JobReason), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"jobReason", (*v.JobReason), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -1865,7 +1867,7 @@ func (v *StartJobRequest) Validate(path string) error {
 		if err := validation.Length(path+"commitId", utf8.RuneCountInString((*v.CommitId)), new(int64(0)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"commitId", (*v.CommitId), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"commitId", (*v.CommitId), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -1873,7 +1875,7 @@ func (v *StartJobRequest) Validate(path string) error {
 		if err := validation.Length(path+"commitMessage", utf8.RuneCountInString((*v.CommitMessage)), new(int64(0)), new(int64(10000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"commitMessage", (*v.CommitMessage), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"commitMessage", (*v.CommitMessage), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -1888,7 +1890,7 @@ func (v *StopJobRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1899,7 +1901,7 @@ func (v *StopJobRequest) Validate(path string) error {
 		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -1910,7 +1912,7 @@ func (v *StopJobRequest) Validate(path string) error {
 		if err := validation.Length(path+"jobId", utf8.RuneCountInString((*v.JobId)), new(int64(0)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"jobId", (*v.JobId), pattern11, "", "^[0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"jobId", (*v.JobId), pattern12, nil, "^[0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1925,7 +1927,7 @@ func (v *SubDomainSetting) Validate(path string) error {
 		if err := validation.Length(path+"prefix", utf8.RuneCountInString((*v.Prefix)), new(int64(0)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"prefix", (*v.Prefix), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"prefix", (*v.Prefix), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -1936,7 +1938,7 @@ func (v *SubDomainSetting) Validate(path string) error {
 		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -1951,7 +1953,7 @@ func (v *TagResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"resourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(0)), new(int64(2048))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern12, "", "^arn:aws:amplify:"); err != nil {
+		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern13, nil, "^arn:aws:amplify:"); err != nil {
 			return err
 		}
 	}
@@ -1966,13 +1968,13 @@ func (v *TagResourceRequest) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"tags", k0), k0, pattern4, "aws:", "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"tags", k0), k0, pattern4, pattern5, "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(256))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"tags", k0), e0, pattern5, "", "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"tags", k0), e0, pattern6, nil, "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
 				return err
 			}
 		}
@@ -1988,7 +1990,7 @@ func (v *UntagResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"resourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(0)), new(int64(2048))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern12, "", "^arn:aws:amplify:"); err != nil {
+		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern13, nil, "^arn:aws:amplify:"); err != nil {
 			return err
 		}
 	}
@@ -2003,7 +2005,7 @@ func (v *UntagResourceRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"tagKeys", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"tagKeys", i0), e0, pattern4, "aws:", "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"tagKeys", i0), e0, pattern4, pattern5, "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
 				return err
 			}
 		}
@@ -2019,7 +2021,7 @@ func (v *UpdateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -2027,7 +2029,7 @@ func (v *UpdateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"name", (*v.Name), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"name", (*v.Name), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -2035,7 +2037,7 @@ func (v *UpdateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"description", (*v.Description), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"description", (*v.Description), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -2048,7 +2050,7 @@ func (v *UpdateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"computeRoleArn", utf8.RuneCountInString((*v.ComputeRoleArn)), new(int64(0)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"computeRoleArn", (*v.ComputeRoleArn), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"computeRoleArn", (*v.ComputeRoleArn), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -2056,7 +2058,7 @@ func (v *UpdateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"iamServiceRoleArn", utf8.RuneCountInString((*v.IamServiceRoleArn)), new(int64(0)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"iamServiceRoleArn", (*v.IamServiceRoleArn), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"iamServiceRoleArn", (*v.IamServiceRoleArn), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -2065,13 +2067,13 @@ func (v *UpdateAppRequest) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(255))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), k0, pattern0, "", "^(?s)"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), k0, pattern0, nil, "^(?s)"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(5500))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), e0, pattern0, "", "^(?s)"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), e0, pattern0, nil, "^(?s)"); err != nil {
 				return err
 			}
 		}
@@ -2080,7 +2082,7 @@ func (v *UpdateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"basicAuthCredentials", utf8.RuneCountInString((*v.BasicAuthCredentials)), new(int64(0)), new(int64(2000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"basicAuthCredentials", (*v.BasicAuthCredentials), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"basicAuthCredentials", (*v.BasicAuthCredentials), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -2095,7 +2097,7 @@ func (v *UpdateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"buildSpec", utf8.RuneCountInString((*v.BuildSpec)), new(int64(1)), new(int64(25000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"buildSpec", (*v.BuildSpec), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"buildSpec", (*v.BuildSpec), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -2103,7 +2105,7 @@ func (v *UpdateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"customHeaders", utf8.RuneCountInString((*v.CustomHeaders)), new(int64(0)), new(int64(25000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"customHeaders", (*v.CustomHeaders), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"customHeaders", (*v.CustomHeaders), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -2112,7 +2114,7 @@ func (v *UpdateAppRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"autoBranchCreationPatterns", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(2048))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"autoBranchCreationPatterns", i0), e0, pattern1, "", "^(?s).+$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"autoBranchCreationPatterns", i0), e0, pattern1, nil, "^(?s).+$"); err != nil {
 				return err
 			}
 		}
@@ -2126,7 +2128,7 @@ func (v *UpdateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"repository", utf8.RuneCountInString((*v.Repository)), new(int64(0)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"repository", (*v.Repository), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"repository", (*v.Repository), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -2134,7 +2136,7 @@ func (v *UpdateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"oauthToken", utf8.RuneCountInString((*v.OauthToken)), new(int64(0)), new(int64(4096))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"oauthToken", (*v.OauthToken), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"oauthToken", (*v.OauthToken), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -2142,7 +2144,7 @@ func (v *UpdateAppRequest) Validate(path string) error {
 		if err := validation.Length(path+"accessToken", utf8.RuneCountInString((*v.AccessToken)), new(int64(1)), new(int64(4096))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"accessToken", (*v.AccessToken), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"accessToken", (*v.AccessToken), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -2167,7 +2169,7 @@ func (v *UpdateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -2178,7 +2180,7 @@ func (v *UpdateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -2186,7 +2188,7 @@ func (v *UpdateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"description", (*v.Description), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"description", (*v.Description), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -2194,7 +2196,7 @@ func (v *UpdateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"framework", utf8.RuneCountInString((*v.Framework)), new(int64(0)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"framework", (*v.Framework), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"framework", (*v.Framework), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -2208,13 +2210,13 @@ func (v *UpdateBranchRequest) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(255))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), k0, pattern0, "", "^(?s)"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), k0, pattern0, nil, "^(?s)"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(5500))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), e0, pattern0, "", "^(?s)"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), e0, pattern0, nil, "^(?s)"); err != nil {
 				return err
 			}
 		}
@@ -2223,7 +2225,7 @@ func (v *UpdateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"basicAuthCredentials", utf8.RuneCountInString((*v.BasicAuthCredentials)), new(int64(0)), new(int64(2000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"basicAuthCredentials", (*v.BasicAuthCredentials), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"basicAuthCredentials", (*v.BasicAuthCredentials), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -2231,7 +2233,7 @@ func (v *UpdateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"buildSpec", utf8.RuneCountInString((*v.BuildSpec)), new(int64(1)), new(int64(25000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"buildSpec", (*v.BuildSpec), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"buildSpec", (*v.BuildSpec), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -2239,7 +2241,7 @@ func (v *UpdateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"ttl", utf8.RuneCountInString((*v.Ttl)), new(int64(0)), new(int64(32))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ttl", (*v.Ttl), pattern7, "", "^\\d*$"); err != nil {
+		if err := validation.Pattern(path+"ttl", (*v.Ttl), pattern8, nil, "^\\d*$"); err != nil {
 			return err
 		}
 	}
@@ -2247,7 +2249,7 @@ func (v *UpdateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"displayName", utf8.RuneCountInString((*v.DisplayName)), new(int64(0)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"displayName", (*v.DisplayName), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"displayName", (*v.DisplayName), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -2255,7 +2257,7 @@ func (v *UpdateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"pullRequestEnvironmentName", utf8.RuneCountInString((*v.PullRequestEnvironmentName)), new(int64(0)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"pullRequestEnvironmentName", (*v.PullRequestEnvironmentName), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"pullRequestEnvironmentName", (*v.PullRequestEnvironmentName), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -2263,7 +2265,7 @@ func (v *UpdateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"backendEnvironmentArn", utf8.RuneCountInString((*v.BackendEnvironmentArn)), new(int64(0)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"backendEnvironmentArn", (*v.BackendEnvironmentArn), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"backendEnvironmentArn", (*v.BackendEnvironmentArn), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -2276,7 +2278,7 @@ func (v *UpdateBranchRequest) Validate(path string) error {
 		if err := validation.Length(path+"computeRoleArn", utf8.RuneCountInString((*v.ComputeRoleArn)), new(int64(0)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"computeRoleArn", (*v.ComputeRoleArn), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"computeRoleArn", (*v.ComputeRoleArn), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -2291,7 +2293,7 @@ func (v *UpdateDomainAssociationRequest) Validate(path string) error {
 		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern7, nil, "^d[a-z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -2302,7 +2304,7 @@ func (v *UpdateDomainAssociationRequest) Validate(path string) error {
 		if err := validation.Length(path+"domainName", utf8.RuneCountInString((*v.DomainName)), new(int64(0)), new(int64(64))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"domainName", (*v.DomainName), pattern8, "", "^(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])(\\.)?$"); err != nil {
+		if err := validation.Pattern(path+"domainName", (*v.DomainName), pattern9, nil, "^(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])(\\.)?$"); err != nil {
 			return err
 		}
 	}
@@ -2321,7 +2323,7 @@ func (v *UpdateDomainAssociationRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"autoSubDomainCreationPatterns", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(2048))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"autoSubDomainCreationPatterns", i0), e0, pattern1, "", "^(?s).+$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"autoSubDomainCreationPatterns", i0), e0, pattern1, nil, "^(?s).+$"); err != nil {
 				return err
 			}
 		}
@@ -2330,7 +2332,7 @@ func (v *UpdateDomainAssociationRequest) Validate(path string) error {
 		if err := validation.Length(path+"autoSubDomainIAMRole", utf8.RuneCountInString((*v.AutoSubDomainIAMRole)), new(int64(0)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"autoSubDomainIAMRole", (*v.AutoSubDomainIAMRole), pattern9, "", "^$|^arn:aws:iam::\\d{12}:role.+$"); err != nil {
+		if err := validation.Pattern(path+"autoSubDomainIAMRole", (*v.AutoSubDomainIAMRole), pattern10, nil, "^$|^arn:aws:iam::\\d{12}:role.+$"); err != nil {
 			return err
 		}
 	}
@@ -2350,7 +2352,7 @@ func (v *UpdateWebhookRequest) Validate(path string) error {
 		if err := validation.Length(path+"webhookId", utf8.RuneCountInString((*v.WebhookId)), new(int64(0)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"webhookId", (*v.WebhookId), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"webhookId", (*v.WebhookId), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}
@@ -2358,7 +2360,7 @@ func (v *UpdateWebhookRequest) Validate(path string) error {
 		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, nil, "^(?s).+$"); err != nil {
 			return err
 		}
 	}
@@ -2366,7 +2368,7 @@ func (v *UpdateWebhookRequest) Validate(path string) error {
 		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(1000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"description", (*v.Description), pattern0, "", "^(?s)"); err != nil {
+		if err := validation.Pattern(path+"description", (*v.Description), pattern0, nil, "^(?s)"); err != nil {
 			return err
 		}
 	}

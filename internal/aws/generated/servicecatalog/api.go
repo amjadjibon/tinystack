@@ -511,7 +511,7 @@ func (v *AssociatePrincipalWithPortfolioInput) Validate(path string) error {
 		if err := validation.Length(path+"PortfolioId", utf8.RuneCountInString((*v.PortfolioId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"PortfolioId", (*v.PortfolioId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"PortfolioId", (*v.PortfolioId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -547,7 +547,7 @@ func (v *AssociateProductWithPortfolioInput) Validate(path string) error {
 		if err := validation.Length(path+"ProductId", utf8.RuneCountInString((*v.ProductId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -558,7 +558,7 @@ func (v *AssociateProductWithPortfolioInput) Validate(path string) error {
 		if err := validation.Length(path+"PortfolioId", utf8.RuneCountInString((*v.PortfolioId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"PortfolioId", (*v.PortfolioId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"PortfolioId", (*v.PortfolioId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -578,7 +578,7 @@ func (v *CreateConstraintInput) Validate(path string) error {
 		if err := validation.Length(path+"PortfolioId", utf8.RuneCountInString((*v.PortfolioId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"PortfolioId", (*v.PortfolioId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"PortfolioId", (*v.PortfolioId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -589,7 +589,7 @@ func (v *CreateConstraintInput) Validate(path string) error {
 		if err := validation.Length(path+"ProductId", utf8.RuneCountInString((*v.ProductId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -616,7 +616,7 @@ func (v *CreateConstraintInput) Validate(path string) error {
 		if err := validation.Length(path+"IdempotencyToken", utf8.RuneCountInString((*v.IdempotencyToken)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"IdempotencyToken", (*v.IdempotencyToken), pattern1, "", "^[a-zA-Z0-9][a-zA-Z0-9_-]*$"); err != nil {
+		if err := validation.Pattern(path+"IdempotencyToken", (*v.IdempotencyToken), pattern1, nil, "^[a-zA-Z0-9][a-zA-Z0-9_-]*$"); err != nil {
 			return err
 		}
 	}
@@ -667,7 +667,7 @@ func (v *CreatePortfolioInput) Validate(path string) error {
 		if err := validation.Length(path+"IdempotencyToken", utf8.RuneCountInString((*v.IdempotencyToken)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"IdempotencyToken", (*v.IdempotencyToken), pattern1, "", "^[a-zA-Z0-9][a-zA-Z0-9_-]*$"); err != nil {
+		if err := validation.Pattern(path+"IdempotencyToken", (*v.IdempotencyToken), pattern1, nil, "^[a-zA-Z0-9][a-zA-Z0-9_-]*$"); err != nil {
 			return err
 		}
 	}
@@ -754,7 +754,7 @@ func (v *CreateProductInput) Validate(path string) error {
 		if err := validation.Length(path+"IdempotencyToken", utf8.RuneCountInString((*v.IdempotencyToken)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"IdempotencyToken", (*v.IdempotencyToken), pattern1, "", "^[a-zA-Z0-9][a-zA-Z0-9_-]*$"); err != nil {
+		if err := validation.Pattern(path+"IdempotencyToken", (*v.IdempotencyToken), pattern1, nil, "^[a-zA-Z0-9][a-zA-Z0-9_-]*$"); err != nil {
 			return err
 		}
 	}
@@ -774,7 +774,7 @@ func (v *CreateProvisioningArtifactInput) Validate(path string) error {
 		if err := validation.Length(path+"ProductId", utf8.RuneCountInString((*v.ProductId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -793,7 +793,7 @@ func (v *CreateProvisioningArtifactInput) Validate(path string) error {
 		if err := validation.Length(path+"IdempotencyToken", utf8.RuneCountInString((*v.IdempotencyToken)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"IdempotencyToken", (*v.IdempotencyToken), pattern1, "", "^[a-zA-Z0-9][a-zA-Z0-9_-]*$"); err != nil {
+		if err := validation.Pattern(path+"IdempotencyToken", (*v.IdempotencyToken), pattern1, nil, "^[a-zA-Z0-9][a-zA-Z0-9_-]*$"); err != nil {
 			return err
 		}
 	}
@@ -813,7 +813,7 @@ func (v *DeleteConstraintInput) Validate(path string) error {
 		if err := validation.Length(path+"Id", utf8.RuneCountInString((*v.Id)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -833,7 +833,7 @@ func (v *DeletePortfolioInput) Validate(path string) error {
 		if err := validation.Length(path+"Id", utf8.RuneCountInString((*v.Id)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -853,7 +853,7 @@ func (v *DeleteProductInput) Validate(path string) error {
 		if err := validation.Length(path+"Id", utf8.RuneCountInString((*v.Id)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -873,7 +873,7 @@ func (v *DeleteProvisioningArtifactInput) Validate(path string) error {
 		if err := validation.Length(path+"ProductId", utf8.RuneCountInString((*v.ProductId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -884,7 +884,7 @@ func (v *DeleteProvisioningArtifactInput) Validate(path string) error {
 		if err := validation.Length(path+"ProvisioningArtifactId", utf8.RuneCountInString((*v.ProvisioningArtifactId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ProvisioningArtifactId", (*v.ProvisioningArtifactId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"ProvisioningArtifactId", (*v.ProvisioningArtifactId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -904,7 +904,7 @@ func (v *DescribeConstraintInput) Validate(path string) error {
 		if err := validation.Length(path+"Id", utf8.RuneCountInString((*v.Id)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -924,7 +924,7 @@ func (v *DescribePortfolioInput) Validate(path string) error {
 		if err := validation.Length(path+"Id", utf8.RuneCountInString((*v.Id)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -941,7 +941,7 @@ func (v *DescribeProductAsAdminInput) Validate(path string) error {
 		if err := validation.Length(path+"Id", utf8.RuneCountInString((*v.Id)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -963,7 +963,7 @@ func (v *DescribeProductInput) Validate(path string) error {
 		if err := validation.Length(path+"Id", utf8.RuneCountInString((*v.Id)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -985,7 +985,7 @@ func (v *DescribeProvisioningArtifactInput) Validate(path string) error {
 		if err := validation.Length(path+"ProvisioningArtifactId", utf8.RuneCountInString((*v.ProvisioningArtifactId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ProvisioningArtifactId", (*v.ProvisioningArtifactId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"ProvisioningArtifactId", (*v.ProvisioningArtifactId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -993,7 +993,7 @@ func (v *DescribeProvisioningArtifactInput) Validate(path string) error {
 		if err := validation.Length(path+"ProductId", utf8.RuneCountInString((*v.ProductId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -1023,7 +1023,7 @@ func (v *DisassociatePrincipalFromPortfolioInput) Validate(path string) error {
 		if err := validation.Length(path+"PortfolioId", utf8.RuneCountInString((*v.PortfolioId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"PortfolioId", (*v.PortfolioId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"PortfolioId", (*v.PortfolioId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -1056,7 +1056,7 @@ func (v *DisassociateProductFromPortfolioInput) Validate(path string) error {
 		if err := validation.Length(path+"ProductId", utf8.RuneCountInString((*v.ProductId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -1067,7 +1067,7 @@ func (v *DisassociateProductFromPortfolioInput) Validate(path string) error {
 		if err := validation.Length(path+"PortfolioId", utf8.RuneCountInString((*v.PortfolioId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"PortfolioId", (*v.PortfolioId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"PortfolioId", (*v.PortfolioId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -1087,7 +1087,7 @@ func (v *ListConstraintsForPortfolioInput) Validate(path string) error {
 		if err := validation.Length(path+"PortfolioId", utf8.RuneCountInString((*v.PortfolioId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"PortfolioId", (*v.PortfolioId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"PortfolioId", (*v.PortfolioId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -1095,7 +1095,7 @@ func (v *ListConstraintsForPortfolioInput) Validate(path string) error {
 		if err := validation.Length(path+"ProductId", utf8.RuneCountInString((*v.ProductId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -1108,7 +1108,7 @@ func (v *ListConstraintsForPortfolioInput) Validate(path string) error {
 		if err := validation.Length(path+"PageToken", utf8.RuneCountInString((*v.PageToken)), new(int64(0)), new(int64(2024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"PageToken", (*v.PageToken), pattern2, "", "^[\\u0009\\u000a\\u000d\\u0020-\\uD7FF\\uE000-\\uFFFD]*$"); err != nil {
+		if err := validation.Pattern(path+"PageToken", (*v.PageToken), pattern2, nil, "^[\\u0009\\u000a\\u000d\\u0020-\\uD7FF\\uE000-\\uFFFD]*$"); err != nil {
 			return err
 		}
 	}
@@ -1128,7 +1128,7 @@ func (v *ListPortfoliosForProductInput) Validate(path string) error {
 		if err := validation.Length(path+"ProductId", utf8.RuneCountInString((*v.ProductId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -1136,7 +1136,7 @@ func (v *ListPortfoliosForProductInput) Validate(path string) error {
 		if err := validation.Length(path+"PageToken", utf8.RuneCountInString((*v.PageToken)), new(int64(0)), new(int64(2024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"PageToken", (*v.PageToken), pattern2, "", "^[\\u0009\\u000a\\u000d\\u0020-\\uD7FF\\uE000-\\uFFFD]*$"); err != nil {
+		if err := validation.Pattern(path+"PageToken", (*v.PageToken), pattern2, nil, "^[\\u0009\\u000a\\u000d\\u0020-\\uD7FF\\uE000-\\uFFFD]*$"); err != nil {
 			return err
 		}
 	}
@@ -1158,7 +1158,7 @@ func (v *ListPortfoliosInput) Validate(path string) error {
 		if err := validation.Length(path+"PageToken", utf8.RuneCountInString((*v.PageToken)), new(int64(0)), new(int64(2024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"PageToken", (*v.PageToken), pattern2, "", "^[\\u0009\\u000a\\u000d\\u0020-\\uD7FF\\uE000-\\uFFFD]*$"); err != nil {
+		if err := validation.Pattern(path+"PageToken", (*v.PageToken), pattern2, nil, "^[\\u0009\\u000a\\u000d\\u0020-\\uD7FF\\uE000-\\uFFFD]*$"); err != nil {
 			return err
 		}
 	}
@@ -1183,7 +1183,7 @@ func (v *ListPrincipalsForPortfolioInput) Validate(path string) error {
 		if err := validation.Length(path+"PortfolioId", utf8.RuneCountInString((*v.PortfolioId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"PortfolioId", (*v.PortfolioId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"PortfolioId", (*v.PortfolioId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -1196,7 +1196,7 @@ func (v *ListPrincipalsForPortfolioInput) Validate(path string) error {
 		if err := validation.Length(path+"PageToken", utf8.RuneCountInString((*v.PageToken)), new(int64(0)), new(int64(2024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"PageToken", (*v.PageToken), pattern2, "", "^[\\u0009\\u000a\\u000d\\u0020-\\uD7FF\\uE000-\\uFFFD]*$"); err != nil {
+		if err := validation.Pattern(path+"PageToken", (*v.PageToken), pattern2, nil, "^[\\u0009\\u000a\\u000d\\u0020-\\uD7FF\\uE000-\\uFFFD]*$"); err != nil {
 			return err
 		}
 	}
@@ -1216,7 +1216,7 @@ func (v *ListProvisioningArtifactsInput) Validate(path string) error {
 		if err := validation.Length(path+"ProductId", utf8.RuneCountInString((*v.ProductId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -1257,7 +1257,7 @@ func (v *SearchProductsAsAdminInput) Validate(path string) error {
 		if err := validation.Length(path+"PortfolioId", utf8.RuneCountInString((*v.PortfolioId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"PortfolioId", (*v.PortfolioId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"PortfolioId", (*v.PortfolioId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -1272,7 +1272,7 @@ func (v *SearchProductsAsAdminInput) Validate(path string) error {
 		if err := validation.Length(path+"PageToken", utf8.RuneCountInString((*v.PageToken)), new(int64(0)), new(int64(2024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"PageToken", (*v.PageToken), pattern2, "", "^[\\u0009\\u000a\\u000d\\u0020-\\uD7FF\\uE000-\\uFFFD]*$"); err != nil {
+		if err := validation.Pattern(path+"PageToken", (*v.PageToken), pattern2, nil, "^[\\u0009\\u000a\\u000d\\u0020-\\uD7FF\\uE000-\\uFFFD]*$"); err != nil {
 			return err
 		}
 	}
@@ -1306,7 +1306,7 @@ func (v *SearchProductsInput) Validate(path string) error {
 		if err := validation.Length(path+"PageToken", utf8.RuneCountInString((*v.PageToken)), new(int64(0)), new(int64(2024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"PageToken", (*v.PageToken), pattern2, "", "^[\\u0009\\u000a\\u000d\\u0020-\\uD7FF\\uE000-\\uFFFD]*$"); err != nil {
+		if err := validation.Pattern(path+"PageToken", (*v.PageToken), pattern2, nil, "^[\\u0009\\u000a\\u000d\\u0020-\\uD7FF\\uE000-\\uFFFD]*$"); err != nil {
 			return err
 		}
 	}
@@ -1321,7 +1321,7 @@ func (v *Tag) Validate(path string) error {
 		if err := validation.Length(path+"Key", utf8.RuneCountInString((*v.Key)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Key", (*v.Key), pattern3, "", "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
+		if err := validation.Pattern(path+"Key", (*v.Key), pattern3, nil, "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
 			return err
 		}
 	}
@@ -1332,7 +1332,7 @@ func (v *Tag) Validate(path string) error {
 		if err := validation.Length(path+"Value", utf8.RuneCountInString((*v.Value)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Value", (*v.Value), pattern3, "", "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
+		if err := validation.Pattern(path+"Value", (*v.Value), pattern3, nil, "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
 			return err
 		}
 	}
@@ -1352,7 +1352,7 @@ func (v *UpdateConstraintInput) Validate(path string) error {
 		if err := validation.Length(path+"Id", utf8.RuneCountInString((*v.Id)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -1377,7 +1377,7 @@ func (v *UpdatePortfolioInput) Validate(path string) error {
 		if err := validation.Length(path+"Id", utf8.RuneCountInString((*v.Id)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -1411,7 +1411,7 @@ func (v *UpdatePortfolioInput) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"RemoveTags", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"RemoveTags", i0), e0, pattern3, "", "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"RemoveTags", i0), e0, pattern3, nil, "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
 				return err
 			}
 		}
@@ -1432,7 +1432,7 @@ func (v *UpdateProductInput) Validate(path string) error {
 		if err := validation.Length(path+"Id", utf8.RuneCountInString((*v.Id)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -1486,7 +1486,7 @@ func (v *UpdateProductInput) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"RemoveTags", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"RemoveTags", i0), e0, pattern3, "", "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"RemoveTags", i0), e0, pattern3, nil, "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
 				return err
 			}
 		}
@@ -1507,7 +1507,7 @@ func (v *UpdateProvisioningArtifactInput) Validate(path string) error {
 		if err := validation.Length(path+"ProductId", utf8.RuneCountInString((*v.ProductId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"ProductId", (*v.ProductId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}
@@ -1518,7 +1518,7 @@ func (v *UpdateProvisioningArtifactInput) Validate(path string) error {
 		if err := validation.Length(path+"ProvisioningArtifactId", utf8.RuneCountInString((*v.ProvisioningArtifactId)), new(int64(1)), new(int64(100))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ProvisioningArtifactId", (*v.ProvisioningArtifactId), pattern0, "", "^[a-zA-Z0-9_\\-]*$"); err != nil {
+		if err := validation.Pattern(path+"ProvisioningArtifactId", (*v.ProvisioningArtifactId), pattern0, nil, "^[a-zA-Z0-9_\\-]*$"); err != nil {
 			return err
 		}
 	}

@@ -166,12 +166,12 @@ func (v *validators) value(expr, path string, ref reference, depth int) (string,
 			}
 		}
 
-		name, excluded, err := v.pattern(source, l.Max)
+		name, reject, err := v.pattern(source, l.Max)
 		if err != nil {
 			return "", err
 		}
 
-		check("Pattern(%s, %s, %s, %q, %q)", path, expr, name, excluded, source)
+		check("Pattern(%s, %s, %s, %s, %q)", path, expr, name, reject, source)
 	}
 
 	values, err := enumValues(&s, traits)
@@ -230,13 +230,24 @@ func bound(kind string, n *json.Number) string {
 	return fmt.Sprintf("new(%s(%s))", kind, n.String())
 }
 
-// re2Patterns maps model patterns that use lookarounds elsewhere than a leading literal prefix to equivalent RE2
-// expressions. Each must match exactly the same strings.
-var re2Patterns = map[string]string{
+// re2Pattern is an RE2 rendering of a model pattern that uses lookarounds elsewhere than a leading literal prefix:
+// a value satisfies the model pattern exactly when it matches match and, if reject is set, does not match reject.
+type re2Pattern struct {
+	match, reject string
+}
+
+// re2Patterns maps such model patterns to their RE2 renderings.
+var re2Patterns = map[string]re2Pattern{
 	// A DNS name: labels of 1 to 63 letters, digits and hyphens that neither start with a hyphen nor end with one,
 	// the last label at least two characters, and an optional trailing dot (Amplify DomainName).
-	`^(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])(\.)?$`: `^(([A-Za-z0-9]` +
-		`([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)\.)+([A-Za-z0-9][A-Za-z0-9-]{0,61}[A-Za-z0-9])(\.)?$`,
+	`^(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])(\.)?$`: {match: `^(([A-Za-z0-9]` +
+		`([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)\.)+([A-Za-z0-9][A-Za-z0-9-]{0,61}[A-Za-z0-9])(\.)?$`},
+	// An S3 bucket name of 3 to 63 lowercase letters, digits, dots and hyphens that starts and ends with a letter or
+	// digit, does not start like an IPv4 address, and has no "..", ".-" or "-." (Shield LogBucket).
+	`^([a-z]|(\d(?!\d{0,2}\.\d{1,3}\.\d{1,3}\.\d{1,3})))([a-z\d]|(\.(?!(\.|-)))|(-(?!\.))){1,61}[a-z\d]$`: {
+		match:  `^[a-z\d][a-z\d.-]{1,61}[a-z\d]$`,
+		reject: `^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|\.\.|\.-|-\.`,
+	},
 }
 
 var (
@@ -245,11 +256,13 @@ var (
 )
 
 // pattern declares a compiled model pattern, rewriting the ECMAScript syntax Go's regexp lacks: \uXXXX becomes
-// \x{XXXX}, a leading literal negative lookahead becomes an excluded prefix, and re2Patterns supplies the rest.
-func (v *validators) pattern(source string, maxLength *json.Number) (name, excluded string, err error) {
+// \x{XXXX}, a leading literal negative lookahead becomes a rejected prefix, and re2Patterns supplies the rest. It
+// returns the variables of the expression a value must match and of the one it must not ("nil" when none).
+func (v *validators) pattern(source string, maxLength *json.Number) (name, reject string, err error) {
 	expr := unicodeEscape.ReplaceAllString(source, `\x{$1}`)
-	if equivalent, ok := re2Patterns[source]; ok {
-		expr = equivalent
+	equivalent, ok := re2Patterns[source]
+	if ok {
+		expr = equivalent.match
 	}
 
 	// Go's regexp caps counted repetitions at 1000. A larger upper bound can be dropped when the value's length
@@ -259,22 +272,40 @@ func (v *validators) pattern(source string, maxLength *json.Number) (name, exclu
 		return "", "", fmt.Errorf("pattern %q: %w", source, err)
 	}
 
+	rejected := equivalent.reject
 	if m := lookahead.FindStringSubmatch(expr); m != nil {
-		excluded, expr = m[1], "^"+expr[len(m[0]):]
+		rejected, expr = "^"+regexp.QuoteMeta(m[1]), "^"+expr[len(m[0]):]
 	}
 
-	if _, compileErr := regexp.Compile(expr); compileErr != nil {
-		return "", "", fmt.Errorf("pattern %q is not supported by Go's regexp: %w", source, compileErr)
+	if name, err = v.compile(expr); err != nil {
+		return "", "", fmt.Errorf("pattern %q is not supported by Go's regexp: %w", source, err)
 	}
 
-	if name = v.patterns[expr]; name == "" {
+	reject = "nil"
+	if rejected != "" {
+		if reject, err = v.compile(rejected); err != nil {
+			return "", "", fmt.Errorf("pattern %q: %w", source, err)
+		}
+	}
+
+	return name, reject, nil
+}
+
+// compile declares a variable holding expr compiled, once per distinct expression, and returns its name.
+func (v *validators) compile(expr string) (string, error) {
+	if _, err := regexp.Compile(expr); err != nil {
+		return "", err
+	}
+
+	name := v.patterns[expr]
+	if name == "" {
 		name = fmt.Sprintf("pattern%d", len(v.patterns))
 		v.patterns[expr] = name
 		v.g.imports["regexp"] = true
 		fmt.Fprintf(&v.vars, "var %s = regexp.MustCompile(%q)\n\n", name, expr)
 	}
 
-	return name, excluded, nil
+	return name, nil
 }
 
 var largeRepeat = regexp.MustCompile(`\{(\d+),(\d+)\}`)

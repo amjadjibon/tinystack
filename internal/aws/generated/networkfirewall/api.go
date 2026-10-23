@@ -739,7 +739,7 @@ func (v *Address) Validate(path string) error {
 		if err := validation.Length(path+"AddressDefinition", utf8.RuneCountInString((*v.AddressDefinition)), new(int64(1)), new(int64(255))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"AddressDefinition", (*v.AddressDefinition), pattern0, "", "^([a-fA-F\\d:\\.]+($|/\\d{1,3}))$"); err != nil {
+		if err := validation.Pattern(path+"AddressDefinition", (*v.AddressDefinition), pattern0, nil, "^([a-fA-F\\d:\\.]+($|/\\d{1,3}))$"); err != nil {
 			return err
 		}
 	}
@@ -751,7 +751,7 @@ func (v *AssociateFirewallPolicyRequest) Validate(path string) error {
 		if err := validation.Length(path+"UpdateToken", utf8.RuneCountInString((*v.UpdateToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, "", "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
+		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, nil, "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
 			return err
 		}
 	}
@@ -759,7 +759,7 @@ func (v *AssociateFirewallPolicyRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallArn", utf8.RuneCountInString((*v.FirewallArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -767,7 +767,7 @@ func (v *AssociateFirewallPolicyRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallName", utf8.RuneCountInString((*v.FirewallName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -778,7 +778,7 @@ func (v *AssociateFirewallPolicyRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallPolicyArn", utf8.RuneCountInString((*v.FirewallPolicyArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallPolicyArn", (*v.FirewallPolicyArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"FirewallPolicyArn", (*v.FirewallPolicyArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -790,7 +790,7 @@ func (v *AssociateSubnetsRequest) Validate(path string) error {
 		if err := validation.Length(path+"UpdateToken", utf8.RuneCountInString((*v.UpdateToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, "", "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
+		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, nil, "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
 			return err
 		}
 	}
@@ -798,7 +798,7 @@ func (v *AssociateSubnetsRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallArn", utf8.RuneCountInString((*v.FirewallArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -806,7 +806,7 @@ func (v *AssociateSubnetsRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallName", utf8.RuneCountInString((*v.FirewallName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -831,7 +831,7 @@ func (v *CreateFirewallPolicyRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallPolicyName", utf8.RuneCountInString((*v.FirewallPolicyName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallPolicyName", (*v.FirewallPolicyName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"FirewallPolicyName", (*v.FirewallPolicyName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -847,7 +847,7 @@ func (v *CreateFirewallPolicyRequest) Validate(path string) error {
 		if err := validation.Length(path+"Description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(512))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Description", (*v.Description), pattern4, "", "^.*$"); err != nil {
+		if err := validation.Pattern(path+"Description", (*v.Description), pattern4, nil, "^.*$"); err != nil {
 			return err
 		}
 	}
@@ -877,7 +877,7 @@ func (v *CreateFirewallRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallName", utf8.RuneCountInString((*v.FirewallName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -888,7 +888,7 @@ func (v *CreateFirewallRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallPolicyArn", utf8.RuneCountInString((*v.FirewallPolicyArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallPolicyArn", (*v.FirewallPolicyArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"FirewallPolicyArn", (*v.FirewallPolicyArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -896,7 +896,7 @@ func (v *CreateFirewallRequest) Validate(path string) error {
 		if err := validation.Length(path+"VpcId", utf8.RuneCountInString((*v.VpcId)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"VpcId", (*v.VpcId), pattern5, "", "^vpc-[0-9a-f]+$"); err != nil {
+		if err := validation.Pattern(path+"VpcId", (*v.VpcId), pattern5, nil, "^vpc-[0-9a-f]+$"); err != nil {
 			return err
 		}
 	}
@@ -911,7 +911,7 @@ func (v *CreateFirewallRequest) Validate(path string) error {
 		if err := validation.Length(path+"Description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(512))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Description", (*v.Description), pattern4, "", "^.*$"); err != nil {
+		if err := validation.Pattern(path+"Description", (*v.Description), pattern4, nil, "^.*$"); err != nil {
 			return err
 		}
 	}
@@ -941,7 +941,7 @@ func (v *CreateRuleGroupRequest) Validate(path string) error {
 		if err := validation.Length(path+"RuleGroupName", utf8.RuneCountInString((*v.RuleGroupName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"RuleGroupName", (*v.RuleGroupName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"RuleGroupName", (*v.RuleGroupName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -967,7 +967,7 @@ func (v *CreateRuleGroupRequest) Validate(path string) error {
 		if err := validation.Length(path+"Description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(512))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Description", (*v.Description), pattern4, "", "^.*$"); err != nil {
+		if err := validation.Pattern(path+"Description", (*v.Description), pattern4, nil, "^.*$"); err != nil {
 			return err
 		}
 	}
@@ -1000,7 +1000,7 @@ func (v *CustomAction) Validate(path string) error {
 		if err := validation.Length(path+"ActionName", utf8.RuneCountInString((*v.ActionName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ActionName", (*v.ActionName), pattern6, "", "^[a-zA-Z0-9]+$"); err != nil {
+		if err := validation.Pattern(path+"ActionName", (*v.ActionName), pattern6, nil, "^[a-zA-Z0-9]+$"); err != nil {
 			return err
 		}
 	}
@@ -1020,7 +1020,7 @@ func (v *DeleteFirewallPolicyRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallPolicyName", utf8.RuneCountInString((*v.FirewallPolicyName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallPolicyName", (*v.FirewallPolicyName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"FirewallPolicyName", (*v.FirewallPolicyName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -1028,7 +1028,7 @@ func (v *DeleteFirewallPolicyRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallPolicyArn", utf8.RuneCountInString((*v.FirewallPolicyArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallPolicyArn", (*v.FirewallPolicyArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"FirewallPolicyArn", (*v.FirewallPolicyArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -1040,7 +1040,7 @@ func (v *DeleteFirewallRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallName", utf8.RuneCountInString((*v.FirewallName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -1048,7 +1048,7 @@ func (v *DeleteFirewallRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallArn", utf8.RuneCountInString((*v.FirewallArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -1063,7 +1063,7 @@ func (v *DeleteResourcePolicyRequest) Validate(path string) error {
 		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -1075,7 +1075,7 @@ func (v *DeleteRuleGroupRequest) Validate(path string) error {
 		if err := validation.Length(path+"RuleGroupName", utf8.RuneCountInString((*v.RuleGroupName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"RuleGroupName", (*v.RuleGroupName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"RuleGroupName", (*v.RuleGroupName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -1083,7 +1083,7 @@ func (v *DeleteRuleGroupRequest) Validate(path string) error {
 		if err := validation.Length(path+"RuleGroupArn", utf8.RuneCountInString((*v.RuleGroupArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"RuleGroupArn", (*v.RuleGroupArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"RuleGroupArn", (*v.RuleGroupArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -1100,7 +1100,7 @@ func (v *DescribeFirewallPolicyRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallPolicyName", utf8.RuneCountInString((*v.FirewallPolicyName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallPolicyName", (*v.FirewallPolicyName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"FirewallPolicyName", (*v.FirewallPolicyName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -1108,7 +1108,7 @@ func (v *DescribeFirewallPolicyRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallPolicyArn", utf8.RuneCountInString((*v.FirewallPolicyArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallPolicyArn", (*v.FirewallPolicyArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"FirewallPolicyArn", (*v.FirewallPolicyArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -1120,7 +1120,7 @@ func (v *DescribeFirewallRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallName", utf8.RuneCountInString((*v.FirewallName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -1128,7 +1128,7 @@ func (v *DescribeFirewallRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallArn", utf8.RuneCountInString((*v.FirewallArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -1140,7 +1140,7 @@ func (v *DescribeLoggingConfigurationRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallArn", utf8.RuneCountInString((*v.FirewallArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -1148,7 +1148,7 @@ func (v *DescribeLoggingConfigurationRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallName", utf8.RuneCountInString((*v.FirewallName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -1163,7 +1163,7 @@ func (v *DescribeResourcePolicyRequest) Validate(path string) error {
 		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -1175,7 +1175,7 @@ func (v *DescribeRuleGroupMetadataRequest) Validate(path string) error {
 		if err := validation.Length(path+"RuleGroupName", utf8.RuneCountInString((*v.RuleGroupName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"RuleGroupName", (*v.RuleGroupName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"RuleGroupName", (*v.RuleGroupName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -1183,7 +1183,7 @@ func (v *DescribeRuleGroupMetadataRequest) Validate(path string) error {
 		if err := validation.Length(path+"RuleGroupArn", utf8.RuneCountInString((*v.RuleGroupArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"RuleGroupArn", (*v.RuleGroupArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"RuleGroupArn", (*v.RuleGroupArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -1200,7 +1200,7 @@ func (v *DescribeRuleGroupRequest) Validate(path string) error {
 		if err := validation.Length(path+"RuleGroupName", utf8.RuneCountInString((*v.RuleGroupName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"RuleGroupName", (*v.RuleGroupName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"RuleGroupName", (*v.RuleGroupName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -1208,7 +1208,7 @@ func (v *DescribeRuleGroupRequest) Validate(path string) error {
 		if err := validation.Length(path+"RuleGroupArn", utf8.RuneCountInString((*v.RuleGroupArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"RuleGroupArn", (*v.RuleGroupArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"RuleGroupArn", (*v.RuleGroupArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -1228,7 +1228,7 @@ func (v *Dimension) Validate(path string) error {
 		if err := validation.Length(path+"Value", utf8.RuneCountInString((*v.Value)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Value", (*v.Value), pattern7, "", "^[a-zA-Z0-9-_ ]+$"); err != nil {
+		if err := validation.Pattern(path+"Value", (*v.Value), pattern7, nil, "^[a-zA-Z0-9-_ ]+$"); err != nil {
 			return err
 		}
 	}
@@ -1240,7 +1240,7 @@ func (v *DisassociateSubnetsRequest) Validate(path string) error {
 		if err := validation.Length(path+"UpdateToken", utf8.RuneCountInString((*v.UpdateToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, "", "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
+		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, nil, "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
 			return err
 		}
 	}
@@ -1248,7 +1248,7 @@ func (v *DisassociateSubnetsRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallArn", utf8.RuneCountInString((*v.FirewallArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -1256,7 +1256,7 @@ func (v *DisassociateSubnetsRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallName", utf8.RuneCountInString((*v.FirewallName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -1268,7 +1268,7 @@ func (v *DisassociateSubnetsRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"SubnetIds", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"SubnetIds", i0), e0, pattern8, "", "^subnet-[0-9a-f]+$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"SubnetIds", i0), e0, pattern8, nil, "^subnet-[0-9a-f]+$"); err != nil {
 				return err
 			}
 		}
@@ -1281,7 +1281,7 @@ func (v *EncryptionConfiguration) Validate(path string) error {
 		if err := validation.Length(path+"KeyId", utf8.RuneCountInString((*v.KeyId)), new(int64(1)), new(int64(2048))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"KeyId", (*v.KeyId), pattern9, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"KeyId", (*v.KeyId), pattern9, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -1352,7 +1352,7 @@ func (v *Header) Validate(path string) error {
 		if err := validation.Length(path+"Source", utf8.RuneCountInString((*v.Source)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Source", (*v.Source), pattern4, "", "^.*$"); err != nil {
+		if err := validation.Pattern(path+"Source", (*v.Source), pattern4, nil, "^.*$"); err != nil {
 			return err
 		}
 	}
@@ -1363,7 +1363,7 @@ func (v *Header) Validate(path string) error {
 		if err := validation.Length(path+"SourcePort", utf8.RuneCountInString((*v.SourcePort)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"SourcePort", (*v.SourcePort), pattern4, "", "^.*$"); err != nil {
+		if err := validation.Pattern(path+"SourcePort", (*v.SourcePort), pattern4, nil, "^.*$"); err != nil {
 			return err
 		}
 	}
@@ -1382,7 +1382,7 @@ func (v *Header) Validate(path string) error {
 		if err := validation.Length(path+"Destination", utf8.RuneCountInString((*v.Destination)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Destination", (*v.Destination), pattern4, "", "^.*$"); err != nil {
+		if err := validation.Pattern(path+"Destination", (*v.Destination), pattern4, nil, "^.*$"); err != nil {
 			return err
 		}
 	}
@@ -1393,7 +1393,7 @@ func (v *Header) Validate(path string) error {
 		if err := validation.Length(path+"DestinationPort", utf8.RuneCountInString((*v.DestinationPort)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"DestinationPort", (*v.DestinationPort), pattern4, "", "^.*$"); err != nil {
+		if err := validation.Pattern(path+"DestinationPort", (*v.DestinationPort), pattern4, nil, "^.*$"); err != nil {
 			return err
 		}
 	}
@@ -1409,7 +1409,7 @@ func (v *IPSet) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"Definition", i0), utf8.RuneCountInString(e0), new(int64(1)), nil); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"Definition", i0), e0, pattern4, "", "^.*$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"Definition", i0), e0, pattern4, nil, "^.*$"); err != nil {
 				return err
 			}
 		}
@@ -1422,7 +1422,7 @@ func (v *ListFirewallPoliciesRequest) Validate(path string) error {
 		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(4096))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern10, "", "^[0-9A-Za-z:\\/+=]+$"); err != nil {
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern10, nil, "^[0-9A-Za-z:\\/+=]+$"); err != nil {
 			return err
 		}
 	}
@@ -1439,7 +1439,7 @@ func (v *ListFirewallsRequest) Validate(path string) error {
 		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(4096))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern10, "", "^[0-9A-Za-z:\\/+=]+$"); err != nil {
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern10, nil, "^[0-9A-Za-z:\\/+=]+$"); err != nil {
 			return err
 		}
 	}
@@ -1448,7 +1448,7 @@ func (v *ListFirewallsRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"VpcIds", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"VpcIds", i0), e0, pattern5, "", "^vpc-[0-9a-f]+$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"VpcIds", i0), e0, pattern5, nil, "^vpc-[0-9a-f]+$"); err != nil {
 				return err
 			}
 		}
@@ -1466,7 +1466,7 @@ func (v *ListRuleGroupsRequest) Validate(path string) error {
 		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(4096))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern10, "", "^[0-9A-Za-z:\\/+=]+$"); err != nil {
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern10, nil, "^[0-9A-Za-z:\\/+=]+$"); err != nil {
 			return err
 		}
 	}
@@ -1493,7 +1493,7 @@ func (v *ListTagsForResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(4096))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern10, "", "^[0-9A-Za-z:\\/+=]+$"); err != nil {
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern10, nil, "^[0-9A-Za-z:\\/+=]+$"); err != nil {
 			return err
 		}
 	}
@@ -1509,7 +1509,7 @@ func (v *ListTagsForResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -1532,7 +1532,7 @@ func (v *LogDestinationConfig) Validate(path string) error {
 		if err := validation.Length(path+"LogDestinationType", utf8.RuneCountInString((*v.LogDestinationType)), new(int64(2)), new(int64(30))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"LogDestinationType", (*v.LogDestinationType), pattern11, "", "^[0-9A-Za-z]+$"); err != nil {
+		if err := validation.Pattern(path+"LogDestinationType", (*v.LogDestinationType), pattern11, nil, "^[0-9A-Za-z]+$"); err != nil {
 			return err
 		}
 		if err := validation.Enum(path+"LogDestinationType", (*v.LogDestinationType), enum6); err != nil {
@@ -1547,13 +1547,13 @@ func (v *LogDestinationConfig) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"LogDestination", k0), utf8.RuneCountInString(k0), new(int64(3)), new(int64(50))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"LogDestination", k0), k0, pattern12, "", "^[0-9A-Za-z.\\-_@\\/]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"LogDestination", k0), k0, pattern12, nil, "^[0-9A-Za-z.\\-_@\\/]+$"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"LogDestination", k0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(1024))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"LogDestination", k0), e0, pattern13, "", "^[\\s\\S]*$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"LogDestination", k0), e0, pattern13, nil, "^[\\s\\S]*$"); err != nil {
 				return err
 			}
 		}
@@ -1641,7 +1641,7 @@ func (v *PortSet) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"Definition", i0), utf8.RuneCountInString(e0), new(int64(1)), nil); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"Definition", i0), e0, pattern4, "", "^.*$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"Definition", i0), e0, pattern4, nil, "^.*$"); err != nil {
 				return err
 			}
 		}
@@ -1674,7 +1674,7 @@ func (v *PutResourcePolicyRequest) Validate(path string) error {
 		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -1685,7 +1685,7 @@ func (v *PutResourcePolicyRequest) Validate(path string) error {
 		if err := validation.Length(path+"Policy", utf8.RuneCountInString((*v.Policy)), new(int64(1)), new(int64(395000))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Policy", (*v.Policy), pattern9, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Policy", (*v.Policy), pattern9, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -1737,7 +1737,7 @@ func (v *RuleOption) Validate(path string) error {
 		if err := validation.Length(path+"Keyword", utf8.RuneCountInString((*v.Keyword)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Keyword", (*v.Keyword), pattern14, "", ".*"); err != nil {
+		if err := validation.Pattern(path+"Keyword", (*v.Keyword), pattern14, nil, ".*"); err != nil {
 			return err
 		}
 	}
@@ -1746,7 +1746,7 @@ func (v *RuleOption) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"Settings", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(8192))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"Settings", i0), e0, pattern14, "", ".*"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"Settings", i0), e0, pattern14, nil, ".*"); err != nil {
 				return err
 			}
 		}
@@ -1760,7 +1760,7 @@ func (v *RuleVariables) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"IPSets", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(32))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"IPSets", k0), k0, pattern15, "", "^[A-Za-z][A-Za-z0-9_]*$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"IPSets", k0), k0, pattern15, nil, "^[A-Za-z][A-Za-z0-9_]*$"); err != nil {
 				return err
 			}
 			if err := e0.Validate(validation.Key(path+"IPSets", k0) + "."); err != nil {
@@ -1773,7 +1773,7 @@ func (v *RuleVariables) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"PortSets", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(32))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"PortSets", k0), k0, pattern15, "", "^[A-Za-z][A-Za-z0-9_]*$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"PortSets", k0), k0, pattern15, nil, "^[A-Za-z][A-Za-z0-9_]*$"); err != nil {
 				return err
 			}
 			if err := e0.Validate(validation.Key(path+"PortSets", k0) + "."); err != nil {
@@ -1901,7 +1901,7 @@ func (v *StatefulRuleGroupReference) Validate(path string) error {
 		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -1955,7 +1955,7 @@ func (v *StatelessRuleGroupReference) Validate(path string) error {
 		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -2032,7 +2032,7 @@ func (v *Tag) Validate(path string) error {
 		if err := validation.Length(path+"Key", utf8.RuneCountInString((*v.Key)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Key", (*v.Key), pattern4, "", "^.*$"); err != nil {
+		if err := validation.Pattern(path+"Key", (*v.Key), pattern4, nil, "^.*$"); err != nil {
 			return err
 		}
 	}
@@ -2043,7 +2043,7 @@ func (v *Tag) Validate(path string) error {
 		if err := validation.Length(path+"Value", utf8.RuneCountInString((*v.Value)), new(int64(0)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Value", (*v.Value), pattern4, "", "^.*$"); err != nil {
+		if err := validation.Pattern(path+"Value", (*v.Value), pattern4, nil, "^.*$"); err != nil {
 			return err
 		}
 	}
@@ -2058,7 +2058,7 @@ func (v *TagResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -2086,7 +2086,7 @@ func (v *UntagResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -2101,7 +2101,7 @@ func (v *UntagResourceRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"TagKeys", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"TagKeys", i0), e0, pattern4, "", "^.*$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"TagKeys", i0), e0, pattern4, nil, "^.*$"); err != nil {
 				return err
 			}
 		}
@@ -2114,7 +2114,7 @@ func (v *UpdateFirewallDeleteProtectionRequest) Validate(path string) error {
 		if err := validation.Length(path+"UpdateToken", utf8.RuneCountInString((*v.UpdateToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, "", "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
+		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, nil, "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
 			return err
 		}
 	}
@@ -2122,7 +2122,7 @@ func (v *UpdateFirewallDeleteProtectionRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallArn", utf8.RuneCountInString((*v.FirewallArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -2130,7 +2130,7 @@ func (v *UpdateFirewallDeleteProtectionRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallName", utf8.RuneCountInString((*v.FirewallName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -2142,7 +2142,7 @@ func (v *UpdateFirewallDescriptionRequest) Validate(path string) error {
 		if err := validation.Length(path+"UpdateToken", utf8.RuneCountInString((*v.UpdateToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, "", "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
+		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, nil, "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
 			return err
 		}
 	}
@@ -2150,7 +2150,7 @@ func (v *UpdateFirewallDescriptionRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallArn", utf8.RuneCountInString((*v.FirewallArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -2158,7 +2158,7 @@ func (v *UpdateFirewallDescriptionRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallName", utf8.RuneCountInString((*v.FirewallName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -2166,7 +2166,7 @@ func (v *UpdateFirewallDescriptionRequest) Validate(path string) error {
 		if err := validation.Length(path+"Description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(512))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Description", (*v.Description), pattern4, "", "^.*$"); err != nil {
+		if err := validation.Pattern(path+"Description", (*v.Description), pattern4, nil, "^.*$"); err != nil {
 			return err
 		}
 	}
@@ -2178,7 +2178,7 @@ func (v *UpdateFirewallEncryptionConfigurationRequest) Validate(path string) err
 		if err := validation.Length(path+"UpdateToken", utf8.RuneCountInString((*v.UpdateToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, "", "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
+		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, nil, "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
 			return err
 		}
 	}
@@ -2186,7 +2186,7 @@ func (v *UpdateFirewallEncryptionConfigurationRequest) Validate(path string) err
 		if err := validation.Length(path+"FirewallArn", utf8.RuneCountInString((*v.FirewallArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -2194,7 +2194,7 @@ func (v *UpdateFirewallEncryptionConfigurationRequest) Validate(path string) err
 		if err := validation.Length(path+"FirewallName", utf8.RuneCountInString((*v.FirewallName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -2211,7 +2211,7 @@ func (v *UpdateFirewallPolicyChangeProtectionRequest) Validate(path string) erro
 		if err := validation.Length(path+"UpdateToken", utf8.RuneCountInString((*v.UpdateToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, "", "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
+		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, nil, "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
 			return err
 		}
 	}
@@ -2219,7 +2219,7 @@ func (v *UpdateFirewallPolicyChangeProtectionRequest) Validate(path string) erro
 		if err := validation.Length(path+"FirewallArn", utf8.RuneCountInString((*v.FirewallArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -2227,7 +2227,7 @@ func (v *UpdateFirewallPolicyChangeProtectionRequest) Validate(path string) erro
 		if err := validation.Length(path+"FirewallName", utf8.RuneCountInString((*v.FirewallName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -2242,7 +2242,7 @@ func (v *UpdateFirewallPolicyRequest) Validate(path string) error {
 		if err := validation.Length(path+"UpdateToken", utf8.RuneCountInString((*v.UpdateToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, "", "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
+		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, nil, "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
 			return err
 		}
 	}
@@ -2250,7 +2250,7 @@ func (v *UpdateFirewallPolicyRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallPolicyArn", utf8.RuneCountInString((*v.FirewallPolicyArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallPolicyArn", (*v.FirewallPolicyArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"FirewallPolicyArn", (*v.FirewallPolicyArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -2258,7 +2258,7 @@ func (v *UpdateFirewallPolicyRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallPolicyName", utf8.RuneCountInString((*v.FirewallPolicyName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallPolicyName", (*v.FirewallPolicyName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"FirewallPolicyName", (*v.FirewallPolicyName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -2274,7 +2274,7 @@ func (v *UpdateFirewallPolicyRequest) Validate(path string) error {
 		if err := validation.Length(path+"Description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(512))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Description", (*v.Description), pattern4, "", "^.*$"); err != nil {
+		if err := validation.Pattern(path+"Description", (*v.Description), pattern4, nil, "^.*$"); err != nil {
 			return err
 		}
 	}
@@ -2291,7 +2291,7 @@ func (v *UpdateLoggingConfigurationRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallArn", utf8.RuneCountInString((*v.FirewallArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -2299,7 +2299,7 @@ func (v *UpdateLoggingConfigurationRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallName", utf8.RuneCountInString((*v.FirewallName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -2319,7 +2319,7 @@ func (v *UpdateRuleGroupRequest) Validate(path string) error {
 		if err := validation.Length(path+"UpdateToken", utf8.RuneCountInString((*v.UpdateToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, "", "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
+		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, nil, "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
 			return err
 		}
 	}
@@ -2327,7 +2327,7 @@ func (v *UpdateRuleGroupRequest) Validate(path string) error {
 		if err := validation.Length(path+"RuleGroupArn", utf8.RuneCountInString((*v.RuleGroupArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"RuleGroupArn", (*v.RuleGroupArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"RuleGroupArn", (*v.RuleGroupArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -2335,7 +2335,7 @@ func (v *UpdateRuleGroupRequest) Validate(path string) error {
 		if err := validation.Length(path+"RuleGroupName", utf8.RuneCountInString((*v.RuleGroupName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"RuleGroupName", (*v.RuleGroupName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"RuleGroupName", (*v.RuleGroupName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}
@@ -2358,7 +2358,7 @@ func (v *UpdateRuleGroupRequest) Validate(path string) error {
 		if err := validation.Length(path+"Description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(512))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Description", (*v.Description), pattern4, "", "^.*$"); err != nil {
+		if err := validation.Pattern(path+"Description", (*v.Description), pattern4, nil, "^.*$"); err != nil {
 			return err
 		}
 	}
@@ -2375,7 +2375,7 @@ func (v *UpdateSubnetChangeProtectionRequest) Validate(path string) error {
 		if err := validation.Length(path+"UpdateToken", utf8.RuneCountInString((*v.UpdateToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, "", "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
+		if err := validation.Pattern(path+"UpdateToken", (*v.UpdateToken), pattern1, nil, "^([0-9a-f]{8})-([0-9a-f]{4}-){3}([0-9a-f]{12})$"); err != nil {
 			return err
 		}
 	}
@@ -2383,7 +2383,7 @@ func (v *UpdateSubnetChangeProtectionRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallArn", utf8.RuneCountInString((*v.FirewallArn)), new(int64(1)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, "", "^arn:aws"); err != nil {
+		if err := validation.Pattern(path+"FirewallArn", (*v.FirewallArn), pattern2, nil, "^arn:aws"); err != nil {
 			return err
 		}
 	}
@@ -2391,7 +2391,7 @@ func (v *UpdateSubnetChangeProtectionRequest) Validate(path string) error {
 		if err := validation.Length(path+"FirewallName", utf8.RuneCountInString((*v.FirewallName)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, "", "^[a-zA-Z0-9-]+$"); err != nil {
+		if err := validation.Pattern(path+"FirewallName", (*v.FirewallName), pattern3, nil, "^[a-zA-Z0-9-]+$"); err != nil {
 			return err
 		}
 	}

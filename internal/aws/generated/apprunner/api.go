@@ -531,6 +531,8 @@ var enum7 = []string{"BRANCH"}
 
 var pattern12 = regexp.MustCompile("^.+$")
 
+var pattern13 = regexp.MustCompile("^aws:")
+
 var enum8 = []string{"AWSXRAY"}
 
 func (v *AuthenticationConfiguration) Validate(path string) error {
@@ -538,7 +540,7 @@ func (v *AuthenticationConfiguration) Validate(path string) error {
 		if err := validation.Length(path+"ConnectionArn", utf8.RuneCountInString((*v.ConnectionArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ConnectionArn", (*v.ConnectionArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"ConnectionArn", (*v.ConnectionArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -546,7 +548,7 @@ func (v *AuthenticationConfiguration) Validate(path string) error {
 		if err := validation.Length(path+"AccessRoleArn", utf8.RuneCountInString((*v.AccessRoleArn)), new(int64(29)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"AccessRoleArn", (*v.AccessRoleArn), pattern1, "", "^arn:(aws|aws-us-gov|aws-cn|aws-iso|aws-iso-b):iam::[0-9]{12}:(role|role\\/service-role)\\/[\\w+=,.@\\-/]{1,1000}$"); err != nil {
+		if err := validation.Pattern(path+"AccessRoleArn", (*v.AccessRoleArn), pattern1, nil, "^arn:(aws|aws-us-gov|aws-cn|aws-iso|aws-iso-b):iam::[0-9]{12}:(role|role\\/service-role)\\/[\\w+=,.@\\-/]{1,1000}$"); err != nil {
 			return err
 		}
 	}
@@ -580,12 +582,12 @@ func (v *CodeConfigurationValues) Validate(path string) error {
 		}
 	}
 	if v.BuildCommand != nil {
-		if err := validation.Pattern(path+"BuildCommand", (*v.BuildCommand), pattern2, "", "^[^\\x0a\\x0d]+$"); err != nil {
+		if err := validation.Pattern(path+"BuildCommand", (*v.BuildCommand), pattern2, nil, "^[^\\x0a\\x0d]+$"); err != nil {
 			return err
 		}
 	}
 	if v.StartCommand != nil {
-		if err := validation.Pattern(path+"StartCommand", (*v.StartCommand), pattern2, "", "^[^\\x0a\\x0d]+$"); err != nil {
+		if err := validation.Pattern(path+"StartCommand", (*v.StartCommand), pattern2, nil, "^[^\\x0a\\x0d]+$"); err != nil {
 			return err
 		}
 	}
@@ -593,7 +595,7 @@ func (v *CodeConfigurationValues) Validate(path string) error {
 		if err := validation.Length(path+"Port", utf8.RuneCountInString((*v.Port)), new(int64(0)), new(int64(51200))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Port", (*v.Port), pattern3, "", ".*"); err != nil {
+		if err := validation.Pattern(path+"Port", (*v.Port), pattern3, nil, ".*"); err != nil {
 			return err
 		}
 	}
@@ -602,13 +604,13 @@ func (v *CodeConfigurationValues) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"RuntimeEnvironmentVariables", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(51200))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"RuntimeEnvironmentVariables", k0), k0, pattern3, "", ".*"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"RuntimeEnvironmentVariables", k0), k0, pattern3, nil, ".*"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"RuntimeEnvironmentVariables", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(51200))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"RuntimeEnvironmentVariables", k0), e0, pattern3, "", ".*"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"RuntimeEnvironmentVariables", k0), e0, pattern3, nil, ".*"); err != nil {
 				return err
 			}
 		}
@@ -634,7 +636,7 @@ func (v *CodeRepository) Validate(path string) error {
 		if err := validation.Length(path+"RepositoryUrl", utf8.RuneCountInString((*v.RepositoryUrl)), new(int64(0)), new(int64(51200))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"RepositoryUrl", (*v.RepositoryUrl), pattern3, "", ".*"); err != nil {
+		if err := validation.Pattern(path+"RepositoryUrl", (*v.RepositoryUrl), pattern3, nil, ".*"); err != nil {
 			return err
 		}
 	}
@@ -655,7 +657,7 @@ func (v *CodeRepository) Validate(path string) error {
 		if err := validation.Length(path+"SourceDirectory", utf8.RuneCountInString((*v.SourceDirectory)), new(int64(1)), new(int64(4096))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"SourceDirectory", (*v.SourceDirectory), pattern4, "", "^[^\\x00]+$"); err != nil {
+		if err := validation.Pattern(path+"SourceDirectory", (*v.SourceDirectory), pattern4, nil, "^[^\\x00]+$"); err != nil {
 			return err
 		}
 	}
@@ -670,7 +672,7 @@ func (v *CreateAutoScalingConfigurationRequest) Validate(path string) error {
 		if err := validation.Length(path+"AutoScalingConfigurationName", utf8.RuneCountInString((*v.AutoScalingConfigurationName)), new(int64(4)), new(int64(32))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"AutoScalingConfigurationName", (*v.AutoScalingConfigurationName), pattern5, "", "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,31}$"); err != nil {
+		if err := validation.Pattern(path+"AutoScalingConfigurationName", (*v.AutoScalingConfigurationName), pattern5, nil, "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,31}$"); err != nil {
 			return err
 		}
 	}
@@ -707,7 +709,7 @@ func (v *CreateConnectionRequest) Validate(path string) error {
 		if err := validation.Length(path+"ConnectionName", utf8.RuneCountInString((*v.ConnectionName)), new(int64(4)), new(int64(32))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ConnectionName", (*v.ConnectionName), pattern5, "", "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,31}$"); err != nil {
+		if err := validation.Pattern(path+"ConnectionName", (*v.ConnectionName), pattern5, nil, "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,31}$"); err != nil {
 			return err
 		}
 	}
@@ -737,7 +739,7 @@ func (v *CreateObservabilityConfigurationRequest) Validate(path string) error {
 		if err := validation.Length(path+"ObservabilityConfigurationName", utf8.RuneCountInString((*v.ObservabilityConfigurationName)), new(int64(4)), new(int64(32))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ObservabilityConfigurationName", (*v.ObservabilityConfigurationName), pattern5, "", "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,31}$"); err != nil {
+		if err := validation.Pattern(path+"ObservabilityConfigurationName", (*v.ObservabilityConfigurationName), pattern5, nil, "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,31}$"); err != nil {
 			return err
 		}
 	}
@@ -764,7 +766,7 @@ func (v *CreateServiceRequest) Validate(path string) error {
 		if err := validation.Length(path+"ServiceName", utf8.RuneCountInString((*v.ServiceName)), new(int64(4)), new(int64(40))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ServiceName", (*v.ServiceName), pattern6, "", "^[A-Za-z0-9][A-Za-z0-9-_]{3,39}$"); err != nil {
+		if err := validation.Pattern(path+"ServiceName", (*v.ServiceName), pattern6, nil, "^[A-Za-z0-9][A-Za-z0-9-_]{3,39}$"); err != nil {
 			return err
 		}
 	}
@@ -802,7 +804,7 @@ func (v *CreateServiceRequest) Validate(path string) error {
 		if err := validation.Length(path+"AutoScalingConfigurationArn", utf8.RuneCountInString((*v.AutoScalingConfigurationArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"AutoScalingConfigurationArn", (*v.AutoScalingConfigurationArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"AutoScalingConfigurationArn", (*v.AutoScalingConfigurationArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -827,7 +829,7 @@ func (v *CreateVpcConnectorRequest) Validate(path string) error {
 		if err := validation.Length(path+"VpcConnectorName", utf8.RuneCountInString((*v.VpcConnectorName)), new(int64(4)), new(int64(40))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"VpcConnectorName", (*v.VpcConnectorName), pattern7, "", "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,39}$"); err != nil {
+		if err := validation.Pattern(path+"VpcConnectorName", (*v.VpcConnectorName), pattern7, nil, "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,39}$"); err != nil {
 			return err
 		}
 	}
@@ -839,7 +841,7 @@ func (v *CreateVpcConnectorRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"Subnets", i0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(51200))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"Subnets", i0), e0, pattern3, "", ".*"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"Subnets", i0), e0, pattern3, nil, ".*"); err != nil {
 				return err
 			}
 		}
@@ -849,7 +851,7 @@ func (v *CreateVpcConnectorRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"SecurityGroups", i0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(51200))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"SecurityGroups", i0), e0, pattern3, "", ".*"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"SecurityGroups", i0), e0, pattern3, nil, ".*"); err != nil {
 				return err
 			}
 		}
@@ -872,7 +874,7 @@ func (v *DeleteAutoScalingConfigurationRequest) Validate(path string) error {
 		if err := validation.Length(path+"AutoScalingConfigurationArn", utf8.RuneCountInString((*v.AutoScalingConfigurationArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"AutoScalingConfigurationArn", (*v.AutoScalingConfigurationArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"AutoScalingConfigurationArn", (*v.AutoScalingConfigurationArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -887,7 +889,7 @@ func (v *DeleteConnectionRequest) Validate(path string) error {
 		if err := validation.Length(path+"ConnectionArn", utf8.RuneCountInString((*v.ConnectionArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ConnectionArn", (*v.ConnectionArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"ConnectionArn", (*v.ConnectionArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -902,7 +904,7 @@ func (v *DeleteObservabilityConfigurationRequest) Validate(path string) error {
 		if err := validation.Length(path+"ObservabilityConfigurationArn", utf8.RuneCountInString((*v.ObservabilityConfigurationArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ObservabilityConfigurationArn", (*v.ObservabilityConfigurationArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"ObservabilityConfigurationArn", (*v.ObservabilityConfigurationArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -917,7 +919,7 @@ func (v *DeleteServiceRequest) Validate(path string) error {
 		if err := validation.Length(path+"ServiceArn", utf8.RuneCountInString((*v.ServiceArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -932,7 +934,7 @@ func (v *DeleteVpcConnectorRequest) Validate(path string) error {
 		if err := validation.Length(path+"VpcConnectorArn", utf8.RuneCountInString((*v.VpcConnectorArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"VpcConnectorArn", (*v.VpcConnectorArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"VpcConnectorArn", (*v.VpcConnectorArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -947,7 +949,7 @@ func (v *DescribeAutoScalingConfigurationRequest) Validate(path string) error {
 		if err := validation.Length(path+"AutoScalingConfigurationArn", utf8.RuneCountInString((*v.AutoScalingConfigurationArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"AutoScalingConfigurationArn", (*v.AutoScalingConfigurationArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"AutoScalingConfigurationArn", (*v.AutoScalingConfigurationArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -962,7 +964,7 @@ func (v *DescribeObservabilityConfigurationRequest) Validate(path string) error 
 		if err := validation.Length(path+"ObservabilityConfigurationArn", utf8.RuneCountInString((*v.ObservabilityConfigurationArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ObservabilityConfigurationArn", (*v.ObservabilityConfigurationArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"ObservabilityConfigurationArn", (*v.ObservabilityConfigurationArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -977,7 +979,7 @@ func (v *DescribeServiceRequest) Validate(path string) error {
 		if err := validation.Length(path+"ServiceArn", utf8.RuneCountInString((*v.ServiceArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -992,7 +994,7 @@ func (v *DescribeVpcConnectorRequest) Validate(path string) error {
 		if err := validation.Length(path+"VpcConnectorArn", utf8.RuneCountInString((*v.VpcConnectorArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"VpcConnectorArn", (*v.VpcConnectorArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"VpcConnectorArn", (*v.VpcConnectorArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -1009,7 +1011,7 @@ func (v *EgressConfiguration) Validate(path string) error {
 		if err := validation.Length(path+"VpcConnectorArn", utf8.RuneCountInString((*v.VpcConnectorArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"VpcConnectorArn", (*v.VpcConnectorArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"VpcConnectorArn", (*v.VpcConnectorArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -1024,7 +1026,7 @@ func (v *EncryptionConfiguration) Validate(path string) error {
 		if err := validation.Length(path+"KmsKey", utf8.RuneCountInString((*v.KmsKey)), new(int64(0)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"KmsKey", (*v.KmsKey), pattern8, "", "^arn:aws(-[\\w]+)*:kms:[a-z\\-]+-[0-9]{1}:[0-9]{12}:key\\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"); err != nil {
+		if err := validation.Pattern(path+"KmsKey", (*v.KmsKey), pattern8, nil, "^arn:aws(-[\\w]+)*:kms:[a-z\\-]+-[0-9]{1}:[0-9]{12}:key\\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"); err != nil {
 			return err
 		}
 	}
@@ -1071,19 +1073,19 @@ func (v *ImageConfiguration) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"RuntimeEnvironmentVariables", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(51200))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"RuntimeEnvironmentVariables", k0), k0, pattern3, "", ".*"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"RuntimeEnvironmentVariables", k0), k0, pattern3, nil, ".*"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"RuntimeEnvironmentVariables", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(51200))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"RuntimeEnvironmentVariables", k0), e0, pattern3, "", ".*"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"RuntimeEnvironmentVariables", k0), e0, pattern3, nil, ".*"); err != nil {
 				return err
 			}
 		}
 	}
 	if v.StartCommand != nil {
-		if err := validation.Pattern(path+"StartCommand", (*v.StartCommand), pattern2, "", "^[^\\x0a\\x0d]+$"); err != nil {
+		if err := validation.Pattern(path+"StartCommand", (*v.StartCommand), pattern2, nil, "^[^\\x0a\\x0d]+$"); err != nil {
 			return err
 		}
 	}
@@ -1091,7 +1093,7 @@ func (v *ImageConfiguration) Validate(path string) error {
 		if err := validation.Length(path+"Port", utf8.RuneCountInString((*v.Port)), new(int64(0)), new(int64(51200))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Port", (*v.Port), pattern3, "", ".*"); err != nil {
+		if err := validation.Pattern(path+"Port", (*v.Port), pattern3, nil, ".*"); err != nil {
 			return err
 		}
 	}
@@ -1116,7 +1118,7 @@ func (v *ImageRepository) Validate(path string) error {
 		if err := validation.Length(path+"ImageIdentifier", utf8.RuneCountInString((*v.ImageIdentifier)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ImageIdentifier", (*v.ImageIdentifier), pattern9, "", "^([0-9]{12}.dkr.ecr.[a-z\\-]+-[0-9]{1}.amazonaws.com\\/((?:[a-z0-9]+(?:[._-][a-z0-9]+)*\\/)*[a-z0-9]+(?:[._-][a-z0-9]+)*)(:([\\w\\d+\\-=._:\\/@])+|@([\\w\\d\\:]+))?)|(^public\\.ecr\\.aws\\/.+\\/((?:[a-z0-9]+(?:[._-][a-z0-9]+)*\\/)*[a-z0-9]+(?:[._-][a-z0-9]+)*)(:([\\w\\d+\\-=._:\\/@])+|@([\\w\\d\\:]+))?)$"); err != nil {
+		if err := validation.Pattern(path+"ImageIdentifier", (*v.ImageIdentifier), pattern9, nil, "^([0-9]{12}.dkr.ecr.[a-z\\-]+-[0-9]{1}.amazonaws.com\\/((?:[a-z0-9]+(?:[._-][a-z0-9]+)*\\/)*[a-z0-9]+(?:[._-][a-z0-9]+)*)(:([\\w\\d+\\-=._:\\/@])+|@([\\w\\d\\:]+))?)|(^public\\.ecr\\.aws\\/.+\\/((?:[a-z0-9]+(?:[._-][a-z0-9]+)*\\/)*[a-z0-9]+(?:[._-][a-z0-9]+)*)(:([\\w\\d+\\-=._:\\/@])+|@([\\w\\d\\:]+))?)$"); err != nil {
 			return err
 		}
 	}
@@ -1145,7 +1147,7 @@ func (v *InstanceConfiguration) Validate(path string) error {
 		if err := validation.Length(path+"Cpu", utf8.RuneCountInString((*v.Cpu)), new(int64(3)), new(int64(9))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Cpu", (*v.Cpu), pattern10, "", "^256|512|1024|2048|4096|(0.25|0.5|1|2|4) vCPU$"); err != nil {
+		if err := validation.Pattern(path+"Cpu", (*v.Cpu), pattern10, nil, "^256|512|1024|2048|4096|(0.25|0.5|1|2|4) vCPU$"); err != nil {
 			return err
 		}
 	}
@@ -1153,7 +1155,7 @@ func (v *InstanceConfiguration) Validate(path string) error {
 		if err := validation.Length(path+"Memory", utf8.RuneCountInString((*v.Memory)), new(int64(3)), new(int64(6))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Memory", (*v.Memory), pattern11, "", "^512|1024|2048|3072|4096|6144|8192|10240|12288|(0.5|1|2|3|4|6|8|10|12) GB$"); err != nil {
+		if err := validation.Pattern(path+"Memory", (*v.Memory), pattern11, nil, "^512|1024|2048|3072|4096|6144|8192|10240|12288|(0.5|1|2|3|4|6|8|10|12) GB$"); err != nil {
 			return err
 		}
 	}
@@ -1161,7 +1163,7 @@ func (v *InstanceConfiguration) Validate(path string) error {
 		if err := validation.Length(path+"InstanceRoleArn", utf8.RuneCountInString((*v.InstanceRoleArn)), new(int64(29)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"InstanceRoleArn", (*v.InstanceRoleArn), pattern1, "", "^arn:(aws|aws-us-gov|aws-cn|aws-iso|aws-iso-b):iam::[0-9]{12}:(role|role\\/service-role)\\/[\\w+=,.@\\-/]{1,1000}$"); err != nil {
+		if err := validation.Pattern(path+"InstanceRoleArn", (*v.InstanceRoleArn), pattern1, nil, "^arn:(aws|aws-us-gov|aws-cn|aws-iso|aws-iso-b):iam::[0-9]{12}:(role|role\\/service-role)\\/[\\w+=,.@\\-/]{1,1000}$"); err != nil {
 			return err
 		}
 	}
@@ -1173,7 +1175,7 @@ func (v *ListAutoScalingConfigurationsRequest) Validate(path string) error {
 		if err := validation.Length(path+"AutoScalingConfigurationName", utf8.RuneCountInString((*v.AutoScalingConfigurationName)), new(int64(4)), new(int64(32))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"AutoScalingConfigurationName", (*v.AutoScalingConfigurationName), pattern5, "", "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,31}$"); err != nil {
+		if err := validation.Pattern(path+"AutoScalingConfigurationName", (*v.AutoScalingConfigurationName), pattern5, nil, "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,31}$"); err != nil {
 			return err
 		}
 	}
@@ -1186,7 +1188,7 @@ func (v *ListAutoScalingConfigurationsRequest) Validate(path string) error {
 		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern3, "", ".*"); err != nil {
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern3, nil, ".*"); err != nil {
 			return err
 		}
 	}
@@ -1198,7 +1200,7 @@ func (v *ListConnectionsRequest) Validate(path string) error {
 		if err := validation.Length(path+"ConnectionName", utf8.RuneCountInString((*v.ConnectionName)), new(int64(4)), new(int64(32))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ConnectionName", (*v.ConnectionName), pattern5, "", "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,31}$"); err != nil {
+		if err := validation.Pattern(path+"ConnectionName", (*v.ConnectionName), pattern5, nil, "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,31}$"); err != nil {
 			return err
 		}
 	}
@@ -1211,7 +1213,7 @@ func (v *ListConnectionsRequest) Validate(path string) error {
 		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern3, "", ".*"); err != nil {
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern3, nil, ".*"); err != nil {
 			return err
 		}
 	}
@@ -1223,7 +1225,7 @@ func (v *ListObservabilityConfigurationsRequest) Validate(path string) error {
 		if err := validation.Length(path+"ObservabilityConfigurationName", utf8.RuneCountInString((*v.ObservabilityConfigurationName)), new(int64(4)), new(int64(32))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ObservabilityConfigurationName", (*v.ObservabilityConfigurationName), pattern5, "", "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,31}$"); err != nil {
+		if err := validation.Pattern(path+"ObservabilityConfigurationName", (*v.ObservabilityConfigurationName), pattern5, nil, "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,31}$"); err != nil {
 			return err
 		}
 	}
@@ -1236,7 +1238,7 @@ func (v *ListObservabilityConfigurationsRequest) Validate(path string) error {
 		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern3, "", ".*"); err != nil {
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern3, nil, ".*"); err != nil {
 			return err
 		}
 	}
@@ -1251,7 +1253,7 @@ func (v *ListOperationsRequest) Validate(path string) error {
 		if err := validation.Length(path+"ServiceArn", utf8.RuneCountInString((*v.ServiceArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -1259,7 +1261,7 @@ func (v *ListOperationsRequest) Validate(path string) error {
 		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(51200))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern3, "", ".*"); err != nil {
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern3, nil, ".*"); err != nil {
 			return err
 		}
 	}
@@ -1276,7 +1278,7 @@ func (v *ListServicesRequest) Validate(path string) error {
 		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(51200))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern3, "", ".*"); err != nil {
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern3, nil, ".*"); err != nil {
 			return err
 		}
 	}
@@ -1296,7 +1298,7 @@ func (v *ListTagsForResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -1313,7 +1315,7 @@ func (v *ListVpcConnectorsRequest) Validate(path string) error {
 		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern3, "", ".*"); err != nil {
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern3, nil, ".*"); err != nil {
 			return err
 		}
 	}
@@ -1347,7 +1349,7 @@ func (v *PauseServiceRequest) Validate(path string) error {
 		if err := validation.Length(path+"ServiceArn", utf8.RuneCountInString((*v.ServiceArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -1362,7 +1364,7 @@ func (v *ResumeServiceRequest) Validate(path string) error {
 		if err := validation.Length(path+"ServiceArn", utf8.RuneCountInString((*v.ServiceArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -1374,7 +1376,7 @@ func (v *ServiceObservabilityConfiguration) Validate(path string) error {
 		if err := validation.Length(path+"ObservabilityConfigurationArn", utf8.RuneCountInString((*v.ObservabilityConfigurationArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ObservabilityConfigurationArn", (*v.ObservabilityConfigurationArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"ObservabilityConfigurationArn", (*v.ObservabilityConfigurationArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -1397,7 +1399,7 @@ func (v *SourceCodeVersion) Validate(path string) error {
 		if err := validation.Length(path+"Value", utf8.RuneCountInString((*v.Value)), new(int64(0)), new(int64(51200))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Value", (*v.Value), pattern3, "", ".*"); err != nil {
+		if err := validation.Pattern(path+"Value", (*v.Value), pattern3, nil, ".*"); err != nil {
 			return err
 		}
 	}
@@ -1431,7 +1433,7 @@ func (v *StartDeploymentRequest) Validate(path string) error {
 		if err := validation.Length(path+"ServiceArn", utf8.RuneCountInString((*v.ServiceArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -1443,7 +1445,7 @@ func (v *Tag) Validate(path string) error {
 		if err := validation.Length(path+"Key", utf8.RuneCountInString((*v.Key)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Key", (*v.Key), pattern12, "aws:", "^(?!aws:).+$"); err != nil {
+		if err := validation.Pattern(path+"Key", (*v.Key), pattern12, pattern13, "^(?!aws:).+$"); err != nil {
 			return err
 		}
 	}
@@ -1451,7 +1453,7 @@ func (v *Tag) Validate(path string) error {
 		if err := validation.Length(path+"Value", utf8.RuneCountInString((*v.Value)), new(int64(0)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Value", (*v.Value), pattern3, "", ".*"); err != nil {
+		if err := validation.Pattern(path+"Value", (*v.Value), pattern3, nil, ".*"); err != nil {
 			return err
 		}
 	}
@@ -1466,7 +1468,7 @@ func (v *TagResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -1503,7 +1505,7 @@ func (v *UntagResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -1515,7 +1517,7 @@ func (v *UntagResourceRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"TagKeys", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"TagKeys", i0), e0, pattern12, "aws:", "^(?!aws:).+$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"TagKeys", i0), e0, pattern12, pattern13, "^(?!aws:).+$"); err != nil {
 				return err
 			}
 		}
@@ -1531,7 +1533,7 @@ func (v *UpdateDefaultAutoScalingConfigurationRequest) Validate(path string) err
 		if err := validation.Length(path+"AutoScalingConfigurationArn", utf8.RuneCountInString((*v.AutoScalingConfigurationArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"AutoScalingConfigurationArn", (*v.AutoScalingConfigurationArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"AutoScalingConfigurationArn", (*v.AutoScalingConfigurationArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -1546,7 +1548,7 @@ func (v *UpdateServiceRequest) Validate(path string) error {
 		if err := validation.Length(path+"ServiceArn", utf8.RuneCountInString((*v.ServiceArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}
@@ -1564,7 +1566,7 @@ func (v *UpdateServiceRequest) Validate(path string) error {
 		if err := validation.Length(path+"AutoScalingConfigurationArn", utf8.RuneCountInString((*v.AutoScalingConfigurationArn)), new(int64(1)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"AutoScalingConfigurationArn", (*v.AutoScalingConfigurationArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+		if err := validation.Pattern(path+"AutoScalingConfigurationArn", (*v.AutoScalingConfigurationArn), pattern0, nil, "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
 			return err
 		}
 	}

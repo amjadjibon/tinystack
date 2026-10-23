@@ -1173,6 +1173,8 @@ var enum16 = []string{"EQUALS", "NOT_EQUALS", "PREFIX"}
 
 var pattern3 = regexp.MustCompile("^[a-zA-Z+-=._:/]+$")
 
+var pattern4 = regexp.MustCompile("^aws:")
+
 func (v *AccountAggregation) Validate(path string) error {
 	if v.FindingType != nil {
 		if err := validation.Enum(path+"findingType", (*v.FindingType), enum0); err != nil {
@@ -1373,7 +1375,7 @@ func (v *BatchGetAccountStatusRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"accountIds", i0), utf8.RuneCountInString(e0), new(int64(12)), new(int64(12))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"accountIds", i0), e0, pattern0, "", "^\\d{12}$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"accountIds", i0), e0, pattern0, nil, "^\\d{12}$"); err != nil {
 				return err
 			}
 		}
@@ -1393,7 +1395,7 @@ func (v *BatchGetFindingDetailsRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"findingArns", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(100))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"findingArns", i0), e0, pattern1, "", "^arn:(aws[a-zA-Z-]*)?:inspector2:[a-z]{2}(-gov)?-[a-z]+-\\d{1}:\\d{12}:finding/[a-f0-9]{32}$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"findingArns", i0), e0, pattern1, nil, "^arn:(aws[a-zA-Z-]*)?:inspector2:[a-z]{2}(-gov)?-[a-z]+-\\d{1}:\\d{12}:finding/[a-f0-9]{32}$"); err != nil {
 				return err
 			}
 		}
@@ -1701,7 +1703,7 @@ func (v *DisableRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"accountIds", i0), utf8.RuneCountInString(e0), new(int64(12)), new(int64(12))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"accountIds", i0), e0, pattern0, "", "^\\d{12}$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"accountIds", i0), e0, pattern0, nil, "^\\d{12}$"); err != nil {
 				return err
 			}
 		}
@@ -1806,7 +1808,7 @@ func (v *EnableRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"accountIds", i0), utf8.RuneCountInString(e0), new(int64(12)), new(int64(12))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"accountIds", i0), e0, pattern0, "", "^\\d{12}$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"accountIds", i0), e0, pattern0, nil, "^\\d{12}$"); err != nil {
 				return err
 			}
 		}
@@ -2275,7 +2277,7 @@ func (v *GetConfigurationRequest) Validate(path string) error {
 		if err := validation.Length(path+"accountId", utf8.RuneCountInString((*v.AccountId)), new(int64(12)), new(int64(12))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"accountId", (*v.AccountId), pattern0, "", "^\\d{12}$"); err != nil {
+		if err := validation.Pattern(path+"accountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
 			return err
 		}
 	}
@@ -2577,7 +2579,7 @@ func (v *ListUsageTotalsRequest) Validate(path string) error {
 			return err
 		}
 		for i0, e0 := range v.AccountIds {
-			if err := validation.Pattern(validation.Index(path+"accountIds", i0), e0, pattern2, "", "[0-9]{12}"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"accountIds", i0), e0, pattern2, nil, "[0-9]{12}"); err != nil {
 				return err
 			}
 		}
@@ -2849,7 +2851,7 @@ func (v *UntagResourceRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"tagKeys", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"tagKeys", i0), e0, pattern3, "aws:", "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"tagKeys", i0), e0, pattern3, pattern4, "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
 				return err
 			}
 		}
@@ -2862,7 +2864,7 @@ func (v *UpdateConfigurationRequest) Validate(path string) error {
 		if err := validation.Length(path+"accountId", utf8.RuneCountInString((*v.AccountId)), new(int64(12)), new(int64(12))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"accountId", (*v.AccountId), pattern0, "", "^\\d{12}$"); err != nil {
+		if err := validation.Pattern(path+"accountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
 			return err
 		}
 	}

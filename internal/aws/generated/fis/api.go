@@ -442,7 +442,7 @@ func (v *CreateExperimentTemplateActionInput) Validate(path string) error {
 		if err := validation.Length(path+"actionId", utf8.RuneCountInString((*v.ActionId)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"actionId", (*v.ActionId), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"actionId", (*v.ActionId), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -450,7 +450,7 @@ func (v *CreateExperimentTemplateActionInput) Validate(path string) error {
 		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(512))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"description", (*v.Description), pattern1, "", "^[\\s\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"description", (*v.Description), pattern1, nil, "^[\\s\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -459,13 +459,13 @@ func (v *CreateExperimentTemplateActionInput) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"parameters", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(64))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"parameters", k0), k0, pattern0, "", "^[\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"parameters", k0), k0, pattern0, nil, "^[\\S]+$"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"parameters", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(1024))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"parameters", k0), e0, pattern0, "", "^[\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"parameters", k0), e0, pattern0, nil, "^[\\S]+$"); err != nil {
 				return err
 			}
 		}
@@ -475,13 +475,13 @@ func (v *CreateExperimentTemplateActionInput) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"targets", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(64))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"targets", k0), k0, pattern0, "", "^[\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"targets", k0), k0, pattern0, nil, "^[\\S]+$"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"targets", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(64))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"targets", k0), e0, pattern0, "", "^[\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"targets", k0), e0, pattern0, nil, "^[\\S]+$"); err != nil {
 				return err
 			}
 		}
@@ -491,7 +491,7 @@ func (v *CreateExperimentTemplateActionInput) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"startAfter", i0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(64))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"startAfter", i0), e0, pattern0, "", "^[\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"startAfter", i0), e0, pattern0, nil, "^[\\S]+$"); err != nil {
 				return err
 			}
 		}
@@ -524,7 +524,7 @@ func (v *CreateExperimentTemplateRequest) Validate(path string) error {
 		if err := validation.Length(path+"clientToken", utf8.RuneCountInString((*v.ClientToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"clientToken", (*v.ClientToken), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"clientToken", (*v.ClientToken), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -535,7 +535,7 @@ func (v *CreateExperimentTemplateRequest) Validate(path string) error {
 		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(512))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"description", (*v.Description), pattern1, "", "^[\\s\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"description", (*v.Description), pattern1, nil, "^[\\s\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -554,7 +554,7 @@ func (v *CreateExperimentTemplateRequest) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"targets", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(64))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"targets", k0), k0, pattern0, "", "^[\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"targets", k0), k0, pattern0, nil, "^[\\S]+$"); err != nil {
 				return err
 			}
 			if err := e0.Validate(validation.Key(path+"targets", k0) + "."); err != nil {
@@ -570,7 +570,7 @@ func (v *CreateExperimentTemplateRequest) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"actions", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(64))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"actions", k0), k0, pattern0, "", "^[\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"actions", k0), k0, pattern0, nil, "^[\\S]+$"); err != nil {
 				return err
 			}
 			if err := e0.Validate(validation.Key(path+"actions", k0) + "."); err != nil {
@@ -585,7 +585,7 @@ func (v *CreateExperimentTemplateRequest) Validate(path string) error {
 		if err := validation.Length(path+"roleArn", utf8.RuneCountInString((*v.RoleArn)), new(int64(20)), new(int64(2048))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"roleArn", (*v.RoleArn), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"roleArn", (*v.RoleArn), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -597,13 +597,13 @@ func (v *CreateExperimentTemplateRequest) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"tags", k0), k0, pattern1, "", "^[\\s\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"tags", k0), k0, pattern1, nil, "^[\\s\\S]+$"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(256))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"tags", k0), e0, pattern2, "", "^[\\s\\S]*$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"tags", k0), e0, pattern2, nil, "^[\\s\\S]*$"); err != nil {
 				return err
 			}
 		}
@@ -624,7 +624,7 @@ func (v *CreateExperimentTemplateStopConditionInput) Validate(path string) error
 		if err := validation.Length(path+"source", utf8.RuneCountInString((*v.Source)), new(int64(0)), new(int64(64))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"source", (*v.Source), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"source", (*v.Source), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -632,7 +632,7 @@ func (v *CreateExperimentTemplateStopConditionInput) Validate(path string) error
 		if err := validation.Length(path+"value", utf8.RuneCountInString((*v.Value)), new(int64(20)), new(int64(2048))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"value", (*v.Value), pattern1, "", "^[\\s\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"value", (*v.Value), pattern1, nil, "^[\\s\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -647,7 +647,7 @@ func (v *CreateExperimentTemplateTargetInput) Validate(path string) error {
 		if err := validation.Length(path+"resourceType", utf8.RuneCountInString((*v.ResourceType)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"resourceType", (*v.ResourceType), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"resourceType", (*v.ResourceType), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -659,7 +659,7 @@ func (v *CreateExperimentTemplateTargetInput) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"resourceArns", i0), utf8.RuneCountInString(e0), new(int64(20)), new(int64(2048))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"resourceArns", i0), e0, pattern0, "", "^[\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"resourceArns", i0), e0, pattern0, nil, "^[\\S]+$"); err != nil {
 				return err
 			}
 		}
@@ -672,13 +672,13 @@ func (v *CreateExperimentTemplateTargetInput) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"resourceTags", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"resourceTags", k0), k0, pattern1, "", "^[\\s\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"resourceTags", k0), k0, pattern1, nil, "^[\\s\\S]+$"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"resourceTags", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(256))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"resourceTags", k0), e0, pattern2, "", "^[\\s\\S]*$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"resourceTags", k0), e0, pattern2, nil, "^[\\s\\S]*$"); err != nil {
 				return err
 			}
 		}
@@ -697,7 +697,7 @@ func (v *CreateExperimentTemplateTargetInput) Validate(path string) error {
 		if err := validation.Length(path+"selectionMode", utf8.RuneCountInString((*v.SelectionMode)), new(int64(0)), new(int64(64))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"selectionMode", (*v.SelectionMode), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"selectionMode", (*v.SelectionMode), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -706,13 +706,13 @@ func (v *CreateExperimentTemplateTargetInput) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"parameters", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(64))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"parameters", k0), k0, pattern0, "", "^[\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"parameters", k0), k0, pattern0, nil, "^[\\S]+$"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"parameters", k0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(1024))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"parameters", k0), e0, pattern3, "", "^[\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"parameters", k0), e0, pattern3, nil, "^[\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]+$"); err != nil {
 				return err
 			}
 		}
@@ -728,7 +728,7 @@ func (v *DeleteExperimentTemplateRequest) Validate(path string) error {
 		if err := validation.Length(path+"id", utf8.RuneCountInString((*v.Id)), new(int64(0)), new(int64(64))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"id", (*v.Id), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"id", (*v.Id), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -743,7 +743,7 @@ func (v *ExperimentTemplateCloudWatchLogsLogConfigurationInput) Validate(path st
 		if err := validation.Length(path+"logGroupArn", utf8.RuneCountInString((*v.LogGroupArn)), new(int64(20)), new(int64(2048))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"logGroupArn", (*v.LogGroupArn), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"logGroupArn", (*v.LogGroupArn), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -758,7 +758,7 @@ func (v *ExperimentTemplateS3LogConfigurationInput) Validate(path string) error 
 		if err := validation.Length(path+"bucketName", utf8.RuneCountInString((*v.BucketName)), new(int64(3)), new(int64(63))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"bucketName", (*v.BucketName), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"bucketName", (*v.BucketName), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -766,7 +766,7 @@ func (v *ExperimentTemplateS3LogConfigurationInput) Validate(path string) error 
 		if err := validation.Length(path+"prefix", utf8.RuneCountInString((*v.Prefix)), new(int64(1)), new(int64(700))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"prefix", (*v.Prefix), pattern1, "", "^[\\s\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"prefix", (*v.Prefix), pattern1, nil, "^[\\s\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -781,7 +781,7 @@ func (v *ExperimentTemplateTargetInputFilter) Validate(path string) error {
 		if err := validation.Length(path+"path", utf8.RuneCountInString((*v.Path)), new(int64(0)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"path", (*v.Path), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"path", (*v.Path), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -793,7 +793,7 @@ func (v *ExperimentTemplateTargetInputFilter) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"values", i0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"values", i0), e0, pattern0, "", "^[\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"values", i0), e0, pattern0, nil, "^[\\S]+$"); err != nil {
 				return err
 			}
 		}
@@ -809,7 +809,7 @@ func (v *GetActionRequest) Validate(path string) error {
 		if err := validation.Length(path+"id", utf8.RuneCountInString((*v.Id)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"id", (*v.Id), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"id", (*v.Id), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -824,7 +824,7 @@ func (v *GetExperimentRequest) Validate(path string) error {
 		if err := validation.Length(path+"id", utf8.RuneCountInString((*v.Id)), new(int64(0)), new(int64(64))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"id", (*v.Id), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"id", (*v.Id), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -839,7 +839,7 @@ func (v *GetExperimentTemplateRequest) Validate(path string) error {
 		if err := validation.Length(path+"id", utf8.RuneCountInString((*v.Id)), new(int64(0)), new(int64(64))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"id", (*v.Id), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"id", (*v.Id), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -854,7 +854,7 @@ func (v *GetTargetResourceTypeRequest) Validate(path string) error {
 		if err := validation.Length(path+"resourceType", utf8.RuneCountInString((*v.ResourceType)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"resourceType", (*v.ResourceType), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"resourceType", (*v.ResourceType), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -871,7 +871,7 @@ func (v *ListActionsRequest) Validate(path string) error {
 		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -888,7 +888,7 @@ func (v *ListExperimentTemplatesRequest) Validate(path string) error {
 		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -905,7 +905,7 @@ func (v *ListExperimentsRequest) Validate(path string) error {
 		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -913,7 +913,7 @@ func (v *ListExperimentsRequest) Validate(path string) error {
 		if err := validation.Length(path+"experimentTemplateId", utf8.RuneCountInString((*v.ExperimentTemplateId)), new(int64(0)), new(int64(64))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"experimentTemplateId", (*v.ExperimentTemplateId), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"experimentTemplateId", (*v.ExperimentTemplateId), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -928,7 +928,7 @@ func (v *ListTagsForResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"resourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(20)), new(int64(2048))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -945,7 +945,7 @@ func (v *ListTargetResourceTypesRequest) Validate(path string) error {
 		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -960,7 +960,7 @@ func (v *StartExperimentRequest) Validate(path string) error {
 		if err := validation.Length(path+"clientToken", utf8.RuneCountInString((*v.ClientToken)), new(int64(1)), new(int64(1024))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"clientToken", (*v.ClientToken), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"clientToken", (*v.ClientToken), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -971,7 +971,7 @@ func (v *StartExperimentRequest) Validate(path string) error {
 		if err := validation.Length(path+"experimentTemplateId", utf8.RuneCountInString((*v.ExperimentTemplateId)), new(int64(0)), new(int64(64))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"experimentTemplateId", (*v.ExperimentTemplateId), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"experimentTemplateId", (*v.ExperimentTemplateId), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -983,13 +983,13 @@ func (v *StartExperimentRequest) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"tags", k0), k0, pattern1, "", "^[\\s\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"tags", k0), k0, pattern1, nil, "^[\\s\\S]+$"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(256))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"tags", k0), e0, pattern2, "", "^[\\s\\S]*$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"tags", k0), e0, pattern2, nil, "^[\\s\\S]*$"); err != nil {
 				return err
 			}
 		}
@@ -1005,7 +1005,7 @@ func (v *StopExperimentRequest) Validate(path string) error {
 		if err := validation.Length(path+"id", utf8.RuneCountInString((*v.Id)), new(int64(0)), new(int64(64))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"id", (*v.Id), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"id", (*v.Id), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -1020,7 +1020,7 @@ func (v *TagResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"resourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(20)), new(int64(2048))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -1035,13 +1035,13 @@ func (v *TagResourceRequest) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"tags", k0), k0, pattern1, "", "^[\\s\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"tags", k0), k0, pattern1, nil, "^[\\s\\S]+$"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(256))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"tags", k0), e0, pattern2, "", "^[\\s\\S]*$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"tags", k0), e0, pattern2, nil, "^[\\s\\S]*$"); err != nil {
 				return err
 			}
 		}
@@ -1057,7 +1057,7 @@ func (v *UntagResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"resourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(20)), new(int64(2048))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -1066,7 +1066,7 @@ func (v *UntagResourceRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"tagKeys", i0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"tagKeys", i0), e0, pattern1, "", "^[\\s\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"tagKeys", i0), e0, pattern1, nil, "^[\\s\\S]+$"); err != nil {
 				return err
 			}
 		}
@@ -1079,7 +1079,7 @@ func (v *UpdateExperimentTemplateActionInputItem) Validate(path string) error {
 		if err := validation.Length(path+"actionId", utf8.RuneCountInString((*v.ActionId)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"actionId", (*v.ActionId), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"actionId", (*v.ActionId), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -1087,7 +1087,7 @@ func (v *UpdateExperimentTemplateActionInputItem) Validate(path string) error {
 		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(512))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"description", (*v.Description), pattern1, "", "^[\\s\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"description", (*v.Description), pattern1, nil, "^[\\s\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -1096,13 +1096,13 @@ func (v *UpdateExperimentTemplateActionInputItem) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"parameters", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(64))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"parameters", k0), k0, pattern0, "", "^[\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"parameters", k0), k0, pattern0, nil, "^[\\S]+$"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"parameters", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(1024))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"parameters", k0), e0, pattern0, "", "^[\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"parameters", k0), e0, pattern0, nil, "^[\\S]+$"); err != nil {
 				return err
 			}
 		}
@@ -1112,13 +1112,13 @@ func (v *UpdateExperimentTemplateActionInputItem) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"targets", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(64))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"targets", k0), k0, pattern0, "", "^[\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"targets", k0), k0, pattern0, nil, "^[\\S]+$"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"targets", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(64))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"targets", k0), e0, pattern0, "", "^[\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"targets", k0), e0, pattern0, nil, "^[\\S]+$"); err != nil {
 				return err
 			}
 		}
@@ -1128,7 +1128,7 @@ func (v *UpdateExperimentTemplateActionInputItem) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"startAfter", i0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(64))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"startAfter", i0), e0, pattern0, "", "^[\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"startAfter", i0), e0, pattern0, nil, "^[\\S]+$"); err != nil {
 				return err
 			}
 		}
@@ -1158,7 +1158,7 @@ func (v *UpdateExperimentTemplateRequest) Validate(path string) error {
 		if err := validation.Length(path+"id", utf8.RuneCountInString((*v.Id)), new(int64(0)), new(int64(64))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"id", (*v.Id), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"id", (*v.Id), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -1166,7 +1166,7 @@ func (v *UpdateExperimentTemplateRequest) Validate(path string) error {
 		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(512))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"description", (*v.Description), pattern1, "", "^[\\s\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"description", (*v.Description), pattern1, nil, "^[\\s\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -1182,7 +1182,7 @@ func (v *UpdateExperimentTemplateRequest) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"targets", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(64))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"targets", k0), k0, pattern0, "", "^[\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"targets", k0), k0, pattern0, nil, "^[\\S]+$"); err != nil {
 				return err
 			}
 			if err := e0.Validate(validation.Key(path+"targets", k0) + "."); err != nil {
@@ -1195,7 +1195,7 @@ func (v *UpdateExperimentTemplateRequest) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"actions", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(64))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"actions", k0), k0, pattern0, "", "^[\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"actions", k0), k0, pattern0, nil, "^[\\S]+$"); err != nil {
 				return err
 			}
 			if err := e0.Validate(validation.Key(path+"actions", k0) + "."); err != nil {
@@ -1207,7 +1207,7 @@ func (v *UpdateExperimentTemplateRequest) Validate(path string) error {
 		if err := validation.Length(path+"roleArn", utf8.RuneCountInString((*v.RoleArn)), new(int64(20)), new(int64(2048))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"roleArn", (*v.RoleArn), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"roleArn", (*v.RoleArn), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -1227,7 +1227,7 @@ func (v *UpdateExperimentTemplateStopConditionInput) Validate(path string) error
 		if err := validation.Length(path+"source", utf8.RuneCountInString((*v.Source)), new(int64(0)), new(int64(64))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"source", (*v.Source), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"source", (*v.Source), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -1235,7 +1235,7 @@ func (v *UpdateExperimentTemplateStopConditionInput) Validate(path string) error
 		if err := validation.Length(path+"value", utf8.RuneCountInString((*v.Value)), new(int64(20)), new(int64(2048))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"value", (*v.Value), pattern1, "", "^[\\s\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"value", (*v.Value), pattern1, nil, "^[\\s\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -1250,7 +1250,7 @@ func (v *UpdateExperimentTemplateTargetInput) Validate(path string) error {
 		if err := validation.Length(path+"resourceType", utf8.RuneCountInString((*v.ResourceType)), new(int64(0)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"resourceType", (*v.ResourceType), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"resourceType", (*v.ResourceType), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -1262,7 +1262,7 @@ func (v *UpdateExperimentTemplateTargetInput) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"resourceArns", i0), utf8.RuneCountInString(e0), new(int64(20)), new(int64(2048))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"resourceArns", i0), e0, pattern0, "", "^[\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"resourceArns", i0), e0, pattern0, nil, "^[\\S]+$"); err != nil {
 				return err
 			}
 		}
@@ -1275,13 +1275,13 @@ func (v *UpdateExperimentTemplateTargetInput) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"resourceTags", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"resourceTags", k0), k0, pattern1, "", "^[\\s\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"resourceTags", k0), k0, pattern1, nil, "^[\\s\\S]+$"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"resourceTags", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(256))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"resourceTags", k0), e0, pattern2, "", "^[\\s\\S]*$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"resourceTags", k0), e0, pattern2, nil, "^[\\s\\S]*$"); err != nil {
 				return err
 			}
 		}
@@ -1300,7 +1300,7 @@ func (v *UpdateExperimentTemplateTargetInput) Validate(path string) error {
 		if err := validation.Length(path+"selectionMode", utf8.RuneCountInString((*v.SelectionMode)), new(int64(0)), new(int64(64))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"selectionMode", (*v.SelectionMode), pattern0, "", "^[\\S]+$"); err != nil {
+		if err := validation.Pattern(path+"selectionMode", (*v.SelectionMode), pattern0, nil, "^[\\S]+$"); err != nil {
 			return err
 		}
 	}
@@ -1309,13 +1309,13 @@ func (v *UpdateExperimentTemplateTargetInput) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"parameters", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(64))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"parameters", k0), k0, pattern0, "", "^[\\S]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"parameters", k0), k0, pattern0, nil, "^[\\S]+$"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"parameters", k0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(1024))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"parameters", k0), e0, pattern3, "", "^[\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"parameters", k0), e0, pattern3, nil, "^[\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]+$"); err != nil {
 				return err
 			}
 		}

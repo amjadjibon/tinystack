@@ -301,7 +301,7 @@ func (v *CreateViewInput) Validate(path string) error {
 		return err
 	}
 	if v.ViewName != nil {
-		if err := validation.Pattern(path+"ViewName", (*v.ViewName), pattern0, "", "^[a-zA-Z0-9\\-]{1,64}$"); err != nil {
+		if err := validation.Pattern(path+"ViewName", (*v.ViewName), pattern0, nil, "^[a-zA-Z0-9\\-]{1,64}$"); err != nil {
 			return err
 		}
 	}
@@ -379,7 +379,7 @@ func (v *ListIndexesInput) Validate(path string) error {
 			return err
 		}
 		for i0, e0 := range v.Regions {
-			if err := validation.Pattern(validation.Index(path+"Regions", i0), e0, pattern1, "", "^[a-z-]+-[a-z]+-[0-9]$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"Regions", i0), e0, pattern1, nil, "^[a-z-]+-[a-z]+-[0-9]$"); err != nil {
 				return err
 			}
 		}

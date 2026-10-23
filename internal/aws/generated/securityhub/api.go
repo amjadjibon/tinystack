@@ -403,7 +403,9 @@ var enum3 = []string{"SECURITY_CONTROL", "STANDARD_CONTROL"}
 
 var pattern1 = regexp.MustCompile("^[a-zA-Z+-=._:/]+$")
 
-var pattern2 = regexp.MustCompile("^arn:aws:securityhub:")
+var pattern2 = regexp.MustCompile("^aws:")
+
+var pattern3 = regexp.MustCompile("^arn:aws:securityhub:")
 
 var enum4 = []string{"AzureCloud", "aws", "aws-cn", "aws-us-gov", "aws-us-iso", "aws-us-iso-b"}
 
@@ -420,7 +422,7 @@ func (v *AwsSecurityFinding) Validate(path string) error {
 		return err
 	}
 	if v.SchemaVersion != nil {
-		if err := validation.Pattern(path+"SchemaVersion", (*v.SchemaVersion), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"SchemaVersion", (*v.SchemaVersion), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -428,7 +430,7 @@ func (v *AwsSecurityFinding) Validate(path string) error {
 		return err
 	}
 	if v.Id != nil {
-		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -436,7 +438,7 @@ func (v *AwsSecurityFinding) Validate(path string) error {
 		return err
 	}
 	if v.ProductArn != nil {
-		if err := validation.Pattern(path+"ProductArn", (*v.ProductArn), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"ProductArn", (*v.ProductArn), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -444,7 +446,7 @@ func (v *AwsSecurityFinding) Validate(path string) error {
 		return err
 	}
 	if v.GeneratorId != nil {
-		if err := validation.Pattern(path+"GeneratorId", (*v.GeneratorId), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"GeneratorId", (*v.GeneratorId), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -452,13 +454,13 @@ func (v *AwsSecurityFinding) Validate(path string) error {
 		return err
 	}
 	if v.AwsAccountId != nil {
-		if err := validation.Pattern(path+"AwsAccountId", (*v.AwsAccountId), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"AwsAccountId", (*v.AwsAccountId), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
 	if v.Types != nil {
 		for i0, e0 := range v.Types {
-			if err := validation.Pattern(validation.Index(path+"Types", i0), e0, pattern0, "", "\\S"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"Types", i0), e0, pattern0, nil, "\\S"); err != nil {
 				return err
 			}
 		}
@@ -467,7 +469,7 @@ func (v *AwsSecurityFinding) Validate(path string) error {
 		return err
 	}
 	if v.CreatedAt != nil {
-		if err := validation.Pattern(path+"CreatedAt", (*v.CreatedAt), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"CreatedAt", (*v.CreatedAt), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -475,7 +477,7 @@ func (v *AwsSecurityFinding) Validate(path string) error {
 		return err
 	}
 	if v.UpdatedAt != nil {
-		if err := validation.Pattern(path+"UpdatedAt", (*v.UpdatedAt), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"UpdatedAt", (*v.UpdatedAt), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -488,7 +490,7 @@ func (v *AwsSecurityFinding) Validate(path string) error {
 		return err
 	}
 	if v.Title != nil {
-		if err := validation.Pattern(path+"Title", (*v.Title), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Title", (*v.Title), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -496,7 +498,7 @@ func (v *AwsSecurityFinding) Validate(path string) error {
 		return err
 	}
 	if v.Description != nil {
-		if err := validation.Pattern(path+"Description", (*v.Description), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Description", (*v.Description), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -537,10 +539,10 @@ func (v *AwsSecurityFinding) Validate(path string) error {
 	}
 	if v.UserDefinedFields != nil {
 		for k0, e0 := range v.UserDefinedFields {
-			if err := validation.Pattern(validation.Key(path+"UserDefinedFields", k0), k0, pattern0, "", "\\S"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"UserDefinedFields", k0), k0, pattern0, nil, "\\S"); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"UserDefinedFields", k0), e0, pattern0, "", "\\S"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"UserDefinedFields", k0), e0, pattern0, nil, "\\S"); err != nil {
 				return err
 			}
 		}
@@ -648,7 +650,7 @@ func (v *AwsSecurityFindingIdentifier) Validate(path string) error {
 		return err
 	}
 	if v.Id != nil {
-		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -656,7 +658,7 @@ func (v *AwsSecurityFindingIdentifier) Validate(path string) error {
 		return err
 	}
 	if v.ProductArn != nil {
-		if err := validation.Pattern(path+"ProductArn", (*v.ProductArn), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"ProductArn", (*v.ProductArn), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -672,7 +674,7 @@ func (v *BatchDisableStandardsRequest) Validate(path string) error {
 			return err
 		}
 		for i0, e0 := range v.StandardsSubscriptionArns {
-			if err := validation.Pattern(validation.Index(path+"StandardsSubscriptionArns", i0), e0, pattern0, "", "\\S"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"StandardsSubscriptionArns", i0), e0, pattern0, nil, "\\S"); err != nil {
 				return err
 			}
 		}
@@ -747,17 +749,17 @@ func (v *BatchUpdateFindingsRequest) Validate(path string) error {
 	}
 	if v.Types != nil {
 		for i0, e0 := range v.Types {
-			if err := validation.Pattern(validation.Index(path+"Types", i0), e0, pattern0, "", "\\S"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"Types", i0), e0, pattern0, nil, "\\S"); err != nil {
 				return err
 			}
 		}
 	}
 	if v.UserDefinedFields != nil {
 		for k0, e0 := range v.UserDefinedFields {
-			if err := validation.Pattern(validation.Key(path+"UserDefinedFields", k0), k0, pattern0, "", "\\S"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"UserDefinedFields", k0), k0, pattern0, nil, "\\S"); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"UserDefinedFields", k0), e0, pattern0, "", "\\S"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"UserDefinedFields", k0), e0, pattern0, nil, "\\S"); err != nil {
 				return err
 			}
 		}
@@ -786,7 +788,7 @@ func (v *CreateActionTargetRequest) Validate(path string) error {
 		return err
 	}
 	if v.Name != nil {
-		if err := validation.Pattern(path+"Name", (*v.Name), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Name", (*v.Name), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -794,7 +796,7 @@ func (v *CreateActionTargetRequest) Validate(path string) error {
 		return err
 	}
 	if v.Description != nil {
-		if err := validation.Pattern(path+"Description", (*v.Description), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Description", (*v.Description), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -802,7 +804,7 @@ func (v *CreateActionTargetRequest) Validate(path string) error {
 		return err
 	}
 	if v.Id != nil {
-		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -814,7 +816,7 @@ func (v *CreateInsightRequest) Validate(path string) error {
 		return err
 	}
 	if v.Name != nil {
-		if err := validation.Pattern(path+"Name", (*v.Name), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Name", (*v.Name), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -830,7 +832,7 @@ func (v *CreateInsightRequest) Validate(path string) error {
 		return err
 	}
 	if v.GroupByAttribute != nil {
-		if err := validation.Pattern(path+"GroupByAttribute", (*v.GroupByAttribute), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"GroupByAttribute", (*v.GroupByAttribute), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -839,12 +841,12 @@ func (v *CreateInsightRequest) Validate(path string) error {
 
 func (v *DateFilter) Validate(path string) error {
 	if v.Start != nil {
-		if err := validation.Pattern(path+"Start", (*v.Start), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Start", (*v.Start), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
 	if v.End != nil {
-		if err := validation.Pattern(path+"End", (*v.End), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"End", (*v.End), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -856,7 +858,7 @@ func (v *DeleteActionTargetRequest) Validate(path string) error {
 		return err
 	}
 	if v.ActionTargetArn != nil {
-		if err := validation.Pattern(path+"ActionTargetArn", (*v.ActionTargetArn), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"ActionTargetArn", (*v.ActionTargetArn), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -868,7 +870,7 @@ func (v *DeleteInsightRequest) Validate(path string) error {
 		return err
 	}
 	if v.InsightArn != nil {
-		if err := validation.Pattern(path+"InsightArn", (*v.InsightArn), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"InsightArn", (*v.InsightArn), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -878,7 +880,7 @@ func (v *DeleteInsightRequest) Validate(path string) error {
 func (v *DescribeActionTargetsRequest) Validate(path string) error {
 	if v.ActionTargetArns != nil {
 		for i0, e0 := range v.ActionTargetArns {
-			if err := validation.Pattern(validation.Index(path+"ActionTargetArns", i0), e0, pattern0, "", "\\S"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"ActionTargetArns", i0), e0, pattern0, nil, "\\S"); err != nil {
 				return err
 			}
 		}
@@ -893,7 +895,7 @@ func (v *DescribeActionTargetsRequest) Validate(path string) error {
 
 func (v *DescribeHubRequest) Validate(path string) error {
 	if v.HubArn != nil {
-		if err := validation.Pattern(path+"HubArn", (*v.HubArn), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"HubArn", (*v.HubArn), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -927,7 +929,7 @@ func (v *EnableSecurityHubRequest) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"Tags", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"Tags", k0), k0, pattern1, "aws:", "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"Tags", k0), k0, pattern1, pattern2, "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"Tags", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(256))); err != nil {
@@ -944,7 +946,7 @@ func (v *GetEnabledStandardsRequest) Validate(path string) error {
 			return err
 		}
 		for i0, e0 := range v.StandardsSubscriptionArns {
-			if err := validation.Pattern(validation.Index(path+"StandardsSubscriptionArns", i0), e0, pattern0, "", "\\S"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"StandardsSubscriptionArns", i0), e0, pattern0, nil, "\\S"); err != nil {
 				return err
 			}
 		}
@@ -983,7 +985,7 @@ func (v *GetInsightResultsRequest) Validate(path string) error {
 		return err
 	}
 	if v.InsightArn != nil {
-		if err := validation.Pattern(path+"InsightArn", (*v.InsightArn), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"InsightArn", (*v.InsightArn), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -993,7 +995,7 @@ func (v *GetInsightResultsRequest) Validate(path string) error {
 func (v *GetInsightsRequest) Validate(path string) error {
 	if v.InsightArns != nil {
 		for i0, e0 := range v.InsightArns {
-			if err := validation.Pattern(validation.Index(path+"InsightArns", i0), e0, pattern0, "", "\\S"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"InsightArns", i0), e0, pattern0, nil, "\\S"); err != nil {
 				return err
 			}
 		}
@@ -1011,7 +1013,7 @@ func (v *ListTagsForResourceRequest) Validate(path string) error {
 		return err
 	}
 	if v.ResourceArn != nil {
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern2, "", "^arn:aws:securityhub:"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern3, nil, "^arn:aws:securityhub:"); err != nil {
 			return err
 		}
 	}
@@ -1023,7 +1025,7 @@ func (v *Note) Validate(path string) error {
 		return err
 	}
 	if v.Text != nil {
-		if err := validation.Pattern(path+"Text", (*v.Text), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Text", (*v.Text), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -1031,7 +1033,7 @@ func (v *Note) Validate(path string) error {
 		return err
 	}
 	if v.UpdatedBy != nil {
-		if err := validation.Pattern(path+"UpdatedBy", (*v.UpdatedBy), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"UpdatedBy", (*v.UpdatedBy), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -1039,7 +1041,7 @@ func (v *Note) Validate(path string) error {
 		return err
 	}
 	if v.UpdatedAt != nil {
-		if err := validation.Pattern(path+"UpdatedAt", (*v.UpdatedAt), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"UpdatedAt", (*v.UpdatedAt), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -1051,7 +1053,7 @@ func (v *NoteUpdate) Validate(path string) error {
 		return err
 	}
 	if v.Text != nil {
-		if err := validation.Pattern(path+"Text", (*v.Text), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Text", (*v.Text), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -1059,7 +1061,7 @@ func (v *NoteUpdate) Validate(path string) error {
 		return err
 	}
 	if v.UpdatedBy != nil {
-		if err := validation.Pattern(path+"UpdatedBy", (*v.UpdatedBy), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"UpdatedBy", (*v.UpdatedBy), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -1071,7 +1073,7 @@ func (v *RelatedFinding) Validate(path string) error {
 		return err
 	}
 	if v.ProductArn != nil {
-		if err := validation.Pattern(path+"ProductArn", (*v.ProductArn), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"ProductArn", (*v.ProductArn), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -1079,7 +1081,7 @@ func (v *RelatedFinding) Validate(path string) error {
 		return err
 	}
 	if v.Id != nil {
-		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -1091,7 +1093,7 @@ func (v *Resource) Validate(path string) error {
 		return err
 	}
 	if v.Type != nil {
-		if err := validation.Pattern(path+"Type", (*v.Type), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Type", (*v.Type), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -1099,7 +1101,7 @@ func (v *Resource) Validate(path string) error {
 		return err
 	}
 	if v.Id != nil {
-		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Id", (*v.Id), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -1109,16 +1111,16 @@ func (v *Resource) Validate(path string) error {
 		}
 	}
 	if v.Region != nil {
-		if err := validation.Pattern(path+"Region", (*v.Region), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Region", (*v.Region), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
 	if v.Tags != nil {
 		for k0, e0 := range v.Tags {
-			if err := validation.Pattern(validation.Key(path+"Tags", k0), k0, pattern0, "", "\\S"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"Tags", k0), k0, pattern0, nil, "\\S"); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"Tags", k0), e0, pattern0, "", "\\S"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"Tags", k0), e0, pattern0, nil, "\\S"); err != nil {
 				return err
 			}
 		}
@@ -1133,7 +1135,7 @@ func (v *Severity) Validate(path string) error {
 		}
 	}
 	if v.Original != nil {
-		if err := validation.Pattern(path+"Original", (*v.Original), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Original", (*v.Original), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -1156,7 +1158,7 @@ func (v *SeverityUpdate) Validate(path string) error {
 
 func (v *SortCriterion) Validate(path string) error {
 	if v.Field != nil {
-		if err := validation.Pattern(path+"Field", (*v.Field), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Field", (*v.Field), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -1173,7 +1175,7 @@ func (v *StandardsSubscriptionRequest) Validate(path string) error {
 		return err
 	}
 	if v.StandardsArn != nil {
-		if err := validation.Pattern(path+"StandardsArn", (*v.StandardsArn), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"StandardsArn", (*v.StandardsArn), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -1182,7 +1184,7 @@ func (v *StandardsSubscriptionRequest) Validate(path string) error {
 
 func (v *StringFilter) Validate(path string) error {
 	if v.Value != nil {
-		if err := validation.Pattern(path+"Value", (*v.Value), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Value", (*v.Value), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -1199,7 +1201,7 @@ func (v *TagResourceRequest) Validate(path string) error {
 		return err
 	}
 	if v.ResourceArn != nil {
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern2, "", "^arn:aws:securityhub:"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern3, nil, "^arn:aws:securityhub:"); err != nil {
 			return err
 		}
 	}
@@ -1214,7 +1216,7 @@ func (v *TagResourceRequest) Validate(path string) error {
 			if err := validation.Length(validation.Key(path+"Tags", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Key(path+"Tags", k0), k0, pattern1, "aws:", "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
+			if err := validation.Pattern(validation.Key(path+"Tags", k0), k0, pattern1, pattern2, "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
 				return err
 			}
 			if err := validation.Length(validation.Key(path+"Tags", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(256))); err != nil {
@@ -1230,7 +1232,7 @@ func (v *UntagResourceRequest) Validate(path string) error {
 		return err
 	}
 	if v.ResourceArn != nil {
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern2, "", "^arn:aws:securityhub:"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern3, nil, "^arn:aws:securityhub:"); err != nil {
 			return err
 		}
 	}
@@ -1245,7 +1247,7 @@ func (v *UntagResourceRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"TagKeys", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"TagKeys", i0), e0, pattern1, "aws:", "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"TagKeys", i0), e0, pattern1, pattern2, "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
 				return err
 			}
 		}
@@ -1258,17 +1260,17 @@ func (v *UpdateActionTargetRequest) Validate(path string) error {
 		return err
 	}
 	if v.ActionTargetArn != nil {
-		if err := validation.Pattern(path+"ActionTargetArn", (*v.ActionTargetArn), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"ActionTargetArn", (*v.ActionTargetArn), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
 	if v.Name != nil {
-		if err := validation.Pattern(path+"Name", (*v.Name), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Name", (*v.Name), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
 	if v.Description != nil {
-		if err := validation.Pattern(path+"Description", (*v.Description), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Description", (*v.Description), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -1280,12 +1282,12 @@ func (v *UpdateInsightRequest) Validate(path string) error {
 		return err
 	}
 	if v.InsightArn != nil {
-		if err := validation.Pattern(path+"InsightArn", (*v.InsightArn), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"InsightArn", (*v.InsightArn), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
 	if v.Name != nil {
-		if err := validation.Pattern(path+"Name", (*v.Name), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"Name", (*v.Name), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
@@ -1295,7 +1297,7 @@ func (v *UpdateInsightRequest) Validate(path string) error {
 		}
 	}
 	if v.GroupByAttribute != nil {
-		if err := validation.Pattern(path+"GroupByAttribute", (*v.GroupByAttribute), pattern0, "", "\\S"); err != nil {
+		if err := validation.Pattern(path+"GroupByAttribute", (*v.GroupByAttribute), pattern0, nil, "\\S"); err != nil {
 			return err
 		}
 	}
