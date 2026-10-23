@@ -232,6 +232,7 @@ nav:
           - "Cognito identity pools": services/cognitoidentity.md
           - "Cognito user pools": services/cognitoidp.md
           - "IAM": services/iam.md
+          - "IAM Access Analyzer": services/accessanalyzer.md
           - "KMS": services/kms.md
           - "STS": services/sts.md
           - "Secrets Manager": services/secretsmanager.md

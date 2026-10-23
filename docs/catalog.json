@@ -2646,6 +2646,30 @@
       ],
       "execution": "Records only",
       "package": "amplify"
+    },
+    "accessanalyzer": {
+      "title": "IAM Access Analyzer",
+      "category": "Security, Identity & Compliance",
+      "scope": "Account and Region",
+      "summary": "Store analyzers and archive rules as records with deterministic validation, empty findings, and CloudFormation/Terraform support.",
+      "features": [
+        "Nineteen pinned REST JSON operations for analyzers, archive rules, findings, and resource tags, with AWS SDK v2 coverage",
+        "Every input is checked against the model's required, length, pattern and enum constraints and fails ValidationException",
+        "Analyzers with account and organization types, unused access configuration validation (1..365 days), and status immediately ACTIVE on read",
+        "Archive rules with filter criteria validation (eq, neq, contains, exists), list pagination, and inline creation during analyzer setup (inline rule names must be unique)",
+        "CloudFormation resource AWS::AccessAnalyzer::Analyzer with inline archive rules, configuration updates, and resource deletion",
+        "TagResource, UntagResource, ListTagsForResource on analyzer ARNs; Resource Groups Tagging API integration",
+        "Deterministic gaps: analyzers produce no findings; ListFindings and ListFindingsV2 return empty results; GetFinding, GetFindingV2, and UpdateFindings return ResourceNotFoundException",
+        "Records-only inventory and Terraform accessanalyzer endpoint key"
+      ],
+      "gaps": [
+        "No policy analysis engine: IAM and resource policies are not analyzed and no findings are generated; finding lookups and updates return ResourceNotFoundException",
+        "No organization validation: ORGANIZATION analyzers are accepted as records without querying AWS Organizations",
+        "ValidatePolicy, CheckNoNewAccess, CheckAccessNotGranted, CheckNoPublicAccess, access previews, and policy generation are not supported",
+        "StartResourceScan, analyzed resources, and recommendations are not supported"
+      ],
+      "execution": "Records only",
+      "package": "accessanalyzer"
     }
   },
   "future": {
