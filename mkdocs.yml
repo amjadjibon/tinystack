@@ -195,6 +195,7 @@ nav:
           - "AWS Cost Explorer": services/costexplorer.md
           - "AWS Cost and Usage Reports": services/costandusagereportservice.md
           - "AWS Resource Explorer": services/resourceexplorer2.md
+          - "AWS Service Catalog": services/servicecatalog.md
           - "AWS Service Quotas": services/servicequotas.md
           - "Amazon Managed Service for Prometheus": services/amp.md
           - "AppConfig": services/appconfig.md

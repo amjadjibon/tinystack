@@ -2699,6 +2699,34 @@
       "execution": "Live regional inventory search; records-only control plane",
       "package": "resourceexplorer2"
     },
+    "servicecatalog": {
+      "title": "AWS Service Catalog",
+      "category": "Management & Governance",
+      "scope": "Account and Region",
+      "summary": "Store portfolios, products, versions, associations and constraints through an AWS JSON 1.1 records-only control plane.",
+      "features": [
+        "Twenty-eight pinned-model operations for portfolios, products, provisioning artifacts, portfolio/product and IAM or IAM_PATTERN principal associations, and constraints; generated validation returns InvalidParametersException",
+        "Product types CLOUD_FORMATION_TEMPLATE, MARKETPLACE, TERRAFORM_OPEN_SOURCE, TERRAFORM_CLOUD and EXTERNAL are accepted as records. ProvisioningArtifactParameters must include Info.LoadTemplateFromURL or Info.TemplateURL. URLs are stored verbatim and never fetched or validated as templates; artifact responses expose the URL under Info.TemplateUrl",
+        "Products, artifacts and constraints are immediately AVAILABLE, meaning their metadata was saved. Artifacts start Active=true and Guidance=DEFAULT; name, description, Active and Guidance can be updated. The last artifact cannot be deleted. Inactive artifacts are omitted from DescribeProduct",
+        "Portfolio deletion fails ResourceInUseException while products, principals or constraints are associated. Associated products cannot be deleted, and product disassociation fails while constraints remain",
+        "LAUNCH, NOTIFICATION, RESOURCE_UPDATE, STACKSET and TEMPLATE constraints store JSON objects without enforcing their rules. LAUNCH requires exactly one nonempty RoleArn or LocalRoleName. Duplicate LAUNCH or STACKSET constraints and LAUNCH/STACKSET conflicts on a portfolio/product pair fail explicitly",
+        "SearchProductsAsAdmin supports PortfolioId; both product searches support Owner and ProductType exact matches and case-insensitive FullTextSearch over name, description and owner. Values within a key are ORed; keys are ANDed. Other filter keys fail explicitly",
+        "Lists and searches use storage key order with PageToken pagination (default page size 20); artifact listing is unpaginated as in the model. ID/name selectors are mutually exclusive and ambiguous names fail explicitly",
+        "Create tokens replay successful responses and reject parameter changes; tags live in portfolio/product records and are changed through UpdatePortfolio or UpdateProduct AddTags/RemoveTags. Resource Groups Tagging API and inventory are integrated",
+        "CloudFormation Portfolio, CloudFormationProduct, PortfolioProductAssociation, PortfolioPrincipalAssociation and LaunchRoleConstraint providers; product artifact configuration changes replace the product. Terraform portfolio, product and both portfolio association resources and endpoint configuration are covered",
+        "AWS SDK v2 integration coverage includes all supported operations, associations, errors, pagination, account/Region isolation, tags, CloudFormation and SQLite restart"
+      ],
+      "gaps": [
+        "ProvisionProduct, DescribeProvisionedProduct, ScanProvisionedProducts, SearchProvisionedProducts, TerminateProvisionedProduct and DescribeRecord are not whitelisted. No templates are deployed and no provisioned-product or execution records are invented",
+        "Tag Options, portfolio sharing/organizations, budgets, service actions, AppRegistry, copy product, source connections and newer operations are not implemented",
+        "No IAM principal, role or wildcard matching, ownership authorization, constraint enforcement, launch-path resolution, template inspection, template parameter extraction, or CloudFormation/S3 fetching; HasDefaultPath=false and launch paths are empty",
+        "SearchProducts returns locally stored products without principal authorization filtering. Sorting, ProductSource and other unimplemented input members are rejected explicitly. AcceptLanguage accepts only empty/default or en (English); other languages and source-portfolio associations fail explicitly",
+        "DisableTemplateValidation and ImportFromPhysicalId are unsupported. Only stored URL sources are supported. No template validation is claimed, regardless of product or artifact type",
+        "CloudFormation AcceptLanguage, SourceConnection, SourcePortfolioId and ReplaceProvisioningArtifacts are unsupported; CloudFormation product artifact changes replace rather than reconcile versions. Launch-role parameters and descriptions update in place"
+      ],
+      "execution": "Records only",
+      "package": "servicecatalog"
+    },
     "accessanalyzer": {
       "title": "IAM Access Analyzer",
       "category": "Security, Identity & Compliance",
