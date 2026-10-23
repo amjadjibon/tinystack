@@ -47,6 +47,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: management,
 		icon: "resourceexplorer2",
 	},
+	servicecatalog: {
+		title: "Service Catalog",
+		category: management,
+		icon: "servicecatalog",
+	},
 	accessanalyzer: {
 		title: "IAM Access Analyzer",
 		category: security,

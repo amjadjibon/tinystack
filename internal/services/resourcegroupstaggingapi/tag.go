@@ -258,6 +258,14 @@ var taggers = map[string]tagger{
 	"resourceexplorer2":   resourceOperations("resourceexplorer2", "ResourceArn", plain),
 	"accessanalyzer":      resourceOperations("accessanalyzer", "ResourceArn", plain),
 	"ram":                 resourceOperations("ram", "ResourceShareArn", pairs),
+	"servicecatalog": {
+		tag: func(ctx context.Context, c *catalog.Caller, r *catalog.Owned, tags map[string]string) error {
+			return serviceCatalogTags(ctx, c, r, "AddTags", pairs(tags))
+		},
+		untag: func(ctx context.Context, c *catalog.Caller, r *catalog.Owned, keys []string) error {
+			return serviceCatalogTags(ctx, c, r, "RemoveTags", names(keys))
+		},
+	},
 	"ssoadmin": operations("ssoadmin", "TagResource", "UntagResource",
 		func(_ context.Context, _ *catalog.Caller, r *catalog.Owned) (map[string]any, error) {
 			details, ok := r.Details.(map[string]any)
@@ -532,5 +540,16 @@ func (s *Service) UntagResources(
 // CodeBuild tags are replaced through UpdateProject; it has no tag endpoints.
 func putCodeBuildTags(ctx context.Context, c *catalog.Caller, r *catalog.Owned, tags map[string]string) error {
 	_, err := c.Call(ctx, "codebuild", "UpdateProject", map[string]any{"Name": r.Name, "Tags": pairs(tags)})
+	return err
+}
+
+func serviceCatalogTags(ctx context.Context, c *catalog.Caller, r *catalog.Owned, member string, value any) error {
+	op := "UpdateProduct"
+	if r.Type == "portfolio" {
+		op = "UpdatePortfolio"
+	}
+
+	_, id, _ := strings.Cut(r.ARN, "/")
+	_, err := c.Call(ctx, "servicecatalog", op, map[string]any{"Id": id, member: value})
 	return err
 }

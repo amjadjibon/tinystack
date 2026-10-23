@@ -109,6 +109,7 @@ import (
 	schedulerapi "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
 	securityhubapi "github.com/amjadjibon/tinystack/internal/aws/generated/securityhub"
+	servicecatalogapi "github.com/amjadjibon/tinystack/internal/aws/generated/servicecatalog"
 	servicediscoveryapi "github.com/amjadjibon/tinystack/internal/aws/generated/servicediscovery"
 	servicequotasapi "github.com/amjadjibon/tinystack/internal/aws/generated/servicequotas"
 	sesapi "github.com/amjadjibon/tinystack/internal/aws/generated/ses"
@@ -227,6 +228,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/scheduler"
 	"github.com/amjadjibon/tinystack/internal/services/secretsmanager"
 	"github.com/amjadjibon/tinystack/internal/services/securityhub"
+	"github.com/amjadjibon/tinystack/internal/services/servicecatalog"
 	"github.com/amjadjibon/tinystack/internal/services/servicediscovery"
 	"github.com/amjadjibon/tinystack/internal/services/servicequotas"
 	"github.com/amjadjibon/tinystack/internal/services/ses"
@@ -457,6 +459,7 @@ func build(
 	connectionRecords := codeconnections.New(store)
 	ampRecords := amp.New(store)
 	resourceExplorerRecords := resourceexplorer2.New(store)
+	serviceCatalogRecords := servicecatalog.New(store)
 	accessAnalyzerRecords := accessanalyzer.New(store)
 	securityHubRecords := securityhub.New(store)
 	inspector2Records := inspector2.New(store)
@@ -586,6 +589,7 @@ func build(
 		amplifyapi.Descriptor(amplifyRecords),
 		codeconnectionsapi.Descriptor(connectionRecords),
 		ampapi.Descriptor(ampRecords),
+		servicecatalogapi.Descriptor(serviceCatalogRecords),
 		accessanalyzerapi.Descriptor(accessAnalyzerRecords),
 		resourceexplorer2api.Descriptor(resourceExplorerRecords),
 		securityhubapi.Descriptor(securityHubRecords),

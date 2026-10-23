@@ -434,6 +434,10 @@
     "resourceexplorer2": {
       "path": "codegen/sdk-codegen/aws-models/resource-explorer-2.json",
       "sha256": "da0468629f8b369c648bf9e962c5237dbad4c8d78b947ed254fd006c05461d30"
+    },
+    "servicecatalog": {
+      "path": "codegen/sdk-codegen/aws-models/service-catalog.json",
+      "sha256": "0e5e2f9eb8726eb0ada441b49b3382c81e152916d609033c0d16d7b939bac3f7"
     }
   }
 }

@@ -18,6 +18,7 @@ provider "aws" {
 
   endpoints {
     resourceexplorer2    = var.endpoint
+    servicecatalog       = var.endpoint
     accessanalyzer       = var.endpoint
     securityhub          = var.endpoint
     inspector2           = var.endpoint
@@ -2566,4 +2567,33 @@ resource "aws_resourceexplorer2_view" "local" {
   filters { filter_string = "service:s3" }
   included_property { name = "tags" }
   tags = { team = var.team }
+}
+
+resource "aws_servicecatalog_portfolio" "main" {
+  name          = "local-portfolio"
+  description   = "Records-only catalog"
+  provider_name = "TinyStack"
+  tags          = { team = var.team }
+}
+
+resource "aws_servicecatalog_product" "main" {
+  name  = "local-product"
+  owner = "TinyStack"
+  type  = "CLOUD_FORMATION_TEMPLATE"
+  provisioning_artifact_parameters {
+    name         = "v1"
+    template_url = "https://example.invalid/stored-only.json"
+  }
+  tags = { team = var.team }
+}
+
+resource "aws_servicecatalog_product_portfolio_association" "main" {
+  portfolio_id = aws_servicecatalog_portfolio.main.id
+  product_id   = aws_servicecatalog_product.main.id
+}
+
+resource "aws_servicecatalog_principal_portfolio_association" "main" {
+  portfolio_id   = aws_servicecatalog_portfolio.main.id
+  principal_arn  = "arn:aws:iam::000000000000:role/catalog-user"
+  principal_type = "IAM"
 }

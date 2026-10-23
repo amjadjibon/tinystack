@@ -86,6 +86,7 @@ var namespaces = map[string]string{
 	"verifiedpermissions":       "VerifiedPermissions",
 	"amp":                       "APS",
 	"accessanalyzer":            "AccessAnalyzer",
+	"servicecatalog":            "ServiceCatalog",
 	"securityhub":               "SecurityHub",
 	"inspector2":                "InspectorV2",
 }
@@ -97,6 +98,8 @@ var typeNames = map[string]string{
 	"securityhub/standard":                   "Standard",
 	"securityhub/insight":                    "Insight",
 	"amp/rulegroupsnamespace":                "RuleGroupsNamespace",
+	"servicecatalog/portfolio":               "Portfolio",
+	"servicecatalog/product":                 "CloudFormationProduct",
 	"apprunner/service":                      "Service",
 	"apprunner/autoscalingconfiguration":     "AutoScalingConfiguration",
 	"apprunner/vpcconnector":                 "VpcConnector",

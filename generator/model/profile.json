@@ -35689,5 +35689,432 @@
         "Tags"
       ]
     }
+  },
+  "servicecatalog": {
+    "validation": {
+      "code": "InvalidParametersException"
+    },
+    "operations": [
+      "CreatePortfolio",
+      "DescribePortfolio",
+      "ListPortfolios",
+      "UpdatePortfolio",
+      "DeletePortfolio",
+      "CreateProduct",
+      "DescribeProduct",
+      "DescribeProductAsAdmin",
+      "SearchProductsAsAdmin",
+      "SearchProducts",
+      "UpdateProduct",
+      "DeleteProduct",
+      "CreateProvisioningArtifact",
+      "DescribeProvisioningArtifact",
+      "ListProvisioningArtifacts",
+      "UpdateProvisioningArtifact",
+      "DeleteProvisioningArtifact",
+      "AssociateProductWithPortfolio",
+      "DisassociateProductFromPortfolio",
+      "ListPortfoliosForProduct",
+      "AssociatePrincipalWithPortfolio",
+      "DisassociatePrincipalFromPortfolio",
+      "ListPrincipalsForPortfolio",
+      "CreateConstraint",
+      "DescribeConstraint",
+      "ListConstraintsForPortfolio",
+      "UpdateConstraint",
+      "DeleteConstraint"
+    ],
+    "shapes": {
+      "CreatePortfolioInput": [
+        "AcceptLanguage",
+        "DisplayName",
+        "Description",
+        "ProviderName",
+        "Tags",
+        "IdempotencyToken"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "CreatePortfolioOutput": [
+        "PortfolioDetail",
+        "Tags"
+      ],
+      "PortfolioDetail": [
+        "Id",
+        "ARN",
+        "DisplayName",
+        "Description",
+        "CreatedTime",
+        "ProviderName"
+      ],
+      "DescribePortfolioInput": [
+        "AcceptLanguage",
+        "Id"
+      ],
+      "DescribePortfolioOutput": [
+        "PortfolioDetail",
+        "Tags",
+        "TagOptions",
+        "Budgets"
+      ],
+      "TagOptionDetail": [
+        "Key",
+        "Value",
+        "Active",
+        "Id",
+        "Owner"
+      ],
+      "BudgetDetail": [
+        "BudgetName"
+      ],
+      "ListPortfoliosInput": [
+        "AcceptLanguage",
+        "PageToken",
+        "PageSize"
+      ],
+      "ListPortfoliosOutput": [
+        "PortfolioDetails",
+        "NextPageToken"
+      ],
+      "UpdatePortfolioInput": [
+        "AcceptLanguage",
+        "Id",
+        "DisplayName",
+        "Description",
+        "ProviderName",
+        "AddTags",
+        "RemoveTags"
+      ],
+      "UpdatePortfolioOutput": [
+        "PortfolioDetail",
+        "Tags"
+      ],
+      "DeletePortfolioInput": [
+        "AcceptLanguage",
+        "Id"
+      ],
+      "DeletePortfolioOutput": [],
+      "CreateProductInput": [
+        "AcceptLanguage",
+        "Name",
+        "Owner",
+        "Description",
+        "Distributor",
+        "SupportDescription",
+        "SupportEmail",
+        "SupportUrl",
+        "ProductType",
+        "Tags",
+        "ProvisioningArtifactParameters",
+        "IdempotencyToken"
+      ],
+      "ProvisioningArtifactProperties": [
+        "Name",
+        "Description",
+        "Info",
+        "Type"
+      ],
+      "CreateProductOutput": [
+        "ProductViewDetail",
+        "ProvisioningArtifactDetail",
+        "Tags"
+      ],
+      "ProductViewDetail": [
+        "ProductViewSummary",
+        "Status",
+        "ProductARN",
+        "CreatedTime"
+      ],
+      "ProductViewSummary": [
+        "Id",
+        "ProductId",
+        "Name",
+        "Owner",
+        "ShortDescription",
+        "Type",
+        "Distributor",
+        "HasDefaultPath",
+        "SupportEmail",
+        "SupportDescription",
+        "SupportUrl"
+      ],
+      "ProvisioningArtifactDetail": [
+        "Id",
+        "Name",
+        "Description",
+        "Type",
+        "CreatedTime",
+        "Active",
+        "Guidance"
+      ],
+      "DescribeProductInput": [
+        "AcceptLanguage",
+        "Id",
+        "Name"
+      ],
+      "DescribeProductOutput": [
+        "ProductViewSummary",
+        "ProvisioningArtifacts",
+        "Budgets",
+        "LaunchPaths"
+      ],
+      "ProvisioningArtifact": [
+        "Id",
+        "Name",
+        "Description",
+        "CreatedTime",
+        "Guidance"
+      ],
+      "LaunchPath": [
+        "Id",
+        "Name"
+      ],
+      "DescribeProductAsAdminInput": [
+        "AcceptLanguage",
+        "Id",
+        "Name"
+      ],
+      "DescribeProductAsAdminOutput": [
+        "ProductViewDetail",
+        "ProvisioningArtifactSummaries",
+        "Tags",
+        "TagOptions",
+        "Budgets"
+      ],
+      "ProvisioningArtifactSummary": [
+        "Id",
+        "Name",
+        "Description",
+        "CreatedTime",
+        "ProvisioningArtifactMetadata"
+      ],
+      "SearchProductsAsAdminInput": [
+        "AcceptLanguage",
+        "PortfolioId",
+        "Filters",
+        "PageToken",
+        "PageSize"
+      ],
+      "SearchProductsAsAdminOutput": [
+        "ProductViewDetails",
+        "NextPageToken"
+      ],
+      "SearchProductsInput": [
+        "AcceptLanguage",
+        "Filters",
+        "PageSize",
+        "PageToken"
+      ],
+      "SearchProductsOutput": [
+        "ProductViewSummaries",
+        "ProductViewAggregations",
+        "NextPageToken"
+      ],
+      "ProductViewAggregationValue": [
+        "Value",
+        "ApproximateCount"
+      ],
+      "UpdateProductInput": [
+        "AcceptLanguage",
+        "Id",
+        "Name",
+        "Owner",
+        "Description",
+        "Distributor",
+        "SupportDescription",
+        "SupportEmail",
+        "SupportUrl",
+        "AddTags",
+        "RemoveTags"
+      ],
+      "UpdateProductOutput": [
+        "ProductViewDetail",
+        "Tags"
+      ],
+      "DeleteProductInput": [
+        "AcceptLanguage",
+        "Id"
+      ],
+      "DeleteProductOutput": [],
+      "CreateProvisioningArtifactInput": [
+        "AcceptLanguage",
+        "ProductId",
+        "Parameters",
+        "IdempotencyToken"
+      ],
+      "CreateProvisioningArtifactOutput": [
+        "ProvisioningArtifactDetail",
+        "Info",
+        "Status"
+      ],
+      "DescribeProvisioningArtifactInput": [
+        "AcceptLanguage",
+        "ProvisioningArtifactId",
+        "ProductId",
+        "ProvisioningArtifactName",
+        "ProductName"
+      ],
+      "DescribeProvisioningArtifactOutput": [
+        "ProvisioningArtifactDetail",
+        "Info",
+        "Status",
+        "ProvisioningArtifactParameters"
+      ],
+      "ProvisioningArtifactParameter": [
+        "ParameterKey",
+        "DefaultValue",
+        "ParameterType",
+        "IsNoEcho",
+        "Description",
+        "ParameterConstraints"
+      ],
+      "ParameterConstraints": [
+        "AllowedValues",
+        "AllowedPattern",
+        "ConstraintDescription",
+        "MaxLength",
+        "MinLength",
+        "MaxValue",
+        "MinValue"
+      ],
+      "ListProvisioningArtifactsInput": [
+        "AcceptLanguage",
+        "ProductId"
+      ],
+      "ListProvisioningArtifactsOutput": [
+        "ProvisioningArtifactDetails",
+        "NextPageToken"
+      ],
+      "UpdateProvisioningArtifactInput": [
+        "AcceptLanguage",
+        "ProductId",
+        "ProvisioningArtifactId",
+        "Name",
+        "Description",
+        "Active",
+        "Guidance"
+      ],
+      "UpdateProvisioningArtifactOutput": [
+        "ProvisioningArtifactDetail",
+        "Info",
+        "Status"
+      ],
+      "DeleteProvisioningArtifactInput": [
+        "AcceptLanguage",
+        "ProductId",
+        "ProvisioningArtifactId"
+      ],
+      "DeleteProvisioningArtifactOutput": [],
+      "AssociateProductWithPortfolioInput": [
+        "AcceptLanguage",
+        "ProductId",
+        "PortfolioId"
+      ],
+      "AssociateProductWithPortfolioOutput": [],
+      "DisassociateProductFromPortfolioInput": [
+        "AcceptLanguage",
+        "ProductId",
+        "PortfolioId"
+      ],
+      "DisassociateProductFromPortfolioOutput": [],
+      "ListPortfoliosForProductInput": [
+        "AcceptLanguage",
+        "ProductId",
+        "PageToken",
+        "PageSize"
+      ],
+      "ListPortfoliosForProductOutput": [
+        "PortfolioDetails",
+        "NextPageToken"
+      ],
+      "AssociatePrincipalWithPortfolioInput": [
+        "AcceptLanguage",
+        "PortfolioId",
+        "PrincipalARN",
+        "PrincipalType"
+      ],
+      "AssociatePrincipalWithPortfolioOutput": [],
+      "DisassociatePrincipalFromPortfolioInput": [
+        "AcceptLanguage",
+        "PortfolioId",
+        "PrincipalARN",
+        "PrincipalType"
+      ],
+      "DisassociatePrincipalFromPortfolioOutput": [],
+      "ListPrincipalsForPortfolioInput": [
+        "AcceptLanguage",
+        "PortfolioId",
+        "PageSize",
+        "PageToken"
+      ],
+      "ListPrincipalsForPortfolioOutput": [
+        "Principals",
+        "NextPageToken"
+      ],
+      "Principal": [
+        "PrincipalARN",
+        "PrincipalType"
+      ],
+      "CreateConstraintInput": [
+        "AcceptLanguage",
+        "PortfolioId",
+        "ProductId",
+        "Parameters",
+        "Type",
+        "Description",
+        "IdempotencyToken"
+      ],
+      "CreateConstraintOutput": [
+        "ConstraintDetail",
+        "ConstraintParameters",
+        "Status"
+      ],
+      "ConstraintDetail": [
+        "ConstraintId",
+        "Type",
+        "Description",
+        "Owner",
+        "ProductId",
+        "PortfolioId"
+      ],
+      "DescribeConstraintInput": [
+        "AcceptLanguage",
+        "Id"
+      ],
+      "DescribeConstraintOutput": [
+        "ConstraintDetail",
+        "ConstraintParameters",
+        "Status"
+      ],
+      "ListConstraintsForPortfolioInput": [
+        "AcceptLanguage",
+        "PortfolioId",
+        "ProductId",
+        "PageSize",
+        "PageToken"
+      ],
+      "ListConstraintsForPortfolioOutput": [
+        "ConstraintDetails",
+        "NextPageToken"
+      ],
+      "UpdateConstraintInput": [
+        "AcceptLanguage",
+        "Id",
+        "Description",
+        "Parameters"
+      ],
+      "UpdateConstraintOutput": [
+        "ConstraintDetail",
+        "ConstraintParameters",
+        "Status"
+      ],
+      "DeleteConstraintInput": [
+        "AcceptLanguage",
+        "Id"
+      ],
+      "DeleteConstraintOutput": []
+    }
   }
 }

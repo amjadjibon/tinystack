@@ -85,9 +85,9 @@ def main():
                 # EMR cluster tags and task-group capacity add two, Amplify app/branch updates add two,
                 # Access Analyzer tags add one, Security Hub action target and insight names add two, and
                 # Network Firewall rule group, policy and firewall tags add three; Inspector filter tags add one;
-                # Resource Explorer index and view tags add two.
+                # Resource Explorer index and view tags add two; Service Catalog portfolio and product tags add two.
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "7 added, 123 changed, 7 destroyed" in updated, updated
+                assert "7 added, 125 changed, 7 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"
                 terraform("plan", "-detailed-exitcode", team="platform")
                 # The provider replaces the monitor when its name changes. The subscription
