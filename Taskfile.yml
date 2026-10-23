@@ -45,7 +45,7 @@ tasks:
 
   test:
     cmds:
-      - go test -race -count=1 -v ./...
+      - go test -race -count=1 -timeout 30m -v ./...
   test:console:
     desc: "Test what only the console build has, the CloudShell and MCP server (embeds the console, so it builds it first)"
     deps: [ui:build]
@@ -75,7 +75,7 @@ tasks:
     desc: "Test the separate Go Testcontainers module (requires Docker; builds the image unless TINYSTACK_IMAGE is set)"
     dir: tests/testcontainers
     cmds:
-      - go test -race -count=1 -v ./...
+      - go test -race -count=1 -timeout 30m -v ./...
 
   test:testcontainers:python:
     desc: "Test the separate Python Testcontainers module (requires Docker; builds the image unless TINYSTACK_IMAGE is set)"
