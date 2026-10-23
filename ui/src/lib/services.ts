@@ -140,6 +140,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: analytics,
 		icon: "lakeformation",
 	},
+	apprunner: {
+		title: "App Runner",
+		category: compute,
+		icon: "apprunner",
+	},
 	codeconnections: {
 		title: "CodeConnections",
 		category: developerTools,

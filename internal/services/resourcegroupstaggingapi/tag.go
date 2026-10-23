@@ -228,6 +228,7 @@ var taggers = map[string]tagger{
 	"kinesisanalyticsv2":   resourceOperations("kinesisanalyticsv2", "ResourceARN", pairs),
 	"opensearchserverless": resourceOperations("opensearchserverless", "ResourceArn", pairs),
 	"emrserverless":        resourceOperations("emrserverless", "ResourceArn", plain),
+	"apprunner":            resourceOperations("apprunner", "ResourceArn", pairs),
 	"codeconnections":      resourceOperations("codeconnections", "ResourceArn", pairs),
 	"memorydb":             resourceOperations("memorydb", "ResourceArn", pairs),
 	"redshift": operations("redshift", "CreateTags", "DeleteTags", byARN("ResourceName"),

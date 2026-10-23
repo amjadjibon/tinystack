@@ -18,6 +18,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/appconfig v1.54.4
 	github.com/aws/aws-sdk-go-v2/service/appconfigdata v1.32.4
 	github.com/aws/aws-sdk-go-v2/service/applicationautoscaling v1.51.4
+	github.com/aws/aws-sdk-go-v2/service/apprunner v1.39.5
 	github.com/aws/aws-sdk-go-v2/service/appsync v1.62.4
 	github.com/aws/aws-sdk-go-v2/service/athena v1.66.4
 	github.com/aws/aws-sdk-go-v2/service/autoscaling v1.78.4

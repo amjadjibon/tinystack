@@ -28,6 +28,7 @@ import (
 	appconfigapi "github.com/amjadjibon/tinystack/internal/aws/generated/appconfig"
 	appconfigdataapi "github.com/amjadjibon/tinystack/internal/aws/generated/appconfigdata"
 	applicationautoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/applicationautoscaling"
+	apprunnerapi "github.com/amjadjibon/tinystack/internal/aws/generated/apprunner"
 	appsyncapi "github.com/amjadjibon/tinystack/internal/aws/generated/appsync"
 	athenaapi "github.com/amjadjibon/tinystack/internal/aws/generated/athena"
 	autoscalingapi "github.com/amjadjibon/tinystack/internal/aws/generated/autoscaling"
@@ -136,6 +137,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/services/appconfig"
 	"github.com/amjadjibon/tinystack/internal/services/applicationautoscaling"
+	"github.com/amjadjibon/tinystack/internal/services/apprunner"
 	"github.com/amjadjibon/tinystack/internal/services/appsync"
 	"github.com/amjadjibon/tinystack/internal/services/athena"
 	"github.com/amjadjibon/tinystack/internal/services/autoscaling"
@@ -438,6 +440,7 @@ func build(
 	curRecords := costandusagereportservice.New(store)
 	budgetRecords := budgets.New(store, deliveries, logger)
 	a.onStop(budgetRecords.Stop)
+	appRunnerRecords := apprunner.New(store)
 	connectionRecords := codeconnections.New(store)
 	ampRecords := amp.New(store)
 	quotaRecords := servicequotas.New(store)
@@ -561,6 +564,7 @@ func build(
 		codeartifactapi.Descriptor(artifactRecords),
 		timestreamwriteapi.Descriptor(timestreamRecords),
 		budgetsapi.Descriptor(budgetRecords),
+		apprunnerapi.Descriptor(appRunnerRecords),
 		codeconnectionsapi.Descriptor(connectionRecords),
 		ampapi.Descriptor(ampRecords),
 		costexplorerapi.Descriptor(costExplorerRecords),

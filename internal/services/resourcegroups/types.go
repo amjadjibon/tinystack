@@ -10,6 +10,7 @@ import (
 // resource types ("sqs" to "AWS::SQS::..."). A service missing here has no
 // resource types a group can select.
 var namespaces = map[string]string{
+	"apprunner":                 "AppRunner",
 	"bedrock":                   "Bedrock",
 	"elasticbeanstalk":          "ElasticBeanstalk",
 	"signer":                    "Signer",
@@ -87,6 +88,10 @@ var namespaces = map[string]string{
 // not the inventory type in PascalCase, by "service/type".
 var typeNames = map[string]string{
 	"amp/rulegroupsnamespace":                "RuleGroupsNamespace",
+	"apprunner/service":                      "Service",
+	"apprunner/autoscalingconfiguration":     "AutoScalingConfiguration",
+	"apprunner/vpcconnector":                 "VpcConnector",
+	"apprunner/observabilityconfiguration":   "ObservabilityConfiguration",
 	"bedrock/guardrail":                      "Guardrail",
 	"bedrock/application-inference-profile":  "ApplicationInferenceProfile",
 	"elasticbeanstalk/application":           "Application",
@@ -169,6 +174,10 @@ func pascal(kind string) string {
 // "AWS::SQS::Queue", derived from the service that holds it and its inventory
 // type. It reports false for the resources of a service with no namespace.
 func resourceType(r *catalog.Owned) (string, bool) {
+	if r.Service == "apprunner" && r.Type == "connection" {
+		return "", false
+	}
+
 	namespace, ok := namespaces[r.Service]
 	if !ok || r.Type == "" {
 		return "", false

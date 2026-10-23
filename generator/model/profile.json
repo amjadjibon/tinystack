@@ -32194,5 +32194,433 @@
         "ConnectionId"
       ]
     }
+  },
+  "apprunner": {
+    "operations": [
+      "CreateAutoScalingConfiguration",
+      "CreateConnection",
+      "CreateObservabilityConfiguration",
+      "CreateService",
+      "CreateVpcConnector",
+      "DeleteAutoScalingConfiguration",
+      "DeleteConnection",
+      "DeleteObservabilityConfiguration",
+      "DeleteService",
+      "DeleteVpcConnector",
+      "DescribeAutoScalingConfiguration",
+      "DescribeObservabilityConfiguration",
+      "DescribeService",
+      "DescribeVpcConnector",
+      "ListAutoScalingConfigurations",
+      "ListConnections",
+      "ListObservabilityConfigurations",
+      "ListOperations",
+      "ListServices",
+      "ListTagsForResource",
+      "ListVpcConnectors",
+      "PauseService",
+      "ResumeService",
+      "StartDeployment",
+      "TagResource",
+      "UntagResource",
+      "UpdateService",
+      "UpdateDefaultAutoScalingConfiguration"
+    ],
+    "shapes": {
+      "CreateAutoScalingConfigurationRequest": [
+        "AutoScalingConfigurationName",
+        "MaxConcurrency",
+        "MinSize",
+        "MaxSize",
+        "Tags"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "CreateAutoScalingConfigurationResponse": [
+        "AutoScalingConfiguration"
+      ],
+      "AutoScalingConfiguration": [
+        "AutoScalingConfigurationArn",
+        "AutoScalingConfigurationName",
+        "AutoScalingConfigurationRevision",
+        "Latest",
+        "Status",
+        "MaxConcurrency",
+        "MinSize",
+        "MaxSize",
+        "CreatedAt",
+        "DeletedAt",
+        "HasAssociatedService",
+        "IsDefault"
+      ],
+      "CreateConnectionRequest": [
+        "ConnectionName",
+        "ProviderType",
+        "Tags"
+      ],
+      "CreateConnectionResponse": [
+        "Connection"
+      ],
+      "Connection": [
+        "ConnectionName",
+        "ConnectionArn",
+        "ProviderType",
+        "Status",
+        "CreatedAt"
+      ],
+      "CreateObservabilityConfigurationRequest": [
+        "ObservabilityConfigurationName",
+        "TraceConfiguration",
+        "Tags"
+      ],
+      "TraceConfiguration": [
+        "Vendor"
+      ],
+      "CreateObservabilityConfigurationResponse": [
+        "ObservabilityConfiguration"
+      ],
+      "ObservabilityConfiguration": [
+        "ObservabilityConfigurationArn",
+        "ObservabilityConfigurationName",
+        "TraceConfiguration",
+        "ObservabilityConfigurationRevision",
+        "Latest",
+        "Status",
+        "CreatedAt",
+        "DeletedAt"
+      ],
+      "CreateServiceRequest": [
+        "ServiceName",
+        "SourceConfiguration",
+        "InstanceConfiguration",
+        "Tags",
+        "EncryptionConfiguration",
+        "HealthCheckConfiguration",
+        "AutoScalingConfigurationArn",
+        "NetworkConfiguration",
+        "ObservabilityConfiguration"
+      ],
+      "SourceConfiguration": [
+        "CodeRepository",
+        "ImageRepository",
+        "AutoDeploymentsEnabled",
+        "AuthenticationConfiguration"
+      ],
+      "CodeRepository": [
+        "RepositoryUrl",
+        "SourceCodeVersion",
+        "CodeConfiguration",
+        "SourceDirectory"
+      ],
+      "SourceCodeVersion": [
+        "Type",
+        "Value"
+      ],
+      "CodeConfiguration": [
+        "ConfigurationSource",
+        "CodeConfigurationValues"
+      ],
+      "CodeConfigurationValues": [
+        "Runtime",
+        "BuildCommand",
+        "StartCommand",
+        "Port",
+        "RuntimeEnvironmentVariables",
+        "RuntimeEnvironmentSecrets"
+      ],
+      "ImageRepository": [
+        "ImageIdentifier",
+        "ImageConfiguration",
+        "ImageRepositoryType"
+      ],
+      "ImageConfiguration": [
+        "RuntimeEnvironmentVariables",
+        "StartCommand",
+        "Port",
+        "RuntimeEnvironmentSecrets"
+      ],
+      "AuthenticationConfiguration": [
+        "ConnectionArn",
+        "AccessRoleArn"
+      ],
+      "InstanceConfiguration": [
+        "Cpu",
+        "Memory",
+        "InstanceRoleArn"
+      ],
+      "EncryptionConfiguration": [
+        "KmsKey"
+      ],
+      "HealthCheckConfiguration": [
+        "Protocol",
+        "Path",
+        "Interval",
+        "Timeout",
+        "HealthyThreshold",
+        "UnhealthyThreshold"
+      ],
+      "NetworkConfiguration": [
+        "EgressConfiguration",
+        "IngressConfiguration",
+        "IpAddressType"
+      ],
+      "EgressConfiguration": [
+        "EgressType",
+        "VpcConnectorArn"
+      ],
+      "IngressConfiguration": [
+        "IsPubliclyAccessible"
+      ],
+      "ServiceObservabilityConfiguration": [
+        "ObservabilityEnabled",
+        "ObservabilityConfigurationArn"
+      ],
+      "CreateServiceResponse": [
+        "Service",
+        "OperationId"
+      ],
+      "Service": [
+        "ServiceName",
+        "ServiceId",
+        "ServiceArn",
+        "ServiceUrl",
+        "CreatedAt",
+        "UpdatedAt",
+        "DeletedAt",
+        "Status",
+        "SourceConfiguration",
+        "InstanceConfiguration",
+        "EncryptionConfiguration",
+        "HealthCheckConfiguration",
+        "AutoScalingConfigurationSummary",
+        "NetworkConfiguration",
+        "ObservabilityConfiguration"
+      ],
+      "AutoScalingConfigurationSummary": [
+        "AutoScalingConfigurationArn",
+        "AutoScalingConfigurationName",
+        "AutoScalingConfigurationRevision",
+        "Status",
+        "CreatedAt",
+        "HasAssociatedService",
+        "IsDefault"
+      ],
+      "CreateVpcConnectorRequest": [
+        "VpcConnectorName",
+        "Subnets",
+        "SecurityGroups",
+        "Tags"
+      ],
+      "CreateVpcConnectorResponse": [
+        "VpcConnector"
+      ],
+      "VpcConnector": [
+        "VpcConnectorName",
+        "VpcConnectorArn",
+        "VpcConnectorRevision",
+        "Subnets",
+        "SecurityGroups",
+        "Status",
+        "CreatedAt",
+        "DeletedAt"
+      ],
+      "DeleteAutoScalingConfigurationRequest": [
+        "AutoScalingConfigurationArn",
+        "DeleteAllRevisions"
+      ],
+      "DeleteAutoScalingConfigurationResponse": [
+        "AutoScalingConfiguration"
+      ],
+      "DeleteConnectionRequest": [
+        "ConnectionArn"
+      ],
+      "DeleteConnectionResponse": [
+        "Connection"
+      ],
+      "DeleteObservabilityConfigurationRequest": [
+        "ObservabilityConfigurationArn"
+      ],
+      "DeleteObservabilityConfigurationResponse": [
+        "ObservabilityConfiguration"
+      ],
+      "DeleteServiceRequest": [
+        "ServiceArn"
+      ],
+      "DeleteServiceResponse": [
+        "Service",
+        "OperationId"
+      ],
+      "DeleteVpcConnectorRequest": [
+        "VpcConnectorArn"
+      ],
+      "DeleteVpcConnectorResponse": [
+        "VpcConnector"
+      ],
+      "DescribeAutoScalingConfigurationRequest": [
+        "AutoScalingConfigurationArn"
+      ],
+      "DescribeAutoScalingConfigurationResponse": [
+        "AutoScalingConfiguration"
+      ],
+      "DescribeObservabilityConfigurationRequest": [
+        "ObservabilityConfigurationArn"
+      ],
+      "DescribeObservabilityConfigurationResponse": [
+        "ObservabilityConfiguration"
+      ],
+      "DescribeServiceRequest": [
+        "ServiceArn"
+      ],
+      "DescribeServiceResponse": [
+        "Service"
+      ],
+      "DescribeVpcConnectorRequest": [
+        "VpcConnectorArn"
+      ],
+      "DescribeVpcConnectorResponse": [
+        "VpcConnector"
+      ],
+      "ListAutoScalingConfigurationsRequest": [
+        "AutoScalingConfigurationName",
+        "LatestOnly",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListAutoScalingConfigurationsResponse": [
+        "AutoScalingConfigurationSummaryList",
+        "NextToken"
+      ],
+      "ListConnectionsRequest": [
+        "ConnectionName",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListConnectionsResponse": [
+        "ConnectionSummaryList",
+        "NextToken"
+      ],
+      "ConnectionSummary": [
+        "ConnectionName",
+        "ConnectionArn",
+        "ProviderType",
+        "Status",
+        "CreatedAt"
+      ],
+      "ListObservabilityConfigurationsRequest": [
+        "ObservabilityConfigurationName",
+        "LatestOnly",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListObservabilityConfigurationsResponse": [
+        "ObservabilityConfigurationSummaryList",
+        "NextToken"
+      ],
+      "ObservabilityConfigurationSummary": [
+        "ObservabilityConfigurationArn",
+        "ObservabilityConfigurationName",
+        "ObservabilityConfigurationRevision"
+      ],
+      "ListOperationsRequest": [
+        "ServiceArn",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListOperationsResponse": [
+        "OperationSummaryList",
+        "NextToken"
+      ],
+      "OperationSummary": [
+        "Id",
+        "Type",
+        "Status",
+        "TargetArn",
+        "StartedAt",
+        "EndedAt",
+        "UpdatedAt"
+      ],
+      "ListServicesRequest": [
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListServicesResponse": [
+        "ServiceSummaryList",
+        "NextToken"
+      ],
+      "ServiceSummary": [
+        "ServiceName",
+        "ServiceId",
+        "ServiceArn",
+        "ServiceUrl",
+        "CreatedAt",
+        "UpdatedAt",
+        "Status"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
+      ],
+      "ListVpcConnectorsRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListVpcConnectorsResponse": [
+        "VpcConnectors",
+        "NextToken"
+      ],
+      "PauseServiceRequest": [
+        "ServiceArn"
+      ],
+      "PauseServiceResponse": [
+        "Service",
+        "OperationId"
+      ],
+      "ResumeServiceRequest": [
+        "ServiceArn"
+      ],
+      "ResumeServiceResponse": [
+        "Service",
+        "OperationId"
+      ],
+      "StartDeploymentRequest": [
+        "ServiceArn"
+      ],
+      "StartDeploymentResponse": [
+        "OperationId"
+      ],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "UpdateServiceRequest": [
+        "ServiceArn",
+        "SourceConfiguration",
+        "InstanceConfiguration",
+        "AutoScalingConfigurationArn",
+        "HealthCheckConfiguration",
+        "NetworkConfiguration",
+        "ObservabilityConfiguration"
+      ],
+      "UpdateServiceResponse": [
+        "Service",
+        "OperationId"
+      ],
+      "UpdateDefaultAutoScalingConfigurationRequest": [
+        "AutoScalingConfigurationArn"
+      ],
+      "UpdateDefaultAutoScalingConfigurationResponse": [
+        "AutoScalingConfiguration"
+      ]
+    }
   }
 }

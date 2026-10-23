@@ -406,6 +406,10 @@
     "amp": {
       "path": "codegen/sdk-codegen/aws-models/amp.json",
       "sha256": "e31b6eaa0de263a0a4c75626f3e041b520b7356281c9599cb59b79a8f1e7f98f"
+    },
+    "apprunner": {
+      "path": "codegen/sdk-codegen/aws-models/apprunner.json",
+      "sha256": "ad06dbb74aab104a64d3e08cf1a755e2dbaed8be7f9d700c4326f0067477e2fc"
     }
   }
 }
