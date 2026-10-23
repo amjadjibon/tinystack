@@ -226,6 +226,7 @@ nav:
           - "AWS IAM Identity Center \u2014 SSO Admin": services/ssoadmin.md
           - "AWS Private CA": services/acmpca.md
           - "AWS Resource Access Manager": services/ram.md
+          - "AWS Security Hub": services/securityhub.md
           - "AWS Signer": services/signer.md
           - "Amazon Verified Permissions": services/verifiedpermissions.md
           - "Certificate Manager": services/acm.md
