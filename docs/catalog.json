@@ -2677,6 +2677,28 @@
       "execution": "Records only",
       "package": "amplify"
     },
+    "resourceexplorer2": {
+      "title": "AWS Resource Explorer",
+      "category": "Management & Governance",
+      "scope": "Account and Region",
+      "summary": "Search TinyStack inventory using regional indexes and views.",
+      "features": [
+        "Twenty REST JSON operations for indexes, views, default associations, inventory searches and resource tags; generated model constraint validation.",
+        "Create and update finish synchronously as ACTIVE; delete removes the index, its views and default association synchronously and returns DELETED. One index per Region and one AGGREGATOR per account.",
+        "Search and ListResources evaluate the query and the view filter as AWS documents: keywords are joined with OR, and that group and every filter with AND; a filter's comma-separated values are alternatives, a trailing * matches any suffix and a leading - excludes matches. Filters: accountid:, id:, region: (global resources report the Region global), resourcetype:service:type, service:, tag:key=value, tag:all, tag:none, tag.key: and tag.value:; tag filters need a view that includes tags. Keywords match the ARN or name case-insensitively as substrings. Quoted phrases, escapes, other prefixes and boolean words fail ValidationException.",
+        "Search uses listing.Scoped and ARN order. Count.TotalResources counts all matches before common.Page pagination. Properties contain tags only when the view includes tags. LastReportedAt is the local inventory snapshot time; the inventory has no AWS discovery timestamps.",
+        "ListSupportedResourceTypes derives its deterministic type list from the currently populated regional inventory, not a static AWS catalogue.",
+        "GetDefaultView returns an empty response when the index has no default view, and ResourceNotFoundException when there is no regional index. Index and view tags live in their records and are visible to inventory, Resource Groups and Resource Groups Tagging API.",
+        "CloudFormation AWS::ResourceExplorer2::Index, AWS::ResourceExplorer2::View and AWS::ResourceExplorer2::DefaultViewAssociation; Terraform aws_resourceexplorer2_index and aws_resourceexplorer2_view with resourceexplorer2 endpoint."
+      ],
+      "gaps": [
+        "AGGREGATOR is stored and uniqueness is enforced, but searches remain confined to the index Region because listing.Scoped is regional. Global inventory resources are visible only from us-east-1.",
+        "Managed views, organization/cross-account scopes, account-level service configuration, setup, streams and newer operations are not implemented. Scope supports only the caller account root ARN.",
+        "No asynchronous indexing, replication, service-linked role creation, or 24-hour aggregator promotion cooldown; searches read live inventory. No relevance ranking or AWS-wide supported-type catalogue."
+      ],
+      "execution": "Live regional inventory search; records-only control plane",
+      "package": "resourceexplorer2"
+    },
     "accessanalyzer": {
       "title": "IAM Access Analyzer",
       "category": "Security, Identity & Compliance",
