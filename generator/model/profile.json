@@ -1024,6 +1024,7 @@
     ],
     "shapes": {
       "CreateApiRequest": [
+        "ApiKeySelectionExpression",
         "CorsConfiguration",
         "Description",
         "DisableExecuteApiEndpoint",
@@ -1038,6 +1039,7 @@
       ],
       "UpdateApiRequest": [
         "ApiId",
+        "ApiKeySelectionExpression",
         "CorsConfiguration",
         "Description",
         "DisableExecuteApiEndpoint",

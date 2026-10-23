@@ -297,11 +297,13 @@ func TestWebSocketAPIValidation(t *testing.T) {
 		&apigw.UpdateApiInput{ApiId: api.ApiId, CorsConfiguration: &apigwtypes.Cors{AllowOrigins: []string{"*"}}},
 	)
 	code(t, err, "BadRequestException")
-	_, err = c.UpdateApi(
-		ctx,
-		&apigw.UpdateApiInput{ApiId: api.ApiId, ApiKeySelectionExpression: new("$request.header.x-api-key")},
-	)
-	code(t, err, "NotImplemented")
+	keyed, err := c.UpdateApi(ctx, &apigw.UpdateApiInput{
+		ApiId: api.ApiId, ApiKeySelectionExpression: new("$context.authorizer.usageIdentifierKey"),
+	})
+	if err != nil || aws.ToString(keyed.ApiKeySelectionExpression) != "$context.authorizer.usageIdentifierKey" {
+		t.Fatalf("%+v %v", keyed, err)
+	}
+
 	_, err = c.CreateIntegration(ctx, &apigw.CreateIntegrationInput{
 		ApiId:           api.ApiId,
 		IntegrationType: apigwtypes.IntegrationTypeHttpProxy, IntegrationUri: new("https://example.com"),
@@ -343,16 +345,18 @@ func TestWebSocketAPIValidation(t *testing.T) {
 		t.Fatal(httpErr)
 	}
 
-	_, err = c.UpdateApi(ctx, &apigw.UpdateApiInput{
-		ApiId:                     httpAPI.ApiId,
-		ApiKeySelectionExpression: new("$request.header.x-api-key"),
-	})
-	code(t, err, "NotImplemented")
 	_, err = c.CreateRoute(ctx, &apigw.CreateRouteInput{
 		ApiId:    httpAPI.ApiId,
-		RouteKey: new("echo"), ApiKeyRequired: new(false),
+		RouteKey: new("GET /echo"), ApiKeyRequired: new(true),
 	})
 	code(t, err, "BadRequestException")
+
+	if _, err = c.CreateRoute(ctx, &apigw.CreateRouteInput{
+		ApiId:    httpAPI.ApiId,
+		RouteKey: new("GET /echo"), ApiKeyRequired: new(false),
+	}); err != nil {
+		t.Fatal(err)
+	}
 
 	httpRoute, routeErr := c.CreateRoute(ctx, &apigw.CreateRouteInput{ApiId: httpAPI.ApiId, RouteKey: new("$default")})
 	if routeErr != nil {

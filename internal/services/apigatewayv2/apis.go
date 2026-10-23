@@ -16,6 +16,7 @@ import (
 
 const (
 	routeSelection = "$request.method $request.path"
+	apiKeyHeader   = "$request.header.x-api-key"
 	ipv4           = "ipv4"
 )
 
@@ -72,6 +73,19 @@ func checkAPI(name, selection, ipType *string, cors *api.Cors) error {
 	return checkCors(cors)
 }
 
+// checkAPIKeySelection accepts the two expressions API Gateway allows: the x-api-key header or the key a Lambda
+// authorizer returns.
+func checkAPIKeySelection(selection *string) error {
+	if selection != nil && *selection != apiKeyHeader && *selection != "$context.authorizer.usageIdentifierKey" {
+		return badRequest(
+			"ApiKeySelectionExpression must be %s or $context.authorizer.usageIdentifierKey.",
+			apiKeyHeader,
+		)
+	}
+
+	return nil
+}
+
 func loadAPI(tx storage.ReadTx, scope request.Scope, id *string) (*api.Api, error) {
 	a, ok, err := storage.Read[api.Api](tx, apiKey(scope, common.Value(id)))
 	if err != nil || !ok {
@@ -105,6 +119,10 @@ func (s *Service) CreateApi(ctx context.Context, in *api.CreateApiRequest) (*api
 		return nil, checkErr
 	}
 
+	if checkErr := checkAPIKeySelection(in.ApiKeySelectionExpression); checkErr != nil {
+		return nil, checkErr
+	}
+
 	if checkErr := checkTags(in.Tags); checkErr != nil {
 		return nil, checkErr
 	}
@@ -117,6 +135,7 @@ func (s *Service) CreateApi(ctx context.Context, in *api.CreateApiRequest) (*api
 		RouteSelectionExpression: new(routeSelection), CorsConfiguration: in.CorsConfiguration,
 		DisableExecuteApiEndpoint: new(common.Value(in.DisableExecuteApiEndpoint)), Version: in.Version,
 		IpAddressType: new(ipv4), CreatedDate: &now, Tags: common.CloneTags(in.Tags),
+		ApiKeySelectionExpression: common.OrElse(in.ApiKeySelectionExpression, new(apiKeyHeader)),
 	}
 	if common.Value(in.ProtocolType) == protocolWebSocket {
 		a.RouteSelectionExpression = in.RouteSelectionExpression
@@ -287,6 +306,11 @@ func (s *Service) UpdateApi(ctx context.Context, in *api.UpdateApiRequest) (*api
 			return checkErr
 		}
 
+		if checkErr := checkAPIKeySelection(in.ApiKeySelectionExpression); checkErr != nil {
+			return checkErr
+		}
+
+		a.ApiKeySelectionExpression = common.OrElse(in.ApiKeySelectionExpression, a.ApiKeySelectionExpression)
 		a.RouteSelectionExpression = common.OrElse(in.RouteSelectionExpression, a.RouteSelectionExpression)
 		a.Name, a.Description = common.OrElse(in.Name, a.Name), common.OrElse(in.Description, a.Description)
 		a.CorsConfiguration = common.OrElse(in.CorsConfiguration, a.CorsConfiguration)

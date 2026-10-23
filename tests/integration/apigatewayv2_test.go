@@ -81,8 +81,19 @@ func TestHTTPAPIManagement(t *testing.T) {
 	if len(aws.ToString(id)) != 10 || !strings.Contains(aws.ToString(created.ApiEndpoint), ".execute-api.localhost:") ||
 		aws.ToString(
 			created.RouteSelectionExpression,
-		) != "$request.method $request.path" || created.CreatedDate == nil {
+		) != "$request.method $request.path" || created.CreatedDate == nil ||
+		aws.ToString(created.ApiKeySelectionExpression) != "$request.header.x-api-key" {
 		t.Fatalf("%+v", created)
+	}
+
+	_, err = c.UpdateApi(ctx, &apigw.UpdateApiInput{ApiId: created.ApiId, ApiKeySelectionExpression: aws.String("$x")})
+	code(t, err, "BadRequestException")
+
+	keyed, err := c.UpdateApi(ctx, &apigw.UpdateApiInput{
+		ApiId: created.ApiId, ApiKeySelectionExpression: aws.String("$context.authorizer.usageIdentifierKey"),
+	})
+	if err != nil || aws.ToString(keyed.ApiKeySelectionExpression) != "$context.authorizer.usageIdentifierKey" {
+		t.Fatalf("%+v %v", keyed, err)
 	}
 
 	_, err = c.GetApi(ctx, &apigw.GetApiInput{ApiId: aws.String("missing123")})

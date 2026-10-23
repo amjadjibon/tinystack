@@ -1313,7 +1313,8 @@ Manage and invoke HTTP and WebSocket APIs with routes, stages, deployments and L
 - WebSocket Lambda AWS_PROXY integrations receive CONNECT, MESSAGE and DISCONNECT request contexts, connection IDs, timestamps, source IP, API/stage/domain information and connect headers/query parameters; non-2xx connect responses reject the handshake.
 - WebSocket MOCK integrations return status 200 with an empty body; $default route response CRUD enables two-way message responses from Lambda or MOCK integrations; other routes are one-way.
 - WebSocket execute-api endpoints support host-style and /_aws/execute-api/<api-id>/<stage> addressing, auto/manual deployment snapshots, 10-minute idle and 2-hour lifetime limits; connections are memory-only and close on shutdown/reset.
-- HTTP-only CORS, quick-create and IP address settings are rejected on WebSocket APIs; WebSocket-only route responses, API key selection expressions and API key route settings are rejected on HTTP APIs.
+- API key selection expressions accept $request.header.x-api-key (the default) or $context.authorizer.usageIdentifierKey and are stored for both protocols.
+- HTTP-only CORS, quick-create and IP address settings are rejected on WebSocket APIs; WebSocket-only route responses and ApiKeyRequired=true are rejected on HTTP APIs.
 
 [Supported operations](apigatewayv2.md#supported-operations) · [Limitations](apigatewayv2.md#limitations-and-future-work)
 

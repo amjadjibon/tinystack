@@ -156,7 +156,7 @@ func (s *Service) CreateRoute(ctx context.Context, in *api.CreateRouteRequest) (
 			return loadErr
 		}
 
-		if common.Value(a.ProtocolType) == protocolHTTP && in.ApiKeyRequired != nil {
+		if common.Value(a.ProtocolType) == protocolHTTP && common.Value(in.ApiKeyRequired) {
 			return badRequest("ApiKeyRequired is only supported for WebSocket APIs.")
 		}
 
@@ -308,7 +308,7 @@ func (s *Service) UpdateRoute(ctx context.Context, in *api.UpdateRouteRequest) (
 				return false, loadErr
 			}
 
-			if common.Value(a.ProtocolType) == protocolHTTP && in.ApiKeyRequired != nil {
+			if common.Value(a.ProtocolType) == protocolHTTP && common.Value(in.ApiKeyRequired) {
 				return false, badRequest("ApiKeyRequired is only supported for WebSocket APIs.")
 			}
 
