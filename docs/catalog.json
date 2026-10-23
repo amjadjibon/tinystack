@@ -2615,6 +2615,36 @@
       ],
       "execution": "Records only",
       "package": "apprunner"
+    },
+    "amplify": {
+      "title": "AWS Amplify Hosting",
+      "category": "Developer Tools",
+      "scope": "Account and Region",
+      "summary": "Store Hosting apps, branches, jobs, domain associations, webhooks and backend environment metadata without builds, deployments or DNS.",
+      "features": [
+        "34 of 37 pinned REST JSON operations, using the official AWS SDK v2, with account and Region isolation and SQLite restart coverage",
+        "App and branch CRUD stores build specs, environment variables, redirect rules, auth settings, roles and configuration; defaultDomain is the deterministic placeholder <appId>.amplifyapp.com",
+        "Basic auth credentials are stored but omitted from app, branch, nested auto-branch configuration and inventory responses; accessToken and oauthToken are validated then discarded, never returned",
+        "StartJob accepts RELEASE and RETRY: jobs remain PENDING until StopJob sets CANCELLED. RETRY allocates a new monotonic branch-local ID and copies source commit metadata; GetJob returns no steps or artifacts",
+        "CreateDeployment records a CREATED manual job and optional fileMap with inert amplify.invalid zip or per-file URLs; StartDeployment changes it to PENDING or records a source URL without fetching it",
+        "Domain association CRUD always reports PENDING_VERIFICATION, unverified subdomains and no DNS records, including custom certificates; no real DNS or certificate provisioning",
+        "Webhook CRUD returns inert amplify.invalid URLs; backend environment Create/Get/List/Delete stores stack and artifact names without creating resources (the model has no UpdateBackendEnvironment)",
+        "TagResource, UntagResource and ListTagsForResource for apps and branches, Resource Groups Tagging API integration, inventory with RecordsOnly=true and ExecutionReady=false, and AWS::Amplify::App/Branch/Domain resource-group types",
+        "Token pagination with common.Page: apps default/max 100; other collections default/max 50; model maxResults=0 uses the default",
+        "App deletion cascades to child records; branch deletion removes its jobs and webhooks",
+        "CloudFormation AWS::Amplify::App, AWS::Amplify::Branch and AWS::Amplify::Domain providers with SDK lifecycle tests; Terraform app and branch apply/update/destroy cases"
+      ],
+      "gaps": [
+        "No build runner, hosting, artifact uploads/downloads, repository authentication, external webhooks, metrics, access logs, real DNS, certificates or automatic branch/subdomain creation; configuration flags only record intent",
+        "Jobs never succeed or execute: clients waiting for build/deployment completion will continue waiting; domain waiters likewise never observe AVAILABLE",
+        "GenerateAccessLogs, GetArtifactUrl and ListArtifacts are not implemented",
+        "Zip upload URLs, per-file upload URLs and webhook URLs are inert and cannot receive uploads or trigger jobs",
+        "StartJob MANUAL and WEB_HOOK are rejected; manual jobs use StartDeployment. StartDeployment requires exactly one of jobId and sourceUrl and rejects re-starting a deployment. RETRY commit overrides are rejected explicitly.",
+        "CloudFormation AutoBranchCreationConfig, AWS::Amplify::Webhook and AWS::Amplify::Jobs are not registered; removing non-tag properties during an in-place update is rejected explicitly",
+        "CloudFormation domain completion means the record exists, not DNS verification; the underlying domain remains PENDING_VERIFICATION"
+      ],
+      "execution": "Records only",
+      "package": "amplify"
     }
   },
   "future": {

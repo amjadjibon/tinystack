@@ -170,6 +170,7 @@ nav:
           - "RDS Data API": services/rdsdata.md
           - "RDS, DocumentDB and Neptune": services/rds.md
       - "Developer Tools":
+          - "AWS Amplify Hosting": services/amplify.md
           - "AWS CodeArtifact": services/codeartifact.md
           - "AWS CodeCommit": services/codecommit.md
           - "AWS CodeConnections": services/codeconnections.md
