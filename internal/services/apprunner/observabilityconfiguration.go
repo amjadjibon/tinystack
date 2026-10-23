@@ -14,10 +14,6 @@ func (s *Service) CreateObservabilityConfiguration(
 	ctx context.Context,
 	in *api.CreateObservabilityConfigurationRequest,
 ) (*api.CreateObservabilityConfigurationResponse, error) {
-	if err := validateCreateObservabilityConfigurationRequest(in); err != nil {
-		return nil, err
-	}
-
 	if common.Value(in.ObservabilityConfigurationName) == defaultConfigurationName {
 		return nil, invalid("DefaultConfiguration is reserved")
 	}
@@ -51,10 +47,6 @@ func (s *Service) DescribeObservabilityConfiguration(
 	ctx context.Context,
 	in *api.DescribeObservabilityConfigurationRequest,
 ) (*api.DescribeObservabilityConfigurationResponse, error) {
-	if err := validateDescribeObservabilityConfigurationRequest(in); err != nil {
-		return nil, err
-	}
-
 	r, err := s.get(ctx, in.ObservabilityConfigurationArn, kindObservability)
 	if err != nil {
 		return nil, err
@@ -69,10 +61,6 @@ func (s *Service) DeleteObservabilityConfiguration(
 	ctx context.Context,
 	in *api.DeleteObservabilityConfigurationRequest,
 ) (*api.DeleteObservabilityConfigurationResponse, error) {
-	if err := validateDeleteObservabilityConfigurationRequest(in); err != nil {
-		return nil, err
-	}
-
 	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
@@ -101,10 +89,6 @@ func (s *Service) ListObservabilityConfigurations(
 	ctx context.Context,
 	in *api.ListObservabilityConfigurationsRequest,
 ) (*api.ListObservabilityConfigurationsResponse, error) {
-	if err := validateListObservabilityConfigurationsRequest(in); err != nil {
-		return nil, err
-	}
-
 	items, next, err := s.list(
 		ctx,
 		kindObservability,

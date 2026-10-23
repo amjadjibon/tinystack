@@ -3,7 +3,11 @@ package amplify
 
 import (
 	"context"
+	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/validation"
+	"regexp"
+	"unicode/utf8"
 )
 
 type CustomRule struct {
@@ -600,6 +604,1775 @@ type UpdateWebhookResult struct {
 	Webhook *Webhook `json:"webhook,omitempty"`
 }
 
+var enum0 = []string{"BETA", "DEVELOPMENT", "EXPERIMENTAL", "PRODUCTION", "PULL_REQUEST"}
+
+var pattern0 = regexp.MustCompile("^(?s)")
+
+var pattern1 = regexp.MustCompile("^(?s).+$")
+
+var pattern2 = regexp.MustCompile("^arn:aws:cloudformation:[a-z0-9-]+:\\d{12}:stack/.+/.+$")
+
+var enum1 = []string{"AMPLIFY_MANAGED", "AMPLIFY_MANAGED_NO_COOKIES"}
+
+var enum2 = []string{"AMPLIFY_MANAGED", "CUSTOM"}
+
+var pattern3 = regexp.MustCompile("^arn:aws:acm:[a-z0-9-]+:\\d{12}:certificate\\/.+$")
+
+var enum3 = []string{"WEB", "WEB_COMPUTE", "WEB_DYNAMIC"}
+
+var pattern4 = regexp.MustCompile("^[a-zA-Z+-=._:/]+$")
+
+var pattern5 = regexp.MustCompile("^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$")
+
+var pattern6 = regexp.MustCompile("^d[a-z0-9]+$")
+
+var pattern7 = regexp.MustCompile("^\\d*$")
+
+var pattern8 = regexp.MustCompile("^(([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)\\.)+([A-Za-z0-9][A-Za-z0-9-]{0,61}[A-Za-z0-9])(\\.)?$")
+
+var pattern9 = regexp.MustCompile("^$|^arn:aws:iam::\\d{12}:role.+$")
+
+var pattern10 = regexp.MustCompile("^.{3,7}$")
+
+var pattern11 = regexp.MustCompile("^[0-9]+$")
+
+var enum4 = []string{"LARGE_16GB", "STANDARD_8GB", "XLARGE_72GB"}
+
+var pattern12 = regexp.MustCompile("^arn:aws:amplify:")
+
+var pattern13 = regexp.MustCompile("^(s3|https|http)://")
+
+var enum5 = []string{"BUCKET_PREFIX", "ZIP"}
+
+var enum6 = []string{"MANUAL", "RELEASE", "RETRY", "WEB_HOOK"}
+
+func (v *AutoBranchCreationConfig) Validate(path string) error {
+	if v.Stage != nil {
+		if err := validation.Enum(path+"stage", (*v.Stage), enum0); err != nil {
+			return err
+		}
+	}
+	if v.Framework != nil {
+		if err := validation.Length(path+"framework", utf8.RuneCountInString((*v.Framework)), new(int64(0)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"framework", (*v.Framework), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.EnvironmentVariables != nil {
+		for k0, e0 := range v.EnvironmentVariables {
+			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(255))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), k0, pattern0, "", "^(?s)"); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(5500))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), e0, pattern0, "", "^(?s)"); err != nil {
+				return err
+			}
+		}
+	}
+	if v.BasicAuthCredentials != nil {
+		if err := validation.Length(path+"basicAuthCredentials", utf8.RuneCountInString((*v.BasicAuthCredentials)), new(int64(0)), new(int64(2000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"basicAuthCredentials", (*v.BasicAuthCredentials), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.BuildSpec != nil {
+		if err := validation.Length(path+"buildSpec", utf8.RuneCountInString((*v.BuildSpec)), new(int64(1)), new(int64(25000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"buildSpec", (*v.BuildSpec), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.PullRequestEnvironmentName != nil {
+		if err := validation.Length(path+"pullRequestEnvironmentName", utf8.RuneCountInString((*v.PullRequestEnvironmentName)), new(int64(0)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"pullRequestEnvironmentName", (*v.PullRequestEnvironmentName), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *Backend) Validate(path string) error {
+	if v.StackArn != nil {
+		if err := validation.Length(path+"stackArn", utf8.RuneCountInString((*v.StackArn)), new(int64(20)), new(int64(2048))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"stackArn", (*v.StackArn), pattern2, "", "^arn:aws:cloudformation:[a-z0-9-]+:\\d{12}:stack/.+/.+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CacheConfig) Validate(path string) error {
+	if err := validation.Required(path+"type", v.Type != nil); err != nil {
+		return err
+	}
+	if v.Type != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum1); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CertificateSettings) Validate(path string) error {
+	if err := validation.Required(path+"type", v.Type != nil); err != nil {
+		return err
+	}
+	if v.Type != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum2); err != nil {
+			return err
+		}
+	}
+	if v.CustomCertificateArn != nil {
+		if err := validation.Length(path+"customCertificateArn", utf8.RuneCountInString((*v.CustomCertificateArn)), new(int64(0)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"customCertificateArn", (*v.CustomCertificateArn), pattern3, "", "^arn:aws:acm:[a-z0-9-]+:\\d{12}:certificate\\/.+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreateAppRequest) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"name", (*v.Name), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.Description != nil {
+		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"description", (*v.Description), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.Repository != nil {
+		if err := validation.Length(path+"repository", utf8.RuneCountInString((*v.Repository)), new(int64(0)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"repository", (*v.Repository), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.Platform != nil {
+		if err := validation.Enum(path+"platform", (*v.Platform), enum3); err != nil {
+			return err
+		}
+	}
+	if v.ComputeRoleArn != nil {
+		if err := validation.Length(path+"computeRoleArn", utf8.RuneCountInString((*v.ComputeRoleArn)), new(int64(0)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"computeRoleArn", (*v.ComputeRoleArn), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.IamServiceRoleArn != nil {
+		if err := validation.Length(path+"iamServiceRoleArn", utf8.RuneCountInString((*v.IamServiceRoleArn)), new(int64(0)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"iamServiceRoleArn", (*v.IamServiceRoleArn), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.OauthToken != nil {
+		if err := validation.Length(path+"oauthToken", utf8.RuneCountInString((*v.OauthToken)), new(int64(0)), new(int64(4096))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"oauthToken", (*v.OauthToken), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.AccessToken != nil {
+		if err := validation.Length(path+"accessToken", utf8.RuneCountInString((*v.AccessToken)), new(int64(1)), new(int64(4096))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"accessToken", (*v.AccessToken), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.EnvironmentVariables != nil {
+		for k0, e0 := range v.EnvironmentVariables {
+			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(255))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), k0, pattern0, "", "^(?s)"); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(5500))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), e0, pattern0, "", "^(?s)"); err != nil {
+				return err
+			}
+		}
+	}
+	if v.BasicAuthCredentials != nil {
+		if err := validation.Length(path+"basicAuthCredentials", utf8.RuneCountInString((*v.BasicAuthCredentials)), new(int64(0)), new(int64(2000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"basicAuthCredentials", (*v.BasicAuthCredentials), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.CustomRules != nil {
+		for i0, e0 := range v.CustomRules {
+			if err := e0.Validate(validation.Index(path+"customRules", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.Tags != nil {
+		if err := validation.Length(path+"tags", len(v.Tags), new(int64(0)), new(int64(50))); err != nil {
+			return err
+		}
+		for k0, e0 := range v.Tags {
+			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(128))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"tags", k0), k0, pattern4, "aws:", "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(256))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"tags", k0), e0, pattern5, "", "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
+				return err
+			}
+		}
+	}
+	if v.BuildSpec != nil {
+		if err := validation.Length(path+"buildSpec", utf8.RuneCountInString((*v.BuildSpec)), new(int64(1)), new(int64(25000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"buildSpec", (*v.BuildSpec), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.CustomHeaders != nil {
+		if err := validation.Length(path+"customHeaders", utf8.RuneCountInString((*v.CustomHeaders)), new(int64(0)), new(int64(25000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"customHeaders", (*v.CustomHeaders), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.AutoBranchCreationPatterns != nil {
+		for i0, e0 := range v.AutoBranchCreationPatterns {
+			if err := validation.Length(validation.Index(path+"autoBranchCreationPatterns", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(2048))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Index(path+"autoBranchCreationPatterns", i0), e0, pattern1, "", "^(?s).+$"); err != nil {
+				return err
+			}
+		}
+	}
+	if v.AutoBranchCreationConfig != nil {
+		if err := (*v.AutoBranchCreationConfig).Validate(path + "autoBranchCreationConfig" + "."); err != nil {
+			return err
+		}
+	}
+	if v.JobConfig != nil {
+		if err := (*v.JobConfig).Validate(path + "jobConfig" + "."); err != nil {
+			return err
+		}
+	}
+	if v.CacheConfig != nil {
+		if err := (*v.CacheConfig).Validate(path + "cacheConfig" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreateBackendEnvironmentRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"environmentName", v.EnvironmentName != nil); err != nil {
+		return err
+	}
+	if v.EnvironmentName != nil {
+		if err := validation.Length(path+"environmentName", utf8.RuneCountInString((*v.EnvironmentName)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"environmentName", (*v.EnvironmentName), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.StackName != nil {
+		if err := validation.Length(path+"stackName", utf8.RuneCountInString((*v.StackName)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"stackName", (*v.StackName), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.DeploymentArtifacts != nil {
+		if err := validation.Length(path+"deploymentArtifacts", utf8.RuneCountInString((*v.DeploymentArtifacts)), new(int64(1)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"deploymentArtifacts", (*v.DeploymentArtifacts), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreateBranchRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"branchName", v.BranchName != nil); err != nil {
+		return err
+	}
+	if v.BranchName != nil {
+		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.Description != nil {
+		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"description", (*v.Description), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.Stage != nil {
+		if err := validation.Enum(path+"stage", (*v.Stage), enum0); err != nil {
+			return err
+		}
+	}
+	if v.Framework != nil {
+		if err := validation.Length(path+"framework", utf8.RuneCountInString((*v.Framework)), new(int64(0)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"framework", (*v.Framework), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.EnvironmentVariables != nil {
+		for k0, e0 := range v.EnvironmentVariables {
+			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(255))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), k0, pattern0, "", "^(?s)"); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(5500))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), e0, pattern0, "", "^(?s)"); err != nil {
+				return err
+			}
+		}
+	}
+	if v.BasicAuthCredentials != nil {
+		if err := validation.Length(path+"basicAuthCredentials", utf8.RuneCountInString((*v.BasicAuthCredentials)), new(int64(0)), new(int64(2000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"basicAuthCredentials", (*v.BasicAuthCredentials), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		if err := validation.Length(path+"tags", len(v.Tags), new(int64(0)), new(int64(50))); err != nil {
+			return err
+		}
+		for k0, e0 := range v.Tags {
+			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(128))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"tags", k0), k0, pattern4, "aws:", "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(256))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"tags", k0), e0, pattern5, "", "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
+				return err
+			}
+		}
+	}
+	if v.BuildSpec != nil {
+		if err := validation.Length(path+"buildSpec", utf8.RuneCountInString((*v.BuildSpec)), new(int64(1)), new(int64(25000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"buildSpec", (*v.BuildSpec), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.Ttl != nil {
+		if err := validation.Length(path+"ttl", utf8.RuneCountInString((*v.Ttl)), new(int64(0)), new(int64(32))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ttl", (*v.Ttl), pattern7, "", "^\\d*$"); err != nil {
+			return err
+		}
+	}
+	if v.DisplayName != nil {
+		if err := validation.Length(path+"displayName", utf8.RuneCountInString((*v.DisplayName)), new(int64(0)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"displayName", (*v.DisplayName), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.PullRequestEnvironmentName != nil {
+		if err := validation.Length(path+"pullRequestEnvironmentName", utf8.RuneCountInString((*v.PullRequestEnvironmentName)), new(int64(0)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"pullRequestEnvironmentName", (*v.PullRequestEnvironmentName), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.BackendEnvironmentArn != nil {
+		if err := validation.Length(path+"backendEnvironmentArn", utf8.RuneCountInString((*v.BackendEnvironmentArn)), new(int64(0)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"backendEnvironmentArn", (*v.BackendEnvironmentArn), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.Backend != nil {
+		if err := (*v.Backend).Validate(path + "backend" + "."); err != nil {
+			return err
+		}
+	}
+	if v.ComputeRoleArn != nil {
+		if err := validation.Length(path+"computeRoleArn", utf8.RuneCountInString((*v.ComputeRoleArn)), new(int64(0)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"computeRoleArn", (*v.ComputeRoleArn), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreateDeploymentRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"branchName", v.BranchName != nil); err != nil {
+		return err
+	}
+	if v.BranchName != nil {
+		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.FileMap != nil {
+		for k0, e0 := range v.FileMap {
+			if err := validation.Length(validation.Key(path+"fileMap", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(255))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"fileMap", k0), k0, pattern0, "", "^(?s)"); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"fileMap", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(32))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"fileMap", k0), e0, pattern0, "", "^(?s)"); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *CreateDomainAssociationRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"domainName", v.DomainName != nil); err != nil {
+		return err
+	}
+	if v.DomainName != nil {
+		if err := validation.Length(path+"domainName", utf8.RuneCountInString((*v.DomainName)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"domainName", (*v.DomainName), pattern8, "", "^(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])(\\.)?$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"subDomainSettings", v.SubDomainSettings != nil); err != nil {
+		return err
+	}
+	if v.SubDomainSettings != nil {
+		if err := validation.Length(path+"subDomainSettings", len(v.SubDomainSettings), new(int64(0)), new(int64(500))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.SubDomainSettings {
+			if err := e0.Validate(validation.Index(path+"subDomainSettings", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.AutoSubDomainCreationPatterns != nil {
+		for i0, e0 := range v.AutoSubDomainCreationPatterns {
+			if err := validation.Length(validation.Index(path+"autoSubDomainCreationPatterns", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(2048))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Index(path+"autoSubDomainCreationPatterns", i0), e0, pattern1, "", "^(?s).+$"); err != nil {
+				return err
+			}
+		}
+	}
+	if v.AutoSubDomainIAMRole != nil {
+		if err := validation.Length(path+"autoSubDomainIAMRole", utf8.RuneCountInString((*v.AutoSubDomainIAMRole)), new(int64(0)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"autoSubDomainIAMRole", (*v.AutoSubDomainIAMRole), pattern9, "", "^$|^arn:aws:iam::\\d{12}:role.+$"); err != nil {
+			return err
+		}
+	}
+	if v.CertificateSettings != nil {
+		if err := (*v.CertificateSettings).Validate(path + "certificateSettings" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreateWebhookRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"branchName", v.BranchName != nil); err != nil {
+		return err
+	}
+	if v.BranchName != nil {
+		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.Description != nil {
+		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"description", (*v.Description), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CustomRule) Validate(path string) error {
+	if err := validation.Required(path+"source", v.Source != nil); err != nil {
+		return err
+	}
+	if v.Source != nil {
+		if err := validation.Length(path+"source", utf8.RuneCountInString((*v.Source)), new(int64(1)), new(int64(2048))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"source", (*v.Source), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"target", v.Target != nil); err != nil {
+		return err
+	}
+	if v.Target != nil {
+		if err := validation.Length(path+"target", utf8.RuneCountInString((*v.Target)), new(int64(1)), new(int64(2048))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"target", (*v.Target), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.Status != nil {
+		if err := validation.Length(path+"status", utf8.RuneCountInString((*v.Status)), new(int64(3)), new(int64(7))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"status", (*v.Status), pattern10, "", "^.{3,7}$"); err != nil {
+			return err
+		}
+	}
+	if v.Condition != nil {
+		if err := validation.Length(path+"condition", utf8.RuneCountInString((*v.Condition)), new(int64(0)), new(int64(2048))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"condition", (*v.Condition), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteAppRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteBackendEnvironmentRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"environmentName", v.EnvironmentName != nil); err != nil {
+		return err
+	}
+	if v.EnvironmentName != nil {
+		if err := validation.Length(path+"environmentName", utf8.RuneCountInString((*v.EnvironmentName)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"environmentName", (*v.EnvironmentName), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteBranchRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"branchName", v.BranchName != nil); err != nil {
+		return err
+	}
+	if v.BranchName != nil {
+		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteDomainAssociationRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"domainName", v.DomainName != nil); err != nil {
+		return err
+	}
+	if v.DomainName != nil {
+		if err := validation.Length(path+"domainName", utf8.RuneCountInString((*v.DomainName)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"domainName", (*v.DomainName), pattern8, "", "^(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])(\\.)?$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteJobRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"branchName", v.BranchName != nil); err != nil {
+		return err
+	}
+	if v.BranchName != nil {
+		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"jobId", v.JobId != nil); err != nil {
+		return err
+	}
+	if v.JobId != nil {
+		if err := validation.Length(path+"jobId", utf8.RuneCountInString((*v.JobId)), new(int64(0)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"jobId", (*v.JobId), pattern11, "", "^[0-9]+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteWebhookRequest) Validate(path string) error {
+	if err := validation.Required(path+"webhookId", v.WebhookId != nil); err != nil {
+		return err
+	}
+	if v.WebhookId != nil {
+		if err := validation.Length(path+"webhookId", utf8.RuneCountInString((*v.WebhookId)), new(int64(0)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"webhookId", (*v.WebhookId), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetAppRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetBackendEnvironmentRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"environmentName", v.EnvironmentName != nil); err != nil {
+		return err
+	}
+	if v.EnvironmentName != nil {
+		if err := validation.Length(path+"environmentName", utf8.RuneCountInString((*v.EnvironmentName)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"environmentName", (*v.EnvironmentName), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetBranchRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"branchName", v.BranchName != nil); err != nil {
+		return err
+	}
+	if v.BranchName != nil {
+		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetDomainAssociationRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"domainName", v.DomainName != nil); err != nil {
+		return err
+	}
+	if v.DomainName != nil {
+		if err := validation.Length(path+"domainName", utf8.RuneCountInString((*v.DomainName)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"domainName", (*v.DomainName), pattern8, "", "^(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])(\\.)?$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetJobRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"branchName", v.BranchName != nil); err != nil {
+		return err
+	}
+	if v.BranchName != nil {
+		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"jobId", v.JobId != nil); err != nil {
+		return err
+	}
+	if v.JobId != nil {
+		if err := validation.Length(path+"jobId", utf8.RuneCountInString((*v.JobId)), new(int64(0)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"jobId", (*v.JobId), pattern11, "", "^[0-9]+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetWebhookRequest) Validate(path string) error {
+	if err := validation.Required(path+"webhookId", v.WebhookId != nil); err != nil {
+		return err
+	}
+	if v.WebhookId != nil {
+		if err := validation.Length(path+"webhookId", utf8.RuneCountInString((*v.WebhookId)), new(int64(0)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"webhookId", (*v.WebhookId), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *JobConfig) Validate(path string) error {
+	if err := validation.Required(path+"buildComputeType", v.BuildComputeType != nil); err != nil {
+		return err
+	}
+	if v.BuildComputeType != nil {
+		if err := validation.Enum(path+"buildComputeType", (*v.BuildComputeType), enum4); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListAppsRequest) Validate(path string) error {
+	if v.NextToken != nil {
+		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(2000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(0)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListBackendEnvironmentsRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if v.EnvironmentName != nil {
+		if err := validation.Length(path+"environmentName", utf8.RuneCountInString((*v.EnvironmentName)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"environmentName", (*v.EnvironmentName), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(2000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(0)), new(float64(50))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListBranchesRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(2000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(0)), new(float64(50))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListDomainAssociationsRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(2000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(0)), new(float64(50))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListJobsRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"branchName", v.BranchName != nil); err != nil {
+		return err
+	}
+	if v.BranchName != nil {
+		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(2000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(0)), new(float64(50))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListTagsForResourceRequest) Validate(path string) error {
+	if err := validation.Required(path+"resourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if v.ResourceArn != nil {
+		if err := validation.Length(path+"resourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(0)), new(int64(2048))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern12, "", "^arn:aws:amplify:"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListWebhooksRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(2000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"nextToken", (*v.NextToken), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(0)), new(float64(50))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *StartDeploymentRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"branchName", v.BranchName != nil); err != nil {
+		return err
+	}
+	if v.BranchName != nil {
+		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.JobId != nil {
+		if err := validation.Length(path+"jobId", utf8.RuneCountInString((*v.JobId)), new(int64(0)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"jobId", (*v.JobId), pattern11, "", "^[0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if v.SourceUrl != nil {
+		if err := validation.Length(path+"sourceUrl", utf8.RuneCountInString((*v.SourceUrl)), new(int64(0)), new(int64(3000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"sourceUrl", (*v.SourceUrl), pattern13, "", "^(s3|https|http)://"); err != nil {
+			return err
+		}
+	}
+	if v.SourceUrlType != nil {
+		if err := validation.Enum(path+"sourceUrlType", (*v.SourceUrlType), enum5); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *StartJobRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"branchName", v.BranchName != nil); err != nil {
+		return err
+	}
+	if v.BranchName != nil {
+		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.JobId != nil {
+		if err := validation.Length(path+"jobId", utf8.RuneCountInString((*v.JobId)), new(int64(0)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"jobId", (*v.JobId), pattern11, "", "^[0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"jobType", v.JobType != nil); err != nil {
+		return err
+	}
+	if v.JobType != nil {
+		if err := validation.Length(path+"jobType", utf8.RuneCountInString((*v.JobType)), new(int64(0)), new(int64(10))); err != nil {
+			return err
+		}
+		if err := validation.Enum(path+"jobType", (*v.JobType), enum6); err != nil {
+			return err
+		}
+	}
+	if v.JobReason != nil {
+		if err := validation.Length(path+"jobReason", utf8.RuneCountInString((*v.JobReason)), new(int64(0)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"jobReason", (*v.JobReason), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.CommitId != nil {
+		if err := validation.Length(path+"commitId", utf8.RuneCountInString((*v.CommitId)), new(int64(0)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"commitId", (*v.CommitId), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.CommitMessage != nil {
+		if err := validation.Length(path+"commitMessage", utf8.RuneCountInString((*v.CommitMessage)), new(int64(0)), new(int64(10000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"commitMessage", (*v.CommitMessage), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *StopJobRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"branchName", v.BranchName != nil); err != nil {
+		return err
+	}
+	if v.BranchName != nil {
+		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"jobId", v.JobId != nil); err != nil {
+		return err
+	}
+	if v.JobId != nil {
+		if err := validation.Length(path+"jobId", utf8.RuneCountInString((*v.JobId)), new(int64(0)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"jobId", (*v.JobId), pattern11, "", "^[0-9]+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *SubDomainSetting) Validate(path string) error {
+	if err := validation.Required(path+"prefix", v.Prefix != nil); err != nil {
+		return err
+	}
+	if v.Prefix != nil {
+		if err := validation.Length(path+"prefix", utf8.RuneCountInString((*v.Prefix)), new(int64(0)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"prefix", (*v.Prefix), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"branchName", v.BranchName != nil); err != nil {
+		return err
+	}
+	if v.BranchName != nil {
+		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *TagResourceRequest) Validate(path string) error {
+	if err := validation.Required(path+"resourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if v.ResourceArn != nil {
+		if err := validation.Length(path+"resourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(0)), new(int64(2048))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern12, "", "^arn:aws:amplify:"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"tags", v.Tags != nil); err != nil {
+		return err
+	}
+	if v.Tags != nil {
+		if err := validation.Length(path+"tags", len(v.Tags), new(int64(0)), new(int64(50))); err != nil {
+			return err
+		}
+		for k0, e0 := range v.Tags {
+			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(128))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"tags", k0), k0, pattern4, "aws:", "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(256))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"tags", k0), e0, pattern5, "", "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *UntagResourceRequest) Validate(path string) error {
+	if err := validation.Required(path+"resourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if v.ResourceArn != nil {
+		if err := validation.Length(path+"resourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(0)), new(int64(2048))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern12, "", "^arn:aws:amplify:"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"tagKeys", v.TagKeys != nil); err != nil {
+		return err
+	}
+	if v.TagKeys != nil {
+		if err := validation.Length(path+"tagKeys", len(v.TagKeys), new(int64(1)), new(int64(50))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.TagKeys {
+			if err := validation.Length(validation.Index(path+"tagKeys", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(128))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Index(path+"tagKeys", i0), e0, pattern4, "aws:", "^(?!aws:)[a-zA-Z+-=._:/]+$"); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *UpdateAppRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"name", (*v.Name), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.Description != nil {
+		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"description", (*v.Description), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.Platform != nil {
+		if err := validation.Enum(path+"platform", (*v.Platform), enum3); err != nil {
+			return err
+		}
+	}
+	if v.ComputeRoleArn != nil {
+		if err := validation.Length(path+"computeRoleArn", utf8.RuneCountInString((*v.ComputeRoleArn)), new(int64(0)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"computeRoleArn", (*v.ComputeRoleArn), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.IamServiceRoleArn != nil {
+		if err := validation.Length(path+"iamServiceRoleArn", utf8.RuneCountInString((*v.IamServiceRoleArn)), new(int64(0)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"iamServiceRoleArn", (*v.IamServiceRoleArn), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.EnvironmentVariables != nil {
+		for k0, e0 := range v.EnvironmentVariables {
+			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(255))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), k0, pattern0, "", "^(?s)"); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(5500))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), e0, pattern0, "", "^(?s)"); err != nil {
+				return err
+			}
+		}
+	}
+	if v.BasicAuthCredentials != nil {
+		if err := validation.Length(path+"basicAuthCredentials", utf8.RuneCountInString((*v.BasicAuthCredentials)), new(int64(0)), new(int64(2000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"basicAuthCredentials", (*v.BasicAuthCredentials), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.CustomRules != nil {
+		for i0, e0 := range v.CustomRules {
+			if err := e0.Validate(validation.Index(path+"customRules", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.BuildSpec != nil {
+		if err := validation.Length(path+"buildSpec", utf8.RuneCountInString((*v.BuildSpec)), new(int64(1)), new(int64(25000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"buildSpec", (*v.BuildSpec), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.CustomHeaders != nil {
+		if err := validation.Length(path+"customHeaders", utf8.RuneCountInString((*v.CustomHeaders)), new(int64(0)), new(int64(25000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"customHeaders", (*v.CustomHeaders), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.AutoBranchCreationPatterns != nil {
+		for i0, e0 := range v.AutoBranchCreationPatterns {
+			if err := validation.Length(validation.Index(path+"autoBranchCreationPatterns", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(2048))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Index(path+"autoBranchCreationPatterns", i0), e0, pattern1, "", "^(?s).+$"); err != nil {
+				return err
+			}
+		}
+	}
+	if v.AutoBranchCreationConfig != nil {
+		if err := (*v.AutoBranchCreationConfig).Validate(path + "autoBranchCreationConfig" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Repository != nil {
+		if err := validation.Length(path+"repository", utf8.RuneCountInString((*v.Repository)), new(int64(0)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"repository", (*v.Repository), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.OauthToken != nil {
+		if err := validation.Length(path+"oauthToken", utf8.RuneCountInString((*v.OauthToken)), new(int64(0)), new(int64(4096))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"oauthToken", (*v.OauthToken), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.AccessToken != nil {
+		if err := validation.Length(path+"accessToken", utf8.RuneCountInString((*v.AccessToken)), new(int64(1)), new(int64(4096))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"accessToken", (*v.AccessToken), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.JobConfig != nil {
+		if err := (*v.JobConfig).Validate(path + "jobConfig" + "."); err != nil {
+			return err
+		}
+	}
+	if v.CacheConfig != nil {
+		if err := (*v.CacheConfig).Validate(path + "cacheConfig" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *UpdateBranchRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"branchName", v.BranchName != nil); err != nil {
+		return err
+	}
+	if v.BranchName != nil {
+		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.Description != nil {
+		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"description", (*v.Description), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.Framework != nil {
+		if err := validation.Length(path+"framework", utf8.RuneCountInString((*v.Framework)), new(int64(0)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"framework", (*v.Framework), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.Stage != nil {
+		if err := validation.Enum(path+"stage", (*v.Stage), enum0); err != nil {
+			return err
+		}
+	}
+	if v.EnvironmentVariables != nil {
+		for k0, e0 := range v.EnvironmentVariables {
+			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(k0), new(int64(0)), new(int64(255))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), k0, pattern0, "", "^(?s)"); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"environmentVariables", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(5500))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"environmentVariables", k0), e0, pattern0, "", "^(?s)"); err != nil {
+				return err
+			}
+		}
+	}
+	if v.BasicAuthCredentials != nil {
+		if err := validation.Length(path+"basicAuthCredentials", utf8.RuneCountInString((*v.BasicAuthCredentials)), new(int64(0)), new(int64(2000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"basicAuthCredentials", (*v.BasicAuthCredentials), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.BuildSpec != nil {
+		if err := validation.Length(path+"buildSpec", utf8.RuneCountInString((*v.BuildSpec)), new(int64(1)), new(int64(25000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"buildSpec", (*v.BuildSpec), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.Ttl != nil {
+		if err := validation.Length(path+"ttl", utf8.RuneCountInString((*v.Ttl)), new(int64(0)), new(int64(32))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ttl", (*v.Ttl), pattern7, "", "^\\d*$"); err != nil {
+			return err
+		}
+	}
+	if v.DisplayName != nil {
+		if err := validation.Length(path+"displayName", utf8.RuneCountInString((*v.DisplayName)), new(int64(0)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"displayName", (*v.DisplayName), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.PullRequestEnvironmentName != nil {
+		if err := validation.Length(path+"pullRequestEnvironmentName", utf8.RuneCountInString((*v.PullRequestEnvironmentName)), new(int64(0)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"pullRequestEnvironmentName", (*v.PullRequestEnvironmentName), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.BackendEnvironmentArn != nil {
+		if err := validation.Length(path+"backendEnvironmentArn", utf8.RuneCountInString((*v.BackendEnvironmentArn)), new(int64(0)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"backendEnvironmentArn", (*v.BackendEnvironmentArn), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.Backend != nil {
+		if err := (*v.Backend).Validate(path + "backend" + "."); err != nil {
+			return err
+		}
+	}
+	if v.ComputeRoleArn != nil {
+		if err := validation.Length(path+"computeRoleArn", utf8.RuneCountInString((*v.ComputeRoleArn)), new(int64(0)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"computeRoleArn", (*v.ComputeRoleArn), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *UpdateDomainAssociationRequest) Validate(path string) error {
+	if err := validation.Required(path+"appId", v.AppId != nil); err != nil {
+		return err
+	}
+	if v.AppId != nil {
+		if err := validation.Length(path+"appId", utf8.RuneCountInString((*v.AppId)), new(int64(1)), new(int64(20))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"appId", (*v.AppId), pattern6, "", "^d[a-z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"domainName", v.DomainName != nil); err != nil {
+		return err
+	}
+	if v.DomainName != nil {
+		if err := validation.Length(path+"domainName", utf8.RuneCountInString((*v.DomainName)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"domainName", (*v.DomainName), pattern8, "", "^(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])(\\.)?$"); err != nil {
+			return err
+		}
+	}
+	if v.SubDomainSettings != nil {
+		if err := validation.Length(path+"subDomainSettings", len(v.SubDomainSettings), new(int64(0)), new(int64(500))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.SubDomainSettings {
+			if err := e0.Validate(validation.Index(path+"subDomainSettings", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.AutoSubDomainCreationPatterns != nil {
+		for i0, e0 := range v.AutoSubDomainCreationPatterns {
+			if err := validation.Length(validation.Index(path+"autoSubDomainCreationPatterns", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(2048))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Index(path+"autoSubDomainCreationPatterns", i0), e0, pattern1, "", "^(?s).+$"); err != nil {
+				return err
+			}
+		}
+	}
+	if v.AutoSubDomainIAMRole != nil {
+		if err := validation.Length(path+"autoSubDomainIAMRole", utf8.RuneCountInString((*v.AutoSubDomainIAMRole)), new(int64(0)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"autoSubDomainIAMRole", (*v.AutoSubDomainIAMRole), pattern9, "", "^$|^arn:aws:iam::\\d{12}:role.+$"); err != nil {
+			return err
+		}
+	}
+	if v.CertificateSettings != nil {
+		if err := (*v.CertificateSettings).Validate(path + "certificateSettings" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *UpdateWebhookRequest) Validate(path string) error {
+	if err := validation.Required(path+"webhookId", v.WebhookId != nil); err != nil {
+		return err
+	}
+	if v.WebhookId != nil {
+		if err := validation.Length(path+"webhookId", utf8.RuneCountInString((*v.WebhookId)), new(int64(0)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"webhookId", (*v.WebhookId), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	if v.BranchName != nil {
+		if err := validation.Length(path+"branchName", utf8.RuneCountInString((*v.BranchName)), new(int64(1)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"branchName", (*v.BranchName), pattern1, "", "^(?s).+$"); err != nil {
+			return err
+		}
+	}
+	if v.Description != nil {
+		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"description", (*v.Description), pattern0, "", "^(?s)"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type API interface {
 	CreateApp(context.Context, *CreateAppRequest) (*CreateAppResult, error)
 	CreateBackendEnvironment(context.Context, *CreateBackendEnvironmentRequest) (*CreateBackendEnvironmentResult, error)
@@ -640,94 +2413,242 @@ type API interface {
 func Descriptor(api API) catalog.Service {
 	return catalog.Service{Name: "amplify", SigningName: "amplify", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "amplify", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"BadRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "DependentServiceFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 503}, "InternalFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "NotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}}, Operations: map[string]catalog.Operation{
 		"CreateApp": {Name: "CreateApp", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "amplify:CreateApp", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccessToken": catalog.MemberBinding{Location: "document", Name: "accessToken", Format: ""}, "AutoBranchCreationConfig": catalog.MemberBinding{Location: "document", Name: "autoBranchCreationConfig", Format: ""}, "AutoBranchCreationPatterns": catalog.MemberBinding{Location: "document", Name: "autoBranchCreationPatterns", Format: ""}, "BasicAuthCredentials": catalog.MemberBinding{Location: "document", Name: "basicAuthCredentials", Format: ""}, "BuildSpec": catalog.MemberBinding{Location: "document", Name: "buildSpec", Format: ""}, "CacheConfig": catalog.MemberBinding{Location: "document", Name: "cacheConfig", Format: ""}, "ComputeRoleArn": catalog.MemberBinding{Location: "document", Name: "computeRoleArn", Format: ""}, "CustomHeaders": catalog.MemberBinding{Location: "document", Name: "customHeaders", Format: ""}, "CustomRules": catalog.MemberBinding{Location: "document", Name: "customRules", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "description", Format: ""}, "EnableAutoBranchCreation": catalog.MemberBinding{Location: "document", Name: "enableAutoBranchCreation", Format: ""}, "EnableBasicAuth": catalog.MemberBinding{Location: "document", Name: "enableBasicAuth", Format: ""}, "EnableBranchAutoBuild": catalog.MemberBinding{Location: "document", Name: "enableBranchAutoBuild", Format: ""}, "EnableBranchAutoDeletion": catalog.MemberBinding{Location: "document", Name: "enableBranchAutoDeletion", Format: ""}, "EnvironmentVariables": catalog.MemberBinding{Location: "document", Name: "environmentVariables", Format: ""}, "IamServiceRoleArn": catalog.MemberBinding{Location: "document", Name: "iamServiceRoleArn", Format: ""}, "JobConfig": catalog.MemberBinding{Location: "document", Name: "jobConfig", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "OauthToken": catalog.MemberBinding{Location: "document", Name: "oauthToken", Format: ""}, "Platform": catalog.MemberBinding{Location: "document", Name: "platform", Format: ""}, "Repository": catalog.MemberBinding{Location: "document", Name: "repository", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}}, Output: map[string]catalog.MemberBinding{"App": catalog.MemberBinding{Location: "document", Name: "app", Format: ""}}, Method: "POST", URI: "/apps", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateAppRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateApp(ctx, input.(*CreateAppRequest))
+			in := input.(*CreateAppRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.CreateApp(ctx, in)
 		}},
 		"CreateBackendEnvironment": {Name: "CreateBackendEnvironment", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:CreateBackendEnvironment", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "DeploymentArtifacts": catalog.MemberBinding{Location: "document", Name: "deploymentArtifacts", Format: ""}, "EnvironmentName": catalog.MemberBinding{Location: "document", Name: "environmentName", Format: ""}, "StackName": catalog.MemberBinding{Location: "document", Name: "stackName", Format: ""}}, Output: map[string]catalog.MemberBinding{"BackendEnvironment": catalog.MemberBinding{Location: "document", Name: "backendEnvironment", Format: ""}}, Method: "POST", URI: "/apps/{appId}/backendenvironments", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateBackendEnvironmentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateBackendEnvironment(ctx, input.(*CreateBackendEnvironmentRequest))
+			in := input.(*CreateBackendEnvironmentRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.CreateBackendEnvironment(ctx, in)
 		}},
 		"CreateBranch": {Name: "CreateBranch", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "amplify:CreateBranch", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "Backend": catalog.MemberBinding{Location: "document", Name: "backend", Format: ""}, "BackendEnvironmentArn": catalog.MemberBinding{Location: "document", Name: "backendEnvironmentArn", Format: ""}, "BasicAuthCredentials": catalog.MemberBinding{Location: "document", Name: "basicAuthCredentials", Format: ""}, "BranchName": catalog.MemberBinding{Location: "document", Name: "branchName", Format: ""}, "BuildSpec": catalog.MemberBinding{Location: "document", Name: "buildSpec", Format: ""}, "ComputeRoleArn": catalog.MemberBinding{Location: "document", Name: "computeRoleArn", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "description", Format: ""}, "DisplayName": catalog.MemberBinding{Location: "document", Name: "displayName", Format: ""}, "EnableAutoBuild": catalog.MemberBinding{Location: "document", Name: "enableAutoBuild", Format: ""}, "EnableBasicAuth": catalog.MemberBinding{Location: "document", Name: "enableBasicAuth", Format: ""}, "EnableNotification": catalog.MemberBinding{Location: "document", Name: "enableNotification", Format: ""}, "EnablePerformanceMode": catalog.MemberBinding{Location: "document", Name: "enablePerformanceMode", Format: ""}, "EnablePullRequestPreview": catalog.MemberBinding{Location: "document", Name: "enablePullRequestPreview", Format: ""}, "EnableSkewProtection": catalog.MemberBinding{Location: "document", Name: "enableSkewProtection", Format: ""}, "EnvironmentVariables": catalog.MemberBinding{Location: "document", Name: "environmentVariables", Format: ""}, "Framework": catalog.MemberBinding{Location: "document", Name: "framework", Format: ""}, "PullRequestEnvironmentName": catalog.MemberBinding{Location: "document", Name: "pullRequestEnvironmentName", Format: ""}, "Stage": catalog.MemberBinding{Location: "document", Name: "stage", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}, "Ttl": catalog.MemberBinding{Location: "document", Name: "ttl", Format: ""}}, Output: map[string]catalog.MemberBinding{"Branch": catalog.MemberBinding{Location: "document", Name: "branch", Format: ""}}, Method: "POST", URI: "/apps/{appId}/branches", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateBranchRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateBranch(ctx, input.(*CreateBranchRequest))
+			in := input.(*CreateBranchRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.CreateBranch(ctx, in)
 		}},
 		"CreateDeployment": {Name: "CreateDeployment", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:CreateDeployment", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "BranchName": catalog.MemberBinding{Location: "label", Name: "branchName", Format: ""}, "FileMap": catalog.MemberBinding{Location: "document", Name: "fileMap", Format: ""}}, Output: map[string]catalog.MemberBinding{"FileUploadUrls": catalog.MemberBinding{Location: "document", Name: "fileUploadUrls", Format: ""}, "JobId": catalog.MemberBinding{Location: "document", Name: "jobId", Format: ""}, "ZipUploadUrl": catalog.MemberBinding{Location: "document", Name: "zipUploadUrl", Format: ""}}, Method: "POST", URI: "/apps/{appId}/branches/{branchName}/deployments", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateDeploymentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateDeployment(ctx, input.(*CreateDeploymentRequest))
+			in := input.(*CreateDeploymentRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.CreateDeployment(ctx, in)
 		}},
 		"CreateDomainAssociation": {Name: "CreateDomainAssociation", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:CreateDomainAssociation", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "AutoSubDomainCreationPatterns": catalog.MemberBinding{Location: "document", Name: "autoSubDomainCreationPatterns", Format: ""}, "AutoSubDomainIAMRole": catalog.MemberBinding{Location: "document", Name: "autoSubDomainIAMRole", Format: ""}, "CertificateSettings": catalog.MemberBinding{Location: "document", Name: "certificateSettings", Format: ""}, "DomainName": catalog.MemberBinding{Location: "document", Name: "domainName", Format: ""}, "EnableAutoSubDomain": catalog.MemberBinding{Location: "document", Name: "enableAutoSubDomain", Format: ""}, "SubDomainSettings": catalog.MemberBinding{Location: "document", Name: "subDomainSettings", Format: ""}}, Output: map[string]catalog.MemberBinding{"DomainAssociation": catalog.MemberBinding{Location: "document", Name: "domainAssociation", Format: ""}}, Method: "POST", URI: "/apps/{appId}/domains", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateDomainAssociationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateDomainAssociation(ctx, input.(*CreateDomainAssociationRequest))
+			in := input.(*CreateDomainAssociationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.CreateDomainAssociation(ctx, in)
 		}},
 		"CreateWebhook": {Name: "CreateWebhook", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:CreateWebhook", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "BranchName": catalog.MemberBinding{Location: "document", Name: "branchName", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "description", Format: ""}}, Output: map[string]catalog.MemberBinding{"Webhook": catalog.MemberBinding{Location: "document", Name: "webhook", Format: ""}}, Method: "POST", URI: "/apps/{appId}/webhooks", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateWebhookRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateWebhook(ctx, input.(*CreateWebhookRequest))
+			in := input.(*CreateWebhookRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.CreateWebhook(ctx, in)
 		}},
 		"DeleteApp": {Name: "DeleteApp", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "amplify:DeleteApp", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}}, Output: map[string]catalog.MemberBinding{"App": catalog.MemberBinding{Location: "document", Name: "app", Format: ""}}, Method: "DELETE", URI: "/apps/{appId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteAppRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteApp(ctx, input.(*DeleteAppRequest))
+			in := input.(*DeleteAppRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.DeleteApp(ctx, in)
 		}},
 		"DeleteBackendEnvironment": {Name: "DeleteBackendEnvironment", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:DeleteBackendEnvironment", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "EnvironmentName": catalog.MemberBinding{Location: "label", Name: "environmentName", Format: ""}}, Output: map[string]catalog.MemberBinding{"BackendEnvironment": catalog.MemberBinding{Location: "document", Name: "backendEnvironment", Format: ""}}, Method: "DELETE", URI: "/apps/{appId}/backendenvironments/{environmentName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteBackendEnvironmentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteBackendEnvironment(ctx, input.(*DeleteBackendEnvironmentRequest))
+			in := input.(*DeleteBackendEnvironmentRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.DeleteBackendEnvironment(ctx, in)
 		}},
 		"DeleteBranch": {Name: "DeleteBranch", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "amplify:DeleteBranch", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "BranchName": catalog.MemberBinding{Location: "label", Name: "branchName", Format: ""}}, Output: map[string]catalog.MemberBinding{"Branch": catalog.MemberBinding{Location: "document", Name: "branch", Format: ""}}, Method: "DELETE", URI: "/apps/{appId}/branches/{branchName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteBranchRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteBranch(ctx, input.(*DeleteBranchRequest))
+			in := input.(*DeleteBranchRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.DeleteBranch(ctx, in)
 		}},
 		"DeleteDomainAssociation": {Name: "DeleteDomainAssociation", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:DeleteDomainAssociation", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "DomainName": catalog.MemberBinding{Location: "label", Name: "domainName", Format: ""}}, Output: map[string]catalog.MemberBinding{"DomainAssociation": catalog.MemberBinding{Location: "document", Name: "domainAssociation", Format: ""}}, Method: "DELETE", URI: "/apps/{appId}/domains/{domainName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteDomainAssociationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteDomainAssociation(ctx, input.(*DeleteDomainAssociationRequest))
+			in := input.(*DeleteDomainAssociationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.DeleteDomainAssociation(ctx, in)
 		}},
 		"DeleteJob": {Name: "DeleteJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:DeleteJob", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "BranchName": catalog.MemberBinding{Location: "label", Name: "branchName", Format: ""}, "JobId": catalog.MemberBinding{Location: "label", Name: "jobId", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobSummary": catalog.MemberBinding{Location: "document", Name: "jobSummary", Format: ""}}, Method: "DELETE", URI: "/apps/{appId}/branches/{branchName}/jobs/{jobId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteJob(ctx, input.(*DeleteJobRequest))
+			in := input.(*DeleteJobRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.DeleteJob(ctx, in)
 		}},
 		"DeleteWebhook": {Name: "DeleteWebhook", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:DeleteWebhook", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"WebhookId": catalog.MemberBinding{Location: "label", Name: "webhookId", Format: ""}}, Output: map[string]catalog.MemberBinding{"Webhook": catalog.MemberBinding{Location: "document", Name: "webhook", Format: ""}}, Method: "DELETE", URI: "/webhooks/{webhookId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteWebhookRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteWebhook(ctx, input.(*DeleteWebhookRequest))
+			in := input.(*DeleteWebhookRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.DeleteWebhook(ctx, in)
 		}},
-		"GetApp": {Name: "GetApp", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "amplify:GetApp", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}}, Output: map[string]catalog.MemberBinding{"App": catalog.MemberBinding{Location: "document", Name: "app", Format: ""}}, Method: "GET", URI: "/apps/{appId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetAppRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.GetApp(ctx, input.(*GetAppRequest)) }},
+		"GetApp": {Name: "GetApp", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "amplify:GetApp", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}}, Output: map[string]catalog.MemberBinding{"App": catalog.MemberBinding{Location: "document", Name: "app", Format: ""}}, Method: "GET", URI: "/apps/{appId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetAppRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*GetAppRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.GetApp(ctx, in)
+		}},
 		"GetBackendEnvironment": {Name: "GetBackendEnvironment", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:GetBackendEnvironment", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "EnvironmentName": catalog.MemberBinding{Location: "label", Name: "environmentName", Format: ""}}, Output: map[string]catalog.MemberBinding{"BackendEnvironment": catalog.MemberBinding{Location: "document", Name: "backendEnvironment", Format: ""}}, Method: "GET", URI: "/apps/{appId}/backendenvironments/{environmentName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetBackendEnvironmentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.GetBackendEnvironment(ctx, input.(*GetBackendEnvironmentRequest))
+			in := input.(*GetBackendEnvironmentRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.GetBackendEnvironment(ctx, in)
 		}},
 		"GetBranch": {Name: "GetBranch", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "amplify:GetBranch", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "BranchName": catalog.MemberBinding{Location: "label", Name: "branchName", Format: ""}}, Output: map[string]catalog.MemberBinding{"Branch": catalog.MemberBinding{Location: "document", Name: "branch", Format: ""}}, Method: "GET", URI: "/apps/{appId}/branches/{branchName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetBranchRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.GetBranch(ctx, input.(*GetBranchRequest))
+			in := input.(*GetBranchRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.GetBranch(ctx, in)
 		}},
 		"GetDomainAssociation": {Name: "GetDomainAssociation", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:GetDomainAssociation", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "DomainName": catalog.MemberBinding{Location: "label", Name: "domainName", Format: ""}}, Output: map[string]catalog.MemberBinding{"DomainAssociation": catalog.MemberBinding{Location: "document", Name: "domainAssociation", Format: ""}}, Method: "GET", URI: "/apps/{appId}/domains/{domainName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetDomainAssociationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.GetDomainAssociation(ctx, input.(*GetDomainAssociationRequest))
+			in := input.(*GetDomainAssociationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.GetDomainAssociation(ctx, in)
 		}},
-		"GetJob": {Name: "GetJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:GetJob", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "BranchName": catalog.MemberBinding{Location: "label", Name: "branchName", Format: ""}, "JobId": catalog.MemberBinding{Location: "label", Name: "jobId", Format: ""}}, Output: map[string]catalog.MemberBinding{"Job": catalog.MemberBinding{Location: "document", Name: "job", Format: ""}}, Method: "GET", URI: "/apps/{appId}/branches/{branchName}/jobs/{jobId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.GetJob(ctx, input.(*GetJobRequest)) }},
+		"GetJob": {Name: "GetJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:GetJob", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "BranchName": catalog.MemberBinding{Location: "label", Name: "branchName", Format: ""}, "JobId": catalog.MemberBinding{Location: "label", Name: "jobId", Format: ""}}, Output: map[string]catalog.MemberBinding{"Job": catalog.MemberBinding{Location: "document", Name: "job", Format: ""}}, Method: "GET", URI: "/apps/{appId}/branches/{branchName}/jobs/{jobId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*GetJobRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.GetJob(ctx, in)
+		}},
 		"GetWebhook": {Name: "GetWebhook", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:GetWebhook", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"WebhookId": catalog.MemberBinding{Location: "label", Name: "webhookId", Format: ""}}, Output: map[string]catalog.MemberBinding{"Webhook": catalog.MemberBinding{Location: "document", Name: "webhook", Format: ""}}, Method: "GET", URI: "/webhooks/{webhookId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetWebhookRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.GetWebhook(ctx, input.(*GetWebhookRequest))
+			in := input.(*GetWebhookRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.GetWebhook(ctx, in)
 		}},
-		"ListApps": {Name: "ListApps", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "amplify:ListApps", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"Apps": catalog.MemberBinding{Location: "document", Name: "apps", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}}, Method: "GET", URI: "/apps", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListAppsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.ListApps(ctx, input.(*ListAppsRequest)) }},
+		"ListApps": {Name: "ListApps", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "amplify:ListApps", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"Apps": catalog.MemberBinding{Location: "document", Name: "apps", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}}, Method: "GET", URI: "/apps", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListAppsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListAppsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.ListApps(ctx, in)
+		}},
 		"ListBackendEnvironments": {Name: "ListBackendEnvironments", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:ListBackendEnvironments", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "EnvironmentName": catalog.MemberBinding{Location: "query", Name: "environmentName", Format: ""}, "MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"BackendEnvironments": catalog.MemberBinding{Location: "document", Name: "backendEnvironments", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}}, Method: "GET", URI: "/apps/{appId}/backendenvironments", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListBackendEnvironmentsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListBackendEnvironments(ctx, input.(*ListBackendEnvironmentsRequest))
+			in := input.(*ListBackendEnvironmentsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.ListBackendEnvironments(ctx, in)
 		}},
 		"ListBranches": {Name: "ListBranches", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "amplify:ListBranches", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"Branches": catalog.MemberBinding{Location: "document", Name: "branches", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}}, Method: "GET", URI: "/apps/{appId}/branches", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListBranchesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListBranches(ctx, input.(*ListBranchesRequest))
+			in := input.(*ListBranchesRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.ListBranches(ctx, in)
 		}},
 		"ListDomainAssociations": {Name: "ListDomainAssociations", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:ListDomainAssociations", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"DomainAssociations": catalog.MemberBinding{Location: "document", Name: "domainAssociations", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}}, Method: "GET", URI: "/apps/{appId}/domains", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListDomainAssociationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListDomainAssociations(ctx, input.(*ListDomainAssociationsRequest))
+			in := input.(*ListDomainAssociationsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.ListDomainAssociations(ctx, in)
 		}},
-		"ListJobs": {Name: "ListJobs", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:ListJobs", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "BranchName": catalog.MemberBinding{Location: "label", Name: "branchName", Format: ""}, "MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobSummaries": catalog.MemberBinding{Location: "document", Name: "jobSummaries", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}}, Method: "GET", URI: "/apps/{appId}/branches/{branchName}/jobs", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListJobsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.ListJobs(ctx, input.(*ListJobsRequest)) }},
+		"ListJobs": {Name: "ListJobs", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:ListJobs", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "BranchName": catalog.MemberBinding{Location: "label", Name: "branchName", Format: ""}, "MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobSummaries": catalog.MemberBinding{Location: "document", Name: "jobSummaries", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}}, Method: "GET", URI: "/apps/{appId}/branches/{branchName}/jobs", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListJobsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListJobsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.ListJobs(ctx, in)
+		}},
 		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:ListTagsForResource", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceArn": catalog.MemberBinding{Location: "label", Name: "resourceArn", Format: ""}}, Output: map[string]catalog.MemberBinding{"Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}}, Method: "GET", URI: "/tags/{resourceArn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceRequest))
+			in := input.(*ListTagsForResourceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.ListTagsForResource(ctx, in)
 		}},
 		"ListWebhooks": {Name: "ListWebhooks", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:ListWebhooks", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}, "Webhooks": catalog.MemberBinding{Location: "document", Name: "webhooks", Format: ""}}, Method: "GET", URI: "/apps/{appId}/webhooks", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListWebhooksRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListWebhooks(ctx, input.(*ListWebhooksRequest))
+			in := input.(*ListWebhooksRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.ListWebhooks(ctx, in)
 		}},
 		"StartDeployment": {Name: "StartDeployment", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:StartDeployment", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "BranchName": catalog.MemberBinding{Location: "label", Name: "branchName", Format: ""}, "JobId": catalog.MemberBinding{Location: "document", Name: "jobId", Format: ""}, "SourceUrl": catalog.MemberBinding{Location: "document", Name: "sourceUrl", Format: ""}, "SourceUrlType": catalog.MemberBinding{Location: "document", Name: "sourceUrlType", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobSummary": catalog.MemberBinding{Location: "document", Name: "jobSummary", Format: ""}}, Method: "POST", URI: "/apps/{appId}/branches/{branchName}/deployments/start", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &StartDeploymentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.StartDeployment(ctx, input.(*StartDeploymentRequest))
+			in := input.(*StartDeploymentRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.StartDeployment(ctx, in)
 		}},
-		"StartJob": {Name: "StartJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:StartJob", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "BranchName": catalog.MemberBinding{Location: "label", Name: "branchName", Format: ""}, "CommitId": catalog.MemberBinding{Location: "document", Name: "commitId", Format: ""}, "CommitMessage": catalog.MemberBinding{Location: "document", Name: "commitMessage", Format: ""}, "CommitTime": catalog.MemberBinding{Location: "document", Name: "commitTime", Format: ""}, "JobId": catalog.MemberBinding{Location: "document", Name: "jobId", Format: ""}, "JobReason": catalog.MemberBinding{Location: "document", Name: "jobReason", Format: ""}, "JobType": catalog.MemberBinding{Location: "document", Name: "jobType", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobSummary": catalog.MemberBinding{Location: "document", Name: "jobSummary", Format: ""}}, Method: "POST", URI: "/apps/{appId}/branches/{branchName}/jobs", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &StartJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.StartJob(ctx, input.(*StartJobRequest)) }},
-		"StopJob":  {Name: "StopJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:StopJob", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "BranchName": catalog.MemberBinding{Location: "label", Name: "branchName", Format: ""}, "JobId": catalog.MemberBinding{Location: "label", Name: "jobId", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobSummary": catalog.MemberBinding{Location: "document", Name: "jobSummary", Format: ""}}, Method: "DELETE", URI: "/apps/{appId}/branches/{branchName}/jobs/{jobId}/stop", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &StopJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.StopJob(ctx, input.(*StopJobRequest)) }},
+		"StartJob": {Name: "StartJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:StartJob", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "BranchName": catalog.MemberBinding{Location: "label", Name: "branchName", Format: ""}, "CommitId": catalog.MemberBinding{Location: "document", Name: "commitId", Format: ""}, "CommitMessage": catalog.MemberBinding{Location: "document", Name: "commitMessage", Format: ""}, "CommitTime": catalog.MemberBinding{Location: "document", Name: "commitTime", Format: ""}, "JobId": catalog.MemberBinding{Location: "document", Name: "jobId", Format: ""}, "JobReason": catalog.MemberBinding{Location: "document", Name: "jobReason", Format: ""}, "JobType": catalog.MemberBinding{Location: "document", Name: "jobType", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobSummary": catalog.MemberBinding{Location: "document", Name: "jobSummary", Format: ""}}, Method: "POST", URI: "/apps/{appId}/branches/{branchName}/jobs", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &StartJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*StartJobRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.StartJob(ctx, in)
+		}},
+		"StopJob": {Name: "StopJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:StopJob", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "BranchName": catalog.MemberBinding{Location: "label", Name: "branchName", Format: ""}, "JobId": catalog.MemberBinding{Location: "label", Name: "jobId", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobSummary": catalog.MemberBinding{Location: "document", Name: "jobSummary", Format: ""}}, Method: "DELETE", URI: "/apps/{appId}/branches/{branchName}/jobs/{jobId}/stop", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &StopJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*StopJobRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.StopJob(ctx, in)
+		}},
 		"TagResource": {Name: "TagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:TagResource", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceArn": catalog.MemberBinding{Location: "label", Name: "resourceArn", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/tags/{resourceArn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &TagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.TagResource(ctx, input.(*TagResourceRequest))
+			in := input.(*TagResourceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.TagResource(ctx, in)
 		}},
 		"UntagResource": {Name: "UntagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:UntagResource", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceArn": catalog.MemberBinding{Location: "label", Name: "resourceArn", Format: ""}, "TagKeys": catalog.MemberBinding{Location: "query", Name: "tagKeys", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/tags/{resourceArn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UntagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UntagResource(ctx, input.(*UntagResourceRequest))
+			in := input.(*UntagResourceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.UntagResource(ctx, in)
 		}},
 		"UpdateApp": {Name: "UpdateApp", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "amplify:UpdateApp", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccessToken": catalog.MemberBinding{Location: "document", Name: "accessToken", Format: ""}, "AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "AutoBranchCreationConfig": catalog.MemberBinding{Location: "document", Name: "autoBranchCreationConfig", Format: ""}, "AutoBranchCreationPatterns": catalog.MemberBinding{Location: "document", Name: "autoBranchCreationPatterns", Format: ""}, "BasicAuthCredentials": catalog.MemberBinding{Location: "document", Name: "basicAuthCredentials", Format: ""}, "BuildSpec": catalog.MemberBinding{Location: "document", Name: "buildSpec", Format: ""}, "CacheConfig": catalog.MemberBinding{Location: "document", Name: "cacheConfig", Format: ""}, "ComputeRoleArn": catalog.MemberBinding{Location: "document", Name: "computeRoleArn", Format: ""}, "CustomHeaders": catalog.MemberBinding{Location: "document", Name: "customHeaders", Format: ""}, "CustomRules": catalog.MemberBinding{Location: "document", Name: "customRules", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "description", Format: ""}, "EnableAutoBranchCreation": catalog.MemberBinding{Location: "document", Name: "enableAutoBranchCreation", Format: ""}, "EnableBasicAuth": catalog.MemberBinding{Location: "document", Name: "enableBasicAuth", Format: ""}, "EnableBranchAutoBuild": catalog.MemberBinding{Location: "document", Name: "enableBranchAutoBuild", Format: ""}, "EnableBranchAutoDeletion": catalog.MemberBinding{Location: "document", Name: "enableBranchAutoDeletion", Format: ""}, "EnvironmentVariables": catalog.MemberBinding{Location: "document", Name: "environmentVariables", Format: ""}, "IamServiceRoleArn": catalog.MemberBinding{Location: "document", Name: "iamServiceRoleArn", Format: ""}, "JobConfig": catalog.MemberBinding{Location: "document", Name: "jobConfig", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "OauthToken": catalog.MemberBinding{Location: "document", Name: "oauthToken", Format: ""}, "Platform": catalog.MemberBinding{Location: "document", Name: "platform", Format: ""}, "Repository": catalog.MemberBinding{Location: "document", Name: "repository", Format: ""}}, Output: map[string]catalog.MemberBinding{"App": catalog.MemberBinding{Location: "document", Name: "app", Format: ""}}, Method: "POST", URI: "/apps/{appId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateAppRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UpdateApp(ctx, input.(*UpdateAppRequest))
+			in := input.(*UpdateAppRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.UpdateApp(ctx, in)
 		}},
 		"UpdateBranch": {Name: "UpdateBranch", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "amplify:UpdateBranch", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "Backend": catalog.MemberBinding{Location: "document", Name: "backend", Format: ""}, "BackendEnvironmentArn": catalog.MemberBinding{Location: "document", Name: "backendEnvironmentArn", Format: ""}, "BasicAuthCredentials": catalog.MemberBinding{Location: "document", Name: "basicAuthCredentials", Format: ""}, "BranchName": catalog.MemberBinding{Location: "label", Name: "branchName", Format: ""}, "BuildSpec": catalog.MemberBinding{Location: "document", Name: "buildSpec", Format: ""}, "ComputeRoleArn": catalog.MemberBinding{Location: "document", Name: "computeRoleArn", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "description", Format: ""}, "DisplayName": catalog.MemberBinding{Location: "document", Name: "displayName", Format: ""}, "EnableAutoBuild": catalog.MemberBinding{Location: "document", Name: "enableAutoBuild", Format: ""}, "EnableBasicAuth": catalog.MemberBinding{Location: "document", Name: "enableBasicAuth", Format: ""}, "EnableNotification": catalog.MemberBinding{Location: "document", Name: "enableNotification", Format: ""}, "EnablePerformanceMode": catalog.MemberBinding{Location: "document", Name: "enablePerformanceMode", Format: ""}, "EnablePullRequestPreview": catalog.MemberBinding{Location: "document", Name: "enablePullRequestPreview", Format: ""}, "EnableSkewProtection": catalog.MemberBinding{Location: "document", Name: "enableSkewProtection", Format: ""}, "EnvironmentVariables": catalog.MemberBinding{Location: "document", Name: "environmentVariables", Format: ""}, "Framework": catalog.MemberBinding{Location: "document", Name: "framework", Format: ""}, "PullRequestEnvironmentName": catalog.MemberBinding{Location: "document", Name: "pullRequestEnvironmentName", Format: ""}, "Stage": catalog.MemberBinding{Location: "document", Name: "stage", Format: ""}, "Ttl": catalog.MemberBinding{Location: "document", Name: "ttl", Format: ""}}, Output: map[string]catalog.MemberBinding{"Branch": catalog.MemberBinding{Location: "document", Name: "branch", Format: ""}}, Method: "POST", URI: "/apps/{appId}/branches/{branchName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateBranchRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UpdateBranch(ctx, input.(*UpdateBranchRequest))
+			in := input.(*UpdateBranchRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.UpdateBranch(ctx, in)
 		}},
 		"UpdateDomainAssociation": {Name: "UpdateDomainAssociation", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:UpdateDomainAssociation", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AppId": catalog.MemberBinding{Location: "label", Name: "appId", Format: ""}, "AutoSubDomainCreationPatterns": catalog.MemberBinding{Location: "document", Name: "autoSubDomainCreationPatterns", Format: ""}, "AutoSubDomainIAMRole": catalog.MemberBinding{Location: "document", Name: "autoSubDomainIAMRole", Format: ""}, "CertificateSettings": catalog.MemberBinding{Location: "document", Name: "certificateSettings", Format: ""}, "DomainName": catalog.MemberBinding{Location: "label", Name: "domainName", Format: ""}, "EnableAutoSubDomain": catalog.MemberBinding{Location: "document", Name: "enableAutoSubDomain", Format: ""}, "SubDomainSettings": catalog.MemberBinding{Location: "document", Name: "subDomainSettings", Format: ""}}, Output: map[string]catalog.MemberBinding{"DomainAssociation": catalog.MemberBinding{Location: "document", Name: "domainAssociation", Format: ""}}, Method: "POST", URI: "/apps/{appId}/domains/{domainName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateDomainAssociationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UpdateDomainAssociation(ctx, input.(*UpdateDomainAssociationRequest))
+			in := input.(*UpdateDomainAssociationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.UpdateDomainAssociation(ctx, in)
 		}},
 		"UpdateWebhook": {Name: "UpdateWebhook", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "amplify:UpdateWebhook", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"BranchName": catalog.MemberBinding{Location: "document", Name: "branchName", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "description", Format: ""}, "WebhookId": catalog.MemberBinding{Location: "label", Name: "webhookId", Format: ""}}, Output: map[string]catalog.MemberBinding{"Webhook": catalog.MemberBinding{Location: "document", Name: "webhook", Format: ""}}, Method: "POST", URI: "/webhooks/{webhookId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateWebhookRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UpdateWebhook(ctx, input.(*UpdateWebhookRequest))
+			in := input.(*UpdateWebhookRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.UpdateWebhook(ctx, in)
 		}},
 	}}
 }

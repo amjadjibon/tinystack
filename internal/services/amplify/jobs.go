@@ -90,10 +90,6 @@ func (s *Service) newJob(ctx context.Context, app, branch *string, kind string, 
 
 // StartJob records a PENDING job without scheduling a build.
 func (s *Service) StartJob(ctx context.Context, in *api.StartJobRequest) (*api.StartJobResult, error) {
-	if err := validateStartJobRequest(in); err != nil {
-		return nil, err
-	}
-
 	kind := common.Value(in.JobType)
 	if kind == jobRetry && (in.CommitId != nil || in.CommitMessage != nil || in.CommitTime != nil) {
 		return nil, bad("RETRY copies the original commit; commit overrides are not supported.")
@@ -137,10 +133,6 @@ func (s *Service) CreateDeployment(
 	ctx context.Context,
 	in *api.CreateDeploymentRequest,
 ) (*api.CreateDeploymentResult, error) {
-	if err := validateCreateDeploymentRequest(in); err != nil {
-		return nil, err
-	}
-
 	r, err := s.newJob(
 		ctx,
 		in.AppId,
@@ -173,10 +165,6 @@ func (s *Service) StartDeployment(
 	ctx context.Context,
 	in *api.StartDeploymentRequest,
 ) (*api.StartDeploymentResult, error) {
-	if err := validateStartDeploymentRequest(in); err != nil {
-		return nil, err
-	}
-
 	if (in.JobId == nil) == (in.SourceUrl == nil) {
 		return nil, bad("Specify exactly one of jobId and sourceUrl.")
 	}
@@ -214,10 +202,6 @@ func (s *Service) StartDeployment(
 
 // GetJob serves the corresponding records-only Hosting operation.
 func (s *Service) GetJob(ctx context.Context, in *api.GetJobRequest) (*api.GetJobResult, error) {
-	if err := validateGetJobRequest(in); err != nil {
-		return nil, err
-	}
-
 	r, err := s.get(ctx, "job", jobID(in.AppId, in.BranchName, in.JobId))
 	if err != nil {
 		return nil, err
@@ -228,10 +212,6 @@ func (s *Service) GetJob(ctx context.Context, in *api.GetJobRequest) (*api.GetJo
 
 // ListJobs serves the corresponding records-only Hosting operation.
 func (s *Service) ListJobs(ctx context.Context, in *api.ListJobsRequest) (*api.ListJobsResult, error) {
-	if err := validateListJobsRequest(in); err != nil {
-		return nil, err
-	}
-
 	items, next, err := s.list(
 		ctx,
 		"job",
@@ -256,10 +236,6 @@ func (s *Service) ListJobs(ctx context.Context, in *api.ListJobsRequest) (*api.L
 
 // StopJob marks a recorded job CANCELLED.
 func (s *Service) StopJob(ctx context.Context, in *api.StopJobRequest) (*api.StopJobResult, error) {
-	if err := validateStopJobRequest(in); err != nil {
-		return nil, err
-	}
-
 	r, err := s.change(ctx, "job", jobID(in.AppId, in.BranchName, in.JobId), common.Value(in.AppId),
 		common.Value(in.BranchName), false, false, func(r *record, _ request.Scope) error {
 			r.Job.Status = new("CANCELLED")
@@ -275,10 +251,6 @@ func (s *Service) StopJob(ctx context.Context, in *api.StopJobRequest) (*api.Sto
 
 // DeleteJob serves the corresponding records-only Hosting operation.
 func (s *Service) DeleteJob(ctx context.Context, in *api.DeleteJobRequest) (*api.DeleteJobResult, error) {
-	if err := validateDeleteJobRequest(in); err != nil {
-		return nil, err
-	}
-
 	r, err := s.change(ctx, "job", jobID(in.AppId, in.BranchName, in.JobId), common.Value(in.AppId),
 		common.Value(in.BranchName), false, true, func(_ *record, _ request.Scope) error { return nil })
 	if err != nil {

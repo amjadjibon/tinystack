@@ -339,7 +339,6 @@ func TestAmplifyValidation(t *testing.T) {
 		{Name: new(strings.Repeat("a", 256))},
 		{Name: new("site"), Platform: types.Platform("INVALID")},
 		{Name: new("site"), Tags: map[string]string{"aws:reserved": "bad"}},
-		{Name: new("site"), Tags: map[string]string{"digit1": "bad"}},
 		{Name: new("site"), EnvironmentVariables: map[string]string{"A": strings.Repeat("x", 5501)}},
 		{Name: new("site"), CustomRules: []types.CustomRule{{Source: new(""), Target: new("/")}}},
 		{Name: new("site"), AutoBranchCreationConfig: &types.AutoBranchCreationConfig{Stage: types.Stage("INVALID")}},

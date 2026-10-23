@@ -15,10 +15,6 @@ func (s *Service) CreateAutoScalingConfiguration(
 	ctx context.Context,
 	in *api.CreateAutoScalingConfigurationRequest,
 ) (*api.CreateAutoScalingConfigurationResponse, error) {
-	if err := validateCreateAutoScalingConfigurationRequest(in); err != nil {
-		return nil, err
-	}
-
 	tags, err := tagsMap(in.Tags)
 	if err != nil {
 		return nil, err
@@ -56,10 +52,6 @@ func (s *Service) DescribeAutoScalingConfiguration(
 	ctx context.Context,
 	in *api.DescribeAutoScalingConfigurationRequest,
 ) (*api.DescribeAutoScalingConfigurationResponse, error) {
-	if err := validateDescribeAutoScalingConfigurationRequest(in); err != nil {
-		return nil, err
-	}
-
 	if err := s.seedDefault(ctx); err != nil {
 		return nil, err
 	}
@@ -76,10 +68,6 @@ func (s *Service) DeleteAutoScalingConfiguration(
 	ctx context.Context,
 	in *api.DeleteAutoScalingConfigurationRequest,
 ) (*api.DeleteAutoScalingConfigurationResponse, error) {
-	if err := validateDeleteAutoScalingConfigurationRequest(in); err != nil {
-		return nil, err
-	}
-
 	if common.Value(in.DeleteAllRevisions) &&
 		len(strings.Split(common.Value(in.AutoScalingConfigurationArn), "/")) != 2 {
 		return nil, invalid("DeleteAllRevisions requires a name-only ARN")
@@ -148,10 +136,6 @@ func (s *Service) ListAutoScalingConfigurations(
 	ctx context.Context,
 	in *api.ListAutoScalingConfigurationsRequest,
 ) (*api.ListAutoScalingConfigurationsResponse, error) {
-	if err := validateListAutoScalingConfigurationsRequest(in); err != nil {
-		return nil, err
-	}
-
 	if err := s.seedDefault(ctx); err != nil {
 		return nil, err
 	}

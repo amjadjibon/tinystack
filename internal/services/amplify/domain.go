@@ -13,7 +13,7 @@ func (s *Service) CreateDomainAssociation(
 	ctx context.Context,
 	in *api.CreateDomainAssociationRequest,
 ) (*api.CreateDomainAssociationResult, error) {
-	if err := validateCreateDomainAssociationRequest(in); err != nil {
+	if err := checkCertificate(in.CertificateSettings); err != nil {
 		return nil, err
 	}
 
@@ -87,10 +87,6 @@ func (s *Service) GetDomainAssociation(
 	ctx context.Context,
 	in *api.GetDomainAssociationRequest,
 ) (*api.GetDomainAssociationResult, error) {
-	if err := validateGetDomainAssociationRequest(in); err != nil {
-		return nil, err
-	}
-
 	id := childID(common.Value(in.AppId), common.Value(in.DomainName))
 	r, err := s.get(ctx, "domain", id)
 	if err != nil {
@@ -105,7 +101,7 @@ func (s *Service) UpdateDomainAssociation(
 	ctx context.Context,
 	in *api.UpdateDomainAssociationRequest,
 ) (*api.UpdateDomainAssociationResult, error) {
-	if err := validateUpdateDomainAssociationRequest(in); err != nil {
+	if err := checkCertificate(in.CertificateSettings); err != nil {
 		return nil, err
 	}
 
@@ -171,10 +167,6 @@ func (s *Service) DeleteDomainAssociation(
 	ctx context.Context,
 	in *api.DeleteDomainAssociationRequest,
 ) (*api.DeleteDomainAssociationResult, error) {
-	if err := validateDeleteDomainAssociationRequest(in); err != nil {
-		return nil, err
-	}
-
 	id := childID(common.Value(in.AppId), common.Value(in.DomainName))
 	r, err := s.change(
 		ctx,
@@ -200,10 +192,6 @@ func (s *Service) ListDomainAssociations(
 	ctx context.Context,
 	in *api.ListDomainAssociationsRequest,
 ) (*api.ListDomainAssociationsResult, error) {
-	if err := validateListDomainAssociationsRequest(in); err != nil {
-		return nil, err
-	}
-
 	items, next, err := s.list(ctx, "domain", common.Value(in.AppId), "", "", in.NextToken, in.MaxResults, 50)
 	if err != nil {
 		return nil, err

@@ -11,7 +11,7 @@ import (
 
 // CreateApp serves the corresponding records-only Hosting operation.
 func (s *Service) CreateApp(ctx context.Context, in *api.CreateAppRequest) (*api.CreateAppResult, error) {
-	if err := validateCreateAppRequest(in); err != nil {
+	if err := checkTags(in.Tags); err != nil {
 		return nil, err
 	}
 
@@ -119,10 +119,6 @@ func (s *Service) CreateApp(ctx context.Context, in *api.CreateAppRequest) (*api
 
 // GetApp serves the corresponding records-only Hosting operation.
 func (s *Service) GetApp(ctx context.Context, in *api.GetAppRequest) (*api.GetAppResult, error) {
-	if err := validateGetAppRequest(in); err != nil {
-		return nil, err
-	}
-
 	id := common.Value(in.AppId)
 	r, err := s.get(ctx, kindApp, id)
 	if err != nil {
@@ -134,10 +130,6 @@ func (s *Service) GetApp(ctx context.Context, in *api.GetAppRequest) (*api.GetAp
 
 // UpdateApp serves the corresponding records-only Hosting operation.
 func (s *Service) UpdateApp(ctx context.Context, in *api.UpdateAppRequest) (*api.UpdateAppResult, error) {
-	if err := validateUpdateAppRequest(in); err != nil {
-		return nil, err
-	}
-
 	id := common.Value(in.AppId)
 	r, err := s.change(ctx, kindApp, id, "", "", false, false, func(r *record, scope request.Scope) error {
 		r.App.UpdateTime = common.SecondsMilli(time.Now())
@@ -228,10 +220,6 @@ func (s *Service) UpdateApp(ctx context.Context, in *api.UpdateAppRequest) (*api
 
 // DeleteApp serves the corresponding records-only Hosting operation.
 func (s *Service) DeleteApp(ctx context.Context, in *api.DeleteAppRequest) (*api.DeleteAppResult, error) {
-	if err := validateDeleteAppRequest(in); err != nil {
-		return nil, err
-	}
-
 	id := common.Value(in.AppId)
 	r, err := s.change(ctx, kindApp, id, "", "", false, true, func(r *record, scope request.Scope) error {
 		return nil
@@ -245,10 +233,6 @@ func (s *Service) DeleteApp(ctx context.Context, in *api.DeleteAppRequest) (*api
 
 // ListApps serves the corresponding records-only Hosting operation.
 func (s *Service) ListApps(ctx context.Context, in *api.ListAppsRequest) (*api.ListAppsResult, error) {
-	if err := validateListAppsRequest(in); err != nil {
-		return nil, err
-	}
-
 	items, next, err := s.list(ctx, kindApp, "", "", "", in.NextToken, in.MaxResults, 100)
 	if err != nil {
 		return nil, err

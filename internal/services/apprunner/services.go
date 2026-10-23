@@ -2,6 +2,7 @@ package apprunner
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apprunner"
@@ -16,12 +17,36 @@ func checkSource(source *api.SourceConfiguration) error {
 	return nil
 }
 
+// instanceSizes are the CPU and memory values App Runner documents. The model's patterns anchor only their first
+// and last alternatives, so they alone would accept values such as "1024junk".
+var instanceSizes = map[string][]string{
+	"Cpu": {"256", "512", "1024", "2048", "4096", "0.25 vCPU", "0.5 vCPU", "1 vCPU", "2 vCPU", "4 vCPU"},
+	"Memory": {
+		"512", "1024", "2048", "3072", "4096", "6144", "8192", "10240", "12288",
+		"0.5 GB", "1 GB", "2 GB", "3 GB", "4 GB", "6 GB", "8 GB", "10 GB", "12 GB",
+	},
+}
+
+func checkInstance(c *api.InstanceConfiguration) error {
+	if c == nil {
+		return nil
+	}
+
+	for field, value := range map[string]*string{"Cpu": c.Cpu, "Memory": c.Memory} {
+		if value != nil && !slices.Contains(instanceSizes[field], *value) {
+			return invalid("InstanceConfiguration.%s %q is not a supported value", field, *value)
+		}
+	}
+
+	return nil
+}
+
 func (s *Service) CreateService(ctx context.Context, in *api.CreateServiceRequest) (*api.CreateServiceResponse, error) {
-	if err := validateCreateServiceRequest(in); err != nil {
+	if err := checkSource(in.SourceConfiguration); err != nil {
 		return nil, err
 	}
 
-	if err := checkSource(in.SourceConfiguration); err != nil {
+	if err := checkInstance(in.InstanceConfiguration); err != nil {
 		return nil, err
 	}
 
@@ -58,10 +83,6 @@ func (s *Service) DescribeService(
 	ctx context.Context,
 	in *api.DescribeServiceRequest,
 ) (*api.DescribeServiceResponse, error) {
-	if err := validateDescribeServiceRequest(in); err != nil {
-		return nil, err
-	}
-
 	r, err := s.get(ctx, in.ServiceArn, kindService)
 	if err != nil {
 		return nil, err
@@ -71,14 +92,14 @@ func (s *Service) DescribeService(
 }
 
 func (s *Service) UpdateService(ctx context.Context, in *api.UpdateServiceRequest) (*api.UpdateServiceResponse, error) {
-	if err := validateUpdateServiceRequest(in); err != nil {
-		return nil, err
-	}
-
 	if in.SourceConfiguration != nil {
 		if err := checkSource(in.SourceConfiguration); err != nil {
 			return nil, err
 		}
+	}
+
+	if err := checkInstance(in.InstanceConfiguration); err != nil {
+		return nil, err
 	}
 
 	out, id, err := s.changeService(ctx, in.ServiceArn, "UPDATE_SERVICE", statusRunning, func(r *api.Service) {
@@ -120,28 +141,16 @@ func (s *Service) UpdateService(ctx context.Context, in *api.UpdateServiceReques
 }
 
 func (s *Service) DeleteService(ctx context.Context, in *api.DeleteServiceRequest) (*api.DeleteServiceResponse, error) {
-	if err := validateDeleteServiceRequest(in); err != nil {
-		return nil, err
-	}
-
 	out, id, err := s.changeService(ctx, in.ServiceArn, "DELETE_SERVICE", statusDeleted, nil, nil)
 	return &api.DeleteServiceResponse{Service: out, OperationId: id}, err
 }
 
 func (s *Service) PauseService(ctx context.Context, in *api.PauseServiceRequest) (*api.PauseServiceResponse, error) {
-	if err := validatePauseServiceRequest(in); err != nil {
-		return nil, err
-	}
-
 	out, id, err := s.changeService(ctx, in.ServiceArn, "PAUSE_SERVICE", statusPaused, nil, nil)
 	return &api.PauseServiceResponse{Service: out, OperationId: id}, err
 }
 
 func (s *Service) ResumeService(ctx context.Context, in *api.ResumeServiceRequest) (*api.ResumeServiceResponse, error) {
-	if err := validateResumeServiceRequest(in); err != nil {
-		return nil, err
-	}
-
 	out, id, err := s.changeService(ctx, in.ServiceArn, "RESUME_SERVICE", statusRunning, nil, nil)
 	return &api.ResumeServiceResponse{Service: out, OperationId: id}, err
 }
@@ -150,19 +159,11 @@ func (s *Service) StartDeployment(
 	ctx context.Context,
 	in *api.StartDeploymentRequest,
 ) (*api.StartDeploymentResponse, error) {
-	if err := validateStartDeploymentRequest(in); err != nil {
-		return nil, err
-	}
-
 	_, id, err := s.changeService(ctx, in.ServiceArn, "START_DEPLOYMENT", statusRunning, nil, nil)
 	return &api.StartDeploymentResponse{OperationId: id}, err
 }
 
 func (s *Service) ListServices(ctx context.Context, in *api.ListServicesRequest) (*api.ListServicesResponse, error) {
-	if err := validateListServicesRequest(in); err != nil {
-		return nil, err
-	}
-
 	items, next, err := s.list(ctx, kindService, nil, nil, in.MaxResults, in.NextToken)
 	if err != nil {
 		return nil, err
@@ -192,10 +193,6 @@ func (s *Service) ListOperations(
 	ctx context.Context,
 	in *api.ListOperationsRequest,
 ) (*api.ListOperationsResponse, error) {
-	if err := validateListOperationsRequest(in); err != nil {
-		return nil, err
-	}
-
 	r, err := s.get(ctx, in.ServiceArn, kindService)
 	if err != nil {
 		return nil, err

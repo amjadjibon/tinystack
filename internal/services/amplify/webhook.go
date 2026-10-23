@@ -11,10 +11,6 @@ import (
 
 // CreateWebhook serves the corresponding records-only Hosting operation.
 func (s *Service) CreateWebhook(ctx context.Context, in *api.CreateWebhookRequest) (*api.CreateWebhookResult, error) {
-	if err := validateCreateWebhookRequest(in); err != nil {
-		return nil, err
-	}
-
 	id := common.RandomID(16)
 	r, err := s.change(
 		ctx,
@@ -52,10 +48,6 @@ func (s *Service) CreateWebhook(ctx context.Context, in *api.CreateWebhookReques
 
 // GetWebhook serves the corresponding records-only Hosting operation.
 func (s *Service) GetWebhook(ctx context.Context, in *api.GetWebhookRequest) (*api.GetWebhookResult, error) {
-	if err := validateGetWebhookRequest(in); err != nil {
-		return nil, err
-	}
-
 	id := common.Value(in.WebhookId)
 	r, err := s.get(ctx, "webhook", id)
 	if err != nil {
@@ -67,10 +59,6 @@ func (s *Service) GetWebhook(ctx context.Context, in *api.GetWebhookRequest) (*a
 
 // UpdateWebhook serves the corresponding records-only Hosting operation.
 func (s *Service) UpdateWebhook(ctx context.Context, in *api.UpdateWebhookRequest) (*api.UpdateWebhookResult, error) {
-	if err := validateUpdateWebhookRequest(in); err != nil {
-		return nil, err
-	}
-
 	id := common.Value(in.WebhookId)
 	r, err := s.change(ctx, "webhook", id, "", "", false, false, func(r *record, scope request.Scope) error {
 		r.Webhook.UpdateTime = common.SecondsMilli(time.Now())
@@ -93,10 +81,6 @@ func (s *Service) UpdateWebhook(ctx context.Context, in *api.UpdateWebhookReques
 
 // DeleteWebhook serves the corresponding records-only Hosting operation.
 func (s *Service) DeleteWebhook(ctx context.Context, in *api.DeleteWebhookRequest) (*api.DeleteWebhookResult, error) {
-	if err := validateDeleteWebhookRequest(in); err != nil {
-		return nil, err
-	}
-
 	id := common.Value(in.WebhookId)
 	r, err := s.change(ctx, "webhook", id, "", "", false, true, func(r *record, scope request.Scope) error {
 		return nil
@@ -110,10 +94,6 @@ func (s *Service) DeleteWebhook(ctx context.Context, in *api.DeleteWebhookReques
 
 // ListWebhooks serves the corresponding records-only Hosting operation.
 func (s *Service) ListWebhooks(ctx context.Context, in *api.ListWebhooksRequest) (*api.ListWebhooksResult, error) {
-	if err := validateListWebhooksRequest(in); err != nil {
-		return nil, err
-	}
-
 	items, next, err := s.list(ctx, "webhook", common.Value(in.AppId), "", "", in.NextToken, in.MaxResults, 50)
 	if err != nil {
 		return nil, err

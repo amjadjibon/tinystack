@@ -85,58 +85,85 @@ func TestConfigurationRevisionTransactions(t *testing.T) {
 }
 
 func TestInstanceModelValues(t *testing.T) {
-	for _, cpu := range []string{
+	check := func(c *api.InstanceConfiguration) error {
+		if err := c.Validate(""); err != nil {
+			return err
+		}
+
+		return checkInstance(c)
+	}
+	cpu := func(v string) error { return check(&api.InstanceConfiguration{Cpu: new(v)}) }
+	mem := func(v string) error { return check(&api.InstanceConfiguration{Memory: new(v)}) }
+	for _, v := range []string{
 		"256", "512", "1024", "2048", "4096",
 		"0.25 vCPU", "0.5 vCPU", "1 vCPU", "2 vCPU", "4 vCPU",
 	} {
-		if err := validateCpu(new(cpu)); err != nil {
-			t.Errorf("CPU %s: %v", cpu, err)
+		if err := cpu(v); err != nil {
+			t.Errorf("CPU %s: %v", v, err)
 		}
 	}
 
-	for _, memory := range []string{
+	for _, v := range []string{
 		"512", "1024", "2048", "3072", "4096", "6144", "8192", "10240", "12288",
 		"0.5 GB", "1 GB", "2 GB", "3 GB", "4 GB", "6 GB", "8 GB", "10 GB", "12 GB",
 	} {
-		if err := validateMemory(new(memory)); err != nil {
-			t.Errorf("Memory %s: %v", memory, err)
+		if err := mem(v); err != nil {
+			t.Errorf("Memory %s: %v", v, err)
 		}
 	}
 
-	for _, cpu := range []string{"128", "8 vCPU", "1024junk"} {
-		if err := validateCpu(new(cpu)); err == nil {
-			t.Errorf("CPU %q accepted", cpu)
+	for _, v := range []string{"128", "8 vCPU", "1024junk"} {
+		if err := cpu(v); err == nil {
+			t.Errorf("CPU %q accepted", v)
 		}
 	}
 
-	for _, memory := range []string{"256", "5 GB", "2048junk"} {
-		if err := validateMemory(new(memory)); err == nil {
-			t.Errorf("Memory %q accepted", memory)
+	for _, v := range []string{"256", "5 GB", "2048junk"} {
+		if err := mem(v); err == nil {
+			t.Errorf("Memory %q accepted", v)
 		}
 	}
 }
 
+// The generated Validate methods enforce the pinned model's patterns.
 func TestSourceModelPatterns(t *testing.T) {
+	image := func(v string) error {
+		return (&api.ImageRepository{ImageIdentifier: new(v), ImageRepositoryType: new("ECR_PUBLIC")}).Validate("")
+	}
+	role := func(v string) error { return (&api.AuthenticationConfiguration{AccessRoleArn: new(v)}).Validate("") }
+	connection := func(v string) error {
+		return (&api.CreateConnectionRequest{ConnectionName: new(v), ProviderType: new("GITHUB")}).Validate("")
+	}
+	directory := func(v string) error {
+		return (&api.CodeRepository{
+			RepositoryUrl:     new("https://github.com/example/app"),
+			SourceCodeVersion: &api.SourceCodeVersion{Type: new("BRANCH"), Value: new("main")},
+			SourceDirectory:   new(v),
+		}).Validate("")
+	}
+	build := func(v string) error {
+		return (&api.CodeConfigurationValues{Runtime: new("PYTHON_3"), BuildCommand: new(v)}).Validate("")
+	}
 	for _, test := range []struct {
+		check func(string) error
 		name  string
-		check func(*string) error
 		value string
 		valid bool
 	}{
-		{"public image", validateImageIdentifier, "public.ecr.aws/example/app:latest", true},
-		{"private image", validateImageIdentifier, "123456789012.dkr.ecr.us-east-1.amazonaws.com/team/app:latest", true},
-		{"invalid image", validateImageIdentifier, "not-an-image", false},
-		{"role", validateRoleArn, "arn:aws:iam::123456789012:role/service-role/example", true},
-		{"invalid role", validateRoleArn, "not-a-role", false},
-		{"name hyphen", validateConnectionName, "valid-name", true},
-		{"name punctuation", validateConnectionName, "bad^name", false},
-		{"source directory", validateSourceDirectory, "src/app", true},
-		{"source NUL", validateSourceDirectory, "src\x00app", false},
-		{"build command", validateBuildCommand, "go build ./...", true},
-		{"build newline", validateBuildCommand, "go build\n./...", false},
+		{image, "public image", "public.ecr.aws/example/app:latest", true},
+		{image, "private image", "123456789012.dkr.ecr.us-east-1.amazonaws.com/team/app:latest", true},
+		{image, "invalid image", "not-an-image", false},
+		{role, "role", "arn:aws:iam::123456789012:role/service-role/example", true},
+		{role, "invalid role", "not-a-role", false},
+		{connection, "name hyphen", "valid-name", true},
+		{connection, "name punctuation", "bad^name", false},
+		{directory, "source directory", "src/app", true},
+		{directory, "source NUL", "src\x00app", false},
+		{build, "build command", "go build ./...", true},
+		{build, "build newline", "go build\n./...", false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := test.check(new(test.value))
+			err := test.check(test.value)
 			if (err == nil) != test.valid {
 				t.Fatalf("value %q: %v", test.value, err)
 			}

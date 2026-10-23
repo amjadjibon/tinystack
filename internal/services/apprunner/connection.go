@@ -14,10 +14,6 @@ func (s *Service) CreateConnection(
 	ctx context.Context,
 	in *api.CreateConnectionRequest,
 ) (*api.CreateConnectionResponse, error) {
-	if err := validateCreateConnectionRequest(in); err != nil {
-		return nil, err
-	}
-
 	tags, err := tagsMap(in.Tags)
 	if err != nil {
 		return nil, err
@@ -46,10 +42,6 @@ func (s *Service) DeleteConnection(
 	ctx context.Context,
 	in *api.DeleteConnectionRequest,
 ) (*api.DeleteConnectionResponse, error) {
-	if err := validateDeleteConnectionRequest(in); err != nil {
-		return nil, err
-	}
-
 	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
@@ -82,10 +74,6 @@ func (s *Service) ListConnections(
 	ctx context.Context,
 	in *api.ListConnectionsRequest,
 ) (*api.ListConnectionsResponse, error) {
-	if err := validateListConnectionsRequest(in); err != nil {
-		return nil, err
-	}
-
 	items, next, err := s.list(ctx, kindConnection, in.ConnectionName, nil, in.MaxResults, in.NextToken)
 	if err != nil {
 		return nil, err

@@ -32536,6 +32536,9 @@
     }
   },
   "apprunner": {
+    "validation": {
+      "code": "InvalidRequestException"
+    },
     "operations": [
       "CreateAutoScalingConfiguration",
       "CreateConnection",
@@ -32964,6 +32967,9 @@
     }
   },
   "amplify": {
+    "validation": {
+      "code": "BadRequestException"
+    },
     "operations": [
       "CreateApp",
       "CreateBackendEnvironment",

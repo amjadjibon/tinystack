@@ -11,7 +11,7 @@ import (
 
 // CreateBranch serves the corresponding records-only Hosting operation.
 func (s *Service) CreateBranch(ctx context.Context, in *api.CreateBranchRequest) (*api.CreateBranchResult, error) {
-	if err := validateCreateBranchRequest(in); err != nil {
+	if err := checkTags(in.Tags); err != nil {
 		return nil, err
 	}
 
@@ -134,10 +134,6 @@ func (s *Service) CreateBranch(ctx context.Context, in *api.CreateBranchRequest)
 
 // GetBranch serves the corresponding records-only Hosting operation.
 func (s *Service) GetBranch(ctx context.Context, in *api.GetBranchRequest) (*api.GetBranchResult, error) {
-	if err := validateGetBranchRequest(in); err != nil {
-		return nil, err
-	}
-
 	id := childID(common.Value(in.AppId), common.Value(in.BranchName))
 	r, err := s.get(ctx, kindBranch, id)
 	if err != nil {
@@ -149,10 +145,6 @@ func (s *Service) GetBranch(ctx context.Context, in *api.GetBranchRequest) (*api
 
 // UpdateBranch serves the corresponding records-only Hosting operation.
 func (s *Service) UpdateBranch(ctx context.Context, in *api.UpdateBranchRequest) (*api.UpdateBranchResult, error) {
-	if err := validateUpdateBranchRequest(in); err != nil {
-		return nil, err
-	}
-
 	id := childID(common.Value(in.AppId), common.Value(in.BranchName))
 	r, err := s.change(
 		ctx,
@@ -252,10 +244,6 @@ func (s *Service) UpdateBranch(ctx context.Context, in *api.UpdateBranchRequest)
 
 // DeleteBranch serves the corresponding records-only Hosting operation.
 func (s *Service) DeleteBranch(ctx context.Context, in *api.DeleteBranchRequest) (*api.DeleteBranchResult, error) {
-	if err := validateDeleteBranchRequest(in); err != nil {
-		return nil, err
-	}
-
 	id := childID(common.Value(in.AppId), common.Value(in.BranchName))
 	r, err := s.change(
 		ctx,
@@ -278,10 +266,6 @@ func (s *Service) DeleteBranch(ctx context.Context, in *api.DeleteBranchRequest)
 
 // ListBranches serves the corresponding records-only Hosting operation.
 func (s *Service) ListBranches(ctx context.Context, in *api.ListBranchesRequest) (*api.ListBranchesResult, error) {
-	if err := validateListBranchesRequest(in); err != nil {
-		return nil, err
-	}
-
 	items, next, err := s.list(ctx, kindBranch, common.Value(in.AppId), "", "", in.NextToken, in.MaxResults, 50)
 	if err != nil {
 		return nil, err

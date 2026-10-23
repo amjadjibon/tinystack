@@ -10,7 +10,7 @@ import (
 
 // TagResource serves the corresponding records-only Hosting operation.
 func (s *Service) TagResource(ctx context.Context, in *api.TagResourceRequest) (*api.TagResourceResponse, error) {
-	if err := validateTagResourceRequest(in); err != nil {
+	if err := checkTags(in.Tags); err != nil {
 		return nil, err
 	}
 
@@ -32,10 +32,6 @@ func (s *Service) TagResource(ctx context.Context, in *api.TagResourceRequest) (
 
 // UntagResource serves the corresponding records-only Hosting operation.
 func (s *Service) UntagResource(ctx context.Context, in *api.UntagResourceRequest) (*api.UntagResourceResponse, error) {
-	if err := validateUntagResourceRequest(in); err != nil {
-		return nil, err
-	}
-
 	_, err := s.tagged(
 		ctx,
 		in.ResourceArn,
@@ -53,10 +49,6 @@ func (s *Service) ListTagsForResource(
 	ctx context.Context,
 	in *api.ListTagsForResourceRequest,
 ) (*api.ListTagsForResourceResponse, error) {
-	if err := validateListTagsForResourceRequest(in); err != nil {
-		return nil, err
-	}
-
 	r, err := s.tagged(ctx, in.ResourceArn, func(_ *record) error { return nil })
 	if err != nil {
 		return nil, err

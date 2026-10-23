@@ -3,7 +3,11 @@ package apprunner
 
 import (
 	"context"
+	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/validation"
+	"regexp"
+	"unicode/utf8"
 )
 
 type Tag struct {
@@ -485,6 +489,1103 @@ type UpdateDefaultAutoScalingConfigurationResponse struct {
 	AutoScalingConfiguration *AutoScalingConfiguration `json:"AutoScalingConfiguration,omitempty"`
 }
 
+var pattern0 = regexp.MustCompile("^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,}$")
+
+var pattern1 = regexp.MustCompile("^arn:(aws|aws-us-gov|aws-cn|aws-iso|aws-iso-b):iam::[0-9]{12}:(role|role\\/service-role)\\/[\\w+=,.@\\-/]{1,1000}$")
+
+var enum0 = []string{"API", "REPOSITORY"}
+
+var enum1 = []string{"CORRETTO_11", "CORRETTO_8", "DOTNET_6", "GO_1", "NODEJS_12", "NODEJS_14", "NODEJS_16", "NODEJS_18", "NODEJS_22", "PHP_81", "PYTHON_3", "PYTHON_311", "RUBY_31"}
+
+var pattern2 = regexp.MustCompile("^[^\\x0a\\x0d]+$")
+
+var pattern3 = regexp.MustCompile(".*")
+
+var pattern4 = regexp.MustCompile("^[^\\x00]+$")
+
+var pattern5 = regexp.MustCompile("^[A-Za-z0-9][A-Za-z0-9\\-_]{3,31}$")
+
+var enum2 = []string{"BITBUCKET", "GITHUB"}
+
+var pattern6 = regexp.MustCompile("^[A-Za-z0-9][A-Za-z0-9-_]{3,39}$")
+
+var pattern7 = regexp.MustCompile("^[A-Za-z0-9][A-Za-z0-9\\-_]{3,39}$")
+
+var enum3 = []string{"DEFAULT", "VPC"}
+
+var pattern8 = regexp.MustCompile("^arn:aws(-[\\w]+)*:kms:[a-z\\-]+-[0-9]{1}:[0-9]{12}:key\\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+
+var enum4 = []string{"HTTP", "TCP"}
+
+var pattern9 = regexp.MustCompile("^([0-9]{12}.dkr.ecr.[a-z\\-]+-[0-9]{1}.amazonaws.com\\/((?:[a-z0-9]+(?:[._-][a-z0-9]+)*\\/)*[a-z0-9]+(?:[._-][a-z0-9]+)*)(:([\\w\\d+\\-=._:\\/@])+|@([\\w\\d\\:]+))?)|(^public\\.ecr\\.aws\\/.+\\/((?:[a-z0-9]+(?:[._-][a-z0-9]+)*\\/)*[a-z0-9]+(?:[._-][a-z0-9]+)*)(:([\\w\\d+\\-=._:\\/@])+|@([\\w\\d\\:]+))?)$")
+
+var enum5 = []string{"ECR", "ECR_PUBLIC"}
+
+var pattern10 = regexp.MustCompile("^256|512|1024|2048|4096|(0.25|0.5|1|2|4) vCPU$")
+
+var pattern11 = regexp.MustCompile("^512|1024|2048|3072|4096|6144|8192|10240|12288|(0.5|1|2|3|4|6|8|10|12) GB$")
+
+var enum6 = []string{"DUAL_STACK", "IPV4"}
+
+var enum7 = []string{"BRANCH"}
+
+var pattern12 = regexp.MustCompile("^.+$")
+
+var enum8 = []string{"AWSXRAY"}
+
+func (v *AuthenticationConfiguration) Validate(path string) error {
+	if v.ConnectionArn != nil {
+		if err := validation.Length(path+"ConnectionArn", utf8.RuneCountInString((*v.ConnectionArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ConnectionArn", (*v.ConnectionArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	if v.AccessRoleArn != nil {
+		if err := validation.Length(path+"AccessRoleArn", utf8.RuneCountInString((*v.AccessRoleArn)), new(int64(29)), new(int64(1024))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccessRoleArn", (*v.AccessRoleArn), pattern1, "", "^arn:(aws|aws-us-gov|aws-cn|aws-iso|aws-iso-b):iam::[0-9]{12}:(role|role\\/service-role)\\/[\\w+=,.@\\-/]{1,1000}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CodeConfiguration) Validate(path string) error {
+	if err := validation.Required(path+"ConfigurationSource", v.ConfigurationSource != nil); err != nil {
+		return err
+	}
+	if v.ConfigurationSource != nil {
+		if err := validation.Enum(path+"ConfigurationSource", (*v.ConfigurationSource), enum0); err != nil {
+			return err
+		}
+	}
+	if v.CodeConfigurationValues != nil {
+		if err := (*v.CodeConfigurationValues).Validate(path + "CodeConfigurationValues" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CodeConfigurationValues) Validate(path string) error {
+	if err := validation.Required(path+"Runtime", v.Runtime != nil); err != nil {
+		return err
+	}
+	if v.Runtime != nil {
+		if err := validation.Enum(path+"Runtime", (*v.Runtime), enum1); err != nil {
+			return err
+		}
+	}
+	if v.BuildCommand != nil {
+		if err := validation.Pattern(path+"BuildCommand", (*v.BuildCommand), pattern2, "", "^[^\\x0a\\x0d]+$"); err != nil {
+			return err
+		}
+	}
+	if v.StartCommand != nil {
+		if err := validation.Pattern(path+"StartCommand", (*v.StartCommand), pattern2, "", "^[^\\x0a\\x0d]+$"); err != nil {
+			return err
+		}
+	}
+	if v.Port != nil {
+		if err := validation.Length(path+"Port", utf8.RuneCountInString((*v.Port)), new(int64(0)), new(int64(51200))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Port", (*v.Port), pattern3, "", ".*"); err != nil {
+			return err
+		}
+	}
+	if v.RuntimeEnvironmentVariables != nil {
+		for k0, e0 := range v.RuntimeEnvironmentVariables {
+			if err := validation.Length(validation.Key(path+"RuntimeEnvironmentVariables", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(51200))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"RuntimeEnvironmentVariables", k0), k0, pattern3, "", ".*"); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"RuntimeEnvironmentVariables", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(51200))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"RuntimeEnvironmentVariables", k0), e0, pattern3, "", ".*"); err != nil {
+				return err
+			}
+		}
+	}
+	if v.RuntimeEnvironmentSecrets != nil {
+		for k0, e0 := range v.RuntimeEnvironmentSecrets {
+			if err := validation.Length(validation.Key(path+"RuntimeEnvironmentSecrets", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(2048))); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"RuntimeEnvironmentSecrets", k0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(2048))); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *CodeRepository) Validate(path string) error {
+	if err := validation.Required(path+"RepositoryUrl", v.RepositoryUrl != nil); err != nil {
+		return err
+	}
+	if v.RepositoryUrl != nil {
+		if err := validation.Length(path+"RepositoryUrl", utf8.RuneCountInString((*v.RepositoryUrl)), new(int64(0)), new(int64(51200))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"RepositoryUrl", (*v.RepositoryUrl), pattern3, "", ".*"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"SourceCodeVersion", v.SourceCodeVersion != nil); err != nil {
+		return err
+	}
+	if v.SourceCodeVersion != nil {
+		if err := (*v.SourceCodeVersion).Validate(path + "SourceCodeVersion" + "."); err != nil {
+			return err
+		}
+	}
+	if v.CodeConfiguration != nil {
+		if err := (*v.CodeConfiguration).Validate(path + "CodeConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.SourceDirectory != nil {
+		if err := validation.Length(path+"SourceDirectory", utf8.RuneCountInString((*v.SourceDirectory)), new(int64(1)), new(int64(4096))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"SourceDirectory", (*v.SourceDirectory), pattern4, "", "^[^\\x00]+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreateAutoScalingConfigurationRequest) Validate(path string) error {
+	if err := validation.Required(path+"AutoScalingConfigurationName", v.AutoScalingConfigurationName != nil); err != nil {
+		return err
+	}
+	if v.AutoScalingConfigurationName != nil {
+		if err := validation.Length(path+"AutoScalingConfigurationName", utf8.RuneCountInString((*v.AutoScalingConfigurationName)), new(int64(4)), new(int64(32))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AutoScalingConfigurationName", (*v.AutoScalingConfigurationName), pattern5, "", "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,31}$"); err != nil {
+			return err
+		}
+	}
+	if v.MaxConcurrency != nil {
+		if err := validation.Range(path+"MaxConcurrency", float64((*v.MaxConcurrency)), new(float64(1)), new(float64(200))); err != nil {
+			return err
+		}
+	}
+	if v.MinSize != nil {
+		if err := validation.Range(path+"MinSize", float64((*v.MinSize)), new(float64(1)), new(float64(25))); err != nil {
+			return err
+		}
+	}
+	if v.MaxSize != nil {
+		if err := validation.Range(path+"MaxSize", float64((*v.MaxSize)), new(float64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"Tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *CreateConnectionRequest) Validate(path string) error {
+	if err := validation.Required(path+"ConnectionName", v.ConnectionName != nil); err != nil {
+		return err
+	}
+	if v.ConnectionName != nil {
+		if err := validation.Length(path+"ConnectionName", utf8.RuneCountInString((*v.ConnectionName)), new(int64(4)), new(int64(32))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ConnectionName", (*v.ConnectionName), pattern5, "", "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,31}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"ProviderType", v.ProviderType != nil); err != nil {
+		return err
+	}
+	if v.ProviderType != nil {
+		if err := validation.Enum(path+"ProviderType", (*v.ProviderType), enum2); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"Tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *CreateObservabilityConfigurationRequest) Validate(path string) error {
+	if err := validation.Required(path+"ObservabilityConfigurationName", v.ObservabilityConfigurationName != nil); err != nil {
+		return err
+	}
+	if v.ObservabilityConfigurationName != nil {
+		if err := validation.Length(path+"ObservabilityConfigurationName", utf8.RuneCountInString((*v.ObservabilityConfigurationName)), new(int64(4)), new(int64(32))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ObservabilityConfigurationName", (*v.ObservabilityConfigurationName), pattern5, "", "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,31}$"); err != nil {
+			return err
+		}
+	}
+	if v.TraceConfiguration != nil {
+		if err := (*v.TraceConfiguration).Validate(path + "TraceConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"Tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *CreateServiceRequest) Validate(path string) error {
+	if err := validation.Required(path+"ServiceName", v.ServiceName != nil); err != nil {
+		return err
+	}
+	if v.ServiceName != nil {
+		if err := validation.Length(path+"ServiceName", utf8.RuneCountInString((*v.ServiceName)), new(int64(4)), new(int64(40))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ServiceName", (*v.ServiceName), pattern6, "", "^[A-Za-z0-9][A-Za-z0-9-_]{3,39}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"SourceConfiguration", v.SourceConfiguration != nil); err != nil {
+		return err
+	}
+	if v.SourceConfiguration != nil {
+		if err := (*v.SourceConfiguration).Validate(path + "SourceConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.InstanceConfiguration != nil {
+		if err := (*v.InstanceConfiguration).Validate(path + "InstanceConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"Tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.EncryptionConfiguration != nil {
+		if err := (*v.EncryptionConfiguration).Validate(path + "EncryptionConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.HealthCheckConfiguration != nil {
+		if err := (*v.HealthCheckConfiguration).Validate(path + "HealthCheckConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.AutoScalingConfigurationArn != nil {
+		if err := validation.Length(path+"AutoScalingConfigurationArn", utf8.RuneCountInString((*v.AutoScalingConfigurationArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AutoScalingConfigurationArn", (*v.AutoScalingConfigurationArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	if v.NetworkConfiguration != nil {
+		if err := (*v.NetworkConfiguration).Validate(path + "NetworkConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.ObservabilityConfiguration != nil {
+		if err := (*v.ObservabilityConfiguration).Validate(path + "ObservabilityConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreateVpcConnectorRequest) Validate(path string) error {
+	if err := validation.Required(path+"VpcConnectorName", v.VpcConnectorName != nil); err != nil {
+		return err
+	}
+	if v.VpcConnectorName != nil {
+		if err := validation.Length(path+"VpcConnectorName", utf8.RuneCountInString((*v.VpcConnectorName)), new(int64(4)), new(int64(40))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"VpcConnectorName", (*v.VpcConnectorName), pattern7, "", "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,39}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Subnets", v.Subnets != nil); err != nil {
+		return err
+	}
+	if v.Subnets != nil {
+		for i0, e0 := range v.Subnets {
+			if err := validation.Length(validation.Index(path+"Subnets", i0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(51200))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Index(path+"Subnets", i0), e0, pattern3, "", ".*"); err != nil {
+				return err
+			}
+		}
+	}
+	if v.SecurityGroups != nil {
+		for i0, e0 := range v.SecurityGroups {
+			if err := validation.Length(validation.Index(path+"SecurityGroups", i0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(51200))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Index(path+"SecurityGroups", i0), e0, pattern3, "", ".*"); err != nil {
+				return err
+			}
+		}
+	}
+	if v.Tags != nil {
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"Tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *DeleteAutoScalingConfigurationRequest) Validate(path string) error {
+	if err := validation.Required(path+"AutoScalingConfigurationArn", v.AutoScalingConfigurationArn != nil); err != nil {
+		return err
+	}
+	if v.AutoScalingConfigurationArn != nil {
+		if err := validation.Length(path+"AutoScalingConfigurationArn", utf8.RuneCountInString((*v.AutoScalingConfigurationArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AutoScalingConfigurationArn", (*v.AutoScalingConfigurationArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteConnectionRequest) Validate(path string) error {
+	if err := validation.Required(path+"ConnectionArn", v.ConnectionArn != nil); err != nil {
+		return err
+	}
+	if v.ConnectionArn != nil {
+		if err := validation.Length(path+"ConnectionArn", utf8.RuneCountInString((*v.ConnectionArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ConnectionArn", (*v.ConnectionArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteObservabilityConfigurationRequest) Validate(path string) error {
+	if err := validation.Required(path+"ObservabilityConfigurationArn", v.ObservabilityConfigurationArn != nil); err != nil {
+		return err
+	}
+	if v.ObservabilityConfigurationArn != nil {
+		if err := validation.Length(path+"ObservabilityConfigurationArn", utf8.RuneCountInString((*v.ObservabilityConfigurationArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ObservabilityConfigurationArn", (*v.ObservabilityConfigurationArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteServiceRequest) Validate(path string) error {
+	if err := validation.Required(path+"ServiceArn", v.ServiceArn != nil); err != nil {
+		return err
+	}
+	if v.ServiceArn != nil {
+		if err := validation.Length(path+"ServiceArn", utf8.RuneCountInString((*v.ServiceArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteVpcConnectorRequest) Validate(path string) error {
+	if err := validation.Required(path+"VpcConnectorArn", v.VpcConnectorArn != nil); err != nil {
+		return err
+	}
+	if v.VpcConnectorArn != nil {
+		if err := validation.Length(path+"VpcConnectorArn", utf8.RuneCountInString((*v.VpcConnectorArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"VpcConnectorArn", (*v.VpcConnectorArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DescribeAutoScalingConfigurationRequest) Validate(path string) error {
+	if err := validation.Required(path+"AutoScalingConfigurationArn", v.AutoScalingConfigurationArn != nil); err != nil {
+		return err
+	}
+	if v.AutoScalingConfigurationArn != nil {
+		if err := validation.Length(path+"AutoScalingConfigurationArn", utf8.RuneCountInString((*v.AutoScalingConfigurationArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AutoScalingConfigurationArn", (*v.AutoScalingConfigurationArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DescribeObservabilityConfigurationRequest) Validate(path string) error {
+	if err := validation.Required(path+"ObservabilityConfigurationArn", v.ObservabilityConfigurationArn != nil); err != nil {
+		return err
+	}
+	if v.ObservabilityConfigurationArn != nil {
+		if err := validation.Length(path+"ObservabilityConfigurationArn", utf8.RuneCountInString((*v.ObservabilityConfigurationArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ObservabilityConfigurationArn", (*v.ObservabilityConfigurationArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DescribeServiceRequest) Validate(path string) error {
+	if err := validation.Required(path+"ServiceArn", v.ServiceArn != nil); err != nil {
+		return err
+	}
+	if v.ServiceArn != nil {
+		if err := validation.Length(path+"ServiceArn", utf8.RuneCountInString((*v.ServiceArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DescribeVpcConnectorRequest) Validate(path string) error {
+	if err := validation.Required(path+"VpcConnectorArn", v.VpcConnectorArn != nil); err != nil {
+		return err
+	}
+	if v.VpcConnectorArn != nil {
+		if err := validation.Length(path+"VpcConnectorArn", utf8.RuneCountInString((*v.VpcConnectorArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"VpcConnectorArn", (*v.VpcConnectorArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *EgressConfiguration) Validate(path string) error {
+	if v.EgressType != nil {
+		if err := validation.Enum(path+"EgressType", (*v.EgressType), enum3); err != nil {
+			return err
+		}
+	}
+	if v.VpcConnectorArn != nil {
+		if err := validation.Length(path+"VpcConnectorArn", utf8.RuneCountInString((*v.VpcConnectorArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"VpcConnectorArn", (*v.VpcConnectorArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *EncryptionConfiguration) Validate(path string) error {
+	if err := validation.Required(path+"KmsKey", v.KmsKey != nil); err != nil {
+		return err
+	}
+	if v.KmsKey != nil {
+		if err := validation.Length(path+"KmsKey", utf8.RuneCountInString((*v.KmsKey)), new(int64(0)), new(int64(256))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"KmsKey", (*v.KmsKey), pattern8, "", "^arn:aws(-[\\w]+)*:kms:[a-z\\-]+-[0-9]{1}:[0-9]{12}:key\\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *HealthCheckConfiguration) Validate(path string) error {
+	if v.Protocol != nil {
+		if err := validation.Enum(path+"Protocol", (*v.Protocol), enum4); err != nil {
+			return err
+		}
+	}
+	if v.Path != nil {
+		if err := validation.Length(path+"Path", utf8.RuneCountInString((*v.Path)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if v.Interval != nil {
+		if err := validation.Range(path+"Interval", float64((*v.Interval)), new(float64(1)), new(float64(20))); err != nil {
+			return err
+		}
+	}
+	if v.Timeout != nil {
+		if err := validation.Range(path+"Timeout", float64((*v.Timeout)), new(float64(1)), new(float64(20))); err != nil {
+			return err
+		}
+	}
+	if v.HealthyThreshold != nil {
+		if err := validation.Range(path+"HealthyThreshold", float64((*v.HealthyThreshold)), new(float64(1)), new(float64(20))); err != nil {
+			return err
+		}
+	}
+	if v.UnhealthyThreshold != nil {
+		if err := validation.Range(path+"UnhealthyThreshold", float64((*v.UnhealthyThreshold)), new(float64(1)), new(float64(20))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ImageConfiguration) Validate(path string) error {
+	if v.RuntimeEnvironmentVariables != nil {
+		for k0, e0 := range v.RuntimeEnvironmentVariables {
+			if err := validation.Length(validation.Key(path+"RuntimeEnvironmentVariables", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(51200))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"RuntimeEnvironmentVariables", k0), k0, pattern3, "", ".*"); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"RuntimeEnvironmentVariables", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(51200))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Key(path+"RuntimeEnvironmentVariables", k0), e0, pattern3, "", ".*"); err != nil {
+				return err
+			}
+		}
+	}
+	if v.StartCommand != nil {
+		if err := validation.Pattern(path+"StartCommand", (*v.StartCommand), pattern2, "", "^[^\\x0a\\x0d]+$"); err != nil {
+			return err
+		}
+	}
+	if v.Port != nil {
+		if err := validation.Length(path+"Port", utf8.RuneCountInString((*v.Port)), new(int64(0)), new(int64(51200))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Port", (*v.Port), pattern3, "", ".*"); err != nil {
+			return err
+		}
+	}
+	if v.RuntimeEnvironmentSecrets != nil {
+		for k0, e0 := range v.RuntimeEnvironmentSecrets {
+			if err := validation.Length(validation.Key(path+"RuntimeEnvironmentSecrets", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(2048))); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"RuntimeEnvironmentSecrets", k0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(2048))); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *ImageRepository) Validate(path string) error {
+	if err := validation.Required(path+"ImageIdentifier", v.ImageIdentifier != nil); err != nil {
+		return err
+	}
+	if v.ImageIdentifier != nil {
+		if err := validation.Length(path+"ImageIdentifier", utf8.RuneCountInString((*v.ImageIdentifier)), new(int64(1)), new(int64(1024))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ImageIdentifier", (*v.ImageIdentifier), pattern9, "", "^([0-9]{12}.dkr.ecr.[a-z\\-]+-[0-9]{1}.amazonaws.com\\/((?:[a-z0-9]+(?:[._-][a-z0-9]+)*\\/)*[a-z0-9]+(?:[._-][a-z0-9]+)*)(:([\\w\\d+\\-=._:\\/@])+|@([\\w\\d\\:]+))?)|(^public\\.ecr\\.aws\\/.+\\/((?:[a-z0-9]+(?:[._-][a-z0-9]+)*\\/)*[a-z0-9]+(?:[._-][a-z0-9]+)*)(:([\\w\\d+\\-=._:\\/@])+|@([\\w\\d\\:]+))?)$"); err != nil {
+			return err
+		}
+	}
+	if v.ImageConfiguration != nil {
+		if err := (*v.ImageConfiguration).Validate(path + "ImageConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"ImageRepositoryType", v.ImageRepositoryType != nil); err != nil {
+		return err
+	}
+	if v.ImageRepositoryType != nil {
+		if err := validation.Enum(path+"ImageRepositoryType", (*v.ImageRepositoryType), enum5); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *IngressConfiguration) Validate(path string) error {
+	return nil
+}
+
+func (v *InstanceConfiguration) Validate(path string) error {
+	if v.Cpu != nil {
+		if err := validation.Length(path+"Cpu", utf8.RuneCountInString((*v.Cpu)), new(int64(3)), new(int64(9))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Cpu", (*v.Cpu), pattern10, "", "^256|512|1024|2048|4096|(0.25|0.5|1|2|4) vCPU$"); err != nil {
+			return err
+		}
+	}
+	if v.Memory != nil {
+		if err := validation.Length(path+"Memory", utf8.RuneCountInString((*v.Memory)), new(int64(3)), new(int64(6))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Memory", (*v.Memory), pattern11, "", "^512|1024|2048|3072|4096|6144|8192|10240|12288|(0.5|1|2|3|4|6|8|10|12) GB$"); err != nil {
+			return err
+		}
+	}
+	if v.InstanceRoleArn != nil {
+		if err := validation.Length(path+"InstanceRoleArn", utf8.RuneCountInString((*v.InstanceRoleArn)), new(int64(29)), new(int64(1024))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"InstanceRoleArn", (*v.InstanceRoleArn), pattern1, "", "^arn:(aws|aws-us-gov|aws-cn|aws-iso|aws-iso-b):iam::[0-9]{12}:(role|role\\/service-role)\\/[\\w+=,.@\\-/]{1,1000}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListAutoScalingConfigurationsRequest) Validate(path string) error {
+	if v.AutoScalingConfigurationName != nil {
+		if err := validation.Length(path+"AutoScalingConfigurationName", utf8.RuneCountInString((*v.AutoScalingConfigurationName)), new(int64(4)), new(int64(32))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AutoScalingConfigurationName", (*v.AutoScalingConfigurationName), pattern5, "", "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,31}$"); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"MaxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern3, "", ".*"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListConnectionsRequest) Validate(path string) error {
+	if v.ConnectionName != nil {
+		if err := validation.Length(path+"ConnectionName", utf8.RuneCountInString((*v.ConnectionName)), new(int64(4)), new(int64(32))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ConnectionName", (*v.ConnectionName), pattern5, "", "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,31}$"); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"MaxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern3, "", ".*"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListObservabilityConfigurationsRequest) Validate(path string) error {
+	if v.ObservabilityConfigurationName != nil {
+		if err := validation.Length(path+"ObservabilityConfigurationName", utf8.RuneCountInString((*v.ObservabilityConfigurationName)), new(int64(4)), new(int64(32))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ObservabilityConfigurationName", (*v.ObservabilityConfigurationName), pattern5, "", "^[A-Za-z0-9][A-Za-z0-9\\-_]{3,31}$"); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"MaxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern3, "", ".*"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListOperationsRequest) Validate(path string) error {
+	if err := validation.Required(path+"ServiceArn", v.ServiceArn != nil); err != nil {
+		return err
+	}
+	if v.ServiceArn != nil {
+		if err := validation.Length(path+"ServiceArn", utf8.RuneCountInString((*v.ServiceArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(51200))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern3, "", ".*"); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"MaxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(20))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListServicesRequest) Validate(path string) error {
+	if v.NextToken != nil {
+		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(0)), new(int64(51200))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern3, "", ".*"); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"MaxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(20))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListTagsForResourceRequest) Validate(path string) error {
+	if err := validation.Required(path+"ResourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if v.ResourceArn != nil {
+		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListVpcConnectorsRequest) Validate(path string) error {
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"MaxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"NextToken", (*v.NextToken), pattern3, "", ".*"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *NetworkConfiguration) Validate(path string) error {
+	if v.EgressConfiguration != nil {
+		if err := (*v.EgressConfiguration).Validate(path + "EgressConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.IngressConfiguration != nil {
+		if err := (*v.IngressConfiguration).Validate(path + "IngressConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.IpAddressType != nil {
+		if err := validation.Enum(path+"IpAddressType", (*v.IpAddressType), enum6); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *PauseServiceRequest) Validate(path string) error {
+	if err := validation.Required(path+"ServiceArn", v.ServiceArn != nil); err != nil {
+		return err
+	}
+	if v.ServiceArn != nil {
+		if err := validation.Length(path+"ServiceArn", utf8.RuneCountInString((*v.ServiceArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ResumeServiceRequest) Validate(path string) error {
+	if err := validation.Required(path+"ServiceArn", v.ServiceArn != nil); err != nil {
+		return err
+	}
+	if v.ServiceArn != nil {
+		if err := validation.Length(path+"ServiceArn", utf8.RuneCountInString((*v.ServiceArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ServiceObservabilityConfiguration) Validate(path string) error {
+	if v.ObservabilityConfigurationArn != nil {
+		if err := validation.Length(path+"ObservabilityConfigurationArn", utf8.RuneCountInString((*v.ObservabilityConfigurationArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ObservabilityConfigurationArn", (*v.ObservabilityConfigurationArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *SourceCodeVersion) Validate(path string) error {
+	if err := validation.Required(path+"Type", v.Type != nil); err != nil {
+		return err
+	}
+	if v.Type != nil {
+		if err := validation.Enum(path+"Type", (*v.Type), enum7); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Value", v.Value != nil); err != nil {
+		return err
+	}
+	if v.Value != nil {
+		if err := validation.Length(path+"Value", utf8.RuneCountInString((*v.Value)), new(int64(0)), new(int64(51200))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Value", (*v.Value), pattern3, "", ".*"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *SourceConfiguration) Validate(path string) error {
+	if v.CodeRepository != nil {
+		if err := (*v.CodeRepository).Validate(path + "CodeRepository" + "."); err != nil {
+			return err
+		}
+	}
+	if v.ImageRepository != nil {
+		if err := (*v.ImageRepository).Validate(path + "ImageRepository" + "."); err != nil {
+			return err
+		}
+	}
+	if v.AuthenticationConfiguration != nil {
+		if err := (*v.AuthenticationConfiguration).Validate(path + "AuthenticationConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *StartDeploymentRequest) Validate(path string) error {
+	if err := validation.Required(path+"ServiceArn", v.ServiceArn != nil); err != nil {
+		return err
+	}
+	if v.ServiceArn != nil {
+		if err := validation.Length(path+"ServiceArn", utf8.RuneCountInString((*v.ServiceArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *Tag) Validate(path string) error {
+	if v.Key != nil {
+		if err := validation.Length(path+"Key", utf8.RuneCountInString((*v.Key)), new(int64(1)), new(int64(128))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Key", (*v.Key), pattern12, "aws:", "^(?!aws:).+$"); err != nil {
+			return err
+		}
+	}
+	if v.Value != nil {
+		if err := validation.Length(path+"Value", utf8.RuneCountInString((*v.Value)), new(int64(0)), new(int64(256))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Value", (*v.Value), pattern3, "", ".*"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *TagResourceRequest) Validate(path string) error {
+	if err := validation.Required(path+"ResourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if v.ResourceArn != nil {
+		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Tags", v.Tags != nil); err != nil {
+		return err
+	}
+	if v.Tags != nil {
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"Tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *TraceConfiguration) Validate(path string) error {
+	if err := validation.Required(path+"Vendor", v.Vendor != nil); err != nil {
+		return err
+	}
+	if v.Vendor != nil {
+		if err := validation.Enum(path+"Vendor", (*v.Vendor), enum8); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *UntagResourceRequest) Validate(path string) error {
+	if err := validation.Required(path+"ResourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if v.ResourceArn != nil {
+		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"TagKeys", v.TagKeys != nil); err != nil {
+		return err
+	}
+	if v.TagKeys != nil {
+		for i0, e0 := range v.TagKeys {
+			if err := validation.Length(validation.Index(path+"TagKeys", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(128))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Index(path+"TagKeys", i0), e0, pattern12, "aws:", "^(?!aws:).+$"); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *UpdateDefaultAutoScalingConfigurationRequest) Validate(path string) error {
+	if err := validation.Required(path+"AutoScalingConfigurationArn", v.AutoScalingConfigurationArn != nil); err != nil {
+		return err
+	}
+	if v.AutoScalingConfigurationArn != nil {
+		if err := validation.Length(path+"AutoScalingConfigurationArn", utf8.RuneCountInString((*v.AutoScalingConfigurationArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AutoScalingConfigurationArn", (*v.AutoScalingConfigurationArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *UpdateServiceRequest) Validate(path string) error {
+	if err := validation.Required(path+"ServiceArn", v.ServiceArn != nil); err != nil {
+		return err
+	}
+	if v.ServiceArn != nil {
+		if err := validation.Length(path+"ServiceArn", utf8.RuneCountInString((*v.ServiceArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ServiceArn", (*v.ServiceArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	if v.SourceConfiguration != nil {
+		if err := (*v.SourceConfiguration).Validate(path + "SourceConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.InstanceConfiguration != nil {
+		if err := (*v.InstanceConfiguration).Validate(path + "InstanceConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.AutoScalingConfigurationArn != nil {
+		if err := validation.Length(path+"AutoScalingConfigurationArn", utf8.RuneCountInString((*v.AutoScalingConfigurationArn)), new(int64(1)), new(int64(1011))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AutoScalingConfigurationArn", (*v.AutoScalingConfigurationArn), pattern0, "", "^arn:aws(-[\\w]+)*:[a-z0-9-\\\\.]{0,63}:[a-z0-9-\\\\.]{0,63}:[0-9]{12}:(\\w|\\/|-){1,1011}$"); err != nil {
+			return err
+		}
+	}
+	if v.HealthCheckConfiguration != nil {
+		if err := (*v.HealthCheckConfiguration).Validate(path + "HealthCheckConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.NetworkConfiguration != nil {
+		if err := (*v.NetworkConfiguration).Validate(path + "NetworkConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.ObservabilityConfiguration != nil {
+		if err := (*v.ObservabilityConfiguration).Validate(path + "ObservabilityConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type API interface {
 	CreateAutoScalingConfiguration(context.Context, *CreateAutoScalingConfigurationRequest) (*CreateAutoScalingConfigurationResponse, error)
 	CreateConnection(context.Context, *CreateConnectionRequest) (*CreateConnectionResponse, error)
@@ -519,88 +1620,200 @@ type API interface {
 func Descriptor(api API) catalog.Service {
 	return catalog.Service{Name: "apprunner", SigningName: "apprunner", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "apprunner", TargetPrefix: "AppRunner", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_0"}, Errors: map[string]catalog.ErrorBinding{"InternalServiceErrorException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 500}, "InvalidRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ServiceQuotaExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 402}}, Operations: map[string]catalog.Operation{
 		"CreateAutoScalingConfiguration": {Name: "CreateAutoScalingConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:CreateAutoScalingConfiguration", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.CreateAutoScalingConfiguration", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &CreateAutoScalingConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateAutoScalingConfiguration(ctx, input.(*CreateAutoScalingConfigurationRequest))
+			in := input.(*CreateAutoScalingConfigurationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.CreateAutoScalingConfiguration(ctx, in)
 		}},
 		"CreateConnection": {Name: "CreateConnection", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:CreateConnection", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.CreateConnection", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &CreateConnectionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateConnection(ctx, input.(*CreateConnectionRequest))
+			in := input.(*CreateConnectionRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.CreateConnection(ctx, in)
 		}},
 		"CreateObservabilityConfiguration": {Name: "CreateObservabilityConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:CreateObservabilityConfiguration", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.CreateObservabilityConfiguration", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &CreateObservabilityConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateObservabilityConfiguration(ctx, input.(*CreateObservabilityConfigurationRequest))
+			in := input.(*CreateObservabilityConfigurationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.CreateObservabilityConfiguration(ctx, in)
 		}},
 		"CreateService": {Name: "CreateService", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "apprunner:CreateService", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.CreateService", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &CreateServiceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateService(ctx, input.(*CreateServiceRequest))
+			in := input.(*CreateServiceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.CreateService(ctx, in)
 		}},
 		"CreateVpcConnector": {Name: "CreateVpcConnector", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:CreateVpcConnector", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.CreateVpcConnector", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &CreateVpcConnectorRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateVpcConnector(ctx, input.(*CreateVpcConnectorRequest))
+			in := input.(*CreateVpcConnectorRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.CreateVpcConnector(ctx, in)
 		}},
 		"DeleteAutoScalingConfiguration": {Name: "DeleteAutoScalingConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:DeleteAutoScalingConfiguration", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.DeleteAutoScalingConfiguration", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DeleteAutoScalingConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteAutoScalingConfiguration(ctx, input.(*DeleteAutoScalingConfigurationRequest))
+			in := input.(*DeleteAutoScalingConfigurationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.DeleteAutoScalingConfiguration(ctx, in)
 		}},
 		"DeleteConnection": {Name: "DeleteConnection", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:DeleteConnection", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.DeleteConnection", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DeleteConnectionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteConnection(ctx, input.(*DeleteConnectionRequest))
+			in := input.(*DeleteConnectionRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.DeleteConnection(ctx, in)
 		}},
 		"DeleteObservabilityConfiguration": {Name: "DeleteObservabilityConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:DeleteObservabilityConfiguration", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.DeleteObservabilityConfiguration", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DeleteObservabilityConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteObservabilityConfiguration(ctx, input.(*DeleteObservabilityConfigurationRequest))
+			in := input.(*DeleteObservabilityConfigurationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.DeleteObservabilityConfiguration(ctx, in)
 		}},
 		"DeleteService": {Name: "DeleteService", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "apprunner:DeleteService", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.DeleteService", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DeleteServiceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteService(ctx, input.(*DeleteServiceRequest))
+			in := input.(*DeleteServiceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.DeleteService(ctx, in)
 		}},
 		"DeleteVpcConnector": {Name: "DeleteVpcConnector", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:DeleteVpcConnector", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.DeleteVpcConnector", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DeleteVpcConnectorRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteVpcConnector(ctx, input.(*DeleteVpcConnectorRequest))
+			in := input.(*DeleteVpcConnectorRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.DeleteVpcConnector(ctx, in)
 		}},
 		"DescribeAutoScalingConfiguration": {Name: "DescribeAutoScalingConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:DescribeAutoScalingConfiguration", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.DescribeAutoScalingConfiguration", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeAutoScalingConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DescribeAutoScalingConfiguration(ctx, input.(*DescribeAutoScalingConfigurationRequest))
+			in := input.(*DescribeAutoScalingConfigurationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.DescribeAutoScalingConfiguration(ctx, in)
 		}},
 		"DescribeObservabilityConfiguration": {Name: "DescribeObservabilityConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:DescribeObservabilityConfiguration", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.DescribeObservabilityConfiguration", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeObservabilityConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DescribeObservabilityConfiguration(ctx, input.(*DescribeObservabilityConfigurationRequest))
+			in := input.(*DescribeObservabilityConfigurationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.DescribeObservabilityConfiguration(ctx, in)
 		}},
 		"DescribeService": {Name: "DescribeService", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "apprunner:DescribeService", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.DescribeService", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeServiceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DescribeService(ctx, input.(*DescribeServiceRequest))
+			in := input.(*DescribeServiceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.DescribeService(ctx, in)
 		}},
 		"DescribeVpcConnector": {Name: "DescribeVpcConnector", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:DescribeVpcConnector", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.DescribeVpcConnector", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeVpcConnectorRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DescribeVpcConnector(ctx, input.(*DescribeVpcConnectorRequest))
+			in := input.(*DescribeVpcConnectorRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.DescribeVpcConnector(ctx, in)
 		}},
 		"ListAutoScalingConfigurations": {Name: "ListAutoScalingConfigurations", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:ListAutoScalingConfigurations", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.ListAutoScalingConfigurations", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListAutoScalingConfigurationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListAutoScalingConfigurations(ctx, input.(*ListAutoScalingConfigurationsRequest))
+			in := input.(*ListAutoScalingConfigurationsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.ListAutoScalingConfigurations(ctx, in)
 		}},
 		"ListConnections": {Name: "ListConnections", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:ListConnections", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.ListConnections", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListConnectionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListConnections(ctx, input.(*ListConnectionsRequest))
+			in := input.(*ListConnectionsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.ListConnections(ctx, in)
 		}},
 		"ListObservabilityConfigurations": {Name: "ListObservabilityConfigurations", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:ListObservabilityConfigurations", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.ListObservabilityConfigurations", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListObservabilityConfigurationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListObservabilityConfigurations(ctx, input.(*ListObservabilityConfigurationsRequest))
+			in := input.(*ListObservabilityConfigurationsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.ListObservabilityConfigurations(ctx, in)
 		}},
 		"ListOperations": {Name: "ListOperations", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:ListOperations", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.ListOperations", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListOperationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListOperations(ctx, input.(*ListOperationsRequest))
+			in := input.(*ListOperationsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.ListOperations(ctx, in)
 		}},
 		"ListServices": {Name: "ListServices", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:ListServices", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.ListServices", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListServicesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListServices(ctx, input.(*ListServicesRequest))
+			in := input.(*ListServicesRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.ListServices(ctx, in)
 		}},
 		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:ListTagsForResource", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.ListTagsForResource", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceRequest))
+			in := input.(*ListTagsForResourceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.ListTagsForResource(ctx, in)
 		}},
 		"ListVpcConnectors": {Name: "ListVpcConnectors", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:ListVpcConnectors", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.ListVpcConnectors", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListVpcConnectorsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListVpcConnectors(ctx, input.(*ListVpcConnectorsRequest))
+			in := input.(*ListVpcConnectorsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.ListVpcConnectors(ctx, in)
 		}},
 		"PauseService": {Name: "PauseService", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "apprunner:PauseService", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.PauseService", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &PauseServiceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.PauseService(ctx, input.(*PauseServiceRequest))
+			in := input.(*PauseServiceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.PauseService(ctx, in)
 		}},
 		"ResumeService": {Name: "ResumeService", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "apprunner:ResumeService", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.ResumeService", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ResumeServiceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ResumeService(ctx, input.(*ResumeServiceRequest))
+			in := input.(*ResumeServiceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.ResumeService(ctx, in)
 		}},
 		"StartDeployment": {Name: "StartDeployment", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:StartDeployment", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.StartDeployment", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &StartDeploymentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.StartDeployment(ctx, input.(*StartDeploymentRequest))
+			in := input.(*StartDeploymentRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.StartDeployment(ctx, in)
 		}},
 		"TagResource": {Name: "TagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:TagResource", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.TagResource", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &TagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.TagResource(ctx, input.(*TagResourceRequest))
+			in := input.(*TagResourceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.TagResource(ctx, in)
 		}},
 		"UntagResource": {Name: "UntagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:UntagResource", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.UntagResource", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &UntagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UntagResource(ctx, input.(*UntagResourceRequest))
+			in := input.(*UntagResourceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.UntagResource(ctx, in)
 		}},
 		"UpdateService": {Name: "UpdateService", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "apprunner:UpdateService", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.UpdateService", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &UpdateServiceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UpdateService(ctx, input.(*UpdateServiceRequest))
+			in := input.(*UpdateServiceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.UpdateService(ctx, in)
 		}},
 		"UpdateDefaultAutoScalingConfiguration": {Name: "UpdateDefaultAutoScalingConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apprunner:UpdateDefaultAutoScalingConfiguration", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AppRunner.UpdateDefaultAutoScalingConfiguration", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &UpdateDefaultAutoScalingConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UpdateDefaultAutoScalingConfiguration(ctx, input.(*UpdateDefaultAutoScalingConfigurationRequest))
+			in := input.(*UpdateDefaultAutoScalingConfigurationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequestException", err.Error())
+			}
+			return api.UpdateDefaultAutoScalingConfiguration(ctx, in)
 		}},
 	}}
 }

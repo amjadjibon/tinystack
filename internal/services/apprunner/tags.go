@@ -40,10 +40,6 @@ func (s *Service) editTags(
 }
 
 func (s *Service) TagResource(ctx context.Context, in *api.TagResourceRequest) (*api.TagResourceResponse, error) {
-	if err := validateTagResourceRequest(in); err != nil {
-		return nil, err
-	}
-
 	add, err := tagsMap(in.Tags)
 	if err != nil {
 		return nil, err
@@ -58,10 +54,6 @@ func (s *Service) TagResource(ctx context.Context, in *api.TagResourceRequest) (
 }
 
 func (s *Service) UntagResource(ctx context.Context, in *api.UntagResourceRequest) (*api.UntagResourceResponse, error) {
-	if err := validateUntagResourceRequest(in); err != nil {
-		return nil, err
-	}
-
 	_, err := s.editTags(
 		ctx,
 		in.ResourceArn,
@@ -74,10 +66,6 @@ func (s *Service) ListTagsForResource(
 	ctx context.Context,
 	in *api.ListTagsForResourceRequest,
 ) (*api.ListTagsForResourceResponse, error) {
-	if err := validateListTagsForResourceRequest(in); err != nil {
-		return nil, err
-	}
-
 	tags, err := s.editTags(
 		ctx,
 		in.ResourceArn,

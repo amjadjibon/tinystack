@@ -107,10 +107,6 @@ func (s *Service) UpdateDefaultAutoScalingConfiguration(
 	ctx context.Context,
 	in *api.UpdateDefaultAutoScalingConfigurationRequest,
 ) (*api.UpdateDefaultAutoScalingConfigurationResponse, error) {
-	if err := validateUpdateDefaultAutoScalingConfigurationRequest(in); err != nil {
-		return nil, err
-	}
-
 	if err := s.seedDefault(ctx); err != nil {
 		return nil, err
 	}

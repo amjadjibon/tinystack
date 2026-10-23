@@ -14,10 +14,6 @@ func (s *Service) CreateVpcConnector(
 	ctx context.Context,
 	in *api.CreateVpcConnectorRequest,
 ) (*api.CreateVpcConnectorResponse, error) {
-	if err := validateCreateVpcConnectorRequest(in); err != nil {
-		return nil, err
-	}
-
 	tags, err := tagsMap(in.Tags)
 	if err != nil {
 		return nil, err
@@ -48,10 +44,6 @@ func (s *Service) DescribeVpcConnector(
 	ctx context.Context,
 	in *api.DescribeVpcConnectorRequest,
 ) (*api.DescribeVpcConnectorResponse, error) {
-	if err := validateDescribeVpcConnectorRequest(in); err != nil {
-		return nil, err
-	}
-
 	r, err := s.get(ctx, in.VpcConnectorArn, kindVpcConnector)
 	if err != nil {
 		return nil, err
@@ -64,10 +56,6 @@ func (s *Service) DeleteVpcConnector(
 	ctx context.Context,
 	in *api.DeleteVpcConnectorRequest,
 ) (*api.DeleteVpcConnectorResponse, error) {
-	if err := validateDeleteVpcConnectorRequest(in); err != nil {
-		return nil, err
-	}
-
 	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
@@ -96,10 +84,6 @@ func (s *Service) ListVpcConnectors(
 	ctx context.Context,
 	in *api.ListVpcConnectorsRequest,
 ) (*api.ListVpcConnectorsResponse, error) {
-	if err := validateListVpcConnectorsRequest(in); err != nil {
-		return nil, err
-	}
-
 	items, next, err := s.list(ctx, kindVpcConnector, nil, nil, in.MaxResults, in.NextToken)
 	if err != nil {
 		return nil, err
