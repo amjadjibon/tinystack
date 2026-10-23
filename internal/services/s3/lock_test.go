@@ -51,8 +51,9 @@ func TestObjectLockLifecycle(t *testing.T) {
 	_, err = svc.GetObjectLockConfiguration(ctx, &api.GetObjectLockConfigurationRequest{
 		Bucket: new("plain-bucket"),
 	})
-	if err == nil || awserror.From(err).Code != "InvalidRequest" {
-		t.Fatalf("GetObjectLockConfiguration on plain bucket: expected InvalidRequest, got %v", err)
+	if err == nil || awserror.From(err).Code != "ObjectLockConfigurationNotFoundError" {
+		t.Fatalf("GetObjectLockConfiguration on plain bucket: expected ObjectLockConfigurationNotFoundError, got %v",
+			err)
 	}
 
 	// 2. Bucket with object lock enabled

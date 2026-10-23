@@ -96,8 +96,9 @@ func (s *Service) GetObjectLockConfiguration(
 			return readErr
 		}
 
-		if reqErr := requireObjectLock(meta); reqErr != nil {
-			return reqErr
+		if meta == nil || meta.ObjectLock == nil {
+			return fail(http.StatusNotFound, "ObjectLockConfigurationNotFoundError",
+				"Object Lock configuration does not exist for this bucket")
 		}
 
 		out.ObjectLockConfiguration = meta.ObjectLock

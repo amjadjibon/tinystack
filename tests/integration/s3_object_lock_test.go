@@ -25,8 +25,8 @@ func TestS3ObjectLock(t *testing.T) {
 	_, err := c.GetObjectLockConfiguration(ctx, &s3.GetObjectLockConfigurationInput{
 		Bucket: aws.String("plain-bucket"),
 	})
-	if code, _ := s3Code(err); code != "InvalidRequest" {
-		t.Fatalf("expected InvalidRequest on plain bucket, got %q (%v)", code, err)
+	if code, _ := s3Code(err); code != "ObjectLockConfigurationNotFoundError" {
+		t.Fatalf("expected ObjectLockConfigurationNotFoundError on plain bucket, got %q (%v)", code, err)
 	}
 
 	// 2. Bucket with Object Lock enabled
