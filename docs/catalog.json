@@ -2564,6 +2564,30 @@
       ],
       "execution": "Local behavior",
       "package": "apigatewaymanagementapi"
+    },
+    "amp": {
+      "title": "Amazon Managed Service for Prometheus",
+      "category": "Management & Governance",
+      "scope": "Account and Region",
+      "summary": "Store Prometheus workspaces, rule groups namespaces, alert manager definitions and logging configurations as metadata without query or remote-write ingestion.",
+      "features": [
+        "Twenty-one pinned REST JSON operations for workspaces, rule groups namespaces, alert manager definitions, logging configurations and native tags, with AWS SDK v2 coverage",
+        "Workspaces with alias and KMS key ARN validation, alias-prefix list filtering, status deterministically ACTIVE on read, and TinyStack-hosted Prometheus endpoint URL",
+        "Rule groups namespaces storing YAML data with non-empty and name pattern validation and prefix name filtering",
+        "Alert manager definitions storing YAML configuration data with Create, Describe, Put, and Delete operations",
+        "Logging configuration validating log group ARN format with Create, Describe, Update, and Delete operations",
+        "CloudFormation resources AWS::APS::Workspace and AWS::APS::RuleGroupsNamespace with create, update, retag and delete",
+        "TagResource, UntagResource, ListTagsForResource on workspace and rule groups namespace ARNs; Resource Groups Tagging API integration",
+        "Token pagination (default 100, maximum 1000), account and Region isolation, RecordsOnly=true inventory and Terraform amp endpoint key"
+      ],
+      "gaps": [
+        "No Prometheus data plane: remote-write ingestion, PromQL queries, and Prometheus rules/alert evaluations are not served; prometheusEndpoint returns a mock endpoint URL",
+        "Scrapers, workspace configuration, and resource policies are not implemented",
+        "Rule group and alert manager YAML payloads are stored as non-empty blobs; YAML syntax and rules are not evaluated",
+        "Workspaces transition immediately to ACTIVE without asynchronous provisioning"
+      ],
+      "execution": "Records only",
+      "package": "amp"
     }
   },
   "future": {
