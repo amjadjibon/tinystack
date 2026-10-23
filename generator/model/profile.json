@@ -34464,5 +34464,1007 @@
         "Tags"
       ]
     }
+  },
+  "inspector2": {
+    "operations": [
+      "Enable",
+      "Disable",
+      "BatchGetAccountStatus",
+      "GetConfiguration",
+      "UpdateConfiguration",
+      "CreateFilter",
+      "ListFilters",
+      "UpdateFilter",
+      "DeleteFilter",
+      "ListFindings",
+      "ListCoverage",
+      "ListCoverageStatistics",
+      "ListFindingAggregations",
+      "BatchGetFindingDetails",
+      "ListUsageTotals",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "validation": {
+      "code": "ValidationException"
+    },
+    "shapes": {
+      "EnableRequest": [
+        "accountIds",
+        "resourceTypes",
+        "clientToken"
+      ],
+      "EnableResponse": [
+        "accounts",
+        "failedAccounts"
+      ],
+      "Account": [
+        "accountId",
+        "status",
+        "resourceStatus"
+      ],
+      "ResourceStatus": [
+        "ec2",
+        "ecr",
+        "lambda",
+        "lambdaCode",
+        "codeRepository"
+      ],
+      "FailedAccount": [
+        "accountId",
+        "status",
+        "resourceStatus",
+        "errorCode",
+        "errorMessage"
+      ],
+      "DisableRequest": [
+        "accountIds",
+        "resourceTypes"
+      ],
+      "DisableResponse": [
+        "accounts",
+        "failedAccounts"
+      ],
+      "BatchGetAccountStatusRequest": [
+        "accountIds"
+      ],
+      "BatchGetAccountStatusResponse": [
+        "accounts",
+        "failedAccounts"
+      ],
+      "AccountState": [
+        "accountId",
+        "state",
+        "resourceState"
+      ],
+      "State": [
+        "status",
+        "errorCode",
+        "errorMessage"
+      ],
+      "ResourceState": [
+        "ec2",
+        "ecr",
+        "lambda",
+        "lambdaCode",
+        "codeRepository"
+      ],
+      "GetConfigurationRequest": [
+        "accountId"
+      ],
+      "GetConfigurationResponse": [
+        "ecrConfiguration",
+        "ec2Configuration"
+      ],
+      "EcrConfigurationState": [
+        "rescanDurationState"
+      ],
+      "EcrRescanDurationState": [
+        "rescanDuration",
+        "status",
+        "updatedAt",
+        "pullDateRescanDuration",
+        "pullDateRescanMode"
+      ],
+      "Ec2ConfigurationState": [
+        "scanModeState"
+      ],
+      "Ec2ScanModeState": [
+        "scanMode",
+        "scanModeStatus"
+      ],
+      "UpdateConfigurationRequest": [
+        "accountId",
+        "ecrConfiguration",
+        "ec2Configuration"
+      ],
+      "EcrConfiguration": [
+        "rescanDuration"
+      ],
+      "Ec2Configuration": [
+        "scanMode"
+      ],
+      "UpdateConfigurationResponse": [],
+      "CreateFilterRequest": [
+        "action",
+        "description",
+        "filterCriteria",
+        "name",
+        "tags",
+        "reason"
+      ],
+      "FilterCriteria": [
+        "findingArn",
+        "awsAccountId",
+        "findingType",
+        "severity",
+        "firstObservedAt",
+        "lastObservedAt",
+        "updatedAt",
+        "findingStatus",
+        "title",
+        "inspectorScore",
+        "resourceType",
+        "resourceId",
+        "resourceTags",
+        "ec2InstanceImageId",
+        "ec2InstanceVpcId",
+        "ec2InstanceSubnetId",
+        "ecrImagePushedAt",
+        "ecrImageArchitecture",
+        "ecrImageRegistry",
+        "ecrImageRepositoryName",
+        "ecrImageTags",
+        "ecrImageHash",
+        "ecrImageLastInUseAt",
+        "ecrImageInUseCount",
+        "portRange",
+        "networkProtocol",
+        "componentId",
+        "componentType",
+        "vulnerabilityId",
+        "vulnerabilitySource",
+        "vendorSeverity",
+        "vulnerablePackages",
+        "relatedVulnerabilities",
+        "fixAvailable",
+        "lambdaFunctionName",
+        "lambdaFunctionLayers",
+        "lambdaFunctionRuntime",
+        "lambdaFunctionLastModifiedAt",
+        "lambdaFunctionExecutionRoleArn",
+        "exploitAvailable",
+        "epssScore"
+      ],
+      "StringFilter": [
+        "comparison",
+        "value"
+      ],
+      "DateFilter": [
+        "startInclusive",
+        "endInclusive"
+      ],
+      "NumberFilter": [
+        "upperInclusive",
+        "lowerInclusive"
+      ],
+      "MapFilter": [
+        "comparison",
+        "key",
+        "value"
+      ],
+      "PortRangeFilter": [
+        "beginInclusive",
+        "endInclusive"
+      ],
+      "PackageFilter": [
+        "name",
+        "version",
+        "epoch",
+        "release",
+        "architecture",
+        "sourceLayerHash",
+        "sourceLambdaLayerArn",
+        "filePath"
+      ],
+      "CreateFilterResponse": [
+        "arn"
+      ],
+      "ListFiltersRequest": [
+        "arns",
+        "action",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListFiltersResponse": [
+        "filters",
+        "nextToken"
+      ],
+      "Filter": [
+        "arn",
+        "ownerId",
+        "name",
+        "criteria",
+        "action",
+        "createdAt",
+        "updatedAt",
+        "description",
+        "reason",
+        "tags"
+      ],
+      "UpdateFilterRequest": [
+        "action",
+        "description",
+        "filterCriteria",
+        "name",
+        "filterArn",
+        "reason"
+      ],
+      "UpdateFilterResponse": [
+        "arn"
+      ],
+      "DeleteFilterRequest": [
+        "arn"
+      ],
+      "DeleteFilterResponse": [
+        "arn"
+      ],
+      "ListFindingsRequest": [
+        "maxResults",
+        "nextToken",
+        "filterCriteria",
+        "sortCriteria"
+      ],
+      "SortCriteria": [
+        "field",
+        "sortOrder"
+      ],
+      "ListFindingsResponse": [
+        "nextToken",
+        "findings"
+      ],
+      "Finding": [
+        "findingArn",
+        "awsAccountId",
+        "type",
+        "description",
+        "title",
+        "remediation",
+        "severity",
+        "firstObservedAt",
+        "lastObservedAt",
+        "updatedAt",
+        "status",
+        "resources",
+        "inspectorScore",
+        "inspectorScoreDetails",
+        "networkReachabilityDetails",
+        "packageVulnerabilityDetails",
+        "fixAvailable",
+        "exploitAvailable",
+        "exploitabilityDetails",
+        "codeVulnerabilityDetails",
+        "epss"
+      ],
+      "Remediation": [
+        "recommendation"
+      ],
+      "Recommendation": [
+        "text",
+        "Url"
+      ],
+      "Resource": [
+        "type",
+        "id",
+        "partition",
+        "region",
+        "tags",
+        "details",
+        "provider",
+        "providerAccountId",
+        "providerOrgId"
+      ],
+      "ResourceDetails": [
+        "awsEc2Instance",
+        "awsEcrContainerImage",
+        "awsLambdaFunction",
+        "codeRepository",
+        "vm",
+        "image",
+        "serverlessFunction"
+      ],
+      "AwsEc2InstanceDetails": [
+        "type",
+        "imageId",
+        "ipV4Addresses",
+        "ipV6Addresses",
+        "keyName",
+        "iamInstanceProfileArn",
+        "vpcId",
+        "subnetId",
+        "launchedAt",
+        "platform"
+      ],
+      "AwsEcrContainerImageDetails": [
+        "repositoryName",
+        "imageTags",
+        "pushedAt",
+        "author",
+        "architecture",
+        "imageHash",
+        "registry",
+        "platform",
+        "lastInUseAt",
+        "inUseCount"
+      ],
+      "AwsLambdaFunctionDetails": [
+        "functionName",
+        "runtime",
+        "codeSha256",
+        "version",
+        "executionRoleArn",
+        "layers",
+        "vpcConfig",
+        "packageType",
+        "architectures",
+        "lastModifiedAt"
+      ],
+      "LambdaVpcConfig": [
+        "subnetIds",
+        "securityGroupIds",
+        "vpcId"
+      ],
+      "CodeRepositoryDetails": [
+        "projectName",
+        "integrationArn",
+        "providerType"
+      ],
+      "Vm": [
+        "type",
+        "vmName",
+        "vmImageReference",
+        "ipV4Addresses",
+        "ipV6Addresses",
+        "networkId",
+        "subnetIds",
+        "securityGroupIds",
+        "launchedAt",
+        "platform",
+        "executionRole",
+        "keyName"
+      ],
+      "Image": [
+        "repositoryName",
+        "registry",
+        "imageTags",
+        "imageDigest",
+        "pushedAt",
+        "architecture",
+        "author",
+        "inUseCount",
+        "lastInUseAt",
+        "platform"
+      ],
+      "ServerlessFunction": [
+        "serverlessFunctionName",
+        "runtime",
+        "version",
+        "codeDigest",
+        "lastModifiedAt",
+        "networkId",
+        "subnetIds",
+        "securityGroupIds",
+        "executionRole",
+        "packageType",
+        "architectures",
+        "layers"
+      ],
+      "InspectorScoreDetails": [
+        "adjustedCvss"
+      ],
+      "CvssScoreDetails": [
+        "scoreSource",
+        "cvssSource",
+        "version",
+        "score",
+        "scoringVector",
+        "adjustments"
+      ],
+      "CvssScoreAdjustment": [
+        "metric",
+        "reason"
+      ],
+      "NetworkReachabilityDetails": [
+        "openPortRange",
+        "protocol",
+        "networkPath"
+      ],
+      "PortRange": [
+        "begin",
+        "end"
+      ],
+      "NetworkPath": [
+        "steps"
+      ],
+      "Step": [
+        "componentId",
+        "componentType",
+        "componentArn"
+      ],
+      "PackageVulnerabilityDetails": [
+        "vulnerabilityId",
+        "vulnerablePackages",
+        "source",
+        "cvss",
+        "relatedVulnerabilities",
+        "sourceUrl",
+        "vendorSeverity",
+        "vendorCreatedAt",
+        "vendorUpdatedAt",
+        "referenceUrls"
+      ],
+      "VulnerablePackage": [
+        "name",
+        "version",
+        "sourceLayerHash",
+        "epoch",
+        "release",
+        "arch",
+        "packageManager",
+        "filePath",
+        "fixedInVersion",
+        "remediation",
+        "sourceLambdaLayerArn"
+      ],
+      "CvssScore": [
+        "baseScore",
+        "scoringVector",
+        "version",
+        "source"
+      ],
+      "ExploitabilityDetails": [
+        "lastKnownExploitAt"
+      ],
+      "CodeVulnerabilityDetails": [
+        "filePath",
+        "detectorTags",
+        "referenceUrls",
+        "ruleId",
+        "sourceLambdaLayerArn",
+        "detectorId",
+        "detectorName",
+        "cwes"
+      ],
+      "CodeFilePath": [
+        "fileName",
+        "filePath",
+        "startLine",
+        "endLine"
+      ],
+      "EpssDetails": [
+        "score"
+      ],
+      "ListCoverageRequest": [
+        "maxResults",
+        "nextToken",
+        "filterCriteria"
+      ],
+      "CoverageFilterCriteria": [
+        "scanStatusCode",
+        "scanStatusReason",
+        "accountId",
+        "resourceId",
+        "resourceType",
+        "scanType",
+        "ecrRepositoryName",
+        "ecrImageTags",
+        "ec2InstanceTags",
+        "lambdaFunctionName",
+        "lambdaFunctionTags",
+        "lambdaFunctionRuntime",
+        "lastScannedAt",
+        "scanMode",
+        "imagePulledAt",
+        "ecrImageLastInUseAt",
+        "ecrImageInUseCount"
+      ],
+      "CoverageStringFilter": [
+        "comparison",
+        "value"
+      ],
+      "CoverageMapFilter": [
+        "comparison",
+        "key",
+        "value"
+      ],
+      "CoverageDateFilter": [
+        "startInclusive",
+        "endInclusive"
+      ],
+      "CoverageNumberFilter": [
+        "upperInclusive",
+        "lowerInclusive"
+      ],
+      "ListCoverageResponse": [
+        "nextToken",
+        "coveredResources"
+      ],
+      "CoveredResource": [
+        "resourceType",
+        "resourceId",
+        "accountId",
+        "scanType",
+        "scanStatus",
+        "resourceMetadata",
+        "lastScannedAt",
+        "scanMode",
+        "provider",
+        "providerAccountId",
+        "providerOrgId",
+        "providerRegion",
+        "providerPartition"
+      ],
+      "ScanStatus": [
+        "statusCode",
+        "reason"
+      ],
+      "ResourceScanMetadata": [
+        "ecrRepository",
+        "ecrImage",
+        "ec2",
+        "lambdaFunction",
+        "codeRepository",
+        "vmInstance",
+        "containerImage",
+        "containerRepository",
+        "containerRegistry",
+        "serverlessFunction"
+      ],
+      "EcrRepositoryMetadata": [
+        "name",
+        "scanFrequency"
+      ],
+      "EcrContainerImageMetadata": [
+        "tags",
+        "imagePulledAt",
+        "lastInUseAt",
+        "inUseCount"
+      ],
+      "Ec2Metadata": [
+        "tags",
+        "amiId",
+        "platform"
+      ],
+      "LambdaFunctionMetadata": [
+        "functionTags",
+        "layers",
+        "functionName",
+        "runtime"
+      ],
+      "CodeRepositoryMetadata": [
+        "projectName",
+        "integrationArn",
+        "providerType",
+        "providerTypeVisibility",
+        "lastScannedCommitId",
+        "scanConfiguration",
+        "onDemandScan"
+      ],
+      "ProjectCodeSecurityScanConfiguration": [
+        "periodicScanConfigurations",
+        "continuousIntegrationScanConfigurations"
+      ],
+      "ProjectPeriodicScanConfiguration": [
+        "frequencyExpression",
+        "ruleSetCategories"
+      ],
+      "ProjectContinuousIntegrationScanConfiguration": [
+        "supportedEvent",
+        "ruleSetCategories"
+      ],
+      "CodeRepositoryOnDemandScan": [
+        "lastScannedCommitId",
+        "lastScanAt",
+        "scanStatus"
+      ],
+      "VmInstanceMetadata": [
+        "tags",
+        "platform",
+        "inventoryHash",
+        "vmImageReference"
+      ],
+      "ContainerImageMetadata": [
+        "imageTags",
+        "imagePulledAt",
+        "lastInUseAt",
+        "inUseCount"
+      ],
+      "ContainerRepositoryMetadata": [
+        "name",
+        "scanFrequency"
+      ],
+      "ContainerRegistryMetadata": [
+        "name"
+      ],
+      "ServerlessFunctionMetadata": [
+        "serverlessFunctionName",
+        "runtime",
+        "functionTags"
+      ],
+      "ListCoverageStatisticsRequest": [
+        "filterCriteria",
+        "groupBy",
+        "nextToken"
+      ],
+      "ListCoverageStatisticsResponse": [
+        "countsByGroup",
+        "totalCounts",
+        "nextToken"
+      ],
+      "Counts": [
+        "count",
+        "groupKey"
+      ],
+      "ListFindingAggregationsRequest": [
+        "aggregationType",
+        "nextToken",
+        "maxResults",
+        "accountIds",
+        "aggregationRequest"
+      ],
+      "AggregationRequest": [
+        "accountAggregation",
+        "amiAggregation",
+        "awsEcrContainerAggregation",
+        "ec2InstanceAggregation",
+        "findingTypeAggregation",
+        "imageLayerAggregation",
+        "packageAggregation",
+        "repositoryAggregation",
+        "titleAggregation",
+        "lambdaLayerAggregation",
+        "lambdaFunctionAggregation"
+      ],
+      "AccountAggregation": [
+        "findingType",
+        "resourceType",
+        "sortOrder",
+        "sortBy"
+      ],
+      "AmiAggregation": [
+        "amis",
+        "sortOrder",
+        "sortBy"
+      ],
+      "AwsEcrContainerAggregation": [
+        "resourceIds",
+        "imageShas",
+        "repositories",
+        "architectures",
+        "imageTags",
+        "sortOrder",
+        "sortBy",
+        "lastInUseAt",
+        "inUseCount"
+      ],
+      "Ec2InstanceAggregation": [
+        "amis",
+        "operatingSystems",
+        "instanceIds",
+        "instanceTags",
+        "sortOrder",
+        "sortBy"
+      ],
+      "FindingTypeAggregation": [
+        "findingType",
+        "resourceType",
+        "sortOrder",
+        "sortBy"
+      ],
+      "ImageLayerAggregation": [
+        "repositories",
+        "resourceIds",
+        "layerHashes",
+        "sortOrder",
+        "sortBy"
+      ],
+      "PackageAggregation": [
+        "packageNames",
+        "sortOrder",
+        "sortBy"
+      ],
+      "RepositoryAggregation": [
+        "repositories",
+        "sortOrder",
+        "sortBy"
+      ],
+      "TitleAggregation": [
+        "titles",
+        "vulnerabilityIds",
+        "resourceType",
+        "findingType",
+        "sortOrder",
+        "sortBy"
+      ],
+      "LambdaLayerAggregation": [
+        "functionNames",
+        "resourceIds",
+        "layerArns",
+        "sortOrder",
+        "sortBy"
+      ],
+      "LambdaFunctionAggregation": [
+        "resourceIds",
+        "functionNames",
+        "runtimes",
+        "functionTags",
+        "sortOrder",
+        "sortBy"
+      ],
+      "ListFindingAggregationsResponse": [
+        "aggregationType",
+        "responses",
+        "nextToken"
+      ],
+      "AggregationResponse": [
+        "accountAggregation",
+        "amiAggregation",
+        "awsEcrContainerAggregation",
+        "ec2InstanceAggregation",
+        "findingTypeAggregation",
+        "imageLayerAggregation",
+        "packageAggregation",
+        "repositoryAggregation",
+        "titleAggregation",
+        "lambdaLayerAggregation",
+        "lambdaFunctionAggregation",
+        "codeRepositoryAggregation",
+        "vmInstanceAggregation",
+        "containerImageAggregation",
+        "serverlessFunctionAggregation"
+      ],
+      "AccountAggregationResponse": [
+        "accountId",
+        "severityCounts",
+        "exploitAvailableCount",
+        "fixAvailableCount"
+      ],
+      "SeverityCounts": [
+        "all",
+        "medium",
+        "high",
+        "critical",
+        "low",
+        "informational",
+        "untriaged"
+      ],
+      "AmiAggregationResponse": [
+        "ami",
+        "accountId",
+        "cloudProvider",
+        "cloudPartition",
+        "cloudRegion",
+        "cloudOrgId",
+        "cloudAccountId",
+        "severityCounts",
+        "affectedInstances"
+      ],
+      "AwsEcrContainerAggregationResponse": [
+        "resourceId",
+        "imageSha",
+        "repository",
+        "architecture",
+        "imageTags",
+        "accountId",
+        "severityCounts",
+        "lastInUseAt",
+        "inUseCount"
+      ],
+      "Ec2InstanceAggregationResponse": [
+        "instanceId",
+        "ami",
+        "operatingSystem",
+        "instanceTags",
+        "accountId",
+        "severityCounts",
+        "networkFindings"
+      ],
+      "FindingTypeAggregationResponse": [
+        "accountId",
+        "severityCounts",
+        "exploitAvailableCount",
+        "fixAvailableCount",
+        "cloudProvider",
+        "cloudAccountId",
+        "cloudOrgId",
+        "cloudRegion",
+        "cloudPartition"
+      ],
+      "ImageLayerAggregationResponse": [
+        "repository",
+        "resourceId",
+        "layerHash",
+        "accountId",
+        "cloudProvider",
+        "cloudAccountId",
+        "cloudOrgId",
+        "cloudRegion",
+        "cloudPartition",
+        "severityCounts"
+      ],
+      "PackageAggregationResponse": [
+        "packageName",
+        "accountId",
+        "severityCounts"
+      ],
+      "RepositoryAggregationResponse": [
+        "repository",
+        "accountId",
+        "cloudProvider",
+        "cloudPartition",
+        "cloudRegion",
+        "cloudOrgId",
+        "cloudAccountId",
+        "severityCounts",
+        "affectedImages"
+      ],
+      "TitleAggregationResponse": [
+        "title",
+        "vulnerabilityId",
+        "accountId",
+        "severityCounts"
+      ],
+      "LambdaLayerAggregationResponse": [
+        "functionName",
+        "resourceId",
+        "layerArn",
+        "accountId",
+        "severityCounts"
+      ],
+      "LambdaFunctionAggregationResponse": [
+        "resourceId",
+        "functionName",
+        "runtime",
+        "lambdaTags",
+        "accountId",
+        "severityCounts",
+        "lastModifiedAt"
+      ],
+      "CodeRepositoryAggregationResponse": [
+        "projectNames",
+        "providerType",
+        "severityCounts",
+        "exploitAvailableActiveFindingsCount",
+        "fixAvailableActiveFindingsCount",
+        "accountId",
+        "resourceId"
+      ],
+      "VmInstanceAggregationResponse": [
+        "resourceId",
+        "cloudProvider",
+        "cloudAccountId",
+        "cloudPartition",
+        "cloudRegion",
+        "cloudOrgId",
+        "vmImageReference",
+        "operatingSystem",
+        "tags",
+        "accountId",
+        "severityCounts",
+        "networkFindings",
+        "exploitAvailableActiveFindingsCount",
+        "fixAvailableActiveFindingsCount"
+      ],
+      "ContainerImageAggregationResponse": [
+        "resourceId",
+        "cloudProvider",
+        "cloudAccountId",
+        "cloudPartition",
+        "cloudRegion",
+        "cloudOrgId",
+        "imageDigest",
+        "repository",
+        "registry",
+        "architecture",
+        "imageTags",
+        "accountId",
+        "severityCounts",
+        "lastInUseAt",
+        "inUseCount",
+        "exploitAvailableActiveFindingsCount",
+        "fixAvailableActiveFindingsCount"
+      ],
+      "ServerlessFunctionAggregationResponse": [
+        "resourceId",
+        "cloudProvider",
+        "cloudAccountId",
+        "cloudPartition",
+        "cloudRegion",
+        "cloudOrgId",
+        "functionName",
+        "runtime",
+        "tags",
+        "accountId",
+        "severityCounts",
+        "lastModifiedAt",
+        "exploitAvailableActiveFindingsCount",
+        "fixAvailableActiveFindingsCount"
+      ],
+      "BatchGetFindingDetailsRequest": [
+        "findingArns"
+      ],
+      "BatchGetFindingDetailsResponse": [
+        "findingDetails",
+        "errors"
+      ],
+      "FindingDetail": [
+        "findingArn",
+        "cisaData",
+        "riskScore",
+        "evidences",
+        "ttps",
+        "tools",
+        "exploitObserved",
+        "referenceUrls",
+        "cwes",
+        "epssScore"
+      ],
+      "CisaData": [
+        "dateAdded",
+        "dateDue",
+        "action"
+      ],
+      "Evidence": [
+        "evidenceRule",
+        "evidenceDetail",
+        "severity"
+      ],
+      "ExploitObserved": [
+        "lastSeen",
+        "firstSeen"
+      ],
+      "FindingDetailsError": [
+        "findingArn",
+        "errorCode",
+        "errorMessage"
+      ],
+      "ListUsageTotalsRequest": [
+        "maxResults",
+        "nextToken",
+        "accountIds"
+      ],
+      "ListUsageTotalsResponse": [
+        "nextToken",
+        "totals"
+      ],
+      "UsageTotal": [
+        "accountId",
+        "usage"
+      ],
+      "Usage": [
+        "type",
+        "total",
+        "estimatedMonthlyCost",
+        "currency",
+        "cloudProvider"
+      ],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "ListTagsForResourceRequest": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags"
+      ]
+    }
   }
 }

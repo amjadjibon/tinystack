@@ -47,6 +47,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: security,
 		icon: "accessanalyzer",
 	},
+	inspector2: {
+		title: "Amazon Inspector",
+		category: security,
+		icon: "inspector2",
+	},
 	securityhub: {
 		title: "AWS Security Hub",
 		category: security,

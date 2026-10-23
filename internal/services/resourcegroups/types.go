@@ -86,6 +86,7 @@ var namespaces = map[string]string{
 	"amp":                       "APS",
 	"accessanalyzer":            "AccessAnalyzer",
 	"securityhub":               "SecurityHub",
+	"inspector2":                "InspectorV2",
 }
 
 // typeNames are the CloudFormation names of the inventory types whose name is

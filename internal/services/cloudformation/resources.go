@@ -248,6 +248,9 @@ func (t *resourceType) replaces(old, p props) bool {
 	if t == types[xraySamplingRuleType] {
 		return xraySamplingRuleReplaces(old, p)
 	}
+	if t == types[inspector2FilterType] {
+		return inspector2FilterReplaces(old, p)
+	}
 	if t == customResourceType || t == types[stackType] {
 		return false
 	}

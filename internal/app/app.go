@@ -75,6 +75,7 @@ import (
 	glueapi "github.com/amjadjibon/tinystack/internal/aws/generated/glue"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	identitystoreapi "github.com/amjadjibon/tinystack/internal/aws/generated/identitystore"
+	inspector2api "github.com/amjadjibon/tinystack/internal/aws/generated/inspector2"
 	iotapi "github.com/amjadjibon/tinystack/internal/aws/generated/iot"
 	iotdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotdataplane"
 	iotjobsdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotjobsdataplane"
@@ -192,6 +193,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/glue"
 	"github.com/amjadjibon/tinystack/internal/services/iam"
 	"github.com/amjadjibon/tinystack/internal/services/identitystore"
+	"github.com/amjadjibon/tinystack/internal/services/inspector2"
 	"github.com/amjadjibon/tinystack/internal/services/iot"
 	"github.com/amjadjibon/tinystack/internal/services/kafka"
 	"github.com/amjadjibon/tinystack/internal/services/kinesis"
@@ -454,6 +456,7 @@ func build(
 	ampRecords := amp.New(store)
 	accessAnalyzerRecords := accessanalyzer.New(store)
 	securityHubRecords := securityhub.New(store)
+	inspector2Records := inspector2.New(store)
 	quotaRecords := servicequotas.New(store)
 	dmsRecords := databasemigrationservice.New(store, network)
 	emrRecords := emrserverless.New(store)
@@ -582,6 +585,7 @@ func build(
 		ampapi.Descriptor(ampRecords),
 		accessanalyzerapi.Descriptor(accessAnalyzerRecords),
 		securityhubapi.Descriptor(securityHubRecords),
+		inspector2api.Descriptor(inspector2Records),
 		costexplorerapi.Descriptor(costExplorerRecords),
 		costandusagereportserviceapi.Descriptor(curRecords),
 		servicequotasapi.Descriptor(quotaRecords),

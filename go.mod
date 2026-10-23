@@ -67,6 +67,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/glue v1.171.0
 	github.com/aws/aws-sdk-go-v2/service/iam v1.64.4
 	github.com/aws/aws-sdk-go-v2/service/identitystore v1.49.1
+	github.com/aws/aws-sdk-go-v2/service/inspector2 v1.61.5
 	github.com/aws/aws-sdk-go-v2/service/iot v1.84.4
 	github.com/aws/aws-sdk-go-v2/service/iotdataplane v1.40.4
 	github.com/aws/aws-sdk-go-v2/service/iotjobsdataplane v1.38.4

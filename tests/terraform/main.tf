@@ -19,6 +19,7 @@ provider "aws" {
   endpoints {
     accessanalyzer       = var.endpoint
     securityhub          = var.endpoint
+    inspector2           = var.endpoint
     amplify              = var.endpoint
     signer               = var.endpoint
     waf                  = var.endpoint
@@ -2534,4 +2535,21 @@ resource "aws_networkfirewall_firewall" "local" {
     subnet_id = aws_subnet.public.id
   }
   tags = local.tags
+}
+
+resource "aws_inspector2_enabler" "local" {
+  account_ids    = [data.aws_caller_identity.current.account_id]
+  resource_types = ["EC2", "ECR", "LAMBDA", "LAMBDA_CODE"]
+}
+
+resource "aws_inspector2_filter" "local" {
+  name   = "local-inspector-filter"
+  action = "SUPPRESS"
+  filter_criteria {
+    severity {
+      comparison = "EQUALS"
+      value      = "LOW"
+    }
+  }
+  tags = { team = var.team }
 }
