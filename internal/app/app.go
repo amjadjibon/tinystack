@@ -71,6 +71,7 @@ import (
 	emrserverlessapi "github.com/amjadjibon/tinystack/internal/aws/generated/emrserverless"
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	firehoseapi "github.com/amjadjibon/tinystack/internal/aws/generated/firehose"
+	fisapi "github.com/amjadjibon/tinystack/internal/aws/generated/fis"
 	glacierapi "github.com/amjadjibon/tinystack/internal/aws/generated/glacier"
 	globalacceleratorapi "github.com/amjadjibon/tinystack/internal/aws/generated/globalaccelerator"
 	glueapi "github.com/amjadjibon/tinystack/internal/aws/generated/glue"
@@ -192,6 +193,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/emrserverless"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/services/firehose"
+	"github.com/amjadjibon/tinystack/internal/services/fis"
 	"github.com/amjadjibon/tinystack/internal/services/glacier"
 	"github.com/amjadjibon/tinystack/internal/services/globalaccelerator"
 	"github.com/amjadjibon/tinystack/internal/services/glue"
@@ -463,6 +465,8 @@ func build(
 	resourceExplorerRecords := resourceexplorer2.New(store)
 	serviceCatalogRecords := servicecatalog.New(store)
 	globalAcceleratorRecords := globalaccelerator.New(store, network, balancers, buckets)
+	fisRecords := fis.New(store)
+	a.onStop(fisRecords.Stop)
 	accessAnalyzerRecords := accessanalyzer.New(store)
 	securityHubRecords := securityhub.New(store)
 	inspector2Records := inspector2.New(store)
@@ -595,6 +599,7 @@ func build(
 		servicecatalogapi.Descriptor(serviceCatalogRecords),
 		accessanalyzerapi.Descriptor(accessAnalyzerRecords),
 		globalacceleratorapi.Descriptor(globalAcceleratorRecords),
+		fisapi.Descriptor(fisRecords),
 		resourceexplorer2api.Descriptor(resourceExplorerRecords),
 		securityhubapi.Descriptor(securityHubRecords),
 		inspector2api.Descriptor(inspector2Records),
@@ -710,6 +715,7 @@ func build(
 	// Groups resolve their queries against the same resources, and read CloudFormation stacks.
 	groups.UseCaller(caller)
 	resourceExplorerRecords.UseCaller(caller)
+	fisRecords.UseCaller(caller)
 	// The credentials provider exchanges certificates for role credentials.
 	things.UseRoleCredentials(tokens.AssumeRoleForService)
 	handler, err := gateway.New(cfg, logger, services...)

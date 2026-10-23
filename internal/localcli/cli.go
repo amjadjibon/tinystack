@@ -145,6 +145,7 @@ var TerraformServices = []string{
 	"servicecatalog",
 	"accessanalyzer",
 	"globalaccelerator",
+	"fis",
 	"inspector2",
 	"resourceexplorer2",
 	"acm",

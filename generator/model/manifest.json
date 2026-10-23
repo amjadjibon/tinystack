@@ -442,6 +442,10 @@
     "globalaccelerator": {
       "path": "codegen/sdk-codegen/aws-models/global-accelerator.json",
       "sha256": "6cbda1096fc2bfdb413a74d0e1cc24a8298d869610df8de95f4582edf137ca73"
+    },
+    "fis": {
+      "path": "codegen/sdk-codegen/aws-models/fis.json",
+      "sha256": "5bdd1bef3a7c8a7d5dcf94c41ebc04ccfe6cabd50249947c2524ce3ade45241a"
     }
   }
 }

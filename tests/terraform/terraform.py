@@ -87,8 +87,9 @@ def main():
                 # Network Firewall rule group, policy and firewall tags add three; Inspector filter tags add one;
                 # Resource Explorer index and view tags add two; Service Catalog portfolio and product tags add two.
                 # Global Accelerator accelerator tags add one; its listener and endpoint group stay unchanged.
+                # FIS experiment-template tags force replacement in provider 5.x: one extra add and destroy.
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "7 added, 126 changed, 7 destroyed" in updated, updated
+                assert "8 added, 126 changed, 8 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"
                 terraform("plan", "-detailed-exitcode", team="platform")
                 # The provider replaces the monitor when its name changes. The subscription

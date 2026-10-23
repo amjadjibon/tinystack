@@ -11,6 +11,7 @@ import (
 // resource types a group can select.
 var namespaces = map[string]string{
 	"globalaccelerator":         "GlobalAccelerator",
+	"fis":                       "FIS",
 	"resourceexplorer2":         "ResourceExplorer2",
 	"apprunner":                 "AppRunner",
 	"amplify":                   "Amplify",
@@ -96,6 +97,7 @@ var namespaces = map[string]string{
 // not the inventory type in PascalCase, by "service/type".
 var typeNames = map[string]string{
 	"globalaccelerator/endpointgroup":        "EndpointGroup",
+	"fis/experiment-template":                "ExperimentTemplate",
 	"securityhub/hub":                        "Hub",
 	"securityhub/standard":                   "Standard",
 	"securityhub/insight":                    "Insight",
@@ -193,6 +195,11 @@ func pascal(kind string) string {
 // "AWS::SQS::Queue", derived from the service that holds it and its inventory
 // type. It reports false for the resources of a service with no namespace.
 func resourceType(r *catalog.Owned) (string, bool) {
+	// FIS experiments have no CloudFormation resource type.
+	if r.Service == "fis" && r.Type == "experiment" {
+		return "", false
+	}
+
 	// Security Hub custom actions have no CloudFormation resource type.
 	if r.Service == "securityhub" && r.Type == "action" {
 		return "", false

@@ -19,6 +19,7 @@ provider "aws" {
   endpoints {
     resourceexplorer2    = var.endpoint
     servicecatalog       = var.endpoint
+    fis                  = var.endpoint
     accessanalyzer       = var.endpoint
     globalaccelerator    = var.endpoint
     securityhub          = var.endpoint
@@ -2627,4 +2628,22 @@ resource "aws_globalaccelerator_endpoint_group" "main" {
 
 resource "aws_eip" "globalaccelerator" {
   domain = "vpc"
+}
+
+# FIS executes only the local wait action; no infrastructure faults are injected.
+resource "aws_fis_experiment_template" "main" {
+  description = "TinyStack local wait"
+  role_arn    = aws_iam_role.lambda.arn
+  stop_condition {
+    source = "none"
+  }
+  action {
+    name      = "wait"
+    action_id = "aws:fis:wait"
+    parameter {
+      key   = "duration"
+      value = "PT1M"
+    }
+  }
+  tags = local.tags
 }

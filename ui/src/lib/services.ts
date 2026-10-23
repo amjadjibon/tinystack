@@ -57,6 +57,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: networking,
 		icon: "globalaccelerator",
 	},
+	fis: {
+		title: "Fault Injection Service",
+		category: management,
+		icon: "fis",
+	},
 	accessanalyzer: {
 		title: "IAM Access Analyzer",
 		category: security,

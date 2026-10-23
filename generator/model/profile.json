@@ -36384,5 +36384,373 @@
         "Listener"
       ]
     }
+  },
+  "fis": {
+    "validation": {
+      "code": "ValidationException"
+    },
+    "operations": [
+      "CreateExperimentTemplate",
+      "GetExperimentTemplate",
+      "ListExperimentTemplates",
+      "UpdateExperimentTemplate",
+      "DeleteExperimentTemplate",
+      "ListActions",
+      "GetAction",
+      "StartExperiment",
+      "GetExperiment",
+      "ListExperiments",
+      "StopExperiment",
+      "ListTargetResourceTypes",
+      "GetTargetResourceType",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateExperimentTemplateRequest": [
+        "clientToken",
+        "description",
+        "stopConditions",
+        "targets",
+        "actions",
+        "roleArn",
+        "tags",
+        "logConfiguration"
+      ],
+      "CreateExperimentTemplateStopConditionInput": [
+        "source",
+        "value"
+      ],
+      "CreateExperimentTemplateTargetInput": [
+        "resourceType",
+        "resourceArns",
+        "resourceTags",
+        "filters",
+        "selectionMode",
+        "parameters"
+      ],
+      "ExperimentTemplateTargetInputFilter": [
+        "path",
+        "values"
+      ],
+      "CreateExperimentTemplateActionInput": [
+        "actionId",
+        "description",
+        "parameters",
+        "targets",
+        "startAfter"
+      ],
+      "CreateExperimentTemplateLogConfigurationInput": [
+        "cloudWatchLogsConfiguration",
+        "s3Configuration",
+        "logSchemaVersion"
+      ],
+      "ExperimentTemplateCloudWatchLogsLogConfigurationInput": [
+        "logGroupArn"
+      ],
+      "ExperimentTemplateS3LogConfigurationInput": [
+        "bucketName",
+        "prefix"
+      ],
+      "CreateExperimentTemplateResponse": [
+        "experimentTemplate"
+      ],
+      "ExperimentTemplate": [
+        "id",
+        "arn",
+        "description",
+        "targets",
+        "actions",
+        "stopConditions",
+        "creationTime",
+        "lastUpdateTime",
+        "roleArn",
+        "tags",
+        "logConfiguration"
+      ],
+      "ExperimentTemplateTarget": [
+        "resourceType",
+        "resourceArns",
+        "resourceTags",
+        "filters",
+        "selectionMode",
+        "parameters"
+      ],
+      "ExperimentTemplateTargetFilter": [
+        "path",
+        "values"
+      ],
+      "ExperimentTemplateAction": [
+        "actionId",
+        "description",
+        "parameters",
+        "targets",
+        "startAfter"
+      ],
+      "ExperimentTemplateStopCondition": [
+        "source",
+        "value"
+      ],
+      "ExperimentTemplateLogConfiguration": [
+        "cloudWatchLogsConfiguration",
+        "s3Configuration",
+        "logSchemaVersion"
+      ],
+      "ExperimentTemplateCloudWatchLogsLogConfiguration": [
+        "logGroupArn"
+      ],
+      "ExperimentTemplateS3LogConfiguration": [
+        "bucketName",
+        "prefix"
+      ],
+      "GetExperimentTemplateRequest": [
+        "id"
+      ],
+      "GetExperimentTemplateResponse": [
+        "experimentTemplate"
+      ],
+      "ListExperimentTemplatesRequest": [
+        "maxResults",
+        "nextToken"
+      ],
+      "ListExperimentTemplatesResponse": [
+        "experimentTemplates",
+        "nextToken"
+      ],
+      "ExperimentTemplateSummary": [
+        "id",
+        "arn",
+        "description",
+        "creationTime",
+        "lastUpdateTime",
+        "tags"
+      ],
+      "UpdateExperimentTemplateRequest": [
+        "id",
+        "description",
+        "stopConditions",
+        "targets",
+        "actions",
+        "roleArn",
+        "logConfiguration"
+      ],
+      "UpdateExperimentTemplateStopConditionInput": [
+        "source",
+        "value"
+      ],
+      "UpdateExperimentTemplateTargetInput": [
+        "resourceType",
+        "resourceArns",
+        "resourceTags",
+        "filters",
+        "selectionMode",
+        "parameters"
+      ],
+      "UpdateExperimentTemplateActionInputItem": [
+        "actionId",
+        "description",
+        "parameters",
+        "targets",
+        "startAfter"
+      ],
+      "UpdateExperimentTemplateLogConfigurationInput": [
+        "cloudWatchLogsConfiguration",
+        "s3Configuration",
+        "logSchemaVersion"
+      ],
+      "UpdateExperimentTemplateResponse": [
+        "experimentTemplate"
+      ],
+      "DeleteExperimentTemplateRequest": [
+        "id"
+      ],
+      "DeleteExperimentTemplateResponse": [
+        "experimentTemplate"
+      ],
+      "ListActionsRequest": [
+        "maxResults",
+        "nextToken"
+      ],
+      "ListActionsResponse": [
+        "actions",
+        "nextToken"
+      ],
+      "ActionSummary": [
+        "id",
+        "arn",
+        "description",
+        "targets",
+        "tags"
+      ],
+      "ActionTarget": [
+        "resourceType"
+      ],
+      "GetActionRequest": [
+        "id"
+      ],
+      "GetActionResponse": [
+        "action"
+      ],
+      "Action": [
+        "id",
+        "arn",
+        "description",
+        "parameters",
+        "targets",
+        "tags"
+      ],
+      "ActionParameter": [
+        "description",
+        "required"
+      ],
+      "StartExperimentRequest": [
+        "clientToken",
+        "experimentTemplateId",
+        "tags"
+      ],
+      "StartExperimentResponse": [
+        "experiment"
+      ],
+      "Experiment": [
+        "id",
+        "arn",
+        "experimentTemplateId",
+        "roleArn",
+        "state",
+        "targets",
+        "actions",
+        "stopConditions",
+        "creationTime",
+        "startTime",
+        "endTime",
+        "tags",
+        "logConfiguration"
+      ],
+      "ExperimentState": [
+        "status",
+        "reason",
+        "error"
+      ],
+      "ExperimentError": [
+        "accountId",
+        "code",
+        "location"
+      ],
+      "ExperimentTarget": [
+        "resourceType",
+        "resourceArns",
+        "resourceTags",
+        "filters",
+        "selectionMode",
+        "parameters"
+      ],
+      "ExperimentTargetFilter": [
+        "path",
+        "values"
+      ],
+      "ExperimentAction": [
+        "actionId",
+        "description",
+        "parameters",
+        "targets",
+        "startAfter",
+        "state",
+        "startTime",
+        "endTime"
+      ],
+      "ExperimentActionState": [
+        "status",
+        "reason"
+      ],
+      "ExperimentStopCondition": [
+        "source",
+        "value"
+      ],
+      "ExperimentLogConfiguration": [
+        "cloudWatchLogsConfiguration",
+        "s3Configuration",
+        "logSchemaVersion"
+      ],
+      "ExperimentCloudWatchLogsLogConfiguration": [
+        "logGroupArn"
+      ],
+      "ExperimentS3LogConfiguration": [
+        "bucketName",
+        "prefix"
+      ],
+      "GetExperimentRequest": [
+        "id"
+      ],
+      "GetExperimentResponse": [
+        "experiment"
+      ],
+      "ListExperimentsRequest": [
+        "maxResults",
+        "nextToken",
+        "experimentTemplateId"
+      ],
+      "ListExperimentsResponse": [
+        "experiments",
+        "nextToken"
+      ],
+      "ExperimentSummary": [
+        "id",
+        "arn",
+        "experimentTemplateId",
+        "state",
+        "creationTime",
+        "tags"
+      ],
+      "StopExperimentRequest": [
+        "id"
+      ],
+      "StopExperimentResponse": [
+        "experiment"
+      ],
+      "ListTargetResourceTypesRequest": [
+        "maxResults",
+        "nextToken"
+      ],
+      "ListTargetResourceTypesResponse": [
+        "targetResourceTypes",
+        "nextToken"
+      ],
+      "TargetResourceTypeSummary": [
+        "resourceType",
+        "description"
+      ],
+      "GetTargetResourceTypeRequest": [
+        "resourceType"
+      ],
+      "GetTargetResourceTypeResponse": [
+        "targetResourceType"
+      ],
+      "TargetResourceType": [
+        "resourceType",
+        "description",
+        "parameters"
+      ],
+      "TargetResourceTypeParameter": [
+        "description",
+        "required"
+      ],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "ListTagsForResourceRequest": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags"
+      ]
+    }
   }
 }

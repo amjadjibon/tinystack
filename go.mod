@@ -63,6 +63,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/emrserverless v1.50.1
 	github.com/aws/aws-sdk-go-v2/service/eventbridge v1.55.3
 	github.com/aws/aws-sdk-go-v2/service/firehose v1.52.4
+	github.com/aws/aws-sdk-go-v2/service/fis v1.46.6
 	github.com/aws/aws-sdk-go-v2/service/glacier v1.41.4
 	github.com/aws/aws-sdk-go-v2/service/globalaccelerator v1.45.5
 	github.com/aws/aws-sdk-go-v2/service/glue v1.171.0
