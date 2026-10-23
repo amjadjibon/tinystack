@@ -232,6 +232,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: security,
 		icon: "verifiedpermissions",
 	},
+	networkfirewall: {
+		title: "AWS Network Firewall",
+		category: security,
+		icon: "networkfirewall",
+	},
 	apigateway: {
 		title: "API Gateway",
 		category: networking,

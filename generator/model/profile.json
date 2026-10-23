@@ -33845,5 +33845,618 @@
         "status"
       ]
     }
+  },
+  "networkfirewall": {
+    "validation": {
+      "code": "InvalidRequestException"
+    },
+    "operations": [
+      "CreateFirewall",
+      "DescribeFirewall",
+      "ListFirewalls",
+      "DeleteFirewall",
+      "UpdateFirewallDescription",
+      "UpdateFirewallDeleteProtection",
+      "UpdateFirewallPolicyChangeProtection",
+      "UpdateSubnetChangeProtection",
+      "AssociateFirewallPolicy",
+      "AssociateSubnets",
+      "DisassociateSubnets",
+      "UpdateFirewallEncryptionConfiguration",
+      "CreateFirewallPolicy",
+      "DescribeFirewallPolicy",
+      "ListFirewallPolicies",
+      "UpdateFirewallPolicy",
+      "DeleteFirewallPolicy",
+      "CreateRuleGroup",
+      "DescribeRuleGroup",
+      "DescribeRuleGroupMetadata",
+      "ListRuleGroups",
+      "UpdateRuleGroup",
+      "DeleteRuleGroup",
+      "DescribeLoggingConfiguration",
+      "UpdateLoggingConfiguration",
+      "PutResourcePolicy",
+      "DescribeResourcePolicy",
+      "DeleteResourcePolicy",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateFirewallRequest": [
+        "FirewallName",
+        "FirewallPolicyArn",
+        "VpcId",
+        "SubnetMappings",
+        "DeleteProtection",
+        "SubnetChangeProtection",
+        "FirewallPolicyChangeProtection",
+        "Description",
+        "Tags",
+        "EncryptionConfiguration"
+      ],
+      "SubnetMapping": [
+        "SubnetId",
+        "IPAddressType"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "EncryptionConfiguration": [
+        "KeyId",
+        "Type"
+      ],
+      "NatGatewayMapping": [
+        "NatGatewayId"
+      ],
+      "ProxySettings": [
+        "ListenerProperties"
+      ],
+      "ListenerProperty": [
+        "Port",
+        "Type"
+      ],
+      "VpcEndpoint": [
+        "VpcId",
+        "SubnetMappings"
+      ],
+      "CreateFirewallResponse": [
+        "Firewall",
+        "FirewallStatus"
+      ],
+      "Firewall": [
+        "FirewallName",
+        "FirewallArn",
+        "FirewallPolicyArn",
+        "VpcId",
+        "SubnetMappings",
+        "DeleteProtection",
+        "SubnetChangeProtection",
+        "FirewallPolicyChangeProtection",
+        "Description",
+        "FirewallId",
+        "Tags",
+        "EncryptionConfiguration",
+        "NumberOfAssociations"
+      ],
+      "FirewallStatus": [
+        "Status",
+        "ConfigurationSyncStateSummary",
+        "SyncStates",
+        "CapacityUsageSummary"
+      ],
+      "SyncState": [
+        "Attachment",
+        "Config"
+      ],
+      "Attachment": [
+        "SubnetId",
+        "EndpointId",
+        "Status",
+        "StatusMessage",
+        "DnsName"
+      ],
+      "PerObjectStatus": [
+        "SyncStatus",
+        "UpdateToken"
+      ],
+      "NatGatewayAttachment": [
+        "NatGatewayId",
+        "Status",
+        "StatusMessage",
+        "DnsName"
+      ],
+      "CapacityUsageSummary": [
+        "CIDRs"
+      ],
+      "CIDRSummary": [
+        "AvailableCIDRCount",
+        "UtilizedCIDRCount",
+        "IPSetReferences"
+      ],
+      "IPSetMetadata": [
+        "ResolvedCIDRCount"
+      ],
+      "TransitGatewayAttachmentSyncState": [
+        "AttachmentId",
+        "TransitGatewayAttachmentStatus",
+        "StatusMessage"
+      ],
+      "DescribeFirewallRequest": [
+        "FirewallName",
+        "FirewallArn"
+      ],
+      "DescribeFirewallResponse": [
+        "UpdateToken",
+        "Firewall",
+        "FirewallStatus"
+      ],
+      "ListFirewallsRequest": [
+        "NextToken",
+        "VpcIds",
+        "MaxResults"
+      ],
+      "ListFirewallsResponse": [
+        "NextToken",
+        "Firewalls"
+      ],
+      "FirewallMetadata": [
+        "FirewallName",
+        "FirewallArn",
+        "TransitGatewayAttachmentId"
+      ],
+      "DeleteFirewallRequest": [
+        "FirewallName",
+        "FirewallArn"
+      ],
+      "DeleteFirewallResponse": [
+        "Firewall",
+        "FirewallStatus"
+      ],
+      "UpdateFirewallDescriptionRequest": [
+        "UpdateToken",
+        "FirewallArn",
+        "FirewallName",
+        "Description"
+      ],
+      "UpdateFirewallDescriptionResponse": [
+        "FirewallArn",
+        "FirewallName",
+        "Description",
+        "UpdateToken"
+      ],
+      "UpdateFirewallDeleteProtectionRequest": [
+        "UpdateToken",
+        "FirewallArn",
+        "FirewallName",
+        "DeleteProtection"
+      ],
+      "UpdateFirewallDeleteProtectionResponse": [
+        "FirewallArn",
+        "FirewallName",
+        "DeleteProtection",
+        "UpdateToken"
+      ],
+      "UpdateFirewallPolicyChangeProtectionRequest": [
+        "UpdateToken",
+        "FirewallArn",
+        "FirewallName",
+        "FirewallPolicyChangeProtection"
+      ],
+      "UpdateFirewallPolicyChangeProtectionResponse": [
+        "UpdateToken",
+        "FirewallArn",
+        "FirewallName",
+        "FirewallPolicyChangeProtection"
+      ],
+      "UpdateSubnetChangeProtectionRequest": [
+        "UpdateToken",
+        "FirewallArn",
+        "FirewallName",
+        "SubnetChangeProtection"
+      ],
+      "UpdateSubnetChangeProtectionResponse": [
+        "UpdateToken",
+        "FirewallArn",
+        "FirewallName",
+        "SubnetChangeProtection"
+      ],
+      "AssociateFirewallPolicyRequest": [
+        "UpdateToken",
+        "FirewallArn",
+        "FirewallName",
+        "FirewallPolicyArn"
+      ],
+      "AssociateFirewallPolicyResponse": [
+        "FirewallArn",
+        "FirewallName",
+        "FirewallPolicyArn",
+        "UpdateToken"
+      ],
+      "AssociateSubnetsRequest": [
+        "UpdateToken",
+        "FirewallArn",
+        "FirewallName",
+        "SubnetMappings"
+      ],
+      "AssociateSubnetsResponse": [
+        "FirewallArn",
+        "FirewallName",
+        "SubnetMappings",
+        "UpdateToken"
+      ],
+      "DisassociateSubnetsRequest": [
+        "UpdateToken",
+        "FirewallArn",
+        "FirewallName",
+        "SubnetIds"
+      ],
+      "DisassociateSubnetsResponse": [
+        "FirewallArn",
+        "FirewallName",
+        "SubnetMappings",
+        "UpdateToken"
+      ],
+      "UpdateFirewallEncryptionConfigurationRequest": [
+        "UpdateToken",
+        "FirewallArn",
+        "FirewallName",
+        "EncryptionConfiguration"
+      ],
+      "UpdateFirewallEncryptionConfigurationResponse": [
+        "FirewallArn",
+        "FirewallName",
+        "UpdateToken",
+        "EncryptionConfiguration"
+      ],
+      "CreateFirewallPolicyRequest": [
+        "FirewallPolicyName",
+        "FirewallPolicy",
+        "Description",
+        "Tags",
+        "DryRun",
+        "EncryptionConfiguration"
+      ],
+      "FirewallPolicy": [
+        "StatelessRuleGroupReferences",
+        "StatelessDefaultActions",
+        "StatelessFragmentDefaultActions",
+        "StatelessCustomActions",
+        "StatefulRuleGroupReferences",
+        "StatefulDefaultActions",
+        "StatefulEngineOptions"
+      ],
+      "StatelessRuleGroupReference": [
+        "ResourceArn",
+        "Priority"
+      ],
+      "CustomAction": [
+        "ActionName",
+        "ActionDefinition"
+      ],
+      "ActionDefinition": [
+        "PublishMetricAction"
+      ],
+      "PublishMetricAction": [
+        "Dimensions"
+      ],
+      "Dimension": [
+        "Value"
+      ],
+      "StatefulRuleGroupReference": [
+        "ResourceArn",
+        "Priority",
+        "Override",
+        "DeepThreatInspection"
+      ],
+      "StatefulRuleGroupOverride": [
+        "Action"
+      ],
+      "StatefulEngineOptions": [
+        "RuleOrder",
+        "StreamExceptionPolicy",
+        "FlowTimeouts"
+      ],
+      "FlowTimeouts": [
+        "TcpIdleTimeoutSeconds"
+      ],
+      "PolicyVariables": [
+        "RuleVariables"
+      ],
+      "IPSet": [
+        "Definition"
+      ],
+      "CreateFirewallPolicyResponse": [
+        "UpdateToken",
+        "FirewallPolicyResponse"
+      ],
+      "FirewallPolicyResponse": [
+        "FirewallPolicyName",
+        "FirewallPolicyArn",
+        "FirewallPolicyId",
+        "Description",
+        "FirewallPolicyStatus",
+        "Tags",
+        "ConsumedStatelessRuleCapacity",
+        "ConsumedStatefulRuleCapacity",
+        "ConsumedStatefulDomainCapacity",
+        "NumberOfAssociations",
+        "EncryptionConfiguration",
+        "LastModifiedTime"
+      ],
+      "DescribeFirewallPolicyRequest": [
+        "FirewallPolicyName",
+        "FirewallPolicyArn"
+      ],
+      "DescribeFirewallPolicyResponse": [
+        "UpdateToken",
+        "FirewallPolicyResponse",
+        "FirewallPolicy"
+      ],
+      "ListFirewallPoliciesRequest": [
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListFirewallPoliciesResponse": [
+        "NextToken",
+        "FirewallPolicies"
+      ],
+      "FirewallPolicyMetadata": [
+        "Name",
+        "Arn"
+      ],
+      "UpdateFirewallPolicyRequest": [
+        "UpdateToken",
+        "FirewallPolicyArn",
+        "FirewallPolicyName",
+        "FirewallPolicy",
+        "Description",
+        "DryRun",
+        "EncryptionConfiguration"
+      ],
+      "UpdateFirewallPolicyResponse": [
+        "UpdateToken",
+        "FirewallPolicyResponse"
+      ],
+      "DeleteFirewallPolicyRequest": [
+        "FirewallPolicyName",
+        "FirewallPolicyArn"
+      ],
+      "DeleteFirewallPolicyResponse": [
+        "FirewallPolicyResponse"
+      ],
+      "CreateRuleGroupRequest": [
+        "RuleGroupName",
+        "RuleGroup",
+        "Rules",
+        "Type",
+        "Description",
+        "Capacity",
+        "Tags",
+        "DryRun",
+        "EncryptionConfiguration"
+      ],
+      "RuleGroup": [
+        "RuleVariables",
+        "RulesSource",
+        "StatefulRuleOptions"
+      ],
+      "RuleVariables": [
+        "IPSets",
+        "PortSets"
+      ],
+      "PortSet": [
+        "Definition"
+      ],
+      "ReferenceSets": [
+        "IPSetReferences"
+      ],
+      "IPSetReference": [
+        "ReferenceArn"
+      ],
+      "RulesSource": [
+        "RulesString",
+        "RulesSourceList",
+        "StatefulRules",
+        "StatelessRulesAndCustomActions"
+      ],
+      "RulesSourceList": [
+        "Targets",
+        "TargetTypes",
+        "GeneratedRulesType"
+      ],
+      "StatefulRule": [
+        "Action",
+        "Header",
+        "RuleOptions"
+      ],
+      "Header": [
+        "Protocol",
+        "Source",
+        "SourcePort",
+        "Direction",
+        "Destination",
+        "DestinationPort"
+      ],
+      "RuleOption": [
+        "Keyword",
+        "Settings"
+      ],
+      "StatelessRulesAndCustomActions": [
+        "StatelessRules",
+        "CustomActions"
+      ],
+      "StatelessRule": [
+        "RuleDefinition",
+        "Priority"
+      ],
+      "RuleDefinition": [
+        "MatchAttributes",
+        "Actions"
+      ],
+      "MatchAttributes": [
+        "Sources",
+        "Destinations",
+        "SourcePorts",
+        "DestinationPorts",
+        "Protocols",
+        "TCPFlags"
+      ],
+      "Address": [
+        "AddressDefinition"
+      ],
+      "PortRange": [
+        "FromPort",
+        "ToPort"
+      ],
+      "TCPFlagField": [
+        "Flags",
+        "Masks"
+      ],
+      "StatefulRuleOptions": [
+        "RuleOrder"
+      ],
+      "CreateRuleGroupResponse": [
+        "UpdateToken",
+        "RuleGroupResponse"
+      ],
+      "RuleGroupResponse": [
+        "RuleGroupArn",
+        "RuleGroupName",
+        "RuleGroupId",
+        "Description",
+        "Type",
+        "Capacity",
+        "RuleGroupStatus",
+        "Tags",
+        "ConsumedCapacity",
+        "NumberOfAssociations",
+        "EncryptionConfiguration",
+        "LastModifiedTime"
+      ],
+      "DescribeRuleGroupRequest": [
+        "RuleGroupName",
+        "RuleGroupArn",
+        "Type"
+      ],
+      "DescribeRuleGroupResponse": [
+        "UpdateToken",
+        "RuleGroup",
+        "RuleGroupResponse"
+      ],
+      "DescribeRuleGroupMetadataRequest": [
+        "RuleGroupName",
+        "RuleGroupArn",
+        "Type"
+      ],
+      "DescribeRuleGroupMetadataResponse": [
+        "RuleGroupArn",
+        "RuleGroupName",
+        "Description",
+        "Type",
+        "Capacity",
+        "StatefulRuleOptions",
+        "LastModifiedTime"
+      ],
+      "ListRuleGroupsRequest": [
+        "NextToken",
+        "MaxResults",
+        "Scope",
+        "Type"
+      ],
+      "ListRuleGroupsResponse": [
+        "NextToken",
+        "RuleGroups"
+      ],
+      "RuleGroupMetadata": [
+        "Name",
+        "Arn"
+      ],
+      "UpdateRuleGroupRequest": [
+        "UpdateToken",
+        "RuleGroupArn",
+        "RuleGroupName",
+        "RuleGroup",
+        "Rules",
+        "Type",
+        "Description",
+        "DryRun",
+        "EncryptionConfiguration"
+      ],
+      "UpdateRuleGroupResponse": [
+        "UpdateToken",
+        "RuleGroupResponse"
+      ],
+      "DeleteRuleGroupRequest": [
+        "RuleGroupName",
+        "RuleGroupArn",
+        "Type"
+      ],
+      "DeleteRuleGroupResponse": [
+        "RuleGroupResponse"
+      ],
+      "DescribeLoggingConfigurationRequest": [
+        "FirewallArn",
+        "FirewallName"
+      ],
+      "DescribeLoggingConfigurationResponse": [
+        "FirewallArn",
+        "LoggingConfiguration"
+      ],
+      "LoggingConfiguration": [
+        "LogDestinationConfigs"
+      ],
+      "LogDestinationConfig": [
+        "LogType",
+        "LogDestinationType",
+        "LogDestination"
+      ],
+      "UpdateLoggingConfigurationRequest": [
+        "FirewallArn",
+        "FirewallName",
+        "LoggingConfiguration"
+      ],
+      "UpdateLoggingConfigurationResponse": [
+        "FirewallArn",
+        "FirewallName",
+        "LoggingConfiguration"
+      ],
+      "PutResourcePolicyRequest": [
+        "ResourceArn",
+        "Policy"
+      ],
+      "PutResourcePolicyResponse": [],
+      "DescribeResourcePolicyRequest": [
+        "ResourceArn"
+      ],
+      "DescribeResourcePolicyResponse": [
+        "Policy"
+      ],
+      "DeleteResourcePolicyRequest": [
+        "ResourceArn"
+      ],
+      "DeleteResourcePolicyResponse": [],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "ListTagsForResourceRequest": [
+        "NextToken",
+        "MaxResults",
+        "ResourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "NextToken",
+        "Tags"
+      ]
+    }
   }
 }

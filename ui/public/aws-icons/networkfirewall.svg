@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="40px" height="40px" viewBox="0 0 40 40" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>Icon-Architecture/32/Arch_AWS-Network-Firewall_32</title>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Icon-Architecture-BG/32/Security-Identity-Compliance" fill="#DD344C">
+            <rect id="Rectangle" x="0" y="0" width="40" height="40"></rect>
+        </g>
+        <g transform="translate(8.000000, 8.000000)" fill="#FFFFFF">
+            <path d="M12,1 L2,5.2 L2,11.5 C2,17.8 6.3,23.6 12,25 C17.7,23.6 22,17.8 22,11.5 L22,5.2 L12,1 Z M12,2.8 L20,6.2 L20,11.5 C20,16.7 16.5,21.6 12,22.9 C7.5,21.6 4,16.7 4,11.5 L4,6.2 L12,2.8 Z M5.5,8 L18.5,8 L18.5,9.5 L5.5,9.5 L5.5,8 Z M5.5,11 L10.5,11 L10.5,12.5 L5.5,12.5 L5.5,11 Z M12,11 L18.5,11 L18.5,12.5 L12,12.5 L12,11 Z M5.5,14 L13.5,14 L13.5,15.5 L5.5,15.5 L5.5,14 Z M15,14 L18.5,14 L18.5,15.5 L15,15.5 L15,14 Z M6.5,17 L17.5,17 L17.5,18.5 L6.5,18.5 L6.5,17 Z" id="AWS-Network-Firewall_Icon"></path>
+        </g>
+    </g>
+</svg>

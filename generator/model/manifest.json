@@ -422,6 +422,10 @@
     "securityhub": {
       "path": "codegen/sdk-codegen/aws-models/securityhub.json",
       "sha256": "7c9d0465c505b8138f2b0e52ca78b367c1f11c89ae1cb1b3cfc69c3783e7b652"
+    },
+    "networkfirewall": {
+      "path": "codegen/sdk-codegen/aws-models/network-firewall.json",
+      "sha256": "b3fdd020de751c97b6245a5c7f0b9e8d71476330c8a0c41cd6093404f7e9637d"
     }
   }
 }

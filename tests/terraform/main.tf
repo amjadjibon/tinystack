@@ -56,6 +56,7 @@ provider "aws" {
     lakeformation        = var.endpoint
     glue                 = var.endpoint
     logs                 = var.endpoint
+    networkfirewall      = var.endpoint
     route53              = var.endpoint
     s3                   = var.endpoint
     scheduler            = var.endpoint
@@ -2483,4 +2484,54 @@ resource "aws_securityhub_insight" "local" {
       value      = "ACTIVE"
     }
   }
+}
+
+resource "aws_networkfirewall_rule_group" "local" {
+  capacity = 100
+  name     = "local-rg"
+  type     = "STATELESS"
+  rule_group {
+    rules_source {
+      stateless_rules_and_custom_actions {
+        stateless_rule {
+          priority = 1
+          rule_definition {
+            actions = ["aws:pass"]
+            match_attributes {
+              destination {
+                address_definition = "0.0.0.0/0"
+              }
+              source {
+                address_definition = "0.0.0.0/0"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  tags = local.tags
+}
+
+resource "aws_networkfirewall_firewall_policy" "local" {
+  name = "local-policy"
+  firewall_policy {
+    stateless_default_actions          = ["aws:pass"]
+    stateless_fragment_default_actions = ["aws:pass"]
+    stateless_rule_group_reference {
+      priority     = 1
+      resource_arn = aws_networkfirewall_rule_group.local.arn
+    }
+  }
+  tags = local.tags
+}
+
+resource "aws_networkfirewall_firewall" "local" {
+  name                = "local-firewall"
+  firewall_policy_arn = aws_networkfirewall_firewall_policy.local.arn
+  vpc_id              = aws_vpc.app.id
+  subnet_mapping {
+    subnet_id = aws_subnet.public.id
+  }
+  tags = local.tags
 }

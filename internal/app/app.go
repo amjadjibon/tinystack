@@ -89,6 +89,7 @@ import (
 	memorydbapi "github.com/amjadjibon/tinystack/internal/aws/generated/memorydb"
 	mqapi "github.com/amjadjibon/tinystack/internal/aws/generated/mq"
 	mwaaapi "github.com/amjadjibon/tinystack/internal/aws/generated/mwaa"
+	networkfirewallapi "github.com/amjadjibon/tinystack/internal/aws/generated/networkfirewall"
 	opensearchapi "github.com/amjadjibon/tinystack/internal/aws/generated/opensearch"
 	opensearchserverlessapi "github.com/amjadjibon/tinystack/internal/aws/generated/opensearchserverless"
 	organizationsapi "github.com/amjadjibon/tinystack/internal/aws/generated/organizations"
@@ -203,6 +204,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/memorydb"
 	"github.com/amjadjibon/tinystack/internal/services/mq"
 	"github.com/amjadjibon/tinystack/internal/services/mwaa"
+	"github.com/amjadjibon/tinystack/internal/services/networkfirewall"
 	"github.com/amjadjibon/tinystack/internal/services/opensearch"
 	"github.com/amjadjibon/tinystack/internal/services/opensearchserverless"
 	"github.com/amjadjibon/tinystack/internal/services/organizations"
@@ -471,6 +473,7 @@ func build(
 	tableRecords := s3tables.New(store)
 	wafClassicRecords := waf.New(store)
 	wafRecords := wafv2.New(store)
+	networkFirewallRecords := networkfirewall.New(store, network)
 	opensearchRecords := opensearch.New(store)
 	resolverRecords := route53resolver.New(store, network)
 	xrayRecords := xray.New(store)
@@ -601,6 +604,7 @@ func build(
 		transfer.ProtectPrivateInputs(transferapi.Descriptor(transferRecords)),
 		wafapi.Descriptor(wafClassicRecords),
 		wafv2api.Descriptor(wafRecords),
+		networkfirewallapi.Descriptor(networkFirewallRecords),
 		opensearchapi.Descriptor(opensearchRecords),
 		route53resolverapi.Descriptor(resolverRecords),
 		xrayapi.Descriptor(xrayRecords),
