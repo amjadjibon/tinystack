@@ -2755,6 +2755,34 @@
       "execution": "Records only",
       "package": "globalaccelerator"
     },
+    "fis": {
+      "title": "AWS Fault Injection Service",
+      "category": "Management & Governance",
+      "scope": "Account and Region",
+      "summary": "Store experiment templates and execute aws:fis:wait actions locally with durable wall-clock state, dependencies, and alarm stop conditions.",
+      "features": [
+        "Sixteen pinned REST JSON operations for experiment templates, experiments, executable action discovery, target-type discovery and tags; model constraint validation returns ValidationException",
+        "Create, get, list, update and delete templates with action dependency and cycle validation; only aws:fis:wait is accepted",
+        "ISO 8601 wait durations from one minute to 12 hours, matching the AWS action reference; independent actions run concurrently and startAfter dependencies wait for completion",
+        "Start, get, list and stop experiments with transaction-claimed pending, initiating, running, completed, stopping, stopped and failed transitions; per-action status and timestamps",
+        "StopExperiment stops initiating/running actions and cancels pending actions; CloudWatch metric and composite alarm stop conditions stop execution in ALARM state",
+        "IAM role ARN, CloudWatch alarm ARN, CloudWatch Logs group and S3 log-destination existence checks through local service APIs",
+        "Targets preserve resourceArns, resourceTags, filters and parameters; selectionMode ALL, COUNT(n) and PERCENT(n) is validated; wait actions accept no targets",
+        "Persistent experiment snapshots and partition-wide worker index resume elapsed wall-clock waits after SQLite restart; templates may be edited or deleted without altering running snapshots",
+        "Template and experiment tags, Resource Groups Tagging API and inventory integration; storage-key-order list pagination and template-filtered experiments",
+        "CloudFormation AWS::FIS::ExperimentTemplate supports in-place updates; Terraform aws_fis_experiment_template and fis endpoint override"
+      ],
+      "gaps": [
+        "The full AWS action catalog is unsupported: EC2, EBS, ECS, EKS, RDS, network, SSM, CloudWatch, DynamoDB, ElastiCache, Kinesis, Lambda, S3, ARC and every action other than aws:fis:wait. Unsupported action IDs fail validation by name; no infrastructure fault effects are simulated",
+        "ListTargetResourceTypes returns an empty list and GetTargetResourceType returns ResourceNotFoundException because wait has no targets. Stored template targets are not resolved, sampled or modified",
+        "Experiment target account configurations, multi-account experiments, experiment options, safety levers, experiment reports and ListExperimentResolvedTargets are not whitelisted",
+        "Log configuration is stored and destination existence is validated; no experiment logs are emitted to CloudWatch Logs or S3",
+        "Worker steps are polled every 100 milliseconds; downtime counts toward an already-running wait. Alarm lookups occur before each transactional step, so changes are observed on the next poll",
+        "Role existence is validated, but role assumption, IAM trust-policy evaluation and remote AWS calls are not performed. Client-token replay is scoped to retained resource records"
+      ],
+      "execution": "Real local wait actions; all other fault actions unsupported",
+      "package": "fis"
+    },
     "accessanalyzer": {
       "title": "IAM Access Analyzer",
       "category": "Security, Identity & Compliance",
