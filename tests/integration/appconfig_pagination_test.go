@@ -62,7 +62,7 @@ func TestAppConfigResourcePagination(t *testing.T) {
 			&appconfig.CreateHostedConfigurationVersionInput{
 				ApplicationId:          app.Id,
 				ConfigurationProfileId: profileID,
-				Content:                []byte(fmt.Sprint(i)),
+				Content:                fmt.Append(nil, i),
 				ContentType:            new("text/plain"),
 			},
 		)
