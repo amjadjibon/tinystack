@@ -150,6 +150,8 @@ github.com/aws/aws-sdk-go-v2/service/firehose v1.52.4 h1:x7MK/eFmp5oDwNyLImQtswU
 github.com/aws/aws-sdk-go-v2/service/firehose v1.52.4/go.mod h1:s7UeaOIdimOKVe5kA6c1B95vmELpofmTXgPG8Z9y22g=
 github.com/aws/aws-sdk-go-v2/service/glacier v1.41.4 h1:1u2Uwwm3J+t77Mb31vYcJdZ5zZAiJbYgS4rBeY+v3fA=
 github.com/aws/aws-sdk-go-v2/service/glacier v1.41.4/go.mod h1:yqrlGWUyW20VyxTIuGa078Zkw0QXifUDbADpX8ofEZ0=
+github.com/aws/aws-sdk-go-v2/service/globalaccelerator v1.45.5 h1:cXZ3PIGG19QIgKyaoq0giiKPtSI17dlldAqpHt7bvYY=
+github.com/aws/aws-sdk-go-v2/service/globalaccelerator v1.45.5/go.mod h1:eecz6whhy8/G3DLOK1b+0DvwZF6ILgqDy+mxfgsefP4=
 github.com/aws/aws-sdk-go-v2/service/glue v1.171.0 h1:P9uuAKGv/cU8k4DF2HpDRnv/6FTLCEZvPhhRPBt6HHo=
 github.com/aws/aws-sdk-go-v2/service/glue v1.171.0/go.mod h1:O7YQ999OSGnEw178qfCXFuqessDHkNJCLGEbvxBJ/s8=
 github.com/aws/aws-sdk-go-v2/service/iam v1.64.4 h1:28xB3Sghdz+BOBpar3ksuZ6vdoGRxmcgowF/TRxvgsI=

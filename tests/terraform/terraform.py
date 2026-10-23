@@ -86,8 +86,9 @@ def main():
                 # Access Analyzer tags add one, Security Hub action target and insight names add two, and
                 # Network Firewall rule group, policy and firewall tags add three; Inspector filter tags add one;
                 # Resource Explorer index and view tags add two; Service Catalog portfolio and product tags add two.
+                # Global Accelerator accelerator tags add one; its listener and endpoint group stay unchanged.
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "7 added, 125 changed, 7 destroyed" in updated, updated
+                assert "7 added, 126 changed, 7 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"
                 terraform("plan", "-detailed-exitcode", team="platform")
                 # The provider replaces the monitor when its name changes. The subscription

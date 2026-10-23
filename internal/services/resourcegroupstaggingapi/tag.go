@@ -257,6 +257,7 @@ var taggers = map[string]tagger{
 	"amp":                 resourceOperations("amp", "ResourceArn", plain),
 	"resourceexplorer2":   resourceOperations("resourceexplorer2", "ResourceArn", plain),
 	"accessanalyzer":      resourceOperations("accessanalyzer", "ResourceArn", plain),
+	"globalaccelerator":   resourceOperations("globalaccelerator", "ResourceArn", pairs),
 	"ram":                 resourceOperations("ram", "ResourceShareArn", pairs),
 	"servicecatalog": {
 		tag: func(ctx context.Context, c *catalog.Caller, r *catalog.Owned, tags map[string]string) error {

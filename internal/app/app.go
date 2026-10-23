@@ -72,6 +72,7 @@ import (
 	eventbridgeapi "github.com/amjadjibon/tinystack/internal/aws/generated/eventbridge"
 	firehoseapi "github.com/amjadjibon/tinystack/internal/aws/generated/firehose"
 	glacierapi "github.com/amjadjibon/tinystack/internal/aws/generated/glacier"
+	globalacceleratorapi "github.com/amjadjibon/tinystack/internal/aws/generated/globalaccelerator"
 	glueapi "github.com/amjadjibon/tinystack/internal/aws/generated/glue"
 	iamapi "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
 	identitystoreapi "github.com/amjadjibon/tinystack/internal/aws/generated/identitystore"
@@ -192,6 +193,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/services/firehose"
 	"github.com/amjadjibon/tinystack/internal/services/glacier"
+	"github.com/amjadjibon/tinystack/internal/services/globalaccelerator"
 	"github.com/amjadjibon/tinystack/internal/services/glue"
 	"github.com/amjadjibon/tinystack/internal/services/iam"
 	"github.com/amjadjibon/tinystack/internal/services/identitystore"
@@ -460,6 +462,7 @@ func build(
 	ampRecords := amp.New(store)
 	resourceExplorerRecords := resourceexplorer2.New(store)
 	serviceCatalogRecords := servicecatalog.New(store)
+	globalAcceleratorRecords := globalaccelerator.New(store, network, balancers, buckets)
 	accessAnalyzerRecords := accessanalyzer.New(store)
 	securityHubRecords := securityhub.New(store)
 	inspector2Records := inspector2.New(store)
@@ -591,6 +594,7 @@ func build(
 		ampapi.Descriptor(ampRecords),
 		servicecatalogapi.Descriptor(serviceCatalogRecords),
 		accessanalyzerapi.Descriptor(accessAnalyzerRecords),
+		globalacceleratorapi.Descriptor(globalAcceleratorRecords),
 		resourceexplorer2api.Descriptor(resourceExplorerRecords),
 		securityhubapi.Descriptor(securityHubRecords),
 		inspector2api.Descriptor(inspector2Records),

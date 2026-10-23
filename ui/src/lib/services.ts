@@ -52,6 +52,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: management,
 		icon: "servicecatalog",
 	},
+	globalaccelerator: {
+		title: "Global Accelerator",
+		category: networking,
+		icon: "globalaccelerator",
+	},
 	accessanalyzer: {
 		title: "IAM Access Analyzer",
 		category: security,

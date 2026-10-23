@@ -20,6 +20,7 @@ provider "aws" {
     resourceexplorer2    = var.endpoint
     servicecatalog       = var.endpoint
     accessanalyzer       = var.endpoint
+    globalaccelerator    = var.endpoint
     securityhub          = var.endpoint
     inspector2           = var.endpoint
     amplify              = var.endpoint
@@ -2596,4 +2597,34 @@ resource "aws_servicecatalog_principal_portfolio_association" "main" {
   portfolio_id   = aws_servicecatalog_portfolio.main.id
   principal_arn  = "arn:aws:iam::000000000000:role/catalog-user"
   principal_type = "IAM"
+}
+
+resource "aws_globalaccelerator_accelerator" "main" {
+  name            = "local-global-accelerator"
+  ip_address_type = "IPV4"
+  enabled         = false
+  tags            = { team = var.team }
+}
+
+resource "aws_globalaccelerator_listener" "main" {
+  accelerator_arn = aws_globalaccelerator_accelerator.main.id
+  protocol        = "TCP"
+  client_affinity = "SOURCE_IP"
+  port_range {
+    from_port = 8080
+    to_port   = 8080
+  }
+}
+
+resource "aws_globalaccelerator_endpoint_group" "main" {
+  listener_arn          = aws_globalaccelerator_listener.main.id
+  endpoint_group_region = "us-east-1"
+  endpoint_configuration {
+    endpoint_id = aws_eip.globalaccelerator.id
+    weight      = 128
+  }
+}
+
+resource "aws_eip" "globalaccelerator" {
+  domain = "vpc"
 }

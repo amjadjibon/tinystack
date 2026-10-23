@@ -36116,5 +36116,273 @@
       ],
       "DeleteConstraintOutput": []
     }
+  },
+  "globalaccelerator": {
+    "validation": {
+      "code": "InvalidArgumentException"
+    },
+    "operations": [
+      "AddEndpoints",
+      "CreateAccelerator",
+      "CreateEndpointGroup",
+      "CreateListener",
+      "DeleteAccelerator",
+      "DeleteEndpointGroup",
+      "DeleteListener",
+      "DescribeAccelerator",
+      "DescribeAcceleratorAttributes",
+      "DescribeEndpointGroup",
+      "DescribeListener",
+      "ListAccelerators",
+      "ListEndpointGroups",
+      "ListListeners",
+      "ListTagsForResource",
+      "RemoveEndpoints",
+      "TagResource",
+      "UntagResource",
+      "UpdateAccelerator",
+      "UpdateAcceleratorAttributes",
+      "UpdateEndpointGroup",
+      "UpdateListener"
+    ],
+    "shapes": {
+      "Accelerator": [
+        "AcceleratorArn",
+        "Name",
+        "IpAddressType",
+        "Enabled",
+        "IpSets",
+        "DnsName",
+        "Status",
+        "CreatedTime",
+        "LastModifiedTime",
+        "DualStackDnsName"
+      ],
+      "AcceleratorAttributes": [
+        "FlowLogsEnabled",
+        "FlowLogsS3Bucket",
+        "FlowLogsS3Prefix"
+      ],
+      "AddEndpointsRequest": [
+        "EndpointConfigurations",
+        "EndpointGroupArn"
+      ],
+      "AddEndpointsResponse": [
+        "EndpointDescriptions",
+        "EndpointGroupArn"
+      ],
+      "CreateAcceleratorRequest": [
+        "Name",
+        "IpAddressType",
+        "Enabled",
+        "IdempotencyToken",
+        "Tags"
+      ],
+      "CreateAcceleratorResponse": [
+        "Accelerator"
+      ],
+      "CreateEndpointGroupRequest": [
+        "ListenerArn",
+        "EndpointGroupRegion",
+        "EndpointConfigurations",
+        "TrafficDialPercentage",
+        "HealthCheckPort",
+        "HealthCheckProtocol",
+        "HealthCheckPath",
+        "HealthCheckIntervalSeconds",
+        "ThresholdCount",
+        "IdempotencyToken",
+        "PortOverrides"
+      ],
+      "CreateEndpointGroupResponse": [
+        "EndpointGroup"
+      ],
+      "CreateListenerRequest": [
+        "AcceleratorArn",
+        "PortRanges",
+        "Protocol",
+        "ClientAffinity",
+        "IdempotencyToken"
+      ],
+      "CreateListenerResponse": [
+        "Listener"
+      ],
+      "DeleteAcceleratorRequest": [
+        "AcceleratorArn"
+      ],
+      "DeleteEndpointGroupRequest": [
+        "EndpointGroupArn"
+      ],
+      "DeleteListenerRequest": [
+        "ListenerArn"
+      ],
+      "DescribeAcceleratorAttributesRequest": [
+        "AcceleratorArn"
+      ],
+      "DescribeAcceleratorAttributesResponse": [
+        "AcceleratorAttributes"
+      ],
+      "DescribeAcceleratorRequest": [
+        "AcceleratorArn"
+      ],
+      "DescribeAcceleratorResponse": [
+        "Accelerator"
+      ],
+      "DescribeEndpointGroupRequest": [
+        "EndpointGroupArn"
+      ],
+      "DescribeEndpointGroupResponse": [
+        "EndpointGroup"
+      ],
+      "DescribeListenerRequest": [
+        "ListenerArn"
+      ],
+      "DescribeListenerResponse": [
+        "Listener"
+      ],
+      "EndpointConfiguration": [
+        "EndpointId",
+        "Weight",
+        "ClientIPPreservationEnabled"
+      ],
+      "EndpointDescription": [
+        "EndpointId",
+        "Weight",
+        "HealthState",
+        "HealthReason",
+        "ClientIPPreservationEnabled"
+      ],
+      "EndpointGroup": [
+        "EndpointGroupArn",
+        "EndpointGroupRegion",
+        "EndpointDescriptions",
+        "TrafficDialPercentage",
+        "HealthCheckPort",
+        "HealthCheckProtocol",
+        "HealthCheckPath",
+        "HealthCheckIntervalSeconds",
+        "ThresholdCount",
+        "PortOverrides"
+      ],
+      "EndpointIdentifier": [
+        "EndpointId",
+        "ClientIPPreservationEnabled"
+      ],
+      "IpAddressDetail": [
+        "IpAddress",
+        "NetworkZone"
+      ],
+      "IpSet": [
+        "IpFamily",
+        "IpAddresses",
+        "IpAddressFamily",
+        "IpAddressDetails"
+      ],
+      "ListAcceleratorsRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListAcceleratorsResponse": [
+        "Accelerators",
+        "NextToken"
+      ],
+      "ListEndpointGroupsRequest": [
+        "ListenerArn",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListEndpointGroupsResponse": [
+        "EndpointGroups",
+        "NextToken"
+      ],
+      "ListListenersRequest": [
+        "AcceleratorArn",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListListenersResponse": [
+        "Listeners",
+        "NextToken"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
+      ],
+      "Listener": [
+        "ListenerArn",
+        "PortRanges",
+        "Protocol",
+        "ClientAffinity"
+      ],
+      "PortOverride": [
+        "ListenerPort",
+        "EndpointPort"
+      ],
+      "PortRange": [
+        "FromPort",
+        "ToPort"
+      ],
+      "RemoveEndpointsRequest": [
+        "EndpointIdentifiers",
+        "EndpointGroupArn"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "UpdateAcceleratorAttributesRequest": [
+        "AcceleratorArn",
+        "FlowLogsEnabled",
+        "FlowLogsS3Bucket",
+        "FlowLogsS3Prefix"
+      ],
+      "UpdateAcceleratorAttributesResponse": [
+        "AcceleratorAttributes"
+      ],
+      "UpdateAcceleratorRequest": [
+        "AcceleratorArn",
+        "Name",
+        "IpAddressType",
+        "Enabled"
+      ],
+      "UpdateAcceleratorResponse": [
+        "Accelerator"
+      ],
+      "UpdateEndpointGroupRequest": [
+        "EndpointGroupArn",
+        "EndpointConfigurations",
+        "TrafficDialPercentage",
+        "HealthCheckPort",
+        "HealthCheckProtocol",
+        "HealthCheckPath",
+        "HealthCheckIntervalSeconds",
+        "ThresholdCount",
+        "PortOverrides"
+      ],
+      "UpdateEndpointGroupResponse": [
+        "EndpointGroup"
+      ],
+      "UpdateListenerRequest": [
+        "ListenerArn",
+        "PortRanges",
+        "Protocol",
+        "ClientAffinity"
+      ],
+      "UpdateListenerResponse": [
+        "Listener"
+      ]
+    }
   }
 }

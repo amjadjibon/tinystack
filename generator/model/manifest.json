@@ -438,6 +438,10 @@
     "servicecatalog": {
       "path": "codegen/sdk-codegen/aws-models/service-catalog.json",
       "sha256": "0e5e2f9eb8726eb0ada441b49b3382c81e152916d609033c0d16d7b939bac3f7"
+    },
+    "globalaccelerator": {
+      "path": "codegen/sdk-codegen/aws-models/global-accelerator.json",
+      "sha256": "6cbda1096fc2bfdb413a74d0e1cc24a8298d869610df8de95f4582edf137ca73"
     }
   }
 }

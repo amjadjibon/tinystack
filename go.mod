@@ -64,6 +64,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/eventbridge v1.55.3
 	github.com/aws/aws-sdk-go-v2/service/firehose v1.52.4
 	github.com/aws/aws-sdk-go-v2/service/glacier v1.41.4
+	github.com/aws/aws-sdk-go-v2/service/globalaccelerator v1.45.5
 	github.com/aws/aws-sdk-go-v2/service/glue v1.171.0
 	github.com/aws/aws-sdk-go-v2/service/iam v1.64.4
 	github.com/aws/aws-sdk-go-v2/service/identitystore v1.49.1

@@ -144,6 +144,7 @@ func EnsureEndpointArg(args []string, endpoint string) []string {
 var TerraformServices = []string{
 	"servicecatalog",
 	"accessanalyzer",
+	"globalaccelerator",
 	"inspector2",
 	"resourceexplorer2",
 	"acm",
