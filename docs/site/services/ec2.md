@@ -13,7 +13,7 @@ Model networking and instance lifecycle for SDK and infrastructure tests.
 | API version | `2016-11-15` |
 | Scope | Account and region |
 | Execution | Records only |
-| Selected operations | 125 of 807 in the pinned model |
+| Selected operations | 161 of 807 in the pinned model |
 
 ## Implemented behavior
 
@@ -30,6 +30,7 @@ See the [implemented feature catalogue](catalogue.md#ec2) for this service's cap
 - IPAM, prefix delegation, ENA tuning, cross-region peering, and real flow-log delivery are outside the profile.
 - CloudFormation rejects in-place ENI address changes and prefix-list address-family changes explicitly.
 - Explicit IPv6 CIDRs retain external BYOIP pool references; pool provisioning and ownership checks are not modeled.
+- Cross-region transit gateway peering, transit gateway Connect attachments, multicast domains, and real IPsec tunnel negotiation are outside the profile; enabling multicast and unsupported VPN tunnel or network options fails explicitly; TGW VPN static routes use transit gateway route APIs and BGP route learning is not simulated.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -51,11 +52,14 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `AssociateIamInstanceProfile` | `POST /` |
 | `AssociateRouteTable` | `POST /` |
 | `AssociateSubnetCidrBlock` | `POST /` |
+| `AssociateTransitGatewayRouteTable` | `POST /` |
 | `AssociateVpcCidrBlock` | `POST /` |
 | `AttachInternetGateway` | `POST /` |
 | `AttachNetworkInterface` | `POST /` |
+| `AttachVpnGateway` | `POST /` |
 | `AuthorizeSecurityGroupEgress` | `POST /` |
 | `AuthorizeSecurityGroupIngress` | `POST /` |
+| `CreateCustomerGateway` | `POST /` |
 | `CreateDefaultSubnet` | `POST /` |
 | `CreateDefaultVpc` | `POST /` |
 | `CreateDhcpOptions` | `POST /` |
@@ -75,9 +79,17 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `CreateSecurityGroup` | `POST /` |
 | `CreateSubnet` | `POST /` |
 | `CreateTags` | `POST /` |
+| `CreateTransitGateway` | `POST /` |
+| `CreateTransitGatewayRoute` | `POST /` |
+| `CreateTransitGatewayRouteTable` | `POST /` |
+| `CreateTransitGatewayVpcAttachment` | `POST /` |
 | `CreateVpc` | `POST /` |
 | `CreateVpcEndpoint` | `POST /` |
 | `CreateVpcPeeringConnection` | `POST /` |
+| `CreateVpnConnection` | `POST /` |
+| `CreateVpnConnectionRoute` | `POST /` |
+| `CreateVpnGateway` | `POST /` |
+| `DeleteCustomerGateway` | `POST /` |
 | `DeleteDhcpOptions` | `POST /` |
 | `DeleteEgressOnlyInternetGateway` | `POST /` |
 | `DeleteFlowLogs` | `POST /` |
@@ -95,12 +107,20 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `DeleteSecurityGroup` | `POST /` |
 | `DeleteSubnet` | `POST /` |
 | `DeleteTags` | `POST /` |
+| `DeleteTransitGateway` | `POST /` |
+| `DeleteTransitGatewayRoute` | `POST /` |
+| `DeleteTransitGatewayRouteTable` | `POST /` |
+| `DeleteTransitGatewayVpcAttachment` | `POST /` |
 | `DeleteVpc` | `POST /` |
 | `DeleteVpcEndpoints` | `POST /` |
 | `DeleteVpcPeeringConnection` | `POST /` |
+| `DeleteVpnConnection` | `POST /` |
+| `DeleteVpnConnectionRoute` | `POST /` |
+| `DeleteVpnGateway` | `POST /` |
 | `DescribeAddresses` | `POST /` |
 | `DescribeAddressesAttribute` | `POST /` |
 | `DescribeAvailabilityZones` | `POST /` |
+| `DescribeCustomerGateways` | `POST /` |
 | `DescribeDhcpOptions` | `POST /` |
 | `DescribeEgressOnlyInternetGateways` | `POST /` |
 | `DescribeFlowLogs` | `POST /` |
@@ -126,20 +146,34 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `DescribeStaleSecurityGroups` | `POST /` |
 | `DescribeSubnets` | `POST /` |
 | `DescribeTags` | `POST /` |
+| `DescribeTransitGatewayAttachments` | `POST /` |
+| `DescribeTransitGatewayRouteTables` | `POST /` |
+| `DescribeTransitGatewayVpcAttachments` | `POST /` |
+| `DescribeTransitGateways` | `POST /` |
 | `DescribeVpcAttribute` | `POST /` |
 | `DescribeVpcEndpointServices` | `POST /` |
 | `DescribeVpcEndpoints` | `POST /` |
 | `DescribeVpcPeeringConnections` | `POST /` |
 | `DescribeVpcs` | `POST /` |
+| `DescribeVpnConnections` | `POST /` |
+| `DescribeVpnGateways` | `POST /` |
 | `DetachInternetGateway` | `POST /` |
 | `DetachNetworkInterface` | `POST /` |
+| `DetachVpnGateway` | `POST /` |
+| `DisableTransitGatewayRouteTablePropagation` | `POST /` |
+| `DisableVgwRoutePropagation` | `POST /` |
 | `DisassociateAddress` | `POST /` |
 | `DisassociateIamInstanceProfile` | `POST /` |
 | `DisassociateRouteTable` | `POST /` |
 | `DisassociateSubnetCidrBlock` | `POST /` |
+| `DisassociateTransitGatewayRouteTable` | `POST /` |
 | `DisassociateVpcCidrBlock` | `POST /` |
+| `EnableTransitGatewayRouteTablePropagation` | `POST /` |
+| `EnableVgwRoutePropagation` | `POST /` |
 | `GetManagedPrefixListAssociations` | `POST /` |
 | `GetManagedPrefixListEntries` | `POST /` |
+| `GetTransitGatewayRouteTableAssociations` | `POST /` |
+| `GetTransitGatewayRouteTablePropagations` | `POST /` |
 | `ImportKeyPair` | `POST /` |
 | `ModifyInstanceMetadataOptions` | `POST /` |
 | `ModifyLaunchTemplate` | `POST /` |
@@ -147,6 +181,8 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `ModifyNetworkInterfaceAttribute` | `POST /` |
 | `ModifySecurityGroupRules` | `POST /` |
 | `ModifySubnetAttribute` | `POST /` |
+| `ModifyTransitGateway` | `POST /` |
+| `ModifyTransitGatewayVpcAttachment` | `POST /` |
 | `ModifyVpcAttribute` | `POST /` |
 | `ModifyVpcEndpoint` | `POST /` |
 | `ModifyVpcPeeringConnectionOptions` | `POST /` |
@@ -162,6 +198,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `RevokeSecurityGroupEgress` | `POST /` |
 | `RevokeSecurityGroupIngress` | `POST /` |
 | `RunInstances` | `POST /` |
+| `SearchTransitGatewayRoutes` | `POST /` |
 | `StartInstances` | `POST /` |
 | `StopInstances` | `POST /` |
 | `TerminateInstances` | `POST /` |
@@ -171,7 +208,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "682 modeled operations outside the implementation"
+??? info "646 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -201,13 +238,11 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `AssociateSecurityGroupVpc`
     - `AssociateTransitGatewayMulticastDomain`
     - `AssociateTransitGatewayPolicyTable`
-    - `AssociateTransitGatewayRouteTable`
     - `AssociateTrunkInterface`
     - `AttachClassicLinkVpc`
     - `AttachImageWatermark`
     - `AttachVerifiedAccessTrustProvider`
     - `AttachVolume`
-    - `AttachVpnGateway`
     - `AuthorizeClientVpnIngress`
     - `BatchModifyIpamRoutingPolicyRegistrations`
     - `BundleInstance`
@@ -239,7 +274,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `CreateClientVpnRoute`
     - `CreateCoipCidr`
     - `CreateCoipPool`
-    - `CreateCustomerGateway`
     - `CreateDelegateMacVolumeOwnershipTask`
     - `CreateFleet`
     - `CreateFpgaImage`
@@ -288,7 +322,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `CreateTrafficMirrorFilterRule`
     - `CreateTrafficMirrorSession`
     - `CreateTrafficMirrorTarget`
-    - `CreateTransitGateway`
     - `CreateTransitGatewayConnect`
     - `CreateTransitGatewayConnectPeer`
     - `CreateTransitGatewayMeteringPolicy`
@@ -298,10 +331,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `CreateTransitGatewayPolicyTable`
     - `CreateTransitGatewayPolicyTableEntry`
     - `CreateTransitGatewayPrefixListReference`
-    - `CreateTransitGatewayRoute`
-    - `CreateTransitGatewayRouteTable`
     - `CreateTransitGatewayRouteTableAnnouncement`
-    - `CreateTransitGatewayVpcAttachment`
     - `CreateVerifiedAccessEndpoint`
     - `CreateVerifiedAccessGroup`
     - `CreateVerifiedAccessInstance`
@@ -312,9 +342,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `CreateVpcEndpointConnectionNotification`
     - `CreateVpcEndpointServiceConfiguration`
     - `CreateVpnConcentrator`
-    - `CreateVpnConnection`
-    - `CreateVpnConnectionRoute`
-    - `CreateVpnGateway`
     - `DeleteApplicationStatusCheck`
     - `DeleteCapacityManagerDataExport`
     - `DeleteCarrierGateway`
@@ -323,7 +350,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteClientVpnRoute`
     - `DeleteCoipCidr`
     - `DeleteCoipPool`
-    - `DeleteCustomerGateway`
     - `DeleteFleets`
     - `DeleteFpgaImage`
     - `DeleteImageUsageReport`
@@ -365,7 +391,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteTrafficMirrorFilterRule`
     - `DeleteTrafficMirrorSession`
     - `DeleteTrafficMirrorTarget`
-    - `DeleteTransitGateway`
     - `DeleteTransitGatewayClientVpnAttachment`
     - `DeleteTransitGatewayConnect`
     - `DeleteTransitGatewayConnectPeer`
@@ -376,10 +401,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteTransitGatewayPolicyTable`
     - `DeleteTransitGatewayPolicyTableEntry`
     - `DeleteTransitGatewayPrefixListReference`
-    - `DeleteTransitGatewayRoute`
-    - `DeleteTransitGatewayRouteTable`
     - `DeleteTransitGatewayRouteTableAnnouncement`
-    - `DeleteTransitGatewayVpcAttachment`
     - `DeleteVerifiedAccessEndpoint`
     - `DeleteVerifiedAccessGroup`
     - `DeleteVerifiedAccessInstance`
@@ -390,9 +412,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteVpcEndpointConnectionNotifications`
     - `DeleteVpcEndpointServiceConfigurations`
     - `DeleteVpnConcentrator`
-    - `DeleteVpnConnection`
-    - `DeleteVpnConnectionRoute`
-    - `DeleteVpnGateway`
     - `DeprovisionByoipCidr`
     - `DeprovisionIpamByoasn`
     - `DeprovisionIpamPoolCidr`
@@ -432,7 +451,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DescribeClientVpnTargetNetworks`
     - `DescribeCoipPools`
     - `DescribeConversionTasks`
-    - `DescribeCustomerGateways`
     - `DescribeDeclarativePoliciesReports`
     - `DescribeElasticGpus`
     - `DescribeExportImageTasks`
@@ -527,7 +545,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DescribeTrafficMirrorFilters`
     - `DescribeTrafficMirrorSessions`
     - `DescribeTrafficMirrorTargets`
-    - `DescribeTransitGatewayAttachments`
     - `DescribeTransitGatewayConnectPeers`
     - `DescribeTransitGatewayConnects`
     - `DescribeTransitGatewayMeteringPolicies`
@@ -535,9 +552,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DescribeTransitGatewayPeeringAttachments`
     - `DescribeTransitGatewayPolicyTables`
     - `DescribeTransitGatewayRouteTableAnnouncements`
-    - `DescribeTransitGatewayRouteTables`
-    - `DescribeTransitGatewayVpcAttachments`
-    - `DescribeTransitGateways`
     - `DescribeTrunkInterfaceAssociations`
     - `DescribeVerifiedAccessEndpoints`
     - `DescribeVerifiedAccessGroups`
@@ -559,13 +573,10 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DescribeVpcEndpointServiceConfigurations`
     - `DescribeVpcEndpointServicePermissions`
     - `DescribeVpnConcentrators`
-    - `DescribeVpnConnections`
-    - `DescribeVpnGateways`
     - `DetachClassicLinkVpc`
     - `DetachImageWatermark`
     - `DetachVerifiedAccessTrustProvider`
     - `DetachVolume`
-    - `DetachVpnGateway`
     - `DisableAddressTransfer`
     - `DisableAllowedImagesSettings`
     - `DisableApplicationStatusCheckSuppression`
@@ -584,8 +595,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DisableRouteServerPropagation`
     - `DisableSerialConsoleAccess`
     - `DisableSnapshotBlockPublicAccess`
-    - `DisableTransitGatewayRouteTablePropagation`
-    - `DisableVgwRoutePropagation`
     - `DisableVpcClassicLink`
     - `DisableVpcClassicLinkDnsSupport`
     - `DisassociateApplicationStatusCheck`
@@ -600,7 +609,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DisassociateSecurityGroupVpc`
     - `DisassociateTransitGatewayMulticastDomain`
     - `DisassociateTransitGatewayPolicyTable`
-    - `DisassociateTransitGatewayRouteTable`
     - `DisassociateTrunkInterface`
     - `EnableAddressTransfer`
     - `EnableAllowedImagesSettings`
@@ -622,8 +630,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `EnableRouteServerPropagation`
     - `EnableSerialConsoleAccess`
     - `EnableSnapshotBlockPublicAccess`
-    - `EnableTransitGatewayRouteTablePropagation`
-    - `EnableVgwRoutePropagation`
     - `EnableVolumeIO`
     - `EnableVpcClassicLink`
     - `EnableVpcClassicLinkDnsSupport`
@@ -699,8 +705,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetTransitGatewayPolicyTableAssociations`
     - `GetTransitGatewayPolicyTableEntries`
     - `GetTransitGatewayPrefixListReferences`
-    - `GetTransitGatewayRouteTableAssociations`
-    - `GetTransitGatewayRouteTablePropagations`
     - `GetVerifiedAccessEndpointPolicy`
     - `GetVerifiedAccessEndpointTargets`
     - `GetVerifiedAccessGroupPolicy`
@@ -766,11 +770,9 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ModifyTrafficMirrorFilterNetworkServices`
     - `ModifyTrafficMirrorFilterRule`
     - `ModifyTrafficMirrorSession`
-    - `ModifyTransitGateway`
     - `ModifyTransitGatewayMeteringPolicy`
     - `ModifyTransitGatewayPolicyTableEntry`
     - `ModifyTransitGatewayPrefixListReference`
-    - `ModifyTransitGatewayVpcAttachment`
     - `ModifyVerifiedAccessEndpoint`
     - `ModifyVerifiedAccessEndpointPolicy`
     - `ModifyVerifiedAccessGroup`
@@ -841,7 +843,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `RunScheduledInstances`
     - `SearchLocalGatewayRoutes`
     - `SearchTransitGatewayMulticastGroups`
-    - `SearchTransitGatewayRoutes`
     - `SendDiagnosticInterrupt`
     - `StartDeclarativePoliciesReport`
     - `StartNetworkInsightsAccessScopeAnalysis`
@@ -863,5 +864,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/ec2)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/ec2/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/ec2.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [ec2_instances_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_instances_test.go), [ec2_network_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_network_test.go), [ec2_security_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_security_test.go), [ec2_tags_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_tags_test.go), [ec2_templates_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_templates_test.go), [ec2_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_test.go), [ec2_tier1_inventory_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_tier1_inventory_test.go), [ec2_tier1_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_tier1_test.go), [ec2_vpc_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_vpc_test.go).
+- SDK integration examples: [ec2_instances_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_instances_test.go), [ec2_network_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_network_test.go), [ec2_security_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_security_test.go), [ec2_tags_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_tags_test.go), [ec2_templates_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_templates_test.go), [ec2_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_test.go), [ec2_tier1_inventory_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_tier1_inventory_test.go), [ec2_tier1_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_tier1_test.go), [ec2_transit_gateway_hardening_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_transit_gateway_hardening_test.go), [ec2_transit_gateway_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_transit_gateway_test.go), [ec2_vpc_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_vpc_test.go), [ec2_vpn_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_vpn_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

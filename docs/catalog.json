@@ -413,7 +413,9 @@
         "Key pairs, instance records, instance profile associations and launch templates",
         "Fixed regional image catalogue and tags",
         "Resource inventory of taggable resources (not terminated instances or deleted NAT gateways), which the Resource Groups Tagging API finds and tags",
-        "AWS-style EC2 and VPC consoles with scoped instance launch/start/stop/reboot/termination, AMIs, generated/imported key pairs with one-time private key display, IAM instance profiles, VPC DNS settings and subnet public IPv4 settings, security rules, route tables and subnet associations, gateways, Elastic IPs, NAT gateways, network ACL rules and associations, endpoint configuration, tags, and links between related resources"
+        "AWS-style EC2 and VPC consoles with scoped instance launch/start/stop/reboot/termination, AMIs, generated/imported key pairs with one-time private key display, IAM instance profiles, VPC DNS settings and subnet public IPv4 settings, security rules, route tables and subnet associations, gateways, Elastic IPs, NAT gateways, network ACL rules and associations, endpoint configuration, tags, and links between related resources",
+        "Transit gateways with validated options and default-table selection, VPC attachments, transit gateway route tables, associations, VPC CIDR propagation, static and blackhole routes, and route table target support",
+        "Customer gateways, virtual private gateways (VGWs), VPC gateway attachments, VGW VPN static-route propagation, and Site-to-Site VPN connections with automatic transit gateway attachment cleanup"
       ],
       "gaps": [
         "Instances are records; no virtual machines boot and no guest software runs",
@@ -424,7 +426,8 @@
         "Verify mode shows scoped inventory; detailed EC2/VPC reads and management require signed CLI/SDK requests",
         "IPAM, prefix delegation, ENA tuning, cross-region peering, and real flow-log delivery are outside the profile",
         "CloudFormation rejects in-place ENI address changes and prefix-list address-family changes explicitly",
-        "Explicit IPv6 CIDRs retain external BYOIP pool references; pool provisioning and ownership checks are not modeled"
+        "Explicit IPv6 CIDRs retain external BYOIP pool references; pool provisioning and ownership checks are not modeled",
+        "Cross-region transit gateway peering, transit gateway Connect attachments, multicast domains, and real IPsec tunnel negotiation are outside the profile; enabling multicast and unsupported VPN tunnel or network options fails explicitly; TGW VPN static routes use transit gateway route APIs and BGP route learning is not simulated"
       ],
       "execution": "Records only",
       "package": "ec2"
