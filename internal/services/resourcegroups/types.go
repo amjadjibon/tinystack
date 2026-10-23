@@ -84,11 +84,15 @@ var namespaces = map[string]string{
 	"verifiedpermissions":       "VerifiedPermissions",
 	"amp":                       "APS",
 	"accessanalyzer":            "AccessAnalyzer",
+	"securityhub":               "SecurityHub",
 }
 
 // typeNames are the CloudFormation names of the inventory types whose name is
 // not the inventory type in PascalCase, by "service/type".
 var typeNames = map[string]string{
+	"securityhub/hub":                        "Hub",
+	"securityhub/standard":                   "Standard",
+	"securityhub/insight":                    "Insight",
 	"amp/rulegroupsnamespace":                "RuleGroupsNamespace",
 	"apprunner/service":                      "Service",
 	"apprunner/autoscalingconfiguration":     "AutoScalingConfiguration",
@@ -179,6 +183,11 @@ func pascal(kind string) string {
 // "AWS::SQS::Queue", derived from the service that holds it and its inventory
 // type. It reports false for the resources of a service with no namespace.
 func resourceType(r *catalog.Owned) (string, bool) {
+	// Security Hub custom actions have no CloudFormation resource type.
+	if r.Service == "securityhub" && r.Type == "action" {
+		return "", false
+	}
+
 	// The official specification has no AWS::AppRunner::Connection or AWS::Amplify::Backend resource type.
 	if r.Service == "apprunner" && r.Type == "connection" || r.Service == "amplify" && r.Type == "backend" {
 		return "", false

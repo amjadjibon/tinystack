@@ -418,6 +418,10 @@
     "accessanalyzer": {
       "path": "codegen/sdk-codegen/aws-models/accessanalyzer.json",
       "sha256": "737a1a50aac7c3224212ae075ccfa01b45e64491deb8d6a9bf68333f309e8b36"
+    },
+    "securityhub": {
+      "path": "codegen/sdk-codegen/aws-models/securityhub.json",
+      "sha256": "7c9d0465c505b8138f2b0e52ca78b367c1f11c89ae1cb1b3cfc69c3783e7b652"
     }
   }
 }

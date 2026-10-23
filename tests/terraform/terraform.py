@@ -82,9 +82,10 @@ def main():
                 # -detailed-exitcode returns 0 only when the plan has no changes.
                 terraform("plan", "-detailed-exitcode")
                 # OpenSearch and Flink add two updates, DMS adds five, Signer profile tags add one, WAF Classic adds four,
-                # EMR cluster tags and task-group capacity add two, Amplify app/branch updates add two, and Access Analyzer tags add one.
+                # EMR cluster tags and task-group capacity add two, Amplify app/branch updates add two,
+                # Access Analyzer tags add one, and Security Hub action target and insight names add two.
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "7 added, 115 changed, 7 destroyed" in updated, updated
+                assert "7 added, 117 changed, 7 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"
                 terraform("plan", "-detailed-exitcode", team="platform")
                 # The provider replaces the monitor when its name changes. The subscription

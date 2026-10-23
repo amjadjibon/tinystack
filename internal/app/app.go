@@ -105,6 +105,7 @@ import (
 	s3tablesapi "github.com/amjadjibon/tinystack/internal/aws/generated/s3tables"
 	schedulerapi "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
+	securityhubapi "github.com/amjadjibon/tinystack/internal/aws/generated/securityhub"
 	servicediscoveryapi "github.com/amjadjibon/tinystack/internal/aws/generated/servicediscovery"
 	servicequotasapi "github.com/amjadjibon/tinystack/internal/aws/generated/servicequotas"
 	sesapi "github.com/amjadjibon/tinystack/internal/aws/generated/ses"
@@ -219,6 +220,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/s3tables"
 	"github.com/amjadjibon/tinystack/internal/services/scheduler"
 	"github.com/amjadjibon/tinystack/internal/services/secretsmanager"
+	"github.com/amjadjibon/tinystack/internal/services/securityhub"
 	"github.com/amjadjibon/tinystack/internal/services/servicediscovery"
 	"github.com/amjadjibon/tinystack/internal/services/servicequotas"
 	"github.com/amjadjibon/tinystack/internal/services/ses"
@@ -449,6 +451,7 @@ func build(
 	connectionRecords := codeconnections.New(store)
 	ampRecords := amp.New(store)
 	accessAnalyzerRecords := accessanalyzer.New(store)
+	securityHubRecords := securityhub.New(store)
 	quotaRecords := servicequotas.New(store)
 	dmsRecords := databasemigrationservice.New(store, network)
 	emrRecords := emrserverless.New(store)
@@ -575,6 +578,7 @@ func build(
 		codeconnectionsapi.Descriptor(connectionRecords),
 		ampapi.Descriptor(ampRecords),
 		accessanalyzerapi.Descriptor(accessAnalyzerRecords),
+		securityhubapi.Descriptor(securityHubRecords),
 		costexplorerapi.Descriptor(costExplorerRecords),
 		costandusagereportserviceapi.Descriptor(curRecords),
 		servicequotasapi.Descriptor(quotaRecords),

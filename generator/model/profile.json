@@ -20941,6 +20941,344 @@
       ]
     }
   },
+  "securityhub": {
+    "validation": {
+      "code": "InvalidInputException",
+      "deferred": [
+        "BatchImportFindingsRequest.Findings"
+      ]
+    },
+    "operations": [
+      "EnableSecurityHub",
+      "DescribeHub",
+      "UpdateSecurityHubConfiguration",
+      "DisableSecurityHub",
+      "DescribeStandards",
+      "BatchEnableStandards",
+      "BatchDisableStandards",
+      "GetEnabledStandards",
+      "BatchImportFindings",
+      "GetFindings",
+      "BatchUpdateFindings",
+      "CreateInsight",
+      "GetInsights",
+      "UpdateInsight",
+      "DeleteInsight",
+      "GetInsightResults",
+      "CreateActionTarget",
+      "DescribeActionTargets",
+      "UpdateActionTarget",
+      "DeleteActionTarget",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "EnableSecurityHubRequest": [
+        "EnableDefaultStandards",
+        "ControlFindingGenerator",
+        "Tags"
+      ],
+      "EnableSecurityHubResponse": [],
+      "DescribeHubRequest": [
+        "HubArn"
+      ],
+      "DescribeHubResponse": [
+        "HubArn",
+        "SubscribedAt",
+        "AutoEnableControls",
+        "ControlFindingGenerator"
+      ],
+      "UpdateSecurityHubConfigurationRequest": [
+        "AutoEnableControls",
+        "ControlFindingGenerator"
+      ],
+      "UpdateSecurityHubConfigurationResponse": [],
+      "DisableSecurityHubRequest": [],
+      "DisableSecurityHubResponse": [],
+      "DescribeStandardsRequest": [
+        "NextToken",
+        "MaxResults"
+      ],
+      "DescribeStandardsResponse": [
+        "Standards",
+        "NextToken"
+      ],
+      "Standard": [
+        "StandardsArn",
+        "Name",
+        "Description",
+        "EnabledByDefault"
+      ],
+      "BatchEnableStandardsRequest": [
+        "StandardsSubscriptionRequests"
+      ],
+      "StandardsSubscriptionRequest": [
+        "StandardsArn"
+      ],
+      "BatchEnableStandardsResponse": [
+        "StandardsSubscriptions"
+      ],
+      "StandardsSubscription": [
+        "StandardsSubscriptionArn",
+        "StandardsArn",
+        "StandardsStatus"
+      ],
+      "BatchDisableStandardsRequest": [
+        "StandardsSubscriptionArns"
+      ],
+      "BatchDisableStandardsResponse": [
+        "StandardsSubscriptions"
+      ],
+      "GetEnabledStandardsRequest": [
+        "StandardsSubscriptionArns",
+        "NextToken",
+        "MaxResults"
+      ],
+      "GetEnabledStandardsResponse": [
+        "StandardsSubscriptions",
+        "NextToken"
+      ],
+      "BatchImportFindingsRequest": [
+        "Findings"
+      ],
+      "AwsSecurityFinding": [
+        "SchemaVersion",
+        "Id",
+        "ProductArn",
+        "GeneratorId",
+        "AwsAccountId",
+        "Types",
+        "CreatedAt",
+        "UpdatedAt",
+        "Severity",
+        "Title",
+        "Description",
+        "Resources",
+        "Workflow",
+        "RecordState",
+        "Compliance",
+        "Note",
+        "Confidence",
+        "Criticality",
+        "VerificationState",
+        "UserDefinedFields",
+        "RelatedFindings"
+      ],
+      "Severity": [
+        "Label",
+        "Normalized",
+        "Original",
+        "Product"
+      ],
+      "Resource": [
+        "Type",
+        "Id",
+        "Partition",
+        "Region",
+        "Tags"
+      ],
+      "Workflow": [
+        "Status"
+      ],
+      "Compliance": [
+        "Status"
+      ],
+      "Note": [
+        "Text",
+        "UpdatedBy",
+        "UpdatedAt"
+      ],
+      "RelatedFinding": [
+        "ProductArn",
+        "Id"
+      ],
+      "BatchImportFindingsResponse": [
+        "FailedCount",
+        "SuccessCount",
+        "FailedFindings"
+      ],
+      "ImportFindingsError": [
+        "Id",
+        "ErrorCode",
+        "ErrorMessage"
+      ],
+      "GetFindingsRequest": [
+        "Filters",
+        "SortCriteria",
+        "NextToken",
+        "MaxResults"
+      ],
+      "AwsSecurityFindingFilters": [
+        "Id",
+        "ProductArn",
+        "GeneratorId",
+        "AwsAccountId",
+        "SeverityLabel",
+        "WorkflowStatus",
+        "RecordState",
+        "ResourceType",
+        "ResourceId",
+        "ComplianceStatus",
+        "CreatedAt",
+        "UpdatedAt"
+      ],
+      "StringFilter": [
+        "Value",
+        "Comparison"
+      ],
+      "DateFilter": [
+        "Start",
+        "End"
+      ],
+      "SortCriterion": [
+        "Field",
+        "SortOrder"
+      ],
+      "GetFindingsResponse": [
+        "Findings",
+        "NextToken"
+      ],
+      "BatchUpdateFindingsRequest": [
+        "FindingIdentifiers",
+        "Workflow",
+        "Severity",
+        "Note",
+        "Confidence",
+        "Criticality",
+        "VerificationState",
+        "Types",
+        "UserDefinedFields",
+        "RelatedFindings"
+      ],
+      "AwsSecurityFindingIdentifier": [
+        "Id",
+        "ProductArn"
+      ],
+      "WorkflowUpdate": [
+        "Status"
+      ],
+      "SeverityUpdate": [
+        "Label",
+        "Normalized",
+        "Product"
+      ],
+      "NoteUpdate": [
+        "Text",
+        "UpdatedBy"
+      ],
+      "BatchUpdateFindingsResponse": [
+        "ProcessedFindings",
+        "UnprocessedFindings"
+      ],
+      "BatchUpdateFindingsUnprocessedFinding": [
+        "FindingIdentifier",
+        "ErrorCode",
+        "ErrorMessage"
+      ],
+      "CreateInsightRequest": [
+        "Name",
+        "Filters",
+        "GroupByAttribute"
+      ],
+      "CreateInsightResponse": [
+        "InsightArn"
+      ],
+      "GetInsightsRequest": [
+        "InsightArns",
+        "NextToken",
+        "MaxResults"
+      ],
+      "GetInsightsResponse": [
+        "Insights",
+        "NextToken"
+      ],
+      "Insight": [
+        "InsightArn",
+        "Name",
+        "Filters",
+        "GroupByAttribute"
+      ],
+      "UpdateInsightRequest": [
+        "InsightArn",
+        "Name",
+        "Filters",
+        "GroupByAttribute"
+      ],
+      "UpdateInsightResponse": [],
+      "DeleteInsightRequest": [
+        "InsightArn"
+      ],
+      "DeleteInsightResponse": [
+        "InsightArn"
+      ],
+      "GetInsightResultsRequest": [
+        "InsightArn"
+      ],
+      "GetInsightResultsResponse": [
+        "InsightResults"
+      ],
+      "InsightResults": [
+        "InsightArn",
+        "GroupByAttribute",
+        "ResultValues"
+      ],
+      "InsightResultValue": [
+        "GroupByAttributeValue",
+        "Count"
+      ],
+      "CreateActionTargetRequest": [
+        "Name",
+        "Description",
+        "Id"
+      ],
+      "CreateActionTargetResponse": [
+        "ActionTargetArn"
+      ],
+      "DescribeActionTargetsRequest": [
+        "ActionTargetArns",
+        "NextToken",
+        "MaxResults"
+      ],
+      "DescribeActionTargetsResponse": [
+        "ActionTargets",
+        "NextToken"
+      ],
+      "ActionTarget": [
+        "ActionTargetArn",
+        "Name",
+        "Description"
+      ],
+      "UpdateActionTargetRequest": [
+        "ActionTargetArn",
+        "Name",
+        "Description"
+      ],
+      "UpdateActionTargetResponse": [],
+      "DeleteActionTargetRequest": [
+        "ActionTargetArn"
+      ],
+      "DeleteActionTargetResponse": [
+        "ActionTargetArn"
+      ],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "ListTagsForResourceRequest": [
+        "ResourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
+      ]
+    }
+  },
   "servicediscovery": {
     "operations": [
       "CreateHttpNamespace",

@@ -47,6 +47,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: security,
 		icon: "accessanalyzer",
 	},
+	securityhub: {
+		title: "AWS Security Hub",
+		category: security,
+		icon: "securityhub",
+	},
 	amp: {
 		title: "Amazon Managed Service for Prometheus",
 		category: management,

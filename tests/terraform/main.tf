@@ -18,6 +18,7 @@ provider "aws" {
 
   endpoints {
     accessanalyzer       = var.endpoint
+    securityhub          = var.endpoint
     amplify              = var.endpoint
     signer               = var.endpoint
     waf                  = var.endpoint
@@ -2452,5 +2453,34 @@ resource "aws_accessanalyzer_archive_rule" "main" {
   filter {
     criteria = "isPublic"
     eq       = ["false"]
+  }
+}
+
+resource "aws_securityhub_account" "local" {
+  enable_default_standards  = false
+  control_finding_generator = "SECURITY_CONTROL"
+}
+
+resource "aws_securityhub_standards_subscription" "local" {
+  depends_on    = [aws_securityhub_account.local]
+  standards_arn = "arn:aws:securityhub:us-east-1::standards/aws-foundational-security-best-practices/v/1.0.0"
+}
+
+resource "aws_securityhub_action_target" "local" {
+  depends_on  = [aws_securityhub_account.local]
+  identifier  = "local"
+  name        = "${var.team}-review"
+  description = "Stored local review action"
+}
+
+resource "aws_securityhub_insight" "local" {
+  depends_on         = [aws_securityhub_account.local]
+  name               = "${var.team}-active"
+  group_by_attribute = "SeverityLabel"
+  filters {
+    record_state {
+      comparison = "EQUALS"
+      value      = "ACTIVE"
+    }
   }
 }

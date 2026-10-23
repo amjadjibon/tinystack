@@ -251,6 +251,7 @@ var taggers = map[string]tagger{
 	"codepipeline":        resourceOperations("codepipeline", "ResourceArn", pairs),
 	"codecommit":          resourceOperations("codecommit", "ResourceArn", plain),
 	"verifiedpermissions": resourceOperations("verifiedpermissions", "ResourceArn", plain),
+	"securityhub":         resourceOperations("securityhub", "ResourceArn", plain),
 	"amp":                 resourceOperations("amp", "ResourceArn", plain),
 	"accessanalyzer":      resourceOperations("accessanalyzer", "ResourceArn", plain),
 	"ram":                 resourceOperations("ram", "ResourceShareArn", pairs),
