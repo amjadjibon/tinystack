@@ -42,6 +42,11 @@ export const categories = [
 ];
 
 const catalog: Record<string, ServiceInfo> = {
+	resourceexplorer2: {
+		title: "AWS Resource Explorer",
+		category: management,
+		icon: "resourceexplorer2",
+	},
 	accessanalyzer: {
 		title: "IAM Access Analyzer",
 		category: security,

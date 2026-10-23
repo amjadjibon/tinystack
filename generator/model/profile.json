@@ -35466,5 +35466,228 @@
         "tags"
       ]
     }
+  },
+  "resourceexplorer2": {
+    "validation": {
+      "code": "ValidationException"
+    },
+    "operations": [
+      "CreateIndex",
+      "GetIndex",
+      "ListIndexes",
+      "UpdateIndexType",
+      "DeleteIndex",
+      "CreateView",
+      "GetView",
+      "ListViews",
+      "UpdateView",
+      "DeleteView",
+      "BatchGetView",
+      "AssociateDefaultView",
+      "GetDefaultView",
+      "DisassociateDefaultView",
+      "Search",
+      "ListResources",
+      "ListSupportedResourceTypes",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateIndexInput": [
+        "ClientToken",
+        "Tags"
+      ],
+      "CreateIndexOutput": [
+        "Arn",
+        "State",
+        "CreatedAt"
+      ],
+      "GetIndexOutput": [
+        "Arn",
+        "Type",
+        "State",
+        "CreatedAt",
+        "LastUpdatedAt",
+        "Tags"
+      ],
+      "ListIndexesInput": [
+        "Type",
+        "Regions",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListIndexesOutput": [
+        "Indexes",
+        "NextToken"
+      ],
+      "Index": [
+        "Region",
+        "Arn",
+        "Type"
+      ],
+      "UpdateIndexTypeInput": [
+        "Arn",
+        "Type"
+      ],
+      "UpdateIndexTypeOutput": [
+        "Arn",
+        "Type",
+        "State",
+        "LastUpdatedAt"
+      ],
+      "DeleteIndexInput": [
+        "Arn"
+      ],
+      "DeleteIndexOutput": [
+        "Arn",
+        "State",
+        "LastUpdatedAt"
+      ],
+      "CreateViewInput": [
+        "ClientToken",
+        "ViewName",
+        "IncludedProperties",
+        "Scope",
+        "Filters",
+        "Tags"
+      ],
+      "IncludedProperty": [
+        "Name"
+      ],
+      "SearchFilter": [
+        "FilterString"
+      ],
+      "CreateViewOutput": [
+        "View"
+      ],
+      "View": [
+        "ViewArn",
+        "ViewName",
+        "Owner",
+        "LastUpdatedAt",
+        "Scope",
+        "IncludedProperties",
+        "Filters"
+      ],
+      "GetViewInput": [
+        "ViewArn"
+      ],
+      "GetViewOutput": [
+        "View",
+        "Tags"
+      ],
+      "ListViewsInput": [
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListViewsOutput": [
+        "Views",
+        "NextToken"
+      ],
+      "UpdateViewInput": [
+        "ViewArn",
+        "IncludedProperties",
+        "Filters"
+      ],
+      "UpdateViewOutput": [
+        "View"
+      ],
+      "DeleteViewInput": [
+        "ViewArn"
+      ],
+      "DeleteViewOutput": [
+        "ViewArn"
+      ],
+      "BatchGetViewInput": [
+        "ViewArns"
+      ],
+      "BatchGetViewOutput": [
+        "Views",
+        "Errors"
+      ],
+      "BatchGetViewError": [
+        "ViewArn",
+        "ErrorMessage"
+      ],
+      "AssociateDefaultViewInput": [
+        "ViewArn"
+      ],
+      "AssociateDefaultViewOutput": [
+        "ViewArn"
+      ],
+      "GetDefaultViewOutput": [
+        "ViewArn"
+      ],
+      "SearchInput": [
+        "QueryString",
+        "MaxResults",
+        "ViewArn",
+        "NextToken"
+      ],
+      "SearchOutput": [
+        "Resources",
+        "NextToken",
+        "ViewArn",
+        "Count"
+      ],
+      "Resource": [
+        "Arn",
+        "OwningAccountId",
+        "Region",
+        "ResourceType",
+        "Service",
+        "LastReportedAt",
+        "Properties"
+      ],
+      "ResourceProperty": [
+        "Name",
+        "LastReportedAt",
+        "Data"
+      ],
+      "ResourceCount": [
+        "TotalResources",
+        "Complete"
+      ],
+      "ListResourcesInput": [
+        "Filters",
+        "MaxResults",
+        "ViewArn",
+        "NextToken"
+      ],
+      "ListResourcesOutput": [
+        "Resources",
+        "NextToken",
+        "ViewArn"
+      ],
+      "ListSupportedResourceTypesInput": [
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListSupportedResourceTypesOutput": [
+        "ResourceTypes",
+        "NextToken"
+      ],
+      "SupportedResourceType": [
+        "Service",
+        "ResourceType"
+      ],
+      "TagResourceInput": [
+        "resourceArn",
+        "Tags"
+      ],
+      "TagResourceOutput": [],
+      "UntagResourceInput": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "UntagResourceOutput": [],
+      "ListTagsForResourceInput": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceOutput": [
+        "Tags"
+      ]
+    }
   }
 }

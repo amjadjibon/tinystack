@@ -99,6 +99,7 @@ import (
 	rdsapi "github.com/amjadjibon/tinystack/internal/aws/generated/rds"
 	rdsdataapi "github.com/amjadjibon/tinystack/internal/aws/generated/rdsdata"
 	redshiftapi "github.com/amjadjibon/tinystack/internal/aws/generated/redshift"
+	resourceexplorer2api "github.com/amjadjibon/tinystack/internal/aws/generated/resourceexplorer2"
 	resourcegroupsapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroups"
 	resourcegroupstaggingapiapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroupstaggingapi"
 	route53api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
@@ -216,6 +217,7 @@ import (
 	rdsdocker "github.com/amjadjibon/tinystack/internal/services/rds/docker"
 	"github.com/amjadjibon/tinystack/internal/services/rdsdata"
 	"github.com/amjadjibon/tinystack/internal/services/redshift"
+	"github.com/amjadjibon/tinystack/internal/services/resourceexplorer2"
 	"github.com/amjadjibon/tinystack/internal/services/resourcegroups"
 	"github.com/amjadjibon/tinystack/internal/services/resourcegroupstaggingapi"
 	"github.com/amjadjibon/tinystack/internal/services/route53"
@@ -454,6 +456,7 @@ func build(
 	amplifyRecords := amplify.New(store)
 	connectionRecords := codeconnections.New(store)
 	ampRecords := amp.New(store)
+	resourceExplorerRecords := resourceexplorer2.New(store)
 	accessAnalyzerRecords := accessanalyzer.New(store)
 	securityHubRecords := securityhub.New(store)
 	inspector2Records := inspector2.New(store)
@@ -584,6 +587,7 @@ func build(
 		codeconnectionsapi.Descriptor(connectionRecords),
 		ampapi.Descriptor(ampRecords),
 		accessanalyzerapi.Descriptor(accessAnalyzerRecords),
+		resourceexplorer2api.Descriptor(resourceExplorerRecords),
 		securityhubapi.Descriptor(securityHubRecords),
 		inspector2api.Descriptor(inspector2Records),
 		costexplorerapi.Descriptor(costExplorerRecords),
@@ -697,6 +701,7 @@ func build(
 	tags.UseCaller(caller)
 	// Groups resolve their queries against the same resources, and read CloudFormation stacks.
 	groups.UseCaller(caller)
+	resourceExplorerRecords.UseCaller(caller)
 	// The credentials provider exchanges certificates for role credentials.
 	things.UseRoleCredentials(tokens.AssumeRoleForService)
 	handler, err := gateway.New(cfg, logger, services...)

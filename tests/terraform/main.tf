@@ -17,6 +17,7 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
+    resourceexplorer2    = var.endpoint
     accessanalyzer       = var.endpoint
     securityhub          = var.endpoint
     inspector2           = var.endpoint
@@ -2551,5 +2552,18 @@ resource "aws_inspector2_filter" "local" {
       value      = "LOW"
     }
   }
+  tags = { team = var.team }
+}
+
+resource "aws_resourceexplorer2_index" "local" {
+  type = "LOCAL"
+  tags = { team = var.team }
+}
+
+resource "aws_resourceexplorer2_view" "local" {
+  depends_on = [aws_resourceexplorer2_index.local]
+  name       = "local-inventory"
+  filters { filter_string = "service:s3" }
+  included_property { name = "tags" }
   tags = { team = var.team }
 }

@@ -255,6 +255,7 @@ var taggers = map[string]tagger{
 	"inspector2":          resourceOperations("inspector2", "ResourceArn", plain),
 	"securityhub":         resourceOperations("securityhub", "ResourceArn", plain),
 	"amp":                 resourceOperations("amp", "ResourceArn", plain),
+	"resourceexplorer2":   resourceOperations("resourceexplorer2", "ResourceArn", plain),
 	"accessanalyzer":      resourceOperations("accessanalyzer", "ResourceArn", plain),
 	"ram":                 resourceOperations("ram", "ResourceShareArn", pairs),
 	"ssoadmin": operations("ssoadmin", "TagResource", "UntagResource",
