@@ -28,6 +28,7 @@ const (
 
 // task is a task's record. It settles in its desired status at once.
 type task struct {
+	HealthContainers []string
 	// Metadata contains running containers, indexed by their authorization tokens.
 	Metadata         map[string]ContainerMetadata `json:",omitempty"`
 	Created          time.Time
@@ -117,16 +118,28 @@ func (t *task) output(scope request.Scope, include []string) api.Task {
 	return out
 }
 
-// taskHealth is HEALTHY when every container has a health check, which
-// always passes, and UNKNOWN otherwise.
+// taskHealth considers only essential containers with configured health checks.
 func taskHealth(t *task) string {
+	health := healthHealthy
+	if len(t.HealthContainers) == 0 {
+		return "UNKNOWN"
+	}
+
 	for _, c := range t.Containers {
-		if common.Value(c.HealthStatus) != "HEALTHY" {
-			return "UNKNOWN"
+		if !slices.Contains(t.HealthContainers, common.Value(c.Name)) {
+			continue
+		}
+
+		switch common.Value(c.HealthStatus) {
+		case healthUnhealthy:
+			return healthUnhealthy
+		case healthHealthy:
+		default:
+			health = "UNKNOWN"
 		}
 	}
 
-	return "HEALTHY"
+	return health
 }
 
 // launch is how a task starts: from RunTask, or from a service.
@@ -233,6 +246,11 @@ func checkOverrides(def *taskDef, o *api.TaskOverride) error {
 	}
 
 	for _, c := range o.ContainerOverrides {
+		if common.Value(c.Cpu) < 0 || c.Memory != nil && *c.Memory <= 0 ||
+			c.MemoryReservation != nil && *c.MemoryReservation <= 0 {
+			return invalidParameter("container overrides require nonnegative cpu and positive memory limits")
+		}
+
 		if !slices.ContainsFunc(def.Def.ContainerDefinitions, func(d api.ContainerDefinition) bool {
 			return common.Value(d.Name) == common.Value(c.Name)
 		}) {
@@ -298,6 +316,11 @@ func (s *Service) start(tx storage.WriteTx, scope request.Scope, c *cluster, def
 	}
 
 	for i := range def.Def.ContainerDefinitions {
+		d := &def.Def.ContainerDefinitions[i]
+		if common.Value(d.Essential) && d.HealthCheck != nil {
+			t.HealthContainers = append(t.HealthContainers, common.Value(d.Name))
+		}
+
 		t.Containers = append(t.Containers, container(scope, t, &def.Def.ContainerDefinitions[i]))
 	}
 
@@ -321,9 +344,6 @@ func container(scope request.Scope, t *task, d *api.ContainerDefinition) api.Con
 		TaskArn:      new(taskARN(scope, t.Cluster, t.ID)), Name: d.Name, Image: d.Image,
 		LastStatus: new(t.Last), HealthStatus: new("UNKNOWN"), Cpu: new(strconv.FormatInt(common.Value(d.Cpu), 10)),
 		NetworkBindings: []api.NetworkBinding{},
-	}
-	if d.HealthCheck != nil {
-		c.HealthStatus = new("HEALTHY")
 	}
 
 	if d.Memory != nil {

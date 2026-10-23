@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
@@ -52,22 +53,27 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store     storage.Store
-	runtime   Runtime
+	runContext context.Context
+	store      storage.Store
+	runtime    Runtime
+	bg         *background.Group
+	logger     *slog.Logger
+	now        func() time.Time
+	caller     *catalog.Caller
+	// busy contains tasks advancing outside transactions; cursors track shipped log timestamps.
+	busy      map[string]bool
+	cursors   map[string]time.Time
 	writeLogs LogWriter
-	logger    *slog.Logger
-	now       func() time.Time
-	bg        *background.Group
-	// busy holds the index keys the runner is advancing, and cursors the time
-	// of the last log line shipped from each container.
-	busy     map[string]bool
-	cursors  map[string]time.Time
-	endpoint string
-	mu       sync.Mutex
+	cancelRun context.CancelFunc
+	endpoint  string
+	lifecycle sync.RWMutex
+	mu        sync.Mutex
 }
 
 func New(store storage.Store) *Service {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &Service{
+		runContext: ctx, cancelRun: cancel,
 		bg: background.New(), store: store, now: time.Now, busy: map[string]bool{},
 		cursors: map[string]time.Time{},
 	}
@@ -80,6 +86,9 @@ func (s *Service) UseEndpoint(endpoint string) {
 
 // Stop ends the runner and removes every container the runtime started.
 func (s *Service) Stop() {
+	s.mu.Lock()
+	s.cancelRun()
+	s.mu.Unlock()
 	if s.bg.Stop() && s.runtime != nil {
 		s.runtime.Close()
 	}
@@ -87,11 +96,24 @@ func (s *Service) Stop() {
 
 // Reset removes every container the runtime started and forgets how far task
 // logs were shipped.
-func (s *Service) Reset(context.Context) {
+func (s *Service) Reset(ctx context.Context) {
+	s.mu.Lock()
+	s.cancelRun()
+	s.mu.Unlock()
+	s.lifecycle.Lock()
+	defer s.lifecycle.Unlock()
+	common.ResetRuntime(s.runtime)
+	_ = s.store.Update(context.WithoutCancel(ctx), func(tx storage.WriteTx) error {
+		for _, key := range tx.Keys(indexPrefix) {
+			tx.Delete(key)
+		}
+
+		return nil
+	})
 	s.mu.Lock()
 	clear(s.cursors)
+	s.runContext, s.cancelRun = context.WithCancel(context.Background())
 	s.mu.Unlock()
-	common.ResetRuntime(s.runtime)
 }
 
 func invalidParameter(format string, args ...any) error {
@@ -183,3 +205,6 @@ func newID() string {
 	_, _ = rand.Read(b[:])
 	return hex.EncodeToString(b[:])
 }
+
+// UseCaller resolves task secrets through the registered services.
+func (s *Service) UseCaller(c *catalog.Caller) { s.caller = c }

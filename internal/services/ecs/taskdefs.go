@@ -163,6 +163,12 @@ func (s *Service) RegisterTaskDefinition(
 		return nil, err
 	}
 
+	if s.runtime != nil {
+		if executionErr := checkExecution(def); executionErr != nil {
+			return nil, executionErr
+		}
+	}
+
 	if tagErr := checkTags(in.Tags); tagErr != nil {
 		return nil, tagErr
 	}
@@ -235,6 +241,10 @@ func newDefinition(in *api.RegisterTaskDefinitionRequest) (*api.TaskDefinition, 
 		return nil, err
 	}
 
+	if err := checkExecutionInputs(in); err != nil {
+		return nil, err
+	}
+
 	def.ContainerDefinitions = containers
 	return def, nil
 }
@@ -290,7 +300,9 @@ func checkSize(def *api.TaskDefinition, in *api.RegisterTaskDefinitionRequest) e
 	return nil
 }
 
-var logDrivers = []string{"json-file", "syslog", "journald", "gelf", "fluentd", "awslogs", "splunk", "awsfirelens"}
+const logAWS = "awslogs"
+
+var logDrivers = []string{"json-file", "syslog", "journald", "gelf", "fluentd", logAWS, "splunk", "awsfirelens"}
 
 // checkContainers validates the container definitions and fills in ECS's
 // defaults: containers are essential, and ports are TCP and, outside bridge

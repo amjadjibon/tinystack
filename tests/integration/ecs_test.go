@@ -348,7 +348,7 @@ func TestECSServicesAndTasks(t *testing.T) {
 			task.LaunchType != ecstypes.LaunchTypeFargate ||
 			aws.ToString(task.PlatformVersion) != "1.4.0" || aws.ToString(task.Group) != "family:web" ||
 			aws.ToString(task.Containers[0].LastStatus) != "RUNNING" ||
-			task.HealthStatus != ecstypes.HealthStatusHealthy ||
+			task.HealthStatus != ecstypes.HealthStatusUnknown ||
 			aws.ToString(task.Cpu) != "256" {
 			t.Fatalf("task = %+v", task)
 		}

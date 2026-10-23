@@ -198,9 +198,16 @@ type HostVolumeProperties struct {
 	SourcePath *string `json:"sourcePath,omitempty"`
 }
 
+type DockerVolumeConfiguration struct {
+	Scope         *string `json:"scope,omitempty"`
+	Autoprovision *bool   `json:"autoprovision,omitempty"`
+	Driver        *string `json:"driver,omitempty"`
+}
+
 type Volume struct {
-	Name *string               `json:"name,omitempty"`
-	Host *HostVolumeProperties `json:"host,omitempty"`
+	Name                      *string                    `json:"name,omitempty"`
+	Host                      *HostVolumeProperties      `json:"host,omitempty"`
+	DockerVolumeConfiguration *DockerVolumeConfiguration `json:"dockerVolumeConfiguration,omitempty"`
 }
 
 type EphemeralStorage struct {

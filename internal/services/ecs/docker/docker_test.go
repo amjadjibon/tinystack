@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
+	"github.com/amjadjibon/tinystack/internal/services/dockercli"
 	"github.com/amjadjibon/tinystack/internal/services/ecs"
 )
 
@@ -114,5 +116,165 @@ func TestRuntimeAddsDockerHostGateway(t *testing.T) {
 
 	if !strings.Contains(string(args), "--add-host=host.docker.internal:host-gateway\n") {
 		t.Fatalf("Docker host mapping missing: %s", args)
+	}
+}
+
+func TestDockerTaskResources(t *testing.T) {
+	if os.Getenv("TINYSTACK_DOCKER_TESTS") != "1" {
+		t.Skip("set TINYSTACK_DOCKER_TESTS=1 to run task containers in Docker")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	r := New()
+	t.Cleanup(r.Close)
+	owner := "test-" + strconv.FormatInt(time.Now().UnixNano(), 10)
+	specs := []ecs.ContainerSpec{
+		{
+			TaskID: owner, Name: "web", Image: "busybox", Command: []string{
+				"sh", "-c",
+				"echo shared > /data/value; mkdir -p /www; echo localhost > /www/index.html; httpd -f -p 8080 -h /www",
+			},
+			Ports:  []ecs.PortSpec{{Container: 8080, Protocol: "tcp"}},
+			Mounts: []ecs.MountSpec{{Source: "data", Target: "/data"}},
+			HealthCheck: &api.HealthCheck{
+				Command:  []string{"CMD-SHELL", "test -f /data/value"},
+				Interval: new(int64(1)), Timeout: new(int64(2)), Retries: new(int64(1)), StartPeriod: new(int64(0)),
+			},
+		},
+		{
+			TaskID: owner, Name: "client", Image: "busybox", Command: []string{
+				"sh", "-c",
+				"test $(cat /data/value) = shared && wget -qO- http://localhost:8080",
+			},
+			VolumesFrom: []api.VolumeFrom{{SourceContainer: new("web"), ReadOnly: new(true)}},
+		},
+	}
+	if err := r.PrepareTask(ctx, owner, specs, []api.Volume{{Name: new("data")}}, "512", "128"); err != nil {
+		t.Fatal(err)
+	}
+
+	resources := r.tasks[owner]
+	volume, network, anchor := resources.volumes["data"], resources.network, resources.anchor
+	web, err := r.Start(ctx, &specs[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for {
+		health, healthErr := r.Health(ctx, web.ID)
+		if healthErr != nil {
+			t.Fatal(healthErr)
+		}
+
+		if health == "HEALTHY" {
+			break
+		}
+
+		select {
+		case <-ctx.Done():
+			t.Fatal(ctx.Err())
+		case <-time.After(100 * time.Millisecond):
+		}
+	}
+
+	client, err := r.Start(ctx, &specs[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for {
+		exited, code, stateErr := r.State(ctx, client.ID)
+		if stateErr != nil || exited && code != 0 {
+			t.Fatalf("client exit=%v code=%d err=%v", exited, code, stateErr)
+		}
+
+		if exited {
+			break
+		}
+
+		select {
+		case <-ctx.Done():
+			t.Fatal(ctx.Err())
+		case <-time.After(100 * time.Millisecond):
+		}
+	}
+
+	limits, err := dockercli.Run(ctx, nil, "inspect", "--format",
+		"{{.HostConfig.NanoCpus}} {{.HostConfig.Memory}}", web.ID)
+	if err != nil || limits != "250000000 67108864" {
+		t.Fatalf("limits=%q err=%v", limits, err)
+	}
+
+	r.Reset()
+	for _, id := range []string{web.ID, client.ID, anchor} {
+		if _, inspectErr := dockercli.Run(ctx, nil, "inspect", id); inspectErr == nil {
+			t.Fatalf("container %s survived reset", id)
+		}
+	}
+
+	if _, err = dockercli.Run(ctx, nil, "volume", "inspect", volume); err == nil {
+		t.Fatal("task volume survived reset")
+	}
+
+	if _, err = dockercli.Run(ctx, nil, "network", "inspect", network); err == nil {
+		t.Fatal("task network survived reset")
+	}
+}
+
+func TestDockerSharedVolumeOwnership(t *testing.T) {
+	if os.Getenv("TINYSTACK_DOCKER_TESTS") != "1" {
+		t.Skip("set TINYSTACK_DOCKER_TESTS=1 to run task containers in Docker")
+	}
+
+	ctx := context.Background()
+	r := New()
+	t.Cleanup(r.Close)
+	name := "tinystack-ecs-test-" + strconv.FormatInt(time.Now().UnixNano(), 10)
+	t.Cleanup(func() { _, _ = dockercli.Run(ctx, nil, "volume", "rm", name) })
+	volume := api.Volume{Name: new(name), DockerVolumeConfiguration: &api.DockerVolumeConfiguration{
+		Scope: new("shared"), Autoprovision: new(true), Driver: new("local"),
+	}}
+	if err := r.PrepareTask(ctx, "shared-owner", nil, []api.Volume{volume}, "", ""); err != nil {
+		t.Fatal(err)
+	}
+
+	r.RemoveTask(ctx, "shared-owner")
+	if _, err := dockercli.Run(ctx, nil, "volume", "inspect", name); err != nil {
+		t.Fatalf("shared volume removed: %v", err)
+	}
+
+	volume.DockerVolumeConfiguration.Autoprovision = new(false)
+	if err := r.PrepareTask(ctx, "next-owner", nil, []api.Volume{volume}, "", ""); err != nil {
+		t.Fatal(err)
+	}
+
+	r.Reset()
+	if _, err := dockercli.Run(ctx, nil, "volume", "inspect", name); err != nil {
+		t.Fatalf("shared volume removed by reset: %v", err)
+	}
+}
+
+func TestTaskResourceBudgets(t *testing.T) {
+	specs := []ecs.ContainerSpec{{CPU: 256, Memory: 64}, {MemoryReservation: 16}}
+	if err := allocateLimits(specs, 1024, true); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := allocateLimits(specs, 128, false); err != nil {
+		t.Fatal(err)
+	}
+
+	if specs[1].CPU != 768 || specs[1].Memory != 64 {
+		t.Fatalf("allocation=%+v", specs)
+	}
+
+	if err := allocateLimits(specs, 64, false); err == nil {
+		t.Fatal("overcommitted task budget accepted")
+	}
+
+	args := strings.Join(resourceArgs(512, 128, 64), " ")
+	if args != "--cpus 0.5 --memory 128m --memory-reservation 64m" {
+		t.Fatalf("resource arguments=%q", args)
 	}
 }

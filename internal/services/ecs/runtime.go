@@ -47,17 +47,24 @@ type Runtime interface {
 // ContainerSpec is a container of a task, from its definition and overrides.
 type ContainerSpec struct {
 	// Metadata is committed with the started container.
-	Metadata         *ContainerMetadata
-	MetadataToken    string
-	Environment      map[string]string
-	Labels           map[string]string
-	Name             string
-	Image            string
-	WorkingDirectory string
-	User             string
-	EntryPoint       []string
-	Command          []string
-	Ports            []PortSpec
+	Metadata          *ContainerMetadata
+	HealthCheck       *api.HealthCheck
+	Labels            map[string]string
+	Environment       map[string]string
+	Image             string
+	Name              string
+	User              string
+	WorkingDirectory  string
+	MetadataToken     string
+	TaskID            string
+	Mounts            []MountSpec
+	VolumesFrom       []api.VolumeFrom
+	EntryPoint        []string
+	Command           []string
+	Ports             []PortSpec
+	CPU               int64
+	Memory            int64
+	MemoryReservation int64
 }
 
 // PortSpec publishes a container port on a host port, any free one when Host
@@ -134,6 +141,21 @@ func (s *Service) visit(ctx context.Context) {
 // task's containers, watches a running task's containers, and removes a stopped
 // task's containers.
 func (s *Service) advance(ctx context.Context, k string) error {
+	s.lifecycle.RLock()
+	defer s.lifecycle.RUnlock()
+	s.mu.Lock()
+	runContext := s.runContext
+	s.mu.Unlock()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	// Reset cancellation belongs to the service, while ctx inherits the runner cancellation.
+	//nolint:contextcheck // Combine reset and runner lifetimes.
+	stopCancel := context.AfterFunc(runContext, cancel)
+	defer stopCancel()
+	if runContext.Err() != nil {
+		return nil
+	}
+
 	parts := strings.Split(strings.TrimPrefix(k, indexPrefix), "/")
 	if len(parts) != 4 {
 		return s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -146,6 +168,10 @@ func (s *Service) advance(ctx context.Context, k string) error {
 	var t *task
 	var def *taskDef
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+		if _, exists := tx.Get(k); !exists {
+			return nil
+		}
+
 		var found bool
 		var readErr error
 		if t, found, readErr = storage.Read[task](tx, taskKey(scope, parts[2], parts[3])); readErr != nil || !found {
@@ -178,17 +204,29 @@ func (s *Service) advance(ctx context.Context, k string) error {
 // launch starts a pending task's containers and records them, or stops the task
 // when one fails to start.
 func (s *Service) launch(ctx context.Context, scope request.Scope, t *task, def *taskDef) error {
+	ctx, cancel := s.startupContext(ctx, scope, t)
+	defer cancel()
 	specs, err := s.containerSpecs(scope, t, def)
-	var started []Started
-	for i := 0; err == nil && i < len(specs); i++ {
-		var st Started
-		if st, err = s.runtime.Start(ctx, &specs[i]); err == nil {
-			started = append(started, st)
-		}
+	started := make([]Started, len(specs))
+	if err == nil {
+		err = s.resolveSecrets(ctx, scope, specs, def)
+	}
+
+	owner := taskARN(scope, t.Cluster, t.ID)
+	if rt, ok := s.runtime.(TaskRuntime); ok && err == nil {
+		err = rt.PrepareTask(ctx, owner, specs, def.Def.Volumes, t.Cpu, t.Memory)
+	}
+
+	if err == nil {
+		err = s.startOrdered(ctx, specs, def, started)
 	}
 
 	kept := false
 	updateErr := s.store.Update(ctx, func(tx storage.WriteTx) error {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		cur, found, readErr := storage.Read[task](tx, taskKey(scope, t.Cluster, t.ID))
 		// A task stopped while its containers started keeps none of them.
 		if readErr != nil || !found || cur.Last != pending {
@@ -202,6 +240,10 @@ func (s *Service) launch(ctx context.Context, scope request.Scope, t *task, def 
 
 		if err != nil {
 			reason := "CannotStartContainerError: " + err.Error()
+			if strings.HasPrefix(err.Error(), "ResourceInitializationError:") {
+				reason = err.Error()
+			}
+
 			reason = reason[:min(len(reason), maxReason)]
 			for i := range cur.Containers {
 				cur.Containers[i].Reason = new(reason)
@@ -258,7 +300,15 @@ func (s *Service) launch(ctx context.Context, scope request.Scope, t *task, def 
 	kept = kept && updateErr == nil
 	if !kept {
 		for _, st := range started {
-			s.runtime.Remove(context.WithoutCancel(ctx), st.ID)
+			if st.ID != "" {
+				s.runtime.Remove(context.WithoutCancel(ctx), st.ID)
+			}
+		}
+	}
+
+	if !kept {
+		if rt, ok := s.runtime.(TaskRuntime); ok {
+			rt.RemoveTask(ctx, owner)
 		}
 	}
 
@@ -272,18 +322,18 @@ func (s *Service) containerSpecs(
 	t *task,
 	def *taskDef,
 ) ([]ContainerSpec, error) {
+	if err := checkExecution(&def.Def); err != nil {
+		return nil, err
+	}
+
 	specs := make([]ContainerSpec, 0, len(def.Def.ContainerDefinitions))
 	for i := range def.Def.ContainerDefinitions {
 		d := &def.Def.ContainerDefinitions[i]
-		if len(d.Secrets) > 0 || len(d.MountPoints) > 0 || len(d.VolumesFrom) > 0 || len(d.DependsOn) > 0 ||
-			len(d.Links) > 0 {
-			return nil, errors.New(
-				"container " + common.Value(d.Name) + " uses secrets, volumes, dependencies, or links, " +
-					"which TinyStack does not run",
-			)
-		}
 
 		spec := ContainerSpec{
+			TaskID: taskARN(scope, t.Cluster, t.ID), HealthCheck: d.HealthCheck,
+			CPU: common.Value(d.Cpu), Memory: common.Value(d.Memory),
+			MemoryReservation: common.Value(d.MemoryReservation), VolumesFrom: d.VolumesFrom,
 			Name: common.Value(
 				d.Name,
 			),
@@ -297,6 +347,12 @@ func (s *Service) containerSpecs(
 				"tinystack.ecs.task": taskARN(scope, t.Cluster, t.ID), "tinystack.ecs.container": common.Value(d.Name),
 			},
 		}
+		for key, value := range d.DockerLabels {
+			if !strings.HasPrefix(key, "tinystack.") {
+				spec.Labels[key] = value
+			}
+		}
+
 		for _, kv := range d.Environment {
 			spec.Environment[common.Value(kv.Name)] = common.Value(kv.Value)
 		}
@@ -307,6 +363,10 @@ func (s *Service) containerSpecs(
 					continue
 				}
 
+				spec.CPU = common.Value(common.OrElse(o.Cpu, new(spec.CPU)))
+				spec.Memory = common.Value(common.OrElse(o.Memory, new(spec.Memory)))
+				spec.MemoryReservation = common.Value(common.OrElse(o.MemoryReservation, new(spec.MemoryReservation)))
+
 				if o.Command != nil {
 					spec.Command = o.Command
 				}
@@ -315,6 +375,13 @@ func (s *Service) containerSpecs(
 					spec.Environment[common.Value(kv.Name)] = common.Value(kv.Value)
 				}
 			}
+		}
+
+		for _, m := range d.MountPoints {
+			spec.Mounts = append(spec.Mounts, MountSpec{
+				Source: common.Value(m.SourceVolume),
+				Target: common.Value(m.ContainerPath), ReadOnly: common.Value(m.ReadOnly),
+			})
 		}
 
 		for _, p := range d.PortMappings {
@@ -399,9 +466,27 @@ func (s *Service) watch(ctx context.Context, scope request.Scope, t *task, def *
 	}
 
 	exits := map[int]exit{}
+	health := map[int]string{}
+	unhealthy := false
 	for i, c := range t.Containers {
 		if common.Value(c.LastStatus) != running || c.RuntimeId == nil {
 			continue
+		}
+
+		if rt, ok := s.runtime.(HealthRuntime); ok && def.Def.ContainerDefinitions[i].HealthCheck != nil {
+			status, err := rt.Health(ctx, *c.RuntimeId)
+			if errors.Is(err, ErrGone) {
+				exits[i] = exit{gone: true}
+				continue
+			}
+
+			if err != nil {
+				return err
+			}
+
+			health[i] = status
+			unhealthy = unhealthy ||
+				status == healthUnhealthy && common.Value(def.Def.ContainerDefinitions[i].Essential)
 		}
 
 		s.ship(ctx, scope, t, &def.Def.ContainerDefinitions[i], *c.RuntimeId)
@@ -416,7 +501,7 @@ func (s *Service) watch(ctx context.Context, scope request.Scope, t *task, def *
 		}
 	}
 
-	if len(exits) == 0 {
+	if len(exits) == 0 && len(health) == 0 {
 		return nil
 	}
 
@@ -426,7 +511,11 @@ func (s *Service) watch(ctx context.Context, scope request.Scope, t *task, def *
 			return err
 		}
 
-		essential, left := false, 0
+		for i, status := range health {
+			cur.Containers[i].HealthStatus = new(status)
+		}
+
+		essential, left := unhealthy, 0
 		for i := range cur.Containers {
 			e, ok := exits[i]
 			if !ok {
@@ -456,8 +545,12 @@ func (s *Service) watch(ctx context.Context, scope request.Scope, t *task, def *
 			return loadErr
 		}
 
-		if stopErr := s.stop(tx, scope, cur, "EssentialContainerExited",
-			"Essential container in task exited"); stopErr != nil {
+		reason := "Essential container in task exited"
+		if unhealthy {
+			reason = "Essential container failed health checks"
+		}
+
+		if stopErr := s.stop(tx, scope, cur, "EssentialContainerExited", reason); stopErr != nil {
 			return stopErr
 		}
 
@@ -480,6 +573,10 @@ func (s *Service) finish(ctx context.Context, scope request.Scope, k string, t *
 		s.mu.Unlock()
 	}
 
+	if rt, ok := s.runtime.(TaskRuntime); ok {
+		rt.RemoveTask(ctx, taskARN(scope, t.Cluster, t.ID))
+	}
+
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
 		tx.Delete(k)
 		return nil
@@ -491,7 +588,7 @@ func (s *Service) finish(ctx context.Context, scope request.Scope, k string, t *
 // and the container's runtime ID without one.
 func (s *Service) ship(ctx context.Context, scope request.Scope, t *task, d *api.ContainerDefinition, id string) {
 	lc := d.LogConfiguration
-	if lc == nil || common.Value(lc.LogDriver) != "awslogs" || lc.Options["awslogs-group"] == "" || s.writeLogs == nil {
+	if lc == nil || common.Value(lc.LogDriver) != logAWS || lc.Options["awslogs-group"] == "" || s.writeLogs == nil {
 		return
 	}
 

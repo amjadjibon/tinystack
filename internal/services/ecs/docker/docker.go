@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/dockercli"
 	"github.com/amjadjibon/tinystack/internal/services/ecs"
 )
@@ -28,18 +29,66 @@ var _ ecs.Runtime = (*Runtime)(nil)
 
 // Runtime runs task containers in Docker.
 type Runtime struct {
-	// started holds the IDs of the containers not yet removed.
+	// tasks and started are guarded by mu; each task's resources by its own lock,
+	// so a slow image pull blocks only the containers of its task.
+	tasks   map[string]*taskResources
 	started map[string]bool
 	mu      sync.Mutex
 	closed  bool
 }
 
 func New() *Runtime {
-	return &Runtime{started: map[string]bool{}}
+	return &Runtime{started: map[string]bool{}, tasks: map[string]*taskResources{}}
 }
 
 func (r *Runtime) Start(ctx context.Context, spec *ecs.ContainerSpec) (ecs.Started, error) {
-	args := []string{"run", "-d", "--add-host=host.docker.internal:host-gateway"}
+	args := []string{"run", "-d"}
+	networkID := ""
+	var task *taskResources
+	if spec.TaskID != "" {
+		r.mu.Lock()
+		task = r.tasks[spec.TaskID]
+		r.mu.Unlock()
+		if task == nil {
+			return ecs.Started{}, fmt.Errorf("task infrastructure was removed")
+		}
+
+		task.mu.Lock()
+		defer task.mu.Unlock()
+		if task.removed {
+			return ecs.Started{}, fmt.Errorf("task infrastructure was removed")
+		}
+
+		networkID = task.anchor
+		args = append(args, "--network=container:"+networkID)
+		for _, mount := range spec.Mounts {
+			source := task.volumes[mount.Source]
+			option := source + ":" + mount.Target
+			if mount.ReadOnly {
+				option += ":ro"
+			}
+
+			args = append(args, "-v", option)
+		}
+
+		for _, from := range spec.VolumesFrom {
+			source := task.containers[common.Value(from.SourceContainer)]
+			if source == "" {
+				return ecs.Started{}, fmt.Errorf("volume source container has not started")
+			}
+
+			if common.Value(from.ReadOnly) {
+				source += ":ro"
+			}
+
+			args = append(args, "--volumes-from", source)
+		}
+	} else {
+		args = append(args, "--add-host=host.docker.internal:host-gateway")
+	}
+
+	args = append(args, resourceArgs(spec.CPU, spec.Memory, spec.MemoryReservation)...)
+	args = append(args, healthArgs(spec.HealthCheck)...)
 	for _, k := range slices.Sorted(maps.Keys(spec.Labels)) {
 		args = append(args, "--label", k+"="+spec.Labels[k])
 	}
@@ -49,6 +98,9 @@ func (r *Runtime) Start(ctx context.Context, spec *ecs.ContainerSpec) (ecs.Start
 	}
 
 	for _, p := range spec.Ports {
+		if networkID != "" {
+			break
+		}
 		host := ""
 		if p.Host != 0 {
 			host = strconv.FormatInt(p.Host, 10)
@@ -80,14 +132,21 @@ func (r *Runtime) Start(ctx context.Context, spec *ecs.ContainerSpec) (ecs.Start
 		return ecs.Started{}, fmt.Errorf("runtime is closed")
 	}
 
+	name := "tinystack-ecs-" + common.RandomID(24)
+	r.mu.Lock()
+	r.started[name] = true
+	r.mu.Unlock()
+	args = append(args, "--name", name)
 	id, err := dockercli.Run(ctx, nil, append(append(args, "--", spec.Image), command...)...)
 	if err != nil {
+		r.Remove(ctx, name)
 		return ecs.Started{}, err
 	}
 
 	// A container started while the runtime closed is removed at once.
 	r.mu.Lock()
 	closed = r.closed
+	delete(r.started, name)
 	r.started[id] = true
 	r.mu.Unlock()
 	if closed {
@@ -95,9 +154,17 @@ func (r *Runtime) Start(ctx context.Context, spec *ecs.ContainerSpec) (ecs.Start
 		return ecs.Started{}, fmt.Errorf("runtime is closed")
 	}
 
+	if task != nil {
+		task.containers[spec.Name] = id
+	}
+
 	started := ecs.Started{ID: id}
+	portID := id
+	if networkID != "" {
+		portID = networkID
+	}
 	for _, p := range spec.Ports {
-		host, portErr := hostPort(ctx, id, p)
+		host, portErr := hostPort(ctx, portID, p)
 		if portErr != nil {
 			r.Remove(ctx, id)
 			return ecs.Started{}, portErr
@@ -179,9 +246,16 @@ func (r *Runtime) Logs(ctx context.Context, id string, since time.Time) ([]ecs.L
 // Remove deletes a container. It outlives the caller's cancellation, since a
 // container must go even when its task was abandoned.
 func (r *Runtime) Remove(ctx context.Context, id string) {
+	r.mu.Lock()
+	owned := r.started[id]
+	r.mu.Unlock()
+	if !owned {
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), removeTimeout)
 	defer cancel()
-	_, _ = dockercli.Run(ctx, nil, "rm", "-f", id)
+	_, _ = dockercli.Run(ctx, nil, "rm", "-f", "-v", id)
 	r.mu.Lock()
 	delete(r.started, id)
 	r.mu.Unlock()
@@ -201,6 +275,7 @@ func (r *Runtime) Close() {
 func (r *Runtime) Reset() {
 	r.mu.Lock()
 	ids := slices.Collect(maps.Keys(r.started))
+	owners := slices.Collect(maps.Keys(r.tasks))
 	r.mu.Unlock()
 	var wg sync.WaitGroup
 	for _, id := range ids {
@@ -208,4 +283,7 @@ func (r *Runtime) Reset() {
 	}
 
 	wg.Wait()
+	for _, owner := range owners {
+		r.RemoveTask(context.Background(), owner)
+	}
 }

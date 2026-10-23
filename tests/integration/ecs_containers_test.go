@@ -28,8 +28,9 @@ import (
 
 // fakeContainer is a container the fake runtime runs.
 type fakeContainer struct {
-	spec    orchestration.ContainerSpec
+	health  string
 	logs    []orchestration.LogLine
+	spec    orchestration.ContainerSpec
 	code    int64
 	exited  bool
 	removed bool
@@ -287,7 +288,7 @@ func TestECSServiceReplacesExitedTasks(t *testing.T) {
 		Family: aws.String("secretive"),
 		ContainerDefinitions: []ecstypes.ContainerDefinition{{
 			Name: aws.String("app"), Image: aws.String("api:1"), Memory: aws.Int32(128),
-			Secrets: []ecstypes.Secret{{Name: aws.String("TOKEN"), ValueFrom: aws.String("arn:aws:ssm:x")}},
+			Secrets: []ecstypes.Secret{{Name: aws.String("TOKEN"), ValueFrom: aws.String("/missing")}},
 		}},
 	})
 	if err != nil {
@@ -352,5 +353,65 @@ func TestECSServiceReplacesExitedTasks(t *testing.T) {
 
 	waitFor(t, "removed container", func() bool {
 		return rt.find(aws.ToString(running.Containers[0].RuntimeId)).removed
+	})
+}
+
+func (r *containerRuntime) Health(_ context.Context, id string) (string, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.containers[id].health == "" {
+		return "UNKNOWN", nil
+	}
+
+	return r.containers[id].health, nil
+}
+
+func TestECSServiceReplacesUnhealthyTasks(t *testing.T) {
+	rt := &containerRuntime{containers: map[string]*fakeContainer{}}
+	s := ecsServer(t, rt)
+	c := ecsClient(s, "us-east-1")
+	ctx := context.Background()
+	_, err := c.RegisterTaskDefinition(ctx, &ecs.RegisterTaskDefinitionInput{
+		Family: new("health"),
+		ContainerDefinitions: []ecstypes.ContainerDefinition{{
+			Name: new("web"), Image: new("test"), Memory: new(int32(64)),
+			HealthCheck: &ecstypes.HealthCheck{Command: []string{"CMD", "true"}},
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = c.CreateService(ctx, &ecs.CreateServiceInput{
+		ServiceName: new("health"), TaskDefinition: new("health"), DesiredCount: new(int32(1)),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	listed, err := c.ListTasks(ctx, &ecs.ListTasksInput{ServiceName: new("health")})
+	if err != nil || len(listed.TaskArns) != 1 {
+		t.Fatalf("list=%+v err=%v", listed, err)
+	}
+
+	first := waitStatus(ctx, t, c, &listed.TaskArns[0], "RUNNING")
+	id := aws.ToString(first.Containers[0].RuntimeId)
+	rt.mu.Lock()
+	rt.containers[id].health = "HEALTHY"
+	rt.mu.Unlock()
+	waitFor(t, "healthy status", func() bool {
+		return describeTask(ctx, t, c, first.TaskArn).HealthStatus == ecstypes.HealthStatusHealthy
+	})
+	rt.mu.Lock()
+	rt.containers[id].health = "UNHEALTHY"
+	rt.mu.Unlock()
+	stopped := waitStatus(ctx, t, c, first.TaskArn, "STOPPED")
+	if stopped.HealthStatus != ecstypes.HealthStatusUnhealthy ||
+		aws.ToString(stopped.StoppedReason) != "Essential container failed health checks" {
+		t.Fatalf("stopped=%+v", stopped)
+	}
+
+	waitFor(t, "healthy service replacement", func() bool {
+		out, listErr := c.ListTasks(ctx, &ecs.ListTasksInput{ServiceName: new("health")})
+		return listErr == nil && len(out.TaskArns) == 1 && out.TaskArns[0] != aws.ToString(first.TaskArn)
 	})
 }

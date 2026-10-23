@@ -629,6 +629,7 @@ func build(
 	caller := catalog.NewCaller(services...)
 	wafClassicRecords.UseCaller(caller)
 	budgetRecords.Start(caller)
+	containers.UseCaller(caller)
 	workflows.UseCaller(caller)
 	firehoses.UseCaller(caller)
 	// Pipes enrich and deliver to Lambda, SQS, SNS, EventBridge, Step Functions, and Kinesis.
