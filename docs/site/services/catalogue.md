@@ -473,6 +473,8 @@ Manage functions and execute Python/Node locally or managed runtimes in Docker.
 **Execution:** Local processes or Docker runtime. **Selected operations:** 50.
 
 - Function lifecycle, code from ZIP or S3, versions, aliases, layers and tags.
+- ImageConfig EntryPoint, Command and WorkingDirectory round trips for Image functions and overrides Docker startup; Zip functions reject ImageConfig.
+- Provisioned concurrency initializes reusable Docker containers or local Python/Node processes asynchronously with IN_PROGRESS, READY and FAILED status; qualifier pools release on config, alias, version or function deletion, reset and shutdown.
 - Automatic executor selection: Docker when its daemon is reachable, otherwise host Python/Node; lambda.executor can force docker or local.
 - Local Zip execution supports Python 3.x and Node.js CJS/ESM, async/callback handlers, ordered layers, warm reuse, timeouts, logs and directory hot reload.
 - Synchronous Invoke ClientContext accepts base64-encoded JSON and reaches the handler context.
