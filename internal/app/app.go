@@ -56,6 +56,7 @@ import (
 	costandusagereportserviceapi "github.com/amjadjibon/tinystack/internal/aws/generated/costandusagereportservice"
 	costexplorerapi "github.com/amjadjibon/tinystack/internal/aws/generated/costexplorer"
 	databasemigrationserviceapi "github.com/amjadjibon/tinystack/internal/aws/generated/databasemigrationservice"
+	datasyncapi "github.com/amjadjibon/tinystack/internal/aws/generated/datasync"
 	dynamodbapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	dynamodbstreamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
 	ec2api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
@@ -176,6 +177,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/costdata"
 	"github.com/amjadjibon/tinystack/internal/services/costexplorer"
 	"github.com/amjadjibon/tinystack/internal/services/databasemigrationservice"
+	"github.com/amjadjibon/tinystack/internal/services/datasync"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/ec2"
 	"github.com/amjadjibon/tinystack/internal/services/ecr"
@@ -467,6 +469,8 @@ func build(
 	globalAcceleratorRecords := globalaccelerator.New(store, network, balancers, buckets)
 	fisRecords := fis.New(store)
 	a.onStop(fisRecords.Stop)
+	dataSyncRecords := datasync.New(store, buckets, roles)
+	a.onStop(dataSyncRecords.Stop)
 	accessAnalyzerRecords := accessanalyzer.New(store)
 	securityHubRecords := securityhub.New(store)
 	inspector2Records := inspector2.New(store)
@@ -597,6 +601,7 @@ func build(
 		codeconnectionsapi.Descriptor(connectionRecords),
 		ampapi.Descriptor(ampRecords),
 		servicecatalogapi.Descriptor(serviceCatalogRecords),
+		datasyncapi.Descriptor(dataSyncRecords),
 		accessanalyzerapi.Descriptor(accessAnalyzerRecords),
 		globalacceleratorapi.Descriptor(globalAcceleratorRecords),
 		fisapi.Descriptor(fisRecords),
@@ -672,6 +677,7 @@ func build(
 	// Step Functions' Task states and Firehose's deliveries call the other
 	// services in-process.
 	caller := catalog.NewCaller(services...)
+	dataSyncRecords.UseCaller(caller)
 	wafClassicRecords.UseCaller(caller)
 	budgetRecords.Start(caller)
 	containers.UseCaller(caller)
@@ -693,6 +699,7 @@ func build(
 	stacks.UseMQ(brokers)
 	stacks.UseMSK(kafkaClusters)
 	stacks.UseMWAA(airflowEnvironments)
+	stacks.UseDataSync(dataSyncRecords)
 	stacks.UseTransfer(transferRecords)
 	stacks.UseLocation(locationTrackers)
 	stacks.UseS3Tables(tableRecords)

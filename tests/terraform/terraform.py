@@ -88,8 +88,9 @@ def main():
                 # Resource Explorer index and view tags add two; Service Catalog portfolio and product tags add two.
                 # Global Accelerator accelerator tags add one; its listener and endpoint group stay unchanged.
                 # FIS experiment-template tags force replacement in provider 5.x: one extra add and destroy.
+                # DataSync IAM role, two S3 locations and task tags add four.
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "8 added, 126 changed, 8 destroyed" in updated, updated
+                assert "8 added, 130 changed, 8 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"
                 terraform("plan", "-detailed-exitcode", team="platform")
                 # The provider replaces the monitor when its name changes. The subscription

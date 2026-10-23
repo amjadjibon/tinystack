@@ -5257,6 +5257,306 @@
       ]
     }
   },
+  "datasync": {
+    "operations": [
+      "CreateLocationS3",
+      "DescribeLocationS3",
+      "UpdateLocationS3",
+      "CreateLocationEfs",
+      "DescribeLocationEfs",
+      "UpdateLocationEfs",
+      "ListLocations",
+      "DeleteLocation",
+      "CreateTask",
+      "DescribeTask",
+      "ListTasks",
+      "UpdateTask",
+      "DeleteTask",
+      "StartTaskExecution",
+      "DescribeTaskExecution",
+      "ListTaskExecutions",
+      "CancelTaskExecution",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "validation": {
+      "code": "InvalidRequestException"
+    },
+    "shapes": {
+      "CreateLocationS3Request": [
+        "Subdirectory",
+        "S3BucketArn",
+        "S3StorageClass",
+        "S3Config",
+        "Tags"
+      ],
+      "S3Config": [
+        "BucketAccessRoleArn"
+      ],
+      "TagListEntry": [
+        "Key",
+        "Value"
+      ],
+      "CreateLocationS3Response": [
+        "LocationArn"
+      ],
+      "DescribeLocationS3Request": [
+        "LocationArn"
+      ],
+      "DescribeLocationS3Response": [
+        "LocationArn",
+        "LocationUri",
+        "S3StorageClass",
+        "S3Config",
+        "CreationTime"
+      ],
+      "UpdateLocationS3Request": [
+        "LocationArn",
+        "Subdirectory",
+        "S3StorageClass",
+        "S3Config"
+      ],
+      "UpdateLocationS3Response": [],
+      "CreateLocationEfsRequest": [
+        "Subdirectory",
+        "EfsFilesystemArn",
+        "Ec2Config",
+        "Tags",
+        "AccessPointArn",
+        "FileSystemAccessRoleArn",
+        "InTransitEncryption"
+      ],
+      "Ec2Config": [
+        "SubnetArn",
+        "SecurityGroupArns"
+      ],
+      "CreateLocationEfsResponse": [
+        "LocationArn"
+      ],
+      "DescribeLocationEfsRequest": [
+        "LocationArn"
+      ],
+      "DescribeLocationEfsResponse": [
+        "LocationArn",
+        "LocationUri",
+        "Ec2Config",
+        "CreationTime",
+        "AccessPointArn",
+        "FileSystemAccessRoleArn",
+        "InTransitEncryption"
+      ],
+      "UpdateLocationEfsRequest": [
+        "LocationArn",
+        "Subdirectory",
+        "AccessPointArn",
+        "FileSystemAccessRoleArn",
+        "InTransitEncryption"
+      ],
+      "UpdateLocationEfsResponse": [],
+      "ListLocationsRequest": [
+        "MaxResults",
+        "NextToken",
+        "Filters"
+      ],
+      "LocationFilter": [
+        "Name",
+        "Values",
+        "Operator"
+      ],
+      "ListLocationsResponse": [
+        "Locations",
+        "NextToken"
+      ],
+      "LocationListEntry": [
+        "LocationArn",
+        "LocationUri"
+      ],
+      "DeleteLocationRequest": [
+        "LocationArn"
+      ],
+      "DeleteLocationResponse": [],
+      "CreateTaskRequest": [
+        "SourceLocationArn",
+        "DestinationLocationArn",
+        "CloudWatchLogGroupArn",
+        "Name",
+        "Options",
+        "Excludes",
+        "Schedule",
+        "Tags",
+        "Includes",
+        "TaskMode"
+      ],
+      "Options": [
+        "VerifyMode",
+        "OverwriteMode",
+        "Atime",
+        "Mtime",
+        "Uid",
+        "Gid",
+        "PreserveDeletedFiles",
+        "PreserveDevices",
+        "PosixPermissions",
+        "BytesPerSecond",
+        "TaskQueueing",
+        "LogLevel",
+        "TransferMode",
+        "SecurityDescriptorCopyFlags",
+        "ObjectTags",
+        "ObjectMetadata"
+      ],
+      "FilterRule": [
+        "FilterType",
+        "Value"
+      ],
+      "TaskSchedule": [
+        "ScheduleExpression",
+        "Status"
+      ],
+      "CreateTaskResponse": [
+        "TaskArn"
+      ],
+      "DescribeTaskRequest": [
+        "TaskArn"
+      ],
+      "DescribeTaskResponse": [
+        "TaskArn",
+        "Status",
+        "Name",
+        "CurrentTaskExecutionArn",
+        "SourceLocationArn",
+        "DestinationLocationArn",
+        "CloudWatchLogGroupArn",
+        "Options",
+        "Excludes",
+        "Schedule",
+        "ErrorCode",
+        "ErrorDetail",
+        "CreationTime",
+        "Includes",
+        "TaskMode"
+      ],
+      "ListTasksRequest": [
+        "MaxResults",
+        "NextToken",
+        "Filters"
+      ],
+      "TaskFilter": [
+        "Name",
+        "Values",
+        "Operator"
+      ],
+      "ListTasksResponse": [
+        "Tasks",
+        "NextToken"
+      ],
+      "TaskListEntry": [
+        "TaskArn",
+        "Status",
+        "Name",
+        "TaskMode"
+      ],
+      "UpdateTaskRequest": [
+        "TaskArn",
+        "Options",
+        "Excludes",
+        "Schedule",
+        "Name",
+        "CloudWatchLogGroupArn",
+        "Includes"
+      ],
+      "UpdateTaskResponse": [],
+      "DeleteTaskRequest": [
+        "TaskArn"
+      ],
+      "DeleteTaskResponse": [],
+      "StartTaskExecutionRequest": [
+        "TaskArn",
+        "OverrideOptions",
+        "Includes",
+        "Excludes",
+        "Tags"
+      ],
+      "StartTaskExecutionResponse": [
+        "TaskExecutionArn"
+      ],
+      "DescribeTaskExecutionRequest": [
+        "TaskExecutionArn"
+      ],
+      "DescribeTaskExecutionResponse": [
+        "TaskExecutionArn",
+        "Status",
+        "Options",
+        "Excludes",
+        "Includes",
+        "StartTime",
+        "EstimatedFilesToTransfer",
+        "EstimatedBytesToTransfer",
+        "FilesTransferred",
+        "BytesWritten",
+        "BytesTransferred",
+        "BytesCompressed",
+        "Result",
+        "FilesDeleted",
+        "FilesSkipped",
+        "FilesVerified",
+        "EstimatedFilesToDelete",
+        "TaskMode",
+        "FilesPrepared",
+        "LaunchTime",
+        "EndTime"
+      ],
+      "TaskExecutionResultDetail": [
+        "PrepareDuration",
+        "PrepareStatus",
+        "TotalDuration",
+        "TransferDuration",
+        "TransferStatus",
+        "VerifyDuration",
+        "VerifyStatus",
+        "ErrorCode",
+        "ErrorDetail"
+      ],
+      "ListTaskExecutionsRequest": [
+        "TaskArn",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListTaskExecutionsResponse": [
+        "TaskExecutions",
+        "NextToken"
+      ],
+      "TaskExecutionListEntry": [
+        "TaskExecutionArn",
+        "Status",
+        "TaskMode"
+      ],
+      "CancelTaskExecutionRequest": [
+        "TaskExecutionArn"
+      ],
+      "CancelTaskExecutionResponse": [],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "Keys"
+      ],
+      "UntagResourceResponse": [],
+      "ListTagsForResourceRequest": [
+        "ResourceArn",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags",
+        "NextToken"
+      ]
+    }
+  },
   "dynamodb": {
     "operations": [
       "CreateTable",

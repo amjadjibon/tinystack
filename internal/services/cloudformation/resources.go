@@ -291,6 +291,7 @@ type client struct {
 	mq       mqRecords
 	msk      mskRecords
 	mwaa     mwaaRecords
+	dataSync dataSyncRecords
 	transfer transferRecords
 	location locationRecords
 	s3tables s3tablesRecords

@@ -446,6 +446,10 @@
     "fis": {
       "path": "codegen/sdk-codegen/aws-models/fis.json",
       "sha256": "5bdd1bef3a7c8a7d5dcf94c41ebc04ccfe6cabd50249947c2524ce3ade45241a"
+    },
+    "datasync": {
+      "path": "codegen/sdk-codegen/aws-models/datasync.json",
+      "sha256": "6a70e3cfff842f15657a006845f382d2bd9cb8d0d0c9a0fca79dff0fdae88d50"
     }
   }
 }

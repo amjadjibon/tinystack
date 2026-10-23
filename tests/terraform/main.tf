@@ -17,6 +17,7 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
+    datasync             = var.endpoint
     resourceexplorer2    = var.endpoint
     servicecatalog       = var.endpoint
     fis                  = var.endpoint
@@ -2644,6 +2645,48 @@ resource "aws_fis_experiment_template" "main" {
       key   = "duration"
       value = "PT1M"
     }
+  }
+  tags = local.tags
+}
+
+resource "aws_iam_role" "datasync" {
+  name = "datasync"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "datasync.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+  tags = local.tags
+}
+
+resource "aws_datasync_location_s3" "source" {
+  s3_bucket_arn = aws_s3_bucket.assets.arn
+  subdirectory  = "/input/"
+  s3_config {
+    bucket_access_role_arn = aws_iam_role.datasync.arn
+  }
+  tags = local.tags
+}
+
+resource "aws_datasync_location_s3" "destination" {
+  s3_bucket_arn = aws_s3_bucket.signer_output.arn
+  subdirectory  = "/output/"
+  s3_config {
+    bucket_access_role_arn = aws_iam_role.datasync.arn
+  }
+  tags = local.tags
+}
+
+resource "aws_datasync_task" "local" {
+  name                     = "local-transfer"
+  source_location_arn      = aws_datasync_location_s3.source.arn
+  destination_location_arn = aws_datasync_location_s3.destination.arn
+  options {
+    verify_mode   = "ONLY_FILES_TRANSFERRED"
+    transfer_mode = "CHANGED"
   }
   tags = local.tags
 }

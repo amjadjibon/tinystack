@@ -42,6 +42,7 @@ export const categories = [
 ];
 
 const catalog: Record<string, ServiceInfo> = {
+	datasync: { title: "AWS DataSync", category: migration, icon: "datasync" },
 	resourceexplorer2: {
 		title: "AWS Resource Explorer",
 		category: management,

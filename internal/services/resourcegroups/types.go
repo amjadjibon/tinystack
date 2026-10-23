@@ -87,6 +87,7 @@ var namespaces = map[string]string{
 	"acmpca":                    "ACMPCA",
 	"verifiedpermissions":       "VerifiedPermissions",
 	"amp":                       "APS",
+	"datasync":                  "DataSync",
 	"accessanalyzer":            "AccessAnalyzer",
 	"servicecatalog":            "ServiceCatalog",
 	"securityhub":               "SecurityHub",
@@ -104,6 +105,9 @@ var typeNames = map[string]string{
 	"amp/rulegroupsnamespace":                "RuleGroupsNamespace",
 	"servicecatalog/portfolio":               "Portfolio",
 	"servicecatalog/product":                 "CloudFormationProduct",
+	"datasync/locations3":                    "LocationS3",
+	"datasync/locationefs":                   "LocationEFS",
+	"datasync/task":                          "Task",
 	"apprunner/service":                      "Service",
 	"apprunner/autoscalingconfiguration":     "AutoScalingConfiguration",
 	"apprunner/vpcconnector":                 "VpcConnector",
@@ -202,6 +206,11 @@ func resourceType(r *catalog.Owned) (string, bool) {
 
 	// Security Hub custom actions have no CloudFormation resource type.
 	if r.Service == "securityhub" && r.Type == "action" {
+		return "", false
+	}
+
+	// DataSync task executions have no CloudFormation resource type.
+	if r.Service == "datasync" && r.Type == "execution" {
 		return "", false
 	}
 

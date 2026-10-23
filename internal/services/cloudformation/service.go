@@ -50,6 +50,7 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
+	dataSync dataSyncRecords
 	transfer transferRecords
 	location locationRecords
 	s3tables s3tablesRecords

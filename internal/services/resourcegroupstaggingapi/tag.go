@@ -260,6 +260,16 @@ var taggers = map[string]tagger{
 	"accessanalyzer":      resourceOperations("accessanalyzer", "ResourceArn", plain),
 	"globalaccelerator":   resourceOperations("globalaccelerator", "ResourceArn", pairs),
 	"ram":                 resourceOperations("ram", "ResourceShareArn", pairs),
+	"datasync": operations(
+		"datasync",
+		"TagResource",
+		"UntagResource",
+		byARN("ResourceArn"),
+		"Tags",
+		pairs,
+		"Keys",
+		names,
+	),
 	"servicecatalog": {
 		tag: func(ctx context.Context, c *catalog.Caller, r *catalog.Owned, tags map[string]string) error {
 			return serviceCatalogTags(ctx, c, r, "AddTags", pairs(tags))

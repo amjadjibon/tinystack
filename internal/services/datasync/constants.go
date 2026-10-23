@@ -1,0 +1,27 @@
+package datasync
+
+const (
+	modeBasic            = "BASIC"
+	detailConfiguration  = "Configuration"
+	locationEfs          = "EFS"
+	statusError          = "ERROR"
+	operatorEquals       = "Equals"
+	detailExecutionReady = "ExecutionReady"
+	statusLaunching      = "LAUNCHING"
+	optionNone           = "NONE"
+	operatorNotContains  = "NotContains"
+	operatorNotEquals    = "NotEquals"
+	phasePending         = "PENDING"
+	verifyPointInTime    = "POINT_IN_TIME_CONSISTENT"
+	statusPreparing      = "PREPARING"
+	optionPreserve       = "PRESERVE"
+	statusRunning        = "RUNNING"
+	detailRecordsOnly    = "RecordsOnly"
+	locationS3           = "S3"
+	statusSuccess        = "SUCCESS"
+	statusTransferring   = "TRANSFERRING"
+	statusVerifying      = "VERIFYING"
+	kindExecution        = "execution"
+	kindLocation         = "location"
+	kindTask             = "task"
+)
