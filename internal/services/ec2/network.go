@@ -372,7 +372,7 @@ func vpcValues(scope request.Scope, v *vpc) values {
 		filterCIDR:                              {v.CIDR},
 		"cidr-block-association.cidr-block":     {v.CIDR},
 		"cidr-block-association.association-id": {v.AssociationID},
-		"cidr-block-association.state":          {"associated"},
+		"cidr-block-association.state":          {associated},
 		"dhcp-options-id": {
 			v.DHCPOptionsID,
 		},

@@ -50,6 +50,12 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 			if (kind == kindInstance && r.State == stateTerminated) ||
 				(kind == kindNATGateway && r.State == stateDeleted) ||
+				(kind == kindTransitGateway && r.State == stateDeleted) ||
+				(kind == kindTransitGatewayAttachment && r.State == stateDeleted) ||
+				(kind == kindTransitGatewayRouteTable && r.State == stateDeleted) ||
+				(kind == kindCustomerGateway && r.State == stateDeleted) ||
+				(kind == kindVpnGateway && r.State == stateDeleted) ||
+				(kind == kindVpnConnection && r.State == stateDeleted) ||
 				(kind == kindPeering && (r.State == stateDeleted || r.State == "rejected" || r.State == "failed")) {
 				continue
 			}

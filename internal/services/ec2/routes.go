@@ -30,12 +30,13 @@ const (
 // routeTable is a VPC's route table with its associations: the VPC's main
 // table holds the main association, and others hold subnets'.
 type routeTable struct {
-	Tags         map[string]string `json:",omitempty"`
-	ID           string
-	VPCID        string
-	ClientToken  string             `json:",omitempty"`
-	Associations []routeAssociation `json:",omitempty"`
-	Routes       []route
+	Tags            map[string]string `json:",omitempty"`
+	ID              string
+	VPCID           string
+	ClientToken     string             `json:",omitempty"`
+	Associations    []routeAssociation `json:",omitempty"`
+	PropagatingVgws []string           `json:",omitempty"`
+	Routes          []route
 }
 
 type routeAssociation struct {
@@ -49,16 +50,17 @@ type routeAssociation struct {
 // instance, or a gateway VPC endpoint, whose routes go to its service's
 // prefix list.
 type route struct {
-	CIDRv6          string `json:",omitempty"`
-	EgressGatewayID string `json:",omitempty"`
-	PeeringID       string `json:",omitempty"`
-	InterfaceID     string `json:",omitempty"`
-	CIDR            string `json:",omitempty"`
-	PrefixList      string `json:",omitempty"`
-	GatewayID       string `json:",omitempty"`
-	NATGatewayID    string `json:",omitempty"`
-	InstanceID      string `json:",omitempty"`
-	Origin          string
+	CIDRv6           string `json:",omitempty"`
+	EgressGatewayID  string `json:",omitempty"`
+	PeeringID        string `json:",omitempty"`
+	InterfaceID      string `json:",omitempty"`
+	TransitGatewayID string `json:",omitempty"`
+	CIDR             string `json:",omitempty"`
+	PrefixList       string `json:",omitempty"`
+	GatewayID        string `json:",omitempty"`
+	NATGatewayID     string `json:",omitempty"`
+	InstanceID       string `json:",omitempty"`
+	Origin           string
 }
 
 func routeTableNotFound(id string) error {
@@ -158,6 +160,38 @@ func dissociateRouteTable(tx storage.WriteTx, scope request.Scope, subnetID stri
 func routeState(tx storage.ReadTx, scope request.Scope, rt *routeTable, r *route) (string, error) {
 	ok := true
 	switch {
+	case r.TransitGatewayID != "":
+		tgw, found, err := storage.Read[transitGateway](tx, scope.Key("ec2", kindTransitGateway, r.TransitGatewayID))
+		if err != nil {
+			return "", err
+		}
+
+		if !found || tgw.State == stateDeleted {
+			ok = false
+			break
+		}
+
+		attachments, listErr := list[transitGatewayAttachment](tx, scope, kindTransitGatewayAttachment)
+		if listErr != nil {
+			return "", listErr
+		}
+
+		ok = slices.ContainsFunc(attachments, func(a *transitGatewayAttachment) bool {
+			return a.TransitGatewayID == r.TransitGatewayID &&
+				a.ResourceType == domainVPC &&
+				a.ResourceID == rt.VPCID &&
+				a.State != stateDeleted
+		})
+	case strings.HasPrefix(r.GatewayID, "vgw-"):
+		vgw, found, err := storage.Read[vpnGateway](tx, scope.Key("ec2", kindVpnGateway, r.GatewayID))
+		if err != nil {
+			return "", err
+		}
+
+		ok = found && vgw.State != stateDeleted &&
+			slices.ContainsFunc(vgw.VPCAttachments, func(a vpnGatewayAttachment) bool {
+				return a.VPCID == rt.VPCID && a.State == stateAttached
+			})
 	case r.EgressGatewayID != "":
 		g, found, err := storage.Read[egressGateway](tx, scope.Key("ec2", kindEgressGateway, r.EgressGatewayID))
 		if err != nil {
@@ -230,6 +264,10 @@ func routeTableOutput(tx storage.ReadTx, scope request.Scope, rt *routeTable) (a
 		Associations: []api.RouteTableAssociation{}, PropagatingVgws: []api.PropagatingVgw{}, Routes: []api.Route{},
 	}
 
+	for _, vgwID := range rt.PropagatingVgws {
+		out.PropagatingVgws = append(out.PropagatingVgws, api.PropagatingVgw{GatewayId: new(vgwID)})
+	}
+
 	for i := range rt.Associations {
 		out.Associations = append(out.Associations, associationOutput(rt, &rt.Associations[i]))
 	}
@@ -242,11 +280,20 @@ func routeTableOutput(tx storage.ReadTx, scope request.Scope, rt *routeTable) (a
 		}
 
 		item := api.Route{
-			DestinationCidrBlock: optional(r.CIDR), DestinationIpv6CidrBlock: optional(r.CIDRv6),
-			EgressOnlyInternetGatewayId: optional(r.EgressGatewayID), VpcPeeringConnectionId: optional(r.PeeringID),
-			NetworkInterfaceId: optional(r.InterfaceID), DestinationPrefixListId: optional(r.PrefixList),
-			GatewayId: optional(r.GatewayID), InstanceId: optional(r.InstanceID),
-			NatGatewayId: optional(r.NATGatewayID), Origin: new(r.Origin), State: new(state),
+			DestinationCidrBlock:        optional(r.CIDR),
+			DestinationIpv6CidrBlock:    optional(r.CIDRv6),
+			EgressOnlyInternetGatewayId: optional(r.EgressGatewayID),
+			VpcPeeringConnectionId:      optional(r.PeeringID),
+			NetworkInterfaceId:          optional(r.InterfaceID),
+			DestinationPrefixListId:     optional(r.PrefixList),
+			GatewayId:                   optional(r.GatewayID),
+			InstanceId:                  optional(r.InstanceID),
+			NatGatewayId: optional(
+				r.NATGatewayID,
+			),
+			TransitGatewayId: optional(r.TransitGatewayID),
+			Origin:           new(r.Origin),
+			State:            new(state),
 		}
 
 		if r.InstanceID != "" {
@@ -254,6 +301,45 @@ func routeTableOutput(tx storage.ReadTx, scope request.Scope, rt *routeTable) (a
 		}
 
 		out.Routes = append(out.Routes, item)
+	}
+
+	if len(rt.PropagatingVgws) > 0 {
+		vpns, err := list[vpnConnection](tx, scope, kindVpnConnection)
+		if err != nil {
+			return out, err
+		}
+
+		for _, vpn := range vpns {
+			if vpn.State == stateDeleted || !slices.Contains(rt.PropagatingVgws, vpn.VpnGatewayID) {
+				continue
+			}
+
+			gateway, found, err := storage.Read[vpnGateway](tx, scope.Key("ec2", kindVpnGateway, vpn.VpnGatewayID))
+			if err != nil {
+				return out, err
+			}
+
+			if !found || gateway.State == stateDeleted || !slices.ContainsFunc(gateway.VPCAttachments,
+				func(a vpnGatewayAttachment) bool { return a.VPCID == rt.VPCID && a.State == stateAttached }) {
+				continue
+			}
+
+			for _, route := range vpn.Routes {
+				if route.State != stateAvailable || slices.ContainsFunc(out.Routes,
+					func(r api.Route) bool { return common.Value(r.DestinationCidrBlock) == route.DestinationCIDR }) {
+					continue
+				}
+
+				out.Routes = append(out.Routes, api.Route{
+					DestinationCidrBlock: new(route.DestinationCIDR),
+					GatewayId: new(
+						vpn.VpnGatewayID,
+					),
+					Origin: new("EnableVgwRoutePropagation"),
+					State:  new(routeActive),
+				})
+			}
+		}
 	}
 
 	return out, nil
@@ -265,7 +351,7 @@ func routeTableValues(scope request.Scope, rt *routeTable) values {
 		filterMain: {}, "association.subnet-id": {}, "association.route-table-association-id": {},
 		"association.route-table-id": {}, "route.destination-cidr-block": {}, "route.gateway-id": {},
 		"route.instance-id": {}, "route.nat-gateway-id": {}, "route.origin": {},
-		"route.destination-prefix-list-id": {},
+		"route.destination-prefix-list-id": {}, "route.transit-gateway-id": {},
 	}
 
 	for _, a := range rt.Associations {
@@ -298,6 +384,10 @@ func routeTableValues(scope request.Scope, rt *routeTable) values {
 
 		if r.NATGatewayID != "" {
 			v["route.nat-gateway-id"] = append(v["route.nat-gateway-id"], r.NATGatewayID)
+		}
+
+		if r.TransitGatewayID != "" {
+			v["route.transit-gateway-id"] = append(v["route.transit-gateway-id"], r.TransitGatewayID)
 		}
 	}
 
@@ -456,6 +546,7 @@ func routeTarget(tx storage.ReadTx, scope request.Scope, rt *routeTable, want *r
 		want.EgressGatewayID,
 		want.PeeringID,
 		want.InterfaceID,
+		want.TransitGatewayID,
 	} {
 		if id != "" {
 			set++
@@ -467,6 +558,29 @@ func routeTarget(tx storage.ReadTx, scope request.Scope, rt *routeTable, want *r
 	case set != 1:
 		return awserror.New("InvalidParameterCombination", "The parameter combination is not valid: "+
 			"a route needs exactly one of gatewayId, natGatewayId, and instanceId")
+	case want.TransitGatewayID != "":
+		tgw, found, err := storage.Read[transitGateway](tx, scope.Key("ec2", kindTransitGateway, want.TransitGatewayID))
+		if err != nil || !found || tgw.State == stateDeleted {
+			return common.ErrorsOr(err, tgwNotFound(want.TransitGatewayID))
+		}
+
+		attachments, listErr := list[transitGatewayAttachment](tx, scope, kindTransitGatewayAttachment)
+		if listErr != nil {
+			return listErr
+		}
+
+		hasAttachment := slices.ContainsFunc(attachments, func(a *transitGatewayAttachment) bool {
+			return a.TransitGatewayID == want.TransitGatewayID &&
+				a.ResourceType == domainVPC &&
+				a.ResourceID == rt.VPCID &&
+				a.State != stateDeleted
+		})
+		if !hasAttachment {
+			return awserror.New("InvalidParameterValue",
+				fmt.Sprintf("Transit Gateway %s is not attached to VPC %s", want.TransitGatewayID, rt.VPCID))
+		}
+
+		vpcID = rt.VPCID
 	case want.EgressGatewayID != "":
 		if want.CIDRv6 == "" {
 			return invalidParameter("Egress-only gateway routes require IPv6")
@@ -501,16 +615,31 @@ func routeTarget(tx storage.ReadTx, scope request.Scope, rt *routeTable, want *r
 
 		vpcID = ni.VPCID
 	case want.GatewayID != "":
-		if !strings.HasPrefix(want.GatewayID, "igw-") {
+		switch {
+		case strings.HasPrefix(want.GatewayID, "igw-"):
+			g, err := loadGateway(tx, scope, want.GatewayID)
+			if err != nil {
+				return err
+			}
+
+			vpcID = g.VPCID
+		case strings.HasPrefix(want.GatewayID, "vgw-"):
+			vgw, found, err := storage.Read[vpnGateway](tx, scope.Key("ec2", kindVpnGateway, want.GatewayID))
+			if err != nil || !found || vgw.State == stateDeleted {
+				return common.ErrorsOr(err, vgwNotFound(want.GatewayID))
+			}
+
+			if !slices.ContainsFunc(vgw.VPCAttachments, func(a vpnGatewayAttachment) bool {
+				return a.VPCID == rt.VPCID && a.State == stateAttached
+			}) {
+				return awserror.New("Gateway.NotAttached",
+					fmt.Sprintf("The vpnGateway '%s' is not attached to VPC '%s'", want.GatewayID, rt.VPCID))
+			}
+
+			vpcID = rt.VPCID
+		default:
 			return notFound("InvalidGatewayID.NotFound", "gateway", want.GatewayID)
 		}
-
-		g, err := loadGateway(tx, scope, want.GatewayID)
-		if err != nil {
-			return err
-		}
-
-		vpcID = g.VPCID
 	case want.NATGatewayID != "":
 		g, found, err := storage.Read[natGateway](tx, scope.Key("ec2", kindNATGateway, want.NATGatewayID))
 		if err != nil || !found || !g.active() {
@@ -624,8 +753,9 @@ func (s *Service) CreateRoute(ctx context.Context, in *api.CreateRouteRequest) (
 		EgressGatewayID: common.Value(
 			in.EgressOnlyInternetGatewayId,
 		),
-		PeeringID:   common.Value(in.VpcPeeringConnectionId),
-		InterfaceID: common.Value(in.NetworkInterfaceId),
+		PeeringID:        common.Value(in.VpcPeeringConnectionId),
+		InterfaceID:      common.Value(in.NetworkInterfaceId),
+		TransitGatewayID: common.Value(in.TransitGatewayId),
 	}, "create")
 	if err != nil {
 		return nil, err
@@ -645,8 +775,9 @@ func (s *Service) ReplaceRoute(ctx context.Context, in *api.ReplaceRouteRequest)
 		EgressGatewayID: common.Value(
 			in.EgressOnlyInternetGatewayId,
 		),
-		PeeringID:   common.Value(in.VpcPeeringConnectionId),
-		InterfaceID: common.Value(in.NetworkInterfaceId),
+		PeeringID:        common.Value(in.VpcPeeringConnectionId),
+		InterfaceID:      common.Value(in.NetworkInterfaceId),
+		TransitGatewayID: common.Value(in.TransitGatewayId),
 	}, "replace")
 	if err != nil {
 		return nil, err
@@ -792,4 +923,69 @@ func (s *Service) ReplaceRouteTableAssociation(
 		NewAssociationId: new(newAssociation),
 		AssociationState: &api.RouteTableAssociationState{State: new(stateAssociated)},
 	}, nil
+}
+
+// EnableVgwRoutePropagation enables route propagation from a VPN gateway to a route table.
+func (s *Service) EnableVgwRoutePropagation(
+	ctx context.Context,
+	in *api.EnableVgwRoutePropagationRequest,
+) (*api.EnableVgwRoutePropagationOutput, error) {
+	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
+		rtbID := common.Value(in.RouteTableId)
+		rt, err := loadRouteTable(tx, scope, rtbID)
+		if err != nil {
+			return err
+		}
+
+		vgwID := common.Value(in.GatewayId)
+		vgw, found, err := storage.Read[vpnGateway](tx, scope.Key("ec2", kindVpnGateway, vgwID))
+		if err != nil || !found || vgw.State == stateDeleted {
+			return common.ErrorsOr(err, vgwNotFound(vgwID))
+		}
+
+		if !slices.ContainsFunc(vgw.VPCAttachments, func(a vpnGatewayAttachment) bool {
+			return a.VPCID == rt.VPCID && a.State == stateAttached
+		}) {
+			return awserror.New("Gateway.NotAttached",
+				fmt.Sprintf("The vpnGateway '%s' is not attached to VPC '%s'", vgwID, rt.VPCID))
+		}
+
+		if !slices.Contains(rt.PropagatingVgws, vgwID) {
+			rt.PropagatingVgws = append(rt.PropagatingVgws, vgwID)
+			return storage.Write(tx, scope.Key("ec2", kindRouteTable, rt.ID), rt)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.EnableVgwRoutePropagationOutput{}, nil
+}
+
+// DisableVgwRoutePropagation disables route propagation from a VPN gateway to a route table.
+func (s *Service) DisableVgwRoutePropagation(
+	ctx context.Context,
+	in *api.DisableVgwRoutePropagationRequest,
+) (*api.DisableVgwRoutePropagationOutput, error) {
+	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
+		rtbID := common.Value(in.RouteTableId)
+		rt, err := loadRouteTable(tx, scope, rtbID)
+		if err != nil {
+			return err
+		}
+
+		vgwID := common.Value(in.GatewayId)
+		rt.PropagatingVgws = slices.DeleteFunc(rt.PropagatingVgws, func(id string) bool {
+			return id == vgwID
+		})
+
+		return storage.Write(tx, scope.Key("ec2", kindRouteTable, rt.ID), rt)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.DisableVgwRoutePropagationOutput{}, nil
 }

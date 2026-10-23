@@ -68,7 +68,7 @@ func prefixOutput(scope request.Scope, pl *customerPrefixList) api.ManagedPrefix
 func prefixValues(scope request.Scope, pl *customerPrefixList) values {
 	return values{
 		"prefix-list-id": {pl.ID}, "prefix-list-name": {pl.Name}, "address-family": {pl.Family},
-		"state": {pl.State}, "owner-id": {scope.AccountID},
+		filterState: {pl.State}, filterOwnerID: {scope.AccountID},
 	}.withTags(pl.Tags)
 }
 

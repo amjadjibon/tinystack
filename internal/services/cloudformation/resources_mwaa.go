@@ -133,7 +133,7 @@ func init() {
 func mwaaParams(p props) (*api.CreateEnvironmentInput, error) {
 	if v, ok := p[mwaaNetwork].(map[string]any); ok {
 		for k := range v {
-			if !slices.Contains([]string{"SubnetIds", mwaaSecurityGroups}, k) {
+			if !slices.Contains([]string{memberSubnetIDs, mwaaSecurityGroups}, k) {
 				return nil, validation("Unsupported MWAA network member %s", k)
 			}
 		}

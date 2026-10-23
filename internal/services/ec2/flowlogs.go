@@ -33,9 +33,9 @@ func flowNotFound(id string) error { return notFound("InvalidFlowLogId.NotFound"
 
 func flowValues(f *flowLog) values {
 	return values{
-		"flow-log-id": {f.ID},
-		filterVPCID:   {f.VPCID},
-		"resource-id": {f.ResourceID},
+		"flow-log-id":    {f.ID},
+		filterVPCID:      {f.VPCID},
+		filterResourceID: {f.ResourceID},
 		"log-group-name": {
 			common.Value(f.Configuration.LogGroupName),
 		},

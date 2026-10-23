@@ -5878,7 +5878,43 @@
       "UpdateSecurityGroupRuleDescriptionsIngress",
       "UpdateSecurityGroupRuleDescriptionsEgress",
       "DescribeSecurityGroupReferences",
-      "DescribeStaleSecurityGroups"
+      "DescribeStaleSecurityGroups",
+      "CreateTransitGateway",
+      "DescribeTransitGateways",
+      "ModifyTransitGateway",
+      "DeleteTransitGateway",
+      "CreateTransitGatewayVpcAttachment",
+      "DescribeTransitGatewayVpcAttachments",
+      "ModifyTransitGatewayVpcAttachment",
+      "DeleteTransitGatewayVpcAttachment",
+      "DescribeTransitGatewayAttachments",
+      "CreateTransitGatewayRouteTable",
+      "DescribeTransitGatewayRouteTables",
+      "DeleteTransitGatewayRouteTable",
+      "AssociateTransitGatewayRouteTable",
+      "DisassociateTransitGatewayRouteTable",
+      "GetTransitGatewayRouteTableAssociations",
+      "EnableTransitGatewayRouteTablePropagation",
+      "DisableTransitGatewayRouteTablePropagation",
+      "GetTransitGatewayRouteTablePropagations",
+      "CreateTransitGatewayRoute",
+      "DeleteTransitGatewayRoute",
+      "SearchTransitGatewayRoutes",
+      "CreateCustomerGateway",
+      "DescribeCustomerGateways",
+      "DeleteCustomerGateway",
+      "CreateVpnGateway",
+      "DescribeVpnGateways",
+      "DeleteVpnGateway",
+      "AttachVpnGateway",
+      "DetachVpnGateway",
+      "EnableVgwRoutePropagation",
+      "DisableVgwRoutePropagation",
+      "CreateVpnConnection",
+      "DescribeVpnConnections",
+      "DeleteVpnConnection",
+      "CreateVpnConnectionRoute",
+      "DeleteVpnConnectionRoute"
     ],
     "shapes": {
       "DescribeRegionsRequest": [
@@ -6832,7 +6868,8 @@
         "DestinationIpv6CidrBlock",
         "EgressOnlyInternetGatewayId",
         "VpcPeeringConnectionId",
-        "NetworkInterfaceId"
+        "NetworkInterfaceId",
+        "TransitGatewayId"
       ],
       "DeleteRouteTableRequest": [
         "DryRun",
@@ -6860,7 +6897,8 @@
         "DestinationPrefixListId",
         "EgressOnlyInternetGatewayId",
         "VpcPeeringConnectionId",
-        "NetworkInterfaceId"
+        "NetworkInterfaceId",
+        "TransitGatewayId"
       ],
       "CreateRouteResult": [
         "Return"
@@ -6876,7 +6914,8 @@
         "DestinationPrefixListId",
         "EgressOnlyInternetGatewayId",
         "VpcPeeringConnectionId",
-        "NetworkInterfaceId"
+        "NetworkInterfaceId",
+        "TransitGatewayId"
       ],
       "DeleteRouteRequest": [
         "DryRun",
@@ -7962,6 +8001,528 @@
         "HttpTokens",
         "InstanceMetadataTags",
         "State"
+      ],
+      "CreateTransitGatewayRequest": [
+        "Description",
+        "Options",
+        "TagSpecifications",
+        "DryRun"
+      ],
+      "CreateTransitGatewayResult": [
+        "TransitGateway"
+      ],
+      "TransitGatewayRequestOptions": [
+        "AmazonSideAsn",
+        "AutoAcceptSharedAttachments",
+        "DefaultRouteTableAssociation",
+        "DefaultRouteTablePropagation",
+        "VpnEcmpSupport",
+        "DnsSupport",
+        "SecurityGroupReferencingSupport",
+        "MulticastSupport",
+        "TransitGatewayCidrBlocks"
+      ],
+      "DescribeTransitGatewaysRequest": [
+        "TransitGatewayIds",
+        "Filters",
+        "MaxResults",
+        "NextToken",
+        "DryRun"
+      ],
+      "DescribeTransitGatewaysResult": [
+        "TransitGateways",
+        "NextToken"
+      ],
+      "TransitGateway": [
+        "TransitGatewayId",
+        "TransitGatewayArn",
+        "State",
+        "OwnerId",
+        "Description",
+        "CreationTime",
+        "Options",
+        "Tags"
+      ],
+      "TransitGatewayOptions": [
+        "AmazonSideAsn",
+        "TransitGatewayCidrBlocks",
+        "AutoAcceptSharedAttachments",
+        "DefaultRouteTableAssociation",
+        "AssociationDefaultRouteTableId",
+        "DefaultRouteTablePropagation",
+        "PropagationDefaultRouteTableId",
+        "VpnEcmpSupport",
+        "DnsSupport",
+        "SecurityGroupReferencingSupport",
+        "MulticastSupport"
+      ],
+      "ModifyTransitGatewayRequest": [
+        "TransitGatewayId",
+        "Description",
+        "Options",
+        "DryRun"
+      ],
+      "ModifyTransitGatewayResult": [
+        "TransitGateway"
+      ],
+      "ModifyTransitGatewayOptions": [
+        "AddTransitGatewayCidrBlocks",
+        "RemoveTransitGatewayCidrBlocks",
+        "VpnEcmpSupport",
+        "DnsSupport",
+        "SecurityGroupReferencingSupport",
+        "AutoAcceptSharedAttachments",
+        "DefaultRouteTableAssociation",
+        "AssociationDefaultRouteTableId",
+        "DefaultRouteTablePropagation",
+        "PropagationDefaultRouteTableId"
+      ],
+      "DeleteTransitGatewayRequest": [
+        "TransitGatewayId",
+        "DryRun"
+      ],
+      "DeleteTransitGatewayResult": [
+        "TransitGateway"
+      ],
+      "CreateTransitGatewayVpcAttachmentRequest": [
+        "TransitGatewayId",
+        "VpcId",
+        "SubnetIds",
+        "Options",
+        "TagSpecifications",
+        "DryRun"
+      ],
+      "CreateTransitGatewayVpcAttachmentRequestOptions": [
+        "DnsSupport",
+        "SecurityGroupReferencingSupport",
+        "Ipv6Support",
+        "ApplianceModeSupport"
+      ],
+      "CreateTransitGatewayVpcAttachmentResult": [
+        "TransitGatewayVpcAttachment"
+      ],
+      "DescribeTransitGatewayVpcAttachmentsRequest": [
+        "TransitGatewayAttachmentIds",
+        "Filters",
+        "MaxResults",
+        "NextToken",
+        "DryRun"
+      ],
+      "DescribeTransitGatewayVpcAttachmentsResult": [
+        "TransitGatewayVpcAttachments",
+        "NextToken"
+      ],
+      "TransitGatewayVpcAttachment": [
+        "TransitGatewayAttachmentId",
+        "TransitGatewayId",
+        "VpcId",
+        "VpcOwnerId",
+        "State",
+        "SubnetIds",
+        "CreationTime",
+        "Options",
+        "Tags"
+      ],
+      "TransitGatewayVpcAttachmentOptions": [
+        "DnsSupport",
+        "SecurityGroupReferencingSupport",
+        "Ipv6Support",
+        "ApplianceModeSupport"
+      ],
+      "ModifyTransitGatewayVpcAttachmentRequest": [
+        "TransitGatewayAttachmentId",
+        "AddSubnetIds",
+        "RemoveSubnetIds",
+        "Options",
+        "DryRun"
+      ],
+      "ModifyTransitGatewayVpcAttachmentRequestOptions": [
+        "DnsSupport",
+        "SecurityGroupReferencingSupport",
+        "Ipv6Support",
+        "ApplianceModeSupport"
+      ],
+      "ModifyTransitGatewayVpcAttachmentResult": [
+        "TransitGatewayVpcAttachment"
+      ],
+      "DeleteTransitGatewayVpcAttachmentRequest": [
+        "TransitGatewayAttachmentId",
+        "DryRun"
+      ],
+      "DeleteTransitGatewayVpcAttachmentResult": [
+        "TransitGatewayVpcAttachment"
+      ],
+      "DescribeTransitGatewayAttachmentsRequest": [
+        "TransitGatewayAttachmentIds",
+        "Filters",
+        "MaxResults",
+        "NextToken",
+        "DryRun"
+      ],
+      "DescribeTransitGatewayAttachmentsResult": [
+        "TransitGatewayAttachments",
+        "NextToken"
+      ],
+      "TransitGatewayAttachment": [
+        "TransitGatewayAttachmentId",
+        "TransitGatewayId",
+        "TransitGatewayOwnerId",
+        "ResourceOwnerId",
+        "ResourceType",
+        "ResourceId",
+        "State",
+        "Association",
+        "CreationTime",
+        "Tags"
+      ],
+      "TransitGatewayAttachmentAssociation": [
+        "TransitGatewayRouteTableId",
+        "State"
+      ],
+      "CreateTransitGatewayRouteTableRequest": [
+        "TransitGatewayId",
+        "TagSpecifications",
+        "DryRun"
+      ],
+      "CreateTransitGatewayRouteTableResult": [
+        "TransitGatewayRouteTable"
+      ],
+      "TransitGatewayRouteTable": [
+        "TransitGatewayRouteTableId",
+        "TransitGatewayId",
+        "State",
+        "DefaultAssociationRouteTable",
+        "DefaultPropagationRouteTable",
+        "CreationTime",
+        "Tags"
+      ],
+      "DescribeTransitGatewayRouteTablesRequest": [
+        "TransitGatewayRouteTableIds",
+        "Filters",
+        "MaxResults",
+        "NextToken",
+        "DryRun"
+      ],
+      "DescribeTransitGatewayRouteTablesResult": [
+        "TransitGatewayRouteTables",
+        "NextToken"
+      ],
+      "DeleteTransitGatewayRouteTableRequest": [
+        "TransitGatewayRouteTableId",
+        "DryRun"
+      ],
+      "DeleteTransitGatewayRouteTableResult": [
+        "TransitGatewayRouteTable"
+      ],
+      "AssociateTransitGatewayRouteTableRequest": [
+        "TransitGatewayRouteTableId",
+        "TransitGatewayAttachmentId",
+        "DryRun"
+      ],
+      "AssociateTransitGatewayRouteTableResult": [
+        "Association"
+      ],
+      "TransitGatewayAssociation": [
+        "TransitGatewayRouteTableId",
+        "TransitGatewayAttachmentId",
+        "ResourceId",
+        "ResourceType",
+        "State"
+      ],
+      "DisassociateTransitGatewayRouteTableRequest": [
+        "TransitGatewayRouteTableId",
+        "TransitGatewayAttachmentId",
+        "DryRun"
+      ],
+      "DisassociateTransitGatewayRouteTableResult": [
+        "Association"
+      ],
+      "GetTransitGatewayRouteTableAssociationsRequest": [
+        "TransitGatewayRouteTableId",
+        "Filters",
+        "MaxResults",
+        "NextToken",
+        "DryRun"
+      ],
+      "GetTransitGatewayRouteTableAssociationsResult": [
+        "Associations",
+        "NextToken"
+      ],
+      "TransitGatewayRouteTableAssociation": [
+        "TransitGatewayAttachmentId",
+        "ResourceId",
+        "ResourceType",
+        "State"
+      ],
+      "EnableTransitGatewayRouteTablePropagationRequest": [
+        "TransitGatewayRouteTableId",
+        "TransitGatewayAttachmentId",
+        "DryRun"
+      ],
+      "EnableTransitGatewayRouteTablePropagationResult": [
+        "Propagation"
+      ],
+      "TransitGatewayPropagation": [
+        "TransitGatewayAttachmentId",
+        "ResourceId",
+        "ResourceType",
+        "TransitGatewayRouteTableId",
+        "State"
+      ],
+      "DisableTransitGatewayRouteTablePropagationRequest": [
+        "TransitGatewayRouteTableId",
+        "TransitGatewayAttachmentId",
+        "DryRun"
+      ],
+      "DisableTransitGatewayRouteTablePropagationResult": [
+        "Propagation"
+      ],
+      "GetTransitGatewayRouteTablePropagationsRequest": [
+        "TransitGatewayRouteTableId",
+        "Filters",
+        "MaxResults",
+        "NextToken",
+        "DryRun"
+      ],
+      "GetTransitGatewayRouteTablePropagationsResult": [
+        "TransitGatewayRouteTablePropagations",
+        "NextToken"
+      ],
+      "TransitGatewayRouteTablePropagation": [
+        "TransitGatewayAttachmentId",
+        "ResourceId",
+        "ResourceType",
+        "State"
+      ],
+      "CreateTransitGatewayRouteRequest": [
+        "DestinationCidrBlock",
+        "TransitGatewayRouteTableId",
+        "TransitGatewayAttachmentId",
+        "Blackhole",
+        "DryRun"
+      ],
+      "CreateTransitGatewayRouteResult": [
+        "Route"
+      ],
+      "TransitGatewayRoute": [
+        "DestinationCidrBlock",
+        "PrefixListId",
+        "TransitGatewayAttachments",
+        "Type",
+        "State"
+      ],
+      "TransitGatewayRouteAttachment": [
+        "ResourceId",
+        "TransitGatewayAttachmentId",
+        "ResourceType"
+      ],
+      "DeleteTransitGatewayRouteRequest": [
+        "TransitGatewayRouteTableId",
+        "DestinationCidrBlock",
+        "DryRun"
+      ],
+      "DeleteTransitGatewayRouteResult": [
+        "Route"
+      ],
+      "SearchTransitGatewayRoutesRequest": [
+        "TransitGatewayRouteTableId",
+        "Filters",
+        "MaxResults",
+        "DryRun"
+      ],
+      "SearchTransitGatewayRoutesResult": [
+        "Routes",
+        "AdditionalRoutesAvailable"
+      ],
+      "CreateCustomerGatewayRequest": [
+        "BgpAsn",
+        "PublicIp",
+        "CertificateArn",
+        "Type",
+        "TagSpecifications",
+        "DeviceName",
+        "IpAddress",
+        "BgpAsnExtended",
+        "DryRun"
+      ],
+      "CreateCustomerGatewayResult": [
+        "CustomerGateway"
+      ],
+      "CustomerGateway": [
+        "CustomerGatewayId",
+        "BgpAsn",
+        "BgpAsnExtended",
+        "IpAddress",
+        "Type",
+        "State",
+        "DeviceName",
+        "CertificateArn",
+        "Tags"
+      ],
+      "DescribeCustomerGatewaysRequest": [
+        "CustomerGatewayIds",
+        "Filters",
+        "DryRun"
+      ],
+      "DescribeCustomerGatewaysResult": [
+        "CustomerGateways"
+      ],
+      "DeleteCustomerGatewayRequest": [
+        "CustomerGatewayId",
+        "DryRun"
+      ],
+      "CreateVpnGatewayRequest": [
+        "AvailabilityZone",
+        "Type",
+        "TagSpecifications",
+        "AmazonSideAsn",
+        "DryRun"
+      ],
+      "CreateVpnGatewayResult": [
+        "VpnGateway"
+      ],
+      "VpnGateway": [
+        "VpnGatewayId",
+        "State",
+        "Type",
+        "AvailabilityZone",
+        "AmazonSideAsn",
+        "VpcAttachments",
+        "Tags"
+      ],
+      "VpcAttachment": [
+        "VpcId",
+        "State"
+      ],
+      "DescribeVpnGatewaysRequest": [
+        "Filters",
+        "VpnGatewayIds",
+        "DryRun"
+      ],
+      "DescribeVpnGatewaysResult": [
+        "VpnGateways"
+      ],
+      "DeleteVpnGatewayRequest": [
+        "VpnGatewayId",
+        "DryRun"
+      ],
+      "AttachVpnGatewayRequest": [
+        "VpcId",
+        "VpnGatewayId",
+        "DryRun"
+      ],
+      "AttachVpnGatewayResult": [
+        "VpcAttachment"
+      ],
+      "DetachVpnGatewayRequest": [
+        "VpcId",
+        "VpnGatewayId",
+        "DryRun"
+      ],
+      "EnableVgwRoutePropagationRequest": [
+        "GatewayId",
+        "RouteTableId",
+        "DryRun"
+      ],
+      "DisableVgwRoutePropagationRequest": [
+        "GatewayId",
+        "RouteTableId",
+        "DryRun"
+      ],
+      "CreateVpnConnectionRequest": [
+        "CustomerGatewayId",
+        "Type",
+        "VpnGatewayId",
+        "TransitGatewayId",
+        "TagSpecifications",
+        "DryRun",
+        "Options"
+      ],
+      "VpnConnectionOptionsSpecification": [
+        "StaticRoutesOnly",
+        "TunnelOptions"
+      ],
+      "VpnTunnelOptionsSpecification": [
+        "TunnelInsideCidr",
+        "PreSharedKey"
+      ],
+      "CreateVpnConnectionResult": [
+        "VpnConnection"
+      ],
+      "DescribeVpnConnectionsRequest": [
+        "Filters",
+        "VpnConnectionIds",
+        "DryRun"
+      ],
+      "DescribeVpnConnectionsResult": [
+        "VpnConnections"
+      ],
+      "DeleteVpnConnectionRequest": [
+        "VpnConnectionId",
+        "DryRun"
+      ],
+      "VpnConnection": [
+        "VpnConnectionId",
+        "CustomerGatewayConfiguration",
+        "CustomerGatewayId",
+        "Category",
+        "State",
+        "Type",
+        "VpnGatewayId",
+        "TransitGatewayId",
+        "Options",
+        "Routes",
+        "Tags",
+        "VgwTelemetry",
+        "GatewayAssociationState"
+      ],
+      "VpnConnectionOptions": [
+        "EnableAcceleration",
+        "StaticRoutesOnly",
+        "LocalIpv4NetworkCidr",
+        "RemoteIpv4NetworkCidr",
+        "LocalIpv6NetworkCidr",
+        "RemoteIpv6NetworkCidr",
+        "OutsideIpAddressType",
+        "TransportTransitGatewayAttachmentId",
+        "TunnelInsideIpVersion",
+        "TunnelOptions"
+      ],
+      "TunnelOption": [
+        "OutsideIpAddress",
+        "TunnelInsideCidr",
+        "TunnelInsideIpv6Cidr",
+        "PreSharedKey",
+        "Phase1LifetimeSeconds",
+        "Phase2LifetimeSeconds",
+        "RekeyMarginTimeSeconds",
+        "RekeyFuzzPercentage",
+        "ReplayWindowSize",
+        "DpdTimeoutSeconds",
+        "DpdTimeoutAction",
+        "StartupAction",
+        "EnableTunnelLifecycleControl"
+      ],
+      "VgwTelemetry": [
+        "AcceptedRouteCount",
+        "LastStatusChange",
+        "OutsideIpAddress",
+        "Status",
+        "StatusMessage",
+        "CertificateArn"
+      ],
+      "VpnStaticRoute": [
+        "DestinationCidrBlock",
+        "Source",
+        "State"
+      ],
+      "CreateVpnConnectionRouteRequest": [
+        "DestinationCidrBlock",
+        "VpnConnectionId"
+      ],
+      "DeleteVpnConnectionRouteRequest": [
+        "DestinationCidrBlock",
+        "VpnConnectionId"
       ]
     }
   },

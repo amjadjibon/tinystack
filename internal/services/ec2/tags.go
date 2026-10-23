@@ -34,7 +34,7 @@ var taggable = map[string]taggableKind{
 	"fl":       {kind: kindFlowLog, resourceType: "vpc-flow-log", missing: flowNotFound},
 	"pl":       {kind: kindPrefixList, resourceType: kindPrefixList, missing: prefixNotFound},
 	"pcx":      {kind: kindPeering, resourceType: kindPeering, missing: peeringNotFound},
-	"vpc":      {kind: kindVPC, resourceType: "vpc", missing: vpcNotFound},
+	domainVPC:  {kind: kindVPC, resourceType: domainVPC, missing: vpcNotFound},
 	"subnet":   {kind: kindSubnet, resourceType: "subnet", missing: subnetNotFound},
 	"sg":       {kind: kindSecurityGroup, resourceType: "security-group", missing: groupNotFound},
 	ec2Key:     {kind: kindKeyPair, resourceType: "key-pair", missing: keyPairIDNotFound},
@@ -46,10 +46,56 @@ var taggable = map[string]taggableKind{
 	"eipalloc": {kind: kindAddress, resourceType: "elastic-ip", missing: addressNotFound},
 	"nat":      {kind: kindNATGateway, resourceType: "natgateway", missing: natGatewayNotFound},
 	"vpce":     {kind: kindVPCEndpoint, resourceType: kindVPCEndpoint, missing: endpointNotFound},
+	"tgw":      {kind: kindTransitGateway, resourceType: "transit-gateway", missing: tgwNotFound},
+	"tgw-attach": {
+		kind:         kindTransitGatewayAttachment,
+		resourceType: "transit-gateway-attachment",
+		missing:      tgwAttachmentNotFound,
+	},
+	"tgw-rtb": {
+		kind:         kindTransitGatewayRouteTable,
+		resourceType: "transit-gateway-route-table",
+		missing:      tgwRouteTableNotFound,
+	},
+	"cgw":           {kind: kindCustomerGateway, resourceType: "customer-gateway", missing: cgwNotFound},
+	"vgw":           {kind: kindVpnGateway, resourceType: "vpn-gateway", missing: vgwNotFound},
+	resourceTypeVPN: {kind: kindVpnConnection, resourceType: "vpn-connection", missing: vpnNotFound},
+}
+
+func tgwNotFound(id string) error {
+	return notFound("InvalidTransitGatewayID.NotFound", "transitGateway", id)
+}
+
+func tgwAttachmentNotFound(id string) error {
+	return notFound("InvalidTransitGatewayAttachmentID.NotFound", "transitGatewayAttachment", id)
+}
+
+func tgwRouteTableNotFound(id string) error {
+	return notFound("InvalidRouteTableID.NotFound", "transitGatewayRouteTable", id)
+}
+
+func cgwNotFound(id string) error {
+	return notFound("InvalidCustomerGatewayID.NotFound", "customerGateway", id)
+}
+
+func vgwNotFound(id string) error {
+	return notFound("InvalidVpnGatewayID.NotFound", "vpnGateway", id)
+}
+
+func vpnNotFound(id string) error {
+	return notFound("InvalidVpnConnectionID.NotFound", "vpnConnection", id)
 }
 
 // taggableByID returns the resource type of an ID.
 func taggableByID(id string) (taggableKind, error) {
+	for _, p := range []string{"tgw-attach", "tgw-rtb", "eipalloc"} {
+		if strings.HasPrefix(id, p+"-") {
+			if t, ok := taggable[p]; ok {
+				return t, nil
+			}
+		}
+	}
+
 	prefix, _, _ := strings.Cut(id, "-")
 	t, ok := taggable[prefix]
 	if !ok {
@@ -218,7 +264,7 @@ func (s *Service) DeleteTags(ctx context.Context, in *api.DeleteTagsRequest) (*a
 // DescribeTags lists the tags of every taggable resource, by resource ID and
 // key.
 func (s *Service) DescribeTags(ctx context.Context, in *api.DescribeTagsRequest) (*api.DescribeTagsResult, error) {
-	match, err := compileFilters(in.Filters, ec2Key, "value", "resource-id", "resource-type")
+	match, err := compileFilters(in.Filters, ec2Key, "value", filterResourceID, filterResourceType)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +284,12 @@ func (s *Service) DescribeTags(ctx context.Context, in *api.DescribeTagsRequest)
 			for _, r := range records {
 				for _, k := range slices.Sorted(maps.Keys(r.Tags)) {
 					if match.match(values{
-						ec2Key: {k}, "value": {r.Tags[k]}, "resource-id": {r.ID}, "resource-type": {t.resourceType},
+						ec2Key: {
+							k,
+						},
+						"value":            {r.Tags[k]},
+						filterResourceID:   {r.ID},
+						filterResourceType: {t.resourceType},
 					}) {
 						found = append(found, &api.TagDescription{
 							ResourceId: new(

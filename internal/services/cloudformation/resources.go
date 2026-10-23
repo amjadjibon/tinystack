@@ -73,6 +73,7 @@ const (
 	memberSecretArn                   = "SecretArn"
 	memberPolicyName                  = "PolicyName"
 	memberTags                        = "Tags"
+	memberTagSpecifications           = "TagSpecifications"
 	memberTableName                   = "TableName"
 	memberType                        = "Type"
 	memberQueueURL                    = "QueueUrl"

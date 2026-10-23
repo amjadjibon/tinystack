@@ -20,7 +20,31 @@ const (
 	kindSubnet = "subnet"
 	// kindDefaults marks a Region whose default VPC was created, so deleting
 	// the default VPC does not bring it back.
-	kindDefaults = "defaults"
+	kindDefaults                  = "defaults"
+	kindTransitGatewayAssociation = "transit-gateway-association"
+	kindTransitGatewayPropagation = "transit-gateway-propagation"
+	kindTransitGatewayRoute       = "transit-gateway-route"
+	kindTransitGateway            = "transit-gateway"
+	kindTransitGatewayAttachment  = "transit-gateway-attachment"
+	kindTransitGatewayRouteTable  = "transit-gateway-route-table"
+	kindCustomerGateway           = "customer-gateway"
+	kindVpnGateway                = "vpn-gateway"
+	kindVpnConnection             = "vpn-connection"
+
+	filterResourceID                 = "resource-id"
+	filterResourceType               = "resource-type"
+	filterTransitGatewayID           = "transit-gateway-id"
+	filterType                       = "type"
+	filterTransitGatewayAttachmentID = "transit-gateway-attachment-id"
+	filterAttachmentResourceID       = "attachment.resource-id"
+
+	stateEnabled  = "enabled"
+	stateAttached = "attached"
+	stateDisable  = "disable"
+	stateEnable   = "enable"
+
+	resourceTypeVPN = "vpn"
+	gwTypeIPSec1    = "ipsec.1"
 )
 
 // newID returns an EC2 resource ID: prefix, a dash, and 17 hex digits.

@@ -1280,6 +1280,7 @@ type Route struct {
 	EgressOnlyInternetGatewayId *string `json:"EgressOnlyInternetGatewayId,omitempty" ec2:"EgressOnlyInternetGatewayId,egressOnlyInternetGatewayId"`
 	VpcPeeringConnectionId      *string `json:"VpcPeeringConnectionId,omitempty" ec2:"VpcPeeringConnectionId,vpcPeeringConnectionId"`
 	NetworkInterfaceId          *string `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
+	TransitGatewayId            *string `json:"TransitGatewayId,omitempty" ec2:"TransitGatewayId,transitGatewayId"`
 }
 
 type RouteTable struct {
@@ -1329,6 +1330,7 @@ type CreateRouteRequest struct {
 	EgressOnlyInternetGatewayId *string `json:"EgressOnlyInternetGatewayId,omitempty" ec2:"EgressOnlyInternetGatewayId,egressOnlyInternetGatewayId"`
 	VpcPeeringConnectionId      *string `json:"VpcPeeringConnectionId,omitempty" ec2:"VpcPeeringConnectionId,vpcPeeringConnectionId"`
 	NetworkInterfaceId          *string `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
+	TransitGatewayId            *string `json:"TransitGatewayId,omitempty" ec2:"TransitGatewayId,TransitGatewayId"`
 }
 
 type CreateRouteResult struct {
@@ -1349,6 +1351,7 @@ type ReplaceRouteRequest struct {
 	EgressOnlyInternetGatewayId *string `json:"EgressOnlyInternetGatewayId,omitempty" ec2:"EgressOnlyInternetGatewayId,egressOnlyInternetGatewayId"`
 	VpcPeeringConnectionId      *string `json:"VpcPeeringConnectionId,omitempty" ec2:"VpcPeeringConnectionId,vpcPeeringConnectionId"`
 	NetworkInterfaceId          *string `json:"NetworkInterfaceId,omitempty" ec2:"NetworkInterfaceId,networkInterfaceId"`
+	TransitGatewayId            *string `json:"TransitGatewayId,omitempty" ec2:"TransitGatewayId,TransitGatewayId"`
 }
 
 type DeleteRouteOutput struct{}
@@ -2499,6 +2502,635 @@ type DescribeStaleSecurityGroupsResult struct {
 	StaleSecurityGroupSet []StaleSecurityGroup `json:"StaleSecurityGroupSet,omitempty" ec2:"StaleSecurityGroupSet,staleSecurityGroupSet,member=item"`
 }
 
+type TransitGatewayRequestOptions struct {
+	AmazonSideAsn                   *int64   `json:"AmazonSideAsn,omitempty" ec2:"AmazonSideAsn,AmazonSideAsn"`
+	AutoAcceptSharedAttachments     *string  `json:"AutoAcceptSharedAttachments,omitempty" ec2:"AutoAcceptSharedAttachments,AutoAcceptSharedAttachments"`
+	DefaultRouteTableAssociation    *string  `json:"DefaultRouteTableAssociation,omitempty" ec2:"DefaultRouteTableAssociation,DefaultRouteTableAssociation"`
+	DefaultRouteTablePropagation    *string  `json:"DefaultRouteTablePropagation,omitempty" ec2:"DefaultRouteTablePropagation,DefaultRouteTablePropagation"`
+	VpnEcmpSupport                  *string  `json:"VpnEcmpSupport,omitempty" ec2:"VpnEcmpSupport,VpnEcmpSupport"`
+	DnsSupport                      *string  `json:"DnsSupport,omitempty" ec2:"DnsSupport,DnsSupport"`
+	SecurityGroupReferencingSupport *string  `json:"SecurityGroupReferencingSupport,omitempty" ec2:"SecurityGroupReferencingSupport,SecurityGroupReferencingSupport"`
+	MulticastSupport                *string  `json:"MulticastSupport,omitempty" ec2:"MulticastSupport,MulticastSupport"`
+	TransitGatewayCidrBlocks        []string `json:"TransitGatewayCidrBlocks,omitempty" ec2:"TransitGatewayCidrBlocks,TransitGatewayCidrBlocks,member=item"`
+}
+
+type CreateTransitGatewayRequest struct {
+	Description       *string                       `json:"Description,omitempty" ec2:"Description,Description"`
+	Options           *TransitGatewayRequestOptions `json:"Options,omitempty" ec2:"Options,Options"`
+	TagSpecifications []TagSpecification            `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	DryRun            *bool                         `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type TransitGatewayOptions struct {
+	AmazonSideAsn                   *int64   `json:"AmazonSideAsn,omitempty" ec2:"AmazonSideAsn,amazonSideAsn"`
+	TransitGatewayCidrBlocks        []string `json:"TransitGatewayCidrBlocks,omitempty" ec2:"TransitGatewayCidrBlocks,transitGatewayCidrBlocks,member=item"`
+	AutoAcceptSharedAttachments     *string  `json:"AutoAcceptSharedAttachments,omitempty" ec2:"AutoAcceptSharedAttachments,autoAcceptSharedAttachments"`
+	DefaultRouteTableAssociation    *string  `json:"DefaultRouteTableAssociation,omitempty" ec2:"DefaultRouteTableAssociation,defaultRouteTableAssociation"`
+	AssociationDefaultRouteTableId  *string  `json:"AssociationDefaultRouteTableId,omitempty" ec2:"AssociationDefaultRouteTableId,associationDefaultRouteTableId"`
+	DefaultRouteTablePropagation    *string  `json:"DefaultRouteTablePropagation,omitempty" ec2:"DefaultRouteTablePropagation,defaultRouteTablePropagation"`
+	PropagationDefaultRouteTableId  *string  `json:"PropagationDefaultRouteTableId,omitempty" ec2:"PropagationDefaultRouteTableId,propagationDefaultRouteTableId"`
+	VpnEcmpSupport                  *string  `json:"VpnEcmpSupport,omitempty" ec2:"VpnEcmpSupport,vpnEcmpSupport"`
+	DnsSupport                      *string  `json:"DnsSupport,omitempty" ec2:"DnsSupport,dnsSupport"`
+	SecurityGroupReferencingSupport *string  `json:"SecurityGroupReferencingSupport,omitempty" ec2:"SecurityGroupReferencingSupport,securityGroupReferencingSupport"`
+	MulticastSupport                *string  `json:"MulticastSupport,omitempty" ec2:"MulticastSupport,multicastSupport"`
+}
+
+type TransitGateway struct {
+	TransitGatewayId  *string                `json:"TransitGatewayId,omitempty" ec2:"TransitGatewayId,transitGatewayId"`
+	TransitGatewayArn *string                `json:"TransitGatewayArn,omitempty" ec2:"TransitGatewayArn,transitGatewayArn"`
+	State             *string                `json:"State,omitempty" ec2:"State,state"`
+	OwnerId           *string                `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
+	Description       *string                `json:"Description,omitempty" ec2:"Description,description"`
+	CreationTime      *time.Time             `json:"CreationTime,omitempty" ec2:"CreationTime,creationTime"`
+	Options           *TransitGatewayOptions `json:"Options,omitempty" ec2:"Options,options"`
+	Tags              []Tag                  `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+}
+
+type CreateTransitGatewayResult struct {
+	TransitGateway *TransitGateway `json:"TransitGateway,omitempty" ec2:"TransitGateway,transitGateway"`
+}
+
+type DescribeTransitGatewaysRequest struct {
+	TransitGatewayIds []string `json:"TransitGatewayIds,omitempty" ec2:"TransitGatewayIds,TransitGatewayIds,member=item"`
+	Filters           []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	MaxResults        *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken         *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	DryRun            *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type DescribeTransitGatewaysResult struct {
+	TransitGateways []TransitGateway `json:"TransitGateways,omitempty" ec2:"TransitGatewaySet,transitGatewaySet,member=item"`
+	NextToken       *string          `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type ModifyTransitGatewayOptions struct {
+	AddTransitGatewayCidrBlocks     []string `json:"AddTransitGatewayCidrBlocks,omitempty" ec2:"AddTransitGatewayCidrBlocks,AddTransitGatewayCidrBlocks,member=item"`
+	RemoveTransitGatewayCidrBlocks  []string `json:"RemoveTransitGatewayCidrBlocks,omitempty" ec2:"RemoveTransitGatewayCidrBlocks,RemoveTransitGatewayCidrBlocks,member=item"`
+	VpnEcmpSupport                  *string  `json:"VpnEcmpSupport,omitempty" ec2:"VpnEcmpSupport,VpnEcmpSupport"`
+	DnsSupport                      *string  `json:"DnsSupport,omitempty" ec2:"DnsSupport,DnsSupport"`
+	SecurityGroupReferencingSupport *string  `json:"SecurityGroupReferencingSupport,omitempty" ec2:"SecurityGroupReferencingSupport,SecurityGroupReferencingSupport"`
+	AutoAcceptSharedAttachments     *string  `json:"AutoAcceptSharedAttachments,omitempty" ec2:"AutoAcceptSharedAttachments,AutoAcceptSharedAttachments"`
+	DefaultRouteTableAssociation    *string  `json:"DefaultRouteTableAssociation,omitempty" ec2:"DefaultRouteTableAssociation,DefaultRouteTableAssociation"`
+	AssociationDefaultRouteTableId  *string  `json:"AssociationDefaultRouteTableId,omitempty" ec2:"AssociationDefaultRouteTableId,AssociationDefaultRouteTableId"`
+	DefaultRouteTablePropagation    *string  `json:"DefaultRouteTablePropagation,omitempty" ec2:"DefaultRouteTablePropagation,DefaultRouteTablePropagation"`
+	PropagationDefaultRouteTableId  *string  `json:"PropagationDefaultRouteTableId,omitempty" ec2:"PropagationDefaultRouteTableId,PropagationDefaultRouteTableId"`
+}
+
+type ModifyTransitGatewayRequest struct {
+	TransitGatewayId *string                      `json:"TransitGatewayId,omitempty" ec2:"TransitGatewayId,TransitGatewayId"`
+	Description      *string                      `json:"Description,omitempty" ec2:"Description,Description"`
+	Options          *ModifyTransitGatewayOptions `json:"Options,omitempty" ec2:"Options,Options"`
+	DryRun           *bool                        `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type ModifyTransitGatewayResult struct {
+	TransitGateway *TransitGateway `json:"TransitGateway,omitempty" ec2:"TransitGateway,transitGateway"`
+}
+
+type DeleteTransitGatewayRequest struct {
+	TransitGatewayId *string `json:"TransitGatewayId,omitempty" ec2:"TransitGatewayId,TransitGatewayId"`
+	DryRun           *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type DeleteTransitGatewayResult struct {
+	TransitGateway *TransitGateway `json:"TransitGateway,omitempty" ec2:"TransitGateway,transitGateway"`
+}
+
+type CreateTransitGatewayVpcAttachmentRequestOptions struct {
+	DnsSupport                      *string `json:"DnsSupport,omitempty" ec2:"DnsSupport,DnsSupport"`
+	SecurityGroupReferencingSupport *string `json:"SecurityGroupReferencingSupport,omitempty" ec2:"SecurityGroupReferencingSupport,SecurityGroupReferencingSupport"`
+	Ipv6Support                     *string `json:"Ipv6Support,omitempty" ec2:"Ipv6Support,Ipv6Support"`
+	ApplianceModeSupport            *string `json:"ApplianceModeSupport,omitempty" ec2:"ApplianceModeSupport,ApplianceModeSupport"`
+}
+
+type CreateTransitGatewayVpcAttachmentRequest struct {
+	TransitGatewayId  *string                                          `json:"TransitGatewayId,omitempty" ec2:"TransitGatewayId,TransitGatewayId"`
+	VpcId             *string                                          `json:"VpcId,omitempty" ec2:"VpcId,VpcId"`
+	SubnetIds         []string                                         `json:"SubnetIds,omitempty" ec2:"SubnetIds,SubnetIds,member=item"`
+	Options           *CreateTransitGatewayVpcAttachmentRequestOptions `json:"Options,omitempty" ec2:"Options,Options"`
+	TagSpecifications []TagSpecification                               `json:"TagSpecifications,omitempty" ec2:"TagSpecifications,TagSpecifications,member=item"`
+	DryRun            *bool                                            `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type TransitGatewayVpcAttachmentOptions struct {
+	DnsSupport                      *string `json:"DnsSupport,omitempty" ec2:"DnsSupport,dnsSupport"`
+	SecurityGroupReferencingSupport *string `json:"SecurityGroupReferencingSupport,omitempty" ec2:"SecurityGroupReferencingSupport,securityGroupReferencingSupport"`
+	Ipv6Support                     *string `json:"Ipv6Support,omitempty" ec2:"Ipv6Support,ipv6Support"`
+	ApplianceModeSupport            *string `json:"ApplianceModeSupport,omitempty" ec2:"ApplianceModeSupport,applianceModeSupport"`
+}
+
+type TransitGatewayVpcAttachment struct {
+	TransitGatewayAttachmentId *string                             `json:"TransitGatewayAttachmentId,omitempty" ec2:"TransitGatewayAttachmentId,transitGatewayAttachmentId"`
+	TransitGatewayId           *string                             `json:"TransitGatewayId,omitempty" ec2:"TransitGatewayId,transitGatewayId"`
+	VpcId                      *string                             `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	VpcOwnerId                 *string                             `json:"VpcOwnerId,omitempty" ec2:"VpcOwnerId,vpcOwnerId"`
+	State                      *string                             `json:"State,omitempty" ec2:"State,state"`
+	SubnetIds                  []string                            `json:"SubnetIds,omitempty" ec2:"SubnetIds,subnetIds,member=item"`
+	CreationTime               *time.Time                          `json:"CreationTime,omitempty" ec2:"CreationTime,creationTime"`
+	Options                    *TransitGatewayVpcAttachmentOptions `json:"Options,omitempty" ec2:"Options,options"`
+	Tags                       []Tag                               `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+}
+
+type CreateTransitGatewayVpcAttachmentResult struct {
+	TransitGatewayVpcAttachment *TransitGatewayVpcAttachment `json:"TransitGatewayVpcAttachment,omitempty" ec2:"TransitGatewayVpcAttachment,transitGatewayVpcAttachment"`
+}
+
+type DescribeTransitGatewayVpcAttachmentsRequest struct {
+	TransitGatewayAttachmentIds []string `json:"TransitGatewayAttachmentIds,omitempty" ec2:"TransitGatewayAttachmentIds,TransitGatewayAttachmentIds"`
+	Filters                     []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	MaxResults                  *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken                   *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	DryRun                      *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type DescribeTransitGatewayVpcAttachmentsResult struct {
+	TransitGatewayVpcAttachments []TransitGatewayVpcAttachment `json:"TransitGatewayVpcAttachments,omitempty" ec2:"TransitGatewayVpcAttachments,transitGatewayVpcAttachments,member=item"`
+	NextToken                    *string                       `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type ModifyTransitGatewayVpcAttachmentRequestOptions struct {
+	DnsSupport                      *string `json:"DnsSupport,omitempty" ec2:"DnsSupport,DnsSupport"`
+	SecurityGroupReferencingSupport *string `json:"SecurityGroupReferencingSupport,omitempty" ec2:"SecurityGroupReferencingSupport,SecurityGroupReferencingSupport"`
+	Ipv6Support                     *string `json:"Ipv6Support,omitempty" ec2:"Ipv6Support,Ipv6Support"`
+	ApplianceModeSupport            *string `json:"ApplianceModeSupport,omitempty" ec2:"ApplianceModeSupport,ApplianceModeSupport"`
+}
+
+type ModifyTransitGatewayVpcAttachmentRequest struct {
+	TransitGatewayAttachmentId *string                                          `json:"TransitGatewayAttachmentId,omitempty" ec2:"TransitGatewayAttachmentId,TransitGatewayAttachmentId"`
+	AddSubnetIds               []string                                         `json:"AddSubnetIds,omitempty" ec2:"AddSubnetIds,AddSubnetIds,member=item"`
+	RemoveSubnetIds            []string                                         `json:"RemoveSubnetIds,omitempty" ec2:"RemoveSubnetIds,RemoveSubnetIds,member=item"`
+	Options                    *ModifyTransitGatewayVpcAttachmentRequestOptions `json:"Options,omitempty" ec2:"Options,Options"`
+	DryRun                     *bool                                            `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type ModifyTransitGatewayVpcAttachmentResult struct {
+	TransitGatewayVpcAttachment *TransitGatewayVpcAttachment `json:"TransitGatewayVpcAttachment,omitempty" ec2:"TransitGatewayVpcAttachment,transitGatewayVpcAttachment"`
+}
+
+type DeleteTransitGatewayVpcAttachmentRequest struct {
+	TransitGatewayAttachmentId *string `json:"TransitGatewayAttachmentId,omitempty" ec2:"TransitGatewayAttachmentId,TransitGatewayAttachmentId"`
+	DryRun                     *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type DeleteTransitGatewayVpcAttachmentResult struct {
+	TransitGatewayVpcAttachment *TransitGatewayVpcAttachment `json:"TransitGatewayVpcAttachment,omitempty" ec2:"TransitGatewayVpcAttachment,transitGatewayVpcAttachment"`
+}
+
+type DescribeTransitGatewayAttachmentsRequest struct {
+	TransitGatewayAttachmentIds []string `json:"TransitGatewayAttachmentIds,omitempty" ec2:"TransitGatewayAttachmentIds,TransitGatewayAttachmentIds"`
+	Filters                     []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	MaxResults                  *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken                   *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	DryRun                      *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type TransitGatewayAttachmentAssociation struct {
+	TransitGatewayRouteTableId *string `json:"TransitGatewayRouteTableId,omitempty" ec2:"TransitGatewayRouteTableId,transitGatewayRouteTableId"`
+	State                      *string `json:"State,omitempty" ec2:"State,state"`
+}
+
+type TransitGatewayAttachment struct {
+	TransitGatewayAttachmentId *string                              `json:"TransitGatewayAttachmentId,omitempty" ec2:"TransitGatewayAttachmentId,transitGatewayAttachmentId"`
+	TransitGatewayId           *string                              `json:"TransitGatewayId,omitempty" ec2:"TransitGatewayId,transitGatewayId"`
+	TransitGatewayOwnerId      *string                              `json:"TransitGatewayOwnerId,omitempty" ec2:"TransitGatewayOwnerId,transitGatewayOwnerId"`
+	ResourceOwnerId            *string                              `json:"ResourceOwnerId,omitempty" ec2:"ResourceOwnerId,resourceOwnerId"`
+	ResourceType               *string                              `json:"ResourceType,omitempty" ec2:"ResourceType,resourceType"`
+	ResourceId                 *string                              `json:"ResourceId,omitempty" ec2:"ResourceId,resourceId"`
+	State                      *string                              `json:"State,omitempty" ec2:"State,state"`
+	Association                *TransitGatewayAttachmentAssociation `json:"Association,omitempty" ec2:"Association,association"`
+	CreationTime               *time.Time                           `json:"CreationTime,omitempty" ec2:"CreationTime,creationTime"`
+	Tags                       []Tag                                `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+}
+
+type DescribeTransitGatewayAttachmentsResult struct {
+	TransitGatewayAttachments []TransitGatewayAttachment `json:"TransitGatewayAttachments,omitempty" ec2:"TransitGatewayAttachments,transitGatewayAttachments,member=item"`
+	NextToken                 *string                    `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type CreateTransitGatewayRouteTableRequest struct {
+	TransitGatewayId  *string            `json:"TransitGatewayId,omitempty" ec2:"TransitGatewayId,TransitGatewayId"`
+	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecifications,TagSpecifications,member=item"`
+	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type TransitGatewayRouteTable struct {
+	TransitGatewayRouteTableId   *string    `json:"TransitGatewayRouteTableId,omitempty" ec2:"TransitGatewayRouteTableId,transitGatewayRouteTableId"`
+	TransitGatewayId             *string    `json:"TransitGatewayId,omitempty" ec2:"TransitGatewayId,transitGatewayId"`
+	State                        *string    `json:"State,omitempty" ec2:"State,state"`
+	DefaultAssociationRouteTable *bool      `json:"DefaultAssociationRouteTable,omitempty" ec2:"DefaultAssociationRouteTable,defaultAssociationRouteTable"`
+	DefaultPropagationRouteTable *bool      `json:"DefaultPropagationRouteTable,omitempty" ec2:"DefaultPropagationRouteTable,defaultPropagationRouteTable"`
+	CreationTime                 *time.Time `json:"CreationTime,omitempty" ec2:"CreationTime,creationTime"`
+	Tags                         []Tag      `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+}
+
+type CreateTransitGatewayRouteTableResult struct {
+	TransitGatewayRouteTable *TransitGatewayRouteTable `json:"TransitGatewayRouteTable,omitempty" ec2:"TransitGatewayRouteTable,transitGatewayRouteTable"`
+}
+
+type DescribeTransitGatewayRouteTablesRequest struct {
+	TransitGatewayRouteTableIds []string `json:"TransitGatewayRouteTableIds,omitempty" ec2:"TransitGatewayRouteTableIds,TransitGatewayRouteTableIds,member=item"`
+	Filters                     []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	MaxResults                  *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken                   *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	DryRun                      *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type DescribeTransitGatewayRouteTablesResult struct {
+	TransitGatewayRouteTables []TransitGatewayRouteTable `json:"TransitGatewayRouteTables,omitempty" ec2:"TransitGatewayRouteTables,transitGatewayRouteTables,member=item"`
+	NextToken                 *string                    `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type DeleteTransitGatewayRouteTableRequest struct {
+	TransitGatewayRouteTableId *string `json:"TransitGatewayRouteTableId,omitempty" ec2:"TransitGatewayRouteTableId,TransitGatewayRouteTableId"`
+	DryRun                     *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type DeleteTransitGatewayRouteTableResult struct {
+	TransitGatewayRouteTable *TransitGatewayRouteTable `json:"TransitGatewayRouteTable,omitempty" ec2:"TransitGatewayRouteTable,transitGatewayRouteTable"`
+}
+
+type AssociateTransitGatewayRouteTableRequest struct {
+	TransitGatewayRouteTableId *string `json:"TransitGatewayRouteTableId,omitempty" ec2:"TransitGatewayRouteTableId,TransitGatewayRouteTableId"`
+	TransitGatewayAttachmentId *string `json:"TransitGatewayAttachmentId,omitempty" ec2:"TransitGatewayAttachmentId,TransitGatewayAttachmentId"`
+	DryRun                     *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type TransitGatewayAssociation struct {
+	TransitGatewayRouteTableId *string `json:"TransitGatewayRouteTableId,omitempty" ec2:"TransitGatewayRouteTableId,transitGatewayRouteTableId"`
+	TransitGatewayAttachmentId *string `json:"TransitGatewayAttachmentId,omitempty" ec2:"TransitGatewayAttachmentId,transitGatewayAttachmentId"`
+	ResourceId                 *string `json:"ResourceId,omitempty" ec2:"ResourceId,resourceId"`
+	ResourceType               *string `json:"ResourceType,omitempty" ec2:"ResourceType,resourceType"`
+	State                      *string `json:"State,omitempty" ec2:"State,state"`
+}
+
+type AssociateTransitGatewayRouteTableResult struct {
+	Association *TransitGatewayAssociation `json:"Association,omitempty" ec2:"Association,association"`
+}
+
+type DisassociateTransitGatewayRouteTableRequest struct {
+	TransitGatewayRouteTableId *string `json:"TransitGatewayRouteTableId,omitempty" ec2:"TransitGatewayRouteTableId,TransitGatewayRouteTableId"`
+	TransitGatewayAttachmentId *string `json:"TransitGatewayAttachmentId,omitempty" ec2:"TransitGatewayAttachmentId,TransitGatewayAttachmentId"`
+	DryRun                     *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type DisassociateTransitGatewayRouteTableResult struct {
+	Association *TransitGatewayAssociation `json:"Association,omitempty" ec2:"Association,association"`
+}
+
+type GetTransitGatewayRouteTableAssociationsRequest struct {
+	TransitGatewayRouteTableId *string  `json:"TransitGatewayRouteTableId,omitempty" ec2:"TransitGatewayRouteTableId,TransitGatewayRouteTableId"`
+	Filters                    []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	MaxResults                 *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken                  *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	DryRun                     *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type TransitGatewayRouteTableAssociation struct {
+	TransitGatewayAttachmentId *string `json:"TransitGatewayAttachmentId,omitempty" ec2:"TransitGatewayAttachmentId,transitGatewayAttachmentId"`
+	ResourceId                 *string `json:"ResourceId,omitempty" ec2:"ResourceId,resourceId"`
+	ResourceType               *string `json:"ResourceType,omitempty" ec2:"ResourceType,resourceType"`
+	State                      *string `json:"State,omitempty" ec2:"State,state"`
+}
+
+type GetTransitGatewayRouteTableAssociationsResult struct {
+	Associations []TransitGatewayRouteTableAssociation `json:"Associations,omitempty" ec2:"Associations,associations,member=item"`
+	NextToken    *string                               `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type EnableTransitGatewayRouteTablePropagationRequest struct {
+	TransitGatewayRouteTableId *string `json:"TransitGatewayRouteTableId,omitempty" ec2:"TransitGatewayRouteTableId,TransitGatewayRouteTableId"`
+	TransitGatewayAttachmentId *string `json:"TransitGatewayAttachmentId,omitempty" ec2:"TransitGatewayAttachmentId,TransitGatewayAttachmentId"`
+	DryRun                     *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type TransitGatewayPropagation struct {
+	TransitGatewayAttachmentId *string `json:"TransitGatewayAttachmentId,omitempty" ec2:"TransitGatewayAttachmentId,transitGatewayAttachmentId"`
+	ResourceId                 *string `json:"ResourceId,omitempty" ec2:"ResourceId,resourceId"`
+	ResourceType               *string `json:"ResourceType,omitempty" ec2:"ResourceType,resourceType"`
+	TransitGatewayRouteTableId *string `json:"TransitGatewayRouteTableId,omitempty" ec2:"TransitGatewayRouteTableId,transitGatewayRouteTableId"`
+	State                      *string `json:"State,omitempty" ec2:"State,state"`
+}
+
+type EnableTransitGatewayRouteTablePropagationResult struct {
+	Propagation *TransitGatewayPropagation `json:"Propagation,omitempty" ec2:"Propagation,propagation"`
+}
+
+type DisableTransitGatewayRouteTablePropagationRequest struct {
+	TransitGatewayRouteTableId *string `json:"TransitGatewayRouteTableId,omitempty" ec2:"TransitGatewayRouteTableId,TransitGatewayRouteTableId"`
+	TransitGatewayAttachmentId *string `json:"TransitGatewayAttachmentId,omitempty" ec2:"TransitGatewayAttachmentId,TransitGatewayAttachmentId"`
+	DryRun                     *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type DisableTransitGatewayRouteTablePropagationResult struct {
+	Propagation *TransitGatewayPropagation `json:"Propagation,omitempty" ec2:"Propagation,propagation"`
+}
+
+type GetTransitGatewayRouteTablePropagationsRequest struct {
+	TransitGatewayRouteTableId *string  `json:"TransitGatewayRouteTableId,omitempty" ec2:"TransitGatewayRouteTableId,TransitGatewayRouteTableId"`
+	Filters                    []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	MaxResults                 *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken                  *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	DryRun                     *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type TransitGatewayRouteTablePropagation struct {
+	TransitGatewayAttachmentId *string `json:"TransitGatewayAttachmentId,omitempty" ec2:"TransitGatewayAttachmentId,transitGatewayAttachmentId"`
+	ResourceId                 *string `json:"ResourceId,omitempty" ec2:"ResourceId,resourceId"`
+	ResourceType               *string `json:"ResourceType,omitempty" ec2:"ResourceType,resourceType"`
+	State                      *string `json:"State,omitempty" ec2:"State,state"`
+}
+
+type GetTransitGatewayRouteTablePropagationsResult struct {
+	TransitGatewayRouteTablePropagations []TransitGatewayRouteTablePropagation `json:"TransitGatewayRouteTablePropagations,omitempty" ec2:"TransitGatewayRouteTablePropagations,transitGatewayRouteTablePropagations,member=item"`
+	NextToken                            *string                               `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type CreateTransitGatewayRouteRequest struct {
+	DestinationCidrBlock       *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,DestinationCidrBlock"`
+	TransitGatewayRouteTableId *string `json:"TransitGatewayRouteTableId,omitempty" ec2:"TransitGatewayRouteTableId,TransitGatewayRouteTableId"`
+	TransitGatewayAttachmentId *string `json:"TransitGatewayAttachmentId,omitempty" ec2:"TransitGatewayAttachmentId,TransitGatewayAttachmentId"`
+	Blackhole                  *bool   `json:"Blackhole,omitempty" ec2:"Blackhole,Blackhole"`
+	DryRun                     *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type TransitGatewayRouteAttachment struct {
+	ResourceId                 *string `json:"ResourceId,omitempty" ec2:"ResourceId,resourceId"`
+	TransitGatewayAttachmentId *string `json:"TransitGatewayAttachmentId,omitempty" ec2:"TransitGatewayAttachmentId,transitGatewayAttachmentId"`
+	ResourceType               *string `json:"ResourceType,omitempty" ec2:"ResourceType,resourceType"`
+}
+
+type TransitGatewayRoute struct {
+	DestinationCidrBlock      *string                         `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,destinationCidrBlock"`
+	PrefixListId              *string                         `json:"PrefixListId,omitempty" ec2:"PrefixListId,prefixListId"`
+	TransitGatewayAttachments []TransitGatewayRouteAttachment `json:"TransitGatewayAttachments,omitempty" ec2:"TransitGatewayAttachments,transitGatewayAttachments,member=item"`
+	Type                      *string                         `json:"Type,omitempty" ec2:"Type,type"`
+	State                     *string                         `json:"State,omitempty" ec2:"State,state"`
+}
+
+type CreateTransitGatewayRouteResult struct {
+	Route *TransitGatewayRoute `json:"Route,omitempty" ec2:"Route,route"`
+}
+
+type DeleteTransitGatewayRouteRequest struct {
+	TransitGatewayRouteTableId *string `json:"TransitGatewayRouteTableId,omitempty" ec2:"TransitGatewayRouteTableId,TransitGatewayRouteTableId"`
+	DestinationCidrBlock       *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,DestinationCidrBlock"`
+	DryRun                     *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type DeleteTransitGatewayRouteResult struct {
+	Route *TransitGatewayRoute `json:"Route,omitempty" ec2:"Route,route"`
+}
+
+type SearchTransitGatewayRoutesRequest struct {
+	TransitGatewayRouteTableId *string  `json:"TransitGatewayRouteTableId,omitempty" ec2:"TransitGatewayRouteTableId,TransitGatewayRouteTableId"`
+	Filters                    []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	MaxResults                 *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	DryRun                     *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type SearchTransitGatewayRoutesResult struct {
+	Routes                    []TransitGatewayRoute `json:"Routes,omitempty" ec2:"RouteSet,routeSet,member=item"`
+	AdditionalRoutesAvailable *bool                 `json:"AdditionalRoutesAvailable,omitempty" ec2:"AdditionalRoutesAvailable,additionalRoutesAvailable"`
+}
+
+type CreateCustomerGatewayRequest struct {
+	BgpAsn            *int64             `json:"BgpAsn,omitempty" ec2:"BgpAsn,BgpAsn"`
+	PublicIp          *string            `json:"PublicIp,omitempty" ec2:"PublicIp,PublicIp"`
+	CertificateArn    *string            `json:"CertificateArn,omitempty" ec2:"CertificateArn,CertificateArn"`
+	Type              *string            `json:"Type,omitempty" ec2:"Type,Type"`
+	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	DeviceName        *string            `json:"DeviceName,omitempty" ec2:"DeviceName,DeviceName"`
+	IpAddress         *string            `json:"IpAddress,omitempty" ec2:"IpAddress,IpAddress"`
+	BgpAsnExtended    *int64             `json:"BgpAsnExtended,omitempty" ec2:"BgpAsnExtended,BgpAsnExtended"`
+	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type CustomerGateway struct {
+	CustomerGatewayId *string `json:"CustomerGatewayId,omitempty" ec2:"CustomerGatewayId,customerGatewayId"`
+	BgpAsn            *string `json:"BgpAsn,omitempty" ec2:"BgpAsn,bgpAsn"`
+	BgpAsnExtended    *string `json:"BgpAsnExtended,omitempty" ec2:"BgpAsnExtended,bgpAsnExtended"`
+	IpAddress         *string `json:"IpAddress,omitempty" ec2:"IpAddress,ipAddress"`
+	Type              *string `json:"Type,omitempty" ec2:"Type,type"`
+	State             *string `json:"State,omitempty" ec2:"State,state"`
+	DeviceName        *string `json:"DeviceName,omitempty" ec2:"DeviceName,deviceName"`
+	CertificateArn    *string `json:"CertificateArn,omitempty" ec2:"CertificateArn,certificateArn"`
+	Tags              []Tag   `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+}
+
+type CreateCustomerGatewayResult struct {
+	CustomerGateway *CustomerGateway `json:"CustomerGateway,omitempty" ec2:"CustomerGateway,customerGateway"`
+}
+
+type DescribeCustomerGatewaysRequest struct {
+	CustomerGatewayIds []string `json:"CustomerGatewayIds,omitempty" ec2:"CustomerGatewayId,CustomerGatewayId,member=CustomerGatewayId"`
+	Filters            []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	DryRun             *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type DescribeCustomerGatewaysResult struct {
+	CustomerGateways []CustomerGateway `json:"CustomerGateways,omitempty" ec2:"CustomerGatewaySet,customerGatewaySet,member=item"`
+}
+
+type DeleteCustomerGatewayOutput struct{}
+
+type DeleteCustomerGatewayRequest struct {
+	CustomerGatewayId *string `json:"CustomerGatewayId,omitempty" ec2:"CustomerGatewayId,CustomerGatewayId"`
+	DryRun            *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type CreateVpnGatewayRequest struct {
+	AvailabilityZone  *string            `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,AvailabilityZone"`
+	Type              *string            `json:"Type,omitempty" ec2:"Type,Type"`
+	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	AmazonSideAsn     *int64             `json:"AmazonSideAsn,omitempty" ec2:"AmazonSideAsn,AmazonSideAsn"`
+	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type VpcAttachment struct {
+	VpcId *string `json:"VpcId,omitempty" ec2:"VpcId,vpcId"`
+	State *string `json:"State,omitempty" ec2:"State,state"`
+}
+
+type VpnGateway struct {
+	VpnGatewayId     *string         `json:"VpnGatewayId,omitempty" ec2:"VpnGatewayId,vpnGatewayId"`
+	State            *string         `json:"State,omitempty" ec2:"State,state"`
+	Type             *string         `json:"Type,omitempty" ec2:"Type,type"`
+	AvailabilityZone *string         `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,availabilityZone"`
+	AmazonSideAsn    *int64          `json:"AmazonSideAsn,omitempty" ec2:"AmazonSideAsn,amazonSideAsn"`
+	VpcAttachments   []VpcAttachment `json:"VpcAttachments,omitempty" ec2:"Attachments,attachments,member=item"`
+	Tags             []Tag           `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+}
+
+type CreateVpnGatewayResult struct {
+	VpnGateway *VpnGateway `json:"VpnGateway,omitempty" ec2:"VpnGateway,vpnGateway"`
+}
+
+type DescribeVpnGatewaysRequest struct {
+	Filters       []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	VpnGatewayIds []string `json:"VpnGatewayIds,omitempty" ec2:"VpnGatewayId,VpnGatewayId,member=VpnGatewayId"`
+	DryRun        *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type DescribeVpnGatewaysResult struct {
+	VpnGateways []VpnGateway `json:"VpnGateways,omitempty" ec2:"VpnGatewaySet,vpnGatewaySet,member=item"`
+}
+
+type DeleteVpnGatewayOutput struct{}
+
+type DeleteVpnGatewayRequest struct {
+	VpnGatewayId *string `json:"VpnGatewayId,omitempty" ec2:"VpnGatewayId,VpnGatewayId"`
+	DryRun       *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type AttachVpnGatewayRequest struct {
+	VpcId        *string `json:"VpcId,omitempty" ec2:"VpcId,VpcId"`
+	VpnGatewayId *string `json:"VpnGatewayId,omitempty" ec2:"VpnGatewayId,VpnGatewayId"`
+	DryRun       *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type AttachVpnGatewayResult struct {
+	VpcAttachment *VpcAttachment `json:"VpcAttachment,omitempty" ec2:"Attachment,attachment"`
+}
+
+type DetachVpnGatewayOutput struct{}
+
+type DetachVpnGatewayRequest struct {
+	VpcId        *string `json:"VpcId,omitempty" ec2:"VpcId,VpcId"`
+	VpnGatewayId *string `json:"VpnGatewayId,omitempty" ec2:"VpnGatewayId,VpnGatewayId"`
+	DryRun       *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type EnableVgwRoutePropagationOutput struct{}
+
+type EnableVgwRoutePropagationRequest struct {
+	GatewayId    *string `json:"GatewayId,omitempty" ec2:"GatewayId,GatewayId"`
+	RouteTableId *string `json:"RouteTableId,omitempty" ec2:"RouteTableId,RouteTableId"`
+	DryRun       *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type DisableVgwRoutePropagationOutput struct{}
+
+type DisableVgwRoutePropagationRequest struct {
+	GatewayId    *string `json:"GatewayId,omitempty" ec2:"GatewayId,GatewayId"`
+	RouteTableId *string `json:"RouteTableId,omitempty" ec2:"RouteTableId,RouteTableId"`
+	DryRun       *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type VpnTunnelOptionsSpecification struct {
+	TunnelInsideCidr *string `json:"TunnelInsideCidr,omitempty" ec2:"TunnelInsideCidr,TunnelInsideCidr"`
+	PreSharedKey     *string `json:"PreSharedKey,omitempty" ec2:"PreSharedKey,PreSharedKey"`
+}
+
+type VpnConnectionOptionsSpecification struct {
+	StaticRoutesOnly *bool                           `json:"StaticRoutesOnly,omitempty" ec2:"StaticRoutesOnly,staticRoutesOnly"`
+	TunnelOptions    []VpnTunnelOptionsSpecification `json:"TunnelOptions,omitempty" ec2:"TunnelOptions,TunnelOptions"`
+}
+
+type CreateVpnConnectionRequest struct {
+	CustomerGatewayId *string                            `json:"CustomerGatewayId,omitempty" ec2:"CustomerGatewayId,CustomerGatewayId"`
+	Type              *string                            `json:"Type,omitempty" ec2:"Type,Type"`
+	VpnGatewayId      *string                            `json:"VpnGatewayId,omitempty" ec2:"VpnGatewayId,VpnGatewayId"`
+	TransitGatewayId  *string                            `json:"TransitGatewayId,omitempty" ec2:"TransitGatewayId,TransitGatewayId"`
+	TagSpecifications []TagSpecification                 `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	DryRun            *bool                              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	Options           *VpnConnectionOptionsSpecification `json:"Options,omitempty" ec2:"Options,options"`
+}
+
+type TunnelOption struct {
+	OutsideIpAddress             *string `json:"OutsideIpAddress,omitempty" ec2:"OutsideIpAddress,outsideIpAddress"`
+	TunnelInsideCidr             *string `json:"TunnelInsideCidr,omitempty" ec2:"TunnelInsideCidr,tunnelInsideCidr"`
+	TunnelInsideIpv6Cidr         *string `json:"TunnelInsideIpv6Cidr,omitempty" ec2:"TunnelInsideIpv6Cidr,tunnelInsideIpv6Cidr"`
+	PreSharedKey                 *string `json:"PreSharedKey,omitempty" ec2:"PreSharedKey,preSharedKey"`
+	Phase1LifetimeSeconds        *int64  `json:"Phase1LifetimeSeconds,omitempty" ec2:"Phase1LifetimeSeconds,phase1LifetimeSeconds"`
+	Phase2LifetimeSeconds        *int64  `json:"Phase2LifetimeSeconds,omitempty" ec2:"Phase2LifetimeSeconds,phase2LifetimeSeconds"`
+	RekeyMarginTimeSeconds       *int64  `json:"RekeyMarginTimeSeconds,omitempty" ec2:"RekeyMarginTimeSeconds,rekeyMarginTimeSeconds"`
+	RekeyFuzzPercentage          *int64  `json:"RekeyFuzzPercentage,omitempty" ec2:"RekeyFuzzPercentage,rekeyFuzzPercentage"`
+	ReplayWindowSize             *int64  `json:"ReplayWindowSize,omitempty" ec2:"ReplayWindowSize,replayWindowSize"`
+	DpdTimeoutSeconds            *int64  `json:"DpdTimeoutSeconds,omitempty" ec2:"DpdTimeoutSeconds,dpdTimeoutSeconds"`
+	DpdTimeoutAction             *string `json:"DpdTimeoutAction,omitempty" ec2:"DpdTimeoutAction,dpdTimeoutAction"`
+	StartupAction                *string `json:"StartupAction,omitempty" ec2:"StartupAction,startupAction"`
+	EnableTunnelLifecycleControl *bool   `json:"EnableTunnelLifecycleControl,omitempty" ec2:"EnableTunnelLifecycleControl,enableTunnelLifecycleControl"`
+}
+
+type VpnConnectionOptions struct {
+	EnableAcceleration                  *bool          `json:"EnableAcceleration,omitempty" ec2:"EnableAcceleration,enableAcceleration"`
+	StaticRoutesOnly                    *bool          `json:"StaticRoutesOnly,omitempty" ec2:"StaticRoutesOnly,staticRoutesOnly"`
+	LocalIpv4NetworkCidr                *string        `json:"LocalIpv4NetworkCidr,omitempty" ec2:"LocalIpv4NetworkCidr,localIpv4NetworkCidr"`
+	RemoteIpv4NetworkCidr               *string        `json:"RemoteIpv4NetworkCidr,omitempty" ec2:"RemoteIpv4NetworkCidr,remoteIpv4NetworkCidr"`
+	LocalIpv6NetworkCidr                *string        `json:"LocalIpv6NetworkCidr,omitempty" ec2:"LocalIpv6NetworkCidr,localIpv6NetworkCidr"`
+	RemoteIpv6NetworkCidr               *string        `json:"RemoteIpv6NetworkCidr,omitempty" ec2:"RemoteIpv6NetworkCidr,remoteIpv6NetworkCidr"`
+	OutsideIpAddressType                *string        `json:"OutsideIpAddressType,omitempty" ec2:"OutsideIpAddressType,outsideIpAddressType"`
+	TransportTransitGatewayAttachmentId *string        `json:"TransportTransitGatewayAttachmentId,omitempty" ec2:"TransportTransitGatewayAttachmentId,transportTransitGatewayAttachmentId"`
+	TunnelInsideIpVersion               *string        `json:"TunnelInsideIpVersion,omitempty" ec2:"TunnelInsideIpVersion,tunnelInsideIpVersion"`
+	TunnelOptions                       []TunnelOption `json:"TunnelOptions,omitempty" ec2:"TunnelOptionSet,tunnelOptionSet,member=item"`
+}
+
+type VpnStaticRoute struct {
+	DestinationCidrBlock *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,destinationCidrBlock"`
+	Source               *string `json:"Source,omitempty" ec2:"Source,source"`
+	State                *string `json:"State,omitempty" ec2:"State,state"`
+}
+
+type VgwTelemetry struct {
+	AcceptedRouteCount *int64     `json:"AcceptedRouteCount,omitempty" ec2:"AcceptedRouteCount,acceptedRouteCount"`
+	LastStatusChange   *time.Time `json:"LastStatusChange,omitempty" ec2:"LastStatusChange,lastStatusChange"`
+	OutsideIpAddress   *string    `json:"OutsideIpAddress,omitempty" ec2:"OutsideIpAddress,outsideIpAddress"`
+	Status             *string    `json:"Status,omitempty" ec2:"Status,status"`
+	StatusMessage      *string    `json:"StatusMessage,omitempty" ec2:"StatusMessage,statusMessage"`
+	CertificateArn     *string    `json:"CertificateArn,omitempty" ec2:"CertificateArn,certificateArn"`
+}
+
+type VpnConnection struct {
+	VpnConnectionId              *string               `json:"VpnConnectionId,omitempty" ec2:"VpnConnectionId,vpnConnectionId"`
+	CustomerGatewayConfiguration *string               `json:"CustomerGatewayConfiguration,omitempty" ec2:"CustomerGatewayConfiguration,customerGatewayConfiguration"`
+	CustomerGatewayId            *string               `json:"CustomerGatewayId,omitempty" ec2:"CustomerGatewayId,customerGatewayId"`
+	Category                     *string               `json:"Category,omitempty" ec2:"Category,category"`
+	State                        *string               `json:"State,omitempty" ec2:"State,state"`
+	Type                         *string               `json:"Type,omitempty" ec2:"Type,type"`
+	VpnGatewayId                 *string               `json:"VpnGatewayId,omitempty" ec2:"VpnGatewayId,vpnGatewayId"`
+	TransitGatewayId             *string               `json:"TransitGatewayId,omitempty" ec2:"TransitGatewayId,transitGatewayId"`
+	Options                      *VpnConnectionOptions `json:"Options,omitempty" ec2:"Options,options"`
+	Routes                       []VpnStaticRoute      `json:"Routes,omitempty" ec2:"Routes,routes,member=item"`
+	Tags                         []Tag                 `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	VgwTelemetry                 []VgwTelemetry        `json:"VgwTelemetry,omitempty" ec2:"VgwTelemetry,vgwTelemetry,member=item"`
+	GatewayAssociationState      *string               `json:"GatewayAssociationState,omitempty" ec2:"GatewayAssociationState,gatewayAssociationState"`
+}
+
+type CreateVpnConnectionResult struct {
+	VpnConnection *VpnConnection `json:"VpnConnection,omitempty" ec2:"VpnConnection,vpnConnection"`
+}
+
+type DescribeVpnConnectionsRequest struct {
+	Filters          []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	VpnConnectionIds []string `json:"VpnConnectionIds,omitempty" ec2:"VpnConnectionId,VpnConnectionId,member=VpnConnectionId"`
+	DryRun           *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type DescribeVpnConnectionsResult struct {
+	VpnConnections []VpnConnection `json:"VpnConnections,omitempty" ec2:"VpnConnectionSet,vpnConnectionSet,member=item"`
+}
+
+type DeleteVpnConnectionOutput struct{}
+
+type DeleteVpnConnectionRequest struct {
+	VpnConnectionId *string `json:"VpnConnectionId,omitempty" ec2:"VpnConnectionId,VpnConnectionId"`
+	DryRun          *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type CreateVpnConnectionRouteOutput struct{}
+
+type CreateVpnConnectionRouteRequest struct {
+	DestinationCidrBlock *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,DestinationCidrBlock"`
+	VpnConnectionId      *string `json:"VpnConnectionId,omitempty" ec2:"VpnConnectionId,VpnConnectionId"`
+}
+
+type DeleteVpnConnectionRouteOutput struct{}
+
+type DeleteVpnConnectionRouteRequest struct {
+	DestinationCidrBlock *string `json:"DestinationCidrBlock,omitempty" ec2:"DestinationCidrBlock,DestinationCidrBlock"`
+	VpnConnectionId      *string `json:"VpnConnectionId,omitempty" ec2:"VpnConnectionId,VpnConnectionId"`
+}
+
 type API interface {
 	DescribeRegions(context.Context, *DescribeRegionsRequest) (*DescribeRegionsResult, error)
 	DescribeAvailabilityZones(context.Context, *DescribeAvailabilityZonesRequest) (*DescribeAvailabilityZonesResult, error)
@@ -2625,6 +3257,42 @@ type API interface {
 	UpdateSecurityGroupRuleDescriptionsEgress(context.Context, *UpdateSecurityGroupRuleDescriptionsEgressRequest) (*UpdateSecurityGroupRuleDescriptionsEgressResult, error)
 	DescribeSecurityGroupReferences(context.Context, *DescribeSecurityGroupReferencesRequest) (*DescribeSecurityGroupReferencesResult, error)
 	DescribeStaleSecurityGroups(context.Context, *DescribeStaleSecurityGroupsRequest) (*DescribeStaleSecurityGroupsResult, error)
+	CreateTransitGateway(context.Context, *CreateTransitGatewayRequest) (*CreateTransitGatewayResult, error)
+	DescribeTransitGateways(context.Context, *DescribeTransitGatewaysRequest) (*DescribeTransitGatewaysResult, error)
+	ModifyTransitGateway(context.Context, *ModifyTransitGatewayRequest) (*ModifyTransitGatewayResult, error)
+	DeleteTransitGateway(context.Context, *DeleteTransitGatewayRequest) (*DeleteTransitGatewayResult, error)
+	CreateTransitGatewayVpcAttachment(context.Context, *CreateTransitGatewayVpcAttachmentRequest) (*CreateTransitGatewayVpcAttachmentResult, error)
+	DescribeTransitGatewayVpcAttachments(context.Context, *DescribeTransitGatewayVpcAttachmentsRequest) (*DescribeTransitGatewayVpcAttachmentsResult, error)
+	ModifyTransitGatewayVpcAttachment(context.Context, *ModifyTransitGatewayVpcAttachmentRequest) (*ModifyTransitGatewayVpcAttachmentResult, error)
+	DeleteTransitGatewayVpcAttachment(context.Context, *DeleteTransitGatewayVpcAttachmentRequest) (*DeleteTransitGatewayVpcAttachmentResult, error)
+	DescribeTransitGatewayAttachments(context.Context, *DescribeTransitGatewayAttachmentsRequest) (*DescribeTransitGatewayAttachmentsResult, error)
+	CreateTransitGatewayRouteTable(context.Context, *CreateTransitGatewayRouteTableRequest) (*CreateTransitGatewayRouteTableResult, error)
+	DescribeTransitGatewayRouteTables(context.Context, *DescribeTransitGatewayRouteTablesRequest) (*DescribeTransitGatewayRouteTablesResult, error)
+	DeleteTransitGatewayRouteTable(context.Context, *DeleteTransitGatewayRouteTableRequest) (*DeleteTransitGatewayRouteTableResult, error)
+	AssociateTransitGatewayRouteTable(context.Context, *AssociateTransitGatewayRouteTableRequest) (*AssociateTransitGatewayRouteTableResult, error)
+	DisassociateTransitGatewayRouteTable(context.Context, *DisassociateTransitGatewayRouteTableRequest) (*DisassociateTransitGatewayRouteTableResult, error)
+	GetTransitGatewayRouteTableAssociations(context.Context, *GetTransitGatewayRouteTableAssociationsRequest) (*GetTransitGatewayRouteTableAssociationsResult, error)
+	EnableTransitGatewayRouteTablePropagation(context.Context, *EnableTransitGatewayRouteTablePropagationRequest) (*EnableTransitGatewayRouteTablePropagationResult, error)
+	DisableTransitGatewayRouteTablePropagation(context.Context, *DisableTransitGatewayRouteTablePropagationRequest) (*DisableTransitGatewayRouteTablePropagationResult, error)
+	GetTransitGatewayRouteTablePropagations(context.Context, *GetTransitGatewayRouteTablePropagationsRequest) (*GetTransitGatewayRouteTablePropagationsResult, error)
+	CreateTransitGatewayRoute(context.Context, *CreateTransitGatewayRouteRequest) (*CreateTransitGatewayRouteResult, error)
+	DeleteTransitGatewayRoute(context.Context, *DeleteTransitGatewayRouteRequest) (*DeleteTransitGatewayRouteResult, error)
+	SearchTransitGatewayRoutes(context.Context, *SearchTransitGatewayRoutesRequest) (*SearchTransitGatewayRoutesResult, error)
+	CreateCustomerGateway(context.Context, *CreateCustomerGatewayRequest) (*CreateCustomerGatewayResult, error)
+	DescribeCustomerGateways(context.Context, *DescribeCustomerGatewaysRequest) (*DescribeCustomerGatewaysResult, error)
+	DeleteCustomerGateway(context.Context, *DeleteCustomerGatewayRequest) (*DeleteCustomerGatewayOutput, error)
+	CreateVpnGateway(context.Context, *CreateVpnGatewayRequest) (*CreateVpnGatewayResult, error)
+	DescribeVpnGateways(context.Context, *DescribeVpnGatewaysRequest) (*DescribeVpnGatewaysResult, error)
+	DeleteVpnGateway(context.Context, *DeleteVpnGatewayRequest) (*DeleteVpnGatewayOutput, error)
+	AttachVpnGateway(context.Context, *AttachVpnGatewayRequest) (*AttachVpnGatewayResult, error)
+	DetachVpnGateway(context.Context, *DetachVpnGatewayRequest) (*DetachVpnGatewayOutput, error)
+	EnableVgwRoutePropagation(context.Context, *EnableVgwRoutePropagationRequest) (*EnableVgwRoutePropagationOutput, error)
+	DisableVgwRoutePropagation(context.Context, *DisableVgwRoutePropagationRequest) (*DisableVgwRoutePropagationOutput, error)
+	CreateVpnConnection(context.Context, *CreateVpnConnectionRequest) (*CreateVpnConnectionResult, error)
+	DescribeVpnConnections(context.Context, *DescribeVpnConnectionsRequest) (*DescribeVpnConnectionsResult, error)
+	DeleteVpnConnection(context.Context, *DeleteVpnConnectionRequest) (*DeleteVpnConnectionOutput, error)
+	CreateVpnConnectionRoute(context.Context, *CreateVpnConnectionRouteRequest) (*CreateVpnConnectionRouteOutput, error)
+	DeleteVpnConnectionRoute(context.Context, *DeleteVpnConnectionRouteRequest) (*DeleteVpnConnectionRouteOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -3003,6 +3671,114 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DescribeStaleSecurityGroups": {Name: "DescribeStaleSecurityGroups", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeStaleSecurityGroups", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeStaleSecurityGroups", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeStaleSecurityGroupsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DescribeStaleSecurityGroups(ctx, input.(*DescribeStaleSecurityGroupsRequest))
+		}},
+		"CreateTransitGateway": {Name: "CreateTransitGateway", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:CreateTransitGateway", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateTransitGateway", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateTransitGatewayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateTransitGateway(ctx, input.(*CreateTransitGatewayRequest))
+		}},
+		"DescribeTransitGateways": {Name: "DescribeTransitGateways", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeTransitGateways", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeTransitGateways", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeTransitGatewaysRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeTransitGateways(ctx, input.(*DescribeTransitGatewaysRequest))
+		}},
+		"ModifyTransitGateway": {Name: "ModifyTransitGateway", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:ModifyTransitGateway", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifyTransitGateway", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifyTransitGatewayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifyTransitGateway(ctx, input.(*ModifyTransitGatewayRequest))
+		}},
+		"DeleteTransitGateway": {Name: "DeleteTransitGateway", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DeleteTransitGateway", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteTransitGateway", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteTransitGatewayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteTransitGateway(ctx, input.(*DeleteTransitGatewayRequest))
+		}},
+		"CreateTransitGatewayVpcAttachment": {Name: "CreateTransitGatewayVpcAttachment", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:CreateTransitGatewayVpcAttachment", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateTransitGatewayVpcAttachment", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateTransitGatewayVpcAttachmentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateTransitGatewayVpcAttachment(ctx, input.(*CreateTransitGatewayVpcAttachmentRequest))
+		}},
+		"DescribeTransitGatewayVpcAttachments": {Name: "DescribeTransitGatewayVpcAttachments", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeTransitGatewayVpcAttachments", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeTransitGatewayVpcAttachments", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeTransitGatewayVpcAttachmentsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeTransitGatewayVpcAttachments(ctx, input.(*DescribeTransitGatewayVpcAttachmentsRequest))
+		}},
+		"ModifyTransitGatewayVpcAttachment": {Name: "ModifyTransitGatewayVpcAttachment", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:ModifyTransitGatewayVpcAttachment", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifyTransitGatewayVpcAttachment", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifyTransitGatewayVpcAttachmentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifyTransitGatewayVpcAttachment(ctx, input.(*ModifyTransitGatewayVpcAttachmentRequest))
+		}},
+		"DeleteTransitGatewayVpcAttachment": {Name: "DeleteTransitGatewayVpcAttachment", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DeleteTransitGatewayVpcAttachment", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteTransitGatewayVpcAttachment", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteTransitGatewayVpcAttachmentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteTransitGatewayVpcAttachment(ctx, input.(*DeleteTransitGatewayVpcAttachmentRequest))
+		}},
+		"DescribeTransitGatewayAttachments": {Name: "DescribeTransitGatewayAttachments", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeTransitGatewayAttachments", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeTransitGatewayAttachments", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeTransitGatewayAttachmentsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeTransitGatewayAttachments(ctx, input.(*DescribeTransitGatewayAttachmentsRequest))
+		}},
+		"CreateTransitGatewayRouteTable": {Name: "CreateTransitGatewayRouteTable", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:CreateTransitGatewayRouteTable", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateTransitGatewayRouteTable", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateTransitGatewayRouteTableRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateTransitGatewayRouteTable(ctx, input.(*CreateTransitGatewayRouteTableRequest))
+		}},
+		"DescribeTransitGatewayRouteTables": {Name: "DescribeTransitGatewayRouteTables", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeTransitGatewayRouteTables", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeTransitGatewayRouteTables", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeTransitGatewayRouteTablesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeTransitGatewayRouteTables(ctx, input.(*DescribeTransitGatewayRouteTablesRequest))
+		}},
+		"DeleteTransitGatewayRouteTable": {Name: "DeleteTransitGatewayRouteTable", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DeleteTransitGatewayRouteTable", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteTransitGatewayRouteTable", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteTransitGatewayRouteTableRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteTransitGatewayRouteTable(ctx, input.(*DeleteTransitGatewayRouteTableRequest))
+		}},
+		"AssociateTransitGatewayRouteTable": {Name: "AssociateTransitGatewayRouteTable", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:AssociateTransitGatewayRouteTable", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AssociateTransitGatewayRouteTable", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AssociateTransitGatewayRouteTableRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AssociateTransitGatewayRouteTable(ctx, input.(*AssociateTransitGatewayRouteTableRequest))
+		}},
+		"DisassociateTransitGatewayRouteTable": {Name: "DisassociateTransitGatewayRouteTable", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DisassociateTransitGatewayRouteTable", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DisassociateTransitGatewayRouteTable", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DisassociateTransitGatewayRouteTableRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DisassociateTransitGatewayRouteTable(ctx, input.(*DisassociateTransitGatewayRouteTableRequest))
+		}},
+		"GetTransitGatewayRouteTableAssociations": {Name: "GetTransitGatewayRouteTableAssociations", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:GetTransitGatewayRouteTableAssociations", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetTransitGatewayRouteTableAssociations", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetTransitGatewayRouteTableAssociationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetTransitGatewayRouteTableAssociations(ctx, input.(*GetTransitGatewayRouteTableAssociationsRequest))
+		}},
+		"EnableTransitGatewayRouteTablePropagation": {Name: "EnableTransitGatewayRouteTablePropagation", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:EnableTransitGatewayRouteTablePropagation", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "EnableTransitGatewayRouteTablePropagation", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &EnableTransitGatewayRouteTablePropagationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.EnableTransitGatewayRouteTablePropagation(ctx, input.(*EnableTransitGatewayRouteTablePropagationRequest))
+		}},
+		"DisableTransitGatewayRouteTablePropagation": {Name: "DisableTransitGatewayRouteTablePropagation", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DisableTransitGatewayRouteTablePropagation", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DisableTransitGatewayRouteTablePropagation", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DisableTransitGatewayRouteTablePropagationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DisableTransitGatewayRouteTablePropagation(ctx, input.(*DisableTransitGatewayRouteTablePropagationRequest))
+		}},
+		"GetTransitGatewayRouteTablePropagations": {Name: "GetTransitGatewayRouteTablePropagations", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:GetTransitGatewayRouteTablePropagations", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetTransitGatewayRouteTablePropagations", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetTransitGatewayRouteTablePropagationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetTransitGatewayRouteTablePropagations(ctx, input.(*GetTransitGatewayRouteTablePropagationsRequest))
+		}},
+		"CreateTransitGatewayRoute": {Name: "CreateTransitGatewayRoute", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:CreateTransitGatewayRoute", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateTransitGatewayRoute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateTransitGatewayRouteRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateTransitGatewayRoute(ctx, input.(*CreateTransitGatewayRouteRequest))
+		}},
+		"DeleteTransitGatewayRoute": {Name: "DeleteTransitGatewayRoute", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DeleteTransitGatewayRoute", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteTransitGatewayRoute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteTransitGatewayRouteRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteTransitGatewayRoute(ctx, input.(*DeleteTransitGatewayRouteRequest))
+		}},
+		"SearchTransitGatewayRoutes": {Name: "SearchTransitGatewayRoutes", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:SearchTransitGatewayRoutes", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "SearchTransitGatewayRoutes", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &SearchTransitGatewayRoutesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.SearchTransitGatewayRoutes(ctx, input.(*SearchTransitGatewayRoutesRequest))
+		}},
+		"CreateCustomerGateway": {Name: "CreateCustomerGateway", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:CreateCustomerGateway", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateCustomerGateway", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateCustomerGatewayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateCustomerGateway(ctx, input.(*CreateCustomerGatewayRequest))
+		}},
+		"DescribeCustomerGateways": {Name: "DescribeCustomerGateways", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeCustomerGateways", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeCustomerGateways", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeCustomerGatewaysRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeCustomerGateways(ctx, input.(*DescribeCustomerGatewaysRequest))
+		}},
+		"DeleteCustomerGateway": {Name: "DeleteCustomerGateway", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:DeleteCustomerGateway", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteCustomerGateway", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteCustomerGatewayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteCustomerGateway(ctx, input.(*DeleteCustomerGatewayRequest))
+		}},
+		"CreateVpnGateway": {Name: "CreateVpnGateway", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:CreateVpnGateway", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateVpnGateway", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateVpnGatewayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateVpnGateway(ctx, input.(*CreateVpnGatewayRequest))
+		}},
+		"DescribeVpnGateways": {Name: "DescribeVpnGateways", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeVpnGateways", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeVpnGateways", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeVpnGatewaysRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeVpnGateways(ctx, input.(*DescribeVpnGatewaysRequest))
+		}},
+		"DeleteVpnGateway": {Name: "DeleteVpnGateway", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:DeleteVpnGateway", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteVpnGateway", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteVpnGatewayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteVpnGateway(ctx, input.(*DeleteVpnGatewayRequest))
+		}},
+		"AttachVpnGateway": {Name: "AttachVpnGateway", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:AttachVpnGateway", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AttachVpnGateway", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AttachVpnGatewayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AttachVpnGateway(ctx, input.(*AttachVpnGatewayRequest))
+		}},
+		"DetachVpnGateway": {Name: "DetachVpnGateway", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:DetachVpnGateway", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DetachVpnGateway", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DetachVpnGatewayRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DetachVpnGateway(ctx, input.(*DetachVpnGatewayRequest))
+		}},
+		"EnableVgwRoutePropagation": {Name: "EnableVgwRoutePropagation", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:EnableVgwRoutePropagation", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "EnableVgwRoutePropagation", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &EnableVgwRoutePropagationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.EnableVgwRoutePropagation(ctx, input.(*EnableVgwRoutePropagationRequest))
+		}},
+		"DisableVgwRoutePropagation": {Name: "DisableVgwRoutePropagation", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:DisableVgwRoutePropagation", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DisableVgwRoutePropagation", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DisableVgwRoutePropagationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DisableVgwRoutePropagation(ctx, input.(*DisableVgwRoutePropagationRequest))
+		}},
+		"CreateVpnConnection": {Name: "CreateVpnConnection", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "ec2:CreateVpnConnection", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateVpnConnection", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateVpnConnectionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateVpnConnection(ctx, input.(*CreateVpnConnectionRequest))
+		}},
+		"DescribeVpnConnections": {Name: "DescribeVpnConnections", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "ec2:DescribeVpnConnections", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeVpnConnections", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeVpnConnectionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeVpnConnections(ctx, input.(*DescribeVpnConnectionsRequest))
+		}},
+		"DeleteVpnConnection": {Name: "DeleteVpnConnection", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:DeleteVpnConnection", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteVpnConnection", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteVpnConnectionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteVpnConnection(ctx, input.(*DeleteVpnConnectionRequest))
+		}},
+		"CreateVpnConnectionRoute": {Name: "CreateVpnConnectionRoute", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:CreateVpnConnectionRoute", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateVpnConnectionRoute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateVpnConnectionRouteRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateVpnConnectionRoute(ctx, input.(*CreateVpnConnectionRouteRequest))
+		}},
+		"DeleteVpnConnectionRoute": {Name: "DeleteVpnConnectionRoute", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:DeleteVpnConnectionRoute", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteVpnConnectionRoute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteVpnConnectionRouteRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteVpnConnectionRoute(ctx, input.(*DeleteVpnConnectionRouteRequest))
 		}},
 	}}
 }

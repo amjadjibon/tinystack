@@ -236,7 +236,7 @@ func dnsName(region, ip string, public bool) string {
 func instanceOutput(scope request.Scope, i *instance, state string) api.Instance {
 	monitoring := monitoringDisabled
 	if i.Monitoring {
-		monitoring = "enabled"
+		monitoring = stateEnabled
 	}
 
 	out := api.Instance{

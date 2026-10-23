@@ -51,8 +51,8 @@ func init() {
 			}
 
 			out, err := c.call(ctx, "ec2", "CreateDhcpOptions", map[string]any{
-				"DhcpConfigurations": configurations,
-				"TagSpecifications":  tagSpecifications("dhcp-options", p),
+				"DhcpConfigurations":    configurations,
+				memberTagSpecifications: tagSpecifications("dhcp-options", p),
 			})
 			if err != nil {
 				return "", nil, err

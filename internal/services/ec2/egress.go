@@ -28,14 +28,14 @@ func egressNotFound(id string) error {
 func egressOutput(g *egressGateway) api.EgressOnlyInternetGateway {
 	return api.EgressOnlyInternetGateway{
 		EgressOnlyInternetGatewayId: new(g.ID), Tags: tagList(g.Tags),
-		Attachments: []api.InternetGatewayAttachment{{VpcId: new(g.VPCID), State: new("attached")}},
+		Attachments: []api.InternetGatewayAttachment{{VpcId: new(g.VPCID), State: new(stateAttached)}},
 	}
 }
 
 func egressValues(g *egressGateway) values {
 	return values{
 		"egress-only-internet-gateway-id": {g.ID}, filterVPCID: {g.VPCID},
-		"attachment.vpc-id": {g.VPCID}, "attachment.state": {"attached"},
+		"attachment.vpc-id": {g.VPCID}, "attachment.state": {stateAttached},
 	}.withTags(g.Tags)
 }
 

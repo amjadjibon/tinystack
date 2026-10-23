@@ -152,7 +152,7 @@ func imageValues(region string, img *image) values {
 	out := imageOutput(region, img)
 	return values{
 		filterImageID: {*out.ImageId}, "name": {img.Name}, filterDescription: {img.Description},
-		"architecture": {img.Architecture}, "owner-id": {img.Owner}, "owner-alias": {img.OwnerAlias},
+		"architecture": {img.Architecture}, filterOwnerID: {img.Owner}, "owner-alias": {img.OwnerAlias},
 		filterState: {stateAvailable}, "is-public": boolValue(true), "image-type": {"machine"},
 		"root-device-name": {img.RootDevice}, "root-device-type": {"ebs"}, "virtualization-type": {"hvm"},
 		"hypervisor": {"xen"}, "ena-support": boolValue(true), "platform-details": {"Linux/UNIX"},

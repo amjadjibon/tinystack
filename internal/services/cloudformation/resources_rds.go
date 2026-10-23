@@ -137,7 +137,7 @@ func init() {
 			name := strings.ToLower(c.nameOf(p, memberDBSubnetGroupName, 255))
 			params := map[string]any{
 				memberDBSubnetGroupName: name, memberDBSubnetGroupDescription: p.str(memberDBSubnetGroupDescription),
-				"SubnetIds": p.list(memberSubnetIDs),
+				memberSubnetIDs: p.list(memberSubnetIDs),
 			}
 
 			if tags := p.tags(); len(tags) > 0 {
