@@ -2426,19 +2426,19 @@ resource "aws_emr_instance_group" "classic" {
 }
 
 resource "aws_amplify_app" "local" {
-  name = "local-hosting"
-  platform = "WEB"
-  build_spec = "version: 1"
+  name                  = "local-hosting"
+  platform              = "WEB"
+  build_spec            = "version: 1"
   environment_variables = { TEAM = var.team }
-  tags = { team = var.team }
+  tags                  = { team = var.team }
 }
 
 resource "aws_amplify_branch" "main" {
-  app_id = aws_amplify_app.local.id
-  branch_name = "main"
-  stage = "DEVELOPMENT"
+  app_id                = aws_amplify_app.local.id
+  branch_name           = "main"
+  stage                 = "DEVELOPMENT"
   environment_variables = { TEAM = var.team }
-  tags = { team = var.team }
+  tags                  = { team = var.team }
 }
 
 resource "aws_accessanalyzer_analyzer" "main" {
