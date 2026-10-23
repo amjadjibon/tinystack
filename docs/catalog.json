@@ -472,13 +472,23 @@
         "Clusters, task definition revisions, service desired count and task lifecycle",
         "Capacity provider metadata and tags",
         "Optional Docker runner starts containers, exposes host ports and captures awslogs output",
-        "Services replace tasks when essential containers exit"
+        "Docker health checks report container and essential-container task health; services replace exited or unhealthy essential containers",
+        "Secrets Manager secret ARNs with optional :json-key and SSM parameter names/ARNs resolve outside transactions into environment variables; failures stop tasks with ResourceInitializationError",
+        "Host bind mounts, empty task volumes, local Docker volumes (task/shared scope and shared autoprovision), mountPoints and volumesFrom",
+        "START, COMPLETE, SUCCESS and HEALTHY startup dependencies with cycle validation and bounded waits (startTimeout, default 300 seconds)",
+        "Task containers share localhost through a namespace holder and a dedicated Docker bridge network; host ports publish on the holder",
+        "Container CPU, memory and memoryReservation plus overrides map to Docker limits; task CPU/memory budgets divide into per-container ceilings",
+        "Stop and reset remove owned containers, namespace holders, task networks and task-scoped volumes, including interrupted startup"
       ],
       "gaps": [
-        "Records mode starts no containers",
-        "Docker mode omits health checks, secrets, volumes, dependencies, task networking and resource limits",
+        "Records mode starts no containers, resolves no secrets and reports UNKNOWN health",
+        "Docker bridge and awsvpc both share a task namespace; bridge differs from AWS per-container networking. No ENIs, VPC routing or security-group enforcement; awsvpc publishes ephemeral host ports",
+        "Task resource budgets use fixed per-container ceilings rather than a shared cgroup; explicit container totals exceeding the task budget fail startup, and containers without limits divide the remaining budget",
+        "Shared volumes and host paths persist after stop/reset; shared autoprovisioned volumes also persist. Volume drivers other than local, driver options/labels, EFS and FSx are unsupported",
+        "Docker mode rejects host/none networking, links, pid/ipc modes, runtimePlatform, ephemeralStorage, hostname, privileged, readonlyRootFilesystem, disableNetworking, DNS servers, ulimits, stopTimeout and appProtocol",
+        "No secret version/stage selectors, secret refresh, execution-role authorization, or dependency-aware shutdown; dependencies gate startup only (container dependency startup is bounded to 300 seconds)",
         "No container instances, load balancer integration, Service Connect, placement or execute command",
-        "Reset removes the task containers it started; a container starting during the reset can outlive it until shutdown"
+        "Docker requires the busybox image for its namespace holder; container health checks use the container shell for CMD-SHELL and shell-quoted exec for CMD"
       ],
       "execution": "Records / optional Docker",
       "package": "ecs"

@@ -516,7 +516,13 @@ Manage clusters, task definitions, tasks, and services with optional Docker exec
 - Clusters, task definition revisions, service desired count and task lifecycle.
 - Capacity provider metadata and tags.
 - Optional Docker runner starts containers, exposes host ports and captures awslogs output.
-- Services replace tasks when essential containers exit.
+- Docker health checks report container and essential-container task health; services replace exited or unhealthy essential containers.
+- Secrets Manager secret ARNs with optional :json-key and SSM parameter names/ARNs resolve outside transactions into environment variables; failures stop tasks with ResourceInitializationError.
+- Host bind mounts, empty task volumes, local Docker volumes (task/shared scope and shared autoprovision), mountPoints and volumesFrom.
+- START, COMPLETE, SUCCESS and HEALTHY startup dependencies with cycle validation and bounded waits (startTimeout, default 300 seconds).
+- Task containers share localhost through a namespace holder and a dedicated Docker bridge network; host ports publish on the holder.
+- Container CPU, memory and memoryReservation plus overrides map to Docker limits; task CPU/memory budgets divide into per-container ceilings.
+- Stop and reset remove owned containers, namespace holders, task networks and task-scoped volumes, including interrupted startup.
 
 [Supported operations](ecs.md#supported-operations) · [Limitations](ecs.md#limitations-and-future-work)
 

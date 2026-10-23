@@ -21,10 +21,14 @@ See the [implemented feature catalogue](catalogue.md#ecs) for this service's cap
 
 ## Limitations and future work
 
-- Records mode starts no containers.
-- Docker mode omits health checks, secrets, volumes, dependencies, task networking and resource limits.
+- Records mode starts no containers, resolves no secrets and reports UNKNOWN health.
+- Docker bridge and awsvpc both share a task namespace; bridge differs from AWS per-container networking. No ENIs, VPC routing or security-group enforcement; awsvpc publishes ephemeral host ports.
+- Task resource budgets use fixed per-container ceilings rather than a shared cgroup; explicit container totals exceeding the task budget fail startup, and containers without limits divide the remaining budget.
+- Shared volumes and host paths persist after stop/reset; shared autoprovisioned volumes also persist. Volume drivers other than local, driver options/labels, EFS and FSx are unsupported.
+- Docker mode rejects host/none networking, links, pid/ipc modes, runtimePlatform, ephemeralStorage, hostname, privileged, readonlyRootFilesystem, disableNetworking, DNS servers, ulimits, stopTimeout and appProtocol.
+- No secret version/stage selectors, secret refresh, execution-role authorization, or dependency-aware shutdown; dependencies gate startup only (container dependency startup is bounded to 300 seconds).
 - No container instances, load balancer integration, Service Connect, placement or execute command.
-- Reset removes the task containers it started; a container starting during the reset can outlive it until shutdown.
+- Docker requires the busybox image for its namespace holder; container health checks use the container shell for CMD-SHELL and shell-quoted exec for CMD.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -128,5 +132,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/ecs)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/ecs/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/ecs.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [ecs_containers_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ecs_containers_test.go), [ecs_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ecs_test.go).
+- SDK integration examples: [ecs_containers_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ecs_containers_test.go), [ecs_depth_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ecs_depth_test.go), [ecs_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ecs_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).
