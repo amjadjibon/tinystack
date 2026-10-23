@@ -460,3 +460,71 @@ func TestStreamingUnion(t *testing.T) {
 		t.Fatalf("streaming union: %s", g.out.String())
 	}
 }
+
+func TestValidationFixture(t *testing.T) {
+	model := `{"shapes": {
+  "fixture#Svc": {"type": "service", "version": "2020-01-01", "traits": {
+    "aws.protocols#awsJson1_1": {}, "aws.auth#sigv4": {"name": "fix"}}},
+  "fixture#Run": {"type": "operation", "input": {"target": "fixture#In"}, "output": {"target": "smithy.api#Unit"}},
+  "fixture#In": {"type": "structure", "members": {
+    "Name": {"target": "fixture#Name", "traits": {"smithy.api#required": {}}},
+    "Flag": {"target": "smithy.api#Boolean", "traits": {"smithy.api#required": {}, "smithy.api#default": false}},
+    "Size": {"target": "smithy.api#Integer", "traits": {"smithy.api#range": {"min": 1, "max": 10}}},
+    "Mode": {"target": "fixture#Mode"},
+    "Items": {"target": "fixture#Items"},
+    "Tags": {"target": "fixture#Tags"}}},
+  "fixture#Name": {"type": "string", "traits": {"smithy.api#length": {"min": 1, "max": 64},
+    "smithy.api#pattern": "^(?!aws:)[\\u0020-\\u007E]+$"}},
+  "fixture#Mode": {"type": "enum", "members": {
+    "ON": {"target": "smithy.api#Unit", "traits": {"smithy.api#enumValue": "on"}},
+    "OFF": {"target": "smithy.api#Unit", "traits": {"smithy.api#enumValue": "off"}}}},
+  "fixture#Items": {"type": "list", "member": {"target": "fixture#Item"}},
+  "fixture#Item": {"type": "structure", "members": {
+    "Id": {"target": "smithy.api#String", "traits": {"smithy.api#required": {}}}}},
+  "fixture#Tags": {"type": "map", "key": {"target": "fixture#Name"}, "value": {"target": "smithy.api#String"}},
+  "smithy.api#String": {"type": "string"},
+  "smithy.api#Boolean": {"type": "boolean"},
+  "smithy.api#Integer": {"type": "integer"}
+}}`
+	profile := serviceProfile{
+		Operations: []string{"Run"},
+		Validation: &validationProfile{Code: "InvalidInputException", Deferred: []string{"In.Items"}},
+	}
+	source, err := generate("fixture", []byte(model), profile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, want := range []string{
+		`var pattern0 = regexp.MustCompile("^[\\x{0020}-\\x{007E}]+$")`,
+		`var enum0 = []string{"off", "on"}`,
+		`validation.Required(path+"Name", v.Name != nil)`,
+		`validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(64)))`,
+		`validation.Pattern(path+"Name", (*v.Name), pattern0, "aws:", "^(?!aws:)[\\u0020-\\u007E]+$")`,
+		`validation.Range(path+"Size", float64((*v.Size)), new(float64(1)), new(float64(10)))`,
+		`validation.Enum(path+"Mode", (*v.Mode), enum0)`,
+		`for k0 := range v.Tags {`,
+		`validation.Required(path+"Id", v.Id != nil)`,
+		`func (v *Item) Validate(path string) error {`,
+		`in := input.(*In)`,
+		`awserror.New("InvalidInputException", err.Error())`,
+	} {
+		if !strings.Contains(string(source), want) {
+			t.Fatalf("generated source lacks %s:\n%s", want, source)
+		}
+	}
+
+	// A member with a default is serialized by every SDK, so it is never reported missing, and a deferred
+	// member is left to the service, which still gets Item.Validate.
+	for _, unwanted := range []string{`path+"Flag"`, `range v.Items`} {
+		if strings.Contains(string(source), unwanted) {
+			t.Fatalf("generated source has %s:\n%s", unwanted, source)
+		}
+	}
+
+	broken := strings.Replace(model, `^(?!aws:)[\\u0020-\\u007E]+$`, `^(?<=a)b$`, 1)
+	if _, err := generate("fixture", []byte(broken), profile); err == nil ||
+		!strings.Contains(err.Error(), "not supported by Go's regexp") {
+		t.Fatalf("unsupported pattern: %v", err)
+	}
+}

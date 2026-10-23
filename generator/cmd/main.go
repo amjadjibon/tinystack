@@ -56,9 +56,19 @@ type shape struct {
 
 // serviceProfile selects what is generated for one pinned service model.
 type serviceProfile struct {
-	Shapes     map[string][]string `json:"shapes"`
-	Query      *queryOverlay       `json:"query"`
-	Operations []string            `json:"operations"`
+	Shapes map[string][]string `json:"shapes"`
+	Query  *queryOverlay       `json:"query"`
+	// Validation, when set, makes the generated Invoke check inputs against the model's constraint traits.
+	Validation *validationProfile `json:"validation"`
+	Operations []string           `json:"operations"`
+}
+
+type validationProfile struct {
+	// Code is the error code an input that breaks a constraint is answered with.
+	Code string `json:"code"`
+	// Deferred lists Shape.Member entries the request check skips because the service validates each element
+	// itself, such as Security Hub's BatchImportFindings, which reports every bad finding instead of failing.
+	Deferred []string `json:"deferred"`
 }
 
 // queryOverlay supplies legacy awsQuery facts that awsQueryCompatible models no
@@ -974,6 +984,23 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 		}
 	}
 
+	var validated []string
+	for _, op := range profile.Operations {
+		if s := g.model.Shapes[prefix+op]; profile.Validation != nil && s.Input.Target != unitShape {
+			validated = append(validated, s.Input.Target)
+		}
+	}
+
+	if len(validated) > 0 {
+		methods, validateErr := g.validators(validated)
+		if validateErr != nil {
+			return nil, validateErr
+		}
+
+		g.imports["github.com/amjadjibon/tinystack/internal/aws/awserror"] = true
+		g.out.Write(methods)
+	}
+
 	fmt.Fprintln(&g.out, "type API interface {")
 	for _, op := range profile.Operations {
 		fmt.Fprintf(&g.out, "%s(context.Context,*%s)(*%s,error)\n", op, inputNames[op], outputs[op])
@@ -1005,6 +1032,15 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 
 	for _, op := range profile.Operations {
 		s := g.model.Shapes[prefix+op]
+		invoke := fmt.Sprintf("return api.%s(ctx,input.(*%s))", op, inputNames[op])
+		if profile.Validation != nil && s.Input.Target != unitShape {
+			invoke = fmt.Sprintf(
+				"in:=input.(*%s);if err:=in.Validate(\"\");err!=nil{return nil,awserror.New(%q,err.Error())};"+
+					"return api.%s(ctx,in)",
+				inputNames[op], profile.Validation.Code, op,
+			)
+		}
+
 		bindings := map[string]catalog.Binding{}
 		for _, protocol := range protocols {
 			binding, bindingErr := compileBinding(g.model, prefix+op, protocol, targetPrefix, svc.Version, g.fields)
@@ -1019,7 +1055,7 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 			&g.out,
 			"%q:{Name:%q,UnitOutput:%t,Sensitive:%t,Anonymous:%t,IAMAction:%q,Bindings:%#v,NewI"+
 				"nput:func()any{return &%s{}},Invoke:func(ctx context.Context,input any)(any"+
-				",error){return api.%s(ctx,input.(*%s))}},\n",
+				",error){%s}},\n",
 			op,
 			op,
 			s.Output.Target == unitShape,
@@ -1028,8 +1064,7 @@ func generate(name string, data []byte, profile serviceProfile) ([]byte, error) 
 			iamAction(name, op, iamPrefix(name, &svc, sigv4.Name), &s),
 			bindings,
 			inputNames[op],
-			op,
-			inputNames[op],
+			invoke,
 		)
 	}
 
