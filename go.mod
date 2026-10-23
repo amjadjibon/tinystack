@@ -3,7 +3,7 @@ module github.com/amjadjibon/tinystack
 go 1.27
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.47.3
+	github.com/aws/aws-sdk-go-v2 v1.47.4
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.22
 	github.com/aws/aws-sdk-go-v2/credentials v1.20.9
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.3
@@ -11,6 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/account v1.42.3
 	github.com/aws/aws-sdk-go-v2/service/acm v1.50.4
 	github.com/aws/aws-sdk-go-v2/service/acmpca v1.56.4
+	github.com/aws/aws-sdk-go-v2/service/amp v1.54.7
 	github.com/aws/aws-sdk-go-v2/service/apigateway v1.52.1
 	github.com/aws/aws-sdk-go-v2/service/apigatewaymanagementapi v1.29.1
 	github.com/aws/aws-sdk-go-v2/service/apigatewayv2 v1.46.1
@@ -110,7 +111,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/waf v1.39.0
 	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.83.4
 	github.com/aws/aws-sdk-go-v2/service/xray v1.45.4
-	github.com/aws/smithy-go v1.28.5
+	github.com/aws/smithy-go v1.28.6
 	github.com/coder/websocket v1.8.15
 	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/dop251/goja v0.0.0-20261004200024-481fdb442bb4
@@ -137,8 +138,8 @@ require (
 	github.com/agnivade/levenshtein v1.2.1 // indirect
 	github.com/air-verse/air v1.67.4 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.6 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.6 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.7 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.7 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.21 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.11.7 // indirect

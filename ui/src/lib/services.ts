@@ -42,6 +42,11 @@ export const categories = [
 ];
 
 const catalog: Record<string, ServiceInfo> = {
+	amp: {
+		title: "Amazon Managed Service for Prometheus",
+		category: management,
+		icon: "cloudwatch",
+	},
 	bedrock: { title: "Amazon Bedrock", category: machineLearning },
 	bedrockruntime: {
 		title: "Amazon Bedrock Runtime",

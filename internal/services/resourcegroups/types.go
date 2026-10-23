@@ -80,11 +80,13 @@ var namespaces = map[string]string{
 	"codepipeline":              "CodePipeline",
 	"acmpca":                    "ACMPCA",
 	"verifiedpermissions":       "VerifiedPermissions",
+	"amp":                       "APS",
 }
 
 // typeNames are the CloudFormation names of the inventory types whose name is
 // not the inventory type in PascalCase, by "service/type".
 var typeNames = map[string]string{
+	"amp/rulegroupsnamespace":                "RuleGroupsNamespace",
 	"bedrock/guardrail":                      "Guardrail",
 	"bedrock/application-inference-profile":  "ApplicationInferenceProfile",
 	"elasticbeanstalk/application":           "Application",

@@ -358,6 +358,249 @@
       ]
     }
   },
+  "amp": {
+    "operations": [
+      "CreateAlertManagerDefinition",
+      "CreateLoggingConfiguration",
+      "CreateRuleGroupsNamespace",
+      "CreateWorkspace",
+      "DeleteAlertManagerDefinition",
+      "DeleteLoggingConfiguration",
+      "DeleteRuleGroupsNamespace",
+      "DeleteWorkspace",
+      "DescribeAlertManagerDefinition",
+      "DescribeLoggingConfiguration",
+      "DescribeRuleGroupsNamespace",
+      "DescribeWorkspace",
+      "ListRuleGroupsNamespaces",
+      "ListTagsForResource",
+      "ListWorkspaces",
+      "PutAlertManagerDefinition",
+      "PutRuleGroupsNamespace",
+      "TagResource",
+      "UntagResource",
+      "UpdateLoggingConfiguration",
+      "UpdateWorkspaceAlias"
+    ],
+    "shapes": {
+      "AlertManagerDefinitionDescription": [
+        "createdAt",
+        "data",
+        "modifiedAt",
+        "status"
+      ],
+      "AlertManagerDefinitionStatus": [
+        "statusCode",
+        "statusReason"
+      ],
+      "CreateAlertManagerDefinitionRequest": [
+        "clientToken",
+        "data",
+        "workspaceId"
+      ],
+      "CreateAlertManagerDefinitionResponse": [
+        "status"
+      ],
+      "CreateLoggingConfigurationRequest": [
+        "clientToken",
+        "logGroupArn",
+        "workspaceId"
+      ],
+      "CreateLoggingConfigurationResponse": [
+        "status"
+      ],
+      "CreateRuleGroupsNamespaceRequest": [
+        "clientToken",
+        "data",
+        "name",
+        "tags",
+        "workspaceId"
+      ],
+      "CreateRuleGroupsNamespaceResponse": [
+        "arn",
+        "name",
+        "status",
+        "tags"
+      ],
+      "CreateWorkspaceRequest": [
+        "alias",
+        "clientToken",
+        "kmsKeyArn",
+        "tags"
+      ],
+      "CreateWorkspaceResponse": [
+        "arn",
+        "kmsKeyArn",
+        "status",
+        "tags",
+        "workspaceId"
+      ],
+      "DeleteAlertManagerDefinitionRequest": [
+        "clientToken",
+        "workspaceId"
+      ],
+      "DeleteLoggingConfigurationRequest": [
+        "clientToken",
+        "workspaceId"
+      ],
+      "DeleteRuleGroupsNamespaceRequest": [
+        "clientToken",
+        "name",
+        "workspaceId"
+      ],
+      "DeleteWorkspaceRequest": [
+        "clientToken",
+        "workspaceId"
+      ],
+      "DescribeAlertManagerDefinitionRequest": [
+        "workspaceId"
+      ],
+      "DescribeAlertManagerDefinitionResponse": [
+        "alertManagerDefinition"
+      ],
+      "DescribeLoggingConfigurationRequest": [
+        "workspaceId"
+      ],
+      "DescribeLoggingConfigurationResponse": [
+        "loggingConfiguration"
+      ],
+      "DescribeRuleGroupsNamespaceRequest": [
+        "name",
+        "workspaceId"
+      ],
+      "DescribeRuleGroupsNamespaceResponse": [
+        "ruleGroupsNamespace"
+      ],
+      "DescribeWorkspaceRequest": [
+        "workspaceId"
+      ],
+      "DescribeWorkspaceResponse": [
+        "workspace"
+      ],
+      "ListRuleGroupsNamespacesRequest": [
+        "maxResults",
+        "name",
+        "nextToken",
+        "workspaceId"
+      ],
+      "ListRuleGroupsNamespacesResponse": [
+        "nextToken",
+        "ruleGroupsNamespaces"
+      ],
+      "ListTagsForResourceRequest": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags"
+      ],
+      "ListWorkspacesRequest": [
+        "alias",
+        "maxResults",
+        "nextToken"
+      ],
+      "ListWorkspacesResponse": [
+        "nextToken",
+        "workspaces"
+      ],
+      "LoggingConfigurationMetadata": [
+        "createdAt",
+        "logGroupArn",
+        "modifiedAt",
+        "status",
+        "workspace"
+      ],
+      "LoggingConfigurationStatus": [
+        "statusCode",
+        "statusReason"
+      ],
+      "PutAlertManagerDefinitionRequest": [
+        "clientToken",
+        "data",
+        "workspaceId"
+      ],
+      "PutAlertManagerDefinitionResponse": [
+        "status"
+      ],
+      "PutRuleGroupsNamespaceRequest": [
+        "clientToken",
+        "data",
+        "name",
+        "workspaceId"
+      ],
+      "PutRuleGroupsNamespaceResponse": [
+        "arn",
+        "name",
+        "status",
+        "tags"
+      ],
+      "RuleGroupsNamespaceDescription": [
+        "arn",
+        "createdAt",
+        "data",
+        "modifiedAt",
+        "name",
+        "status",
+        "tags"
+      ],
+      "RuleGroupsNamespaceStatus": [
+        "statusCode",
+        "statusReason"
+      ],
+      "RuleGroupsNamespaceSummary": [
+        "arn",
+        "createdAt",
+        "modifiedAt",
+        "name",
+        "status",
+        "tags"
+      ],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "UpdateLoggingConfigurationRequest": [
+        "clientToken",
+        "logGroupArn",
+        "workspaceId"
+      ],
+      "UpdateLoggingConfigurationResponse": [
+        "status"
+      ],
+      "UpdateWorkspaceAliasRequest": [
+        "alias",
+        "clientToken",
+        "workspaceId"
+      ],
+      "WorkspaceDescription": [
+        "alias",
+        "arn",
+        "createdAt",
+        "kmsKeyArn",
+        "prometheusEndpoint",
+        "status",
+        "tags",
+        "workspaceId"
+      ],
+      "WorkspaceStatus": [
+        "statusCode"
+      ],
+      "WorkspaceSummary": [
+        "alias",
+        "arn",
+        "createdAt",
+        "kmsKeyArn",
+        "status",
+        "tags",
+        "workspaceId"
+      ]
+    }
+  },
   "apigateway": {
     "operations": [
       "CreateRestApi",
