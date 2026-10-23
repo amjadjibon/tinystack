@@ -522,6 +522,19 @@ func TestValidationFixture(t *testing.T) {
 		}
 	}
 
+	// A repeat above Go's 1000 limit is unbounded when the length trait already bounds it, and fails otherwise.
+	long := strings.Replace(model, `^(?!aws:)[\\u0020-\\u007E]+$`, `^a{1,1500}$`, 1)
+	long = strings.Replace(long, `"max": 64`, `"max": 2000`, 1)
+	if _, err = generate("fixture", []byte(long), profile); err == nil || !strings.Contains(err.Error(), "{1,1500}") {
+		t.Fatalf("unbounded repeat: %v", err)
+	}
+
+	long = strings.Replace(long, `"max": 2000`, `"max": 1500`, 1)
+	if source, err = generate("fixture", []byte(long), profile); err != nil ||
+		!strings.Contains(string(source), `regexp.MustCompile("^a{1,}$")`) {
+		t.Fatalf("bounded repeat: %v\n%s", err, source)
+	}
+
 	broken := strings.Replace(model, `^(?!aws:)[\\u0020-\\u007E]+$`, `^(?<=a)b$`, 1)
 	if _, err := generate("fixture", []byte(broken), profile); err == nil ||
 		!strings.Contains(err.Error(), "not supported by Go's regexp") {

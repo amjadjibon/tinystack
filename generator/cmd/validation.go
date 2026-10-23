@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -158,7 +159,14 @@ func (v *validators) value(expr, path string, ref reference, depth int) (string,
 			return "", err
 		}
 
-		name, excluded, err := v.pattern(source)
+		var l bounds
+		if raw, ok := traits[traitLength]; ok {
+			if err := json.Unmarshal(raw, &l); err != nil {
+				return "", err
+			}
+		}
+
+		name, excluded, err := v.pattern(source, l.Max)
 		if err != nil {
 			return "", err
 		}
@@ -222,15 +230,35 @@ func bound(kind string, n *json.Number) string {
 	return fmt.Sprintf("new(%s(%s))", kind, n.String())
 }
 
+// re2Patterns maps model patterns that use lookarounds elsewhere than a leading literal prefix to equivalent RE2
+// expressions. Each must match exactly the same strings.
+var re2Patterns = map[string]string{
+	// A DNS name: labels of 1 to 63 letters, digits and hyphens that neither start with a hyphen nor end with one,
+	// the last label at least two characters, and an optional trailing dot (Amplify DomainName).
+	`^(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])(\.)?$`: `^(([A-Za-z0-9]` +
+		`([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)\.)+([A-Za-z0-9][A-Za-z0-9-]{0,61}[A-Za-z0-9])(\.)?$`,
+}
+
 var (
 	unicodeEscape = regexp.MustCompile(`\\u([0-9A-Fa-f]{4})`)
 	lookahead     = regexp.MustCompile(`^\^\(\?!([^()\\.*+?\[\]{}|^$]+)\)`)
 )
 
-// pattern declares a compiled model pattern, rewriting the ECMAScript escapes Go's regexp lacks: \uXXXX becomes
-// \x{XXXX}, and a leading literal negative lookahead becomes an excluded prefix.
-func (v *validators) pattern(source string) (name, excluded string, err error) {
+// pattern declares a compiled model pattern, rewriting the ECMAScript syntax Go's regexp lacks: \uXXXX becomes
+// \x{XXXX}, a leading literal negative lookahead becomes an excluded prefix, and re2Patterns supplies the rest.
+func (v *validators) pattern(source string, maxLength *json.Number) (name, excluded string, err error) {
 	expr := unicodeEscape.ReplaceAllString(source, `\x{$1}`)
+	if equivalent, ok := re2Patterns[source]; ok {
+		expr = equivalent
+	}
+
+	// Go's regexp caps counted repetitions at 1000. A larger upper bound can be dropped when the value's length
+	// limit is no greater, since a value never repeats anything more often than it has characters.
+	expr, err = unbound(expr, maxLength)
+	if err != nil {
+		return "", "", fmt.Errorf("pattern %q: %w", source, err)
+	}
+
 	if m := lookahead.FindStringSubmatch(expr); m != nil {
 		excluded, expr = m[1], "^"+expr[len(m[0]):]
 	}
@@ -247,6 +275,33 @@ func (v *validators) pattern(source string) (name, excluded string, err error) {
 	}
 
 	return name, excluded, nil
+}
+
+var largeRepeat = regexp.MustCompile(`\{(\d+),(\d+)\}`)
+
+func unbound(expr string, maxLength *json.Number) (string, error) {
+	var err error
+	out := largeRepeat.ReplaceAllStringFunc(expr, func(m string) string {
+		parts := largeRepeat.FindStringSubmatch(m)
+		upper, _ := strconv.Atoi(parts[2])
+		if upper <= 1000 {
+			return m
+		}
+
+		limit := upper + 1
+		if maxLength != nil {
+			limit, _ = strconv.Atoi(maxLength.String())
+		}
+
+		if limit > upper {
+			err = fmt.Errorf("repeat %s exceeds 1000 and is not bounded by the length trait", m)
+			return m
+		}
+
+		return "{" + parts[1] + ",}"
+	})
+
+	return out, err
 }
 
 func (v *validators) enum(values []string) string {
