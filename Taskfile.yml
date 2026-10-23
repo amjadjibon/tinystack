@@ -73,13 +73,13 @@ tasks:
 
   test:testcontainers:
     desc: "Test the separate Go Testcontainers module (requires Docker; builds the image unless TINYSTACK_IMAGE is set)"
-    dir: testcontainers
+    dir: tests/testcontainers
     cmds:
       - go test -race -count=1 -v ./...
 
   test:testcontainers:python:
     desc: "Test the separate Python Testcontainers module (requires Docker; builds the image unless TINYSTACK_IMAGE is set)"
-    dir: testcontainers-python
+    dir: tests/testcontainers-python
     cmds:
       - python3 -m venv .venv
       - .venv/bin/pip install -q -e '.[test]'
@@ -87,22 +87,22 @@ tasks:
 
   test:testcontainers:java:
     desc: "Test the separate Java Testcontainers module (requires Docker and JDK 17+; builds the image unless TINYSTACK_IMAGE is set)"
-    dir: testcontainers-java
+    dir: tests/testcontainers-java
     cmds:
       - ./mvnw -q test
 
   test:testcontainers:node:
     desc: "Test the separate Node Testcontainers module (requires Docker and npm; builds the image unless TINYSTACK_IMAGE is set)"
-    dir: testcontainers-node
+    dir: tests/testcontainers-node
     cmds:
       - npm test
 
   lint:testcontainers:
     desc: "Vet and lint the separate Go Testcontainers module"
-    dir: testcontainers
+    dir: tests/testcontainers
     cmds:
       - go vet ./...
-      - golangci-lint run --allow-serial-runners --config ../.golangci.yml ./...
+      - golangci-lint run --allow-serial-runners --config ../../.golangci.yml ./...
 
   smoke:
     cmds:

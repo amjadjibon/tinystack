@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/testcontainers/testcontainers-go"
 
-	tinystack "github.com/amjadjibon/tinystack/testcontainers"
+	tinystack "github.com/amjadjibon/tinystack/tests/testcontainers"
 )
 
 func ExampleRun() {

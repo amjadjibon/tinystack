@@ -23,7 +23,7 @@ function resolveOrCreateImage(): { image: string; createdTag?: string } {
     return { image: envImage.trim() };
   }
   const tag = `tinystack-test-node:${Date.now()}`;
-  const repoRoot = path.resolve("..");
+  const repoRoot = path.resolve("../..");
   execSync(`docker build --target headless -t ${tag} ${repoRoot}`, {
     stdio: "inherit",
   });

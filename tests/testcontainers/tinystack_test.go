@@ -20,7 +20,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 
-	tinystack "github.com/amjadjibon/tinystack/testcontainers"
+	tinystack "github.com/amjadjibon/tinystack/tests/testcontainers"
 )
 
 func TestContainer(t *testing.T) {
@@ -40,7 +40,7 @@ func TestContainer(t *testing.T) {
 		tinystack.WithReadyScriptsComplete(),
 	}
 	if image == "" {
-		root, err := filepath.Abs("..")
+		root, err := filepath.Abs("../..")
 		require.NoError(t, err)
 		// The Dockerfile needs BuildKit's cache mounts. Testcontainers' image
 		// builder does not establish a BuildKit session; the Docker CLI does.

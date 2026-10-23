@@ -1,4 +1,4 @@
-module github.com/amjadjibon/tinystack/testcontainers
+module github.com/amjadjibon/tinystack/tests/testcontainers
 
 go 1.27
 

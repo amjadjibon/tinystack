@@ -30,7 +30,7 @@ def tinystack_image():
         return
 
     # Build the current checkout, as the Go module's tests do, and remove the image afterwards.
-    repo_root = Path(__file__).resolve().parents[2]
+    repo_root = Path(__file__).resolve().parents[3]
     image_tag = f"tinystack-test:{int(time.time() * 1000)}"
     subprocess.run(
         ["docker", "build", "--target", "headless", "-t", image_tag, str(repo_root)],

@@ -23,10 +23,10 @@ export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
 
 ## Go module
 
-The `github.com/amjadjibon/tinystack/testcontainers` Go module uses Testcontainers Go v0.44.0.
+The `github.com/amjadjibon/tinystack/tests/testcontainers` Go module uses Testcontainers Go v0.44.0.
 
 ```sh
-go get github.com/amjadjibon/tinystack/testcontainers
+go get github.com/amjadjibon/tinystack/tests/testcontainers
 ```
 
 ### Use the AWS SDK
@@ -40,7 +40,7 @@ import (
     "github.com/aws/aws-sdk-go-v2/service/s3"
     "github.com/testcontainers/testcontainers-go"
 
-    tinystack "github.com/amjadjibon/tinystack/testcontainers"
+    tinystack "github.com/amjadjibon/tinystack/tests/testcontainers"
 )
 
 func TestUploads(t *testing.T) {

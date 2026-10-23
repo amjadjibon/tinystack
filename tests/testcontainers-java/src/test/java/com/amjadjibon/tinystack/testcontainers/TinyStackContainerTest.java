@@ -87,7 +87,7 @@ public class TinyStackContainerTest {
             return envImage.trim();
         }
 
-        Path repoRoot = Paths.get("..").toAbsolutePath().normalize();
+        Path repoRoot = Paths.get("../..").toAbsolutePath().normalize();
         String tag = "tinystack-test:" + System.currentTimeMillis();
         ProcessBuilder pb = new ProcessBuilder("docker", "build", "--target", "headless", "-t", tag, repoRoot.toString());
         pb.inheritIO();

@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 
-	tinystack "github.com/amjadjibon/tinystack/testcontainers"
+	tinystack "github.com/amjadjibon/tinystack/tests/testcontainers"
 )
 
 // endpointContainer supplies a real HTTP server in place of Docker for reset's
