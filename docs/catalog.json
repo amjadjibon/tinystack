@@ -2588,6 +2588,33 @@
       ],
       "execution": "Records only",
       "package": "amp"
+    },
+    "apprunner": {
+      "title": "AWS App Runner",
+      "category": "Compute",
+      "scope": "Account and Region",
+      "summary": "Store App Runner services, revisioned configurations, connections and VPC connectors as metadata over AWS JSON 1.0.",
+      "features": [
+        "Twenty-eight pinned-model operations: service create/describe/list/update/delete, pause/resume, deployment records and operation history; auto scaling create/describe/list/delete and default selection; connections, VPC connectors, observability configurations and native tags",
+        "Lifecycle mutations return OPERATION_IN_PROGRESS snapshots and atomically persist RUNNING, PAUSED or DELETED before returning; the next read sees the terminal state, and every operation record is immediately SUCCEEDED. Pause and deployment require RUNNING; resume requires PAUSED. No background timer or runtime work is scheduled",
+        "Exactly one source repository, nested required members, model enums, lengths, patterns and numeric ranges are validated. CPU and memory values are checked independently against model patterns, without a runtime sizing matrix",
+        "Auto scaling and observability configurations have monotonically increasing revisions and Latest flags for the highest revision of each name; name-only and name/revision partial ARNs resolve the latest active matching revision. Lists default LatestOnly to true; unfiltered configuration lists omit inactive revisions, while name-filtered lists include retained tombstones",
+        "An account/Region-local DefaultConfiguration auto scaling revision is materialized lazily with MinSize=1, MaxSize=25 and MaxConcurrency=100. UpdateDefaultAutoScalingConfiguration changes the default; services without an ARN select the latest active revision of its name. Associated and default configurations cannot be deleted",
+        "Connections remain PENDING_HANDSHAKE; VPC connectors and observability configurations are ACTIVE records. Deletes retain INACTIVE configuration tombstones; deleted connections are removed",
+        "Tags are stored in resource records, with native tag operations, Resource Groups Tagging API support, account/Region isolation, shared token pagination and persistent SQLite restart coverage. Omitted MaxResults returns all matching records",
+        "Inventory reports RecordsOnly=true and ExecutionReady=false. Resource Groups recognizes the four official CloudFormation types; there is no invented connection type",
+        "CloudFormation AWS::AppRunner::Service, AWS::AppRunner::AutoScalingConfiguration, AWS::AppRunner::VpcConnector and AWS::AppRunner::ObservabilityConfiguration providers, with Ref and GetAtt, immutable configuration replacement, service updates and tag updates; native environment-variable and secret Name/Value arrays are translated to SDK maps"
+      ],
+      "gaps": [
+        "No container runtime, builds, repository clone/authentication, source polling, automatic deployments, traffic, DNS, health checks, metrics, tracing, IAM role use, KMS encryption or network provisioning. Source, instance, encryption, network, observability and health-check settings are records only",
+        "ServiceUrl is a deterministic placeholder host derived from the stored service ID and Region; it is not served and has no traffic",
+        "No custom domains or VPC ingress connections. ListServicesForAutoScalingConfiguration is not implemented",
+        "Deleted service records and inactive configuration revisions are retained indefinitely; no AWS cleanup delay is emulated. Latest refers to the highest stored revision, including retained tombstones, while partial ARNs select active revisions",
+        "App Runner referenced network and observability settings are stored without provisioning or cross-service validation; no AWS quotas or external provider handshakes are simulated",
+        "CloudFormation service optional-property removal is rejected when the API cannot clear it. Service tag changes are applied in place"
+      ],
+      "execution": "Records only",
+      "package": "apprunner"
     }
   },
   "future": {

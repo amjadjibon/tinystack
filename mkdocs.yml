@@ -151,6 +151,7 @@ nav:
           - "SES v1": services/ses.md
           - "SES v2": services/sesv2.md
       - "Compute":
+          - "AWS App Runner": services/apprunner.md
           - "AWS Batch": services/batch.md
           - "EC2": services/ec2.md
           - "EC2 Auto Scaling": services/autoscaling.md
