@@ -252,6 +252,7 @@ var taggers = map[string]tagger{
 	"codecommit":          resourceOperations("codecommit", "ResourceArn", plain),
 	"verifiedpermissions": resourceOperations("verifiedpermissions", "ResourceArn", plain),
 	"amp":                 resourceOperations("amp", "ResourceArn", plain),
+	"accessanalyzer":      resourceOperations("accessanalyzer", "ResourceArn", plain),
 	"ram":                 resourceOperations("ram", "ResourceShareArn", pairs),
 	"ssoadmin": operations("ssoadmin", "TagResource", "UntagResource",
 		func(_ context.Context, _ *catalog.Caller, r *catalog.Owned) (map[string]any, error) {

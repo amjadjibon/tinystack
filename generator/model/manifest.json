@@ -414,6 +414,10 @@
     "amplify": {
       "path": "codegen/sdk-codegen/aws-models/amplify.json",
       "sha256": "27cf0a1fc50ad8670a35cfb0144b018ebe1eb0608ae0e14287e8549790cb988f"
+    },
+    "accessanalyzer": {
+      "path": "codegen/sdk-codegen/aws-models/accessanalyzer.json",
+      "sha256": "737a1a50aac7c3224212ae075ccfa01b45e64491deb8d6a9bf68333f309e8b36"
     }
   }
 }

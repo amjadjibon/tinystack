@@ -83,6 +83,7 @@ var namespaces = map[string]string{
 	"acmpca":                    "ACMPCA",
 	"verifiedpermissions":       "VerifiedPermissions",
 	"amp":                       "APS",
+	"accessanalyzer":            "AccessAnalyzer",
 }
 
 // typeNames are the CloudFormation names of the inventory types whose name is

@@ -17,6 +17,7 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
+    accessanalyzer       = var.endpoint
     amplify              = var.endpoint
     signer               = var.endpoint
     waf                  = var.endpoint
@@ -2436,4 +2437,20 @@ resource "aws_amplify_branch" "main" {
   stage = "DEVELOPMENT"
   environment_variables = { TEAM = var.team }
   tags = { team = var.team }
+}
+
+resource "aws_accessanalyzer_analyzer" "main" {
+  analyzer_name = "main"
+  type          = "ACCOUNT"
+  tags          = local.tags
+}
+
+resource "aws_accessanalyzer_archive_rule" "main" {
+  analyzer_name = aws_accessanalyzer_analyzer.main.analyzer_name
+  rule_name     = "main"
+
+  filter {
+    criteria = "isPublic"
+    eq       = ["false"]
+  }
 }

@@ -18,6 +18,7 @@ import (
 	wiredns "github.com/miekg/dns"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	accessanalyzerapi "github.com/amjadjibon/tinystack/internal/aws/generated/accessanalyzer"
 	accountapi "github.com/amjadjibon/tinystack/internal/aws/generated/account"
 	acmapi "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
 	acmpcaapi "github.com/amjadjibon/tinystack/internal/aws/generated/acmpca"
@@ -128,6 +129,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	"github.com/amjadjibon/tinystack/internal/inithooks"
 	"github.com/amjadjibon/tinystack/internal/metadata"
+	"github.com/amjadjibon/tinystack/internal/services/accessanalyzer"
 	"github.com/amjadjibon/tinystack/internal/services/account"
 	"github.com/amjadjibon/tinystack/internal/services/acm"
 	"github.com/amjadjibon/tinystack/internal/services/acmpca"
@@ -446,6 +448,7 @@ func build(
 	amplifyRecords := amplify.New(store)
 	connectionRecords := codeconnections.New(store)
 	ampRecords := amp.New(store)
+	accessAnalyzerRecords := accessanalyzer.New(store)
 	quotaRecords := servicequotas.New(store)
 	dmsRecords := databasemigrationservice.New(store, network)
 	emrRecords := emrserverless.New(store)
@@ -571,6 +574,7 @@ func build(
 		amplifyapi.Descriptor(amplifyRecords),
 		codeconnectionsapi.Descriptor(connectionRecords),
 		ampapi.Descriptor(ampRecords),
+		accessanalyzerapi.Descriptor(accessAnalyzerRecords),
 		costexplorerapi.Descriptor(costExplorerRecords),
 		costandusagereportserviceapi.Descriptor(curRecords),
 		servicequotasapi.Descriptor(quotaRecords),

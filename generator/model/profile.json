@@ -33171,5 +33171,341 @@
         "webhook"
       ]
     }
+  },
+  "accessanalyzer": {
+    "validation": {
+      "code": "ValidationException"
+    },
+    "operations": [
+      "ApplyArchiveRule",
+      "CreateAnalyzer",
+      "CreateArchiveRule",
+      "DeleteAnalyzer",
+      "DeleteArchiveRule",
+      "GetAnalyzer",
+      "GetArchiveRule",
+      "GetFinding",
+      "GetFindingV2",
+      "ListAnalyzers",
+      "ListArchiveRules",
+      "ListFindings",
+      "ListFindingsV2",
+      "ListTagsForResource",
+      "TagResource",
+      "UntagResource",
+      "UpdateAnalyzer",
+      "UpdateArchiveRule",
+      "UpdateFindings"
+    ],
+    "shapes": {
+      "AnalysisRule": [
+        "exclusions"
+      ],
+      "AnalysisRuleCriteria": [
+        "accountIds",
+        "resourceTags"
+      ],
+      "AnalyzerConfiguration": [
+        "internalAccess",
+        "unusedAccess"
+      ],
+      "AnalyzerSummary": [
+        "arn",
+        "configuration",
+        "createdAt",
+        "lastResourceAnalyzed",
+        "lastResourceAnalyzedAt",
+        "name",
+        "status",
+        "statusReason",
+        "tags",
+        "type"
+      ],
+      "ApplyArchiveRuleRequest": [
+        "analyzerArn",
+        "clientToken",
+        "ruleName"
+      ],
+      "ArchiveRuleSummary": [
+        "createdAt",
+        "filter",
+        "ruleName",
+        "updatedAt"
+      ],
+      "CreateAnalyzerRequest": [
+        "analyzerName",
+        "archiveRules",
+        "clientToken",
+        "configuration",
+        "tags",
+        "type"
+      ],
+      "CreateAnalyzerResponse": [
+        "arn"
+      ],
+      "CreateArchiveRuleRequest": [
+        "analyzerName",
+        "clientToken",
+        "filter",
+        "ruleName"
+      ],
+      "Criterion": [
+        "contains",
+        "eq",
+        "exists",
+        "neq"
+      ],
+      "DeleteAnalyzerRequest": [
+        "analyzerName",
+        "clientToken"
+      ],
+      "DeleteArchiveRuleRequest": [
+        "analyzerName",
+        "clientToken",
+        "ruleName"
+      ],
+      "ExternalAccessDetails": [
+        "action",
+        "condition",
+        "isPublic",
+        "principal",
+        "resourceControlPolicyRestriction",
+        "sources"
+      ],
+      "Finding": [
+        "action",
+        "analyzedAt",
+        "condition",
+        "createdAt",
+        "error",
+        "id",
+        "isPublic",
+        "principal",
+        "resource",
+        "resourceControlPolicyRestriction",
+        "resourceOwnerAccount",
+        "resourceType",
+        "sources",
+        "status",
+        "updatedAt"
+      ],
+      "FindingDetails": [
+        "externalAccessDetails",
+        "internalAccessDetails",
+        "unusedIamRoleDetails",
+        "unusedIamUserAccessKeyDetails",
+        "unusedIamUserPasswordDetails",
+        "unusedPermissionDetails"
+      ],
+      "FindingSource": [
+        "detail",
+        "type"
+      ],
+      "FindingSourceDetail": [
+        "accessPointAccount",
+        "accessPointArn"
+      ],
+      "FindingSummary": [
+        "action",
+        "analyzedAt",
+        "condition",
+        "createdAt",
+        "error",
+        "id",
+        "isPublic",
+        "principal",
+        "resource",
+        "resourceControlPolicyRestriction",
+        "resourceOwnerAccount",
+        "resourceType",
+        "sources",
+        "status",
+        "updatedAt"
+      ],
+      "FindingSummaryV2": [
+        "analyzedAt",
+        "createdAt",
+        "error",
+        "findingType",
+        "id",
+        "resource",
+        "resourceOwnerAccount",
+        "resourceType",
+        "status",
+        "updatedAt"
+      ],
+      "GetAnalyzerRequest": [
+        "analyzerName"
+      ],
+      "GetAnalyzerResponse": [
+        "analyzer"
+      ],
+      "GetArchiveRuleRequest": [
+        "analyzerName",
+        "ruleName"
+      ],
+      "GetArchiveRuleResponse": [
+        "archiveRule"
+      ],
+      "GetFindingRequest": [
+        "analyzerArn",
+        "id"
+      ],
+      "GetFindingResponse": [
+        "finding"
+      ],
+      "GetFindingV2Request": [
+        "analyzerArn",
+        "id",
+        "maxResults",
+        "nextToken"
+      ],
+      "GetFindingV2Response": [
+        "analyzedAt",
+        "createdAt",
+        "error",
+        "findingDetails",
+        "findingType",
+        "id",
+        "nextToken",
+        "resource",
+        "resourceOwnerAccount",
+        "resourceType",
+        "status",
+        "updatedAt"
+      ],
+      "InlineArchiveRule": [
+        "filter",
+        "ruleName"
+      ],
+      "InternalAccessAnalysisRule": [
+        "inclusions"
+      ],
+      "InternalAccessAnalysisRuleCriteria": [
+        "accountIds",
+        "resourceArns",
+        "resourceTypes"
+      ],
+      "InternalAccessConfiguration": [
+        "analysisRule"
+      ],
+      "InternalAccessDetails": [
+        "accessType",
+        "action",
+        "condition",
+        "principal",
+        "principalOwnerAccount",
+        "principalType",
+        "resourceControlPolicyRestriction",
+        "serviceControlPolicyRestriction",
+        "sources"
+      ],
+      "ListAnalyzersRequest": [
+        "maxResults",
+        "nextToken",
+        "type"
+      ],
+      "ListAnalyzersResponse": [
+        "analyzers",
+        "nextToken"
+      ],
+      "ListArchiveRulesRequest": [
+        "analyzerName",
+        "maxResults",
+        "nextToken"
+      ],
+      "ListArchiveRulesResponse": [
+        "archiveRules",
+        "nextToken"
+      ],
+      "ListFindingsRequest": [
+        "analyzerArn",
+        "filter",
+        "maxResults",
+        "nextToken",
+        "sort"
+      ],
+      "ListFindingsResponse": [
+        "findings",
+        "nextToken"
+      ],
+      "ListFindingsV2Request": [
+        "analyzerArn",
+        "filter",
+        "maxResults",
+        "nextToken",
+        "sort"
+      ],
+      "ListFindingsV2Response": [
+        "findings",
+        "nextToken"
+      ],
+      "ListTagsForResourceRequest": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags"
+      ],
+      "SortCriteria": [
+        "attributeName",
+        "orderBy"
+      ],
+      "StatusReason": [
+        "code"
+      ],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "UnusedAccessConfiguration": [
+        "analysisRule",
+        "unusedAccessAge"
+      ],
+      "UnusedAction": [
+        "action",
+        "lastAccessed"
+      ],
+      "UnusedIamRoleDetails": [
+        "lastAccessed"
+      ],
+      "UnusedIamUserAccessKeyDetails": [
+        "accessKeyId",
+        "lastAccessed"
+      ],
+      "UnusedIamUserPasswordDetails": [
+        "lastAccessed"
+      ],
+      "UnusedPermissionDetails": [
+        "actions",
+        "lastAccessed",
+        "serviceNamespace"
+      ],
+      "UpdateAnalyzerRequest": [
+        "analyzerName",
+        "configuration"
+      ],
+      "UpdateAnalyzerResponse": [
+        "configuration"
+      ],
+      "UpdateArchiveRuleRequest": [
+        "analyzerName",
+        "clientToken",
+        "filter",
+        "ruleName"
+      ],
+      "UpdateFindingsRequest": [
+        "analyzerArn",
+        "clientToken",
+        "ids",
+        "resourceArn",
+        "status"
+      ]
+    }
   }
 }

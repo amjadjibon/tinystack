@@ -42,6 +42,11 @@ export const categories = [
 ];
 
 const catalog: Record<string, ServiceInfo> = {
+	accessanalyzer: {
+		title: "IAM Access Analyzer",
+		category: security,
+		icon: "accessanalyzer",
+	},
 	amp: {
 		title: "Amazon Managed Service for Prometheus",
 		category: management,
