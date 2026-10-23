@@ -229,6 +229,7 @@ var taggers = map[string]tagger{
 	"opensearchserverless": resourceOperations("opensearchserverless", "ResourceArn", pairs),
 	"emrserverless":        resourceOperations("emrserverless", "ResourceArn", plain),
 	"apprunner":            resourceOperations("apprunner", "ResourceArn", pairs),
+	"amplify":              resourceOperations("amplify", "ResourceArn", plain),
 	"codeconnections":      resourceOperations("codeconnections", "ResourceArn", pairs),
 	"memorydb":             resourceOperations("memorydb", "ResourceArn", pairs),
 	"redshift": operations("redshift", "CreateTags", "DeleteTags", byARN("ResourceName"),

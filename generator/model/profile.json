@@ -32622,5 +32622,552 @@
         "AutoScalingConfiguration"
       ]
     }
+  },
+  "amplify": {
+    "operations": [
+      "CreateApp",
+      "CreateBackendEnvironment",
+      "CreateBranch",
+      "CreateDeployment",
+      "CreateDomainAssociation",
+      "CreateWebhook",
+      "DeleteApp",
+      "DeleteBackendEnvironment",
+      "DeleteBranch",
+      "DeleteDomainAssociation",
+      "DeleteJob",
+      "DeleteWebhook",
+      "GetApp",
+      "GetBackendEnvironment",
+      "GetBranch",
+      "GetDomainAssociation",
+      "GetJob",
+      "GetWebhook",
+      "ListApps",
+      "ListBackendEnvironments",
+      "ListBranches",
+      "ListDomainAssociations",
+      "ListJobs",
+      "ListTagsForResource",
+      "ListWebhooks",
+      "StartDeployment",
+      "StartJob",
+      "StopJob",
+      "TagResource",
+      "UntagResource",
+      "UpdateApp",
+      "UpdateBranch",
+      "UpdateDomainAssociation",
+      "UpdateWebhook"
+    ],
+    "shapes": {
+      "CreateAppRequest": [
+        "name",
+        "description",
+        "repository",
+        "platform",
+        "computeRoleArn",
+        "iamServiceRoleArn",
+        "oauthToken",
+        "accessToken",
+        "environmentVariables",
+        "enableBranchAutoBuild",
+        "enableBranchAutoDeletion",
+        "enableBasicAuth",
+        "basicAuthCredentials",
+        "customRules",
+        "tags",
+        "buildSpec",
+        "customHeaders",
+        "enableAutoBranchCreation",
+        "autoBranchCreationPatterns",
+        "autoBranchCreationConfig",
+        "jobConfig",
+        "cacheConfig"
+      ],
+      "CustomRule": [
+        "source",
+        "target",
+        "status",
+        "condition"
+      ],
+      "AutoBranchCreationConfig": [
+        "stage",
+        "framework",
+        "enableAutoBuild",
+        "environmentVariables",
+        "basicAuthCredentials",
+        "enableBasicAuth",
+        "enablePerformanceMode",
+        "buildSpec",
+        "enablePullRequestPreview",
+        "pullRequestEnvironmentName"
+      ],
+      "JobConfig": [
+        "buildComputeType"
+      ],
+      "CacheConfig": [
+        "type"
+      ],
+      "CreateAppResult": [
+        "app"
+      ],
+      "App": [
+        "appId",
+        "appArn",
+        "name",
+        "tags",
+        "description",
+        "repository",
+        "platform",
+        "createTime",
+        "updateTime",
+        "computeRoleArn",
+        "iamServiceRoleArn",
+        "environmentVariables",
+        "defaultDomain",
+        "enableBranchAutoBuild",
+        "enableBranchAutoDeletion",
+        "enableBasicAuth",
+        "customRules",
+        "buildSpec",
+        "customHeaders",
+        "enableAutoBranchCreation",
+        "autoBranchCreationPatterns",
+        "autoBranchCreationConfig",
+        "cacheConfig",
+        "jobConfig"
+      ],
+      "CreateBackendEnvironmentRequest": [
+        "appId",
+        "environmentName",
+        "stackName",
+        "deploymentArtifacts"
+      ],
+      "CreateBackendEnvironmentResult": [
+        "backendEnvironment"
+      ],
+      "BackendEnvironment": [
+        "backendEnvironmentArn",
+        "environmentName",
+        "stackName",
+        "deploymentArtifacts",
+        "createTime",
+        "updateTime"
+      ],
+      "CreateBranchRequest": [
+        "appId",
+        "branchName",
+        "description",
+        "stage",
+        "framework",
+        "enableNotification",
+        "enableAutoBuild",
+        "enableSkewProtection",
+        "environmentVariables",
+        "basicAuthCredentials",
+        "enableBasicAuth",
+        "enablePerformanceMode",
+        "tags",
+        "buildSpec",
+        "ttl",
+        "displayName",
+        "enablePullRequestPreview",
+        "pullRequestEnvironmentName",
+        "backendEnvironmentArn",
+        "backend",
+        "computeRoleArn"
+      ],
+      "Backend": [
+        "stackArn"
+      ],
+      "CreateBranchResult": [
+        "branch"
+      ],
+      "Branch": [
+        "branchArn",
+        "branchName",
+        "description",
+        "tags",
+        "stage",
+        "displayName",
+        "enableNotification",
+        "createTime",
+        "updateTime",
+        "environmentVariables",
+        "enableAutoBuild",
+        "enableSkewProtection",
+        "customDomains",
+        "framework",
+        "activeJobId",
+        "totalNumberOfJobs",
+        "enableBasicAuth",
+        "enablePerformanceMode",
+        "buildSpec",
+        "ttl",
+        "enablePullRequestPreview",
+        "pullRequestEnvironmentName",
+        "backendEnvironmentArn",
+        "backend",
+        "computeRoleArn"
+      ],
+      "CreateDeploymentRequest": [
+        "appId",
+        "branchName",
+        "fileMap"
+      ],
+      "CreateDeploymentResult": [
+        "jobId",
+        "fileUploadUrls",
+        "zipUploadUrl"
+      ],
+      "CreateDomainAssociationRequest": [
+        "appId",
+        "domainName",
+        "enableAutoSubDomain",
+        "subDomainSettings",
+        "autoSubDomainCreationPatterns",
+        "autoSubDomainIAMRole",
+        "certificateSettings"
+      ],
+      "SubDomainSetting": [
+        "prefix",
+        "branchName"
+      ],
+      "CertificateSettings": [
+        "type",
+        "customCertificateArn"
+      ],
+      "CreateDomainAssociationResult": [
+        "domainAssociation"
+      ],
+      "DomainAssociation": [
+        "domainAssociationArn",
+        "domainName",
+        "enableAutoSubDomain",
+        "autoSubDomainCreationPatterns",
+        "autoSubDomainIAMRole",
+        "domainStatus",
+        "updateStatus",
+        "statusReason",
+        "certificateVerificationDNSRecord",
+        "subDomains",
+        "certificate"
+      ],
+      "SubDomain": [
+        "subDomainSetting",
+        "verified",
+        "dnsRecord"
+      ],
+      "Certificate": [
+        "type",
+        "customCertificateArn",
+        "certificateVerificationDNSRecord"
+      ],
+      "CreateWebhookRequest": [
+        "appId",
+        "branchName",
+        "description"
+      ],
+      "CreateWebhookResult": [
+        "webhook"
+      ],
+      "Webhook": [
+        "webhookArn",
+        "webhookId",
+        "webhookUrl",
+        "appId",
+        "branchName",
+        "description",
+        "createTime",
+        "updateTime"
+      ],
+      "DeleteAppRequest": [
+        "appId"
+      ],
+      "DeleteAppResult": [
+        "app"
+      ],
+      "DeleteBackendEnvironmentRequest": [
+        "appId",
+        "environmentName"
+      ],
+      "DeleteBackendEnvironmentResult": [
+        "backendEnvironment"
+      ],
+      "DeleteBranchRequest": [
+        "appId",
+        "branchName"
+      ],
+      "DeleteBranchResult": [
+        "branch"
+      ],
+      "DeleteDomainAssociationRequest": [
+        "appId",
+        "domainName"
+      ],
+      "DeleteDomainAssociationResult": [
+        "domainAssociation"
+      ],
+      "DeleteJobRequest": [
+        "appId",
+        "branchName",
+        "jobId"
+      ],
+      "DeleteJobResult": [
+        "jobSummary"
+      ],
+      "JobSummary": [
+        "jobArn",
+        "jobId",
+        "commitId",
+        "commitMessage",
+        "commitTime",
+        "startTime",
+        "status",
+        "endTime",
+        "jobType",
+        "sourceUrl",
+        "sourceUrlType"
+      ],
+      "DeleteWebhookRequest": [
+        "webhookId"
+      ],
+      "DeleteWebhookResult": [
+        "webhook"
+      ],
+      "GetAppRequest": [
+        "appId"
+      ],
+      "GetAppResult": [
+        "app"
+      ],
+      "GetBackendEnvironmentRequest": [
+        "appId",
+        "environmentName"
+      ],
+      "GetBackendEnvironmentResult": [
+        "backendEnvironment"
+      ],
+      "GetBranchRequest": [
+        "appId",
+        "branchName"
+      ],
+      "GetBranchResult": [
+        "branch"
+      ],
+      "GetDomainAssociationRequest": [
+        "appId",
+        "domainName"
+      ],
+      "GetDomainAssociationResult": [
+        "domainAssociation"
+      ],
+      "GetJobRequest": [
+        "appId",
+        "branchName",
+        "jobId"
+      ],
+      "GetJobResult": [
+        "job"
+      ],
+      "Job": [
+        "summary",
+        "steps"
+      ],
+      "Step": [
+        "stepName",
+        "startTime",
+        "status",
+        "endTime",
+        "logUrl",
+        "artifactsUrl",
+        "testArtifactsUrl",
+        "testConfigUrl",
+        "screenshots",
+        "statusReason",
+        "context"
+      ],
+      "GetWebhookRequest": [
+        "webhookId"
+      ],
+      "GetWebhookResult": [
+        "webhook"
+      ],
+      "ListAppsRequest": [
+        "nextToken",
+        "maxResults"
+      ],
+      "ListAppsResult": [
+        "apps",
+        "nextToken"
+      ],
+      "ListBackendEnvironmentsRequest": [
+        "appId",
+        "environmentName",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListBackendEnvironmentsResult": [
+        "backendEnvironments",
+        "nextToken"
+      ],
+      "ListBranchesRequest": [
+        "appId",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListBranchesResult": [
+        "branches",
+        "nextToken"
+      ],
+      "ListDomainAssociationsRequest": [
+        "appId",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListDomainAssociationsResult": [
+        "domainAssociations",
+        "nextToken"
+      ],
+      "ListJobsRequest": [
+        "appId",
+        "branchName",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListJobsResult": [
+        "jobSummaries",
+        "nextToken"
+      ],
+      "ListTagsForResourceRequest": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags"
+      ],
+      "ListWebhooksRequest": [
+        "appId",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListWebhooksResult": [
+        "webhooks",
+        "nextToken"
+      ],
+      "StartDeploymentRequest": [
+        "appId",
+        "branchName",
+        "jobId",
+        "sourceUrl",
+        "sourceUrlType"
+      ],
+      "StartDeploymentResult": [
+        "jobSummary"
+      ],
+      "StartJobRequest": [
+        "appId",
+        "branchName",
+        "jobId",
+        "jobType",
+        "jobReason",
+        "commitId",
+        "commitMessage",
+        "commitTime"
+      ],
+      "StartJobResult": [
+        "jobSummary"
+      ],
+      "StopJobRequest": [
+        "appId",
+        "branchName",
+        "jobId"
+      ],
+      "StopJobResult": [
+        "jobSummary"
+      ],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "UpdateAppRequest": [
+        "appId",
+        "name",
+        "description",
+        "platform",
+        "computeRoleArn",
+        "iamServiceRoleArn",
+        "environmentVariables",
+        "enableBranchAutoBuild",
+        "enableBranchAutoDeletion",
+        "enableBasicAuth",
+        "basicAuthCredentials",
+        "customRules",
+        "buildSpec",
+        "customHeaders",
+        "enableAutoBranchCreation",
+        "autoBranchCreationPatterns",
+        "autoBranchCreationConfig",
+        "repository",
+        "oauthToken",
+        "accessToken",
+        "jobConfig",
+        "cacheConfig"
+      ],
+      "UpdateAppResult": [
+        "app"
+      ],
+      "UpdateBranchRequest": [
+        "appId",
+        "branchName",
+        "description",
+        "framework",
+        "stage",
+        "enableNotification",
+        "enableAutoBuild",
+        "enableSkewProtection",
+        "environmentVariables",
+        "basicAuthCredentials",
+        "enableBasicAuth",
+        "enablePerformanceMode",
+        "buildSpec",
+        "ttl",
+        "displayName",
+        "enablePullRequestPreview",
+        "pullRequestEnvironmentName",
+        "backendEnvironmentArn",
+        "backend",
+        "computeRoleArn"
+      ],
+      "UpdateBranchResult": [
+        "branch"
+      ],
+      "UpdateDomainAssociationRequest": [
+        "appId",
+        "domainName",
+        "enableAutoSubDomain",
+        "subDomainSettings",
+        "autoSubDomainCreationPatterns",
+        "autoSubDomainIAMRole",
+        "certificateSettings"
+      ],
+      "UpdateDomainAssociationResult": [
+        "domainAssociation"
+      ],
+      "UpdateWebhookRequest": [
+        "webhookId",
+        "branchName",
+        "description"
+      ],
+      "UpdateWebhookResult": [
+        "webhook"
+      ]
+    }
   }
 }

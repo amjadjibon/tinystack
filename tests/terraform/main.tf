@@ -17,6 +17,7 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
+    amplify              = var.endpoint
     signer               = var.endpoint
     waf                  = var.endpoint
     dms                  = var.endpoint
@@ -2419,4 +2420,20 @@ resource "aws_emr_instance_group" "classic" {
   instance_type  = "m5.xlarge"
   instance_count = var.team == "core" ? 1 : 2
   name           = "classic-task"
+}
+
+resource "aws_amplify_app" "local" {
+  name = "local-hosting"
+  platform = "WEB"
+  build_spec = "version: 1"
+  environment_variables = { TEAM = var.team }
+  tags = { team = var.team }
+}
+
+resource "aws_amplify_branch" "main" {
+  app_id = aws_amplify_app.local.id
+  branch_name = "main"
+  stage = "DEVELOPMENT"
+  environment_variables = { TEAM = var.team }
+  tags = { team = var.team }
 }

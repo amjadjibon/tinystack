@@ -11,6 +11,7 @@ import (
 // resource types a group can select.
 var namespaces = map[string]string{
 	"apprunner":                 "AppRunner",
+	"amplify":                   "Amplify",
 	"bedrock":                   "Bedrock",
 	"elasticbeanstalk":          "ElasticBeanstalk",
 	"signer":                    "Signer",
@@ -92,6 +93,9 @@ var typeNames = map[string]string{
 	"apprunner/autoscalingconfiguration":     "AutoScalingConfiguration",
 	"apprunner/vpcconnector":                 "VpcConnector",
 	"apprunner/observabilityconfiguration":   "ObservabilityConfiguration",
+	"amplify/app":                            "App",
+	"amplify/branch":                         "Branch",
+	"amplify/domain":                         "Domain",
 	"bedrock/guardrail":                      "Guardrail",
 	"bedrock/application-inference-profile":  "ApplicationInferenceProfile",
 	"elasticbeanstalk/application":           "Application",
@@ -174,7 +178,8 @@ func pascal(kind string) string {
 // "AWS::SQS::Queue", derived from the service that holds it and its inventory
 // type. It reports false for the resources of a service with no namespace.
 func resourceType(r *catalog.Owned) (string, bool) {
-	if r.Service == "apprunner" && r.Type == "connection" {
+	// The official specification has no AWS::AppRunner::Connection or AWS::Amplify::Backend resource type.
+	if r.Service == "apprunner" && r.Type == "connection" || r.Service == "amplify" && r.Type == "backend" {
 		return "", false
 	}
 

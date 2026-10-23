@@ -145,6 +145,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: compute,
 		icon: "apprunner",
 	},
+	amplify: {
+		title: "Amplify Hosting",
+		category: developerTools,
+		icon: "amplify",
+	},
 	codeconnections: {
 		title: "CodeConnections",
 		category: developerTools,

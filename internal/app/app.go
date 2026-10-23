@@ -22,6 +22,7 @@ import (
 	acmapi "github.com/amjadjibon/tinystack/internal/aws/generated/acm"
 	acmpcaapi "github.com/amjadjibon/tinystack/internal/aws/generated/acmpca"
 	ampapi "github.com/amjadjibon/tinystack/internal/aws/generated/amp"
+	amplifyapi "github.com/amjadjibon/tinystack/internal/aws/generated/amplify"
 	apigatewayapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	apigatewaymanagementapiapi "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewaymanagementapi"
 	apigatewayv2api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
@@ -131,6 +132,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/acm"
 	"github.com/amjadjibon/tinystack/internal/services/acmpca"
 	"github.com/amjadjibon/tinystack/internal/services/amp"
+	"github.com/amjadjibon/tinystack/internal/services/amplify"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
 	"github.com/amjadjibon/tinystack/internal/services/apigatewaymanagementapi"
@@ -441,6 +443,7 @@ func build(
 	budgetRecords := budgets.New(store, deliveries, logger)
 	a.onStop(budgetRecords.Stop)
 	appRunnerRecords := apprunner.New(store)
+	amplifyRecords := amplify.New(store)
 	connectionRecords := codeconnections.New(store)
 	ampRecords := amp.New(store)
 	quotaRecords := servicequotas.New(store)
@@ -565,6 +568,7 @@ func build(
 		timestreamwriteapi.Descriptor(timestreamRecords),
 		budgetsapi.Descriptor(budgetRecords),
 		apprunnerapi.Descriptor(appRunnerRecords),
+		amplifyapi.Descriptor(amplifyRecords),
 		codeconnectionsapi.Descriptor(connectionRecords),
 		ampapi.Descriptor(ampRecords),
 		costexplorerapi.Descriptor(costExplorerRecords),
