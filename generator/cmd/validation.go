@@ -248,6 +248,11 @@ var re2Patterns = map[string]re2Pattern{
 		match:  `^[a-z\d][a-z\d.-]{1,61}[a-z\d]$`,
 		reject: `^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|\.\.|\.-|-\.`,
 	},
+	// The root slash, or one to four segments of "/" followed by characters outside the reserved set whose first
+	// is not a dot (S3 Files Path).
+	`^(\/|(\/(?!\.)+[^$#<>;;` + "`" + `|&?{}^*/\n]+){1,4})$`: {
+		match: `^(/|(/[^.$#<>;` + "`" + `|&?{}^*/\n][^$#<>;` + "`" + `|&?{}^*/\n]*){1,4})$`,
+	},
 }
 
 var (
