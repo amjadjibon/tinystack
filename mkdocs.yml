@@ -214,6 +214,7 @@ nav:
           - "Resource Groups Tagging API": services/resourcegroupstaggingapi.md
           - "Systems Manager": services/ssm.md
       - "Media Services":
+          - "AWS Elemental MediaConnect": services/mediaconnect.md
           - "AWS Elemental MediaConvert": services/mediaconvert.md
       - "Migration & Modernization":
           - "AWS DataSync": services/datasync.md

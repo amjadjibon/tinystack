@@ -2896,6 +2896,32 @@
       "execution": "Records only",
       "package": "shield"
     },
+    "mediaconnect": {
+      "title": "AWS Elemental MediaConnect",
+      "category": "Media Services",
+      "scope": "Account and Region",
+      "summary": "Store flows, sources, outputs, entitlements and VPC interfaces with durable local lifecycle transitions; no media is transported.",
+      "features": [
+        "Twenty-two REST JSON operations with model constraints reported as BadRequestException",
+        "Create, describe, list, update and delete flows; StartFlow and StopFlow use STANDBY, STARTING, ACTIVE, STOPPING, UPDATING and DELETING states. A durable partition-wide index is claimed transactionally every 100 milliseconds, with one deterministic transition per visit and recovery after SQLite restart",
+        "Sources with RTP, RTP-FEC, RIST, Zixi push and SRT listener/caller records, up to two sources with failover configuration; SRT merge is rejected",
+        "Outputs with RTP, RTP-FEC, RIST, Zixi push/pull and SRT listener/caller records, update and removal; up to 50 outputs per flow",
+        "Grant, update, revoke and page entitlements; cross-account sources resolve enabled entitlements in the same Region and require the receiving account to be a subscriber",
+        "VPC interface records validate existing TinyStack EC2 subnets/security groups in the same VPC and Availability Zone, and existing account IAM roles; Zixi static-key and SRT password encryption validate existing Secrets Manager secrets in the same account and Region",
+        "Tags on flow, source, output and entitlement records (CreateFlow FlowTags or TagResource), inventory and Resource Groups Tagging API integration; list pagination follows storage key order",
+        "CloudFormation AWS::MediaConnect::Flow, FlowSource, FlowOutput, FlowEntitlement and FlowVpcInterface with specification-driven replacement and complete in-place template updates",
+        "Terraform provider 5.100 has no MediaConnect resources (verified internal/service/mediaconnect at v5.100.0); endpoint key and local Terraform CLI override are supplied; no resource/update-apply count changes"
+      ],
+      "gaps": [
+        "Records only: no media transport, sockets, ingest/egress IPs, EC2 network-interface allocation, health monitoring, actual failover or encryption/key retrieval; lifecycle ACTIVE does not indicate media delivery",
+        "Media streams, source metadata/thumbnails, maintenance, monitoring configuration, flow sizing, NDI, CDI, JPEG XS, router integration, bridges, gateways, offerings and reservations are unsupported and not whitelisted",
+        "VPC interface tags are unsupported, including the CloudFormation Tags property",
+        "SPEKE configuration is stored for entitlement encryption without contacting the key server; IAM trust and permission policies are not evaluated",
+        "Cross-account entitlement changes do not asynchronously modify existing receiver flow status; references are rechecked on source changes and StartFlow"
+      ],
+      "execution": "Records only; deterministic local flow lifecycle worker",
+      "package": "mediaconnect"
+    },
     "accessanalyzer": {
       "title": "IAM Access Analyzer",
       "category": "Security, Identity & Compliance",
