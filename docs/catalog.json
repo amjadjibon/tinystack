@@ -1732,6 +1732,33 @@
         "The exhaustive [records guide](../guides/location-records.md) describes selected members/defaults/limits/errors/scope/tags/CF and an executable lifecycle. Device positions, deprecated pricing decisions and consumer associations remain [future scope](../roadmap/services/location-runtime.md)"
       ]
     },
+    "s3files": {
+      "title": "Amazon S3 Files",
+      "category": "Storage",
+      "scope": "Account and Region",
+      "summary": "Manage S3-backed file system, mount target and access point records with durable local lifecycle transitions.",
+      "features": [
+        "All 21 pinned REST JSON operations, generated model constraint validation with ValidationException, SDK v2 integration coverage and SQLite restart recovery",
+        "File system creation validates a real TinyStack S3 bucket in the same account and Region, enabled bucket versioning, SSE-S3 or SSE-KMS encryption, an existing account IAM role and any explicit KMS key; client tokens replay matching requests and reject conflicting parameters",
+        "acceptBucketWarning acknowledges the documented approximate 12 million live-object prefix warning; versioning remains required even when warnings are accepted",
+        "A transactional aws/s3files/index worker polls every 100 milliseconds and settles creating or deleting records after 150 milliseconds; file system deletion requires removing all mount targets and access points first",
+        "Mount targets validate existing EC2 subnets and same-VPC security groups, default groups, one target per Availability Zone per file system, a single VPC per file system, and usable IPv4/IPv6 addresses against subnet CIDRs; security groups update in place",
+        "Access points replay reused client tokens without changing the original resource, as documented by AWS, and preserve POSIX users, secondary groups, root directories and creation permissions; file system policies require a JSON object containing Statement and are stored verbatim",
+        "Synchronization configuration stores import and expiration rules: omit latestVersionNumber on first write, then supply the current version for each update; conflicting versions fail with ConflictException",
+        "Tags on file systems and access points, paginated list APIs in storage key order, inventory, Resource Groups and the Resource Groups Tagging API; console uses the existing S3 icon",
+        "Official CloudFormation types AWS::S3Files::FileSystem, MountTarget, AccessPoint and FileSystemPolicy, with specification-based replacement and in-place tag, policy, security-group and synchronization-rule updates",
+        "Terraform AWS provider 5.100 has no S3 Files service, resources or endpoint key (verified names/data/names_data.hcl at v5.100.0); no Terraform fixtures, CLI override or update-apply count changes"
+      ],
+      "gaps": [
+        "No NFS server, file I/O, object import/export or actual synchronization; mount target IP addresses are metadata only and no EC2 network interface or IP allocation is created",
+        "Policies, POSIX identities, creation permissions and IAM role trust/permissions are not evaluated; no CloudWatch metrics, EventBridge rules, S3 notifications or real encryption is performed",
+        "Lifecycle transitions are deterministic local timers, not AWS health or readiness; failed and misconfigured states are not simulated",
+        "Large-prefix warning detection counts current live objects only and uses the documented approximate 12 million-object threshold; AWS warning heuristics, rename duration and costs are not simulated",
+        "Removing CloudFormation SynchronizationConfiguration is explicitly unsupported; provide replacement rules instead. NetworkInterfaceId is absent because no interface is allocated"
+      ],
+      "execution": "Records only; deterministic local lifecycle worker",
+      "package": "s3files"
+    },
     "s3tables": {
       "title": "Amazon S3 Tables",
       "category": "Storage",
