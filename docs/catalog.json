@@ -82,6 +82,32 @@
     }
   ],
   "services": {
+    "translate": {
+      "title": "Amazon Translate",
+      "category": "Machine Learning",
+      "scope": "Account and Region; fixtures account-wide",
+      "summary": "Return exact user-registered translation fixtures and run local fixture-backed S3 batch jobs.",
+      "features": [
+        "19 of 19 pinned model operations with generated InvalidRequestException constraint validation",
+        "TranslateText and text/plain or text/html TranslateDocument match source, target and decoded text exactly; auto requires exactly one matching fixture",
+        "Static English ListLanguages from the AWS supported-languages page, with pagination",
+        "Import CSV, TSV and TMX terminologies, overwrite, list, delete, KMS reference validation and record tags",
+        "Parallel data validates existing local S3 files and parses real CSV/TSV/TMX; background CREATING/UPDATING to ACTIVE",
+        "Batch jobs require an existing IAM role and S3 prefix; exact fixtures produce target-prefixed output objects and auxiliary details in an account-TranslateText-job folder",
+        "Background jobs are transactionally claimed, perform S3 I/O outside transactions and fail explicitly after restart",
+        "Inventory, Resource Groups Tagging API, and CloudFormation AWS::Translate::Terminology and AWS::Translate::ParallelData"
+      ],
+      "gaps": [
+        "No translation inference, language detection model, terminology application or parallel-data application; missing or ambiguous fixtures fail explicitly",
+        "Nonempty translation Settings fail explicitly; AppliedTerminologies remains empty and fixtures are returned verbatim",
+        "GetTerminology fails explicitly because a retrievable presigned download URL is not implemented",
+        "Only text/plain and text/html documents/batch inputs; no remote S3, role assumption, document format conversion or encrypted data execution",
+        "S3 writes are not atomic with job state; cancellation or process interruption can leave partial output objects",
+        "Terraform provider 5.100 has no Translate resources; the current official CloudFormation specification does include Translate types, contrary to the original task note"
+      ],
+      "execution": "Fixture-backed local translation; no inference",
+      "package": "translate"
+    },
     "mediaconvert": {
       "title": "AWS Elemental MediaConvert",
       "category": "Media Services",

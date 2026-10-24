@@ -401,3 +401,25 @@ resource "aws_cloudwatch_metric_alarm" "billing" {
 ```
 
 Load costs with the fixture endpoint described earlier in the guide.
+
+## Translation fixtures
+
+TinyStack never infers translations. Register exact answers with
+`PUT /_tinystack/translate/fixtures/{id}`:
+
+```json
+{"sourceLanguageCode":"en","targetLanguageCode":"fr","text":"hello","translatedText":"bonjour"}
+```
+
+The endpoint supports GET (list or one ID), PUT (replace one ID), and DELETE. IDs use 1–64 letters, digits,
+underscores or hyphens. Use the same administrator authorization as cost fixtures; signed requests use service
+`tinystack`. Fixtures belong to the configured default account across Regions, persist in SQLite mode, and are
+cleared by `/_tinystack/reset`. The admin HTTP body limit is 1 MiB.
+
+Source, target and decoded text match exactly, including whitespace and HTML. `auto` requires one matching
+fixture. Missing or ambiguous answers return InvalidRequestException naming the registration endpoint.
+Nonempty Settings fail. Terminology names must exist but do not modify fixture text; AppliedTerminologies is empty.
+GetTerminology fails explicitly because no presigned download endpoint is implemented.
+
+Background batch jobs write local S3 outputs and fail with `interrupted by service restart` if unfinished
+at restart. Partial outputs may remain. See [Translate](../services/translate.md) for the supported scope.

@@ -190,6 +190,7 @@ nav:
       - "Machine Learning":
           - "Amazon Bedrock": services/bedrock.md
           - "Amazon Bedrock Runtime": services/bedrockruntime.md
+          - "Amazon Translate": services/translate.md
       - "Management & Governance":
           - "AWS Account": services/account.md
           - "AWS Backup": services/backup.md
@@ -294,7 +295,6 @@ nav:
           - "OpenSearch Service runtime engine": roadmap/services/opensearch-runtime.md
           - "Route 53 Resolver DNS Firewall, query logging and runtime": roadmap/services/route53resolver-runtime.md
           - "S3 Tables runtime and broader metadata": roadmap/services/s3tables-runtime.md
-          - "Transcribe": roadmap/services/transcribe.md
           - "Transfer Family runtime and advanced configuration": roadmap/services/transfer-runtime.md
           - "Translate": roadmap/services/translate.md
   # GENERATED NAV END
