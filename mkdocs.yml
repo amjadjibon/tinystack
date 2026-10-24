@@ -213,6 +213,8 @@ nav:
           - "Resource Groups": services/resourcegroups.md
           - "Resource Groups Tagging API": services/resourcegroupstaggingapi.md
           - "Systems Manager": services/ssm.md
+      - "Media Services":
+          - "AWS Elemental MediaConvert": services/mediaconvert.md
       - "Migration & Modernization":
           - "AWS DataSync": services/datasync.md
           - "AWS Database Migration Service": services/databasemigrationservice.md

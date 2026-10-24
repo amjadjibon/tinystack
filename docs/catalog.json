@@ -82,6 +82,32 @@
     }
   ],
   "services": {
+    "mediaconvert": {
+      "title": "AWS Elemental MediaConvert",
+      "category": "Media Services",
+      "summary": "Manage queues, custom presets and job templates and exercise a durable local job lifecycle without transcoding.",
+      "features": [
+        "Queue, preset and job-template CRUD, tags, category and partial-input filters and indexed name/creation-date pagination with ascending/descending order",
+        "Per-account/Region Default queue; ON_DEMAND pricing, pause/resume, priority/concurrency scheduling and active-job deletion checks",
+        "Create/Get/List/Search/Cancel jobs with existing local IAM roles, queues, templates and preset references; one-minute client-token idempotency",
+        "Template defaults merge recursively with explicit job settings; supplied arrays replace template arrays",
+        "Persisted SUBMITTED \u2192 PROGRESSING \u2192 COMPLETE execution, with timing, percent complete and empty queue transitions (queue hopping is unsupported)",
+        "Local S3 input existence validation; missing inputs finish ERROR with code 1404 and HeadObject failure message",
+        "MediaConvert Job State Change events publish to EventBridge after committed status changes, including CANCELED and ERROR; normal EventBridge rules deliver to local SQS targets",
+        "DescribeEndpoints returns the requesting TinyStack endpoint; inventory and Resource Groups Tagging integration",
+        "CloudFormation AWS::MediaConvert::Queue, Preset and JobTemplate; SettingsJson stores supported settings; Name changes replace and other supported properties update in place",
+        "Terraform aws_media_convert_queue (provider 5.100), endpoint override and in-place tag updates"
+      ],
+      "gaps": [
+        "No transcoding, probing or output media/manifest files: COMPLETE means local input objects existed, regardless of their bytes or codec",
+        "Only custom presets/templates are listed; no system preset/template catalog, reserved pricing, acceleration, queue hopping or inference feeds",
+        "Only profiled settings are accepted: S3 FileInput, basic input selectors, file output groups, MP4/container/video H264/audio AAC configuration, timecode and ad-avail offset; other model members fail explicitly",
+        "No HTTP input fetching, output object writes, codec validation, IAM data-plane permission simulation or periodic STATUS_UPDATE events; StatusUpdateInterval is stored",
+        "EventBridge publishing is best effort after commit; no transactional outbox/replay guarantee"
+      ],
+      "execution": "Local behavior",
+      "package": "mediaconvert"
+    },
     "datasync": {
       "title": "AWS DataSync",
       "category": "Migration & Modernization",
