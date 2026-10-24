@@ -376,11 +376,11 @@ func (s *Service) dropDatabase(ctx context.Context, p *parser) error {
 
 // formats are the input and output formats STORED AS names.
 var formats = map[string][3]string{
-	"textfile": {
+	formatTextfile: {
 		"org.apache.hadoop.mapred.TextInputFormat", "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
 		"org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe",
 	},
-	"parquet": {
+	formatParquet: {
 		"org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
 		"org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
 		"org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
@@ -389,7 +389,7 @@ var formats = map[string][3]string{
 		"org.apache.hadoop.hive.ql.io.orc.OrcInputFormat", "org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat",
 		"org.apache.hadoop.hive.ql.io.orc.OrcSerde",
 	},
-	"jsonfile": {
+	formatJSONFile: {
 		"org.apache.hadoop.mapred.TextInputFormat", "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
 		"org.openx.data.jsonserde.JsonSerDe",
 	},
@@ -410,9 +410,9 @@ func (s *Service) createTable(ctx context.Context, p *parser, database string) e
 	}
 
 	sd := &glueapi.StorageDescriptor{
-		InputFormat: new(formats["textfile"][0]), OutputFormat: new(formats["textfile"][1]),
+		InputFormat: new(formats[formatTextfile][0]), OutputFormat: new(formats[formatTextfile][1]),
 		SerdeInfo: &glueapi.SerDeInfo{
-			SerializationLibrary: new(formats["textfile"][2]), Parameters: map[string]string{},
+			SerializationLibrary: new(formats[formatTextfile][2]), Parameters: map[string]string{},
 		},
 	}
 	in := &glueapi.TableInput{
@@ -459,7 +459,7 @@ func (s *Service) createTable(ctx context.Context, p *parser, database string) e
 				}
 
 				sd.InputFormat, sd.OutputFormat = new(f[0]), new(f[1])
-				if kind != "textfile" {
+				if kind != formatTextfile {
 					sd.SerdeInfo.SerializationLibrary = new(f[2])
 				}
 			}

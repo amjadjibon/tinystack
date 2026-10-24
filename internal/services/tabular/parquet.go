@@ -263,6 +263,11 @@ func codec(name string) (compress.Codec, error) {
 
 func nodeFor(kind string) (parquet.Node, error) {
 	k := strings.ToLower(kind)
+	if (strings.HasPrefix(k, "array<") || strings.HasPrefix(k, "map<") || strings.HasPrefix(k, "struct<")) &&
+		!strings.HasSuffix(k, ">") {
+		return nil, fmt.Errorf("invalid Hive type %s", kind)
+	}
+
 	switch {
 	case k == hiveBoolean:
 		return parquet.Leaf(parquet.BooleanType), nil

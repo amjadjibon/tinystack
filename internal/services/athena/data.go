@@ -1,13 +1,9 @@
 package athena
 
 import (
-	"bufio"
 	"bytes"
 	"compress/gzip"
 	"context"
-	"encoding/csv"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -18,25 +14,21 @@ import (
 	glueapi "github.com/amjadjibon/tinystack/internal/aws/generated/glue"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/tabular"
 )
 
 // Row formats TinyStack reads.
 const (
+	formatParquet   = "parquet"
+	formatTextfile  = "textfile"
+	formatJSONFile  = "jsonfile"
+	typeBigint      = "bigint"
 	formatDelimited = "delimited"
 	formatCSV       = "csv"
 	formatJSON      = "json"
 )
 
-// rowFormat is how a table's objects hold its rows.
-type rowFormat struct {
-	kind  string
-	delim string
-	// null is the field that means NULL in delimited text.
-	null       string
-	skipHeader int
-	// lenient skips JSON lines that are not objects.
-	lenient bool
-}
+type rowFormat = tabular.Format
 
 // formatOf reads a table's row format from its SerDe and parameters.
 func formatOf(t *glueapi.Table) (*rowFormat, error) {
@@ -45,161 +37,51 @@ func formatOf(t *glueapi.Table) (*rowFormat, error) {
 	lib := strings.ToLower(common.Value(serde.SerializationLibrary))
 	input := strings.ToLower(common.Value(sd.InputFormat))
 	params := serde.Parameters
-	f := &rowFormat{kind: formatDelimited, delim: "\x01", null: `\N`}
+	f := &rowFormat{Kind: formatDelimited, Delimiter: "\x01", Null: `\N`}
 	if n, err := strconv.Atoi(t.Parameters["skip.header.line.count"]); err == nil {
-		f.skipHeader = n
+		f.SkipHeader = n
 	}
 
 	classification := strings.ToLower(t.Parameters["classification"])
 	switch {
-	case strings.Contains(lib, "parquet") || strings.Contains(lib, "orc") || strings.Contains(lib, "avro") ||
-		strings.Contains(input, "parquet") || strings.Contains(input, "orc") || strings.Contains(input, "avro") ||
-		strings.Contains(lib, "iceberg") || classification == "parquet":
-		return nil, fmt.Errorf("NOT_SUPPORTED: TinyStack reads text (CSV and delimited) and JSON tables, not %s",
+	case strings.EqualFold(t.Parameters["table_type"], "iceberg") || strings.Contains(lib, "iceberg"):
+		return nil, fmt.Errorf("NOT_SUPPORTED: TinyStack does not read Iceberg tables")
+	case strings.Contains(lib, formatParquet) || strings.Contains(input, formatParquet) || classification == formatParquet:
+		f.Kind = tabular.Parquet
+	case strings.Contains(lib, "orc") || strings.Contains(lib, "avro") ||
+		strings.Contains(input, "orc") || strings.Contains(input, "avro"):
+		return nil, fmt.Errorf("NOT_SUPPORTED: TinyStack reads text, JSON and Parquet tables, not %s",
 			common.Value(common.OrElse(serde.SerializationLibrary, sd.InputFormat)))
 	case strings.Contains(lib, "jsonserde") || lib == "" && classification == formatJSON:
-		f.kind = formatJSON
-		f.lenient = strings.EqualFold(params["ignore.malformed.json"], "true")
+		f.Kind = formatJSON
+		f.Lenient = strings.EqualFold(params["ignore.malformed.json"], "true")
 	case strings.Contains(lib, "opencsvserde"):
-		f.kind, f.delim = formatCSV, ","
+		f.Kind, f.Delimiter = formatCSV, ","
 		if sep := params["separatorChar"]; sep != "" {
-			f.delim = sep[:1]
+			f.Delimiter = sep[:1]
 		}
 
 		if q := params["quoteChar"]; q != "" && q != `"` {
 			return nil, fmt.Errorf(`TinyStack reads CSV quoted with ", not %s`, q)
 		}
 	case lib == "" && classification == formatCSV:
-		f.delim = ","
+		f.Delimiter = ","
 	}
 
-	if f.kind == formatDelimited {
+	if f.Kind == formatDelimited {
 		for _, key := range []string{keyFieldDelim, "serialization.format"} {
 			if d := params[key]; d != "" && (key == keyFieldDelim || len(d) == 1 && d[0] > '9') {
-				f.delim = d
+				f.Delimiter = d
 				break
 			}
 		}
 
 		if n, ok := params["serialization.null.format"]; ok {
-			f.null = n
+			f.Null = n
 		}
 	}
 
 	return f, nil
-}
-
-// records splits an object's bytes into rows of fields, nil for NULL, as
-// columns names the table's columns.
-func (f *rowFormat) records(body []byte, columns []string) ([][]*string, error) {
-	var out [][]*string
-	switch f.kind {
-	case formatCSV:
-		r := csv.NewReader(bytes.NewReader(body))
-		r.Comma, r.LazyQuotes, r.FieldsPerRecord = rune(f.delim[0]), true, -1
-		for {
-			fields, err := r.Read()
-			if errors.Is(err, io.EOF) {
-				break
-			}
-
-			if err != nil {
-				return nil, fmt.Errorf("HIVE_BAD_DATA: %w", err)
-			}
-
-			row := make([]*string, len(fields))
-			for i := range fields {
-				row[i] = &fields[i]
-			}
-
-			out = append(out, row)
-		}
-	case formatJSON:
-		scanner := bufio.NewScanner(bytes.NewReader(body))
-		scanner.Buffer(make([]byte, 0, 64<<10), 16<<20)
-		for scanner.Scan() {
-			line := strings.TrimSpace(scanner.Text())
-			if line == "" {
-				continue
-			}
-
-			row, err := jsonRow(line, columns)
-			if err != nil && f.lenient {
-				continue
-			}
-
-			if err != nil {
-				return nil, err
-			}
-
-			out = append(out, row)
-		}
-
-		if err := scanner.Err(); err != nil {
-			return nil, err
-		}
-	default:
-		for line := range strings.SplitSeq(string(body), "\n") {
-			line = strings.TrimSuffix(line, "\r")
-			if line == "" {
-				continue
-			}
-
-			fields := strings.Split(line, f.delim)
-			row := make([]*string, len(fields))
-			for i := range fields {
-				if fields[i] != f.null {
-					row[i] = &fields[i]
-				}
-			}
-
-			out = append(out, row)
-		}
-	}
-
-	if f.skipHeader > 0 && f.kind != formatJSON {
-		out = out[min(f.skipHeader, len(out)):]
-	}
-
-	return out, nil
-}
-
-// jsonRow reads a JSON object's members into a row, matching column names
-// without case; nested values stay JSON text.
-func jsonRow(line string, columns []string) ([]*string, error) {
-	d := json.NewDecoder(strings.NewReader(line))
-	d.UseNumber()
-	var object map[string]any
-	if err := d.Decode(&object); err != nil || object == nil {
-		return nil, fmt.Errorf("HIVE_CURSOR_ERROR: Row is not a valid JSON Object: %s", line)
-	}
-
-	members := make(map[string]any, len(object))
-	for k, v := range object {
-		members[strings.ToLower(k)] = v
-	}
-
-	row := make([]*string, len(columns))
-	for i, c := range columns {
-		switch v := members[c].(type) {
-		case nil:
-		case string:
-			row[i] = &v
-		case json.Number:
-			row[i] = new(v.String())
-		case bool:
-			row[i] = new(strconv.FormatBool(v))
-		default:
-			b, err := json.Marshal(v)
-			if err != nil {
-				return nil, err
-			}
-
-			row[i] = new(string(b))
-		}
-	}
-
-	return row, nil
 }
 
 // location splits an s3:// location into its bucket and its key prefix,

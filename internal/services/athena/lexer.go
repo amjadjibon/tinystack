@@ -22,9 +22,10 @@ const (
 // token is one token of a statement; value is a word's or quoted
 // identifier's name, or a string literal's text.
 type token struct {
-	text  string
-	value string
-	kind  tokenKind
+	text      string
+	value     string
+	kind      tokenKind
+	separated bool
 }
 
 func (t token) is(word string) bool {
@@ -101,6 +102,8 @@ func lex(sql string) ([]token, error) {
 			i++
 			out = append(out, token{kind: tokenPunct, text: sql[start:i]})
 		}
+
+		out[len(out)-1].separated = len(out) > 1 && out[len(out)-2].kind == tokenSpace
 	}
 
 	return out, nil

@@ -164,3 +164,12 @@ func TestParquetProjection(t *testing.T) {
 		t.Fatal(count)
 	}
 }
+
+func TestMalformedNestedTypes(t *testing.T) {
+	for _, kind := range []string{"array<", "map<string,int", "struct<a:int"} {
+		var body bytes.Buffer
+		if err := (&Format{Kind: Parquet}).Write(&body, []Column{{Name: "bad", Type: kind}}, nil, "GZIP"); err == nil {
+			t.Fatalf("accepted %s", kind)
+		}
+	}
+}

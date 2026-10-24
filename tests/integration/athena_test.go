@@ -228,8 +228,8 @@ ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe' LOCATION 's3://lake/events
 	// Failures are FAILED executions with Athena's reasons.
 	for query, reason := range map[string]string{
 		"SELECT * FROM missing":               "TABLE_NOT_FOUND",
-		"INSERT INTO sales VALUES (1)":        "NOT_SUPPORTED",
-		"SELECT * FROM cols":                  "NOT_SUPPORTED",
+		"INSERT INTO sales VALUES (1)":        "TYPE_MISMATCH",
+		"SELECT * FROM cols":                  "HIVE_CURSOR_ERROR",
 		"SELECT 1; SELECT 2":                  "Only one sql statement",
 		"DROP DATABASE lake":                  "not empty",
 		"SELECT nosuchfunction(1) FROM sales": "SYNTAX_ERROR",

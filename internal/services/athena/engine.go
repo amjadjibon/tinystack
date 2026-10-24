@@ -147,7 +147,7 @@ func value(field *string, kind string) any {
 
 	s := strings.TrimSpace(*field)
 	switch base(kind) {
-	case "tinyint", "smallint", "int", "integer", "bigint":
+	case "tinyint", "smallint", "int", "integer", typeBigint:
 		if n, err := strconv.ParseInt(s, 10, 64); err == nil {
 			return n
 		}
@@ -193,12 +193,14 @@ func (s *Service) load(ctx context.Context, conn *sql.Conn, t *glueapi.Table) (i
 	defs := make([]string, len(all))
 	marks := make([]string, len(all))
 	for i, c := range all {
-		decl := athenaType(c.kind)
-		if decl == "array" || decl == "map" || decl == "row" {
-			decl = "json"
+		// Preserve the full Hive declaration so CTAS can retain nested types
+		// and decimal parameters through SQLite's column metadata.
+		decl := c.kind
+		if decl == "" {
+			decl = typeVarchar
 		}
 
-		defs[i], marks[i] = quote(c.name)+" "+decl, "?"
+		defs[i], marks[i] = quote(c.name)+" "+quote(decl), "?"
 		if i < len(data) {
 			names[i] = c.name
 		}
@@ -207,6 +209,10 @@ func (s *Service) load(ctx context.Context, conn *sql.Conn, t *glueapi.Table) (i
 	table := quote(common.Value(t.DatabaseName)) + "." + quote(common.Value(t.Name))
 	if _, err = conn.ExecContext(ctx, "CREATE TABLE "+table+" ("+strings.Join(defs, ", ")+")"); err != nil {
 		return 0, err
+	}
+
+	if schemaOnly, _ := ctx.Value(schemaOnlyKey{}).(bool); schemaOnly {
+		return 0, nil
 	}
 
 	sources, err := s.sources(ctx, t)
@@ -240,7 +246,7 @@ func (s *Service) load(ctx context.Context, conn *sql.Conn, t *glueapi.Table) (i
 			}
 
 			scanned += o.size
-			rows, parseErr := f.records(body, names)
+			rows, parseErr := f.Records(body, names)
 			if parseErr != nil {
 				return 0, parseErr
 			}
@@ -269,11 +275,12 @@ func (s *Service) load(ctx context.Context, conn *sql.Conn, t *glueapi.Table) (i
 
 // resultSet is a query's columns, with their Athena types, and rows.
 type resultSet struct {
-	Columns []resultColumn
-	Rows    [][]*string
+	Columns     []resultColumn
+	Rows        [][]*string
+	UpdateCount int64
 }
 
-type resultColumn struct{ Name, Type string }
+type resultColumn struct{ Name, Type, HiveType string }
 
 // collect reads a query's rows as Athena renders them.
 func collect(rows *sql.Rows) (*resultSet, error) {
@@ -284,7 +291,13 @@ func collect(rows *sql.Rows) (*resultSet, error) {
 
 	out := &resultSet{Columns: make([]resultColumn, len(types))}
 	for i, t := range types {
-		out.Columns[i] = resultColumn{Name: t.Name(), Type: strings.ToLower(t.DatabaseTypeName())}
+		hive := strings.ToLower(t.DatabaseTypeName())
+		kind := hive
+		if hive != "" {
+			kind = athenaType(hive)
+		}
+
+		out.Columns[i] = resultColumn{Name: t.Name(), Type: kind, HiveType: hive}
 	}
 
 	values := make([]any, len(types))
@@ -312,7 +325,7 @@ func collect(rows *sql.Rows) (*resultSet, error) {
 	}
 
 	for i := range out.Columns {
-		if out.Columns[i].Type == "" || out.Columns[i].Type == "json" {
+		if out.Columns[i].Type == "" || out.Columns[i].Type == formatJSON {
 			out.Columns[i].Type = typeVarchar
 		}
 	}
@@ -323,7 +336,7 @@ func collect(rows *sql.Rows) (*resultSet, error) {
 func inferred(v any) string {
 	switch v.(type) {
 	case int64:
-		return "bigint"
+		return typeBigint
 	case float64:
 		return "double"
 	case bool:

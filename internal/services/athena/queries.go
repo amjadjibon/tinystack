@@ -31,6 +31,7 @@ func accountOf(ctx context.Context) string {
 type execution struct {
 	Execution api.QueryExecution
 	Text      bool
+	Enforced  bool
 }
 
 func loadExecution(tx storage.ReadTx, scope request.Scope, id string) (*execution, error) {
@@ -99,20 +100,24 @@ func (s *Service) StartQueryExecution(
 		}
 
 		id, err = idempotent(tx, scope, in.ClientRequestToken, func(id string) error {
-			e = &execution{Execution: api.QueryExecution{
-				QueryExecutionId:      new(id),
-				Query:                 in.QueryString,
-				StatementType:         new(statementDML),
-				ResultConfiguration:   rc,
-				QueryExecutionContext: qc,
-				WorkGroup:             new(group),
-				ExecutionParameters:   in.ExecutionParameters,
-				EngineVersion:         w.WorkGroup.Configuration.EngineVersion,
-				Status: &api.QueryExecutionStatus{
-					State:              new("RUNNING"),
-					SubmissionDateTime: new(common.Unix(submitted)),
+			e = &execution{
+				Enforced: common.Value(w.WorkGroup.Configuration.EnforceWorkGroupConfiguration),
+				Execution: api.QueryExecution{
+					QueryExecutionId:      new(id),
+					Query:                 in.QueryString,
+					StatementType:         new(statementDML),
+					ResultConfiguration:   rc,
+					QueryExecutionContext: qc,
+					WorkGroup:             new(group),
+					ExecutionParameters:   in.ExecutionParameters,
+					EngineVersion:         w.WorkGroup.Configuration.EngineVersion,
+					Status: &api.QueryExecutionStatus{
+						State:              new("RUNNING"),
+						SubmissionDateTime: new(common.Unix(submitted)),
+					},
 				},
-			}}
+			}
+
 			return storage.Write(tx, scope.Key(service, kindQuery, id), e)
 		})
 		return err
@@ -132,6 +137,11 @@ func (s *Service) StartQueryExecution(
 // location, and records how it ended.
 func (s *Service) finish(ctx context.Context, e *execution, submitted time.Time) {
 	x := &e.Execution
+	ctx = context.WithValue(
+		ctx,
+		writeContextKey{},
+		writeContext{id: *x.QueryExecutionId, output: *x.ResultConfiguration.OutputLocation, enforced: e.Enforced},
+	)
 	rs, kind, scanned, err := s.execute(ctx, *x.QueryExecutionContext.Database, *x.Query, x.ExecutionParameters)
 	x.StatementType, e.Text = new(kind), kind != statementDML
 	if first := firstWords(mustLex(*x.Query), 1); first != "" {
@@ -206,6 +216,14 @@ func (s *Service) execute(ctx context.Context, database, query string, params []
 		tokens = tokens[:end]
 	}
 
+	if isCTAS(t) {
+		rs, scanned, err := s.ctas(ctx, database, t, params)
+		return rs, statementDML, scanned, err
+	}
+	if t[0].is("insert") {
+		rs, scanned, err := s.insertInto(ctx, database, t, params)
+		return rs, statementDML, scanned, err
+	}
 	first := strings.ToLower(t[0].text)
 	switch first {
 	case "select", "with", "values", "(":
@@ -526,7 +544,7 @@ func (s *Service) GetQueryResults(
 		return nil, err
 	}
 
-	out := &api.GetQueryResultsOutput{UpdateCount: new(int64(0)), NextToken: next, ResultSet: &api.ResultSet{
+	out := &api.GetQueryResultsOutput{UpdateCount: new(rs.UpdateCount), NextToken: next, ResultSet: &api.ResultSet{
 		Rows: []api.Row{}, ResultSetMetadata: &api.ResultSetMetadata{ColumnInfo: []api.ColumnInfo{}},
 	}}
 	for _, c := range rs.Columns {

@@ -2,6 +2,7 @@ package athena
 
 import (
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -47,5 +48,24 @@ func TestRewrite(t *testing.T) {
 
 	if got := unescape(`\t|\001|\\`); got != "\t|\x01|\\" {
 		t.Errorf("unescape = %q", got)
+	}
+}
+
+func TestWriteQueryTokenSpacing(t *testing.T) {
+	for _, query := range []string{"SELECT 1>=0", "SELECT 'a'||'b'", "SELECT 1 -- comment\n + 2"} {
+		original, err := lex(query)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		got, err := rewrite(queryTokens(solid(original)), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if strings.Contains(got, "> =") || strings.Contains(got, "| |") ||
+			!strings.HasPrefix(strings.TrimSpace(got), "SELECT ") {
+			t.Fatalf("%q", got)
+		}
 	}
 }
