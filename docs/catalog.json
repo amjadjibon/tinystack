@@ -2792,6 +2792,33 @@
       "execution": "Records only",
       "package": "globalaccelerator"
     },
+    "dsql": {
+      "title": "Amazon Aurora DSQL",
+      "category": "Database",
+      "scope": "Account and Region",
+      "summary": "Manage Aurora DSQL cluster records, reciprocal multi-Region peering and versioned cluster policies.",
+      "features": [
+        "Twelve of sixteen pinned REST JSON operations: cluster create/get/list/update/delete, VPC endpoint discovery, policy get/put/delete and three tagging operations; generated ValidationException constraints",
+        "Durable transaction-claimed CREATING, ACTIVE, UPDATING, PENDING_SETUP, PENDING_DELETE and DELETING transitions; 100 ms polling with 150 ms minimum transition delay, resumed after SQLite restart",
+        "Deletion protection defaults to enabled; successful client-token responses persist independently of resource lifetime, including delete and policy replay",
+        "Reciprocal two-cluster peering requires existing clusters in different Regions of the same account, a shared third witness Region and a common documented continent Region set",
+        "Public endpoint <identifier>.dsql.<region>.on.aws, cluster ARN, AWS-owned encryption metadata and deterministic cluster-specific PrivateLink service/DNS metadata",
+        "Tags in cluster records, storage-key-order pagination, inventory and Resource Groups Tagging API integration",
+        "CloudFormation AWS::DSQL::Cluster with in-place updates and no replacement properties, identifier Ref and endpoint attributes; Terraform aws_dsql_cluster and reciprocal aws_dsql_cluster_peering using two regional provider aliases against one endpoint"
+      ],
+      "gaps": [
+        "Records only, including when the RDS Docker runtime is enabled: no PostgreSQL listener, SQL execution, TLS, IAM database-token authentication, replication, quorum or actual PrivateLink networking. RDS Docker requires fixed database passwords and owns RDS-specific container labels, volumes and lifecycle; safely accepting rotating DSQL IAM tokens needs a PostgreSQL authentication proxy and a separate recovery contract. No RDS code or behavior is changed",
+        "IDLE and INACTIVE are not synthesized: AWS describes inactivity triggers without deterministic timing, and this records-only service has no connection activity. Deleted records disappear after DELETING rather than retaining a DELETED tombstone",
+        "KmsEncryptionKey accepts only AWS_OWNED_KMS_KEY; custom KMS keys and encryption changes fail ValidationException. EncryptionDetails describes AWS-owned metadata only",
+        "Resource policy JSON objects and Statement presence are checked; policies are stored without enforcement. Lockout safety evaluation is unsupported, so create/put with a policy requires bypassPolicyLockoutSafetyCheck=true; CloudFormation PolicyDocument therefore fails explicitly rather than bypassing safety on behalf of the caller",
+        "Removing CloudFormation MultiRegionProperties is explicitly unsupported; no implicit replacement. CloudFormation exposes PolicyVersion and AWS-owned EncryptionDetails attributes",
+        "The four CDC stream operations are not whitelisted; no change stream delivery, backups, capacity scaling, regional failures, IAM policy enforcement or account quotas",
+        "Terraform multi-Region peering requires normal parallel apply: both reciprocal aws_dsql_cluster_peering resources must run concurrently. Serial apply can wait indefinitely for the reciprocal request",
+        "Client token replay records have no expiry. Region sets follow the documented AWS availability snapshot; cluster-specific PrivateLink suffixes are locally derived and do not correspond to AWS infrastructure"
+      ],
+      "execution": "Records only; deterministic background control-plane transitions",
+      "package": "dsql"
+    },
     "fis": {
       "title": "AWS Fault Injection Service",
       "category": "Management & Governance",
@@ -2991,13 +3018,6 @@
       "state": "Proposed",
       "slice": "Implement `DeleteReportDefinition`, `DescribeReportDefinitions`, `ListTagsForResource`.",
       "features": "- [ ] `DeleteReportDefinition`\n- [ ] `DescribeReportDefinitions`\n- [ ] `ListTagsForResource`\n- [ ] `ModifyReportDefinition`\n- [ ] `PutReportDefinition`\n- [ ] `TagResource`\n- [ ] `UntagResource`",
-      "integration": "The proposed resource scope is account-wide; define persistence and cross-service effects accordingly."
-    },
-    "dsql": {
-      "title": "Aurora DSQL",
-      "state": "Proposed",
-      "slice": "Implement `CreateCluster`, `GetCluster`, `ListClusters`.",
-      "features": "- [ ] `CreateCluster`\n- [ ] `GetCluster`\n- [ ] `ListClusters`\n- [ ] `UpdateCluster`\n- [ ] `DeleteCluster`",
       "integration": "The proposed resource scope is account-wide; define persistence and cross-service effects accordingly."
     },
     "ecs-metadata": {
