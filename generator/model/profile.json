@@ -37410,5 +37410,941 @@
     "validation": {
       "code": "InvalidParameterException"
     }
+  },
+  "swf": {
+    "operations": [
+      "CountClosedWorkflowExecutions",
+      "CountOpenWorkflowExecutions",
+      "CountPendingActivityTasks",
+      "CountPendingDecisionTasks",
+      "DeleteActivityType",
+      "DeleteWorkflowType",
+      "DeprecateActivityType",
+      "DeprecateDomain",
+      "DeprecateWorkflowType",
+      "DescribeActivityType",
+      "DescribeDomain",
+      "DescribeWorkflowExecution",
+      "DescribeWorkflowType",
+      "GetWorkflowExecutionHistory",
+      "ListActivityTypes",
+      "ListClosedWorkflowExecutions",
+      "ListDomains",
+      "ListOpenWorkflowExecutions",
+      "ListTagsForResource",
+      "ListWorkflowTypes",
+      "PollForActivityTask",
+      "PollForDecisionTask",
+      "RecordActivityTaskHeartbeat",
+      "RegisterActivityType",
+      "RegisterDomain",
+      "RegisterWorkflowType",
+      "RequestCancelWorkflowExecution",
+      "RespondActivityTaskCanceled",
+      "RespondActivityTaskCompleted",
+      "RespondActivityTaskFailed",
+      "RespondDecisionTaskCompleted",
+      "SignalWorkflowExecution",
+      "StartWorkflowExecution",
+      "TagResource",
+      "TerminateWorkflowExecution",
+      "UndeprecateActivityType",
+      "UndeprecateDomain",
+      "UndeprecateWorkflowType",
+      "UntagResource"
+    ],
+    "validation": {
+      "code": "ValidationException"
+    },
+    "shapes": {
+      "ActivityTask": [
+        "taskToken",
+        "activityId",
+        "startedEventId",
+        "workflowExecution",
+        "activityType",
+        "input"
+      ],
+      "ActivityTaskCancelRequestedEventAttributes": [
+        "decisionTaskCompletedEventId",
+        "activityId"
+      ],
+      "ActivityTaskCanceledEventAttributes": [
+        "details",
+        "scheduledEventId",
+        "startedEventId",
+        "latestCancelRequestedEventId"
+      ],
+      "ActivityTaskCompletedEventAttributes": [
+        "result",
+        "scheduledEventId",
+        "startedEventId"
+      ],
+      "ActivityTaskFailedEventAttributes": [
+        "reason",
+        "details",
+        "scheduledEventId",
+        "startedEventId"
+      ],
+      "ActivityTaskScheduledEventAttributes": [
+        "activityType",
+        "activityId",
+        "input",
+        "control",
+        "scheduleToStartTimeout",
+        "scheduleToCloseTimeout",
+        "startToCloseTimeout",
+        "taskList",
+        "taskPriority",
+        "decisionTaskCompletedEventId",
+        "heartbeatTimeout"
+      ],
+      "ActivityTaskStartedEventAttributes": [
+        "identity",
+        "scheduledEventId"
+      ],
+      "ActivityTaskStatus": [
+        "cancelRequested"
+      ],
+      "ActivityTaskTimedOutEventAttributes": [
+        "timeoutType",
+        "scheduledEventId",
+        "startedEventId",
+        "details"
+      ],
+      "ActivityType": [
+        "name",
+        "version"
+      ],
+      "ActivityTypeConfiguration": [
+        "defaultTaskStartToCloseTimeout",
+        "defaultTaskHeartbeatTimeout",
+        "defaultTaskList",
+        "defaultTaskPriority",
+        "defaultTaskScheduleToStartTimeout",
+        "defaultTaskScheduleToCloseTimeout"
+      ],
+      "ActivityTypeDetail": [
+        "typeInfo",
+        "configuration"
+      ],
+      "ActivityTypeInfo": [
+        "activityType",
+        "status",
+        "description",
+        "creationDate",
+        "deprecationDate"
+      ],
+      "ActivityTypeInfos": [
+        "typeInfos",
+        "nextPageToken"
+      ],
+      "CancelTimerDecisionAttributes": [
+        "timerId"
+      ],
+      "CancelTimerFailedEventAttributes": [
+        "timerId",
+        "cause",
+        "decisionTaskCompletedEventId"
+      ],
+      "CancelWorkflowExecutionDecisionAttributes": [
+        "details"
+      ],
+      "CancelWorkflowExecutionFailedEventAttributes": [
+        "cause",
+        "decisionTaskCompletedEventId"
+      ],
+      "ChildWorkflowExecutionCanceledEventAttributes": [
+        "workflowExecution",
+        "workflowType",
+        "details",
+        "initiatedEventId",
+        "startedEventId"
+      ],
+      "ChildWorkflowExecutionCompletedEventAttributes": [
+        "workflowExecution",
+        "workflowType",
+        "result",
+        "initiatedEventId",
+        "startedEventId"
+      ],
+      "ChildWorkflowExecutionFailedEventAttributes": [
+        "workflowExecution",
+        "workflowType",
+        "reason",
+        "details",
+        "initiatedEventId",
+        "startedEventId"
+      ],
+      "ChildWorkflowExecutionStartedEventAttributes": [
+        "workflowExecution",
+        "workflowType",
+        "initiatedEventId"
+      ],
+      "ChildWorkflowExecutionTerminatedEventAttributes": [
+        "workflowExecution",
+        "workflowType",
+        "initiatedEventId",
+        "startedEventId"
+      ],
+      "ChildWorkflowExecutionTimedOutEventAttributes": [
+        "workflowExecution",
+        "workflowType",
+        "timeoutType",
+        "initiatedEventId",
+        "startedEventId"
+      ],
+      "CloseStatusFilter": [
+        "status"
+      ],
+      "CompleteWorkflowExecutionDecisionAttributes": [
+        "result"
+      ],
+      "CompleteWorkflowExecutionFailedEventAttributes": [
+        "cause",
+        "decisionTaskCompletedEventId"
+      ],
+      "ContinueAsNewWorkflowExecutionDecisionAttributes": [
+        "input",
+        "executionStartToCloseTimeout",
+        "taskList",
+        "taskPriority",
+        "taskStartToCloseTimeout",
+        "childPolicy",
+        "tagList",
+        "workflowTypeVersion",
+        "lambdaRole"
+      ],
+      "ContinueAsNewWorkflowExecutionFailedEventAttributes": [
+        "cause",
+        "decisionTaskCompletedEventId"
+      ],
+      "CountClosedWorkflowExecutionsInput": [
+        "domain",
+        "startTimeFilter",
+        "closeTimeFilter",
+        "executionFilter",
+        "typeFilter",
+        "tagFilter",
+        "closeStatusFilter"
+      ],
+      "CountOpenWorkflowExecutionsInput": [
+        "domain",
+        "startTimeFilter",
+        "typeFilter",
+        "tagFilter",
+        "executionFilter"
+      ],
+      "CountPendingActivityTasksInput": [
+        "domain",
+        "taskList"
+      ],
+      "CountPendingDecisionTasksInput": [
+        "domain",
+        "taskList"
+      ],
+      "Decision": [
+        "decisionType",
+        "scheduleActivityTaskDecisionAttributes",
+        "requestCancelActivityTaskDecisionAttributes",
+        "completeWorkflowExecutionDecisionAttributes",
+        "failWorkflowExecutionDecisionAttributes",
+        "cancelWorkflowExecutionDecisionAttributes",
+        "continueAsNewWorkflowExecutionDecisionAttributes",
+        "recordMarkerDecisionAttributes",
+        "startTimerDecisionAttributes",
+        "cancelTimerDecisionAttributes",
+        "signalExternalWorkflowExecutionDecisionAttributes",
+        "requestCancelExternalWorkflowExecutionDecisionAttributes",
+        "startChildWorkflowExecutionDecisionAttributes",
+        "scheduleLambdaFunctionDecisionAttributes"
+      ],
+      "DecisionTask": [
+        "taskToken",
+        "startedEventId",
+        "workflowExecution",
+        "workflowType",
+        "events",
+        "nextPageToken",
+        "previousStartedEventId"
+      ],
+      "DecisionTaskCompletedEventAttributes": [
+        "executionContext",
+        "scheduledEventId",
+        "startedEventId",
+        "taskList",
+        "taskListScheduleToStartTimeout"
+      ],
+      "DecisionTaskScheduledEventAttributes": [
+        "taskList",
+        "taskPriority",
+        "startToCloseTimeout",
+        "scheduleToStartTimeout"
+      ],
+      "DecisionTaskStartedEventAttributes": [
+        "identity",
+        "scheduledEventId"
+      ],
+      "DecisionTaskTimedOutEventAttributes": [
+        "timeoutType",
+        "scheduledEventId",
+        "startedEventId"
+      ],
+      "DeleteActivityTypeInput": [
+        "domain",
+        "activityType"
+      ],
+      "DeleteWorkflowTypeInput": [
+        "domain",
+        "workflowType"
+      ],
+      "DeprecateActivityTypeInput": [
+        "domain",
+        "activityType"
+      ],
+      "DeprecateDomainInput": [
+        "name"
+      ],
+      "DeprecateWorkflowTypeInput": [
+        "domain",
+        "workflowType"
+      ],
+      "DescribeActivityTypeInput": [
+        "domain",
+        "activityType"
+      ],
+      "DescribeDomainInput": [
+        "name"
+      ],
+      "DescribeWorkflowExecutionInput": [
+        "domain",
+        "execution"
+      ],
+      "DescribeWorkflowTypeInput": [
+        "domain",
+        "workflowType"
+      ],
+      "DomainConfiguration": [
+        "workflowExecutionRetentionPeriodInDays"
+      ],
+      "DomainDetail": [
+        "domainInfo",
+        "configuration"
+      ],
+      "DomainInfo": [
+        "name",
+        "status",
+        "description",
+        "arn"
+      ],
+      "DomainInfos": [
+        "domainInfos",
+        "nextPageToken"
+      ],
+      "ExecutionTimeFilter": [
+        "oldestDate",
+        "latestDate"
+      ],
+      "ExternalWorkflowExecutionCancelRequestedEventAttributes": [
+        "workflowExecution",
+        "initiatedEventId"
+      ],
+      "ExternalWorkflowExecutionSignaledEventAttributes": [
+        "workflowExecution",
+        "initiatedEventId"
+      ],
+      "FailWorkflowExecutionDecisionAttributes": [
+        "reason",
+        "details"
+      ],
+      "FailWorkflowExecutionFailedEventAttributes": [
+        "cause",
+        "decisionTaskCompletedEventId"
+      ],
+      "GetWorkflowExecutionHistoryInput": [
+        "domain",
+        "execution",
+        "nextPageToken",
+        "maximumPageSize",
+        "reverseOrder"
+      ],
+      "History": [
+        "events",
+        "nextPageToken"
+      ],
+      "HistoryEvent": [
+        "eventTimestamp",
+        "eventType",
+        "eventId",
+        "workflowExecutionStartedEventAttributes",
+        "workflowExecutionCompletedEventAttributes",
+        "completeWorkflowExecutionFailedEventAttributes",
+        "workflowExecutionFailedEventAttributes",
+        "failWorkflowExecutionFailedEventAttributes",
+        "workflowExecutionTimedOutEventAttributes",
+        "workflowExecutionCanceledEventAttributes",
+        "cancelWorkflowExecutionFailedEventAttributes",
+        "workflowExecutionContinuedAsNewEventAttributes",
+        "continueAsNewWorkflowExecutionFailedEventAttributes",
+        "workflowExecutionTerminatedEventAttributes",
+        "workflowExecutionCancelRequestedEventAttributes",
+        "decisionTaskScheduledEventAttributes",
+        "decisionTaskStartedEventAttributes",
+        "decisionTaskCompletedEventAttributes",
+        "decisionTaskTimedOutEventAttributes",
+        "activityTaskScheduledEventAttributes",
+        "activityTaskStartedEventAttributes",
+        "activityTaskCompletedEventAttributes",
+        "activityTaskFailedEventAttributes",
+        "activityTaskTimedOutEventAttributes",
+        "activityTaskCanceledEventAttributes",
+        "activityTaskCancelRequestedEventAttributes",
+        "workflowExecutionSignaledEventAttributes",
+        "markerRecordedEventAttributes",
+        "recordMarkerFailedEventAttributes",
+        "timerStartedEventAttributes",
+        "timerFiredEventAttributes",
+        "timerCanceledEventAttributes",
+        "startChildWorkflowExecutionInitiatedEventAttributes",
+        "childWorkflowExecutionStartedEventAttributes",
+        "childWorkflowExecutionCompletedEventAttributes",
+        "childWorkflowExecutionFailedEventAttributes",
+        "childWorkflowExecutionTimedOutEventAttributes",
+        "childWorkflowExecutionCanceledEventAttributes",
+        "childWorkflowExecutionTerminatedEventAttributes",
+        "signalExternalWorkflowExecutionInitiatedEventAttributes",
+        "externalWorkflowExecutionSignaledEventAttributes",
+        "signalExternalWorkflowExecutionFailedEventAttributes",
+        "externalWorkflowExecutionCancelRequestedEventAttributes",
+        "requestCancelExternalWorkflowExecutionInitiatedEventAttributes",
+        "requestCancelExternalWorkflowExecutionFailedEventAttributes",
+        "scheduleActivityTaskFailedEventAttributes",
+        "requestCancelActivityTaskFailedEventAttributes",
+        "startTimerFailedEventAttributes",
+        "cancelTimerFailedEventAttributes",
+        "startChildWorkflowExecutionFailedEventAttributes",
+        "lambdaFunctionScheduledEventAttributes",
+        "lambdaFunctionStartedEventAttributes",
+        "lambdaFunctionCompletedEventAttributes",
+        "lambdaFunctionFailedEventAttributes",
+        "lambdaFunctionTimedOutEventAttributes",
+        "scheduleLambdaFunctionFailedEventAttributes",
+        "startLambdaFunctionFailedEventAttributes"
+      ],
+      "LambdaFunctionCompletedEventAttributes": [
+        "scheduledEventId",
+        "startedEventId",
+        "result"
+      ],
+      "LambdaFunctionFailedEventAttributes": [
+        "scheduledEventId",
+        "startedEventId",
+        "reason",
+        "details"
+      ],
+      "LambdaFunctionScheduledEventAttributes": [
+        "id",
+        "name",
+        "control",
+        "input",
+        "startToCloseTimeout",
+        "decisionTaskCompletedEventId"
+      ],
+      "LambdaFunctionStartedEventAttributes": [
+        "scheduledEventId"
+      ],
+      "LambdaFunctionTimedOutEventAttributes": [
+        "scheduledEventId",
+        "startedEventId",
+        "timeoutType"
+      ],
+      "ListActivityTypesInput": [
+        "domain",
+        "name",
+        "registrationStatus",
+        "nextPageToken",
+        "maximumPageSize",
+        "reverseOrder"
+      ],
+      "ListClosedWorkflowExecutionsInput": [
+        "domain",
+        "startTimeFilter",
+        "closeTimeFilter",
+        "executionFilter",
+        "closeStatusFilter",
+        "typeFilter",
+        "tagFilter",
+        "nextPageToken",
+        "maximumPageSize",
+        "reverseOrder"
+      ],
+      "ListDomainsInput": [
+        "nextPageToken",
+        "registrationStatus",
+        "maximumPageSize",
+        "reverseOrder"
+      ],
+      "ListOpenWorkflowExecutionsInput": [
+        "domain",
+        "startTimeFilter",
+        "typeFilter",
+        "tagFilter",
+        "nextPageToken",
+        "maximumPageSize",
+        "reverseOrder",
+        "executionFilter"
+      ],
+      "ListTagsForResourceInput": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceOutput": [
+        "tags"
+      ],
+      "ListWorkflowTypesInput": [
+        "domain",
+        "name",
+        "registrationStatus",
+        "nextPageToken",
+        "maximumPageSize",
+        "reverseOrder"
+      ],
+      "MarkerRecordedEventAttributes": [
+        "markerName",
+        "details",
+        "decisionTaskCompletedEventId"
+      ],
+      "PendingTaskCount": [
+        "count",
+        "truncated"
+      ],
+      "PollForActivityTaskInput": [
+        "domain",
+        "taskList",
+        "identity"
+      ],
+      "PollForDecisionTaskInput": [
+        "domain",
+        "taskList",
+        "identity",
+        "nextPageToken",
+        "maximumPageSize",
+        "reverseOrder",
+        "startAtPreviousStartedEvent"
+      ],
+      "RecordActivityTaskHeartbeatInput": [
+        "taskToken",
+        "details"
+      ],
+      "RecordMarkerDecisionAttributes": [
+        "markerName",
+        "details"
+      ],
+      "RecordMarkerFailedEventAttributes": [
+        "markerName",
+        "cause",
+        "decisionTaskCompletedEventId"
+      ],
+      "RegisterActivityTypeInput": [
+        "domain",
+        "name",
+        "version",
+        "description",
+        "defaultTaskStartToCloseTimeout",
+        "defaultTaskHeartbeatTimeout",
+        "defaultTaskList",
+        "defaultTaskPriority",
+        "defaultTaskScheduleToStartTimeout",
+        "defaultTaskScheduleToCloseTimeout"
+      ],
+      "RegisterDomainInput": [
+        "name",
+        "description",
+        "workflowExecutionRetentionPeriodInDays",
+        "tags"
+      ],
+      "RegisterWorkflowTypeInput": [
+        "domain",
+        "name",
+        "version",
+        "description",
+        "defaultTaskStartToCloseTimeout",
+        "defaultExecutionStartToCloseTimeout",
+        "defaultTaskList",
+        "defaultTaskPriority",
+        "defaultChildPolicy",
+        "defaultLambdaRole"
+      ],
+      "RequestCancelActivityTaskDecisionAttributes": [
+        "activityId"
+      ],
+      "RequestCancelActivityTaskFailedEventAttributes": [
+        "activityId",
+        "cause",
+        "decisionTaskCompletedEventId"
+      ],
+      "RequestCancelExternalWorkflowExecutionDecisionAttributes": [
+        "workflowId",
+        "runId",
+        "control"
+      ],
+      "RequestCancelExternalWorkflowExecutionFailedEventAttributes": [
+        "workflowId",
+        "runId",
+        "cause",
+        "initiatedEventId",
+        "decisionTaskCompletedEventId",
+        "control"
+      ],
+      "RequestCancelExternalWorkflowExecutionInitiatedEventAttributes": [
+        "workflowId",
+        "runId",
+        "decisionTaskCompletedEventId",
+        "control"
+      ],
+      "RequestCancelWorkflowExecutionInput": [
+        "domain",
+        "workflowId",
+        "runId"
+      ],
+      "ResourceTag": [
+        "key",
+        "value"
+      ],
+      "RespondActivityTaskCanceledInput": [
+        "taskToken",
+        "details"
+      ],
+      "RespondActivityTaskCompletedInput": [
+        "taskToken",
+        "result"
+      ],
+      "RespondActivityTaskFailedInput": [
+        "taskToken",
+        "reason",
+        "details"
+      ],
+      "RespondDecisionTaskCompletedInput": [
+        "taskToken",
+        "decisions",
+        "executionContext",
+        "taskList",
+        "taskListScheduleToStartTimeout"
+      ],
+      "Run": [
+        "runId"
+      ],
+      "ScheduleActivityTaskDecisionAttributes": [
+        "activityType",
+        "activityId",
+        "control",
+        "input",
+        "scheduleToCloseTimeout",
+        "taskList",
+        "taskPriority",
+        "scheduleToStartTimeout",
+        "startToCloseTimeout",
+        "heartbeatTimeout"
+      ],
+      "ScheduleActivityTaskFailedEventAttributes": [
+        "activityType",
+        "activityId",
+        "cause",
+        "decisionTaskCompletedEventId"
+      ],
+      "ScheduleLambdaFunctionDecisionAttributes": [
+        "id",
+        "name",
+        "control",
+        "input",
+        "startToCloseTimeout"
+      ],
+      "ScheduleLambdaFunctionFailedEventAttributes": [
+        "id",
+        "name",
+        "cause",
+        "decisionTaskCompletedEventId"
+      ],
+      "SignalExternalWorkflowExecutionDecisionAttributes": [
+        "workflowId",
+        "runId",
+        "signalName",
+        "input",
+        "control"
+      ],
+      "SignalExternalWorkflowExecutionFailedEventAttributes": [
+        "workflowId",
+        "runId",
+        "cause",
+        "initiatedEventId",
+        "decisionTaskCompletedEventId",
+        "control"
+      ],
+      "SignalExternalWorkflowExecutionInitiatedEventAttributes": [
+        "workflowId",
+        "runId",
+        "signalName",
+        "input",
+        "decisionTaskCompletedEventId",
+        "control"
+      ],
+      "SignalWorkflowExecutionInput": [
+        "domain",
+        "workflowId",
+        "runId",
+        "signalName",
+        "input"
+      ],
+      "StartChildWorkflowExecutionDecisionAttributes": [
+        "workflowType",
+        "workflowId",
+        "control",
+        "input",
+        "executionStartToCloseTimeout",
+        "taskList",
+        "taskPriority",
+        "taskStartToCloseTimeout",
+        "childPolicy",
+        "tagList",
+        "lambdaRole"
+      ],
+      "StartChildWorkflowExecutionFailedEventAttributes": [
+        "workflowType",
+        "cause",
+        "workflowId",
+        "initiatedEventId",
+        "decisionTaskCompletedEventId",
+        "control"
+      ],
+      "StartChildWorkflowExecutionInitiatedEventAttributes": [
+        "workflowId",
+        "workflowType",
+        "control",
+        "input",
+        "executionStartToCloseTimeout",
+        "taskList",
+        "taskPriority",
+        "decisionTaskCompletedEventId",
+        "childPolicy",
+        "taskStartToCloseTimeout",
+        "tagList",
+        "lambdaRole"
+      ],
+      "StartLambdaFunctionFailedEventAttributes": [
+        "scheduledEventId",
+        "cause",
+        "message"
+      ],
+      "StartTimerDecisionAttributes": [
+        "timerId",
+        "control",
+        "startToFireTimeout"
+      ],
+      "StartTimerFailedEventAttributes": [
+        "timerId",
+        "cause",
+        "decisionTaskCompletedEventId"
+      ],
+      "StartWorkflowExecutionInput": [
+        "domain",
+        "workflowId",
+        "workflowType",
+        "taskList",
+        "taskPriority",
+        "input",
+        "executionStartToCloseTimeout",
+        "tagList",
+        "taskStartToCloseTimeout",
+        "childPolicy",
+        "lambdaRole"
+      ],
+      "TagFilter": [
+        "tag"
+      ],
+      "TagResourceInput": [
+        "resourceArn",
+        "tags"
+      ],
+      "TaskList": [
+        "name"
+      ],
+      "TerminateWorkflowExecutionInput": [
+        "domain",
+        "workflowId",
+        "runId",
+        "reason",
+        "details",
+        "childPolicy"
+      ],
+      "TimerCanceledEventAttributes": [
+        "timerId",
+        "startedEventId",
+        "decisionTaskCompletedEventId"
+      ],
+      "TimerFiredEventAttributes": [
+        "timerId",
+        "startedEventId"
+      ],
+      "TimerStartedEventAttributes": [
+        "timerId",
+        "control",
+        "startToFireTimeout",
+        "decisionTaskCompletedEventId"
+      ],
+      "UndeprecateActivityTypeInput": [
+        "domain",
+        "activityType"
+      ],
+      "UndeprecateDomainInput": [
+        "name"
+      ],
+      "UndeprecateWorkflowTypeInput": [
+        "domain",
+        "workflowType"
+      ],
+      "UntagResourceInput": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "WorkflowExecution": [
+        "workflowId",
+        "runId"
+      ],
+      "WorkflowExecutionCancelRequestedEventAttributes": [
+        "externalWorkflowExecution",
+        "externalInitiatedEventId",
+        "cause"
+      ],
+      "WorkflowExecutionCanceledEventAttributes": [
+        "details",
+        "decisionTaskCompletedEventId"
+      ],
+      "WorkflowExecutionCompletedEventAttributes": [
+        "result",
+        "decisionTaskCompletedEventId"
+      ],
+      "WorkflowExecutionConfiguration": [
+        "taskStartToCloseTimeout",
+        "executionStartToCloseTimeout",
+        "taskList",
+        "taskPriority",
+        "childPolicy",
+        "lambdaRole"
+      ],
+      "WorkflowExecutionContinuedAsNewEventAttributes": [
+        "input",
+        "decisionTaskCompletedEventId",
+        "newExecutionRunId",
+        "executionStartToCloseTimeout",
+        "taskList",
+        "taskPriority",
+        "taskStartToCloseTimeout",
+        "childPolicy",
+        "tagList",
+        "workflowType",
+        "lambdaRole"
+      ],
+      "WorkflowExecutionCount": [
+        "count",
+        "truncated"
+      ],
+      "WorkflowExecutionDetail": [
+        "executionInfo",
+        "executionConfiguration",
+        "openCounts",
+        "latestActivityTaskTimestamp",
+        "latestExecutionContext"
+      ],
+      "WorkflowExecutionFailedEventAttributes": [
+        "reason",
+        "details",
+        "decisionTaskCompletedEventId"
+      ],
+      "WorkflowExecutionFilter": [
+        "workflowId"
+      ],
+      "WorkflowExecutionInfo": [
+        "execution",
+        "workflowType",
+        "startTimestamp",
+        "closeTimestamp",
+        "executionStatus",
+        "closeStatus",
+        "parent",
+        "tagList",
+        "cancelRequested"
+      ],
+      "WorkflowExecutionInfos": [
+        "executionInfos",
+        "nextPageToken"
+      ],
+      "WorkflowExecutionOpenCounts": [
+        "openActivityTasks",
+        "openDecisionTasks",
+        "openTimers",
+        "openChildWorkflowExecutions",
+        "openLambdaFunctions"
+      ],
+      "WorkflowExecutionSignaledEventAttributes": [
+        "signalName",
+        "input",
+        "externalWorkflowExecution",
+        "externalInitiatedEventId"
+      ],
+      "WorkflowExecutionStartedEventAttributes": [
+        "input",
+        "executionStartToCloseTimeout",
+        "taskStartToCloseTimeout",
+        "childPolicy",
+        "taskList",
+        "taskPriority",
+        "workflowType",
+        "tagList",
+        "continuedExecutionRunId",
+        "parentWorkflowExecution",
+        "parentInitiatedEventId",
+        "lambdaRole"
+      ],
+      "WorkflowExecutionTerminatedEventAttributes": [
+        "reason",
+        "details",
+        "childPolicy",
+        "cause"
+      ],
+      "WorkflowExecutionTimedOutEventAttributes": [
+        "timeoutType",
+        "childPolicy"
+      ],
+      "WorkflowType": [
+        "name",
+        "version"
+      ],
+      "WorkflowTypeConfiguration": [
+        "defaultTaskStartToCloseTimeout",
+        "defaultExecutionStartToCloseTimeout",
+        "defaultTaskList",
+        "defaultTaskPriority",
+        "defaultChildPolicy",
+        "defaultLambdaRole"
+      ],
+      "WorkflowTypeDetail": [
+        "typeInfo",
+        "configuration"
+      ],
+      "WorkflowTypeFilter": [
+        "name",
+        "version"
+      ],
+      "WorkflowTypeInfo": [
+        "workflowType",
+        "status",
+        "description",
+        "creationDate",
+        "deprecationDate"
+      ],
+      "WorkflowTypeInfos": [
+        "typeInfos",
+        "nextPageToken"
+      ]
+    }
   }
 }

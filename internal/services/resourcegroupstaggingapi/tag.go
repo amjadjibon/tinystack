@@ -257,6 +257,7 @@ var taggers = map[string]tagger{
 	"amp":                 resourceOperations("amp", "ResourceArn", plain),
 	"resourceexplorer2":   resourceOperations("resourceexplorer2", "ResourceArn", plain),
 	"fis":                 resourceOperations("fis", "ResourceArn", plain),
+	"swf":                 resourceOperations("swf", "ResourceArn", pairs),
 	"accessanalyzer":      resourceOperations("accessanalyzer", "ResourceArn", plain),
 	"shield":              resourceOperations("shield", "ResourceARN", pairs),
 	"globalaccelerator":   resourceOperations("globalaccelerator", "ResourceArn", pairs),

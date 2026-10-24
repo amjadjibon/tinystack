@@ -125,6 +125,7 @@ import (
 	ssmapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
 	ssoadminapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssoadmin"
 	stsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
+	swfapi "github.com/amjadjibon/tinystack/internal/aws/generated/swf"
 	timestreamwriteapi "github.com/amjadjibon/tinystack/internal/aws/generated/timestreamwrite"
 	transferapi "github.com/amjadjibon/tinystack/internal/aws/generated/transfer"
 	verifiedpermissionsapi "github.com/amjadjibon/tinystack/internal/aws/generated/verifiedpermissions"
@@ -248,6 +249,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/ssm"
 	"github.com/amjadjibon/tinystack/internal/services/ssoadmin"
 	"github.com/amjadjibon/tinystack/internal/services/sts"
+	"github.com/amjadjibon/tinystack/internal/services/swf"
 	"github.com/amjadjibon/tinystack/internal/services/timestreamwrite"
 	"github.com/amjadjibon/tinystack/internal/services/transfer"
 	"github.com/amjadjibon/tinystack/internal/services/verifiedpermissions"
@@ -475,6 +477,8 @@ func build(
 	a.onStop(dataSyncRecords.Stop)
 	shieldRecords := shield.New(store)
 	accessAnalyzerRecords := accessanalyzer.New(store)
+	swfRecords := swf.New(store)
+	a.onStop(swfRecords.Stop)
 	securityHubRecords := securityhub.New(store)
 	inspector2Records := inspector2.New(store)
 	quotaRecords := servicequotas.New(store)
@@ -607,6 +611,7 @@ func build(
 		datasyncapi.Descriptor(dataSyncRecords),
 		accessanalyzerapi.Descriptor(accessAnalyzerRecords),
 		shieldapi.Descriptor(shieldRecords),
+		swfapi.Descriptor(swfRecords),
 		globalacceleratorapi.Descriptor(globalAcceleratorRecords),
 		fisapi.Descriptor(fisRecords),
 		resourceexplorer2api.Descriptor(resourceExplorerRecords),

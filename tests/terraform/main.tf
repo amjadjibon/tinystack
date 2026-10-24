@@ -23,6 +23,7 @@ provider "aws" {
     servicecatalog       = var.endpoint
     fis                  = var.endpoint
     accessanalyzer       = var.endpoint
+    swf                  = var.endpoint
     globalaccelerator    = var.endpoint
     securityhub          = var.endpoint
     inspector2           = var.endpoint
@@ -2711,4 +2712,10 @@ resource "aws_shield_protection_group" "local" {
   members             = [aws_shield_protection.local.resource_arn]
   tags                = local.tags
   depends_on          = [aws_shield_protection.local]
+}
+
+resource "aws_swf_domain" "main" {
+  name                                        = "local-workflows"
+  workflow_execution_retention_period_in_days = 1
+  tags                                        = { team = var.team }
 }

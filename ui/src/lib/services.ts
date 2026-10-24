@@ -42,6 +42,11 @@ export const categories = [
 ];
 
 const catalog: Record<string, ServiceInfo> = {
+	swf: {
+		title: "Amazon Simple Workflow Service",
+		category: integration,
+		icon: "swf",
+	},
 	datasync: { title: "AWS DataSync", category: migration, icon: "datasync" },
 	resourceexplorer2: {
 		title: "AWS Resource Explorer",

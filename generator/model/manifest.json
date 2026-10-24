@@ -454,6 +454,10 @@
     "shield": {
       "path": "codegen/sdk-codegen/aws-models/shield.json",
       "sha256": "5bab90bb091a18441e1e3a35f7a5dff33f1bbc6be8eeda96cbc54f3350b62635"
+    },
+    "swf": {
+      "path": "codegen/sdk-codegen/aws-models/swf.json",
+      "sha256": "bcbcdf119308ff6e3132790133d269edcd85c7fc2bdaa60deedc01ae7c34e245"
     }
   }
 }
