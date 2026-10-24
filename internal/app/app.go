@@ -111,6 +111,7 @@ import (
 	route53api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
 	route53resolverapi "github.com/amjadjibon/tinystack/internal/aws/generated/route53resolver"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	s3filesapi "github.com/amjadjibon/tinystack/internal/aws/generated/s3files"
 	s3tablesapi "github.com/amjadjibon/tinystack/internal/aws/generated/s3tables"
 	schedulerapi "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	secretsmanagerapi "github.com/amjadjibon/tinystack/internal/aws/generated/secretsmanager"
@@ -238,6 +239,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/route53"
 	"github.com/amjadjibon/tinystack/internal/services/route53resolver"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
+	"github.com/amjadjibon/tinystack/internal/services/s3files"
 	"github.com/amjadjibon/tinystack/internal/services/s3tables"
 	"github.com/amjadjibon/tinystack/internal/services/scheduler"
 	"github.com/amjadjibon/tinystack/internal/services/secretsmanager"
@@ -487,6 +489,8 @@ func build(
 	a.onStop(mediaConnectRecords.Stop)
 	dataSyncRecords := datasync.New(store, buckets, roles)
 	a.onStop(dataSyncRecords.Stop)
+	s3FilesRecords := s3files.New(store, network, buckets, roles, keys)
+	a.onStop(s3FilesRecords.Stop)
 	shieldRecords := shield.New(store)
 	accessAnalyzerRecords := accessanalyzer.New(store)
 	swfRecords := swf.New(store)
@@ -622,6 +626,7 @@ func build(
 		servicecatalogapi.Descriptor(serviceCatalogRecords),
 		mediaconvertapi.Descriptor(mediaConvertRecords),
 		datasyncapi.Descriptor(dataSyncRecords),
+		s3filesapi.Descriptor(s3FilesRecords),
 		mediaconnectapi.Descriptor(mediaConnectRecords),
 		accessanalyzerapi.Descriptor(accessAnalyzerRecords),
 		shieldapi.Descriptor(shieldRecords),

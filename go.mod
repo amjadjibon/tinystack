@@ -103,6 +103,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.70.4
 	github.com/aws/aws-sdk-go-v2/service/route53resolver v1.54.4
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.114.3
+	github.com/aws/aws-sdk-go-v2/service/s3files v1.9.1
 	github.com/aws/aws-sdk-go-v2/service/s3tables v1.23.4
 	github.com/aws/aws-sdk-go-v2/service/scheduler v1.25.4
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.50.4

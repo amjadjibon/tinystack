@@ -14,6 +14,7 @@ const appSyncAPIType = "Api"
 var namespaces = map[string]string{
 	"globalaccelerator":         "GlobalAccelerator",
 	"dsql":                      "DSQL",
+	"s3files":                   "S3Files",
 	"fis":                       "FIS",
 	"resourceexplorer2":         "ResourceExplorer2",
 	"apprunner":                 "AppRunner",
@@ -105,6 +106,9 @@ var namespaces = map[string]string{
 var typeNames = map[string]string{
 	"globalaccelerator/endpointgroup":        "EndpointGroup",
 	"dsql/cluster":                           "Cluster",
+	"s3files/file-system":                    "FileSystem",
+	"s3files/mount-target":                   "MountTarget",
+	"s3files/access-point":                   "AccessPoint",
 	"fis/experiment-template":                "ExperimentTemplate",
 	"shield/protection":                      "Protection",
 	"shield/protection-group":                "ProtectionGroup",

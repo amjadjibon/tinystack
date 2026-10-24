@@ -470,6 +470,10 @@
     "mediaconnect": {
       "path": "codegen/sdk-codegen/aws-models/mediaconnect.json",
       "sha256": "9c43ab63f22973308717e6127b1c3cd40c63237f0559de262ab772707d96c277"
+    },
+    "s3files": {
+      "path": "codegen/sdk-codegen/aws-models/s3files.json",
+      "sha256": "b538b511c203d050db7ba5ea07ded62cf6a285e63271251f14398a1b4f094fd4"
     }
   }
 }

@@ -10,6 +10,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/efs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/mountaddr"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -94,36 +95,30 @@ func (s *Service) CreateMountTarget(
 		if e != nil || !block.Addr().Is4() {
 			return invalid("Subnet must have an IPv4 CIDR")
 		}
-		// This is an unreserved metadata address, never an EC2 allocation. Skip AWS's
-		// reserved first four addresses and the last address; avoid other EFS records.
-		ip := block.Masked().Addr().Next().Next().Next().Next()
+		// This is an unreserved metadata address, never an EC2 allocation, that no other EFS record reports.
+		var want netip.Addr
 		if in.IpAddress != nil {
-			ip, _ = netip.ParseAddr(*in.IpAddress)
+			var parseErr error
+			want, parseErr = netip.ParseAddr(*in.IpAddress)
+			if parseErr != nil {
+				return invalid("IpAddress must be a usable address in the subnet CIDR")
+			}
 		}
-		usable := func(addr netip.Addr) bool {
-			first := block.Masked().Addr().Next().Next().Next().Next()
-			return block.Contains(addr) && addr.Compare(first) >= 0 && block.Contains(addr.Next())
-		}
-		used := func(addr netip.Addr) bool {
+
+		ip, e := mountaddr.Pick(block, want, func(addr netip.Addr) bool {
 			return slices.ContainsFunc(all, func(r *record) bool {
 				return common.Value(r.MT.SubnetId) == *in.SubnetId && common.Value(r.MT.IpAddress) == addr.String()
 			})
+		})
+		switch {
+		case errors.Is(e, mountaddr.ErrOutsideSubnet):
+			return invalid("IpAddress must be a usable address in the subnet CIDR")
+		case errors.Is(e, mountaddr.ErrInUse):
+			return failure("IpAddressInUse", "Another EFS record uses this address")
+		case errors.Is(e, mountaddr.ErrExhausted):
+			return failure("NoFreeAddressesInSubnet", "No unused metadata addresses in subnet")
 		}
-		if in.IpAddress != nil {
-			if !usable(ip) {
-				return invalid("IpAddress must be a usable address in the subnet CIDR")
-			}
-			if used(ip) {
-				return failure("IpAddressInUse", "Another EFS record uses this address")
-			}
-		} else {
-			for usable(ip) && used(ip) {
-				ip = ip.Next()
-			}
-			if !usable(ip) {
-				return failure("NoFreeAddressesInSubnet", "No unused metadata addresses in subnet")
-			}
-		}
+
 		out = &api.MountTargetDescription{
 			OwnerId: new(scope.AccountID), MountTargetId: new(id), FileSystemId: new(parent.ID),
 			SubnetId: in.SubnetId, LifeCycleState: new(available), IpAddress: new(ip.String()), VpcId: subnet.VpcId,

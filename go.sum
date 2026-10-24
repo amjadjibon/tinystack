@@ -238,6 +238,8 @@ github.com/aws/aws-sdk-go-v2/service/route53resolver v1.54.4 h1:kG9q+sir+bgYHOQv
 github.com/aws/aws-sdk-go-v2/service/route53resolver v1.54.4/go.mod h1:r5l8ND1hElvJhQVlRH8qtizTcXy1gjrZOSeWfrc196M=
 github.com/aws/aws-sdk-go-v2/service/s3 v1.114.3 h1:NyeuyXkZL476uoAowNActm4XJO1QPKf7aassgXHpiqA=
 github.com/aws/aws-sdk-go-v2/service/s3 v1.114.3/go.mod h1:GfoBeKMDJecgRUsGf/0RGdx0NJAh81ObTd922h8pQys=
+github.com/aws/aws-sdk-go-v2/service/s3files v1.9.1 h1:MSB0EIsd6PTVcucSjj7KjnMgOrKzkd41oFHpRpqY4Zs=
+github.com/aws/aws-sdk-go-v2/service/s3files v1.9.1/go.mod h1:B1B6EvGtvR1k0wPYm4PDhiOih2y3BVw6NhO7zyxT5ng=
 github.com/aws/aws-sdk-go-v2/service/s3tables v1.23.4 h1:6R9LXM9EFQMg4emfo6iDkngruq3nmCKCdMERbDSaxd0=
 github.com/aws/aws-sdk-go-v2/service/s3tables v1.23.4/go.mod h1:JNQpIunQlXjlO1e/eD8x9ABzxMOJEQcj4UapxzqhuyY=
 github.com/aws/aws-sdk-go-v2/service/scheduler v1.25.4 h1:m76q/2Ty77F7semxZjMoMp7LRMG3446NpWjyTxf/jco=

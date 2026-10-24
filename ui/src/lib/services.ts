@@ -148,6 +148,7 @@ const catalog: Record<string, ServiceInfo> = {
 	memorydb: { title: "Amazon MemoryDB", category: database, icon: "memorydb" },
 	redshift: { title: "Amazon Redshift", category: analytics, icon: "redshift" },
 	s3tables: { title: "Amazon S3 Tables", category: storage, icon: "s3" },
+	s3files: { title: "Amazon S3 Files", category: storage, icon: "s3" },
 	glacier: { title: "Amazon S3 Glacier", category: storage, icon: "glacier" },
 	location: {
 		title: "Amazon Location Service",

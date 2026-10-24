@@ -39453,5 +39453,311 @@
         "Tags"
       ]
     }
+  },
+  "s3files": {
+    "validation": {
+      "code": "ValidationException"
+    },
+    "operations": [
+      "CreateAccessPoint",
+      "CreateFileSystem",
+      "CreateMountTarget",
+      "DeleteAccessPoint",
+      "DeleteFileSystem",
+      "DeleteFileSystemPolicy",
+      "DeleteMountTarget",
+      "GetAccessPoint",
+      "GetFileSystem",
+      "GetFileSystemPolicy",
+      "GetMountTarget",
+      "GetSynchronizationConfiguration",
+      "ListAccessPoints",
+      "ListFileSystems",
+      "ListMountTargets",
+      "ListTagsForResource",
+      "PutFileSystemPolicy",
+      "PutSynchronizationConfiguration",
+      "TagResource",
+      "UntagResource",
+      "UpdateMountTarget"
+    ],
+    "shapes": {
+      "CreateAccessPointRequest": [
+        "clientToken",
+        "tags",
+        "fileSystemId",
+        "posixUser",
+        "rootDirectory"
+      ],
+      "CreateAccessPointResponse": [
+        "accessPointArn",
+        "accessPointId",
+        "clientToken",
+        "fileSystemId",
+        "status",
+        "ownerId",
+        "posixUser",
+        "rootDirectory",
+        "tags",
+        "name"
+      ],
+      "CreateFileSystemRequest": [
+        "bucket",
+        "prefix",
+        "clientToken",
+        "kmsKeyId",
+        "roleArn",
+        "tags",
+        "acceptBucketWarning"
+      ],
+      "CreateFileSystemResponse": [
+        "creationTime",
+        "fileSystemArn",
+        "fileSystemId",
+        "bucket",
+        "prefix",
+        "clientToken",
+        "kmsKeyId",
+        "status",
+        "statusMessage",
+        "roleArn",
+        "ownerId",
+        "tags",
+        "name"
+      ],
+      "CreateMountTargetRequest": [
+        "fileSystemId",
+        "subnetId",
+        "ipv4Address",
+        "ipv6Address",
+        "ipAddressType",
+        "securityGroups"
+      ],
+      "CreateMountTargetResponse": [
+        "availabilityZoneId",
+        "ownerId",
+        "mountTargetId",
+        "fileSystemId",
+        "subnetId",
+        "ipv4Address",
+        "ipv6Address",
+        "networkInterfaceId",
+        "vpcId",
+        "securityGroups",
+        "status",
+        "statusMessage"
+      ],
+      "CreationPermissions": [
+        "ownerUid",
+        "ownerGid",
+        "permissions"
+      ],
+      "DeleteAccessPointRequest": [
+        "accessPointId"
+      ],
+      "DeleteFileSystemPolicyRequest": [
+        "fileSystemId"
+      ],
+      "DeleteFileSystemRequest": [
+        "fileSystemId",
+        "forceDelete"
+      ],
+      "DeleteMountTargetRequest": [
+        "mountTargetId"
+      ],
+      "ExpirationDataRule": [
+        "daysAfterLastAccess"
+      ],
+      "GetAccessPointRequest": [
+        "accessPointId"
+      ],
+      "GetAccessPointResponse": [
+        "accessPointArn",
+        "accessPointId",
+        "clientToken",
+        "fileSystemId",
+        "status",
+        "ownerId",
+        "posixUser",
+        "rootDirectory",
+        "tags",
+        "name"
+      ],
+      "GetFileSystemPolicyRequest": [
+        "fileSystemId"
+      ],
+      "GetFileSystemPolicyResponse": [
+        "fileSystemId",
+        "policy"
+      ],
+      "GetFileSystemRequest": [
+        "fileSystemId"
+      ],
+      "GetFileSystemResponse": [
+        "creationTime",
+        "fileSystemArn",
+        "fileSystemId",
+        "bucket",
+        "prefix",
+        "clientToken",
+        "kmsKeyId",
+        "status",
+        "statusMessage",
+        "roleArn",
+        "ownerId",
+        "tags",
+        "name"
+      ],
+      "GetMountTargetRequest": [
+        "mountTargetId"
+      ],
+      "GetMountTargetResponse": [
+        "availabilityZoneId",
+        "ownerId",
+        "mountTargetId",
+        "fileSystemId",
+        "subnetId",
+        "ipv4Address",
+        "ipv6Address",
+        "networkInterfaceId",
+        "vpcId",
+        "securityGroups",
+        "status",
+        "statusMessage"
+      ],
+      "GetSynchronizationConfigurationRequest": [
+        "fileSystemId"
+      ],
+      "GetSynchronizationConfigurationResponse": [
+        "latestVersionNumber",
+        "importDataRules",
+        "expirationDataRules"
+      ],
+      "ImportDataRule": [
+        "prefix",
+        "trigger",
+        "sizeLessThan"
+      ],
+      "ListAccessPointsDescription": [
+        "accessPointArn",
+        "accessPointId",
+        "fileSystemId",
+        "status",
+        "ownerId",
+        "posixUser",
+        "rootDirectory",
+        "name"
+      ],
+      "ListAccessPointsRequest": [
+        "fileSystemId",
+        "maxResults",
+        "nextToken"
+      ],
+      "ListAccessPointsResponse": [
+        "nextToken",
+        "accessPoints"
+      ],
+      "ListFileSystemsDescription": [
+        "creationTime",
+        "fileSystemArn",
+        "fileSystemId",
+        "name",
+        "bucket",
+        "status",
+        "statusMessage",
+        "roleArn",
+        "ownerId"
+      ],
+      "ListFileSystemsRequest": [
+        "bucket",
+        "maxResults",
+        "nextToken"
+      ],
+      "ListFileSystemsResponse": [
+        "nextToken",
+        "fileSystems"
+      ],
+      "ListMountTargetsDescription": [
+        "availabilityZoneId",
+        "fileSystemId",
+        "ipv4Address",
+        "ipv6Address",
+        "status",
+        "statusMessage",
+        "mountTargetId",
+        "networkInterfaceId",
+        "ownerId",
+        "subnetId",
+        "vpcId"
+      ],
+      "ListMountTargetsRequest": [
+        "fileSystemId",
+        "accessPointId",
+        "maxResults",
+        "nextToken"
+      ],
+      "ListMountTargetsResponse": [
+        "nextToken",
+        "mountTargets"
+      ],
+      "ListTagsForResourceRequest": [
+        "resourceId",
+        "maxResults",
+        "nextToken"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags",
+        "nextToken"
+      ],
+      "PosixUser": [
+        "uid",
+        "gid",
+        "secondaryGids"
+      ],
+      "PutFileSystemPolicyRequest": [
+        "fileSystemId",
+        "policy"
+      ],
+      "PutSynchronizationConfigurationRequest": [
+        "fileSystemId",
+        "latestVersionNumber",
+        "importDataRules",
+        "expirationDataRules"
+      ],
+      "RootDirectory": [
+        "path",
+        "creationPermissions"
+      ],
+      "Tag": [
+        "key",
+        "value"
+      ],
+      "TagResourceRequest": [
+        "resourceId",
+        "tags"
+      ],
+      "UntagResourceRequest": [
+        "resourceId",
+        "tagKeys"
+      ],
+      "UpdateMountTargetRequest": [
+        "mountTargetId",
+        "securityGroups"
+      ],
+      "UpdateMountTargetResponse": [
+        "availabilityZoneId",
+        "ownerId",
+        "mountTargetId",
+        "fileSystemId",
+        "subnetId",
+        "ipv4Address",
+        "ipv6Address",
+        "networkInterfaceId",
+        "vpcId",
+        "securityGroups",
+        "status",
+        "statusMessage"
+      ]
+    }
   }
 }
