@@ -239,7 +239,7 @@ func (g *generator) typeName(id string) (string, error) {
 var restTraits = map[string]bool{
 	"smithy.api#http":              true,
 	"smithy.api#httpLabel":         true,
-	"smithy.api#httpHeader":        true,
+	traitHeader:                    true,
 	"smithy.api#httpQuery":         true,
 	"smithy.api#httpPayload":       true,
 	"smithy.api#httpPrefixHeaders": true,
@@ -271,6 +271,11 @@ func httpBound(member reference) bool {
 // also accept the HTTP binding traits.
 func checkTraits(traits map[string]json.RawMessage, rest bool) error {
 	for t := range traits {
+		// AWS JSON and Query serialize members in the document, ignoring HTTP bindings.
+		if !rest && (t == traitLabel || t == traitQuery || t == traitHeader) {
+			continue
+		}
+
 		if rest && restTraits[t] {
 			continue
 		}

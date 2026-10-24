@@ -100,11 +100,12 @@ func compileBinding(
 }
 
 const (
-	traitLabel = "smithy.api#httpLabel"
-	traitQuery = "smithy.api#httpQuery"
-	locHeader  = "header"
-	locQuery   = "query"
-	locPrefix  = "prefix"
+	traitHeader = "smithy.api#httpHeader"
+	traitLabel  = "smithy.api#httpLabel"
+	traitQuery  = "smithy.api#httpQuery"
+	locHeader   = "header"
+	locQuery    = "query"
+	locPrefix   = "prefix"
 )
 
 // memberBindings locates the selected members. For inputs, modeled header and
@@ -131,7 +132,7 @@ func memberBindings(
 			switch trait {
 			case traitLabel:
 				location = "label"
-			case "smithy.api#httpHeader":
+			case traitHeader:
 				location = locHeader
 			case traitQuery:
 				location = locQuery

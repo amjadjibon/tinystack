@@ -413,7 +413,7 @@ func TestAnonymousOperations(t *testing.T) {
 
 func TestUnsupportedWireTraitsFail(t *testing.T) {
 	for _, trait := range []string{
-		"smithy.api#streaming", "smithy.api#httpHeader",
+		"smithy.api#streaming",
 		"smithy.api#timestampFormat",
 		"smithy.api#xmlAttribute", "smithy.api#xmlNamespace",
 	} {
@@ -541,5 +541,27 @@ func TestValidationFixture(t *testing.T) {
 	if _, err := generate("fixture", []byte(broken), profile); err == nil ||
 		!strings.Contains(err.Error(), "not supported by Go's regexp") {
 		t.Fatalf("unsupported pattern: %v", err)
+	}
+}
+
+func TestJSONIgnoresHTTPMemberBindings(t *testing.T) {
+	model := `{"shapes": {
+ "fixture#Svc":{"type":"service","version":"2020-01-01","traits":{
+ "aws.protocols#awsJson1_1":{},"aws.auth#sigv4":{"name":"fixture"}}},
+ "fixture#Get":{"type":"operation","input":{"target":"fixture#In"},"output":{"target":"fixture#Out"}},
+ "fixture#In":{"type":"structure","members":{
+ "Name":{"target":"smithy.api#String","traits":{"smithy.api#httpLabel":{},"smithy.api#required":{}}},
+ "Filter":{"target":"smithy.api#String","traits":{"smithy.api#httpQuery":"filter"}},
+ "Header":{"target":"smithy.api#String","traits":{"smithy.api#httpHeader":"x-header"}}}},
+ "fixture#Out":{"type":"structure"},"smithy.api#String":{"type":"string"}}}`
+	source, err := generate("fixture", []byte(model), serviceProfile{Operations: []string{"Get"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, want := range []string{`json:"Name,omitempty"`, `json:"Filter,omitempty"`, `json:"Header,omitempty"`} {
+		if !strings.Contains(string(source), want) {
+			t.Fatalf("missing document binding %s", want)
+		}
 	}
 }

@@ -478,6 +478,14 @@
     "iotwireless": {
       "path": "codegen/sdk-codegen/aws-models/iot-wireless.json",
       "sha256": "5dd34f4795ec9ee66b9d28e4d0e7f59ac11ef65ec87022ae09fb81b9c6998ac0"
+    },
+    "translate": {
+      "path": "codegen/sdk-codegen/aws-models/translate.json",
+      "sha256": "103c44c87ddc51b0b8048248c508653c98e9c4b9295fc1c2f211e63738d2e646"
+    },
+    "transcribe": {
+      "path": "codegen/sdk-codegen/aws-models/transcribe.json",
+      "sha256": "d530e27cd85dfce6fc14e96a0a7174a405e907518a3596cd18e957e292f451b7"
     }
   }
 }
