@@ -303,6 +303,7 @@ func (s *Service) tick(ctx context.Context) {
 		s.advanceRun(ctx, *ref)
 	}
 
+	s.tickCrawlers(ctx)
 	s.tickTriggers(ctx)
 }
 

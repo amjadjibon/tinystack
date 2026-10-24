@@ -25,6 +25,7 @@ const (
 	hiveSmallint  = "smallint"
 	hiveInt       = "int"
 	hiveBigint    = "bigint"
+	hiveString    = "string"
 	hiveDate      = "date"
 	hiveTimestamp = "timestamp"
 	hiveBoolean   = "boolean"
@@ -86,7 +87,7 @@ func hiveType(n parquet.Node) string {
 				return hiveBigint
 			}
 		case l.UTF8 != nil:
-			return "string"
+			return hiveString
 		case l.Date != nil:
 			return hiveDate
 		case l.Timestamp != nil:

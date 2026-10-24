@@ -177,6 +177,7 @@ func workflowGraph(tx storage.ReadTx, scope request.Scope, n, run string) (*api.
 
 	graph := &api.WorkflowGraph{Nodes: []api.Node{}, Edges: []api.Edge{}}
 	jobs := map[string]bool{}
+	crawlers := map[string]bool{}
 	for _, r := range triggers {
 		t := &r.Trigger
 		if common.Value(t.WorkflowName) != n {
@@ -189,6 +190,17 @@ func workflowGraph(tx storage.ReadTx, scope request.Scope, n, run string) (*api.
 			TriggerDetails: &api.TriggerNodeDetails{Trigger: t},
 		})
 		for _, a := range t.Actions {
+			if a.CrawlerName != nil {
+				crawler := *a.CrawlerName
+				crawlers[crawler] = true
+				graph.Edges = append(
+					graph.Edges,
+					api.Edge{SourceId: new(tid), DestinationId: new("crawler/" + crawler)},
+				)
+
+				continue
+			}
+
 			job := common.Value(a.JobName)
 			graph.Edges = append(graph.Edges, api.Edge{SourceId: new(tid), DestinationId: new("job/" + job)})
 			jobs[job] = true
@@ -196,6 +208,17 @@ func workflowGraph(tx storage.ReadTx, scope request.Scope, n, run string) (*api.
 
 		if t.Predicate != nil {
 			for _, c := range t.Predicate.Conditions {
+				if c.CrawlerName != nil {
+					crawler := *c.CrawlerName
+					crawlers[crawler] = true
+					graph.Edges = append(
+						graph.Edges,
+						api.Edge{SourceId: new("crawler/" + crawler), DestinationId: new(tid)},
+					)
+
+					continue
+				}
+
 				job := common.Value(c.JobName)
 				graph.Edges = append(graph.Edges, api.Edge{SourceId: new("job/" + job), DestinationId: new(tid)})
 				jobs[job] = true
@@ -217,9 +240,9 @@ func workflowGraph(tx storage.ReadTx, scope request.Scope, n, run string) (*api.
 
 		details := &api.JobNodeDetails{}
 		if run != "" {
-			runs, err := storage.Records[runRecord](tx, scope.Key(service, "run", url.PathEscape(name)+"/"))
-			if err != nil {
-				return nil, err
+			runs, runErr := storage.Records[runRecord](tx, scope.Key(service, "run", url.PathEscape(name)+"/"))
+			if runErr != nil {
+				return nil, runErr
 			}
 
 			for _, r := range runs {
@@ -232,6 +255,50 @@ func workflowGraph(tx storage.ReadTx, scope request.Scope, n, run string) (*api.
 		graph.Nodes = append(
 			graph.Nodes,
 			api.Node{Type: new("JOB"), Name: new(name), UniqueId: new("job/" + name), JobDetails: details},
+		)
+	}
+
+	crawlerRows, err := storage.Records[crawlerRecord](tx, scope.Prefix(service, kindCrawler))
+	if err != nil {
+		return nil, err
+	}
+
+	for _, c := range crawlerRows {
+		n := *c.Crawler.Name
+		if !crawlers[n] {
+			continue
+		}
+
+		details := &api.CrawlerNodeDetails{}
+		if run != "" {
+			rows, err := storage.Records[crawlRecord](tx, crawlPrefix(scope, n))
+			if err != nil {
+				return nil, err
+			}
+
+			for _, r := range rows {
+				if r.WorkflowRun != run {
+					continue
+				}
+
+				h := r.History
+				details.Crawls = append(
+					details.Crawls,
+					api.Crawl{
+						State:        h.State,
+						StartedOn:    h.StartTime,
+						CompletedOn:  h.EndTime,
+						ErrorMessage: h.ErrorMessage,
+						LogGroup:     h.LogGroup,
+						LogStream:    h.LogStream,
+					},
+				)
+			}
+		}
+
+		graph.Nodes = append(
+			graph.Nodes,
+			api.Node{Type: new("CRAWLER"), Name: new(n), UniqueId: new("crawler/" + n), CrawlerDetails: details},
 		)
 	}
 
@@ -623,6 +690,43 @@ func (s *Service) advanceWorkflow(tx storage.WriteTx, ref workflowReference) err
 					tx,
 					runKey(ref.Scope, *run.Run.JobName, *run.Run.Id),
 					run,
+				); writeErr != nil {
+					return writeErr
+				}
+			}
+		}
+	}
+
+	crawls, err := storage.Records[crawlRecord](tx, ref.Scope.Prefix(service, "crawl"))
+	if err != nil {
+		return err
+	}
+
+	for _, crawl := range crawls {
+		if crawl.Workflow != ref.Name || crawl.WorkflowRun != ref.ID {
+			continue
+		}
+
+		state := common.Value(crawl.History.State)
+		if state == stateCancelled {
+			state = stateStopped
+		}
+
+		counts[state]++
+		total++
+		if state == stateRunning {
+			running++
+			if stopping {
+				crawler, loadErr := loadCrawler(tx, ref.Scope, crawl.Crawler)
+				if loadErr != nil {
+					return loadErr
+				}
+
+				crawler.Crawler.State = new(stateStopping)
+				if writeErr := storage.Write(
+					tx,
+					orchestrationKey(ref.Scope, kindCrawler, *crawler.Crawler.Name),
+					crawler,
 				); writeErr != nil {
 					return writeErr
 				}

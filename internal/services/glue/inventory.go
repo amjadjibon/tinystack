@@ -25,7 +25,23 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 			arn := "arn:aws:glue:" + region + ":" + account + ":" + kind + "/" + n
 			switch kind {
-			case kindJob, kindTrigger, kindWorkflow:
+			case kindClassifier:
+				decoded, err := url.PathUnescape(n)
+				if err != nil {
+					return err
+				}
+
+				out = append(
+					out,
+					catalog.Resource{
+						Type:    kindClassifier,
+						Account: account,
+						Region:  region,
+						Name:    decoded,
+						ARN:     "arn:aws:glue:" + region + ":" + account + ":classifier/" + decoded,
+					},
+				)
+			case kindJob, kindTrigger, kindWorkflow, kindCrawler:
 				decoded, decodeErr := url.PathUnescape(n)
 				if decodeErr != nil {
 					return decodeErr

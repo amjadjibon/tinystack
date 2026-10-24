@@ -239,6 +239,10 @@ func supportsAttribute(typ, name string) bool {
 
 // replaces reports whether going from old to p replaces a resource.
 func (t *resourceType) replaces(old, p props) bool {
+	if t == types[glueClassifierType] {
+		return glueClassifierReplaces(old, p)
+	}
+
 	if t == types["AWS::MediaConnect::Flow"] {
 		return mediaConnectFlowReplaces(old, p)
 	}

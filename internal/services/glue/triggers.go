@@ -52,6 +52,36 @@ func loadTrigger(tx storage.ReadTx, scope request.Scope, n string) (*triggerReco
 	return r, nil
 }
 
+// validateSchedule checks a Glue cron expression and Glue's five-minute minimum interval.
+func validateSchedule(expression string) error {
+	if !strings.HasPrefix(expression, "cron(") {
+		return invalid("Schedule requires cron(...)")
+	}
+
+	plan, err := schedule.Parse(expression)
+	if err != nil {
+		return invalid("Invalid Glue cron: %s", err)
+	}
+
+	// Check a complete day's worth of occurrences, including hour boundaries.
+	// The shared parser skips directly between eligible days/months/years.
+	previous, ok := plan.First(time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC))
+	for range 1440 {
+		if !ok {
+			break
+		}
+
+		next, exists := plan.First(previous)
+		if exists && next.Sub(previous) < 5*time.Minute {
+			return invalid("Glue schedules must be at least five minutes apart")
+		}
+
+		previous, ok = next, exists
+	}
+
+	return nil
+}
+
 func validateTrigger(tx storage.ReadTx, scope request.Scope, t *api.Trigger) error {
 	if err := orchestrationName(t.Name); err != nil {
 		return err
@@ -71,6 +101,18 @@ func validateTrigger(tx storage.ReadTx, scope request.Scope, t *api.Trigger) err
 	}
 
 	for _, a := range t.Actions {
+		if a.CrawlerName != nil {
+			if a.JobName != nil || len(a.Arguments) > 0 || a.Timeout != nil {
+				return invalid("Crawler actions cannot include job fields")
+			}
+
+			if _, err := loadCrawler(tx, scope, *a.CrawlerName); err != nil {
+				return err
+			}
+
+			continue
+		}
+
 		if _, err := loadJob(tx, scope, common.Value(a.JobName)); err != nil {
 			return err
 		}
@@ -85,29 +127,8 @@ func validateTrigger(tx storage.ReadTx, scope request.Scope, t *api.Trigger) err
 	}
 
 	if typ == triggerScheduled {
-		if !strings.HasPrefix(common.Value(t.Schedule), "cron(") {
-			return invalid("Scheduled triggers require cron(...)")
-		}
-
-		plan, err := schedule.Parse(*t.Schedule)
-		if err != nil {
-			return invalid("Invalid Glue cron: %s", err)
-		}
-
-		// Check a complete day's worth of occurrences, including hour boundaries.
-		// The shared parser skips directly between eligible days/months/years.
-		previous, ok := plan.First(time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC))
-		for range 1440 {
-			if !ok {
-				break
-			}
-
-			next, exists := plan.First(previous)
-			if exists && next.Sub(previous) < 5*time.Minute {
-				return invalid("Glue schedules must be at least five minutes apart")
-			}
-
-			previous, ok = next, exists
+		if err := validateSchedule(common.Value(t.Schedule)); err != nil {
+			return err
 		}
 	} else if t.Schedule != nil {
 		return invalid("Schedule requires a SCHEDULED trigger")
@@ -124,6 +145,31 @@ func validateTrigger(tx storage.ReadTx, scope request.Scope, t *api.Trigger) err
 		}
 
 		for _, c := range t.Predicate.Conditions {
+			if c.CrawlerName != nil {
+				if c.JobName != nil || c.State != nil {
+					return invalid("Crawler conditions cannot include job fields")
+				}
+
+				state := common.Value(c.CrawlState)
+				if state != stateSucceeded && state != stateFailed && state != stateCancelled {
+					return invalid("Invalid CrawlState")
+				}
+
+				if c.LogicalOperator != nil && *c.LogicalOperator != "EQUALS" {
+					return invalid("LogicalOperator must be EQUALS")
+				}
+
+				if _, err := loadCrawler(tx, scope, *c.CrawlerName); err != nil {
+					return err
+				}
+
+				continue
+			}
+
+			if c.CrawlState != nil {
+				return invalid("CrawlState requires CrawlerName")
+			}
+
 			if c.LogicalOperator != nil && *c.LogicalOperator != "EQUALS" {
 				return invalid("LogicalOperator must be EQUALS")
 			}
@@ -322,12 +368,7 @@ func (s *Service) triggerPage(
 		}
 
 		for _, r := range rows {
-			match := true
-			for k, v := range tags {
-				if value, ok := r.Tags[k]; !ok || value != v {
-					match = false
-				}
-			}
+			match := tagsMatch(r.Tags, tags)
 
 			if dependent != nil {
 				found := false
@@ -406,6 +447,14 @@ func (s *Service) BatchGetTriggers(
 
 func (s *Service) fireTrigger(tx storage.WriteTx, scope request.Scope, r *triggerRecord, workflow, run string) error {
 	for _, a := range r.Trigger.Actions {
+		if a.CrawlerName != nil {
+			if err := s.startCrawler(tx, scope, *a.CrawlerName, *r.Trigger.Name, workflow, run); err != nil {
+				return err
+			}
+
+			continue
+		}
+
 		_, err := s.startRun(
 			tx,
 			scope,
@@ -500,6 +549,31 @@ func predicateMatch(
 	signature = ""
 	matches := 0
 	for _, c := range t.Trigger.Predicate.Conditions {
+		if c.CrawlerName != nil {
+			rows, err := storage.Records[crawlRecord](tx, crawlPrefix(scope, *c.CrawlerName))
+			if err != nil {
+				return "", false, err
+			}
+
+			var latest *crawlRecord
+			for _, r := range rows {
+				if r.Workflow != workflow || r.WorkflowRun != run || r.Trigger == "" {
+					continue
+				}
+
+				if latest == nil || common.Value(r.History.StartTime) > common.Value(latest.History.StartTime) {
+					latest = r
+				}
+			}
+
+			if latest != nil && common.Value(latest.History.State) == common.Value(c.CrawlState) {
+				matches++
+				signature += *latest.History.CrawlId + "/"
+			}
+
+			continue
+		}
+
 		rows, err := storage.Records[runRecord](
 			tx,
 			scope.Key(service, "run", url.PathEscape(common.Value(c.JobName))+"/"),

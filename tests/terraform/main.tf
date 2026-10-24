@@ -2814,3 +2814,23 @@ resource "aws_media_convert_queue" "local" {
   status       = "ACTIVE"
   tags         = local.tags
 }
+
+resource "aws_glue_classifier" "csv" {
+  name = "tinystack-glue-csv"
+  csv_classifier {
+    contains_header = "PRESENT"
+    delimiter       = ","
+    quote_symbol    = "\""
+  }
+}
+
+resource "aws_glue_crawler" "s3" {
+  name          = "tinystack-glue-crawler"
+  role          = aws_iam_role.lambda.arn
+  database_name = aws_glue_catalog_database.lake.name
+  classifiers   = [aws_glue_classifier.csv.name]
+  s3_target {
+    path = "s3://${aws_s3_bucket.assets.bucket}/glue/data/"
+  }
+  tags = local.tags
+}

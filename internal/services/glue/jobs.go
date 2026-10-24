@@ -52,6 +52,48 @@ func loadJob(tx storage.ReadTx, scope request.Scope, n string) (*jobRecord, erro
 	return r, nil
 }
 
+// validateRole checks that role names an IAM role in the caller's account, by name or by ARN as Glue accepts.
+func (s *Service) validateRole(ctx context.Context, role *string) error {
+	if role == nil || *role == "" {
+		return invalid("Role is required")
+	}
+
+	if !strings.HasPrefix(*role, "arn:") {
+		if _, err := s.roles.GetRole(ctx, &iamapi.GetRoleRequest{RoleName: role}); err != nil {
+			return invalid("IAM role %s does not exist", *role)
+		}
+
+		return nil
+	}
+
+	scope, err := request.RegionalScope(ctx)
+	if err != nil {
+		return err
+	}
+
+	r, found, err := s.roles.RoleByARN(ctx, *role)
+	if err != nil {
+		return err
+	}
+
+	if !found || r.Account != scope.AccountID {
+		return invalid("IAM role %s does not exist", *role)
+	}
+
+	return nil
+}
+
+// tagsMatch reports whether tags carry every key and value in filter.
+func tagsMatch(tags, filter map[string]string) bool {
+	for k, v := range filter {
+		if value, ok := tags[k]; !ok || value != v {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (s *Service) validateJob(ctx context.Context, j *api.Job) error {
 	if err := orchestrationName(j.Name); err != nil {
 		return err
@@ -61,28 +103,8 @@ func (s *Service) validateJob(ctx context.Context, j *api.Job) error {
 		return invalid("Description exceeds 2048 bytes")
 	}
 
-	if j.Role == nil || *j.Role == "" {
-		return invalid("Role is required")
-	}
-
-	if strings.HasPrefix(*j.Role, "arn:") {
-		scope, err := request.RegionalScope(ctx)
-		if err != nil {
-			return err
-		}
-
-		role, found, err := s.roles.RoleByARN(ctx, *j.Role)
-		if err != nil {
-			return err
-		}
-
-		if !found || role.Account != scope.AccountID {
-			return invalid("IAM role %s does not exist", *j.Role)
-		}
-	} else {
-		if _, err := s.roles.GetRole(ctx, &iamapi.GetRoleRequest{RoleName: j.Role}); err != nil {
-			return invalid("IAM role %s does not exist", *j.Role)
-		}
+	if err := s.validateRole(ctx, j.Role); err != nil {
+		return err
 	}
 
 	if j.Command == nil {
@@ -383,15 +405,7 @@ func (s *Service) jobPage(
 		}
 
 		for _, r := range records {
-			match := true
-			for k, v := range tags {
-				if value, ok := r.Tags[k]; !ok || value != v {
-					match = false
-					break
-				}
-			}
-
-			if match {
+			if tagsMatch(r.Tags, tags) {
 				all = append(all, r)
 			}
 		}

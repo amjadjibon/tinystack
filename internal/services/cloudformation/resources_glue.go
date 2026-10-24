@@ -2,18 +2,22 @@ package cloudformation
 
 import (
 	"context"
+	"maps"
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 const (
+	glueCrawler  = "Crawler"
 	glueJob      = "Job"
 	glueTrigger  = "Trigger"
 	glueOnDemand = "ON_DEMAND"
 )
 
 func init() {
+	registerGlue("AWS::Glue::Crawler", glueCrawler)
+	registerGlueClassifier()
 	registerGlue("AWS::Glue::Job", glueJob)
 	registerGlue("AWS::Glue::Trigger", glueTrigger)
 	registerGlue("AWS::Glue::Workflow", "Workflow")
@@ -22,6 +26,19 @@ func init() {
 func registerGlue(typeName, kind string) {
 	fields := []string{memberName, memberDescription, memberTags}
 	switch kind {
+	case glueCrawler:
+		fields = append(
+			fields,
+			"Role",
+			"DatabaseName",
+			"Targets",
+			"Classifiers",
+			"TablePrefix",
+			"Schedule",
+			"SchemaChangePolicy",
+			"RecrawlPolicy",
+			"Configuration",
+		)
 	case glueJob:
 		fields = append(
 			fields,
@@ -53,6 +70,7 @@ func registerGlue(typeName, kind string) {
 		attributes: []string{}, replace: replace,
 		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
 			params := glueParams(p, fields)
+			glueCrawlerSchedule(kind, params)
 			if !p.has(memberName) {
 				params[memberName] = "tinystack-" + common.RandomID(16)
 			}
@@ -63,10 +81,16 @@ func registerGlue(typeName, kind string) {
 				return "", nil, err
 			}
 
-			return outText(out, memberName), map[string]any{}, nil
+			physical := outText(out, memberName)
+			if kind == glueCrawler {
+				physical, _ = params[memberName].(string)
+			}
+
+			return physical, map[string]any{}, nil
 		},
 		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
 			params := glueParams(p, fields)
+			glueCrawlerSchedule(kind, params)
 			delete(params, memberName)
 			var input map[string]any
 			switch kind {
@@ -151,4 +175,81 @@ func glueParams(p props, fields []string) map[string]any {
 	}
 
 	return params
+}
+
+func glueCrawlerSchedule(kind string, p map[string]any) {
+	if kind != glueCrawler {
+		return
+	}
+
+	if schedule, ok := p["Schedule"].(map[string]any); ok {
+		p["Schedule"] = schedule["ScheduleExpression"]
+	}
+}
+
+const glueClassifierType = "AWS::Glue::Classifier"
+
+func glueClassifierReplaces(old, p props) bool {
+	for _, kind := range []string{"CsvClassifier", "JsonClassifier", "GrokClassifier", "XMLClassifier"} {
+		a, aok := old[kind].(map[string]any)
+		b, bok := p[kind].(map[string]any)
+		if aok != bok || a[memberName] != b[memberName] {
+			return true
+		}
+	}
+
+	return false
+}
+
+func registerGlueClassifier() {
+	fields := []string{"CsvClassifier", "JsonClassifier", "GrokClassifier", "XMLClassifier"}
+	register(glueClassifierType, &resourceType{
+		properties: fields, attributes: []string{},
+		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
+			params := glueParams(p, fields)
+			var name string
+			for _, kind := range fields {
+				v, ok := params[kind].(map[string]any)
+				if !ok {
+					continue
+				}
+
+				v = maps.Clone(v)
+				name, _ = v[memberName].(string)
+				if name == "" {
+					name = "tinystack-" + common.RandomID(16)
+					v[memberName] = name
+				}
+
+				params[kind] = v
+			}
+
+			if _, err := c.call(ctx, "glue", "CreateClassifier", params); err != nil {
+				return "", nil, err
+			}
+
+			return name, map[string]any{}, nil
+		},
+		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
+			params := glueParams(p, fields)
+			for _, kind := range fields {
+				if v, ok := params[kind].(map[string]any); ok {
+					v = maps.Clone(v)
+					v[memberName] = r.Physical
+					params[kind] = v
+				}
+			}
+
+			_, err := c.call(ctx, "glue", "UpdateClassifier", params)
+			return r.Attributes, err
+		},
+		remove: func(ctx context.Context, c *client, r *resource) error {
+			_, err := c.call(ctx, "glue", "DeleteClassifier", map[string]any{memberName: r.Physical})
+			if gone(err, "EntityNotFoundException") {
+				return nil
+			}
+
+			return err
+		},
+	})
 }

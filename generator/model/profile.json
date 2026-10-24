@@ -12964,7 +12964,26 @@
       "GetWorkflowRunProperties",
       "PutWorkflowRunProperties",
       "StopWorkflowRun",
-      "BatchGetWorkflows"
+      "BatchGetWorkflows",
+      "CreateClassifier",
+      "GetClassifier",
+      "GetClassifiers",
+      "UpdateClassifier",
+      "DeleteClassifier",
+      "CreateCrawler",
+      "GetCrawler",
+      "GetCrawlers",
+      "BatchGetCrawlers",
+      "ListCrawlers",
+      "UpdateCrawler",
+      "DeleteCrawler",
+      "StartCrawler",
+      "StopCrawler",
+      "UpdateCrawlerSchedule",
+      "StartCrawlerSchedule",
+      "StopCrawlerSchedule",
+      "GetCrawlerMetrics",
+      "ListCrawls"
     ],
     "shapes": {
       "CreateDatabaseRequest": [
@@ -13391,6 +13410,7 @@
         "DestinationId"
       ],
       "Node": [
+        "CrawlerDetails",
         "Type",
         "Name",
         "UniqueId",
@@ -13416,11 +13436,14 @@
         "Conditions"
       ],
       "Condition": [
+        "CrawlState",
+        "CrawlerName",
         "LogicalOperator",
         "JobName",
         "State"
       ],
       "Action": [
+        "CrawlerName",
         "JobName",
         "Arguments",
         "Timeout"
@@ -13623,6 +13646,280 @@
       "EventBatchingCondition": [
         "BatchSize",
         "BatchWindow"
+      ],
+      "CreateClassifierRequest": [
+        "CsvClassifier",
+        "JsonClassifier"
+      ],
+      "CreateClassifierResponse": [],
+      "GetClassifierRequest": [
+        "Name"
+      ],
+      "GetClassifierResponse": [
+        "Classifier"
+      ],
+      "GetClassifiersRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "GetClassifiersResponse": [
+        "Classifiers",
+        "NextToken"
+      ],
+      "UpdateClassifierRequest": [
+        "CsvClassifier",
+        "JsonClassifier"
+      ],
+      "UpdateClassifierResponse": [],
+      "DeleteClassifierRequest": [
+        "Name"
+      ],
+      "DeleteClassifierResponse": [],
+      "CreateCrawlerRequest": [
+        "Name",
+        "Role",
+        "DatabaseName",
+        "Description",
+        "Targets",
+        "Classifiers",
+        "TablePrefix",
+        "Schedule",
+        "SchemaChangePolicy",
+        "RecrawlPolicy",
+        "Configuration",
+        "Tags"
+      ],
+      "CreateCrawlerResponse": [],
+      "GetCrawlerRequest": [
+        "Name"
+      ],
+      "GetCrawlerResponse": [
+        "Crawler"
+      ],
+      "GetCrawlersRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "GetCrawlersResponse": [
+        "Crawlers",
+        "NextToken"
+      ],
+      "BatchGetCrawlersRequest": [
+        "CrawlerNames"
+      ],
+      "BatchGetCrawlersResponse": [
+        "Crawlers",
+        "CrawlersNotFound"
+      ],
+      "ListCrawlersRequest": [
+        "MaxResults",
+        "NextToken",
+        "Tags"
+      ],
+      "ListCrawlersResponse": [
+        "CrawlerNames",
+        "NextToken"
+      ],
+      "UpdateCrawlerRequest": [
+        "Name",
+        "Role",
+        "DatabaseName",
+        "Description",
+        "Targets",
+        "Classifiers",
+        "TablePrefix",
+        "Schedule",
+        "SchemaChangePolicy",
+        "RecrawlPolicy",
+        "Configuration"
+      ],
+      "UpdateCrawlerResponse": [],
+      "DeleteCrawlerRequest": [
+        "Name"
+      ],
+      "DeleteCrawlerResponse": [],
+      "StartCrawlerRequest": [
+        "Name"
+      ],
+      "StartCrawlerResponse": [],
+      "StopCrawlerRequest": [
+        "Name"
+      ],
+      "StopCrawlerResponse": [],
+      "UpdateCrawlerScheduleRequest": [
+        "CrawlerName",
+        "Schedule"
+      ],
+      "UpdateCrawlerScheduleResponse": [],
+      "StartCrawlerScheduleRequest": [
+        "CrawlerName"
+      ],
+      "StartCrawlerScheduleResponse": [],
+      "StopCrawlerScheduleRequest": [
+        "CrawlerName"
+      ],
+      "StopCrawlerScheduleResponse": [],
+      "GetCrawlerMetricsRequest": [
+        "CrawlerNameList",
+        "MaxResults",
+        "NextToken"
+      ],
+      "GetCrawlerMetricsResponse": [
+        "CrawlerMetricsList",
+        "NextToken"
+      ],
+      "ListCrawlsRequest": [
+        "CrawlerName",
+        "MaxResults",
+        "Filters",
+        "NextToken"
+      ],
+      "ListCrawlsResponse": [
+        "Crawls",
+        "NextToken"
+      ],
+      "Classifier": [
+        "CsvClassifier",
+        "JsonClassifier"
+      ],
+      "CsvClassifier": [
+        "Name",
+        "CreationTime",
+        "LastUpdated",
+        "Version",
+        "Delimiter",
+        "QuoteSymbol",
+        "ContainsHeader",
+        "Header",
+        "DisableValueTrimming",
+        "AllowSingleColumn",
+        "CustomDatatypeConfigured",
+        "CustomDatatypes"
+      ],
+      "CreateCsvClassifierRequest": [
+        "Name",
+        "Delimiter",
+        "QuoteSymbol",
+        "ContainsHeader",
+        "Header",
+        "DisableValueTrimming",
+        "AllowSingleColumn",
+        "CustomDatatypeConfigured",
+        "CustomDatatypes"
+      ],
+      "UpdateCsvClassifierRequest": [
+        "Name",
+        "Delimiter",
+        "QuoteSymbol",
+        "ContainsHeader",
+        "Header",
+        "DisableValueTrimming",
+        "AllowSingleColumn",
+        "CustomDatatypeConfigured",
+        "CustomDatatypes"
+      ],
+      "JsonClassifier": [
+        "Name",
+        "CreationTime",
+        "LastUpdated",
+        "Version",
+        "JsonPath"
+      ],
+      "CreateJsonClassifierRequest": [
+        "Name",
+        "JsonPath"
+      ],
+      "UpdateJsonClassifierRequest": [
+        "Name",
+        "JsonPath"
+      ],
+      "Crawler": [
+        "Name",
+        "Role",
+        "Targets",
+        "DatabaseName",
+        "Description",
+        "Classifiers",
+        "RecrawlPolicy",
+        "SchemaChangePolicy",
+        "State",
+        "TablePrefix",
+        "Schedule",
+        "CrawlElapsedTime",
+        "CreationTime",
+        "LastUpdated",
+        "LastCrawl",
+        "Version",
+        "Configuration",
+        "CatalogId"
+      ],
+      "CrawlerTargets": [
+        "S3Targets"
+      ],
+      "S3Target": [
+        "Path",
+        "Exclusions",
+        "ConnectionName",
+        "SampleSize",
+        "EventQueueArn",
+        "DlqEventQueueArn"
+      ],
+      "SchemaChangePolicy": [
+        "UpdateBehavior",
+        "DeleteBehavior"
+      ],
+      "RecrawlPolicy": [
+        "RecrawlBehavior"
+      ],
+      "Schedule": [
+        "ScheduleExpression",
+        "State"
+      ],
+      "LastCrawlInfo": [
+        "Status",
+        "ErrorMessage",
+        "LogGroup",
+        "LogStream",
+        "MessagePrefix",
+        "StartTime"
+      ],
+      "CrawlerMetrics": [
+        "CrawlerName",
+        "TimeLeftSeconds",
+        "StillEstimating",
+        "LastRuntimeSeconds",
+        "MedianRuntimeSeconds",
+        "TablesCreated",
+        "TablesUpdated",
+        "TablesDeleted"
+      ],
+      "CrawlerHistory": [
+        "CrawlId",
+        "State",
+        "StartTime",
+        "EndTime",
+        "Summary",
+        "ErrorMessage",
+        "LogGroup",
+        "LogStream",
+        "MessagePrefix",
+        "DPUHour"
+      ],
+      "CrawlsFilter": [
+        "FieldName",
+        "FilterOperator",
+        "FieldValue"
+      ],
+      "CrawlerNodeDetails": [
+        "Crawls"
+      ],
+      "Crawl": [
+        "State",
+        "StartedOn",
+        "CompletedOn",
+        "ErrorMessage",
+        "LogGroup",
+        "LogStream"
       ]
     }
   },

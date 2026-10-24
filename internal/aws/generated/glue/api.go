@@ -520,6 +520,8 @@ type BatchStopJobRunResponse struct {
 }
 
 type Condition struct {
+	CrawlState      *string `json:"CrawlState,omitempty"`
+	CrawlerName     *string `json:"CrawlerName,omitempty"`
 	LogicalOperator *string `json:"LogicalOperator,omitempty"`
 	JobName         *string `json:"JobName,omitempty"`
 	State           *string `json:"State,omitempty"`
@@ -531,9 +533,10 @@ type Predicate struct {
 }
 
 type Action struct {
-	JobName   *string           `json:"JobName,omitempty"`
-	Arguments map[string]string `json:"Arguments,omitempty"`
-	Timeout   *int64            `json:"Timeout,omitempty"`
+	CrawlerName *string           `json:"CrawlerName,omitempty"`
+	JobName     *string           `json:"JobName,omitempty"`
+	Arguments   map[string]string `json:"Arguments,omitempty"`
+	Timeout     *int64            `json:"Timeout,omitempty"`
 }
 
 type CreateTriggerRequest struct {
@@ -671,6 +674,19 @@ type WorkflowRunStatistics struct {
 	RunningActions   *int64 `json:"RunningActions,omitempty"`
 }
 
+type Crawl struct {
+	State        *string  `json:"State,omitempty"`
+	StartedOn    *float64 `json:"StartedOn,omitempty"`
+	CompletedOn  *float64 `json:"CompletedOn,omitempty"`
+	ErrorMessage *string  `json:"ErrorMessage,omitempty"`
+	LogGroup     *string  `json:"LogGroup,omitempty"`
+	LogStream    *string  `json:"LogStream,omitempty"`
+}
+
+type CrawlerNodeDetails struct {
+	Crawls []Crawl `json:"Crawls,omitempty"`
+}
+
 type JobNodeDetails struct {
 	JobRuns []JobRun `json:"JobRuns,omitempty"`
 }
@@ -680,6 +696,7 @@ type TriggerNodeDetails struct {
 }
 
 type Node struct {
+	CrawlerDetails *CrawlerNodeDetails `json:"CrawlerDetails,omitempty"`
 	Type           *string             `json:"Type,omitempty"`
 	Name           *string             `json:"Name,omitempty"`
 	UniqueId       *string             `json:"UniqueId,omitempty"`
@@ -821,6 +838,335 @@ type BatchGetWorkflowsResponse struct {
 	MissingWorkflows []string   `json:"MissingWorkflows,omitempty"`
 }
 
+type CreateCsvClassifierRequest struct {
+	Name                     *string  `json:"Name,omitempty"`
+	Delimiter                *string  `json:"Delimiter,omitempty"`
+	QuoteSymbol              *string  `json:"QuoteSymbol,omitempty"`
+	ContainsHeader           *string  `json:"ContainsHeader,omitempty"`
+	Header                   []string `json:"Header,omitempty"`
+	DisableValueTrimming     *bool    `json:"DisableValueTrimming,omitempty"`
+	AllowSingleColumn        *bool    `json:"AllowSingleColumn,omitempty"`
+	CustomDatatypeConfigured *bool    `json:"CustomDatatypeConfigured,omitempty"`
+	CustomDatatypes          []string `json:"CustomDatatypes,omitempty"`
+}
+
+type CreateJsonClassifierRequest struct {
+	Name     *string `json:"Name,omitempty"`
+	JsonPath *string `json:"JsonPath,omitempty"`
+}
+
+type CreateClassifierRequest struct {
+	CsvClassifier  *CreateCsvClassifierRequest  `json:"CsvClassifier,omitempty"`
+	JsonClassifier *CreateJsonClassifierRequest `json:"JsonClassifier,omitempty"`
+}
+
+type CreateClassifierResponse struct {
+}
+
+type GetClassifierRequest struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type CsvClassifier struct {
+	Name                     *string  `json:"Name,omitempty"`
+	CreationTime             *float64 `json:"CreationTime,omitempty"`
+	LastUpdated              *float64 `json:"LastUpdated,omitempty"`
+	Version                  *int64   `json:"Version,omitempty"`
+	Delimiter                *string  `json:"Delimiter,omitempty"`
+	QuoteSymbol              *string  `json:"QuoteSymbol,omitempty"`
+	ContainsHeader           *string  `json:"ContainsHeader,omitempty"`
+	Header                   []string `json:"Header,omitempty"`
+	DisableValueTrimming     *bool    `json:"DisableValueTrimming,omitempty"`
+	AllowSingleColumn        *bool    `json:"AllowSingleColumn,omitempty"`
+	CustomDatatypeConfigured *bool    `json:"CustomDatatypeConfigured,omitempty"`
+	CustomDatatypes          []string `json:"CustomDatatypes,omitempty"`
+}
+
+type JsonClassifier struct {
+	Name         *string  `json:"Name,omitempty"`
+	CreationTime *float64 `json:"CreationTime,omitempty"`
+	LastUpdated  *float64 `json:"LastUpdated,omitempty"`
+	Version      *int64   `json:"Version,omitempty"`
+	JsonPath     *string  `json:"JsonPath,omitempty"`
+}
+
+type Classifier struct {
+	CsvClassifier  *CsvClassifier  `json:"CsvClassifier,omitempty"`
+	JsonClassifier *JsonClassifier `json:"JsonClassifier,omitempty"`
+}
+
+type GetClassifierResponse struct {
+	Classifier *Classifier `json:"Classifier,omitempty"`
+}
+
+type GetClassifiersRequest struct {
+	MaxResults *int64  `json:"MaxResults,omitempty"`
+	NextToken  *string `json:"NextToken,omitempty"`
+}
+
+type GetClassifiersResponse struct {
+	Classifiers []Classifier `json:"Classifiers,omitempty"`
+	NextToken   *string      `json:"NextToken,omitempty"`
+}
+
+type UpdateCsvClassifierRequest struct {
+	Name                     *string  `json:"Name,omitempty"`
+	Delimiter                *string  `json:"Delimiter,omitempty"`
+	QuoteSymbol              *string  `json:"QuoteSymbol,omitempty"`
+	ContainsHeader           *string  `json:"ContainsHeader,omitempty"`
+	Header                   []string `json:"Header,omitempty"`
+	DisableValueTrimming     *bool    `json:"DisableValueTrimming,omitempty"`
+	AllowSingleColumn        *bool    `json:"AllowSingleColumn,omitempty"`
+	CustomDatatypeConfigured *bool    `json:"CustomDatatypeConfigured,omitempty"`
+	CustomDatatypes          []string `json:"CustomDatatypes,omitempty"`
+}
+
+type UpdateJsonClassifierRequest struct {
+	Name     *string `json:"Name,omitempty"`
+	JsonPath *string `json:"JsonPath,omitempty"`
+}
+
+type UpdateClassifierRequest struct {
+	CsvClassifier  *UpdateCsvClassifierRequest  `json:"CsvClassifier,omitempty"`
+	JsonClassifier *UpdateJsonClassifierRequest `json:"JsonClassifier,omitempty"`
+}
+
+type UpdateClassifierResponse struct {
+}
+
+type DeleteClassifierRequest struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type DeleteClassifierResponse struct {
+}
+
+type S3Target struct {
+	Path             *string  `json:"Path,omitempty"`
+	Exclusions       []string `json:"Exclusions,omitempty"`
+	ConnectionName   *string  `json:"ConnectionName,omitempty"`
+	SampleSize       *int64   `json:"SampleSize,omitempty"`
+	EventQueueArn    *string  `json:"EventQueueArn,omitempty"`
+	DlqEventQueueArn *string  `json:"DlqEventQueueArn,omitempty"`
+}
+
+type CrawlerTargets struct {
+	S3Targets []S3Target `json:"S3Targets,omitempty"`
+}
+
+type SchemaChangePolicy struct {
+	UpdateBehavior *string `json:"UpdateBehavior,omitempty"`
+	DeleteBehavior *string `json:"DeleteBehavior,omitempty"`
+}
+
+type RecrawlPolicy struct {
+	RecrawlBehavior *string `json:"RecrawlBehavior,omitempty"`
+}
+
+type CreateCrawlerRequest struct {
+	Name               *string             `json:"Name,omitempty"`
+	Role               *string             `json:"Role,omitempty"`
+	DatabaseName       *string             `json:"DatabaseName,omitempty"`
+	Description        *string             `json:"Description,omitempty"`
+	Targets            *CrawlerTargets     `json:"Targets,omitempty"`
+	Classifiers        []string            `json:"Classifiers,omitempty"`
+	TablePrefix        *string             `json:"TablePrefix,omitempty"`
+	Schedule           *string             `json:"Schedule,omitempty"`
+	SchemaChangePolicy *SchemaChangePolicy `json:"SchemaChangePolicy,omitempty"`
+	RecrawlPolicy      *RecrawlPolicy      `json:"RecrawlPolicy,omitempty"`
+	Configuration      *string             `json:"Configuration,omitempty"`
+	Tags               map[string]string   `json:"Tags,omitempty"`
+}
+
+type CreateCrawlerResponse struct {
+}
+
+type GetCrawlerRequest struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type Schedule struct {
+	ScheduleExpression *string `json:"ScheduleExpression,omitempty"`
+	State              *string `json:"State,omitempty"`
+}
+
+type LastCrawlInfo struct {
+	Status        *string  `json:"Status,omitempty"`
+	ErrorMessage  *string  `json:"ErrorMessage,omitempty"`
+	LogGroup      *string  `json:"LogGroup,omitempty"`
+	LogStream     *string  `json:"LogStream,omitempty"`
+	MessagePrefix *string  `json:"MessagePrefix,omitempty"`
+	StartTime     *float64 `json:"StartTime,omitempty"`
+}
+
+type Crawler struct {
+	Name               *string             `json:"Name,omitempty"`
+	Role               *string             `json:"Role,omitempty"`
+	Targets            *CrawlerTargets     `json:"Targets,omitempty"`
+	DatabaseName       *string             `json:"DatabaseName,omitempty"`
+	Description        *string             `json:"Description,omitempty"`
+	Classifiers        []string            `json:"Classifiers,omitempty"`
+	RecrawlPolicy      *RecrawlPolicy      `json:"RecrawlPolicy,omitempty"`
+	SchemaChangePolicy *SchemaChangePolicy `json:"SchemaChangePolicy,omitempty"`
+	State              *string             `json:"State,omitempty"`
+	TablePrefix        *string             `json:"TablePrefix,omitempty"`
+	Schedule           *Schedule           `json:"Schedule,omitempty"`
+	CrawlElapsedTime   *int64              `json:"CrawlElapsedTime,omitempty"`
+	CreationTime       *float64            `json:"CreationTime,omitempty"`
+	LastUpdated        *float64            `json:"LastUpdated,omitempty"`
+	LastCrawl          *LastCrawlInfo      `json:"LastCrawl,omitempty"`
+	Version            *int64              `json:"Version,omitempty"`
+	Configuration      *string             `json:"Configuration,omitempty"`
+	CatalogId          *string             `json:"CatalogId,omitempty"`
+}
+
+type GetCrawlerResponse struct {
+	Crawler *Crawler `json:"Crawler,omitempty"`
+}
+
+type GetCrawlersRequest struct {
+	MaxResults *int64  `json:"MaxResults,omitempty"`
+	NextToken  *string `json:"NextToken,omitempty"`
+}
+
+type GetCrawlersResponse struct {
+	Crawlers  []Crawler `json:"Crawlers,omitempty"`
+	NextToken *string   `json:"NextToken,omitempty"`
+}
+
+type BatchGetCrawlersRequest struct {
+	CrawlerNames []string `json:"CrawlerNames,omitempty"`
+}
+
+type BatchGetCrawlersResponse struct {
+	Crawlers         []Crawler `json:"Crawlers,omitempty"`
+	CrawlersNotFound []string  `json:"CrawlersNotFound,omitempty"`
+}
+
+type ListCrawlersRequest struct {
+	MaxResults *int64            `json:"MaxResults,omitempty"`
+	NextToken  *string           `json:"NextToken,omitempty"`
+	Tags       map[string]string `json:"Tags,omitempty"`
+}
+
+type ListCrawlersResponse struct {
+	CrawlerNames []string `json:"CrawlerNames,omitempty"`
+	NextToken    *string  `json:"NextToken,omitempty"`
+}
+
+type UpdateCrawlerRequest struct {
+	Name               *string             `json:"Name,omitempty"`
+	Role               *string             `json:"Role,omitempty"`
+	DatabaseName       *string             `json:"DatabaseName,omitempty"`
+	Description        *string             `json:"Description,omitempty"`
+	Targets            *CrawlerTargets     `json:"Targets,omitempty"`
+	Classifiers        []string            `json:"Classifiers,omitempty"`
+	TablePrefix        *string             `json:"TablePrefix,omitempty"`
+	Schedule           *string             `json:"Schedule,omitempty"`
+	SchemaChangePolicy *SchemaChangePolicy `json:"SchemaChangePolicy,omitempty"`
+	RecrawlPolicy      *RecrawlPolicy      `json:"RecrawlPolicy,omitempty"`
+	Configuration      *string             `json:"Configuration,omitempty"`
+}
+
+type UpdateCrawlerResponse struct {
+}
+
+type DeleteCrawlerRequest struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type DeleteCrawlerResponse struct {
+}
+
+type StartCrawlerRequest struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type StartCrawlerResponse struct {
+}
+
+type StopCrawlerRequest struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type StopCrawlerResponse struct {
+}
+
+type UpdateCrawlerScheduleRequest struct {
+	CrawlerName *string `json:"CrawlerName,omitempty"`
+	Schedule    *string `json:"Schedule,omitempty"`
+}
+
+type UpdateCrawlerScheduleResponse struct {
+}
+
+type StartCrawlerScheduleRequest struct {
+	CrawlerName *string `json:"CrawlerName,omitempty"`
+}
+
+type StartCrawlerScheduleResponse struct {
+}
+
+type StopCrawlerScheduleRequest struct {
+	CrawlerName *string `json:"CrawlerName,omitempty"`
+}
+
+type StopCrawlerScheduleResponse struct {
+}
+
+type GetCrawlerMetricsRequest struct {
+	CrawlerNameList []string `json:"CrawlerNameList,omitempty"`
+	MaxResults      *int64   `json:"MaxResults,omitempty"`
+	NextToken       *string  `json:"NextToken,omitempty"`
+}
+
+type CrawlerMetrics struct {
+	CrawlerName          *string  `json:"CrawlerName,omitempty"`
+	TimeLeftSeconds      *float64 `json:"TimeLeftSeconds,omitempty"`
+	StillEstimating      *bool    `json:"StillEstimating,omitempty"`
+	LastRuntimeSeconds   *float64 `json:"LastRuntimeSeconds,omitempty"`
+	MedianRuntimeSeconds *float64 `json:"MedianRuntimeSeconds,omitempty"`
+	TablesCreated        *int64   `json:"TablesCreated,omitempty"`
+	TablesUpdated        *int64   `json:"TablesUpdated,omitempty"`
+	TablesDeleted        *int64   `json:"TablesDeleted,omitempty"`
+}
+
+type GetCrawlerMetricsResponse struct {
+	CrawlerMetricsList []CrawlerMetrics `json:"CrawlerMetricsList,omitempty"`
+	NextToken          *string          `json:"NextToken,omitempty"`
+}
+
+type CrawlsFilter struct {
+	FieldName      *string `json:"FieldName,omitempty"`
+	FilterOperator *string `json:"FilterOperator,omitempty"`
+	FieldValue     *string `json:"FieldValue,omitempty"`
+}
+
+type ListCrawlsRequest struct {
+	CrawlerName *string        `json:"CrawlerName,omitempty"`
+	MaxResults  *int64         `json:"MaxResults,omitempty"`
+	Filters     []CrawlsFilter `json:"Filters,omitempty"`
+	NextToken   *string        `json:"NextToken,omitempty"`
+}
+
+type CrawlerHistory struct {
+	CrawlId       *string  `json:"CrawlId,omitempty"`
+	State         *string  `json:"State,omitempty"`
+	StartTime     *float64 `json:"StartTime,omitempty"`
+	EndTime       *float64 `json:"EndTime,omitempty"`
+	Summary       *string  `json:"Summary,omitempty"`
+	ErrorMessage  *string  `json:"ErrorMessage,omitempty"`
+	LogGroup      *string  `json:"LogGroup,omitempty"`
+	LogStream     *string  `json:"LogStream,omitempty"`
+	MessagePrefix *string  `json:"MessagePrefix,omitempty"`
+	DPUHour       *float64 `json:"DPUHour,omitempty"`
+}
+
+type ListCrawlsResponse struct {
+	Crawls    []CrawlerHistory `json:"Crawls,omitempty"`
+	NextToken *string          `json:"NextToken,omitempty"`
+}
+
 type API interface {
 	CreateDatabase(context.Context, *CreateDatabaseRequest) (*CreateDatabaseResponse, error)
 	GetDatabase(context.Context, *GetDatabaseRequest) (*GetDatabaseResponse, error)
@@ -873,10 +1219,29 @@ type API interface {
 	PutWorkflowRunProperties(context.Context, *PutWorkflowRunPropertiesRequest) (*PutWorkflowRunPropertiesResponse, error)
 	StopWorkflowRun(context.Context, *StopWorkflowRunRequest) (*StopWorkflowRunResponse, error)
 	BatchGetWorkflows(context.Context, *BatchGetWorkflowsRequest) (*BatchGetWorkflowsResponse, error)
+	CreateClassifier(context.Context, *CreateClassifierRequest) (*CreateClassifierResponse, error)
+	GetClassifier(context.Context, *GetClassifierRequest) (*GetClassifierResponse, error)
+	GetClassifiers(context.Context, *GetClassifiersRequest) (*GetClassifiersResponse, error)
+	UpdateClassifier(context.Context, *UpdateClassifierRequest) (*UpdateClassifierResponse, error)
+	DeleteClassifier(context.Context, *DeleteClassifierRequest) (*DeleteClassifierResponse, error)
+	CreateCrawler(context.Context, *CreateCrawlerRequest) (*CreateCrawlerResponse, error)
+	GetCrawler(context.Context, *GetCrawlerRequest) (*GetCrawlerResponse, error)
+	GetCrawlers(context.Context, *GetCrawlersRequest) (*GetCrawlersResponse, error)
+	BatchGetCrawlers(context.Context, *BatchGetCrawlersRequest) (*BatchGetCrawlersResponse, error)
+	ListCrawlers(context.Context, *ListCrawlersRequest) (*ListCrawlersResponse, error)
+	UpdateCrawler(context.Context, *UpdateCrawlerRequest) (*UpdateCrawlerResponse, error)
+	DeleteCrawler(context.Context, *DeleteCrawlerRequest) (*DeleteCrawlerResponse, error)
+	StartCrawler(context.Context, *StartCrawlerRequest) (*StartCrawlerResponse, error)
+	StopCrawler(context.Context, *StopCrawlerRequest) (*StopCrawlerResponse, error)
+	UpdateCrawlerSchedule(context.Context, *UpdateCrawlerScheduleRequest) (*UpdateCrawlerScheduleResponse, error)
+	StartCrawlerSchedule(context.Context, *StartCrawlerScheduleRequest) (*StartCrawlerScheduleResponse, error)
+	StopCrawlerSchedule(context.Context, *StopCrawlerScheduleRequest) (*StopCrawlerScheduleResponse, error)
+	GetCrawlerMetrics(context.Context, *GetCrawlerMetricsRequest) (*GetCrawlerMetricsResponse, error)
+	ListCrawls(context.Context, *ListCrawlsRequest) (*ListCrawlsResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "glue", SigningName: "glue", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "glue", TargetPrefix: "AWSGlue", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"AlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ConcurrentRunsExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "EntityNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "FederatedResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "FederationSourceException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "FederationSourceRetryableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "GlueEncryptionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "IdempotentParameterMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "IllegalWorkflowStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InternalServiceException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 500}, "InvalidInputException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "OperationTimeoutException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNotReadyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNumberLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "glue", SigningName: "glue", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "glue", TargetPrefix: "AWSGlue", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"AlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ConcurrentRunsExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "CrawlerNotRunningException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "CrawlerRunningException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "CrawlerStoppingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "EntityNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "FederatedResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "FederationSourceException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "FederationSourceRetryableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "GlueEncryptionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "IdempotentParameterMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "IllegalWorkflowStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InternalServiceException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 500}, "InvalidInputException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "NoScheduleException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "OperationTimeoutException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNotReadyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNumberLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "SchedulerNotRunningException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "SchedulerRunningException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "SchedulerTransitioningException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "VersionMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateDatabase": {Name: "CreateDatabase", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:CreateDatabase", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.CreateDatabase", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateDatabaseRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateDatabase(ctx, input.(*CreateDatabaseRequest))
 		}},
@@ -1019,6 +1384,63 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"BatchGetWorkflows": {Name: "BatchGetWorkflows", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:BatchGetWorkflows", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.BatchGetWorkflows", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchGetWorkflowsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.BatchGetWorkflows(ctx, input.(*BatchGetWorkflowsRequest))
+		}},
+		"CreateClassifier": {Name: "CreateClassifier", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:CreateClassifier", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.CreateClassifier", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateClassifierRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateClassifier(ctx, input.(*CreateClassifierRequest))
+		}},
+		"GetClassifier": {Name: "GetClassifier", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetClassifier", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetClassifier", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetClassifierRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetClassifier(ctx, input.(*GetClassifierRequest))
+		}},
+		"GetClassifiers": {Name: "GetClassifiers", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetClassifiers", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetClassifiers", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetClassifiersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetClassifiers(ctx, input.(*GetClassifiersRequest))
+		}},
+		"UpdateClassifier": {Name: "UpdateClassifier", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:UpdateClassifier", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.UpdateClassifier", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateClassifierRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateClassifier(ctx, input.(*UpdateClassifierRequest))
+		}},
+		"DeleteClassifier": {Name: "DeleteClassifier", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:DeleteClassifier", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.DeleteClassifier", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteClassifierRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteClassifier(ctx, input.(*DeleteClassifierRequest))
+		}},
+		"CreateCrawler": {Name: "CreateCrawler", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:CreateCrawler", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.CreateCrawler", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateCrawlerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateCrawler(ctx, input.(*CreateCrawlerRequest))
+		}},
+		"GetCrawler": {Name: "GetCrawler", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetCrawler", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetCrawler", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetCrawlerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetCrawler(ctx, input.(*GetCrawlerRequest))
+		}},
+		"GetCrawlers": {Name: "GetCrawlers", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetCrawlers", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetCrawlers", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetCrawlersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetCrawlers(ctx, input.(*GetCrawlersRequest))
+		}},
+		"BatchGetCrawlers": {Name: "BatchGetCrawlers", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:BatchGetCrawlers", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.BatchGetCrawlers", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchGetCrawlersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.BatchGetCrawlers(ctx, input.(*BatchGetCrawlersRequest))
+		}},
+		"ListCrawlers": {Name: "ListCrawlers", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:ListCrawlers", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.ListCrawlers", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListCrawlersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListCrawlers(ctx, input.(*ListCrawlersRequest))
+		}},
+		"UpdateCrawler": {Name: "UpdateCrawler", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:UpdateCrawler", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.UpdateCrawler", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateCrawlerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateCrawler(ctx, input.(*UpdateCrawlerRequest))
+		}},
+		"DeleteCrawler": {Name: "DeleteCrawler", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:DeleteCrawler", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.DeleteCrawler", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteCrawlerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteCrawler(ctx, input.(*DeleteCrawlerRequest))
+		}},
+		"StartCrawler": {Name: "StartCrawler", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:StartCrawler", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.StartCrawler", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StartCrawlerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.StartCrawler(ctx, input.(*StartCrawlerRequest))
+		}},
+		"StopCrawler": {Name: "StopCrawler", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:StopCrawler", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.StopCrawler", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StopCrawlerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.StopCrawler(ctx, input.(*StopCrawlerRequest))
+		}},
+		"UpdateCrawlerSchedule": {Name: "UpdateCrawlerSchedule", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:UpdateCrawlerSchedule", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.UpdateCrawlerSchedule", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateCrawlerScheduleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateCrawlerSchedule(ctx, input.(*UpdateCrawlerScheduleRequest))
+		}},
+		"StartCrawlerSchedule": {Name: "StartCrawlerSchedule", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:StartCrawlerSchedule", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.StartCrawlerSchedule", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StartCrawlerScheduleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.StartCrawlerSchedule(ctx, input.(*StartCrawlerScheduleRequest))
+		}},
+		"StopCrawlerSchedule": {Name: "StopCrawlerSchedule", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:StopCrawlerSchedule", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.StopCrawlerSchedule", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StopCrawlerScheduleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.StopCrawlerSchedule(ctx, input.(*StopCrawlerScheduleRequest))
+		}},
+		"GetCrawlerMetrics": {Name: "GetCrawlerMetrics", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetCrawlerMetrics", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetCrawlerMetrics", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetCrawlerMetricsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetCrawlerMetrics(ctx, input.(*GetCrawlerMetricsRequest))
+		}},
+		"ListCrawls": {Name: "ListCrawls", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:ListCrawls", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.ListCrawls", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListCrawlsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListCrawls(ctx, input.(*ListCrawlsRequest))
 		}},
 	}}
 }
