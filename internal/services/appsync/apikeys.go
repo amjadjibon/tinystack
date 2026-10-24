@@ -58,7 +58,7 @@ func (s *Service) CreateApiKey(ctx context.Context, in *api.CreateApiKeyRequest)
 	k := &api.ApiKey{Id: new("da2-" + common.RandomID(26)), Description: in.Description}
 	setExpiry(k, at)
 	err = s.update(ctx, func(tx storage.WriteTx, scope request.Scope) error {
-		if _, loadErr := loadAPI(tx, scope, in.ApiId); loadErr != nil {
+		if loadErr := keyAPI(tx, scope, in.ApiId); loadErr != nil {
 			return loadErr
 		}
 
@@ -74,7 +74,7 @@ func (s *Service) CreateApiKey(ctx context.Context, in *api.CreateApiKeyRequest)
 func (s *Service) ListApiKeys(ctx context.Context, in *api.ListApiKeysRequest) (*api.ListApiKeysResponse, error) {
 	out := &api.ListApiKeysResponse{}
 	err := s.view(ctx, func(tx storage.ReadTx, scope request.Scope) error {
-		if _, loadErr := loadAPI(tx, scope, in.ApiId); loadErr != nil {
+		if loadErr := keyAPI(tx, scope, in.ApiId); loadErr != nil {
 			return loadErr
 		}
 

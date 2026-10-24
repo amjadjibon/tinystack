@@ -573,6 +573,153 @@ type ListTagsForResourceResponse struct {
 	Tags map[string]string `json:"tags,omitempty"`
 }
 
+type CognitoConfig struct {
+	UserPoolId       *string `json:"userPoolId,omitempty"`
+	AwsRegion        *string `json:"awsRegion,omitempty"`
+	AppIdClientRegex *string `json:"appIdClientRegex,omitempty"`
+}
+
+type AuthProvider struct {
+	AuthType               *string                 `json:"authType,omitempty"`
+	CognitoConfig          *CognitoConfig          `json:"cognitoConfig,omitempty"`
+	OpenIDConnectConfig    *OpenIDConnectConfig    `json:"openIDConnectConfig,omitempty"`
+	LambdaAuthorizerConfig *LambdaAuthorizerConfig `json:"lambdaAuthorizerConfig,omitempty"`
+}
+
+type AuthMode struct {
+	AuthType *string `json:"authType,omitempty"`
+}
+
+type EventConfig struct {
+	AuthProviders             []AuthProvider `json:"authProviders,omitempty"`
+	ConnectionAuthModes       []AuthMode     `json:"connectionAuthModes,omitempty"`
+	DefaultPublishAuthModes   []AuthMode     `json:"defaultPublishAuthModes,omitempty"`
+	DefaultSubscribeAuthModes []AuthMode     `json:"defaultSubscribeAuthModes,omitempty"`
+}
+
+type CreateApiRequest struct {
+	Name         *string           `json:"name,omitempty"`
+	OwnerContact *string           `json:"ownerContact,omitempty"`
+	Tags         map[string]string `json:"tags,omitempty"`
+	EventConfig  *EventConfig      `json:"eventConfig,omitempty"`
+}
+
+type Api struct {
+	ApiId        *string           `json:"apiId,omitempty"`
+	Name         *string           `json:"name,omitempty"`
+	OwnerContact *string           `json:"ownerContact,omitempty"`
+	Tags         map[string]string `json:"tags,omitempty"`
+	Dns          map[string]string `json:"dns,omitempty"`
+	ApiArn       *string           `json:"apiArn,omitempty"`
+	Created      *float64          `json:"created,omitempty"`
+	EventConfig  *EventConfig      `json:"eventConfig,omitempty"`
+}
+
+type CreateApiResponse struct {
+	Api *Api `json:"api,omitempty"`
+}
+
+type GetApiRequest struct {
+	ApiId *string `json:"-"`
+}
+
+type GetApiResponse struct {
+	Api *Api `json:"api,omitempty"`
+}
+
+type UpdateApiRequest struct {
+	ApiId        *string      `json:"-"`
+	Name         *string      `json:"name,omitempty"`
+	OwnerContact *string      `json:"ownerContact,omitempty"`
+	EventConfig  *EventConfig `json:"eventConfig,omitempty"`
+}
+
+type UpdateApiResponse struct {
+	Api *Api `json:"api,omitempty"`
+}
+
+type DeleteApiRequest struct {
+	ApiId *string `json:"-"`
+}
+
+type DeleteApiResponse struct {
+}
+
+type ListApisRequest struct {
+	NextToken  *string `json:"-"`
+	MaxResults *int64  `json:"-"`
+}
+
+type ListApisResponse struct {
+	Apis      []Api   `json:"apis,omitempty"`
+	NextToken *string `json:"nextToken,omitempty"`
+}
+
+type CreateChannelNamespaceRequest struct {
+	ApiId              *string           `json:"-"`
+	Name               *string           `json:"name,omitempty"`
+	SubscribeAuthModes []AuthMode        `json:"subscribeAuthModes,omitempty"`
+	PublishAuthModes   []AuthMode        `json:"publishAuthModes,omitempty"`
+	CodeHandlers       *string           `json:"codeHandlers,omitempty"`
+	Tags               map[string]string `json:"tags,omitempty"`
+}
+
+type ChannelNamespace struct {
+	ApiId               *string           `json:"apiId,omitempty"`
+	Name                *string           `json:"name,omitempty"`
+	SubscribeAuthModes  []AuthMode        `json:"subscribeAuthModes,omitempty"`
+	PublishAuthModes    []AuthMode        `json:"publishAuthModes,omitempty"`
+	CodeHandlers        *string           `json:"codeHandlers,omitempty"`
+	Tags                map[string]string `json:"tags,omitempty"`
+	ChannelNamespaceArn *string           `json:"channelNamespaceArn,omitempty"`
+	Created             *float64          `json:"created,omitempty"`
+	LastModified        *float64          `json:"lastModified,omitempty"`
+}
+
+type CreateChannelNamespaceResponse struct {
+	ChannelNamespace *ChannelNamespace `json:"channelNamespace,omitempty"`
+}
+
+type GetChannelNamespaceRequest struct {
+	ApiId *string `json:"-"`
+	Name  *string `json:"-"`
+}
+
+type GetChannelNamespaceResponse struct {
+	ChannelNamespace *ChannelNamespace `json:"channelNamespace,omitempty"`
+}
+
+type UpdateChannelNamespaceRequest struct {
+	ApiId              *string    `json:"-"`
+	Name               *string    `json:"-"`
+	SubscribeAuthModes []AuthMode `json:"subscribeAuthModes,omitempty"`
+	PublishAuthModes   []AuthMode `json:"publishAuthModes,omitempty"`
+	CodeHandlers       *string    `json:"codeHandlers,omitempty"`
+}
+
+type UpdateChannelNamespaceResponse struct {
+	ChannelNamespace *ChannelNamespace `json:"channelNamespace,omitempty"`
+}
+
+type DeleteChannelNamespaceRequest struct {
+	ApiId *string `json:"-"`
+	Name  *string `json:"-"`
+}
+
+type DeleteChannelNamespaceResponse struct {
+}
+
+type ListChannelNamespacesRequest struct {
+	ApiId      *string `json:"-"`
+	NextToken  *string `json:"-"`
+	MaxResults *int64  `json:"-"`
+}
+
+type ListChannelNamespacesResponse struct {
+	ChannelNamespaces []ChannelNamespace `json:"channelNamespaces,omitempty"`
+	NextToken         *string            `json:"nextToken,omitempty"`
+}
+
 type API interface {
 	CreateGraphqlApi(context.Context, *CreateGraphqlApiRequest) (*CreateGraphqlApiResponse, error)
 	GetGraphqlApi(context.Context, *GetGraphqlApiRequest) (*GetGraphqlApiResponse, error)
@@ -610,10 +757,20 @@ type API interface {
 	TagResource(context.Context, *TagResourceRequest) (*TagResourceResponse, error)
 	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceResponse, error)
 	ListTagsForResource(context.Context, *ListTagsForResourceRequest) (*ListTagsForResourceResponse, error)
+	CreateApi(context.Context, *CreateApiRequest) (*CreateApiResponse, error)
+	GetApi(context.Context, *GetApiRequest) (*GetApiResponse, error)
+	UpdateApi(context.Context, *UpdateApiRequest) (*UpdateApiResponse, error)
+	DeleteApi(context.Context, *DeleteApiRequest) (*DeleteApiResponse, error)
+	ListApis(context.Context, *ListApisRequest) (*ListApisResponse, error)
+	CreateChannelNamespace(context.Context, *CreateChannelNamespaceRequest) (*CreateChannelNamespaceResponse, error)
+	GetChannelNamespace(context.Context, *GetChannelNamespaceRequest) (*GetChannelNamespaceResponse, error)
+	UpdateChannelNamespace(context.Context, *UpdateChannelNamespaceRequest) (*UpdateChannelNamespaceResponse, error)
+	DeleteChannelNamespace(context.Context, *DeleteChannelNamespaceRequest) (*DeleteChannelNamespaceResponse, error)
+	ListChannelNamespaces(context.Context, *ListChannelNamespacesRequest) (*ListChannelNamespacesResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "appsync", SigningName: "appsync", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "appsync", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"AccessDeniedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "ApiKeyLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ApiKeyValidityOutOfBoundsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ApiLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "BadRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "GraphQLSchemaException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InternalFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "NotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "appsync", SigningName: "appsync", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "appsync", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"AccessDeniedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "ApiKeyLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ApiKeyValidityOutOfBoundsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ApiLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "BadRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "ConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "GraphQLSchemaException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InternalFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "NotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServiceQuotaExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 402}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}}, Operations: map[string]catalog.Operation{
 		"CreateGraphqlApi": {Name: "CreateGraphqlApi", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "appsync:CreateGraphqlApi", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AdditionalAuthenticationProviders": catalog.MemberBinding{Location: "document", Name: "additionalAuthenticationProviders", Format: ""}, "ApiType": catalog.MemberBinding{Location: "document", Name: "apiType", Format: ""}, "AuthenticationType": catalog.MemberBinding{Location: "document", Name: "authenticationType", Format: ""}, "IntrospectionConfig": catalog.MemberBinding{Location: "document", Name: "introspectionConfig", Format: ""}, "LambdaAuthorizerConfig": catalog.MemberBinding{Location: "document", Name: "lambdaAuthorizerConfig", Format: ""}, "LogConfig": catalog.MemberBinding{Location: "document", Name: "logConfig", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "OpenIDConnectConfig": catalog.MemberBinding{Location: "document", Name: "openIDConnectConfig", Format: ""}, "OwnerContact": catalog.MemberBinding{Location: "document", Name: "ownerContact", Format: ""}, "QueryDepthLimit": catalog.MemberBinding{Location: "document", Name: "queryDepthLimit", Format: ""}, "ResolverCountLimit": catalog.MemberBinding{Location: "document", Name: "resolverCountLimit", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}, "UserPoolConfig": catalog.MemberBinding{Location: "document", Name: "userPoolConfig", Format: ""}, "Visibility": catalog.MemberBinding{Location: "document", Name: "visibility", Format: ""}, "XrayEnabled": catalog.MemberBinding{Location: "document", Name: "xrayEnabled", Format: ""}}, Output: map[string]catalog.MemberBinding{"GraphqlApi": catalog.MemberBinding{Location: "document", Name: "graphqlApi", Format: ""}}, Method: "POST", URI: "/v1/apis", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateGraphqlApiRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateGraphqlApi(ctx, input.(*CreateGraphqlApiRequest))
 		}},
@@ -719,6 +876,32 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "appsync:ListTagsForResource", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceArn": catalog.MemberBinding{Location: "label", Name: "resourceArn", Format: ""}}, Output: map[string]catalog.MemberBinding{"Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}}, Method: "GET", URI: "/v1/tags/{resourceArn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceRequest))
+		}},
+		"CreateApi": {Name: "CreateApi", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "appsync:CreateApi", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"EventConfig": catalog.MemberBinding{Location: "document", Name: "eventConfig", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "OwnerContact": catalog.MemberBinding{Location: "document", Name: "ownerContact", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}}, Output: map[string]catalog.MemberBinding{"Api": catalog.MemberBinding{Location: "document", Name: "api", Format: ""}}, Method: "POST", URI: "/v2/apis", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateApiRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateApi(ctx, input.(*CreateApiRequest))
+		}},
+		"GetApi": {Name: "GetApi", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "appsync:GetApi", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiId": catalog.MemberBinding{Location: "label", Name: "apiId", Format: ""}}, Output: map[string]catalog.MemberBinding{"Api": catalog.MemberBinding{Location: "document", Name: "api", Format: ""}}, Method: "GET", URI: "/v2/apis/{apiId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetApiRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.GetApi(ctx, input.(*GetApiRequest)) }},
+		"UpdateApi": {Name: "UpdateApi", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "appsync:UpdateApi", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiId": catalog.MemberBinding{Location: "label", Name: "apiId", Format: ""}, "EventConfig": catalog.MemberBinding{Location: "document", Name: "eventConfig", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "OwnerContact": catalog.MemberBinding{Location: "document", Name: "ownerContact", Format: ""}}, Output: map[string]catalog.MemberBinding{"Api": catalog.MemberBinding{Location: "document", Name: "api", Format: ""}}, Method: "POST", URI: "/v2/apis/{apiId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateApiRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateApi(ctx, input.(*UpdateApiRequest))
+		}},
+		"DeleteApi": {Name: "DeleteApi", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "appsync:DeleteApi", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiId": catalog.MemberBinding{Location: "label", Name: "apiId", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/v2/apis/{apiId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteApiRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteApi(ctx, input.(*DeleteApiRequest))
+		}},
+		"ListApis": {Name: "ListApis", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "appsync:ListApis", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"Apis": catalog.MemberBinding{Location: "document", Name: "apis", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}}, Method: "GET", URI: "/v2/apis", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListApisRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.ListApis(ctx, input.(*ListApisRequest)) }},
+		"CreateChannelNamespace": {Name: "CreateChannelNamespace", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "appsync:CreateChannelNamespace", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiId": catalog.MemberBinding{Location: "label", Name: "apiId", Format: ""}, "CodeHandlers": catalog.MemberBinding{Location: "document", Name: "codeHandlers", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "PublishAuthModes": catalog.MemberBinding{Location: "document", Name: "publishAuthModes", Format: ""}, "SubscribeAuthModes": catalog.MemberBinding{Location: "document", Name: "subscribeAuthModes", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}}, Output: map[string]catalog.MemberBinding{"ChannelNamespace": catalog.MemberBinding{Location: "document", Name: "channelNamespace", Format: ""}}, Method: "POST", URI: "/v2/apis/{apiId}/channelNamespaces", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateChannelNamespaceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateChannelNamespace(ctx, input.(*CreateChannelNamespaceRequest))
+		}},
+		"GetChannelNamespace": {Name: "GetChannelNamespace", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "appsync:GetChannelNamespace", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiId": catalog.MemberBinding{Location: "label", Name: "apiId", Format: ""}, "Name": catalog.MemberBinding{Location: "label", Name: "name", Format: ""}}, Output: map[string]catalog.MemberBinding{"ChannelNamespace": catalog.MemberBinding{Location: "document", Name: "channelNamespace", Format: ""}}, Method: "GET", URI: "/v2/apis/{apiId}/channelNamespaces/{name}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetChannelNamespaceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetChannelNamespace(ctx, input.(*GetChannelNamespaceRequest))
+		}},
+		"UpdateChannelNamespace": {Name: "UpdateChannelNamespace", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "appsync:UpdateChannelNamespace", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiId": catalog.MemberBinding{Location: "label", Name: "apiId", Format: ""}, "CodeHandlers": catalog.MemberBinding{Location: "document", Name: "codeHandlers", Format: ""}, "Name": catalog.MemberBinding{Location: "label", Name: "name", Format: ""}, "PublishAuthModes": catalog.MemberBinding{Location: "document", Name: "publishAuthModes", Format: ""}, "SubscribeAuthModes": catalog.MemberBinding{Location: "document", Name: "subscribeAuthModes", Format: ""}}, Output: map[string]catalog.MemberBinding{"ChannelNamespace": catalog.MemberBinding{Location: "document", Name: "channelNamespace", Format: ""}}, Method: "POST", URI: "/v2/apis/{apiId}/channelNamespaces/{name}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateChannelNamespaceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateChannelNamespace(ctx, input.(*UpdateChannelNamespaceRequest))
+		}},
+		"DeleteChannelNamespace": {Name: "DeleteChannelNamespace", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "appsync:DeleteChannelNamespace", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiId": catalog.MemberBinding{Location: "label", Name: "apiId", Format: ""}, "Name": catalog.MemberBinding{Location: "label", Name: "name", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/v2/apis/{apiId}/channelNamespaces/{name}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteChannelNamespaceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteChannelNamespace(ctx, input.(*DeleteChannelNamespaceRequest))
+		}},
+		"ListChannelNamespaces": {Name: "ListChannelNamespaces", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "appsync:ListChannelNamespaces", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiId": catalog.MemberBinding{Location: "label", Name: "apiId", Format: ""}, "MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"ChannelNamespaces": catalog.MemberBinding{Location: "document", Name: "channelNamespaces", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}}, Method: "GET", URI: "/v2/apis/{apiId}/channelNamespaces", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListChannelNamespacesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListChannelNamespaces(ctx, input.(*ListChannelNamespacesRequest))
 		}},
 	}}
 }

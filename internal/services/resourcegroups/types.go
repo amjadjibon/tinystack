@@ -6,6 +6,8 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 )
 
+const appSyncAPIType = "Api"
+
 // namespaces maps a TinyStack service to the CloudFormation namespace of its
 // resource types ("sqs" to "AWS::SQS::..."). A service missing here has no
 // resource types a group can select.
@@ -160,6 +162,8 @@ var typeNames = map[string]string{
 	"memorydb/subnetgroup":                   "SubnetGroup",
 	"apigatewayv2/websocket-api":             "Api",
 	"apigatewayv2/http-api":                  "Api",
+	"appsync/event-api":                      appSyncAPIType,
+	"appsync/channel-namespace":              "ChannelNamespace",
 	"appsync/graphql-api":                    "GraphQLApi",
 	"athena/workgroup":                       "WorkGroup",
 	"ec2/elastic-ip":                         "EIP",

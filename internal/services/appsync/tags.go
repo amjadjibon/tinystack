@@ -34,6 +34,38 @@ func tagged(tx storage.ReadTx, scope request.Scope, arn *string) (*api.GraphqlAp
 // retag replaces the tags of the API arn names with fn's result.
 func (s *Service) retag(ctx context.Context, arn *string, fn func(map[string]string) map[string]string) error {
 	return s.update(ctx, func(tx storage.WriteTx, scope request.Scope) error {
+		id, isAPI := strings.CutPrefix(common.Value(arn), apiARN(scope, ""))
+		if isAPI && strings.Contains(id, "/channelNamespace/") {
+			apiID, name, _ := strings.Cut(id, "/channelNamespace/")
+			n, err := loadNamespace(tx, scope, new(apiID), new(name))
+			if err != nil {
+				return err
+			}
+
+			n.Tags = fn(common.CloneTags(n.Tags))
+			if err := checkTags(n.Tags); err != nil {
+				return err
+			}
+
+			return storage.Write(tx, owned(scope, kindNamespace, apiID, name), n)
+		}
+
+		if isAPI && !strings.Contains(id, "/") {
+			a, ok, err := storage.Read[api.Api](tx, scope.Key(service, kindEventAPI, id))
+			if err != nil {
+				return err
+			}
+
+			if ok {
+				a.Tags = fn(common.CloneTags(a.Tags))
+				if err := checkTags(a.Tags); err != nil {
+					return err
+				}
+
+				return storage.Write(tx, scope.Key(service, kindEventAPI, id), a)
+			}
+		}
+
 		a, err := tagged(tx, scope, arn)
 		if err != nil {
 			return err
@@ -77,6 +109,30 @@ func (s *Service) ListTagsForResource(
 ) (*api.ListTagsForResourceResponse, error) {
 	out := &api.ListTagsForResourceResponse{}
 	err := s.view(ctx, func(tx storage.ReadTx, scope request.Scope) error {
+		id, isAPI := strings.CutPrefix(common.Value(in.ResourceArn), apiARN(scope, ""))
+		if isAPI && strings.Contains(id, "/channelNamespace/") {
+			apiID, name, _ := strings.Cut(id, "/channelNamespace/")
+			n, err := loadNamespace(tx, scope, new(apiID), new(name))
+			if err != nil {
+				return err
+			}
+
+			out.Tags = common.CloneTags(n.Tags)
+			return nil
+		}
+
+		if isAPI && !strings.Contains(id, "/") {
+			a, ok, err := storage.Read[api.Api](tx, scope.Key(service, kindEventAPI, id))
+			if err != nil {
+				return err
+			}
+
+			if ok {
+				out.Tags = common.CloneTags(a.Tags)
+				return nil
+			}
+		}
+
 		a, err := tagged(tx, scope, in.ResourceArn)
 		if err != nil {
 			return err

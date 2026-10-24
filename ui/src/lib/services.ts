@@ -284,7 +284,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: networking,
 		icon: "apigateway",
 	},
-	appsync: { title: "AppSync", category: integration, icon: "appsync" },
+	appsync: {
+		title: "AppSync GraphQL & Events",
+		category: integration,
+		icon: "appsync",
+	},
 	athena: { title: "Athena", category: analytics, icon: "athena" },
 	applicationautoscaling: {
 		title: "Application Auto Scaling",

@@ -1193,7 +1193,17 @@
       "ListFunctions",
       "TagResource",
       "UntagResource",
-      "ListTagsForResource"
+      "ListTagsForResource",
+      "CreateApi",
+      "GetApi",
+      "UpdateApi",
+      "DeleteApi",
+      "ListApis",
+      "CreateChannelNamespace",
+      "GetChannelNamespace",
+      "UpdateChannelNamespace",
+      "DeleteChannelNamespace",
+      "ListChannelNamespaces"
     ],
     "shapes": {
       "CreateGraphqlApiRequest": [
@@ -1654,6 +1664,123 @@
       ],
       "ListTagsForResourceResponse": [
         "tags"
+      ],
+      "Api": [
+        "apiId",
+        "name",
+        "ownerContact",
+        "tags",
+        "dns",
+        "apiArn",
+        "created",
+        "eventConfig"
+      ],
+      "EventConfig": [
+        "authProviders",
+        "connectionAuthModes",
+        "defaultPublishAuthModes",
+        "defaultSubscribeAuthModes"
+      ],
+      "AuthProvider": [
+        "authType",
+        "cognitoConfig",
+        "openIDConnectConfig",
+        "lambdaAuthorizerConfig"
+      ],
+      "AuthMode": [
+        "authType"
+      ],
+      "CognitoConfig": [
+        "userPoolId",
+        "awsRegion",
+        "appIdClientRegex"
+      ],
+      "ChannelNamespace": [
+        "apiId",
+        "name",
+        "subscribeAuthModes",
+        "publishAuthModes",
+        "codeHandlers",
+        "tags",
+        "channelNamespaceArn",
+        "created",
+        "lastModified"
+      ],
+      "CreateApiRequest": [
+        "name",
+        "ownerContact",
+        "tags",
+        "eventConfig"
+      ],
+      "CreateApiResponse": [
+        "api"
+      ],
+      "GetApiRequest": [
+        "apiId"
+      ],
+      "GetApiResponse": [
+        "api"
+      ],
+      "UpdateApiRequest": [
+        "apiId",
+        "name",
+        "ownerContact",
+        "eventConfig"
+      ],
+      "UpdateApiResponse": [
+        "api"
+      ],
+      "DeleteApiRequest": [
+        "apiId"
+      ],
+      "ListApisRequest": [
+        "nextToken",
+        "maxResults"
+      ],
+      "ListApisResponse": [
+        "apis",
+        "nextToken"
+      ],
+      "CreateChannelNamespaceRequest": [
+        "apiId",
+        "name",
+        "subscribeAuthModes",
+        "publishAuthModes",
+        "codeHandlers",
+        "tags"
+      ],
+      "CreateChannelNamespaceResponse": [
+        "channelNamespace"
+      ],
+      "GetChannelNamespaceRequest": [
+        "apiId",
+        "name"
+      ],
+      "GetChannelNamespaceResponse": [
+        "channelNamespace"
+      ],
+      "UpdateChannelNamespaceRequest": [
+        "apiId",
+        "name",
+        "subscribeAuthModes",
+        "publishAuthModes",
+        "codeHandlers"
+      ],
+      "UpdateChannelNamespaceResponse": [
+        "channelNamespace"
+      ],
+      "DeleteChannelNamespaceRequest": [
+        "apiId",
+        "name"
+      ],
+      "ListChannelNamespacesRequest": [
+        "apiId",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListChannelNamespacesResponse": [
+        "channelNamespaces",
+        "nextToken"
       ]
     }
   },

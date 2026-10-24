@@ -86,7 +86,7 @@ func (s *Service) authorize(ctx context.Context, g *graph, r *execute.Request, q
 		return &caller{mode: authAPIKey}, nil
 	case r.Caller != nil && has(authIAM):
 		return &caller{mode: authIAM, identity: map[string]any{
-			"accountId": r.Caller.AccountID, "username": r.Caller.AccessKey, "sourceIp": sourceIP,
+			keyAccountID: r.Caller.AccountID, "username": r.Caller.AccessKey, "sourceIp": sourceIP,
 			"userArn": "arn:aws:iam::" + r.Caller.AccountID + ":root", "cognitoIdentityPoolId": nil,
 			"cognitoIdentityId": nil, "cognitoIdentityAuthType": nil, "cognitoIdentityAuthProvider": nil,
 		}}, nil
@@ -209,13 +209,25 @@ func (s *Service) lambdaCaller(
 		}
 	}
 
+	requestContext := map[string]any{
+		"apiId": *g.api.ApiId, keyAccountID: common.Value(g.api.Owner), "requestId": common.RandomID(32),
+		"queryString": q.Query, "operationName": q.OperationName, "variables": q.Variables,
+	}
+	if q.eventOperation != "" {
+		requestContext = map[string]any{
+			"apiId": *g.api.ApiId, keyAccountID: common.Value(g.api.Owner), "requestId": common.RandomID(32),
+			keyEventOperation: q.eventOperation, "channelNamespaceName": nil, keyEventChannel: nil,
+		}
+		if q.eventChannel != "" {
+			requestContext[keyEventChannel] = q.eventChannel
+			requestContext["channelNamespaceName"] = strings.Split(strings.TrimPrefix(q.eventChannel, "/"), "/")[0]
+		}
+	}
+
 	payload, err := json.Marshal(map[string]any{
 		"authorizationToken": token,
-		"requestContext": map[string]any{
-			"apiId": *g.api.ApiId, "accountId": common.Value(g.api.Owner), "requestId": common.RandomID(32),
-			"queryString": q.Query, "operationName": q.OperationName, "variables": q.Variables,
-		},
-		"requestHeaders": headers(r),
+		"requestContext":     requestContext,
+		"requestHeaders":     headers(r),
 	})
 	if err != nil {
 		return nil, err
@@ -230,6 +242,7 @@ func (s *Service) lambdaCaller(
 
 	var answer struct {
 		ResolverContext map[string]any `json:"resolverContext"`
+		HandlerContext  map[string]any `json:"handlerContext"`
 		DeniedFields    []string       `json:"deniedFields"`
 		IsAuthorized    bool           `json:"isAuthorized"`
 	}
@@ -238,6 +251,10 @@ func (s *Service) lambdaCaller(
 	}
 
 	c := &caller{mode: authLambda, identity: map[string]any{"resolverContext": answer.ResolverContext}}
+	if q.eventOperation != "" {
+		c.identity = map[string]any{"handlerContext": answer.HandlerContext}
+	}
+
 	for _, f := range answer.DeniedFields {
 		// A field is denied by its ARN (…/types/<type>/fields/<field>) or as
 		// <type>.<field>.

@@ -73,9 +73,10 @@ type Service struct {
 	pools     *cognitoidp.Service
 	verifier  *proxy.Verifier
 	// caller reaches the DynamoDB and EventBridge data sources.
-	caller *catalog.Caller
-	bg     *background.Group
-	now    func() time.Time
+	caller             *catalog.Caller
+	bg                 *background.Group
+	now                func() time.Time
+	eventSubscriptions *eventHub
 	// subscriptions are the real-time connections' started subscriptions.
 	subscriptions hub
 }
@@ -85,7 +86,7 @@ type Service struct {
 func New(store storage.Store, functions *lambda.Service, pools *cognitoidp.Service) *Service {
 	return &Service{
 		store: store, functions: functions, pools: pools, verifier: proxy.NewVerifier(), bg: background.New(),
-		now: time.Now,
+		now: time.Now, eventSubscriptions: &eventHub{},
 	}
 }
 

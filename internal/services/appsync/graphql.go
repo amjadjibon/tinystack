@@ -26,9 +26,11 @@ import (
 
 // query is the body of a GraphQL request.
 type query struct {
-	Variables     map[string]any `json:"variables"`
-	Query         string         `json:"query"`
-	OperationName string         `json:"operationName"`
+	eventOperation string
+	eventChannel   string
+	Variables      map[string]any `json:"variables"`
+	Query          string         `json:"query"`
+	OperationName  string         `json:"operationName"`
 }
 
 // graph is what running a request needs of an API, read in one transaction:
@@ -116,6 +118,10 @@ func (s *Service) locate(ctx context.Context, id string) (request.Scope, error) 
 
 // Execute runs a GraphQL request, POST /graphql, against the API id names.
 func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*execute.Response, bool, error) {
+	if r.Path == "/event" {
+		return s.executeEvent(ctx, id, r)
+	}
+
 	scope, err := s.locate(ctx, id)
 	if err != nil || scope.AccountID == "" {
 		return nil, false, err

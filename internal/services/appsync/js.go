@@ -79,7 +79,9 @@ func compile(code string) (*goja.Program, error) {
 	src = exportDeclaration.ReplaceAllString(exportList.ReplaceAllString(src, ""), "$1")
 	src = "(function (__module) {\n" + src + "\nreturn {\n" +
 		"  request: typeof request === \"function\" ? request : undefined,\n" +
-		"  response: typeof response === \"function\" ? response : undefined,\n};\n})"
+		"  response: typeof response === \"function\" ? response : undefined,\n" +
+		"  onPublish: typeof onPublish === \"undefined\" ? undefined : onPublish,\n" +
+		"  onSubscribe: typeof onSubscribe === \"undefined\" ? undefined : onSubscribe,\n};\n})"
 	program, err := goja.Compile("code.js", src, true)
 	if err != nil {
 		return nil, err

@@ -120,6 +120,10 @@ func (h *hub) list(apiID string) []*subscription {
 // Connect serves a real-time connection: GET /graphql on the real-time host,
 // or /graphql/realtime on the GraphQL endpoint, upgraded to a WebSocket.
 func (s *Service) Connect(ctx context.Context, id string, r *execute.Request, socket execute.Socket) (bool, error) {
+	if r.Path == "/event/realtime" {
+		return s.connectEvent(ctx, id, r, socket)
+	}
+
 	scope, err := s.locate(ctx, id)
 	if err != nil || scope.AccountID == "" || (r.Path != graphqlPath && r.Path != graphqlPath+"/realtime") {
 		return false, err
