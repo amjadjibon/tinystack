@@ -260,6 +260,7 @@ var taggers = map[string]tagger{
 	"fis":                 resourceOperations("fis", "ResourceArn", plain),
 	"mediaconvert":        resourceOperations("mediaconvert", "Arn", plain),
 	"swf":                 resourceOperations("swf", "ResourceArn", pairs),
+	"mediaconnect":        resourceOperations("mediaconnect", "ResourceArn", plain),
 	"accessanalyzer":      resourceOperations("accessanalyzer", "ResourceArn", plain),
 	"shield":              resourceOperations("shield", "ResourceARN", pairs),
 	"globalaccelerator":   resourceOperations("globalaccelerator", "ResourceArn", pairs),

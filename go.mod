@@ -82,6 +82,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/lakeformation v1.56.0
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.112.2
 	github.com/aws/aws-sdk-go-v2/service/location v1.59.4
+	github.com/aws/aws-sdk-go-v2/service/mediaconnect v1.62.2
 	github.com/aws/aws-sdk-go-v2/service/mediaconvert v1.107.1
 	github.com/aws/aws-sdk-go-v2/service/memorydb v1.42.4
 	github.com/aws/aws-sdk-go-v2/service/mq v1.45.4

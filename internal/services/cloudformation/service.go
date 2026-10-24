@@ -51,6 +51,7 @@ var _ api.API = (*Service)(nil)
 
 type Service struct {
 	mediaConvert mediaConvertRecords
+	mediaConnect mediaConnectRecords
 
 	dataSync dataSyncRecords
 	transfer transferRecords

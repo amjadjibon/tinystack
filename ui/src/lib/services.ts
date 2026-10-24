@@ -54,6 +54,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: integration,
 		icon: "swf",
 	},
+	mediaconnect: {
+		title: "AWS Elemental MediaConnect",
+		category: mediaServices,
+		icon: "mediaconnect",
+	},
 	datasync: { title: "AWS DataSync", category: migration, icon: "datasync" },
 	resourceexplorer2: {
 		title: "AWS Resource Explorer",

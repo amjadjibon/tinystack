@@ -18,6 +18,7 @@ provider "aws" {
 
   endpoints {
     dsql                 = var.endpoint
+    mediaconnect         = var.endpoint
     shield               = var.endpoint
     mediaconvert         = var.endpoint
     datasync             = var.endpoint

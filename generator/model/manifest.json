@@ -466,6 +466,10 @@
     "mediaconvert": {
       "path": "codegen/sdk-codegen/aws-models/mediaconvert.json",
       "sha256": "beebb2ba87a70b7976bb0caba2c4c691d17e468c11466669387a525e46086648"
+    },
+    "mediaconnect": {
+      "path": "codegen/sdk-codegen/aws-models/mediaconnect.json",
+      "sha256": "9c43ab63f22973308717e6127b1c3cd40c63237f0559de262ab772707d96c277"
     }
   }
 }

@@ -239,6 +239,10 @@ func supportsAttribute(typ, name string) bool {
 
 // replaces reports whether going from old to p replaces a resource.
 func (t *resourceType) replaces(old, p props) bool {
+	if t == types["AWS::MediaConnect::Flow"] {
+		return mediaConnectFlowReplaces(old, p)
+	}
+
 	if t == types[mwaaEnvironmentType] {
 		return mwaaReplaces(old, p)
 	}
@@ -289,6 +293,7 @@ func (t *resourceType) createsFirst(old, p props) bool {
 // client calls other services for one stack resource.
 type client struct {
 	mediaConvert mediaConvertRecords
+	mediaConnect mediaConnectRecords
 
 	mq       mqRecords
 	msk      mskRecords

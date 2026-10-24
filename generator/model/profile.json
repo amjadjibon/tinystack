@@ -39030,5 +39030,428 @@
         "nextPageToken"
       ]
     }
+  },
+  "mediaconnect": {
+    "validation": {
+      "code": "BadRequestException"
+    },
+    "operations": [
+      "CreateFlow",
+      "DescribeFlow",
+      "ListFlows",
+      "UpdateFlow",
+      "DeleteFlow",
+      "StartFlow",
+      "StopFlow",
+      "AddFlowSources",
+      "UpdateFlowSource",
+      "RemoveFlowSource",
+      "AddFlowOutputs",
+      "UpdateFlowOutput",
+      "RemoveFlowOutput",
+      "GrantFlowEntitlements",
+      "UpdateFlowEntitlement",
+      "RevokeFlowEntitlement",
+      "ListEntitlements",
+      "AddFlowVpcInterfaces",
+      "RemoveFlowVpcInterface",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateFlowRequest": [
+        "AvailabilityZone",
+        "Entitlements",
+        "FlowTags",
+        "Name",
+        "Outputs",
+        "Source",
+        "SourceFailoverConfig",
+        "Sources",
+        "VpcInterfaces"
+      ],
+      "GrantEntitlementRequest": [
+        "DataTransferSubscriberFeePercent",
+        "Description",
+        "Encryption",
+        "EntitlementStatus",
+        "Name",
+        "Subscribers"
+      ],
+      "Encryption": [
+        "Algorithm",
+        "ConstantInitializationVector",
+        "DeviceId",
+        "KeyType",
+        "Region",
+        "ResourceId",
+        "RoleArn",
+        "SecretArn",
+        "Url"
+      ],
+      "AddOutputRequest": [
+        "CidrAllowList",
+        "Description",
+        "Destination",
+        "Encryption",
+        "MaxLatency",
+        "MinLatency",
+        "Name",
+        "Port",
+        "Protocol",
+        "RemoteId",
+        "SenderControlPort",
+        "SmoothingLatency",
+        "StreamId",
+        "VpcInterfaceAttachment",
+        "OutputStatus"
+      ],
+      "VpcInterfaceAttachment": [
+        "VpcInterfaceName"
+      ],
+      "SetSourceRequest": [
+        "Decryption",
+        "Description",
+        "EntitlementArn",
+        "IngestPort",
+        "MaxBitrate",
+        "MaxLatency",
+        "MaxSyncBuffer",
+        "MinLatency",
+        "Name",
+        "Protocol",
+        "SenderControlPort",
+        "SenderIpAddress",
+        "SourceListenerAddress",
+        "SourceListenerPort",
+        "StreamId",
+        "VpcInterfaceName",
+        "WhitelistCidr"
+      ],
+      "FailoverConfig": [
+        "FailoverMode",
+        "RecoveryWindow",
+        "SourcePriority",
+        "State"
+      ],
+      "SourcePriority": [
+        "PrimarySource"
+      ],
+      "VpcInterfaceRequest": [
+        "Name",
+        "NetworkInterfaceType",
+        "RoleArn",
+        "SecurityGroupIds",
+        "SubnetId"
+      ],
+      "CreateFlowResponse": [
+        "Flow"
+      ],
+      "Flow": [
+        "AvailabilityZone",
+        "Description",
+        "EgressIp",
+        "Entitlements",
+        "FlowArn",
+        "Name",
+        "Outputs",
+        "Source",
+        "SourceFailoverConfig",
+        "Sources",
+        "Status",
+        "VpcInterfaces"
+      ],
+      "Entitlement": [
+        "DataTransferSubscriberFeePercent",
+        "Description",
+        "Encryption",
+        "EntitlementArn",
+        "EntitlementStatus",
+        "Name",
+        "Subscribers"
+      ],
+      "Output": [
+        "DataTransferSubscriberFeePercent",
+        "Description",
+        "Destination",
+        "Encryption",
+        "EntitlementArn",
+        "ListenerAddress",
+        "MediaLiveInputArn",
+        "Name",
+        "OutputArn",
+        "Port",
+        "Transport",
+        "VpcInterfaceAttachment",
+        "BridgeArn",
+        "BridgePorts",
+        "OutputStatus",
+        "PeerIpAddress",
+        "ConnectedRouterInputArn"
+      ],
+      "Transport": [
+        "CidrAllowList",
+        "MaxBitrate",
+        "MaxLatency",
+        "MaxSyncBuffer",
+        "MinLatency",
+        "Protocol",
+        "RemoteId",
+        "SenderControlPort",
+        "SenderIpAddress",
+        "SmoothingLatency",
+        "SourceListenerAddress",
+        "SourceListenerPort",
+        "StreamId"
+      ],
+      "Source": [
+        "DataTransferSubscriberFeePercent",
+        "Decryption",
+        "Description",
+        "EntitlementArn",
+        "IngestIp",
+        "IngestPort",
+        "Name",
+        "SenderControlPort",
+        "SenderIpAddress",
+        "SourceArn",
+        "Transport",
+        "VpcInterfaceName",
+        "WhitelistCidr",
+        "PeerIpAddress",
+        "ConnectedRouterOutputArn"
+      ],
+      "VpcInterface": [
+        "Name",
+        "NetworkInterfaceIds",
+        "NetworkInterfaceType",
+        "RoleArn",
+        "SecurityGroupIds",
+        "SubnetId"
+      ],
+      "DescribeFlowRequest": [
+        "FlowArn"
+      ],
+      "DescribeFlowResponse": [
+        "Flow",
+        "Messages"
+      ],
+      "Messages": [
+        "Errors"
+      ],
+      "ListFlowsRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListFlowsResponse": [
+        "Flows",
+        "NextToken"
+      ],
+      "ListedFlow": [
+        "AvailabilityZone",
+        "Description",
+        "FlowArn",
+        "Name",
+        "SourceType",
+        "Status"
+      ],
+      "UpdateFlowRequest": [
+        "FlowArn",
+        "SourceFailoverConfig"
+      ],
+      "UpdateFailoverConfig": [
+        "FailoverMode",
+        "RecoveryWindow",
+        "SourcePriority",
+        "State"
+      ],
+      "UpdateFlowResponse": [
+        "Flow"
+      ],
+      "DeleteFlowRequest": [
+        "FlowArn"
+      ],
+      "DeleteFlowResponse": [
+        "FlowArn",
+        "Status"
+      ],
+      "StartFlowRequest": [
+        "FlowArn"
+      ],
+      "StartFlowResponse": [
+        "FlowArn",
+        "Status"
+      ],
+      "StopFlowRequest": [
+        "FlowArn"
+      ],
+      "StopFlowResponse": [
+        "FlowArn",
+        "Status"
+      ],
+      "AddFlowSourcesRequest": [
+        "FlowArn",
+        "Sources"
+      ],
+      "AddFlowSourcesResponse": [
+        "FlowArn",
+        "Sources"
+      ],
+      "UpdateFlowSourceRequest": [
+        "Decryption",
+        "Description",
+        "EntitlementArn",
+        "FlowArn",
+        "IngestPort",
+        "MaxBitrate",
+        "MaxLatency",
+        "MaxSyncBuffer",
+        "MinLatency",
+        "Protocol",
+        "SenderControlPort",
+        "SenderIpAddress",
+        "SourceArn",
+        "SourceListenerAddress",
+        "SourceListenerPort",
+        "StreamId",
+        "VpcInterfaceName",
+        "WhitelistCidr"
+      ],
+      "UpdateEncryption": [
+        "Algorithm",
+        "ConstantInitializationVector",
+        "DeviceId",
+        "KeyType",
+        "Region",
+        "ResourceId",
+        "RoleArn",
+        "SecretArn",
+        "Url"
+      ],
+      "UpdateFlowSourceResponse": [
+        "FlowArn",
+        "Source"
+      ],
+      "RemoveFlowSourceRequest": [
+        "FlowArn",
+        "SourceArn"
+      ],
+      "RemoveFlowSourceResponse": [
+        "FlowArn",
+        "SourceArn"
+      ],
+      "AddFlowOutputsRequest": [
+        "FlowArn",
+        "Outputs"
+      ],
+      "AddFlowOutputsResponse": [
+        "FlowArn",
+        "Outputs"
+      ],
+      "UpdateFlowOutputRequest": [
+        "CidrAllowList",
+        "Description",
+        "Destination",
+        "Encryption",
+        "FlowArn",
+        "MaxLatency",
+        "MinLatency",
+        "OutputArn",
+        "Port",
+        "Protocol",
+        "RemoteId",
+        "SenderControlPort",
+        "SenderIpAddress",
+        "SmoothingLatency",
+        "StreamId",
+        "VpcInterfaceAttachment",
+        "OutputStatus"
+      ],
+      "UpdateFlowOutputResponse": [
+        "FlowArn",
+        "Output"
+      ],
+      "RemoveFlowOutputRequest": [
+        "FlowArn",
+        "OutputArn"
+      ],
+      "RemoveFlowOutputResponse": [
+        "FlowArn",
+        "OutputArn"
+      ],
+      "GrantFlowEntitlementsRequest": [
+        "Entitlements",
+        "FlowArn"
+      ],
+      "GrantFlowEntitlementsResponse": [
+        "Entitlements",
+        "FlowArn"
+      ],
+      "UpdateFlowEntitlementRequest": [
+        "Description",
+        "Encryption",
+        "EntitlementArn",
+        "EntitlementStatus",
+        "FlowArn",
+        "Subscribers"
+      ],
+      "UpdateFlowEntitlementResponse": [
+        "Entitlement",
+        "FlowArn"
+      ],
+      "RevokeFlowEntitlementRequest": [
+        "EntitlementArn",
+        "FlowArn"
+      ],
+      "RevokeFlowEntitlementResponse": [
+        "EntitlementArn",
+        "FlowArn"
+      ],
+      "ListEntitlementsRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListEntitlementsResponse": [
+        "Entitlements",
+        "NextToken"
+      ],
+      "ListedEntitlement": [
+        "DataTransferSubscriberFeePercent",
+        "EntitlementArn",
+        "EntitlementName"
+      ],
+      "AddFlowVpcInterfacesRequest": [
+        "FlowArn",
+        "VpcInterfaces"
+      ],
+      "AddFlowVpcInterfacesResponse": [
+        "FlowArn",
+        "VpcInterfaces"
+      ],
+      "RemoveFlowVpcInterfaceRequest": [
+        "FlowArn",
+        "VpcInterfaceName"
+      ],
+      "RemoveFlowVpcInterfaceResponse": [
+        "FlowArn",
+        "NonDeletedNetworkInterfaceIds",
+        "VpcInterfaceName"
+      ],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
+      ]
+    }
   }
 }

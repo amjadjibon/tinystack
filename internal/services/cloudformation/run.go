@@ -385,6 +385,7 @@ func (s *Service) perform(ctx context.Context,
 ) (physical string, attributes map[string]any, err error) {
 	c := &client{
 		mediaConvert: s.mediaConvert,
+		mediaConnect: s.mediaConnect,
 
 		caller:   s.caller,
 		mq:       s.mq,

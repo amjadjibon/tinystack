@@ -91,6 +91,7 @@ import (
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	locationapi "github.com/amjadjibon/tinystack/internal/aws/generated/location"
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
+	mediaconnectapi "github.com/amjadjibon/tinystack/internal/aws/generated/mediaconnect"
 	mediaconvertapi "github.com/amjadjibon/tinystack/internal/aws/generated/mediaconvert"
 	memorydbapi "github.com/amjadjibon/tinystack/internal/aws/generated/memorydb"
 	mqapi "github.com/amjadjibon/tinystack/internal/aws/generated/mq"
@@ -216,6 +217,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/location"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
+	"github.com/amjadjibon/tinystack/internal/services/mediaconnect"
 	"github.com/amjadjibon/tinystack/internal/services/mediaconvert"
 	"github.com/amjadjibon/tinystack/internal/services/memorydb"
 	"github.com/amjadjibon/tinystack/internal/services/mq"
@@ -481,6 +483,8 @@ func build(
 	a.onStop(fisRecords.Stop)
 	mediaConvertRecords := mediaconvert.New(store, roles)
 	a.onStop(mediaConvertRecords.Stop)
+	mediaConnectRecords := mediaconnect.New(store, network, roles)
+	a.onStop(mediaConnectRecords.Stop)
 	dataSyncRecords := datasync.New(store, buckets, roles)
 	a.onStop(dataSyncRecords.Stop)
 	shieldRecords := shield.New(store)
@@ -618,6 +622,7 @@ func build(
 		servicecatalogapi.Descriptor(serviceCatalogRecords),
 		mediaconvertapi.Descriptor(mediaConvertRecords),
 		datasyncapi.Descriptor(dataSyncRecords),
+		mediaconnectapi.Descriptor(mediaConnectRecords),
 		accessanalyzerapi.Descriptor(accessAnalyzerRecords),
 		shieldapi.Descriptor(shieldRecords),
 		swfapi.Descriptor(swfRecords),
@@ -699,6 +704,7 @@ func build(
 	mediaConvertRecords.UseCaller(caller)
 	shieldRecords.UseCaller(caller)
 	dataSyncRecords.UseCaller(caller)
+	mediaConnectRecords.UseCaller(caller)
 	wafClassicRecords.UseCaller(caller)
 	budgetRecords.Start(caller)
 	containers.UseCaller(caller)
@@ -722,6 +728,7 @@ func build(
 	stacks.UseMWAA(airflowEnvironments)
 	stacks.UseMediaConvert(mediaConvertRecords)
 	stacks.UseDataSync(dataSyncRecords)
+	stacks.UseMediaConnect(mediaConnectRecords)
 	stacks.UseTransfer(transferRecords)
 	stacks.UseLocation(locationTrackers)
 	stacks.UseS3Tables(tableRecords)
