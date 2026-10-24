@@ -288,6 +288,8 @@ github.com/aws/aws-sdk-go-v2/service/timestreamwrite v1.43.4 h1:H2Haj+0uwBfxesUA
 github.com/aws/aws-sdk-go-v2/service/timestreamwrite v1.43.4/go.mod h1:4bdZ5RJIx7C1VjZAy53kwW4EzL5TPzy7zUWL79+y8Vg=
 github.com/aws/aws-sdk-go-v2/service/transfer v1.85.3 h1:XAK5pci5lszUBOEpPt8jrFgQgi9uFhUcXzQdwiJxukw=
 github.com/aws/aws-sdk-go-v2/service/transfer v1.85.3/go.mod h1:SxXlk1uckGGUbo92CHnDG4anrqOCvwSorhUoSlwB2+Y=
+github.com/aws/aws-sdk-go-v2/service/translate v1.43.3 h1:6raglDWV0cF1c+hrRZjqRHuRYvOET66WA1TmQQXKb74=
+github.com/aws/aws-sdk-go-v2/service/translate v1.43.3/go.mod h1:kzzEfERx0GbL7fN3G/h0aXPk5qeLsMconbaZ4vrBdCg=
 github.com/aws/aws-sdk-go-v2/service/verifiedpermissions v1.41.4 h1:EcGLoXhyvESrCurDkoXY7DfYV6V31Qa9bS7pDV+ScNI=
 github.com/aws/aws-sdk-go-v2/service/verifiedpermissions v1.41.4/go.mod h1:0MnoIZ55Kl9LNzzKXKNznegHa1PPnJhzIK6LJGyruco=
 github.com/aws/aws-sdk-go-v2/service/waf v1.39.0 h1:p2ekz9dzSsh/m7Mehn8/cLpLqVXOAWxsI2+MffIazpQ=

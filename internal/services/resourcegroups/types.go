@@ -12,6 +12,7 @@ const appSyncAPIType = "Api"
 // resource types ("sqs" to "AWS::SQS::..."). A service missing here has no
 // resource types a group can select.
 var namespaces = map[string]string{
+	"translate":                 "Translate",
 	"globalaccelerator":         "GlobalAccelerator",
 	"dsql":                      "DSQL",
 	"s3files":                   "S3Files",
@@ -127,6 +128,8 @@ var typeNames = map[string]string{
 	"mediaconvert/queue":                     "Queue",
 	"mediaconvert/preset":                    "Preset",
 	"mediaconvert/jobtemplate":               "JobTemplate",
+	"translate/terminology":                  "Terminology",
+	"translate/parallel-data":                "ParallelData",
 	"datasync/locations3":                    "LocationS3",
 	"datasync/locationefs":                   "LocationEFS",
 	"datasync/task":                          "Task",

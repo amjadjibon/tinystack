@@ -40628,4 +40628,324 @@
       ]
     }
   }
+,
+  "translate": {
+    "validation": {
+      "code": "InvalidRequestException"
+    },
+    "operations": [
+      "TranslateText",
+      "TranslateDocument",
+      "ListLanguages",
+      "ImportTerminology",
+      "GetTerminology",
+      "ListTerminologies",
+      "DeleteTerminology",
+      "CreateParallelData",
+      "UpdateParallelData",
+      "GetParallelData",
+      "ListParallelData",
+      "DeleteParallelData",
+      "StartTextTranslationJob",
+      "DescribeTextTranslationJob",
+      "ListTextTranslationJobs",
+      "StopTextTranslationJob",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "TranslateTextRequest": [
+        "Text",
+        "TerminologyNames",
+        "SourceLanguageCode",
+        "TargetLanguageCode",
+        "Settings"
+      ],
+      "TranslationSettings": [
+        "Formality",
+        "Profanity",
+        "Brevity"
+      ],
+      "TranslateTextResponse": [
+        "TranslatedText",
+        "SourceLanguageCode",
+        "TargetLanguageCode",
+        "AppliedTerminologies",
+        "AppliedSettings"
+      ],
+      "AppliedTerminology": [
+        "Name",
+        "Terms"
+      ],
+      "Term": [
+        "SourceText",
+        "TargetText"
+      ],
+      "TranslateDocumentRequest": [
+        "Document",
+        "TerminologyNames",
+        "SourceLanguageCode",
+        "TargetLanguageCode",
+        "Settings"
+      ],
+      "Document": [
+        "Content",
+        "ContentType"
+      ],
+      "TranslateDocumentResponse": [
+        "TranslatedDocument",
+        "SourceLanguageCode",
+        "TargetLanguageCode",
+        "AppliedTerminologies",
+        "AppliedSettings"
+      ],
+      "TranslatedDocument": [
+        "Content"
+      ],
+      "ListLanguagesRequest": [
+        "DisplayLanguageCode",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListLanguagesResponse": [
+        "Languages",
+        "DisplayLanguageCode",
+        "NextToken"
+      ],
+      "Language": [
+        "LanguageName",
+        "LanguageCode"
+      ],
+      "ImportTerminologyRequest": [
+        "Name",
+        "MergeStrategy",
+        "Description",
+        "TerminologyData",
+        "EncryptionKey",
+        "Tags"
+      ],
+      "TerminologyData": [
+        "File",
+        "Format",
+        "Directionality"
+      ],
+      "EncryptionKey": [
+        "Type",
+        "Id"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "ImportTerminologyResponse": [
+        "TerminologyProperties",
+        "AuxiliaryDataLocation"
+      ],
+      "TerminologyProperties": [
+        "Name",
+        "Description",
+        "Arn",
+        "SourceLanguageCode",
+        "TargetLanguageCodes",
+        "EncryptionKey",
+        "SizeBytes",
+        "TermCount",
+        "CreatedAt",
+        "LastUpdatedAt",
+        "Directionality",
+        "Message",
+        "SkippedTermCount",
+        "Format"
+      ],
+      "TerminologyDataLocation": [
+        "RepositoryType",
+        "Location"
+      ],
+      "GetTerminologyRequest": [
+        "Name",
+        "TerminologyDataFormat"
+      ],
+      "GetTerminologyResponse": [
+        "TerminologyProperties",
+        "TerminologyDataLocation",
+        "AuxiliaryDataLocation"
+      ],
+      "ListTerminologiesRequest": [
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListTerminologiesResponse": [
+        "TerminologyPropertiesList",
+        "NextToken"
+      ],
+      "DeleteTerminologyRequest": [
+        "Name"
+      ],
+      "CreateParallelDataRequest": [
+        "Name",
+        "Description",
+        "ParallelDataConfig",
+        "EncryptionKey",
+        "ClientToken",
+        "Tags"
+      ],
+      "ParallelDataConfig": [
+        "S3Uri",
+        "Format"
+      ],
+      "CreateParallelDataResponse": [
+        "Name",
+        "Status"
+      ],
+      "UpdateParallelDataRequest": [
+        "Name",
+        "Description",
+        "ParallelDataConfig",
+        "ClientToken"
+      ],
+      "UpdateParallelDataResponse": [
+        "Name",
+        "Status",
+        "LatestUpdateAttemptStatus",
+        "LatestUpdateAttemptAt"
+      ],
+      "GetParallelDataRequest": [
+        "Name"
+      ],
+      "GetParallelDataResponse": [
+        "ParallelDataProperties",
+        "DataLocation",
+        "AuxiliaryDataLocation",
+        "LatestUpdateAttemptAuxiliaryDataLocation"
+      ],
+      "ParallelDataProperties": [
+        "Name",
+        "Arn",
+        "Description",
+        "Status",
+        "SourceLanguageCode",
+        "TargetLanguageCodes",
+        "ParallelDataConfig",
+        "Message",
+        "ImportedDataSize",
+        "ImportedRecordCount",
+        "FailedRecordCount",
+        "SkippedRecordCount",
+        "EncryptionKey",
+        "CreatedAt",
+        "LastUpdatedAt",
+        "LatestUpdateAttemptStatus",
+        "LatestUpdateAttemptAt"
+      ],
+      "ParallelDataDataLocation": [
+        "RepositoryType",
+        "Location"
+      ],
+      "ListParallelDataRequest": [
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListParallelDataResponse": [
+        "ParallelDataPropertiesList",
+        "NextToken"
+      ],
+      "DeleteParallelDataRequest": [
+        "Name"
+      ],
+      "DeleteParallelDataResponse": [
+        "Name",
+        "Status"
+      ],
+      "StartTextTranslationJobRequest": [
+        "JobName",
+        "InputDataConfig",
+        "OutputDataConfig",
+        "DataAccessRoleArn",
+        "SourceLanguageCode",
+        "TargetLanguageCodes",
+        "TerminologyNames",
+        "ParallelDataNames",
+        "ClientToken",
+        "Settings"
+      ],
+      "InputDataConfig": [
+        "S3Uri",
+        "ContentType"
+      ],
+      "OutputDataConfig": [
+        "S3Uri"
+      ],
+      "StartTextTranslationJobResponse": [
+        "JobId",
+        "JobStatus"
+      ],
+      "DescribeTextTranslationJobRequest": [
+        "JobId"
+      ],
+      "DescribeTextTranslationJobResponse": [
+        "TextTranslationJobProperties"
+      ],
+      "TextTranslationJobProperties": [
+        "JobId",
+        "JobName",
+        "JobStatus",
+        "JobDetails",
+        "SourceLanguageCode",
+        "TargetLanguageCodes",
+        "TerminologyNames",
+        "ParallelDataNames",
+        "Message",
+        "SubmittedTime",
+        "EndTime",
+        "InputDataConfig",
+        "OutputDataConfig",
+        "DataAccessRoleArn",
+        "Settings"
+      ],
+      "JobDetails": [
+        "TranslatedDocumentsCount",
+        "DocumentsWithErrorsCount",
+        "InputDocumentsCount"
+      ],
+      "ListTextTranslationJobsRequest": [
+        "Filter",
+        "NextToken",
+        "MaxResults"
+      ],
+      "TextTranslationJobFilter": [
+        "JobName",
+        "JobStatus",
+        "SubmittedBeforeTime",
+        "SubmittedAfterTime"
+      ],
+      "ListTextTranslationJobsResponse": [
+        "TextTranslationJobPropertiesList",
+        "NextToken"
+      ],
+      "StopTextTranslationJobRequest": [
+        "JobId"
+      ],
+      "StopTextTranslationJobResponse": [
+        "JobId",
+        "JobStatus"
+      ],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "ListTagsForResourceRequest": [
+        "ResourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
+      ]
+    }
+  }
 }

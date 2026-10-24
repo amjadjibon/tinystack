@@ -24,6 +24,7 @@ const AdminSigningName = "tinystack"
 // adminPaths are the endpoints that change or expose every account, which need
 // an administrator once the console signs people in.
 var adminPaths = []string{
+	"/_tinystack/translate/fixtures",
 	"/_tinystack/bedrock/fixtures",
 	"/_tinystack/costs/fixtures",
 	"/_tinystack/reset",

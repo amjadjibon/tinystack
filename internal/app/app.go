@@ -133,6 +133,7 @@ import (
 	swfapi "github.com/amjadjibon/tinystack/internal/aws/generated/swf"
 	timestreamwriteapi "github.com/amjadjibon/tinystack/internal/aws/generated/timestreamwrite"
 	transferapi "github.com/amjadjibon/tinystack/internal/aws/generated/transfer"
+	translateapi "github.com/amjadjibon/tinystack/internal/aws/generated/translate"
 	verifiedpermissionsapi "github.com/amjadjibon/tinystack/internal/aws/generated/verifiedpermissions"
 	wafapi "github.com/amjadjibon/tinystack/internal/aws/generated/waf"
 	wafv2api "github.com/amjadjibon/tinystack/internal/aws/generated/wafv2"
@@ -262,6 +263,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/swf"
 	"github.com/amjadjibon/tinystack/internal/services/timestreamwrite"
 	"github.com/amjadjibon/tinystack/internal/services/transfer"
+	"github.com/amjadjibon/tinystack/internal/services/translate"
 	"github.com/amjadjibon/tinystack/internal/services/verifiedpermissions"
 	"github.com/amjadjibon/tinystack/internal/services/waf"
 	"github.com/amjadjibon/tinystack/internal/services/wafv2"
@@ -489,6 +491,12 @@ func build(
 	a.onStop(mediaConvertRecords.Stop)
 	mediaConnectRecords := mediaconnect.New(store, network, roles)
 	a.onStop(mediaConnectRecords.Stop)
+	translateRecords := translate.New(store, buckets, roles, keys)
+	a.onStop(translateRecords.Stop)
+	if err = translateRecords.Start(ctx); err != nil {
+		return nil, err
+	}
+
 	dataSyncRecords := datasync.New(store, buckets, roles)
 	a.onStop(dataSyncRecords.Stop)
 	s3FilesRecords := s3files.New(store, network, buckets, roles, keys)
@@ -634,6 +642,7 @@ func build(
 		servicecatalogapi.Descriptor(serviceCatalogRecords),
 		mediaconvertapi.Descriptor(mediaConvertRecords),
 		datasyncapi.Descriptor(dataSyncRecords),
+		translateapi.Descriptor(translateRecords),
 		s3filesapi.Descriptor(s3FilesRecords),
 		mediaconnectapi.Descriptor(mediaConnectRecords),
 		accessanalyzerapi.Descriptor(accessAnalyzerRecords),
@@ -863,6 +872,9 @@ func build(
 	bedrockFixtures := bedrockruntime.Handler(store, cfg.Defaults.Account)
 	handler.Handle("bedrock/fixtures", bedrockFixtures)
 	handler.Handle("bedrock/fixtures/", bedrockFixtures)
+	translateFixtures := translate.Handler(store, cfg.Defaults.Account)
+	handler.Handle("translate/fixtures", translateFixtures)
+	handler.Handle("translate/fixtures/", translateFixtures)
 	fixtures := costdata.Handler(store, cfg.Defaults.Account)
 	handler.Handle("costs/fixtures", fixtures)
 	handler.Handle("costs/fixtures/", fixtures)

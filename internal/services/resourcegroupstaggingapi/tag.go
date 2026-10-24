@@ -263,6 +263,7 @@ var taggers = map[string]tagger{
 	"iotwireless":         resourceOperations("iotwireless", "ResourceArn", pairs),
 	"swf":                 resourceOperations("swf", "ResourceArn", pairs),
 	"mediaconnect":        resourceOperations("mediaconnect", "ResourceArn", plain),
+	"translate":           resourceOperations("translate", "ResourceArn", pairs),
 	"accessanalyzer":      resourceOperations("accessanalyzer", "ResourceArn", plain),
 	"shield":              resourceOperations("shield", "ResourceARN", pairs),
 	"globalaccelerator":   resourceOperations("globalaccelerator", "ResourceArn", pairs),

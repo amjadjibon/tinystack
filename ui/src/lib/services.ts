@@ -44,6 +44,11 @@ export const categories = [
 ];
 
 const catalog: Record<string, ServiceInfo> = {
+	translate: {
+		title: "Amazon Translate",
+		category: machineLearning,
+		icon: "translate",
+	},
 	mediaconvert: {
 		title: "AWS Elemental MediaConvert",
 		category: mediaServices,
