@@ -13,7 +13,6 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [AWS CodeConnections repository links and sync](services/codeconnections-sync.md) | Proposed | Extend connection and host records with repository links and sync configurations. |
 | [AWS Private CA certificate issuance](services/acmpca-issuance.md) | Proposed | Extend records-only certificate authorities with certificate signing so an authority can become ACTIVE and issue and revoke certificates. |
 | [AWS Resource Access Manager cross-account access and invitations runtime](services/ram-runtime.md) | Proposed | Extend records-only resource shares to cross-account invitations, managed permissions, and real cross-account resource access. |
-| [AWS Signer](services/signer.md) | Proposed | Implement `StartSigningJob`, `DescribeSigningJob`, `ListSigningJobs`. |
 | [AWS X-Ray trace ingestion and telemetry runtime](services/xray-runtime.md) | Proposed | Extend records-only groups and sampling rules to trace ingestion, telemetry processing, and service map analysis. |
 | [Amazon Location runtime and broader records](services/location-runtime.md) | Proposed | Implement device-position ingestion, retrieval/history and tracker consumer associations with explicit runtime semantics. |
 | [Amazon MQ configuration, users and runtime](services/mq-runtime.md) | Future extensions | Broker records and tags are implemented. Configuration/user APIs and a real messaging runtime require separate slices. |
@@ -31,21 +30,13 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [CodeBuild build execution](services/codebuild-runtime.md) | Proposed extension | Extend the implemented project metadata with an explicit build execution/runtime contract. |
 | [CodeDeploy deployment execution and agents](services/codedeploy-runtime.md) | Proposed | Extend application, deployment configuration and group records to real deployment execution. |
 | [CodePipeline execution and release automation](services/codepipeline-execution.md) | Proposed | Extend records-only pipeline declarations to executions, stage transitions, approvals and triggers. |
-| [Cost and Usage Reports](services/cur.md) | Proposed | Implement `DeleteReportDefinition`, `DescribeReportDefinitions`, `ListTagsForResource`. |
-| [EC2 Instance Metadata](services/imds.md) | Proposed | Implement `GetInstanceIdentityDocument`, `GetIamSecurityCredentials`, `GetMetadata`. |
-| [ECS Task Metadata](services/ecs-metadata.md) | Proposed | Implement `GetTaskMetadata`, `GetContainerMetadata`, `GetTaskStats`. |
-| [EMR](services/emr.md) | Proposed | Implement `RunJobFlow`, `DescribeCluster`, `ListClusters`. |
 | [Elastic Load Balancing (Classic) policies and traffic](services/elb-policies.md) | Proposed | Extend the records-only Classic Load Balancer control plane with policies, placement changes and a data plane. |
 | [IAM Identity Center additional control plane and sign-in](services/identitysso-extension.md) | Proposed | Extend the user/group, membership, permission set and assignment records with separately designed provisioning and identity execution. |
-| [IoT Wireless](services/iotwireless.md) | Proposed | Implement `GetPositionEstimate`. |
 | [Lambda Core](services/lambda-core.md) | Proposed | Implement `CreateNetworkConnector`, `GetNetworkConnector`, `ListNetworkConnectors`. |
 | [Lambda Durable Execution](services/lambda-durable.md) | Proposed | Implement `CheckpointDurableExecution`, `GetDurableExecutionState`, `GetDurableExecution`. |
 | [Lambda MicroVMs](services/lambda-microvms.md) | Proposed | Implement `CreateMicrovmImage`, `RunMicrovm`, `GetMicrovm`. |
-| [MediaConnect](services/mediaconnect.md) | Proposed | Implement `CreateFlow`, `DescribeFlow`, `ListFlows`. |
 | [OpenSearch Service runtime engine](services/opensearch-runtime.md) | Runtime decision required | create one OpenSearch domain, obtain its endpoint, index a document, search it, and delete the domain through AWS-style management calls. |
-| [RDS Data API](services/rds-data.md) | Proposed | Implement `ExecuteStatement`, `BeginTransaction`, `CommitTransaction`. |
 | [Route 53 Resolver DNS Firewall, query logging and runtime](services/route53resolver-runtime.md) | Proposed | Extend the records-only endpoint, rule and association slice with separate advanced control-plane and truthful DNS execution contracts. |
-| [S3 Files](services/s3files.md) | Proposed | Implement `CreateFileSystem`, `GetFileSystem`, `ListFileSystems`. |
 | [S3 Tables runtime and broader metadata](services/s3tables-runtime.md) | Proposed | Define a coherent metadata-location and actual Iceberg file/runtime contract beyond the implemented customer metadata records. |
 | [Transcribe](services/transcribe.md) | Proposed | Implement `StartTranscriptionJob`, `GetTranscriptionJob`, `ListTranscriptionJobs`. |
 | [Transfer Family runtime and advanced configuration](services/transfer-runtime.md) | Proposed | Extend the implemented server/user/public-key records with explicitly configured runtime and advanced records. |

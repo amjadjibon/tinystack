@@ -3152,39 +3152,6 @@
       "features": "- [ ] `StartBuild`\n- [ ] `BatchGetBuilds`\n- [ ] `StopBuild`\n- [ ] `ListBuilds`\n- [ ] `ListBuildsForProject`\n- [ ] `BatchDeleteBuilds`\n- [ ] Batch builds, workers, source checkout and artifact publication\n- [ ] Webhooks, report groups and report generation",
       "integration": "Project metadata is delivered; build execution must define workers, lifecycle, logs, artifacts, credentials and readiness separately."
     },
-    "cur": {
-      "title": "Cost and Usage Reports",
-      "state": "Proposed",
-      "slice": "Implement `DeleteReportDefinition`, `DescribeReportDefinitions`, `ListTagsForResource`.",
-      "features": "- [ ] `DeleteReportDefinition`\n- [ ] `DescribeReportDefinitions`\n- [ ] `ListTagsForResource`\n- [ ] `ModifyReportDefinition`\n- [ ] `PutReportDefinition`\n- [ ] `TagResource`\n- [ ] `UntagResource`",
-      "integration": "The proposed resource scope is account-wide; define persistence and cross-service effects accordingly."
-    },
-    "ecs-metadata": {
-      "title": "ECS Task Metadata",
-      "state": "Proposed",
-      "slice": "Implement `GetTaskMetadata`, `GetContainerMetadata`, `GetTaskStats`.",
-      "features": "- [ ] `GetTaskMetadata` \u2014 serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetContainerMetadata` \u2014 serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetTaskStats` \u2014 serve the matching ECS task metadata V4 HTTP route.\n- [ ] `GetContainerStats` \u2014 serve the matching ECS task metadata V4 HTTP route.",
-      "acceptance": "Call the `/v4/<token>` metadata routes over HTTP. Check valid and unknown tokens, task and container metadata, stats, and token isolation."
-    },
-    "emr": {
-      "title": "EMR",
-      "state": "Proposed",
-      "slice": "Implement `RunJobFlow`, `DescribeCluster`, `ListClusters`.",
-      "features": "- [ ] `RunJobFlow`\n- [ ] `DescribeCluster`\n- [ ] `ListClusters`\n- [ ] `ModifyCluster`\n- [ ] `SetTerminationProtection`\n- [ ] `SetVisibleToAllUsers`\n- [ ] `AddJobFlowSteps`\n- [ ] `DescribeStep`\n- [ ] `ListSteps`\n- [ ] `CancelSteps`\n- [ ] `AddInstanceFleet`\n- [ ] `ListInstanceFleets`\n- [ ] `ModifyInstanceFleet`\n- [ ] `AddInstanceGroups`\n- [ ] `ListInstanceGroups`"
-    },
-    "imds": {
-      "title": "EC2 Instance Metadata",
-      "state": "Proposed",
-      "slice": "Implement `GetInstanceIdentityDocument`, `GetIamSecurityCredentials`, `GetMetadata`.",
-      "features": "- [ ] `GetInstanceIdentityDocument` \u2014 serve the corresponding IMDS HTTP path.\n- [ ] `GetIamSecurityCredentials` \u2014 serve the corresponding IMDS HTTP path.\n- [ ] `GetMetadata` \u2014 serve the corresponding IMDS HTTP path.\n- [ ] `GetUserData` \u2014 serve the corresponding IMDS HTTP path.",
-      "acceptance": "Call `/latest/` metadata routes over HTTP. Check IMDSv2 token issuance, credential and identity paths, expiry, and instance isolation."
-    },
-    "iotwireless": {
-      "title": "IoT Wireless",
-      "state": "Proposed",
-      "slice": "Implement `GetPositionEstimate`.",
-      "features": "- [ ] `GetPositionEstimate`"
-    },
     "lambda-core": {
       "title": "Lambda Core",
       "state": "Proposed",
@@ -3211,12 +3178,6 @@
       "features": "- [ ] BatchUpdateDevicePosition\n- [ ] GetDevicePosition\n- [ ] BatchGetDevicePosition\n- [ ] GetDevicePositionHistory\n- [ ] ListDevicePositions and position filtering/evaluation\n- [ ] AssociateTrackerConsumer, DisassociateTrackerConsumer and ListTrackerConsumers\n- [ ] RequestBasedUsage/deprecated PricingPlan metadata compatibility decision (a pricing value, not an API)\n- [ ] Geofences and location-event delivery\n- [ ] KMS and geospatial-query eligibility\n- [ ] Maps, search, places, routes and other Location data planes",
       "integration": "Tracker configuration CRUD and tags are implemented records only. See the [records guide](../../guides/location-records.md). PositionFiltering metadata does not imply filtered device positions or event delivery."
     },
-    "mediaconnect": {
-      "title": "MediaConnect",
-      "state": "Proposed",
-      "slice": "Implement `CreateFlow`, `DescribeFlow`, `ListFlows`.",
-      "features": "- [ ] `CreateFlow`\n- [ ] `DescribeFlow`\n- [ ] `ListFlows`\n- [ ] `UpdateFlow`\n- [ ] `DescribeFlowSourceMetadata`\n- [ ] `DescribeFlowSourceThumbnail`\n- [ ] `ListBridges`\n- [ ] `ListEntitlements`\n- [ ] `ListGateways`\n- [ ] `ListGatewayInstances`\n- [ ] `ListOfferings`\n- [ ] `ListReservations`\n- [ ] `DescribeBridge`\n- [ ] `DescribeGateway`\n- [ ] `DescribeGatewayInstance`"
-    },
     "mq-runtime": {
       "title": "Amazon MQ configuration, users and runtime",
       "state": "Future extensions",
@@ -3229,30 +3190,12 @@
       "slice": "Environment configuration records and tags are implemented. Tokens, Airflow APIs and actual execution require a separate runtime contract.",
       "features": "- [ ] `CreateWebLoginToken`\n- [ ] `CreateCliToken`\n- [ ] `InvokeRestApi`\n- [ ] Airflow DAG/task execution, scheduler/worker/webserver lifecycle and readiness\n- [ ] Real URLs/endpoints, credentials, log and metrics delivery\n- [ ] Advanced artifacts, configuration, encryption and network configuration updates"
     },
-    "rds-data": {
-      "title": "RDS Data API",
-      "state": "Proposed",
-      "slice": "Implement `ExecuteStatement`, `BeginTransaction`, `CommitTransaction`.",
-      "features": "- [ ] `ExecuteStatement`\n- [ ] `BeginTransaction`\n- [ ] `CommitTransaction`\n- [ ] `RollbackTransaction`\n- [ ] `BatchExecuteStatement`"
-    },
-    "s3files": {
-      "title": "S3 Files",
-      "state": "Proposed",
-      "slice": "Implement `CreateFileSystem`, `GetFileSystem`, `ListFileSystems`.",
-      "features": "- [ ] `CreateFileSystem`\n- [ ] `GetFileSystem`\n- [ ] `ListFileSystems`\n- [ ] `DeleteFileSystem`\n- [ ] `CreateMountTarget`\n- [ ] `GetMountTarget`\n- [ ] `ListMountTargets`\n- [ ] `DeleteMountTarget`\n- [ ] `UpdateMountTarget`\n- [ ] `CreateAccessPoint`\n- [ ] `GetAccessPoint`\n- [ ] `ListAccessPoints`\n- [ ] `DeleteAccessPoint`\n- [ ] `GetFileSystemPolicy`\n- [ ] `PutFileSystemPolicy`"
-    },
     "s3tables-runtime": {
       "title": "S3 Tables runtime and broader metadata",
       "state": "Proposed",
       "slice": "Define a coherent metadata-location and actual Iceberg file/runtime contract beyond the implemented customer metadata records.",
       "features": "- [ ] GetTableMetadataLocation\n- [ ] UpdateTableMetadataLocation\n- [ ] Genuine warehouse and metadata/data-file ownership with object reads/writes\n- [ ] Iceberg REST catalog and query-engine integration\n- [ ] Table schemas/nested types, partition specs and sort orders\n- [ ] Maintenance, compaction, snapshots, expiration and replication\n- [ ] AWS-managed buckets/tables and catalog analytics integrations\n- [ ] Encryption/KMS/IAM execution and runtime readiness\n- [ ] CloudFormation schema-backed Table, WarehouseLocation and advanced maintenance/encryption/storage/metrics/replication properties",
       "integration": "Sixteen hierarchy/tag APIs and three finite CloudFormation resource subsets are implemented records only. See the [records guide](../../guides/s3tables-records.md). Metadata-location calls must not succeed until truthful file ownership and version semantics are implemented."
-    },
-    "signer": {
-      "title": "AWS Signer",
-      "state": "Proposed",
-      "slice": "Implement `StartSigningJob`, `DescribeSigningJob`, `ListSigningJobs`.",
-      "features": "- [ ] `StartSigningJob`\n- [ ] `DescribeSigningJob`\n- [ ] `ListSigningJobs`\n- [ ] `PutSigningProfile`\n- [ ] `GetSigningProfile`"
     },
     "transcribe": {
       "title": "Transcribe",
