@@ -2915,6 +2915,30 @@
       ],
       "execution": "Records only",
       "package": "inspector2"
+    },
+    "swf": {
+      "title": "Amazon Simple Workflow Service",
+      "category": "Application Integration",
+      "scope": "Account and Region",
+      "summary": "Coordinate local deciders and activity workers through durable workflow histories, task polling, timers and timeouts.",
+      "features": [
+        "All 39 pinned JSON 1.0 operations: domains, workflow/activity types, executions, decision and activity tasks, visibility counts and tags; generated model constraints return ValidationException",
+        "Domain registration, deprecation and restoration; workflow/activity type versions, defaults, deprecation, restoration and deletion; retention accepts 0..90 days or NONE (0 and NONE remove closed history)",
+        "Start, describe, signal, cancel, terminate and continue executions; one open run per workflowId per domain; execution tags, ordered histories, reverse-order pagination and visibility time/type/tag/workflowId/close-status filters with the one-filter rule",
+        "Real local deciders and activity workers: 60-second cancellable long polls wake on in-process changes, claim tasks in storage transactions, respect priorities and invalidate opaque tokens when tasks close",
+        "Activity scheduling, completion, failure, cancellation and heartbeat cancelRequested; workflow completion/failure/cancellation, markers, timers, external signals/cancellation and child workflows with child policies and recorded failure causes",
+        "Background transaction claims enforce workflow, decision and activity schedule-to-start, schedule-to-close, start-to-close and heartbeat deadlines; timers fire and new decisions become available",
+        "SQLite restart preserves open runs, histories, task tokens, timers, defaults and tags; persisted partition-wide index resumes deadline processing",
+        "Domain tags, native resource inventory and Resource Groups Tagging API adapter; Terraform aws_swf_domain with the swf endpoint override. SWF has no CloudFormation resource types"
+      ],
+      "gaps": [
+        "No SWF Flow framework, cross-region coordination or imported history; history contains only local recorded events",
+        "ScheduleLambdaFunction records ScheduleLambdaFunctionFailed with LAMBDA_SERVICE_NOT_AVAILABLE_IN_REGION; no Lambda invocation. Lambda roles are rejected on execution start",
+        "Sticky decision task lists are unsupported and rejected; no AWS distributed delivery latency, throttling or service quota simulation",
+        "Timeout and retention transitions use a 100 ms local worker and wall-clock deadlines; NONE disables individual task deadlines within the workflow execution deadline"
+      ],
+      "execution": "Real local workflow coordination; workers and deciders run in clients",
+      "package": "swf"
     }
   },
   "future": {

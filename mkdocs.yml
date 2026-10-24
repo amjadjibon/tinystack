@@ -140,6 +140,7 @@ nav:
       - "Application Integration":
           - "Amazon MQ": services/mq.md
           - "Amazon MWAA": services/mwaa.md
+          - "Amazon Simple Workflow Service": services/swf.md
           - "AppSync GraphQL": services/appsync.md
           - "EventBridge": services/eventbridge.md
           - "EventBridge Pipes": services/pipes.md
