@@ -1,0 +1,205 @@
+// Package dsql implements Aurora DSQL control-plane records without SQL execution.
+package dsql
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/json"
+	"fmt"
+	"reflect"
+	"strings"
+	"time"
+
+	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	api "github.com/amjadjibon/tinystack/internal/aws/generated/dsql"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/background"
+	"github.com/amjadjibon/tinystack/internal/storage"
+)
+
+const (
+	serviceName   = "dsql"
+	kindCluster   = "cluster"
+	indexPrefix   = "aws/dsql/index/"
+	creating      = "CREATING"
+	active        = "ACTIVE"
+	updating      = "UPDATING"
+	deleting      = "DELETING"
+	pendingSetup  = "PENDING_SETUP"
+	pendingDelete = "PENDING_DELETE"
+)
+
+type Service struct {
+	store   storage.Store
+	workers *background.Group
+}
+
+type record struct {
+	Due time.Time
+	api.GetClusterOutput
+	Policy        *string
+	PolicyVersion string
+	Activated     bool
+}
+
+type work struct {
+	Scope request.Scope
+	ID    string
+}
+
+type replay struct {
+	Request  string
+	Response json.RawMessage
+}
+
+func New(store storage.Store) *Service {
+	s := &Service{store: store, workers: background.New()}
+	s.workers.Every(100*time.Millisecond, s.advance)
+	return s
+}
+
+func (s *Service) Stop() { s.workers.Stop() }
+
+func invalid(message string) error { return awserror.New("ValidationException", message) }
+
+func conflict(message string) error { return awserror.New("ConflictException", message) }
+
+func missing() error {
+	return awserror.New("ResourceNotFoundException", "DSQL cluster or policy does not exist")
+}
+
+func key(scope request.Scope, id string) string { return scope.Key(serviceName, kindCluster, id) }
+
+func indexKey(scope request.Scope, id string) string {
+	return indexPrefix + scope.AccountID + "/" + scope.Region + "/" + id
+}
+
+func resourceARN(scope request.Scope, id string) string {
+	return fmt.Sprintf("arn:aws:dsql:%s:%s:cluster/%s", scope.Region, scope.AccountID, id)
+}
+
+func parseARN(scope request.Scope, arn string) (request.Scope, string, error) {
+	parts := strings.Split(arn, ":")
+	if len(parts) != 6 || parts[0] != "arn" || parts[1] != "aws" || parts[2] != serviceName ||
+		parts[4] != scope.AccountID {
+		return scope, "", missing()
+	}
+
+	id, ok := strings.CutPrefix(parts[5], "cluster/")
+	if !ok || id == "" {
+		return scope, "", missing()
+	}
+
+	return request.Scope{AccountID: scope.AccountID, Region: parts[3]}, id, nil
+}
+
+func read(tx storage.ReadTx, scope request.Scope, id string) (*record, error) {
+	r, found, err := storage.Read[record](tx, key(scope, id))
+	if err != nil {
+		return nil, err
+	}
+
+	if !found {
+		return nil, missing()
+	}
+
+	return r, nil
+}
+
+func write(tx storage.WriteTx, scope request.Scope, r *record) error {
+	return storage.Write(tx, key(scope, common.Value(r.Identifier)), r)
+}
+
+func queue(tx storage.WriteTx, scope request.Scope, r *record, status string) error {
+	r.Status = new(status)
+	r.Due = time.Now().UTC().Add(150 * time.Millisecond)
+	if err := write(tx, scope, r); err != nil {
+		return err
+	}
+
+	return storage.Write(
+		tx,
+		indexKey(scope, common.Value(r.Identifier)),
+		work{Scope: scope, ID: common.Value(r.Identifier)},
+	)
+}
+
+func (s *Service) get(ctx context.Context, id *string) (*record, error) {
+	scope, err := request.RegionalScope(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var r *record
+	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+		var e error
+		r, e = read(tx, scope, common.Value(id))
+		return e
+	})
+	return r, err
+}
+
+// mutate retains successful responses, including deletes, independently of resource lifetime.
+func mutate[T any](ctx context.Context, s *Service, op, id string, token *string, in any,
+	fn func(storage.WriteTx, request.Scope) (*T, error),
+) (*T, error) {
+	scope, err := request.RegionalScope(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	fields := map[string]any{}
+	value := reflect.ValueOf(in).Elem()
+	for i := range value.NumField() {
+		fields[value.Type().Field(i).Name] = value.Field(i).Interface()
+	}
+
+	encoded, err := json.Marshal(fields)
+	if err != nil {
+		return nil, err
+	}
+
+	// Label/query members have json:"-"; include their values explicitly in the replay fingerprint.
+	fingerprint := fmt.Sprintf("%s:%s:%s", op, id, encoded)
+	digest := sha256.Sum256([]byte(common.Value(token)))
+	replayKey := scope.Key(serviceName, "token", op+"/"+fmt.Sprintf("%x", digest))
+	var out *T
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		if common.Value(token) != "" {
+			old, found, e := storage.Read[replay](tx, replayKey)
+			if e != nil {
+				return e
+			}
+
+			if found {
+				if old.Request != fingerprint {
+					return conflict("Client token was already used with different parameters")
+				}
+
+				out = new(T)
+				return json.Unmarshal(old.Response, out)
+			}
+		}
+
+		var e error
+		out, e = fn(tx, scope)
+		if e != nil {
+			return e
+		}
+
+		if common.Value(token) == "" {
+			return nil
+		}
+
+		response, e := json.Marshal(out)
+		if e != nil {
+			return e
+		}
+
+		return storage.Write(tx, replayKey, replay{Request: fingerprint, Response: response})
+	})
+	return out, err
+}
+
+var _ api.API = (*Service)(nil)

@@ -17,6 +17,7 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
+    dsql                 = var.endpoint
     shield               = var.endpoint
     datasync             = var.endpoint
     resourceexplorer2    = var.endpoint
@@ -2718,4 +2719,56 @@ resource "aws_swf_domain" "main" {
   name                                        = "local-workflows"
   workflow_execution_retention_period_in_days = 1
   tags                                        = { team = var.team }
+}
+
+# Provider 5.100 updates tags in place; deletion protection must be disabled for destroy.
+resource "aws_dsql_cluster" "local" {
+  deletion_protection_enabled = false
+  tags                        = local.tags
+}
+
+# Both provider aliases use the same local endpoint; SigV4 carries the Region.
+provider "aws" {
+  alias                       = "dsql_peer"
+  access_key                  = "test"
+  secret_key                  = "test"
+  region                      = "us-east-2"
+  skip_metadata_api_check     = true
+  skip_credentials_validation = true
+  skip_requesting_account_id  = true
+  endpoints {
+    dsql = var.endpoint
+    sts  = var.endpoint
+  }
+}
+
+resource "aws_dsql_cluster" "primary" {
+  deletion_protection_enabled = false
+  multi_region_properties {
+    witness_region = "us-west-2"
+  }
+  tags = local.tags
+}
+
+resource "aws_dsql_cluster" "peer" {
+  provider                    = aws.dsql_peer
+  deletion_protection_enabled = false
+  multi_region_properties {
+    witness_region = "us-west-2"
+  }
+  tags = local.tags
+}
+
+# Reciprocal peer updates run concurrently after both regional records exist.
+resource "aws_dsql_cluster_peering" "primary" {
+  identifier     = aws_dsql_cluster.primary.identifier
+  witness_region = "us-west-2"
+  clusters       = [aws_dsql_cluster.peer.arn]
+}
+
+resource "aws_dsql_cluster_peering" "peer" {
+  provider       = aws.dsql_peer
+  identifier     = aws_dsql_cluster.peer.identifier
+  witness_region = "us-west-2"
+  clusters       = [aws_dsql_cluster.primary.arn]
 }

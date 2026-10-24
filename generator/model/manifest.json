@@ -458,6 +458,10 @@
     "swf": {
       "path": "codegen/sdk-codegen/aws-models/swf.json",
       "sha256": "bcbcdf119308ff6e3132790133d269edcd85c7fc2bdaa60deedc01ae7c34e245"
+    },
+    "dsql": {
+      "path": "codegen/sdk-codegen/aws-models/dsql.json",
+      "sha256": "ee674d9f2ac26be1b5af7d48e9235c85b001aecd5eeabfd75ee5a0ec5cd17f34"
     }
   }
 }

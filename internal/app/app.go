@@ -57,6 +57,7 @@ import (
 	costexplorerapi "github.com/amjadjibon/tinystack/internal/aws/generated/costexplorer"
 	databasemigrationserviceapi "github.com/amjadjibon/tinystack/internal/aws/generated/databasemigrationservice"
 	datasyncapi "github.com/amjadjibon/tinystack/internal/aws/generated/datasync"
+	dsqlapi "github.com/amjadjibon/tinystack/internal/aws/generated/dsql"
 	dynamodbapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	dynamodbstreamsapi "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodbstreams"
 	ec2api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
@@ -180,6 +181,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/costexplorer"
 	"github.com/amjadjibon/tinystack/internal/services/databasemigrationservice"
 	"github.com/amjadjibon/tinystack/internal/services/datasync"
+	"github.com/amjadjibon/tinystack/internal/services/dsql"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/ec2"
 	"github.com/amjadjibon/tinystack/internal/services/ecr"
@@ -471,6 +473,8 @@ func build(
 	resourceExplorerRecords := resourceexplorer2.New(store)
 	serviceCatalogRecords := servicecatalog.New(store)
 	globalAcceleratorRecords := globalaccelerator.New(store, network, balancers, buckets)
+	dsqlRecords := dsql.New(store)
+	a.onStop(dsqlRecords.Stop)
 	fisRecords := fis.New(store)
 	a.onStop(fisRecords.Stop)
 	dataSyncRecords := datasync.New(store, buckets, roles)
@@ -613,6 +617,7 @@ func build(
 		shieldapi.Descriptor(shieldRecords),
 		swfapi.Descriptor(swfRecords),
 		globalacceleratorapi.Descriptor(globalAcceleratorRecords),
+		dsqlapi.Descriptor(dsqlRecords),
 		fisapi.Descriptor(fisRecords),
 		resourceexplorer2api.Descriptor(resourceExplorerRecords),
 		securityhubapi.Descriptor(securityHubRecords),

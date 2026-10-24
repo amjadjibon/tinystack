@@ -64,6 +64,7 @@ const catalog: Record<string, ServiceInfo> = {
 		icon: "globalaccelerator",
 	},
 	shield: { title: "AWS Shield Advanced", category: security, icon: "shield" },
+	dsql: { title: "Amazon Aurora DSQL", category: database, icon: "dsql" },
 	fis: {
 		title: "Fault Injection Service",
 		category: management,

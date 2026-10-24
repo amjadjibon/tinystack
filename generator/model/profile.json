@@ -5684,6 +5684,150 @@
       ]
     }
   },
+  "dsql": {
+    "operations": [
+      "CreateCluster",
+      "DeleteCluster",
+      "DeleteClusterPolicy",
+      "GetCluster",
+      "GetClusterPolicy",
+      "GetVpcEndpointServiceName",
+      "ListClusters",
+      "ListTagsForResource",
+      "PutClusterPolicy",
+      "TagResource",
+      "UntagResource",
+      "UpdateCluster"
+    ],
+    "shapes": {
+      "ClusterSummary": [
+        "identifier",
+        "arn"
+      ],
+      "CreateClusterInput": [
+        "deletionProtectionEnabled",
+        "kmsEncryptionKey",
+        "tags",
+        "clientToken",
+        "multiRegionProperties",
+        "policy",
+        "bypassPolicyLockoutSafetyCheck"
+      ],
+      "CreateClusterOutput": [
+        "identifier",
+        "arn",
+        "status",
+        "creationTime",
+        "multiRegionProperties",
+        "encryptionDetails",
+        "deletionProtectionEnabled",
+        "endpoint"
+      ],
+      "DeleteClusterInput": [
+        "identifier",
+        "clientToken"
+      ],
+      "DeleteClusterOutput": [
+        "identifier",
+        "arn",
+        "status",
+        "creationTime"
+      ],
+      "DeleteClusterPolicyInput": [
+        "identifier",
+        "expectedPolicyVersion",
+        "clientToken"
+      ],
+      "DeleteClusterPolicyOutput": [
+        "policyVersion"
+      ],
+      "EncryptionDetails": [
+        "encryptionType",
+        "kmsKeyArn",
+        "encryptionStatus"
+      ],
+      "GetClusterInput": [
+        "identifier"
+      ],
+      "GetClusterOutput": [
+        "identifier",
+        "arn",
+        "status",
+        "creationTime",
+        "deletionProtectionEnabled",
+        "multiRegionProperties",
+        "tags",
+        "encryptionDetails",
+        "endpoint"
+      ],
+      "GetClusterPolicyInput": [
+        "identifier"
+      ],
+      "GetClusterPolicyOutput": [
+        "policy",
+        "policyVersion"
+      ],
+      "GetVpcEndpointServiceNameInput": [
+        "identifier"
+      ],
+      "GetVpcEndpointServiceNameOutput": [
+        "serviceName",
+        "clusterVpcEndpoint"
+      ],
+      "ListClustersInput": [
+        "maxResults",
+        "nextToken"
+      ],
+      "ListClustersOutput": [
+        "nextToken",
+        "clusters"
+      ],
+      "ListTagsForResourceInput": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceOutput": [
+        "tags"
+      ],
+      "MultiRegionProperties": [
+        "witnessRegion",
+        "clusters"
+      ],
+      "PutClusterPolicyInput": [
+        "identifier",
+        "policy",
+        "bypassPolicyLockoutSafetyCheck",
+        "expectedPolicyVersion",
+        "clientToken"
+      ],
+      "PutClusterPolicyOutput": [
+        "policyVersion"
+      ],
+      "TagResourceInput": [
+        "resourceArn",
+        "tags"
+      ],
+      "UntagResourceInput": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "UpdateClusterInput": [
+        "identifier",
+        "deletionProtectionEnabled",
+        "kmsEncryptionKey",
+        "clientToken",
+        "multiRegionProperties"
+      ],
+      "UpdateClusterOutput": [
+        "identifier",
+        "arn",
+        "status",
+        "creationTime"
+      ]
+    },
+    "validation": {
+      "code": "ValidationException"
+    }
+  },
   "dynamodb": {
     "operations": [
       "CreateTable",

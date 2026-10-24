@@ -148,6 +148,7 @@ var TerraformServices = []string{
 	"shield",
 	"swf",
 	"globalaccelerator",
+	"dsql",
 	"fis",
 	"inspector2",
 	"resourceexplorer2",

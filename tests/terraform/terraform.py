@@ -91,8 +91,10 @@ def main():
                 # Shield protection and protection-group tags update in place: +2 changes.
                 # DataSync IAM role, two S3 locations and task tags add four.
                 # SWF domain tags update in place (+1); name, description and retention are ForceNew and unchanged.
+                # DSQL three cluster tag sets update in place (+3); witness_region is ForceNew and unchanged.
+                # Both peering resources are unchanged and have no tags.
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "8 added, 133 changed, 8 destroyed" in updated, updated
+                assert "8 added, 136 changed, 8 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"
                 terraform("plan", "-detailed-exitcode", team="platform")
                 # The provider replaces the monitor when its name changes. The subscription

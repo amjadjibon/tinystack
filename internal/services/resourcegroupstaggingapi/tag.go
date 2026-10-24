@@ -256,6 +256,7 @@ var taggers = map[string]tagger{
 	"securityhub":         resourceOperations("securityhub", "ResourceArn", plain),
 	"amp":                 resourceOperations("amp", "ResourceArn", plain),
 	"resourceexplorer2":   resourceOperations("resourceexplorer2", "ResourceArn", plain),
+	"dsql":                resourceOperations("dsql", "ResourceArn", plain),
 	"fis":                 resourceOperations("fis", "ResourceArn", plain),
 	"swf":                 resourceOperations("swf", "ResourceArn", pairs),
 	"accessanalyzer":      resourceOperations("accessanalyzer", "ResourceArn", plain),

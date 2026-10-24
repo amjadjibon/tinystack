@@ -13,6 +13,7 @@ const appSyncAPIType = "Api"
 // resource types a group can select.
 var namespaces = map[string]string{
 	"globalaccelerator":         "GlobalAccelerator",
+	"dsql":                      "DSQL",
 	"fis":                       "FIS",
 	"resourceexplorer2":         "ResourceExplorer2",
 	"apprunner":                 "AppRunner",
@@ -101,6 +102,7 @@ var namespaces = map[string]string{
 // not the inventory type in PascalCase, by "service/type".
 var typeNames = map[string]string{
 	"globalaccelerator/endpointgroup":        "EndpointGroup",
+	"dsql/cluster":                           "Cluster",
 	"fis/experiment-template":                "ExperimentTemplate",
 	"shield/protection":                      "Protection",
 	"shield/protection-group":                "ProtectionGroup",

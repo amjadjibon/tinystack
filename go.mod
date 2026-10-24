@@ -49,6 +49,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/databasemigrationservice v1.75.1
 	github.com/aws/aws-sdk-go-v2/service/datasync v1.57.1
 	github.com/aws/aws-sdk-go-v2/service/docdb v1.57.4
+	github.com/aws/aws-sdk-go-v2/service/dsql v1.22.6
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.70.3
 	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.45.1
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.338.4
