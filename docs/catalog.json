@@ -2814,6 +2814,29 @@
       "execution": "Real local wait actions; all other fault actions unsupported",
       "package": "fis"
     },
+    "shield": {
+      "title": "AWS Shield Advanced",
+      "category": "Security, Identity & Compliance",
+      "scope": "Account (global)",
+      "summary": "Store Shield Advanced subscriptions, protections and protection groups without attack detection or mitigation.",
+      "features": [
+        "Thirty-three JSON 1.1 operations with generated InvalidParameterException validation and AWS SDK v2 integration coverage",
+        "Annual subscription commitment, renewal-window validation and global account-scoped persistence",
+        "Protections validate existing CloudFront distributions, Route 53 hosted zones, Global Accelerator accelerators, Classic/Application Load Balancers and Elastic IP allocations",
+        "Protection groups support ALL, BY_RESOURCE_TYPE and ARBITRARY membership, filters and pagination",
+        "Route 53 health checks, emergency contacts, proactive engagement and SRT role/log bucket configuration with local reference checks",
+        "Tags, Resource Groups Tagging API and records-only inventory for protections and protection groups",
+        "CloudFormation Protection, ProtectionGroup, DRTAccess and ProactiveEngagement; Terraform subscription, protection and protection group"
+      ],
+      "gaps": [
+        "No attack detection, traffic inspection, mitigation, SRT calls, IAM policy evaluation, support-plan checks or DDoS cost protection; attack lists and statistics are empty and unknown attacks fail",
+        "Application layer automatic response operations and WAFv2 integration are unsupported",
+        "Network Load Balancers are protected through their Elastic IP allocations, as on AWS; direct NLB ARNs are unsupported",
+        "Subscriptions cannot be deleted; DeleteSubscription returns LockedSubscriptionException. No billing or automatic renewal scheduler runs"
+      ],
+      "execution": "Records only",
+      "package": "shield"
+    },
     "accessanalyzer": {
       "title": "IAM Access Analyzer",
       "category": "Security, Identity & Compliance",

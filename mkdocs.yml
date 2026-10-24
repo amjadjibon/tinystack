@@ -233,6 +233,7 @@ nav:
           - "AWS Private CA": services/acmpca.md
           - "AWS Resource Access Manager": services/ram.md
           - "AWS Security Hub": services/securityhub.md
+          - "AWS Shield Advanced": services/shield.md
           - "AWS Signer": services/signer.md
           - "Amazon Inspector": services/inspector2.md
           - "Amazon Verified Permissions": services/verifiedpermissions.md
