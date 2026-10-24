@@ -542,7 +542,10 @@ func (g *generator) emit(id string) error {
 	g.seen[id] = true
 	s := g.model.Shapes[id]
 	traits := s.Traits
-	if isoTimestamp(&s) {
+	// epoch-seconds is the JSON protocols' default, so the trait changes nothing there.
+	epoch := !g.xml && !g.queryOnly && s.Type == shapeTimestamp &&
+		string(traits[traitTimestampFormat]) == `"epoch-seconds"`
+	if isoTimestamp(&s) || epoch {
 		traits = maps.Clone(traits)
 		delete(traits, traitTimestampFormat)
 	}

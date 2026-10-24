@@ -282,11 +282,12 @@ func TestRESTJSONFixture(t *testing.T) {
     "Payload": {"target": "smithy.api#Blob", "traits": {"smithy.api#httpPayload": {}}}}},
   "fixture#Out": {"type": "structure", "members": {
     "Status": {"target": "smithy.api#Integer", "traits": {"smithy.api#httpResponseCode": {}}},
-    "At": {"target": "smithy.api#Timestamp"},
+    "At": {"target": "fixture#Epoch"},
     "Since": {"target": "fixture#Iso", "traits": {"smithy.api#jsonName": "since"}},
     "Next": {"target": "smithy.api#String", "traits": {"smithy.api#httpQuery": "next"}}}},
   "fixture#Missing": {"type": "structure", "traits": {"smithy.api#error": "client", "smithy.api#httpError": 404},
     "members": {"Message": {"target": "smithy.api#String", "traits": {"smithy.api#jsonName": "message"}}}},
+  "fixture#Epoch": {"type": "timestamp", "traits": {"smithy.api#timestampFormat": "epoch-seconds"}},
   "fixture#Iso": {"type": "timestamp", "traits": {"smithy.api#timestampFormat": "date-time"}},
   "smithy.api#String": {"type": "string"},
   "smithy.api#Blob": {"type": "blob"},
