@@ -474,6 +474,10 @@
     "s3files": {
       "path": "codegen/sdk-codegen/aws-models/s3files.json",
       "sha256": "b538b511c203d050db7ba5ea07ded62cf6a285e63271251f14398a1b4f094fd4"
+    },
+    "iotwireless": {
+      "path": "codegen/sdk-codegen/aws-models/iot-wireless.json",
+      "sha256": "5dd34f4795ec9ee66b9d28e4d0e7f59ac11ef65ec87022ae09fb81b9c6998ac0"
     }
   }
 }

@@ -39759,5 +39759,133 @@
         "statusMessage"
       ]
     }
+  },
+  "iotwireless": {
+    "validation": {
+      "code": "ValidationException"
+    },
+    "operations": [
+      "AssociateMulticastGroupWithFuotaTask",
+      "AssociateWirelessDeviceWithFuotaTask",
+      "AssociateWirelessDeviceWithMulticastGroup",
+      "AssociateWirelessDeviceWithThing",
+      "AssociateWirelessGatewayWithCertificate",
+      "AssociateWirelessGatewayWithThing",
+      "CancelMulticastGroupSession",
+      "CreateDestination",
+      "CreateDeviceProfile",
+      "CreateFuotaTask",
+      "CreateMulticastGroup",
+      "CreateServiceProfile",
+      "CreateWirelessDevice",
+      "CreateWirelessGateway",
+      "DeleteDestination",
+      "DeleteDeviceProfile",
+      "DeleteFuotaTask",
+      "DeleteMulticastGroup",
+      "DeleteQueuedMessages",
+      "DeleteServiceProfile",
+      "DeleteWirelessDevice",
+      "DeleteWirelessGateway",
+      "DisassociateMulticastGroupFromFuotaTask",
+      "DisassociateWirelessDeviceFromFuotaTask",
+      "DisassociateWirelessDeviceFromMulticastGroup",
+      "DisassociateWirelessDeviceFromThing",
+      "DisassociateWirelessGatewayFromCertificate",
+      "DisassociateWirelessGatewayFromThing",
+      "GetDestination",
+      "GetDeviceProfile",
+      "GetFuotaTask",
+      "GetLogLevelsByResourceTypes",
+      "GetMulticastGroup",
+      "GetMulticastGroupSession",
+      "GetResourceLogLevel",
+      "GetServiceEndpoint",
+      "GetServiceProfile",
+      "GetWirelessDevice",
+      "GetWirelessDeviceStatistics",
+      "GetWirelessGateway",
+      "GetWirelessGatewayCertificate",
+      "GetWirelessGatewayStatistics",
+      "ListDestinations",
+      "ListDeviceProfiles",
+      "ListFuotaTasks",
+      "ListMulticastGroups",
+      "ListMulticastGroupsByFuotaTask",
+      "ListQueuedMessages",
+      "ListServiceProfiles",
+      "ListTagsForResource",
+      "ListWirelessDevices",
+      "ListWirelessGateways",
+      "PutResourceLogLevel",
+      "ResetAllResourceLogLevels",
+      "ResetResourceLogLevel",
+      "SendDataToMulticastGroup",
+      "SendDataToWirelessDevice",
+      "StartFuotaTask",
+      "StartMulticastGroupSession",
+      "TagResource",
+      "TestWirelessDevice",
+      "UntagResource",
+      "UpdateDestination",
+      "UpdateFuotaTask",
+      "UpdateLogLevelsByResourceTypes",
+      "UpdateMulticastGroup",
+      "UpdateWirelessDevice",
+      "UpdateWirelessGateway"
+    ],
+    "shapes": {
+      "CreateWirelessDeviceRequest": [
+        "ClientRequestToken",
+        "Description",
+        "DestinationName",
+        "LoRaWAN",
+        "Name",
+        "Positioning",
+        "Tags",
+        "Type"
+      ],
+      "UpdateWirelessDeviceRequest": [
+        "Description",
+        "DestinationName",
+        "Id",
+        "LoRaWAN",
+        "Name",
+        "Positioning"
+      ],
+      "WirelessMetadata": [
+        "LoRaWAN"
+      ],
+      "GetWirelessDeviceResponse": [
+        "Arn",
+        "Description",
+        "DestinationName",
+        "Id",
+        "LoRaWAN",
+        "Name",
+        "Positioning",
+        "ThingArn",
+        "ThingName",
+        "Type"
+      ],
+      "WirelessDeviceStatistics": [
+        "Arn",
+        "DestinationName",
+        "FuotaDeviceStatus",
+        "Id",
+        "LastUplinkReceivedAt",
+        "LoRaWAN",
+        "McGroupId",
+        "MulticastDeviceStatus",
+        "Name",
+        "Positioning",
+        "Type"
+      ],
+      "GetWirelessDeviceStatisticsResponse": [
+        "LastUplinkReceivedAt",
+        "LoRaWAN",
+        "WirelessDeviceId"
+      ]
+    }
   }
 }

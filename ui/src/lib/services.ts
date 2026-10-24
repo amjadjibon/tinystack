@@ -394,6 +394,7 @@ const catalog: Record<string, ServiceInfo> = {
 		category: iot,
 		icon: "iot",
 	},
+	iotwireless: { title: "IoT Wireless", category: iot, icon: "iotwireless" },
 	kinesis: {
 		title: "Kinesis Data Streams",
 		category: analytics,

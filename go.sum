@@ -182,6 +182,8 @@ github.com/aws/aws-sdk-go-v2/service/iotdataplane v1.40.4 h1:tVoRqCigeQV/kmxoccS
 github.com/aws/aws-sdk-go-v2/service/iotdataplane v1.40.4/go.mod h1:gw/2vb2D0CnBM1Ux8+5jIa+GzS2hQ+nCRMrdkStT5lo=
 github.com/aws/aws-sdk-go-v2/service/iotjobsdataplane v1.38.4 h1:M8jO8ov0Bc3XartN571Qzj9NxlWui7PiR/trTQERsXg=
 github.com/aws/aws-sdk-go-v2/service/iotjobsdataplane v1.38.4/go.mod h1:UpU3FMGabHjWDM/yKob9M7L3J2IZB462YuE46E4452w=
+github.com/aws/aws-sdk-go-v2/service/iotwireless v1.67.0 h1:aagJrm0F4QfT35gHf3UuPuCzu9SdgDDHaaDIIqyrONM=
+github.com/aws/aws-sdk-go-v2/service/iotwireless v1.67.0/go.mod h1:4ODQ6j4AVCeLdF3sEd9mATbWx8iJf2jzjo1T1zUpphg=
 github.com/aws/aws-sdk-go-v2/service/kafka v1.65.4 h1:Gcgg77monwn6NI/bfAiZlBD5jpC7M4rNrhun2SypkYk=
 github.com/aws/aws-sdk-go-v2/service/kafka v1.65.4/go.mod h1:paE27tdB2PUHS55VG9+7Arjcg2FwGp5WuHjyWiiTJ/A=
 github.com/aws/aws-sdk-go-v2/service/kinesis v1.56.4 h1:G1LWuW2P2zDRKE91jVQnYqvSsyJRNS8GRr11Nsu93B0=

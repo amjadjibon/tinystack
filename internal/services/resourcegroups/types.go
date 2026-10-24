@@ -92,6 +92,7 @@ var namespaces = map[string]string{
 	"verifiedpermissions":       "VerifiedPermissions",
 	"amp":                       "APS",
 	"mediaconvert":              "MediaConvert",
+	"iotwireless":               "IoTWireless",
 	"datasync":                  "DataSync",
 	"mediaconnect":              "MediaConnect",
 	"accessanalyzer":            "AccessAnalyzer",

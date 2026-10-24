@@ -83,6 +83,7 @@ import (
 	iotapi "github.com/amjadjibon/tinystack/internal/aws/generated/iot"
 	iotdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotdataplane"
 	iotjobsdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotjobsdataplane"
+	iotwirelessapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotwireless"
 	kafkaapi "github.com/amjadjibon/tinystack/internal/aws/generated/kafka"
 	kinesisapi "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	kinesisanalyticsv2api "github.com/amjadjibon/tinystack/internal/aws/generated/kinesisanalyticsv2"
@@ -210,6 +211,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/identitystore"
 	"github.com/amjadjibon/tinystack/internal/services/inspector2"
 	"github.com/amjadjibon/tinystack/internal/services/iot"
+	"github.com/amjadjibon/tinystack/internal/services/iotwireless"
 	"github.com/amjadjibon/tinystack/internal/services/kafka"
 	"github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/services/kinesisanalyticsv2"
@@ -547,6 +549,8 @@ func build(
 		request.Scope{AccountID: cfg.Defaults.Account, Region: cfg.Defaults.Region},
 		cfg.Identity.Mode == config.IdentityVerify,
 	)
+	wirelessRecords := iotwireless.New(store, roles, things)
+	a.onStop(wirelessRecords.Stop)
 	control, err := cloudcontrol.New(store)
 	if err != nil {
 		return nil, err
@@ -699,6 +703,7 @@ func build(
 		iotapi.Descriptor(things),
 		iotdataplaneapi.Descriptor(things.DataPlane()),
 		iotjobsdataplaneapi.Descriptor(things.JobsDataPlane()),
+		iotwirelessapi.Descriptor(wirelessRecords),
 		resourcegroupstaggingapiapi.Descriptor(tags),
 		resourcegroupsapi.Descriptor(groups),
 	}
@@ -710,6 +715,7 @@ func build(
 	shieldRecords.UseCaller(caller)
 	dataSyncRecords.UseCaller(caller)
 	mediaConnectRecords.UseCaller(caller)
+	wirelessRecords.UseCaller(caller)
 	wafClassicRecords.UseCaller(caller)
 	budgetRecords.Start(caller)
 	containers.UseCaller(caller)

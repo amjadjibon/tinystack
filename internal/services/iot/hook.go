@@ -411,6 +411,12 @@ func publishable(topic string) bool {
 	return withinLimits(topic) && (!strings.HasPrefix(topic, "$") || consumed(topic))
 }
 
+// PublishableTopic reports whether topic names one topic a message can be published to: a publishable topic with
+// no wildcards.
+func PublishableTopic(topic string) bool {
+	return topic != "" && !strings.ContainsAny(topic, "+#") && publishable(topic)
+}
+
 // consumed reports whether a topic is one IoT Core consumes instead of
 // delivering: Basic Ingest's, and the shadow, jobs, and fleet provisioning
 // requests.

@@ -260,6 +260,7 @@ var taggers = map[string]tagger{
 	"s3files":             resourceOperations("s3files", resourceIDMember, pairs),
 	"fis":                 resourceOperations("fis", "ResourceArn", plain),
 	"mediaconvert":        resourceOperations("mediaconvert", "Arn", plain),
+	"iotwireless":         resourceOperations("iotwireless", "ResourceArn", pairs),
 	"swf":                 resourceOperations("swf", "ResourceArn", pairs),
 	"mediaconnect":        resourceOperations("mediaconnect", "ResourceArn", plain),
 	"accessanalyzer":      resourceOperations("accessanalyzer", "ResourceArn", plain),
