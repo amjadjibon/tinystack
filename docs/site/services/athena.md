@@ -12,7 +12,7 @@ Query local S3 data through the Glue catalog using an in-memory SQLite SQL engin
 | Wire protocol | AWS JSON 1.1 |
 | API version | `2017-05-18` |
 | Scope | Account and region |
-| Execution | SQLite SQL engine |
+| Execution | SQLite SQL engine with local S3 reads/writes and Glue catalog updates |
 | Selected operations | 25 of 70 in the pinned model |
 
 ## Implemented behavior
@@ -23,7 +23,7 @@ See the [implemented feature catalogue](catalogue.md#athena) for this service's 
 
 - Queries complete inside StartQueryExecution; there is no distributed query engine.
 - SQL is a documented SQLite-backed subset, not full Trino semantics.
-- Parquet, ORC, Avro, Iceberg, CTAS and INSERT are rejected.
+- ORC, Avro, Iceberg and Iceberg-only mutation statements are rejected; bucketed CTAS properties are unsupported.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -120,5 +120,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/athena)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/athena/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/athena.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [athena_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/athena_test.go).
+- SDK integration examples: [athena_formats_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/athena_formats_test.go), [athena_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/athena_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

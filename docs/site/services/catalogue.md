@@ -168,11 +168,13 @@ Store provisioned cluster, subnet group and parameter group metadata without run
 
 Query local S3 data through the Glue catalog using an in-memory SQLite SQL engine.
 
-**Execution:** SQLite SQL engine. **Selected operations:** 25.
+**Execution:** SQLite SQL engine with local S3 reads/writes and Glue catalog updates. **Selected operations:** 25.
 
 - Workgroups, named queries, query execution metadata, pagination and client tokens.
-- SELECT queries over CSV, delimited text and JSON, including gzip data.
+- SELECT queries over CSV, delimited text, JSON and Parquet, including gzip text and SNAPPY/GZIP/ZSTD Parquet pages.
 - Glue catalog DDL, SHOW, DESCRIBE, MSCK REPAIR and partition changes.
+- CTAS to Parquet, JSON or TEXTFILE, WITH NO DATA, and INSERT INTO SELECT or VALUES.
+- Partitioned writes create Hive prefixes and Glue partitions; row update counts are retained.
 - Query results are retained and written to the configured S3 output location.
 
 [Supported operations](athena.md#supported-operations) · [Limitations](athena.md#limitations-and-future-work)

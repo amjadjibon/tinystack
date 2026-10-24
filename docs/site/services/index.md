@@ -22,7 +22,7 @@ Future services and unimplemented extensions live in the [roadmap](../roadmap/in
 | [Amazon OpenSearch Serverless](opensearchserverless.md) | 21 | Records only |
 | [Amazon OpenSearch Service](opensearch.md) | 10 | Configuration records only |
 | [Amazon Redshift](redshift.md) | 14 | Configuration records only |
-| [Athena](athena.md) | 25 | SQLite SQL engine |
+| [Athena](athena.md) | 25 | SQLite SQL engine with local S3 reads/writes and Glue catalog updates |
 | [Data Firehose](firehose.md) | 12 | Local behavior |
 | [Glue Data Catalog](glue.md) | 19 | Local behavior |
 | [Kinesis Data Streams](kinesis.md) | 31 | Local behavior |
