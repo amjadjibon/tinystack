@@ -450,6 +450,10 @@
     "datasync": {
       "path": "codegen/sdk-codegen/aws-models/datasync.json",
       "sha256": "6a70e3cfff842f15657a006845f382d2bd9cb8d0d0c9a0fca79dff0fdae88d50"
+    },
+    "shield": {
+      "path": "codegen/sdk-codegen/aws-models/shield.json",
+      "sha256": "5bab90bb091a18441e1e3a35f7a5dff33f1bbc6be8eeda96cbc54f3350b62635"
     }
   }
 }

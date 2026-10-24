@@ -118,6 +118,7 @@ import (
 	sesapi "github.com/amjadjibon/tinystack/internal/aws/generated/ses"
 	sesv2api "github.com/amjadjibon/tinystack/internal/aws/generated/sesv2"
 	sfnapi "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
+	shieldapi "github.com/amjadjibon/tinystack/internal/aws/generated/shield"
 	signerapi "github.com/amjadjibon/tinystack/internal/aws/generated/signer"
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
@@ -240,6 +241,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/ses"
 	"github.com/amjadjibon/tinystack/internal/services/sesv2"
 	"github.com/amjadjibon/tinystack/internal/services/sfn"
+	"github.com/amjadjibon/tinystack/internal/services/shield"
 	"github.com/amjadjibon/tinystack/internal/services/signer"
 	"github.com/amjadjibon/tinystack/internal/services/sns"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
@@ -471,6 +473,7 @@ func build(
 	a.onStop(fisRecords.Stop)
 	dataSyncRecords := datasync.New(store, buckets, roles)
 	a.onStop(dataSyncRecords.Stop)
+	shieldRecords := shield.New(store)
 	accessAnalyzerRecords := accessanalyzer.New(store)
 	securityHubRecords := securityhub.New(store)
 	inspector2Records := inspector2.New(store)
@@ -603,6 +606,7 @@ func build(
 		servicecatalogapi.Descriptor(serviceCatalogRecords),
 		datasyncapi.Descriptor(dataSyncRecords),
 		accessanalyzerapi.Descriptor(accessAnalyzerRecords),
+		shieldapi.Descriptor(shieldRecords),
 		globalacceleratorapi.Descriptor(globalAcceleratorRecords),
 		fisapi.Descriptor(fisRecords),
 		resourceexplorer2api.Descriptor(resourceExplorerRecords),
@@ -677,6 +681,7 @@ func build(
 	// Step Functions' Task states and Firehose's deliveries call the other
 	// services in-process.
 	caller := catalog.NewCaller(services...)
+	shieldRecords.UseCaller(caller)
 	dataSyncRecords.UseCaller(caller)
 	wafClassicRecords.UseCaller(caller)
 	budgetRecords.Start(caller)

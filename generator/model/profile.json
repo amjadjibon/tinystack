@@ -37052,5 +37052,363 @@
         "tags"
       ]
     }
+  },
+  "shield": {
+    "operations": [
+      "AssociateDRTLogBucket",
+      "AssociateDRTRole",
+      "AssociateHealthCheck",
+      "AssociateProactiveEngagementDetails",
+      "CreateProtection",
+      "CreateProtectionGroup",
+      "CreateSubscription",
+      "DeleteProtection",
+      "DeleteProtectionGroup",
+      "DeleteSubscription",
+      "DescribeAttack",
+      "DescribeAttackStatistics",
+      "DescribeDRTAccess",
+      "DescribeEmergencyContactSettings",
+      "DescribeProtection",
+      "DescribeProtectionGroup",
+      "DescribeSubscription",
+      "DisableProactiveEngagement",
+      "DisassociateDRTLogBucket",
+      "DisassociateDRTRole",
+      "DisassociateHealthCheck",
+      "EnableProactiveEngagement",
+      "GetSubscriptionState",
+      "ListAttacks",
+      "ListProtectionGroups",
+      "ListProtections",
+      "ListResourcesInProtectionGroup",
+      "ListTagsForResource",
+      "TagResource",
+      "UntagResource",
+      "UpdateEmergencyContactSettings",
+      "UpdateProtectionGroup",
+      "UpdateSubscription"
+    ],
+    "shapes": {
+      "ApplicationLayerAutomaticResponseConfiguration": [
+        "Status",
+        "Action"
+      ],
+      "AssociateDRTLogBucketRequest": [
+        "LogBucket"
+      ],
+      "AssociateDRTLogBucketResponse": [],
+      "AssociateDRTRoleRequest": [
+        "RoleArn"
+      ],
+      "AssociateDRTRoleResponse": [],
+      "AssociateHealthCheckRequest": [
+        "ProtectionId",
+        "HealthCheckArn"
+      ],
+      "AssociateHealthCheckResponse": [],
+      "AssociateProactiveEngagementDetailsRequest": [
+        "EmergencyContactList"
+      ],
+      "AssociateProactiveEngagementDetailsResponse": [],
+      "AttackDetail": [
+        "AttackId",
+        "ResourceArn",
+        "SubResources",
+        "StartTime",
+        "EndTime",
+        "AttackCounters",
+        "AttackProperties",
+        "Mitigations"
+      ],
+      "AttackProperty": [
+        "AttackLayer",
+        "AttackPropertyIdentifier",
+        "TopContributors",
+        "Unit",
+        "Total"
+      ],
+      "AttackStatisticsDataItem": [
+        "AttackVolume",
+        "AttackCount"
+      ],
+      "AttackSummary": [
+        "AttackId",
+        "ResourceArn",
+        "StartTime",
+        "EndTime",
+        "AttackVectors"
+      ],
+      "AttackVectorDescription": [
+        "VectorType"
+      ],
+      "AttackVolume": [
+        "BitsPerSecond",
+        "PacketsPerSecond",
+        "RequestsPerSecond"
+      ],
+      "AttackVolumeStatistics": [
+        "Max"
+      ],
+      "BlockAction": [],
+      "Contributor": [
+        "Name",
+        "Value"
+      ],
+      "CountAction": [],
+      "CreateProtectionGroupRequest": [
+        "ProtectionGroupId",
+        "Aggregation",
+        "Pattern",
+        "ResourceType",
+        "Members",
+        "Tags"
+      ],
+      "CreateProtectionGroupResponse": [],
+      "CreateProtectionRequest": [
+        "Name",
+        "ResourceArn",
+        "Tags"
+      ],
+      "CreateProtectionResponse": [
+        "ProtectionId"
+      ],
+      "CreateSubscriptionRequest": [],
+      "CreateSubscriptionResponse": [],
+      "DeleteProtectionGroupRequest": [
+        "ProtectionGroupId"
+      ],
+      "DeleteProtectionGroupResponse": [],
+      "DeleteProtectionRequest": [
+        "ProtectionId"
+      ],
+      "DeleteProtectionResponse": [],
+      "DeleteSubscriptionRequest": [],
+      "DeleteSubscriptionResponse": [],
+      "DescribeAttackRequest": [
+        "AttackId"
+      ],
+      "DescribeAttackResponse": [
+        "Attack"
+      ],
+      "DescribeAttackStatisticsRequest": [],
+      "DescribeAttackStatisticsResponse": [
+        "TimeRange",
+        "DataItems"
+      ],
+      "DescribeDRTAccessRequest": [],
+      "DescribeDRTAccessResponse": [
+        "RoleArn",
+        "LogBucketList"
+      ],
+      "DescribeEmergencyContactSettingsRequest": [],
+      "DescribeEmergencyContactSettingsResponse": [
+        "EmergencyContactList"
+      ],
+      "DescribeProtectionGroupRequest": [
+        "ProtectionGroupId"
+      ],
+      "DescribeProtectionGroupResponse": [
+        "ProtectionGroup"
+      ],
+      "DescribeProtectionRequest": [
+        "ProtectionId",
+        "ResourceArn"
+      ],
+      "DescribeProtectionResponse": [
+        "Protection"
+      ],
+      "DescribeSubscriptionRequest": [],
+      "DescribeSubscriptionResponse": [
+        "Subscription"
+      ],
+      "DisableProactiveEngagementRequest": [],
+      "DisableProactiveEngagementResponse": [],
+      "DisassociateDRTLogBucketRequest": [
+        "LogBucket"
+      ],
+      "DisassociateDRTLogBucketResponse": [],
+      "DisassociateDRTRoleRequest": [],
+      "DisassociateDRTRoleResponse": [],
+      "DisassociateHealthCheckRequest": [
+        "ProtectionId",
+        "HealthCheckArn"
+      ],
+      "DisassociateHealthCheckResponse": [],
+      "EmergencyContact": [
+        "EmailAddress",
+        "PhoneNumber",
+        "ContactNotes"
+      ],
+      "EnableProactiveEngagementRequest": [],
+      "EnableProactiveEngagementResponse": [],
+      "GetSubscriptionStateRequest": [],
+      "GetSubscriptionStateResponse": [
+        "SubscriptionState"
+      ],
+      "InclusionProtectionFilters": [
+        "ResourceArns",
+        "ProtectionNames",
+        "ResourceTypes"
+      ],
+      "InclusionProtectionGroupFilters": [
+        "ProtectionGroupIds",
+        "Patterns",
+        "ResourceTypes",
+        "Aggregations"
+      ],
+      "Limit": [
+        "Type",
+        "Max"
+      ],
+      "ListAttacksRequest": [
+        "ResourceArns",
+        "StartTime",
+        "EndTime",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListAttacksResponse": [
+        "AttackSummaries",
+        "NextToken"
+      ],
+      "ListProtectionGroupsRequest": [
+        "NextToken",
+        "MaxResults",
+        "InclusionFilters"
+      ],
+      "ListProtectionGroupsResponse": [
+        "ProtectionGroups",
+        "NextToken"
+      ],
+      "ListProtectionsRequest": [
+        "NextToken",
+        "MaxResults",
+        "InclusionFilters"
+      ],
+      "ListProtectionsResponse": [
+        "Protections",
+        "NextToken"
+      ],
+      "ListResourcesInProtectionGroupRequest": [
+        "ProtectionGroupId",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListResourcesInProtectionGroupResponse": [
+        "ResourceArns",
+        "NextToken"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceARN"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
+      ],
+      "Mitigation": [
+        "MitigationName"
+      ],
+      "Protection": [
+        "Id",
+        "Name",
+        "ResourceArn",
+        "HealthCheckIds",
+        "ProtectionArn"
+      ],
+      "ProtectionGroup": [
+        "ProtectionGroupId",
+        "Aggregation",
+        "Pattern",
+        "ResourceType",
+        "Members",
+        "ProtectionGroupArn"
+      ],
+      "ProtectionGroupArbitraryPatternLimits": [
+        "MaxMembers"
+      ],
+      "ProtectionGroupLimits": [
+        "MaxProtectionGroups",
+        "PatternTypeLimits"
+      ],
+      "ProtectionGroupPatternTypeLimits": [
+        "ArbitraryPatternLimits"
+      ],
+      "ProtectionLimits": [
+        "ProtectedResourceTypeLimits"
+      ],
+      "ResponseAction": [
+        "Block",
+        "Count"
+      ],
+      "SubResourceSummary": [
+        "Type",
+        "Id",
+        "AttackVectors",
+        "Counters"
+      ],
+      "Subscription": [
+        "StartTime",
+        "EndTime",
+        "TimeCommitmentInSeconds",
+        "AutoRenew",
+        "Limits",
+        "ProactiveEngagementStatus",
+        "SubscriptionLimits",
+        "SubscriptionArn"
+      ],
+      "SubscriptionLimits": [
+        "ProtectionLimits",
+        "ProtectionGroupLimits"
+      ],
+      "SummarizedAttackVector": [
+        "VectorType",
+        "VectorCounters"
+      ],
+      "SummarizedCounter": [
+        "Name",
+        "Max",
+        "Average",
+        "Sum",
+        "N",
+        "Unit"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "TagResourceRequest": [
+        "ResourceARN",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "TimeRange": [
+        "FromInclusive",
+        "ToExclusive"
+      ],
+      "UntagResourceRequest": [
+        "ResourceARN",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "UpdateEmergencyContactSettingsRequest": [
+        "EmergencyContactList"
+      ],
+      "UpdateEmergencyContactSettingsResponse": [],
+      "UpdateProtectionGroupRequest": [
+        "ProtectionGroupId",
+        "Aggregation",
+        "Pattern",
+        "ResourceType",
+        "Members"
+      ],
+      "UpdateProtectionGroupResponse": [],
+      "UpdateSubscriptionRequest": [
+        "AutoRenew"
+      ],
+      "UpdateSubscriptionResponse": []
+    },
+    "validation": {
+      "code": "InvalidParameterException"
+    }
   }
 }

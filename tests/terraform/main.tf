@@ -17,6 +17,7 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
+    shield               = var.endpoint
     datasync             = var.endpoint
     resourceexplorer2    = var.endpoint
     servicecatalog       = var.endpoint
@@ -2689,4 +2690,25 @@ resource "aws_datasync_task" "local" {
     transfer_mode = "CHANGED"
   }
   tags = local.tags
+}
+
+# Subscription destruction leaves the annual commitment intact.
+resource "aws_shield_subscription" "local" {
+  skip_destroy = true
+}
+
+resource "aws_shield_protection" "local" {
+  name         = "local-eip"
+  resource_arn = "arn:aws:ec2:us-east-1:${data.aws_caller_identity.current.account_id}:eip-allocation/${aws_eip.nat.id}"
+  tags         = local.tags
+  depends_on   = [aws_shield_subscription.local]
+}
+
+resource "aws_shield_protection_group" "local" {
+  protection_group_id = "local-protections"
+  aggregation         = "SUM"
+  pattern             = "ARBITRARY"
+  members             = [aws_shield_protection.local.resource_arn]
+  tags                = local.tags
+  depends_on          = [aws_shield_protection.local]
 }

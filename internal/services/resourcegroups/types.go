@@ -89,6 +89,7 @@ var namespaces = map[string]string{
 	"amp":                       "APS",
 	"datasync":                  "DataSync",
 	"accessanalyzer":            "AccessAnalyzer",
+	"shield":                    "Shield",
 	"servicecatalog":            "ServiceCatalog",
 	"securityhub":               "SecurityHub",
 	"inspector2":                "InspectorV2",
@@ -99,6 +100,8 @@ var namespaces = map[string]string{
 var typeNames = map[string]string{
 	"globalaccelerator/endpointgroup":        "EndpointGroup",
 	"fis/experiment-template":                "ExperimentTemplate",
+	"shield/protection":                      "Protection",
+	"shield/protection-group":                "ProtectionGroup",
 	"securityhub/hub":                        "Hub",
 	"securityhub/standard":                   "Standard",
 	"securityhub/insight":                    "Insight",

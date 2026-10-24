@@ -58,6 +58,7 @@ const catalog: Record<string, ServiceInfo> = {
 		category: networking,
 		icon: "globalaccelerator",
 	},
+	shield: { title: "AWS Shield Advanced", category: security, icon: "shield" },
 	fis: {
 		title: "Fault Injection Service",
 		category: management,
