@@ -1,0 +1,27 @@
+package glue
+
+const (
+	worker4X           = "G.4X"
+	worker8X           = "G.8X"
+	commandPython      = "pythonshell"
+	commandSpark       = "glueetl"
+	commandStreaming   = "gluestreaming"
+	commandRay         = "glueray"
+	stateStarting      = "STARTING"
+	stateRunning       = "RUNNING"
+	stateStopping      = "STOPPING"
+	stateStopped       = "STOPPED"
+	stateSucceeded     = "SUCCEEDED"
+	stateFailed        = "FAILED"
+	stateTimeout       = "TIMEOUT"
+	triggerOnDemand    = "ON_DEMAND"
+	triggerScheduled   = "SCHEDULED"
+	triggerConditional = "CONDITIONAL"
+	triggerActivated   = "ACTIVATED"
+	version09          = "0.9"
+	version10          = "1.0"
+	version30          = "3.0"
+	version40          = "4.0"
+	version50          = "5.0"
+	workerRay          = "Z.2X"
+)

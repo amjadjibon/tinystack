@@ -4,8 +4,9 @@ package local
 
 import (
 	"os/exec"
-	"syscall"
+
+	"github.com/amjadjibon/tinystack/internal/services/hostprocess"
 )
 
-func configureProcess(cmd *exec.Cmd) { cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true} }
-func killProcess(cmd *exec.Cmd)      { _ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL) }
+func configureProcess(cmd *exec.Cmd) { hostprocess.Configure(cmd) }
+func killProcess(cmd *exec.Cmd)      { hostprocess.Kill(cmd) }

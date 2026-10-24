@@ -177,6 +177,7 @@ func (s *Service) GetPartitions(ctx context.Context, in *api.GetPartitionsReques
 		return strings.TrimPrefix(partitionKey(request.Scope{}, db, table, p.Values), partitionPrefix(request.Scope{},
 			db, table))
 	}
+
 	selected, next, err := page(all, id, in.NextToken, in.MaxResults)
 	if err != nil {
 		return nil, err

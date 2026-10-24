@@ -15,12 +15,17 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/glue"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/background"
+	"github.com/amjadjibon/tinystack/internal/services/iam"
+	"github.com/amjadjibon/tinystack/internal/services/logs"
+	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -35,8 +40,18 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store storage.Store
-	now   func() time.Time
+	store   storage.Store
+	now     func() time.Time
+	roles   *iam.Service
+	buckets *s3.Service
+	logs    *logs.Service
+	workers *background.Group
+	active  map[string]context.CancelFunc
+	secrets map[string]string
+	session string
+	python  string
+	mu      sync.Mutex
+	enabled bool
 }
 
 func New(store storage.Store) *Service {

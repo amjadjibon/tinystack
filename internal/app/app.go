@@ -562,6 +562,10 @@ func build(
 	email := sesv2.New(store, deliveries)
 	identityPools := cognitoidentity.New(store, identities, roles)
 	dataCatalog := glue.New(store)
+	hostRuntime, localExecution := runtime.(interface{ LocalExecution() bool })
+	dataCatalog.UseExecution(roles, buckets, logGroups, localExecution && hostRuntime.LocalExecution(),
+		cfg.Lambda.Local.Python, cfg.Identity.SecretKeys)
+	a.onStop(dataCatalog.Stop)
 	queries := athena.New(store, dataCatalog, buckets)
 	parameters := ssm.New(store, keys)
 	// Systems Manager publishes the IDs of EC2's images.

@@ -2057,6 +2057,38 @@ resource "aws_lakeformation_lf_tag" "lake" {
   values = ["core", "platform"]
 }
 
+# Glue orchestration definitions; this trigger stays disabled during provider smoke tests.
+resource "aws_glue_workflow" "local" {
+  name                   = "tinystack-glue-workflow"
+  default_run_properties = { environment = "local" }
+  max_concurrent_runs    = 1
+  tags                   = local.tags
+}
+
+resource "aws_glue_job" "python" {
+  name         = "tinystack-glue-python"
+  role_arn     = aws_iam_role.lambda.arn
+  max_capacity = 0.0625
+  timeout      = 1
+  command {
+    name            = "pythonshell"
+    python_version  = "3.9"
+    script_location = "s3://${aws_s3_bucket.assets.bucket}/glue/job.py"
+  }
+  tags = local.tags
+}
+
+resource "aws_glue_trigger" "local" {
+  name          = "tinystack-glue-start"
+  type          = "ON_DEMAND"
+  enabled       = false
+  workflow_name = aws_glue_workflow.local.name
+  actions {
+    job_name = aws_glue_job.python.name
+  }
+  tags = local.tags
+}
+
 resource "aws_glue_catalog_database" "lake" {
   name = "tinystack_lake"
 }

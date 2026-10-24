@@ -326,6 +326,501 @@ type GetTagsResponse struct {
 	Tags map[string]string `json:"Tags,omitempty"`
 }
 
+type ExecutionProperty struct {
+	MaxConcurrentRuns *int64 `json:"MaxConcurrentRuns,omitempty"`
+}
+
+type JobCommand struct {
+	Name           *string `json:"Name,omitempty"`
+	ScriptLocation *string `json:"ScriptLocation,omitempty"`
+	PythonVersion  *string `json:"PythonVersion,omitempty"`
+	Runtime        *string `json:"Runtime,omitempty"`
+}
+
+type CreateJobRequest struct {
+	Name                    *string            `json:"Name,omitempty"`
+	Description             *string            `json:"Description,omitempty"`
+	Role                    *string            `json:"Role,omitempty"`
+	ExecutionProperty       *ExecutionProperty `json:"ExecutionProperty,omitempty"`
+	Command                 *JobCommand        `json:"Command,omitempty"`
+	DefaultArguments        map[string]string  `json:"DefaultArguments,omitempty"`
+	NonOverridableArguments map[string]string  `json:"NonOverridableArguments,omitempty"`
+	MaxRetries              *int64             `json:"MaxRetries,omitempty"`
+	Timeout                 *int64             `json:"Timeout,omitempty"`
+	MaxCapacity             *float64           `json:"MaxCapacity,omitempty"`
+	GlueVersion             *string            `json:"GlueVersion,omitempty"`
+	NumberOfWorkers         *int64             `json:"NumberOfWorkers,omitempty"`
+	WorkerType              *string            `json:"WorkerType,omitempty"`
+	Tags                    map[string]string  `json:"Tags,omitempty"`
+}
+
+type CreateJobResponse struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type GetJobRequest struct {
+	JobName *string `json:"JobName,omitempty"`
+}
+
+type Job struct {
+	Name                    *string            `json:"Name,omitempty"`
+	Description             *string            `json:"Description,omitempty"`
+	Role                    *string            `json:"Role,omitempty"`
+	ExecutionProperty       *ExecutionProperty `json:"ExecutionProperty,omitempty"`
+	Command                 *JobCommand        `json:"Command,omitempty"`
+	DefaultArguments        map[string]string  `json:"DefaultArguments,omitempty"`
+	NonOverridableArguments map[string]string  `json:"NonOverridableArguments,omitempty"`
+	MaxRetries              *int64             `json:"MaxRetries,omitempty"`
+	Timeout                 *int64             `json:"Timeout,omitempty"`
+	MaxCapacity             *float64           `json:"MaxCapacity,omitempty"`
+	GlueVersion             *string            `json:"GlueVersion,omitempty"`
+	NumberOfWorkers         *int64             `json:"NumberOfWorkers,omitempty"`
+	WorkerType              *string            `json:"WorkerType,omitempty"`
+	CreatedOn               *float64           `json:"CreatedOn,omitempty"`
+	LastModifiedOn          *float64           `json:"LastModifiedOn,omitempty"`
+}
+
+type GetJobResponse struct {
+	Job *Job `json:"Job,omitempty"`
+}
+
+type GetJobsRequest struct {
+	NextToken  *string `json:"NextToken,omitempty"`
+	MaxResults *int64  `json:"MaxResults,omitempty"`
+}
+
+type GetJobsResponse struct {
+	Jobs      []Job   `json:"Jobs,omitempty"`
+	NextToken *string `json:"NextToken,omitempty"`
+}
+
+type ListJobsRequest struct {
+	NextToken  *string           `json:"NextToken,omitempty"`
+	MaxResults *int64            `json:"MaxResults,omitempty"`
+	Tags       map[string]string `json:"Tags,omitempty"`
+}
+
+type ListJobsResponse struct {
+	JobNames  []string `json:"JobNames,omitempty"`
+	NextToken *string  `json:"NextToken,omitempty"`
+}
+
+type JobUpdate struct {
+	Description             *string            `json:"Description,omitempty"`
+	Role                    *string            `json:"Role,omitempty"`
+	ExecutionProperty       *ExecutionProperty `json:"ExecutionProperty,omitempty"`
+	Command                 *JobCommand        `json:"Command,omitempty"`
+	DefaultArguments        map[string]string  `json:"DefaultArguments,omitempty"`
+	NonOverridableArguments map[string]string  `json:"NonOverridableArguments,omitempty"`
+	MaxRetries              *int64             `json:"MaxRetries,omitempty"`
+	Timeout                 *int64             `json:"Timeout,omitempty"`
+	MaxCapacity             *float64           `json:"MaxCapacity,omitempty"`
+	GlueVersion             *string            `json:"GlueVersion,omitempty"`
+	NumberOfWorkers         *int64             `json:"NumberOfWorkers,omitempty"`
+	WorkerType              *string            `json:"WorkerType,omitempty"`
+}
+
+type UpdateJobRequest struct {
+	JobName   *string    `json:"JobName,omitempty"`
+	JobUpdate *JobUpdate `json:"JobUpdate,omitempty"`
+}
+
+type UpdateJobResponse struct {
+	JobName *string `json:"JobName,omitempty"`
+}
+
+type DeleteJobRequest struct {
+	JobName *string `json:"JobName,omitempty"`
+}
+
+type DeleteJobResponse struct {
+	JobName *string `json:"JobName,omitempty"`
+}
+
+type BatchGetJobsRequest struct {
+	JobNames []string `json:"JobNames,omitempty"`
+}
+
+type BatchGetJobsResponse struct {
+	Jobs         []Job    `json:"Jobs,omitempty"`
+	JobsNotFound []string `json:"JobsNotFound,omitempty"`
+}
+
+type StartJobRunRequest struct {
+	JobName   *string           `json:"JobName,omitempty"`
+	Arguments map[string]string `json:"Arguments,omitempty"`
+	Timeout   *int64            `json:"Timeout,omitempty"`
+	JobRunId  *string           `json:"JobRunId,omitempty"`
+}
+
+type StartJobRunResponse struct {
+	JobRunId *string `json:"JobRunId,omitempty"`
+}
+
+type GetJobRunRequest struct {
+	JobName *string `json:"JobName,omitempty"`
+	RunId   *string `json:"RunId,omitempty"`
+}
+
+type JobRun struct {
+	Id              *string           `json:"Id,omitempty"`
+	Attempt         *int64            `json:"Attempt,omitempty"`
+	PreviousRunId   *string           `json:"PreviousRunId,omitempty"`
+	TriggerName     *string           `json:"TriggerName,omitempty"`
+	JobName         *string           `json:"JobName,omitempty"`
+	StartedOn       *float64          `json:"StartedOn,omitempty"`
+	LastModifiedOn  *float64          `json:"LastModifiedOn,omitempty"`
+	CompletedOn     *float64          `json:"CompletedOn,omitempty"`
+	JobRunState     *string           `json:"JobRunState,omitempty"`
+	Arguments       map[string]string `json:"Arguments,omitempty"`
+	ErrorMessage    *string           `json:"ErrorMessage,omitempty"`
+	ExecutionTime   *int64            `json:"ExecutionTime,omitempty"`
+	Timeout         *int64            `json:"Timeout,omitempty"`
+	MaxCapacity     *float64          `json:"MaxCapacity,omitempty"`
+	WorkerType      *string           `json:"WorkerType,omitempty"`
+	NumberOfWorkers *int64            `json:"NumberOfWorkers,omitempty"`
+	GlueVersion     *string           `json:"GlueVersion,omitempty"`
+	LogGroupName    *string           `json:"LogGroupName,omitempty"`
+}
+
+type GetJobRunResponse struct {
+	JobRun *JobRun `json:"JobRun,omitempty"`
+}
+
+type GetJobRunsRequest struct {
+	JobName    *string `json:"JobName,omitempty"`
+	NextToken  *string `json:"NextToken,omitempty"`
+	MaxResults *int64  `json:"MaxResults,omitempty"`
+}
+
+type GetJobRunsResponse struct {
+	JobRuns   []JobRun `json:"JobRuns,omitempty"`
+	NextToken *string  `json:"NextToken,omitempty"`
+}
+
+type BatchStopJobRunRequest struct {
+	JobName   *string  `json:"JobName,omitempty"`
+	JobRunIds []string `json:"JobRunIds,omitempty"`
+}
+
+type BatchStopJobRunSuccessfulSubmission struct {
+	JobName  *string `json:"JobName,omitempty"`
+	JobRunId *string `json:"JobRunId,omitempty"`
+}
+
+type BatchStopJobRunError struct {
+	ErrorDetail *ErrorDetail `json:"ErrorDetail,omitempty"`
+	JobName     *string      `json:"JobName,omitempty"`
+	JobRunId    *string      `json:"JobRunId,omitempty"`
+}
+
+type BatchStopJobRunResponse struct {
+	SuccessfulSubmissions []BatchStopJobRunSuccessfulSubmission `json:"SuccessfulSubmissions,omitempty"`
+	Errors                []BatchStopJobRunError                `json:"Errors,omitempty"`
+}
+
+type Condition struct {
+	LogicalOperator *string `json:"LogicalOperator,omitempty"`
+	JobName         *string `json:"JobName,omitempty"`
+	State           *string `json:"State,omitempty"`
+}
+
+type Predicate struct {
+	Logical    *string     `json:"Logical,omitempty"`
+	Conditions []Condition `json:"Conditions,omitempty"`
+}
+
+type Action struct {
+	JobName   *string           `json:"JobName,omitempty"`
+	Arguments map[string]string `json:"Arguments,omitempty"`
+	Timeout   *int64            `json:"Timeout,omitempty"`
+}
+
+type CreateTriggerRequest struct {
+	Name            *string           `json:"Name,omitempty"`
+	WorkflowName    *string           `json:"WorkflowName,omitempty"`
+	Type            *string           `json:"Type,omitempty"`
+	Schedule        *string           `json:"Schedule,omitempty"`
+	Predicate       *Predicate        `json:"Predicate,omitempty"`
+	Actions         []Action          `json:"Actions,omitempty"`
+	Description     *string           `json:"Description,omitempty"`
+	StartOnCreation *bool             `json:"StartOnCreation,omitempty"`
+	Tags            map[string]string `json:"Tags,omitempty"`
+}
+
+type CreateTriggerResponse struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type GetTriggerRequest struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type Trigger struct {
+	Name         *string    `json:"Name,omitempty"`
+	WorkflowName *string    `json:"WorkflowName,omitempty"`
+	Id           *string    `json:"Id,omitempty"`
+	Type         *string    `json:"Type,omitempty"`
+	State        *string    `json:"State,omitempty"`
+	Description  *string    `json:"Description,omitempty"`
+	Schedule     *string    `json:"Schedule,omitempty"`
+	Actions      []Action   `json:"Actions,omitempty"`
+	Predicate    *Predicate `json:"Predicate,omitempty"`
+}
+
+type GetTriggerResponse struct {
+	Trigger *Trigger `json:"Trigger,omitempty"`
+}
+
+type GetTriggersRequest struct {
+	NextToken        *string `json:"NextToken,omitempty"`
+	DependentJobName *string `json:"DependentJobName,omitempty"`
+	MaxResults       *int64  `json:"MaxResults,omitempty"`
+}
+
+type GetTriggersResponse struct {
+	Triggers  []Trigger `json:"Triggers,omitempty"`
+	NextToken *string   `json:"NextToken,omitempty"`
+}
+
+type ListTriggersRequest struct {
+	NextToken        *string           `json:"NextToken,omitempty"`
+	DependentJobName *string           `json:"DependentJobName,omitempty"`
+	MaxResults       *int64            `json:"MaxResults,omitempty"`
+	Tags             map[string]string `json:"Tags,omitempty"`
+}
+
+type ListTriggersResponse struct {
+	TriggerNames []string `json:"TriggerNames,omitempty"`
+	NextToken    *string  `json:"NextToken,omitempty"`
+}
+
+type TriggerUpdate struct {
+	Name        *string    `json:"Name,omitempty"`
+	Description *string    `json:"Description,omitempty"`
+	Schedule    *string    `json:"Schedule,omitempty"`
+	Actions     []Action   `json:"Actions,omitempty"`
+	Predicate   *Predicate `json:"Predicate,omitempty"`
+}
+
+type UpdateTriggerRequest struct {
+	Name          *string        `json:"Name,omitempty"`
+	TriggerUpdate *TriggerUpdate `json:"TriggerUpdate,omitempty"`
+}
+
+type UpdateTriggerResponse struct {
+	Trigger *Trigger `json:"Trigger,omitempty"`
+}
+
+type DeleteTriggerRequest struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type DeleteTriggerResponse struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type StartTriggerRequest struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type StartTriggerResponse struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type StopTriggerRequest struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type StopTriggerResponse struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type BatchGetTriggersRequest struct {
+	TriggerNames []string `json:"TriggerNames,omitempty"`
+}
+
+type BatchGetTriggersResponse struct {
+	Triggers         []Trigger `json:"Triggers,omitempty"`
+	TriggersNotFound []string  `json:"TriggersNotFound,omitempty"`
+}
+
+type CreateWorkflowRequest struct {
+	Name                 *string           `json:"Name,omitempty"`
+	Description          *string           `json:"Description,omitempty"`
+	DefaultRunProperties map[string]string `json:"DefaultRunProperties,omitempty"`
+	Tags                 map[string]string `json:"Tags,omitempty"`
+	MaxConcurrentRuns    *int64            `json:"MaxConcurrentRuns,omitempty"`
+}
+
+type CreateWorkflowResponse struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type GetWorkflowRequest struct {
+	Name         *string `json:"Name,omitempty"`
+	IncludeGraph *bool   `json:"IncludeGraph,omitempty"`
+}
+
+type WorkflowRunStatistics struct {
+	TotalActions     *int64 `json:"TotalActions,omitempty"`
+	TimeoutActions   *int64 `json:"TimeoutActions,omitempty"`
+	FailedActions    *int64 `json:"FailedActions,omitempty"`
+	StoppedActions   *int64 `json:"StoppedActions,omitempty"`
+	SucceededActions *int64 `json:"SucceededActions,omitempty"`
+	RunningActions   *int64 `json:"RunningActions,omitempty"`
+}
+
+type JobNodeDetails struct {
+	JobRuns []JobRun `json:"JobRuns,omitempty"`
+}
+
+type TriggerNodeDetails struct {
+	Trigger *Trigger `json:"Trigger,omitempty"`
+}
+
+type Node struct {
+	Type           *string             `json:"Type,omitempty"`
+	Name           *string             `json:"Name,omitempty"`
+	UniqueId       *string             `json:"UniqueId,omitempty"`
+	JobDetails     *JobNodeDetails     `json:"JobDetails,omitempty"`
+	TriggerDetails *TriggerNodeDetails `json:"TriggerDetails,omitempty"`
+}
+
+type Edge struct {
+	SourceId      *string `json:"SourceId,omitempty"`
+	DestinationId *string `json:"DestinationId,omitempty"`
+}
+
+type WorkflowGraph struct {
+	Nodes []Node `json:"Nodes,omitempty"`
+	Edges []Edge `json:"Edges,omitempty"`
+}
+
+type WorkflowRun struct {
+	Name                  *string                `json:"Name,omitempty"`
+	WorkflowRunId         *string                `json:"WorkflowRunId,omitempty"`
+	PreviousRunId         *string                `json:"PreviousRunId,omitempty"`
+	WorkflowRunProperties map[string]string      `json:"WorkflowRunProperties,omitempty"`
+	StartedOn             *float64               `json:"StartedOn,omitempty"`
+	CompletedOn           *float64               `json:"CompletedOn,omitempty"`
+	Status                *string                `json:"Status,omitempty"`
+	ErrorMessage          *string                `json:"ErrorMessage,omitempty"`
+	Statistics            *WorkflowRunStatistics `json:"Statistics,omitempty"`
+	Graph                 *WorkflowGraph         `json:"Graph,omitempty"`
+}
+
+type Workflow struct {
+	Name                 *string           `json:"Name,omitempty"`
+	Description          *string           `json:"Description,omitempty"`
+	DefaultRunProperties map[string]string `json:"DefaultRunProperties,omitempty"`
+	CreatedOn            *float64          `json:"CreatedOn,omitempty"`
+	LastModifiedOn       *float64          `json:"LastModifiedOn,omitempty"`
+	LastRun              *WorkflowRun      `json:"LastRun,omitempty"`
+	Graph                *WorkflowGraph    `json:"Graph,omitempty"`
+	MaxConcurrentRuns    *int64            `json:"MaxConcurrentRuns,omitempty"`
+}
+
+type GetWorkflowResponse struct {
+	Workflow *Workflow `json:"Workflow,omitempty"`
+}
+
+type ListWorkflowsRequest struct {
+	NextToken  *string `json:"NextToken,omitempty"`
+	MaxResults *int64  `json:"MaxResults,omitempty"`
+}
+
+type ListWorkflowsResponse struct {
+	Workflows []string `json:"Workflows,omitempty"`
+	NextToken *string  `json:"NextToken,omitempty"`
+}
+
+type UpdateWorkflowRequest struct {
+	Name                 *string           `json:"Name,omitempty"`
+	Description          *string           `json:"Description,omitempty"`
+	DefaultRunProperties map[string]string `json:"DefaultRunProperties,omitempty"`
+	MaxConcurrentRuns    *int64            `json:"MaxConcurrentRuns,omitempty"`
+}
+
+type UpdateWorkflowResponse struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type DeleteWorkflowRequest struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type DeleteWorkflowResponse struct {
+	Name *string `json:"Name,omitempty"`
+}
+
+type StartWorkflowRunRequest struct {
+	Name          *string           `json:"Name,omitempty"`
+	RunProperties map[string]string `json:"RunProperties,omitempty"`
+}
+
+type StartWorkflowRunResponse struct {
+	RunId *string `json:"RunId,omitempty"`
+}
+
+type GetWorkflowRunRequest struct {
+	Name         *string `json:"Name,omitempty"`
+	RunId        *string `json:"RunId,omitempty"`
+	IncludeGraph *bool   `json:"IncludeGraph,omitempty"`
+}
+
+type GetWorkflowRunResponse struct {
+	Run *WorkflowRun `json:"Run,omitempty"`
+}
+
+type GetWorkflowRunsRequest struct {
+	Name         *string `json:"Name,omitempty"`
+	IncludeGraph *bool   `json:"IncludeGraph,omitempty"`
+	NextToken    *string `json:"NextToken,omitempty"`
+	MaxResults   *int64  `json:"MaxResults,omitempty"`
+}
+
+type GetWorkflowRunsResponse struct {
+	Runs      []WorkflowRun `json:"Runs,omitempty"`
+	NextToken *string       `json:"NextToken,omitempty"`
+}
+
+type GetWorkflowRunPropertiesRequest struct {
+	Name  *string `json:"Name,omitempty"`
+	RunId *string `json:"RunId,omitempty"`
+}
+
+type GetWorkflowRunPropertiesResponse struct {
+	RunProperties map[string]string `json:"RunProperties,omitempty"`
+}
+
+type PutWorkflowRunPropertiesRequest struct {
+	Name          *string           `json:"Name,omitempty"`
+	RunId         *string           `json:"RunId,omitempty"`
+	RunProperties map[string]string `json:"RunProperties,omitempty"`
+}
+
+type PutWorkflowRunPropertiesResponse struct {
+}
+
+type StopWorkflowRunRequest struct {
+	Name  *string `json:"Name,omitempty"`
+	RunId *string `json:"RunId,omitempty"`
+}
+
+type StopWorkflowRunResponse struct {
+}
+
+type BatchGetWorkflowsRequest struct {
+	Names        []string `json:"Names,omitempty"`
+	IncludeGraph *bool    `json:"IncludeGraph,omitempty"`
+}
+
+type BatchGetWorkflowsResponse struct {
+	Workflows        []Workflow `json:"Workflows,omitempty"`
+	MissingWorkflows []string   `json:"MissingWorkflows,omitempty"`
+}
+
 type API interface {
 	CreateDatabase(context.Context, *CreateDatabaseRequest) (*CreateDatabaseResponse, error)
 	GetDatabase(context.Context, *GetDatabaseRequest) (*GetDatabaseResponse, error)
@@ -346,10 +841,42 @@ type API interface {
 	TagResource(context.Context, *TagResourceRequest) (*TagResourceResponse, error)
 	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceResponse, error)
 	GetTags(context.Context, *GetTagsRequest) (*GetTagsResponse, error)
+	CreateJob(context.Context, *CreateJobRequest) (*CreateJobResponse, error)
+	GetJob(context.Context, *GetJobRequest) (*GetJobResponse, error)
+	GetJobs(context.Context, *GetJobsRequest) (*GetJobsResponse, error)
+	ListJobs(context.Context, *ListJobsRequest) (*ListJobsResponse, error)
+	UpdateJob(context.Context, *UpdateJobRequest) (*UpdateJobResponse, error)
+	DeleteJob(context.Context, *DeleteJobRequest) (*DeleteJobResponse, error)
+	BatchGetJobs(context.Context, *BatchGetJobsRequest) (*BatchGetJobsResponse, error)
+	StartJobRun(context.Context, *StartJobRunRequest) (*StartJobRunResponse, error)
+	GetJobRun(context.Context, *GetJobRunRequest) (*GetJobRunResponse, error)
+	GetJobRuns(context.Context, *GetJobRunsRequest) (*GetJobRunsResponse, error)
+	BatchStopJobRun(context.Context, *BatchStopJobRunRequest) (*BatchStopJobRunResponse, error)
+	CreateTrigger(context.Context, *CreateTriggerRequest) (*CreateTriggerResponse, error)
+	GetTrigger(context.Context, *GetTriggerRequest) (*GetTriggerResponse, error)
+	GetTriggers(context.Context, *GetTriggersRequest) (*GetTriggersResponse, error)
+	ListTriggers(context.Context, *ListTriggersRequest) (*ListTriggersResponse, error)
+	UpdateTrigger(context.Context, *UpdateTriggerRequest) (*UpdateTriggerResponse, error)
+	DeleteTrigger(context.Context, *DeleteTriggerRequest) (*DeleteTriggerResponse, error)
+	StartTrigger(context.Context, *StartTriggerRequest) (*StartTriggerResponse, error)
+	StopTrigger(context.Context, *StopTriggerRequest) (*StopTriggerResponse, error)
+	BatchGetTriggers(context.Context, *BatchGetTriggersRequest) (*BatchGetTriggersResponse, error)
+	CreateWorkflow(context.Context, *CreateWorkflowRequest) (*CreateWorkflowResponse, error)
+	GetWorkflow(context.Context, *GetWorkflowRequest) (*GetWorkflowResponse, error)
+	ListWorkflows(context.Context, *ListWorkflowsRequest) (*ListWorkflowsResponse, error)
+	UpdateWorkflow(context.Context, *UpdateWorkflowRequest) (*UpdateWorkflowResponse, error)
+	DeleteWorkflow(context.Context, *DeleteWorkflowRequest) (*DeleteWorkflowResponse, error)
+	StartWorkflowRun(context.Context, *StartWorkflowRunRequest) (*StartWorkflowRunResponse, error)
+	GetWorkflowRun(context.Context, *GetWorkflowRunRequest) (*GetWorkflowRunResponse, error)
+	GetWorkflowRuns(context.Context, *GetWorkflowRunsRequest) (*GetWorkflowRunsResponse, error)
+	GetWorkflowRunProperties(context.Context, *GetWorkflowRunPropertiesRequest) (*GetWorkflowRunPropertiesResponse, error)
+	PutWorkflowRunProperties(context.Context, *PutWorkflowRunPropertiesRequest) (*PutWorkflowRunPropertiesResponse, error)
+	StopWorkflowRun(context.Context, *StopWorkflowRunRequest) (*StopWorkflowRunResponse, error)
+	BatchGetWorkflows(context.Context, *BatchGetWorkflowsRequest) (*BatchGetWorkflowsResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "glue", SigningName: "glue", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "glue", TargetPrefix: "AWSGlue", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"AlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "EntityNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "FederatedResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "FederationSourceException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "FederationSourceRetryableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "GlueEncryptionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InternalServiceException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 500}, "InvalidInputException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "OperationTimeoutException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNotReadyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNumberLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "glue", SigningName: "glue", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "glue", TargetPrefix: "AWSGlue", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"AlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ConcurrentRunsExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "EntityNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "FederatedResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "FederationSourceException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "FederationSourceRetryableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "GlueEncryptionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "IdempotentParameterMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "IllegalWorkflowStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InternalServiceException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 500}, "InvalidInputException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "OperationTimeoutException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNotReadyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNumberLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateDatabase": {Name: "CreateDatabase", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:CreateDatabase", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.CreateDatabase", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateDatabaseRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateDatabase(ctx, input.(*CreateDatabaseRequest))
 		}},
@@ -403,5 +930,95 @@ func Descriptor(api API) catalog.Service {
 			return api.UntagResource(ctx, input.(*UntagResourceRequest))
 		}},
 		"GetTags": {Name: "GetTags", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetTags", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetTags", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.GetTags(ctx, input.(*GetTagsRequest)) }},
+		"CreateJob": {Name: "CreateJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:CreateJob", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.CreateJob", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateJob(ctx, input.(*CreateJobRequest))
+		}},
+		"GetJob":   {Name: "GetJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetJob", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetJob", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.GetJob(ctx, input.(*GetJobRequest)) }},
+		"GetJobs":  {Name: "GetJobs", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetJobs", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetJobs", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetJobsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.GetJobs(ctx, input.(*GetJobsRequest)) }},
+		"ListJobs": {Name: "ListJobs", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:ListJobs", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.ListJobs", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListJobsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.ListJobs(ctx, input.(*ListJobsRequest)) }},
+		"UpdateJob": {Name: "UpdateJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:UpdateJob", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.UpdateJob", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateJob(ctx, input.(*UpdateJobRequest))
+		}},
+		"DeleteJob": {Name: "DeleteJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:DeleteJob", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.DeleteJob", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteJob(ctx, input.(*DeleteJobRequest))
+		}},
+		"BatchGetJobs": {Name: "BatchGetJobs", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:BatchGetJobs", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.BatchGetJobs", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchGetJobsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.BatchGetJobs(ctx, input.(*BatchGetJobsRequest))
+		}},
+		"StartJobRun": {Name: "StartJobRun", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:StartJobRun", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.StartJobRun", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StartJobRunRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.StartJobRun(ctx, input.(*StartJobRunRequest))
+		}},
+		"GetJobRun": {Name: "GetJobRun", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetJobRun", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetJobRun", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetJobRunRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetJobRun(ctx, input.(*GetJobRunRequest))
+		}},
+		"GetJobRuns": {Name: "GetJobRuns", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetJobRuns", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetJobRuns", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetJobRunsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetJobRuns(ctx, input.(*GetJobRunsRequest))
+		}},
+		"BatchStopJobRun": {Name: "BatchStopJobRun", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:BatchStopJobRun", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.BatchStopJobRun", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchStopJobRunRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.BatchStopJobRun(ctx, input.(*BatchStopJobRunRequest))
+		}},
+		"CreateTrigger": {Name: "CreateTrigger", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:CreateTrigger", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.CreateTrigger", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateTriggerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateTrigger(ctx, input.(*CreateTriggerRequest))
+		}},
+		"GetTrigger": {Name: "GetTrigger", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetTrigger", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetTrigger", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetTriggerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetTrigger(ctx, input.(*GetTriggerRequest))
+		}},
+		"GetTriggers": {Name: "GetTriggers", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetTriggers", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetTriggers", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetTriggersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetTriggers(ctx, input.(*GetTriggersRequest))
+		}},
+		"ListTriggers": {Name: "ListTriggers", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:ListTriggers", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.ListTriggers", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListTriggersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListTriggers(ctx, input.(*ListTriggersRequest))
+		}},
+		"UpdateTrigger": {Name: "UpdateTrigger", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:UpdateTrigger", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.UpdateTrigger", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateTriggerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateTrigger(ctx, input.(*UpdateTriggerRequest))
+		}},
+		"DeleteTrigger": {Name: "DeleteTrigger", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:DeleteTrigger", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.DeleteTrigger", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteTriggerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteTrigger(ctx, input.(*DeleteTriggerRequest))
+		}},
+		"StartTrigger": {Name: "StartTrigger", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:StartTrigger", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.StartTrigger", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StartTriggerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.StartTrigger(ctx, input.(*StartTriggerRequest))
+		}},
+		"StopTrigger": {Name: "StopTrigger", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:StopTrigger", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.StopTrigger", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StopTriggerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.StopTrigger(ctx, input.(*StopTriggerRequest))
+		}},
+		"BatchGetTriggers": {Name: "BatchGetTriggers", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:BatchGetTriggers", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.BatchGetTriggers", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchGetTriggersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.BatchGetTriggers(ctx, input.(*BatchGetTriggersRequest))
+		}},
+		"CreateWorkflow": {Name: "CreateWorkflow", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:CreateWorkflow", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.CreateWorkflow", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateWorkflowRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateWorkflow(ctx, input.(*CreateWorkflowRequest))
+		}},
+		"GetWorkflow": {Name: "GetWorkflow", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetWorkflow", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetWorkflow", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetWorkflowRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetWorkflow(ctx, input.(*GetWorkflowRequest))
+		}},
+		"ListWorkflows": {Name: "ListWorkflows", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:ListWorkflows", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.ListWorkflows", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListWorkflowsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListWorkflows(ctx, input.(*ListWorkflowsRequest))
+		}},
+		"UpdateWorkflow": {Name: "UpdateWorkflow", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:UpdateWorkflow", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.UpdateWorkflow", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateWorkflowRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateWorkflow(ctx, input.(*UpdateWorkflowRequest))
+		}},
+		"DeleteWorkflow": {Name: "DeleteWorkflow", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:DeleteWorkflow", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.DeleteWorkflow", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteWorkflowRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteWorkflow(ctx, input.(*DeleteWorkflowRequest))
+		}},
+		"StartWorkflowRun": {Name: "StartWorkflowRun", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:StartWorkflowRun", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.StartWorkflowRun", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StartWorkflowRunRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.StartWorkflowRun(ctx, input.(*StartWorkflowRunRequest))
+		}},
+		"GetWorkflowRun": {Name: "GetWorkflowRun", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetWorkflowRun", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetWorkflowRun", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetWorkflowRunRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetWorkflowRun(ctx, input.(*GetWorkflowRunRequest))
+		}},
+		"GetWorkflowRuns": {Name: "GetWorkflowRuns", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetWorkflowRuns", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetWorkflowRuns", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetWorkflowRunsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetWorkflowRuns(ctx, input.(*GetWorkflowRunsRequest))
+		}},
+		"GetWorkflowRunProperties": {Name: "GetWorkflowRunProperties", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetWorkflowRunProperties", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetWorkflowRunProperties", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetWorkflowRunPropertiesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetWorkflowRunProperties(ctx, input.(*GetWorkflowRunPropertiesRequest))
+		}},
+		"PutWorkflowRunProperties": {Name: "PutWorkflowRunProperties", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:PutWorkflowRunProperties", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.PutWorkflowRunProperties", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutWorkflowRunPropertiesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutWorkflowRunProperties(ctx, input.(*PutWorkflowRunPropertiesRequest))
+		}},
+		"StopWorkflowRun": {Name: "StopWorkflowRun", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:StopWorkflowRun", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.StopWorkflowRun", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StopWorkflowRunRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.StopWorkflowRun(ctx, input.(*StopWorkflowRunRequest))
+		}},
+		"BatchGetWorkflows": {Name: "BatchGetWorkflows", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:BatchGetWorkflows", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.BatchGetWorkflows", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchGetWorkflowsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.BatchGetWorkflows(ctx, input.(*BatchGetWorkflowsRequest))
+		}},
 	}}
 }

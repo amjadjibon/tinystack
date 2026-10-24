@@ -108,6 +108,9 @@ func New(options Options) *Runtime {
 
 func (r *Runtime) SupportsDirectories() bool { return true }
 
+// LocalExecution identifies the opt-in host executor for other local runtimes.
+func (r *Runtime) LocalExecution() bool { return true }
+
 // acquire takes an idle environment of the function's revision or starts one.
 // Starting runs outside the lock, so a slow cold start (large packages and
 // layers) does not hold up other functions.

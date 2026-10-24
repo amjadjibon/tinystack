@@ -2,10 +2,12 @@ package glue
 
 import (
 	"context"
+	"net/url"
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/glue"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -23,6 +25,24 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 			arn := "arn:aws:glue:" + region + ":" + account + ":" + kind + "/" + n
 			switch kind {
+			case kindJob, kindTrigger, kindWorkflow:
+				decoded, decodeErr := url.PathUnescape(n)
+				if decodeErr != nil {
+					return decodeErr
+				}
+
+				n = decoded
+
+				arn = "arn:aws:glue:" + region + ":" + account + ":" + kind + "/" + n
+				_, tags, err := loadTagged(tx, request.Scope{AccountID: account, Region: region}, kind, n)
+				if err != nil {
+					return err
+				}
+
+				out = append(
+					out,
+					catalog.Resource{Type: kind, Account: account, Region: region, Name: n, ARN: arn, Tags: tags},
+				)
 			case kindDatabase:
 				d, _, err := storage.Read[database](tx, key)
 				if err != nil {

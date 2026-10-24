@@ -178,36 +178,97 @@ func (s *Service) DeleteDatabase(
 	return &api.DeleteDatabaseResponse{}, nil
 }
 
-// tagged returns the name of the database an ARN names, the only resource
-// TinyStack tags in the catalog.
-func tagged(scope request.Scope, arn *string) (string, error) {
-	prefix := "arn:aws:glue:" + scope.Region + ":" + scope.AccountID + ":database/"
-	n, ok := strings.CutPrefix(common.Value(arn), prefix)
-	if !ok || n == "" {
-		return "", invalid("TinyStack tags Glue databases only, not %s.", common.Value(arn))
+// tagged resolves a taggable resource in the caller's account and Region.
+func tagged(scope request.Scope, arn *string) (kind, n string, err error) {
+	prefix := "arn:aws:glue:" + scope.Region + ":" + scope.AccountID + ":"
+	rest, ok := strings.CutPrefix(common.Value(arn), prefix)
+	if !ok {
+		return "", "", invalid("Invalid Glue resource ARN")
 	}
 
-	return strings.ToLower(n), nil
+	kind, n, ok = strings.Cut(rest, "/")
+	if !ok || n == "" || (kind != kindDatabase && kind != kindJob && kind != kindTrigger && kind != kindWorkflow) {
+		return "", "", invalid("Unsupported Glue resource ARN")
+	}
+
+	if kind == kindDatabase {
+		n = strings.ToLower(n)
+	}
+
+	return kind, n, nil
+}
+
+func loadTagged(
+	tx storage.ReadTx,
+	scope request.Scope,
+	kind, n string,
+) (record any, tags map[string]string, err error) {
+	switch kind {
+	case kindJob:
+		r, err := loadJob(tx, scope, n)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return r, r.Tags, nil
+	case kindTrigger:
+		r, err := loadTrigger(tx, scope, n)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return r, r.Tags, nil
+	case kindWorkflow:
+		r, err := loadWorkflow(tx, scope, n)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return r, r.Tags, nil
+	default:
+		r, err := loadDatabase(tx, scope, n)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return r, r.Tags, nil
+	}
 }
 
 func (s *Service) retag(ctx context.Context, arn *string, fn func(map[string]string) map[string]string) error {
 	return s.update(ctx, nil, func(tx storage.WriteTx, scope request.Scope) error {
-		n, err := tagged(scope, arn)
+		kind, n, err := tagged(scope, arn)
 		if err != nil {
 			return err
 		}
 
-		d, err := loadDatabase(tx, scope, n)
+		r, tags, err := loadTagged(tx, scope, kind, n)
 		if err != nil {
 			return err
 		}
 
-		d.Tags = fn(common.CloneTags(d.Tags))
-		if checkErr := checkTags(d.Tags); checkErr != nil {
-			return checkErr
+		tags = fn(common.CloneTags(tags))
+		switch record := r.(type) {
+		case *jobRecord:
+			record.Tags = tags
+		case *triggerRecord:
+			record.Tags = tags
+		case *workflowRecord:
+			record.Tags = tags
+		case *database:
+			record.Tags = tags
 		}
 
-		return storage.Write(tx, databaseKey(scope, n), d)
+		if err := checkTags(tags); err != nil {
+			return err
+		}
+
+		key := databaseKey(scope, n)
+		if kind != kindDatabase {
+			key = orchestrationKey(scope, kind, n)
+		}
+
+		return storage.Write(tx, key, r)
 	})
 }
 
@@ -241,17 +302,21 @@ func (s *Service) UntagResource(ctx context.Context, in *api.UntagResourceReques
 func (s *Service) GetTags(ctx context.Context, in *api.GetTagsRequest) (*api.GetTagsResponse, error) {
 	out := &api.GetTagsResponse{Tags: map[string]string{}}
 	err := s.view(ctx, nil, func(tx storage.ReadTx, scope request.Scope) error {
-		n, err := tagged(scope, in.ResourceArn)
+		kind, n, err := tagged(scope, in.ResourceArn)
 		if err != nil {
 			return err
 		}
 
-		d, err := loadDatabase(tx, scope, n)
-		if err == nil && d.Tags != nil {
-			out.Tags = d.Tags
+		_, tags, err := loadTagged(tx, scope, kind, n)
+		if err != nil {
+			return err
 		}
 
-		return err
+		if tags != nil {
+			out.Tags = tags
+		}
+
+		return nil
 	})
 	if err != nil {
 		return nil, err

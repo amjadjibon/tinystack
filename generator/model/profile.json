@@ -12932,7 +12932,39 @@
       "DeletePartition",
       "TagResource",
       "UntagResource",
-      "GetTags"
+      "GetTags",
+      "CreateJob",
+      "GetJob",
+      "GetJobs",
+      "ListJobs",
+      "UpdateJob",
+      "DeleteJob",
+      "BatchGetJobs",
+      "StartJobRun",
+      "GetJobRun",
+      "GetJobRuns",
+      "BatchStopJobRun",
+      "CreateTrigger",
+      "GetTrigger",
+      "GetTriggers",
+      "ListTriggers",
+      "UpdateTrigger",
+      "DeleteTrigger",
+      "StartTrigger",
+      "StopTrigger",
+      "BatchGetTriggers",
+      "CreateWorkflow",
+      "GetWorkflow",
+      "ListWorkflows",
+      "UpdateWorkflow",
+      "DeleteWorkflow",
+      "StartWorkflowRun",
+      "GetWorkflowRun",
+      "GetWorkflowRuns",
+      "GetWorkflowRunProperties",
+      "PutWorkflowRunProperties",
+      "StopWorkflowRun",
+      "BatchGetWorkflows"
     ],
     "shapes": {
       "CreateDatabaseRequest": [
@@ -13180,6 +13212,417 @@
       ],
       "GetTagsResponse": [
         "Tags"
+      ],
+      "CreateJobRequest": [
+        "Name",
+        "Description",
+        "Role",
+        "ExecutionProperty",
+        "Command",
+        "DefaultArguments",
+        "NonOverridableArguments",
+        "MaxRetries",
+        "Timeout",
+        "MaxCapacity",
+        "GlueVersion",
+        "NumberOfWorkers",
+        "WorkerType",
+        "Tags"
+      ],
+      "Job": [
+        "Name",
+        "Description",
+        "Role",
+        "ExecutionProperty",
+        "Command",
+        "DefaultArguments",
+        "NonOverridableArguments",
+        "MaxRetries",
+        "Timeout",
+        "MaxCapacity",
+        "GlueVersion",
+        "NumberOfWorkers",
+        "WorkerType",
+        "CreatedOn",
+        "LastModifiedOn"
+      ],
+      "JobUpdate": [
+        "Description",
+        "Role",
+        "ExecutionProperty",
+        "Command",
+        "DefaultArguments",
+        "NonOverridableArguments",
+        "MaxRetries",
+        "Timeout",
+        "MaxCapacity",
+        "GlueVersion",
+        "NumberOfWorkers",
+        "WorkerType"
+      ],
+      "JobCommand": [
+        "Name",
+        "ScriptLocation",
+        "PythonVersion",
+        "Runtime"
+      ],
+      "ExecutionProperty": [
+        "MaxConcurrentRuns"
+      ],
+      "JobRun": [
+        "Id",
+        "Attempt",
+        "PreviousRunId",
+        "TriggerName",
+        "JobName",
+        "StartedOn",
+        "LastModifiedOn",
+        "CompletedOn",
+        "JobRunState",
+        "Arguments",
+        "ErrorMessage",
+        "ExecutionTime",
+        "Timeout",
+        "MaxCapacity",
+        "WorkerType",
+        "NumberOfWorkers",
+        "GlueVersion",
+        "LogGroupName"
+      ],
+      "StartJobRunRequest": [
+        "JobName",
+        "Arguments",
+        "Timeout",
+        "JobRunId"
+      ],
+      "GetJobRunRequest": [
+        "JobName",
+        "RunId"
+      ],
+      "GetJobRunsRequest": [
+        "JobName",
+        "NextToken",
+        "MaxResults"
+      ],
+      "CreateJobResponse": [
+        "Name"
+      ],
+      "GetJobRequest": [
+        "JobName"
+      ],
+      "GetJobResponse": [
+        "Job"
+      ],
+      "GetJobsRequest": [
+        "NextToken",
+        "MaxResults"
+      ],
+      "GetJobsResponse": [
+        "Jobs",
+        "NextToken"
+      ],
+      "ListJobsRequest": [
+        "NextToken",
+        "MaxResults",
+        "Tags"
+      ],
+      "ListJobsResponse": [
+        "JobNames",
+        "NextToken"
+      ],
+      "UpdateJobRequest": [
+        "JobName",
+        "JobUpdate"
+      ],
+      "UpdateJobResponse": [
+        "JobName"
+      ],
+      "DeleteJobRequest": [
+        "JobName"
+      ],
+      "DeleteJobResponse": [
+        "JobName"
+      ],
+      "BatchGetJobsRequest": [
+        "JobNames"
+      ],
+      "BatchGetJobsResponse": [
+        "Jobs",
+        "JobsNotFound"
+      ],
+      "StartJobRunResponse": [
+        "JobRunId"
+      ],
+      "GetJobRunResponse": [
+        "JobRun"
+      ],
+      "GetJobRunsResponse": [
+        "JobRuns",
+        "NextToken"
+      ],
+      "BatchStopJobRunRequest": [
+        "JobName",
+        "JobRunIds"
+      ],
+      "BatchStopJobRunResponse": [
+        "SuccessfulSubmissions",
+        "Errors"
+      ],
+      "BatchGetWorkflowsResponse": [
+        "Workflows",
+        "MissingWorkflows"
+      ],
+      "Workflow": [
+        "Name",
+        "Description",
+        "DefaultRunProperties",
+        "CreatedOn",
+        "LastModifiedOn",
+        "LastRun",
+        "Graph",
+        "MaxConcurrentRuns"
+      ],
+      "WorkflowGraph": [
+        "Nodes",
+        "Edges"
+      ],
+      "Edge": [
+        "SourceId",
+        "DestinationId"
+      ],
+      "Node": [
+        "Type",
+        "Name",
+        "UniqueId",
+        "JobDetails",
+        "TriggerDetails"
+      ],
+      "TriggerNodeDetails": [
+        "Trigger"
+      ],
+      "Trigger": [
+        "Name",
+        "WorkflowName",
+        "Id",
+        "Type",
+        "State",
+        "Description",
+        "Schedule",
+        "Actions",
+        "Predicate"
+      ],
+      "Predicate": [
+        "Logical",
+        "Conditions"
+      ],
+      "Condition": [
+        "LogicalOperator",
+        "JobName",
+        "State"
+      ],
+      "Action": [
+        "JobName",
+        "Arguments",
+        "Timeout"
+      ],
+      "JobNodeDetails": [
+        "JobRuns"
+      ],
+      "NotificationProperty": [
+        "NotifyDelayAfter"
+      ],
+      "Predecessor": [
+        "JobName",
+        "RunId"
+      ],
+      "WorkflowRun": [
+        "Name",
+        "WorkflowRunId",
+        "PreviousRunId",
+        "WorkflowRunProperties",
+        "StartedOn",
+        "CompletedOn",
+        "Status",
+        "ErrorMessage",
+        "Statistics",
+        "Graph"
+      ],
+      "WorkflowRunStatistics": [
+        "TotalActions",
+        "TimeoutActions",
+        "FailedActions",
+        "StoppedActions",
+        "SucceededActions",
+        "RunningActions"
+      ],
+      "BatchGetWorkflowsRequest": [
+        "Names",
+        "IncludeGraph"
+      ],
+      "StopWorkflowRunResponse": [],
+      "StopWorkflowRunRequest": [
+        "Name",
+        "RunId"
+      ],
+      "PutWorkflowRunPropertiesResponse": [],
+      "PutWorkflowRunPropertiesRequest": [
+        "Name",
+        "RunId",
+        "RunProperties"
+      ],
+      "GetWorkflowRunPropertiesResponse": [
+        "RunProperties"
+      ],
+      "GetWorkflowRunPropertiesRequest": [
+        "Name",
+        "RunId"
+      ],
+      "GetWorkflowRunsResponse": [
+        "Runs",
+        "NextToken"
+      ],
+      "GetWorkflowRunsRequest": [
+        "Name",
+        "IncludeGraph",
+        "NextToken",
+        "MaxResults"
+      ],
+      "GetWorkflowRunResponse": [
+        "Run"
+      ],
+      "GetWorkflowRunRequest": [
+        "Name",
+        "RunId",
+        "IncludeGraph"
+      ],
+      "StartWorkflowRunResponse": [
+        "RunId"
+      ],
+      "StartWorkflowRunRequest": [
+        "Name",
+        "RunProperties"
+      ],
+      "DeleteWorkflowResponse": [
+        "Name"
+      ],
+      "DeleteWorkflowRequest": [
+        "Name"
+      ],
+      "UpdateWorkflowResponse": [
+        "Name"
+      ],
+      "UpdateWorkflowRequest": [
+        "Name",
+        "Description",
+        "DefaultRunProperties",
+        "MaxConcurrentRuns"
+      ],
+      "ListWorkflowsResponse": [
+        "Workflows",
+        "NextToken"
+      ],
+      "ListWorkflowsRequest": [
+        "NextToken",
+        "MaxResults"
+      ],
+      "GetWorkflowResponse": [
+        "Workflow"
+      ],
+      "GetWorkflowRequest": [
+        "Name",
+        "IncludeGraph"
+      ],
+      "CreateWorkflowResponse": [
+        "Name"
+      ],
+      "CreateWorkflowRequest": [
+        "Name",
+        "Description",
+        "DefaultRunProperties",
+        "Tags",
+        "MaxConcurrentRuns"
+      ],
+      "BatchGetTriggersResponse": [
+        "Triggers",
+        "TriggersNotFound"
+      ],
+      "BatchGetTriggersRequest": [
+        "TriggerNames"
+      ],
+      "StopTriggerResponse": [
+        "Name"
+      ],
+      "StopTriggerRequest": [
+        "Name"
+      ],
+      "StartTriggerResponse": [
+        "Name"
+      ],
+      "StartTriggerRequest": [
+        "Name"
+      ],
+      "DeleteTriggerResponse": [
+        "Name"
+      ],
+      "DeleteTriggerRequest": [
+        "Name"
+      ],
+      "UpdateTriggerResponse": [
+        "Trigger"
+      ],
+      "UpdateTriggerRequest": [
+        "Name",
+        "TriggerUpdate"
+      ],
+      "TriggerUpdate": [
+        "Name",
+        "Description",
+        "Schedule",
+        "Actions",
+        "Predicate"
+      ],
+      "ListTriggersResponse": [
+        "TriggerNames",
+        "NextToken"
+      ],
+      "ListTriggersRequest": [
+        "NextToken",
+        "DependentJobName",
+        "MaxResults",
+        "Tags"
+      ],
+      "GetTriggersResponse": [
+        "Triggers",
+        "NextToken"
+      ],
+      "GetTriggersRequest": [
+        "NextToken",
+        "DependentJobName",
+        "MaxResults"
+      ],
+      "GetTriggerResponse": [
+        "Trigger"
+      ],
+      "GetTriggerRequest": [
+        "Name"
+      ],
+      "CreateTriggerResponse": [
+        "Name"
+      ],
+      "CreateTriggerRequest": [
+        "Name",
+        "WorkflowName",
+        "Type",
+        "Schedule",
+        "Predicate",
+        "Actions",
+        "Description",
+        "StartOnCreation",
+        "Tags"
+      ],
+      "EventBatchingCondition": [
+        "BatchSize",
+        "BatchWindow"
       ]
     }
   },
