@@ -239,7 +239,7 @@
     "glue": {
       "title": "Glue",
       "category": "Analytics",
-      "summary": "Manage the Data Catalog and orchestrate local Python shell ETL jobs, triggers and workflows.",
+      "summary": "Manage the Data Catalog, classify and crawl S3 data, and orchestrate local Python shell ETL jobs and workflows.",
       "features": [
         "Database CRUD, tags and pagination",
         "Table CRUD and batch deletion",
@@ -251,11 +251,17 @@
         "Complete stdout and stderr are published after each attempt to /aws-glue/python-jobs/output and /aws-glue/python-jobs/error, using JobRunId streams",
         "ON_DEMAND, five-minute-or-slower UTC cron and job-state CONDITIONAL triggers, using the shared schedule parser",
         "Workflows with on-demand and scheduled source triggers, conditional chains, run properties, graphs, statistics, stopping and concurrency limits",
-        "Jobs, triggers and workflows support tags, resource inventory and CloudFormation"
+        "Jobs, triggers and workflows support tags, resource inventory and CloudFormation",
+        "CSV and JSON custom classifier CRUD, versions, timestamps and pagination; custom classifiers run before built-ins in crawler order",
+        "S3 crawler CRUD, batches, tag-filtered listings, schedules, stop, history and metrics; IAM roles, S3 buckets and custom classifiers must exist",
+        "Shared tabular inference for CSV, TSV, pipe and semicolon text, JSON objects/lines with nested Hive types, Parquet and gzip text; Hive and unnamed folder partitions",
+        "Crawlers publish tables and partitions to the same catalog Athena reads, with SerDes, classification and file statistics",
+        "Schema update and table deletion/deprecation policies and incremental new-folder crawls; crawler conditions and actions participate in workflow graphs and statistics",
+        "Crawler tags, inventory, Resource Groups Tagging, AWS::Glue::Crawler and CSV/JSON AWS::Glue::Classifier CloudFormation resources"
       ],
       "gaps": [
         "Spark (glueetl/gluestreaming) and Ray (glueray) definitions are stored, but StartJobRun explicitly rejects execution because TinyStack has no Spark/Ray runtime",
-        "Crawlers, crawler trigger conditions, EVENT triggers, connections, Glue Studio and managed production engines are not implemented; unsupported members fail explicitly",
+        "EVENT triggers, connections, Glue Studio and managed production engines are not implemented; unsupported members fail explicitly",
         "Python scripts use the configured host python3 and its installed packages, not a managed Glue Python distribution; the awsglue library is unavailable and scripts must not import it",
         "Python shell execution is enabled only when the selected Lambda executor is local; otherwise runs fail with: Local execution is disabled: select the Lambda local executor (lambda.executor: local) to run Glue Python shell jobs",
         "Scripts execute with the TinyStack user privileges; this shares Lambda local execution settings and process-group lifecycle, not a sandbox",
@@ -263,9 +269,17 @@
         "A claimed RUNNING process is killed on shutdown; its durable run becomes FAILED with an explicit interrupted-execution error after restart, never silently SUCCEEDED; queued STARTING runs resume",
         "Cron L/W/# extensions are explicitly unsupported by the shared parser; missed schedule times are skipped rather than replayed",
         "StartWorkflowRun selects exactly one ON_DEMAND source trigger; scheduled or directly started source triggers also create workflow runs; trigger renaming is unsupported",
+        "Grok/XML classifiers and JDBC, MongoDB, DynamoDB, Catalog, Delta, Iceberg and Hudi crawler targets fail explicitly; Catalog and DynamoDB discovery are not implemented. S3 target connections and event-queue (S3 event mode) crawls fail explicitly when set",
+        "Crawler Configuration accepts only Version 1.0; grouping overrides including CombineCompatibleSchemas and other configuration keys fail explicitly",
+        "Custom JSONPath supports $, $[*] and dotted member paths with optional final [*]; other expressions fail explicitly. Athena retains its JSON-lines reader and does not interpret custom JSONPath",
+        "CSV custom datatype overrides support bigint, double, boolean, string and timestamp; other types fail explicitly. Athena supports double-quoted CSV only",
+        "Crawler grouping merges identical compatible schemas under a target folder; incompatible schemas sharing one root fail rather than inventing a table location. AWS proprietary probabilistic grouping and header heuristics are approximated",
+        "Crawler exclusions support *, **, ?, and character classes; brace alternation fails explicitly. ListCrawls supports STATE EQ filters only. Estimated remaining time is unavailable (zero with StillEstimating while running)",
+        "A claimed crawl interrupted by shutdown becomes FAILED on restart with an explicit interruption message; an unclaimed RUNNING crawl resumes, and STOPPING completes CANCELLED. Crawl catalog writes commit atomically after S3 reads, so stopped crawls publish no tables",
+        "Crawl output messages use /aws-glue/crawlers with the crawler name as stream; crawling is available independently of the Python executor",
         "Job logs become visible after each attempt finishes; ErrorMessage retains at most the last 8192 bytes of stderr"
       ],
-      "execution": "Records / optional local Python host execution",
+      "execution": "Records / local S3 crawling / optional local Python host execution",
       "package": "glue"
     },
     "athena": {
