@@ -183,6 +183,7 @@ nav:
       - "Front-End Web & Mobile":
           - "Amazon Location Service": services/location.md
       - "Internet of Things":
+          - "AWS IoT Wireless": services/iotwireless.md
           - "IoT Core": services/iot.md
           - "IoT Data Plane": services/iotdataplane.md
           - "IoT Jobs Data Plane": services/iotjobsdataplane.md

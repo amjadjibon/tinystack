@@ -2923,6 +2923,35 @@
       "execution": "Records only",
       "package": "shield"
     },
+    "iotwireless": {
+      "title": "AWS IoT Wireless",
+      "category": "Internet of Things",
+      "scope": "Account and Region",
+      "summary": "Store LoRaWAN resources and simulate local uplinks through the IoT MQTT broker and topic rules.",
+      "features": [
+        "68 REST JSON operations with generated ValidationException constraints; destinations, LoRaWAN and Sidewalk device profiles, service profiles, LoRaWAN devices and gateways, multicast groups and FUOTA tasks",
+        "Destinations validate existing TinyStack IAM roles and IoT topic rules or publishable MQTT topics; devices validate destinations and profile references, activation mode and unique DevEui; gateways enforce unique GatewayEui",
+        "Things and gateway certificates associate with real TinyStack IoT resources; lookup devices and gateways by ID, EUI or associated thing name",
+        "TestWirelessDevice commits a simulated uplink before publishing through IoT Core: MQTT destinations deliver to subscribers and RuleName destinations invoke that rule using Basic Ingest, including SQS actions",
+        "Uplinks contain WirelessDeviceId, base64 PayloadData (Test), and WirelessMetadata.LoRaWAN. FPort is the first configured application port or 1; data rate 3, frequency 868300000 Hz, RSSI -64 and SNR 9.5 are deterministic. All gateways in the account and Region participate; last-uplink timestamps and gateway Connected status derive only from this traffic",
+        "Device and multicast downlinks queue durably without transmission; list device queues with pagination and delete a MessageId or * for all messages",
+        "Multicast device and FUOTA device/group associations; multicast sessions become Session_Set at their start time and return to Pending after SessionTimeout seconds or cancellation. FUOTA tasks progress FuotaSession_Waiting to In_FuotaSession to FuotaDone, with a 0.6-second session and Successful associated device status",
+        "A services/background.Group worker visits a durable aws/iotwireless/index every 200 milliseconds, claims transitions in transactions and resumes after SQLite restart; FUOTA firmware references must name existing TinyStack S3 objects and IAM roles",
+        "Stored service and per-resource log levels; GetServiceEndpoint returns this TinyStack endpoint for CUPS and its ws/wss equivalent for LNS",
+        "Tags on all seven resource kinds, inventory, Resource Groups and Resource Groups Tagging API; list pagination in storage key order and idempotent create tokens",
+        "CloudFormation Destination, DeviceProfile, ServiceProfile, MulticastGroup and FuotaTask, with immutable destination name and profile name/LoRaWAN replacement; mutable fields and tags update in place. FUOTA LoRaWAN.StartTime starts the task after associations",
+        "Terraform AWS provider 5.100.0 has no iotwireless resources or service endpoint key (verified complete upstream source tree); no Terraform resources, endpoint override or update-apply count changes"
+      ],
+      "gaps": [
+        "No radio transmission, LoRaWAN network server, CUPS/LNS listener or server trust certificate, firmware transfer, real gateway health, positioning or IAM role assumption/policy evaluation; local statistics are simulation values only",
+        "Sidewalk wireless devices and manufacturing-serial lookup require unsupported partner account linking; Sidewalk device profiles are records with a locally generated public-key identifier and false qualification status",
+        "Partner accounts, network analyzer, positioning/GetPositionEstimate, import tasks, gateway task definitions/tasks/firmware, event configurations and metrics are not whitelisted",
+        "CloudFormation WirelessDevice and WirelessGateway are unsupported: their mutable full radio/activation/EUI properties cannot be completely expressed through the implemented update APIs. Sidewalk CloudFormation profiles and service-profile derived radio attributes absent from the API are unsupported",
+        "FUOTA tasks and their associations can change only before starting; started tasks cannot be restarted. Multicast group queues have no list API and remain until group deletion. Log levels are stored without log emission"
+      ],
+      "execution": "Local simulated uplinks through IoT MQTT and rules; durable downlink records and deterministic multicast/FUOTA worker; no radio transport",
+      "package": "iotwireless"
+    },
     "mediaconnect": {
       "title": "AWS Elemental MediaConnect",
       "category": "Media Services",
