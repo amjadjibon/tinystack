@@ -402,24 +402,40 @@ resource "aws_cloudwatch_metric_alarm" "billing" {
 
 Load costs with the fixture endpoint described earlier in the guide.
 
-## Translation fixtures
+## Translation and transcription fixtures
 
-TinyStack never infers translations. Register exact answers with
-`PUT /_tinystack/translate/fixtures/{id}`:
+TinyStack never infers translations or recognizes speech. Register the exact answers your tests need with
+`PUT /_tinystack/translate/fixtures/{id}` or `PUT /_tinystack/transcribe/fixtures/{id}`:
 
 ```json
 {"sourceLanguageCode":"en","targetLanguageCode":"fr","text":"hello","translatedText":"bonjour"}
 ```
 
-The endpoint supports GET (list or one ID), PUT (replace one ID), and DELETE. IDs use 1–64 letters, digits,
+```json
+{"mediaFileUri":"s3://media/audio.wav","languageCode":"en-US","transcript":"Hello from a fixture."}
+```
+
+Both endpoints support GET (list or one ID), PUT (replace one ID), and DELETE. IDs use 1–64 letters, digits,
 underscores or hyphens. Use the same administrator authorization as cost fixtures; signed requests use service
 `tinystack`. Fixtures belong to the configured default account across Regions, persist in SQLite mode, and are
-cleared by `/_tinystack/reset`. The admin HTTP body limit is 1 MiB.
+cleared by `/_tinystack/reset`. Requests have a 1 MiB HTTP body ceiling; this is an admin transport limit.
 
-Source, target and decoded text match exactly, including whitespace and HTML. `auto` requires one matching
-fixture. Missing or ambiguous answers return InvalidRequestException naming the registration endpoint.
-Nonempty Settings fail. Terminology names must exist but do not modify fixture text; AppliedTerminologies is empty.
-GetTerminology fails explicitly because no presigned download endpoint is implemented.
+Translation matches the source language, target language and complete decoded text exactly, including HTML
+markup and whitespace. `auto` succeeds only when exactly one fixture matches the target and text, returning its
+source as the detected language. Missing or ambiguous translations return `InvalidRequestException` naming the
+registration endpoint. Empty output strings are permitted for intentionally empty fixture answers. Nonempty
+translation Settings fail; terminology names must exist but do not change the answer. AppliedTerminologies is empty.
+`GetTerminology` fails explicitly because no presigned download endpoint is implemented.
 
-Background batch jobs write local S3 outputs and fail with `interrupted by service restart` if unfinished
-at restart. Partial outputs may remain. See [Translate](../services/translate.md) for the supported scope.
+Transcription matches the exact local S3 URI and LanguageCode. Media and the customer output bucket must exist.
+No fixture means a FAILED job whose FailureReason names the registration endpoint. The output JSON includes only
+jobName, accountId, status and results.transcripts[0].transcript. No word items, timestamps or confidence values
+are invented. Vocabulary and filter names must exist and be ready but do not modify the fixture transcript.
+Vocabulary/filter DownloadUri is omitted. Language identification, redaction, subtitles, speaker/channel settings,
+toxicity detection and service-managed buckets are unsupported.
+
+Batch translations and transcription jobs run in background workers. Pending jobs fail with
+`interrupted by service restart` after restart; previously written S3 outputs may remain. Translation outputs use
+`{output-prefix}/{account}-TranslateText-{job-id}/{language}.{filename}` and a `details` subfolder.
+
+See [Translate](../services/translate.md) and [Transcribe](../services/transcribe.md) for the full supported scope.

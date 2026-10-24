@@ -108,6 +108,33 @@
       "execution": "Fixture-backed local translation; no inference",
       "package": "translate"
     },
+    "transcribe": {
+      "title": "Amazon Transcribe",
+      "category": "Machine Learning",
+      "scope": "Account and Region; fixtures account-wide",
+      "summary": "Create local S3 transcription job output exclusively from registered URI/language fixtures.",
+      "features": [
+        "17 pinned model operations for transcription jobs, vocabularies, vocabulary filters and tags, with generated BadRequestException validation",
+        "Media and output buckets must exist in TinyStack S3; OutputKey is honored and service-managed output is rejected",
+        "QUEUED to IN_PROGRESS to COMPLETED or FAILED in a transactionally claimed background queue; unfinished jobs fail explicitly after restart",
+        "Output JSON contains jobName, accountId, status and results.transcripts; transcript text comes only from exact URI/language fixtures",
+        "Vocabularies and filters validate Phrases/Words or existing local S3 files; vocabulary readiness advances through a worker",
+        "Named vocabularies and filters must exist, be READY and match the job language; record tags and key-order lists with model filters/pagination",
+        "Inventory, Resource Groups Tagging API and CloudFormation AWS::Transcribe::Vocabulary and AWS::Transcribe::VocabularyFilter",
+        "Terraform 5.100 aws_transcribe_vocabulary and aws_transcribe_vocabulary_filter with in-place tag updates (+2 expected changes)"
+      ],
+      "gaps": [
+        "No speech recognition, fabricated transcripts, word items, timings or confidence values",
+        "Vocabulary/filter contents do not alter fixture transcripts; DownloadUri is omitted instead of inventing a download URL",
+        "Language identification, redaction, subtitles, speaker/channel settings, toxicity detection, custom models and service-managed output buckets fail explicitly",
+        "No medical, medical scribe, call analytics, language models or HTTP/2 streaming operations",
+        "Optional vocabulary/filter DataAccessRoleArn and encryption configuration inputs are not whitelisted; generated rejection avoids accepting unsupported execution",
+        "The current CloudFormation specification includes Transcribe types, contrary to the task note; transcription jobs via CloudFormation are unsupported because its schema has no customer output bucket",
+        "S3 object writes and job record completion are not atomic; partial output may remain after interruption"
+      ],
+      "execution": "Fixture-backed local S3 transcript writes; no speech inference",
+      "package": "transcribe"
+    },
     "mediaconvert": {
       "title": "AWS Elemental MediaConvert",
       "category": "Media Services",
