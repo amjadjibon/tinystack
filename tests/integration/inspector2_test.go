@@ -396,6 +396,7 @@ func TestInspector2CloudFormation(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	stack := wantStatus(ctx, t, c, "inspector-filter", cfntypes.StackStatusCreateComplete)
 	ic := inspector2Client(s)
 	filters, err := ic.ListFilters(ctx, &sdk.ListFiltersInput{})
 	if err != nil || len(filters.Filters) != 1 || *filters.Filters[0].Name != "stack-filter" {
@@ -447,6 +448,7 @@ func TestInspector2CloudFormation(t *testing.T) {
 		t.Fatal(deleteErr)
 	}
 
+	wantStatus(ctx, t, c, *stack.StackId, cfntypes.StackStatusDeleteComplete)
 	filters, err = ic.ListFilters(ctx, &sdk.ListFiltersInput{})
 	if err != nil || len(filters.Filters) != 0 {
 		t.Fatalf("stack deletion: %+v %v", filters, err)
