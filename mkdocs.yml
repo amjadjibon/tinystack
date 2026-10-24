@@ -135,7 +135,7 @@ nav:
           - "Amazon Redshift": services/redshift.md
           - "Athena": services/athena.md
           - "Data Firehose": services/firehose.md
-          - "Glue Data Catalog": services/glue.md
+          - "Glue": services/glue.md
           - "Kinesis Data Streams": services/kinesis.md
       - "Application Integration":
           - "Amazon MQ": services/mq.md
