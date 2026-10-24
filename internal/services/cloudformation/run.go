@@ -384,6 +384,8 @@ func (s *Service) perform(ctx context.Context,
 	scope request.Scope, st *stack, next *step,
 ) (physical string, attributes map[string]any, err error) {
 	c := &client{
+		mediaConvert: s.mediaConvert,
+
 		caller:   s.caller,
 		mq:       s.mq,
 		msk:      s.msk,

@@ -19,6 +19,7 @@ const iot = "Internet of Things";
 const management = "Management & Governance";
 const security = "Security, Identity & Compliance";
 const developerTools = "Developer Tools";
+const mediaServices = "Media Services";
 const migration = "Migration & Modernization";
 const business = "Business Applications";
 const frontend = "Front-End Web & Mobile";
@@ -37,11 +38,17 @@ export const categories = [
 	security,
 	business,
 	developerTools,
+	mediaServices,
 	migration,
 	frontend,
 ];
 
 const catalog: Record<string, ServiceInfo> = {
+	mediaconvert: {
+		title: "AWS Elemental MediaConvert",
+		category: mediaServices,
+		icon: "mediaconvert",
+	},
 	swf: {
 		title: "Amazon Simple Workflow Service",
 		category: integration,

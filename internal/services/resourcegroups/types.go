@@ -90,6 +90,7 @@ var namespaces = map[string]string{
 	"acmpca":                    "ACMPCA",
 	"verifiedpermissions":       "VerifiedPermissions",
 	"amp":                       "APS",
+	"mediaconvert":              "MediaConvert",
 	"datasync":                  "DataSync",
 	"accessanalyzer":            "AccessAnalyzer",
 	"shield":                    "Shield",
@@ -112,6 +113,9 @@ var typeNames = map[string]string{
 	"amp/rulegroupsnamespace":                "RuleGroupsNamespace",
 	"servicecatalog/portfolio":               "Portfolio",
 	"servicecatalog/product":                 "CloudFormationProduct",
+	"mediaconvert/queue":                     "Queue",
+	"mediaconvert/preset":                    "Preset",
+	"mediaconvert/jobtemplate":               "JobTemplate",
 	"datasync/locations3":                    "LocationS3",
 	"datasync/locationefs":                   "LocationEFS",
 	"datasync/task":                          "Task",
@@ -208,6 +212,11 @@ func pascal(kind string) string {
 // "AWS::SQS::Queue", derived from the service that holds it and its inventory
 // type. It reports false for the resources of a service with no namespace.
 func resourceType(r *catalog.Owned) (string, bool) {
+	// MediaConvert jobs have no CloudFormation resource type.
+	if r.Service == "mediaconvert" && r.Type == "job" {
+		return "", false
+	}
+
 	// FIS experiments have no CloudFormation resource type.
 	if r.Service == "fis" && r.Type == "experiment" {
 		return "", false

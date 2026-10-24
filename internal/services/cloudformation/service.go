@@ -50,6 +50,8 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
+	mediaConvert mediaConvertRecords
+
 	dataSync dataSyncRecords
 	transfer transferRecords
 	location locationRecords

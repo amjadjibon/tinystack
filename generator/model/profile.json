@@ -1,4 +1,417 @@
 {
+  "mediaconvert": {
+    "validation": {
+      "code": "BadRequestException"
+    },
+    "operations": [
+      "CreateQueue",
+      "GetQueue",
+      "ListQueues",
+      "UpdateQueue",
+      "DeleteQueue",
+      "CreatePreset",
+      "GetPreset",
+      "ListPresets",
+      "UpdatePreset",
+      "DeletePreset",
+      "CreateJobTemplate",
+      "GetJobTemplate",
+      "ListJobTemplates",
+      "UpdateJobTemplate",
+      "DeleteJobTemplate",
+      "CreateJob",
+      "GetJob",
+      "ListJobs",
+      "CancelJob",
+      "SearchJobs",
+      "DescribeEndpoints",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateQueueRequest": [
+        "ConcurrentJobs",
+        "Description",
+        "Name",
+        "PricingPlan",
+        "Status",
+        "Tags"
+      ],
+      "CreateQueueResponse": [
+        "Queue"
+      ],
+      "GetQueueRequest": [
+        "Name"
+      ],
+      "GetQueueResponse": [
+        "Queue"
+      ],
+      "ListQueuesRequest": [
+        "ListBy",
+        "MaxResults",
+        "NextToken",
+        "Order"
+      ],
+      "ListQueuesResponse": [
+        "NextToken",
+        "Queues",
+        "TotalConcurrentJobs",
+        "UnallocatedConcurrentJobs"
+      ],
+      "UpdateQueueRequest": [
+        "ConcurrentJobs",
+        "Description",
+        "Name",
+        "Status"
+      ],
+      "UpdateQueueResponse": [
+        "Queue"
+      ],
+      "DeleteQueueRequest": [
+        "Name"
+      ],
+      "DeleteQueueResponse": [],
+      "CreatePresetRequest": [
+        "Category",
+        "Description",
+        "Name",
+        "Settings",
+        "Tags"
+      ],
+      "CreatePresetResponse": [
+        "Preset"
+      ],
+      "GetPresetRequest": [
+        "Name"
+      ],
+      "GetPresetResponse": [
+        "Preset"
+      ],
+      "ListPresetsRequest": [
+        "Category",
+        "ListBy",
+        "MaxResults",
+        "NextToken",
+        "Order"
+      ],
+      "ListPresetsResponse": [
+        "NextToken",
+        "Presets"
+      ],
+      "UpdatePresetRequest": [
+        "Category",
+        "Description",
+        "Name",
+        "Settings"
+      ],
+      "UpdatePresetResponse": [
+        "Preset"
+      ],
+      "DeletePresetRequest": [
+        "Name"
+      ],
+      "DeletePresetResponse": [],
+      "CreateJobTemplateRequest": [
+        "Category",
+        "Description",
+        "Name",
+        "Priority",
+        "Queue",
+        "Settings",
+        "StatusUpdateInterval",
+        "Tags"
+      ],
+      "CreateJobTemplateResponse": [
+        "JobTemplate"
+      ],
+      "GetJobTemplateRequest": [
+        "Name"
+      ],
+      "GetJobTemplateResponse": [
+        "JobTemplate"
+      ],
+      "ListJobTemplatesRequest": [
+        "Category",
+        "ListBy",
+        "MaxResults",
+        "NextToken",
+        "Order"
+      ],
+      "ListJobTemplatesResponse": [
+        "JobTemplates",
+        "NextToken"
+      ],
+      "UpdateJobTemplateRequest": [
+        "Category",
+        "Description",
+        "Name",
+        "Priority",
+        "Queue",
+        "Settings",
+        "StatusUpdateInterval"
+      ],
+      "UpdateJobTemplateResponse": [
+        "JobTemplate"
+      ],
+      "DeleteJobTemplateRequest": [
+        "Name"
+      ],
+      "DeleteJobTemplateResponse": [],
+      "CreateJobRequest": [
+        "ClientRequestToken",
+        "JobTemplate",
+        "Priority",
+        "Queue",
+        "Role",
+        "Settings",
+        "Tags",
+        "UserMetadata",
+        "StatusUpdateInterval"
+      ],
+      "CreateJobResponse": [
+        "Job"
+      ],
+      "GetJobRequest": [
+        "Id"
+      ],
+      "GetJobResponse": [
+        "Job"
+      ],
+      "ListJobsRequest": [
+        "MaxResults",
+        "NextToken",
+        "Order",
+        "Queue",
+        "Status"
+      ],
+      "ListJobsResponse": [
+        "Jobs",
+        "NextToken"
+      ],
+      "CancelJobRequest": [
+        "Id"
+      ],
+      "CancelJobResponse": [],
+      "SearchJobsRequest": [
+        "InputFile",
+        "MaxResults",
+        "NextToken",
+        "Order",
+        "Queue",
+        "Status"
+      ],
+      "SearchJobsResponse": [
+        "Jobs",
+        "NextToken"
+      ],
+      "DescribeEndpointsRequest": [
+        "MaxResults",
+        "Mode",
+        "NextToken"
+      ],
+      "DescribeEndpointsResponse": [
+        "Endpoints",
+        "NextToken"
+      ],
+      "TagResourceRequest": [
+        "Arn",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "Arn",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "ListTagsForResourceRequest": [
+        "Arn"
+      ],
+      "ListTagsForResourceResponse": [
+        "ResourceTags"
+      ],
+      "Queue": [
+        "Arn",
+        "ConcurrentJobs",
+        "CreatedAt",
+        "Description",
+        "LastUpdated",
+        "Name",
+        "PricingPlan",
+        "ProgressingJobsCount",
+        "Status",
+        "SubmittedJobsCount",
+        "Type"
+      ],
+      "Job": [
+        "Arn",
+        "ClientRequestToken",
+        "CreatedAt",
+        "CurrentPhase",
+        "ErrorCode",
+        "ErrorMessage",
+        "Id",
+        "JobPercentComplete",
+        "JobTemplate",
+        "Priority",
+        "Queue",
+        "QueueTransitions",
+        "Role",
+        "Settings",
+        "Status",
+        "StatusUpdateInterval",
+        "Timing",
+        "UserMetadata"
+      ],
+      "JobTemplate": [
+        "Arn",
+        "Category",
+        "CreatedAt",
+        "Description",
+        "LastUpdated",
+        "Name",
+        "Priority",
+        "Queue",
+        "Settings",
+        "StatusUpdateInterval",
+        "Type"
+      ],
+      "Preset": [
+        "Arn",
+        "Category",
+        "CreatedAt",
+        "Description",
+        "LastUpdated",
+        "Name",
+        "Settings",
+        "Type"
+      ],
+      "ResourceTags": [
+        "Arn",
+        "Tags"
+      ],
+      "Timing": [
+        "FinishTime",
+        "StartTime",
+        "SubmitTime"
+      ],
+      "QueueTransition": [
+        "DestinationQueue",
+        "SourceQueue",
+        "Timestamp"
+      ],
+      "Endpoint": [
+        "Url"
+      ],
+      "JobSettings": [
+        "Inputs",
+        "OutputGroups",
+        "TimecodeConfig",
+        "AdAvailOffset"
+      ],
+      "JobTemplateSettings": [
+        "Inputs",
+        "OutputGroups",
+        "TimecodeConfig",
+        "AdAvailOffset"
+      ],
+      "PresetSettings": [
+        "AudioDescriptions",
+        "ContainerSettings",
+        "VideoDescription"
+      ],
+      "Input": [
+        "FileInput",
+        "AudioSelectors",
+        "TimecodeSource",
+        "VideoSelector"
+      ],
+      "InputTemplate": [
+        "AudioSelectors",
+        "TimecodeSource",
+        "VideoSelector"
+      ],
+      "AudioSelector": [
+        "DefaultSelection",
+        "Offset",
+        "Tracks",
+        "SelectorType"
+      ],
+      "VideoSelector": [
+        "ColorSpace",
+        "Rotate"
+      ],
+      "OutputGroup": [
+        "Name",
+        "CustomName",
+        "OutputGroupSettings",
+        "Outputs"
+      ],
+      "OutputGroupSettings": [
+        "Type",
+        "FileGroupSettings"
+      ],
+      "FileGroupSettings": [
+        "Destination"
+      ],
+      "Output": [
+        "NameModifier",
+        "Preset",
+        "ContainerSettings",
+        "VideoDescription",
+        "AudioDescriptions"
+      ],
+      "ContainerSettings": [
+        "Container",
+        "Mp4Settings"
+      ],
+      "Mp4Settings": [
+        "CslgAtom",
+        "FreeSpaceBox",
+        "MoovPlacement"
+      ],
+      "VideoDescription": [
+        "Width",
+        "Height",
+        "CodecSettings",
+        "ScalingBehavior",
+        "Sharpness"
+      ],
+      "VideoCodecSettings": [
+        "Codec",
+        "H264Settings"
+      ],
+      "H264Settings": [
+        "Bitrate",
+        "MaxBitrate",
+        "RateControlMode",
+        "CodecLevel",
+        "CodecProfile",
+        "FramerateControl",
+        "FramerateNumerator",
+        "FramerateDenominator",
+        "GopSize",
+        "GopSizeUnits"
+      ],
+      "AudioDescription": [
+        "AudioSourceName",
+        "CodecSettings"
+      ],
+      "AudioCodecSettings": [
+        "Codec",
+        "AacSettings"
+      ],
+      "AacSettings": [
+        "Bitrate",
+        "CodingMode",
+        "SampleRate"
+      ],
+      "TimecodeConfig": [
+        "Source",
+        "Start"
+      ]
+    }
+  },
   "account": {
     "operations": [
       "GetAccountInformation",

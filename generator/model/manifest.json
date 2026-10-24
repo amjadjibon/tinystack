@@ -462,6 +462,10 @@
     "dsql": {
       "path": "codegen/sdk-codegen/aws-models/dsql.json",
       "sha256": "ee674d9f2ac26be1b5af7d48e9235c85b001aecd5eeabfd75ee5a0ec5cd17f34"
+    },
+    "mediaconvert": {
+      "path": "codegen/sdk-codegen/aws-models/mediaconvert.json",
+      "sha256": "beebb2ba87a70b7976bb0caba2c4c691d17e468c11466669387a525e46086648"
     }
   }
 }

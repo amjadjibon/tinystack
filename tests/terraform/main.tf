@@ -19,6 +19,7 @@ provider "aws" {
   endpoints {
     dsql                 = var.endpoint
     shield               = var.endpoint
+    mediaconvert         = var.endpoint
     datasync             = var.endpoint
     resourceexplorer2    = var.endpoint
     servicecatalog       = var.endpoint
@@ -2771,4 +2772,12 @@ resource "aws_dsql_cluster_peering" "peer" {
   identifier     = aws_dsql_cluster.peer.identifier
   witness_region = "us-west-2"
   clusters       = [aws_dsql_cluster.primary.arn]
+}
+
+resource "aws_media_convert_queue" "local" {
+  name         = "tinystack-media"
+  description  = "Local lifecycle queue"
+  pricing_plan = "ON_DEMAND"
+  status       = "ACTIVE"
+  tags         = local.tags
 }

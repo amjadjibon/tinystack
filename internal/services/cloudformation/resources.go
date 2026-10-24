@@ -288,6 +288,8 @@ func (t *resourceType) createsFirst(old, p props) bool {
 
 // client calls other services for one stack resource.
 type client struct {
+	mediaConvert mediaConvertRecords
+
 	mq       mqRecords
 	msk      mskRecords
 	mwaa     mwaaRecords

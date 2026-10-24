@@ -91,6 +91,7 @@ import (
 	lambdaapi "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	locationapi "github.com/amjadjibon/tinystack/internal/aws/generated/location"
 	logsapi "github.com/amjadjibon/tinystack/internal/aws/generated/logs"
+	mediaconvertapi "github.com/amjadjibon/tinystack/internal/aws/generated/mediaconvert"
 	memorydbapi "github.com/amjadjibon/tinystack/internal/aws/generated/memorydb"
 	mqapi "github.com/amjadjibon/tinystack/internal/aws/generated/mq"
 	mwaaapi "github.com/amjadjibon/tinystack/internal/aws/generated/mwaa"
@@ -215,6 +216,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/location"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
+	"github.com/amjadjibon/tinystack/internal/services/mediaconvert"
 	"github.com/amjadjibon/tinystack/internal/services/memorydb"
 	"github.com/amjadjibon/tinystack/internal/services/mq"
 	"github.com/amjadjibon/tinystack/internal/services/mwaa"
@@ -477,6 +479,8 @@ func build(
 	a.onStop(dsqlRecords.Stop)
 	fisRecords := fis.New(store)
 	a.onStop(fisRecords.Stop)
+	mediaConvertRecords := mediaconvert.New(store, roles)
+	a.onStop(mediaConvertRecords.Stop)
 	dataSyncRecords := datasync.New(store, buckets, roles)
 	a.onStop(dataSyncRecords.Stop)
 	shieldRecords := shield.New(store)
@@ -612,6 +616,7 @@ func build(
 		codeconnectionsapi.Descriptor(connectionRecords),
 		ampapi.Descriptor(ampRecords),
 		servicecatalogapi.Descriptor(serviceCatalogRecords),
+		mediaconvertapi.Descriptor(mediaConvertRecords),
 		datasyncapi.Descriptor(dataSyncRecords),
 		accessanalyzerapi.Descriptor(accessAnalyzerRecords),
 		shieldapi.Descriptor(shieldRecords),
@@ -691,6 +696,7 @@ func build(
 	// Step Functions' Task states and Firehose's deliveries call the other
 	// services in-process.
 	caller := catalog.NewCaller(services...)
+	mediaConvertRecords.UseCaller(caller)
 	shieldRecords.UseCaller(caller)
 	dataSyncRecords.UseCaller(caller)
 	wafClassicRecords.UseCaller(caller)
@@ -714,6 +720,7 @@ func build(
 	stacks.UseMQ(brokers)
 	stacks.UseMSK(kafkaClusters)
 	stacks.UseMWAA(airflowEnvironments)
+	stacks.UseMediaConvert(mediaConvertRecords)
 	stacks.UseDataSync(dataSyncRecords)
 	stacks.UseTransfer(transferRecords)
 	stacks.UseLocation(locationTrackers)
