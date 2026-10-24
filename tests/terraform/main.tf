@@ -17,6 +17,7 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
+    transcribe           = var.endpoint
     dsql                 = var.endpoint
     mediaconnect         = var.endpoint
     shield               = var.endpoint
@@ -2833,4 +2834,18 @@ resource "aws_glue_crawler" "s3" {
     path = "s3://${aws_s3_bucket.assets.bucket}/glue/data/"
   }
   tags = local.tags
+}
+
+resource "aws_transcribe_vocabulary" "fixtures" {
+  vocabulary_name = "fixture-vocabulary"
+  language_code   = "en-US"
+  phrases         = ["TinyStack"]
+  tags            = { team = var.team }
+}
+
+resource "aws_transcribe_vocabulary_filter" "fixtures" {
+  vocabulary_filter_name = "fixture-filter"
+  language_code          = "en-US"
+  words                  = ["example"]
+  tags                   = { team = var.team }
 }

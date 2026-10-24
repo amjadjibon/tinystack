@@ -13,6 +13,7 @@ const appSyncAPIType = "Api"
 // resource types a group can select.
 var namespaces = map[string]string{
 	"translate":                 "Translate",
+	"transcribe":                "Transcribe",
 	"globalaccelerator":         "GlobalAccelerator",
 	"dsql":                      "DSQL",
 	"s3files":                   "S3Files",
@@ -130,6 +131,9 @@ var typeNames = map[string]string{
 	"mediaconvert/jobtemplate":               "JobTemplate",
 	"translate/terminology":                  "Terminology",
 	"translate/parallel-data":                "ParallelData",
+	"transcribe/transcription-job":           "TranscriptionJob",
+	"transcribe/vocabulary":                  "Vocabulary",
+	"transcribe/vocabulary-filter":           "VocabularyFilter",
 	"datasync/locations3":                    "LocationS3",
 	"datasync/locationefs":                   "LocationEFS",
 	"datasync/task":                          "Task",

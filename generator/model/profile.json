@@ -40947,5 +40947,288 @@
         "Tags"
       ]
     }
+  },
+  "transcribe": {
+    "validation": {
+      "code": "BadRequestException"
+    },
+    "operations": [
+      "StartTranscriptionJob",
+      "GetTranscriptionJob",
+      "ListTranscriptionJobs",
+      "DeleteTranscriptionJob",
+      "CreateVocabulary",
+      "UpdateVocabulary",
+      "GetVocabulary",
+      "ListVocabularies",
+      "DeleteVocabulary",
+      "CreateVocabularyFilter",
+      "UpdateVocabularyFilter",
+      "GetVocabularyFilter",
+      "ListVocabularyFilters",
+      "DeleteVocabularyFilter",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "StartTranscriptionJobRequest": [
+        "TranscriptionJobName",
+        "LanguageCode",
+        "MediaSampleRateHertz",
+        "MediaFormat",
+        "Media",
+        "OutputBucketName",
+        "OutputKey",
+        "Settings",
+        "Tags"
+      ],
+      "Media": [
+        "MediaFileUri",
+        "RedactedMediaFileUri"
+      ],
+      "Settings": [
+        "VocabularyName",
+        "VocabularyFilterName",
+        "VocabularyFilterMethod"
+      ],
+      "ModelSettings": [
+        "LanguageModelName"
+      ],
+      "JobExecutionSettings": [
+        "AllowDeferredExecution",
+        "DataAccessRoleArn"
+      ],
+      "ContentRedaction": [
+        "RedactionType",
+        "RedactionOutput",
+        "PiiEntityTypes"
+      ],
+      "Subtitles": [
+        "Formats",
+        "OutputStartIndex"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "LanguageIdSettings": [
+        "VocabularyName",
+        "VocabularyFilterName",
+        "LanguageModelName"
+      ],
+      "ToxicityDetectionSettings": [
+        "ToxicityCategories"
+      ],
+      "StartTranscriptionJobResponse": [
+        "TranscriptionJob"
+      ],
+      "TranscriptionJob": [
+        "TranscriptionJobName",
+        "TranscriptionJobStatus",
+        "LanguageCode",
+        "MediaSampleRateHertz",
+        "MediaFormat",
+        "Media",
+        "Transcript",
+        "StartTime",
+        "CreationTime",
+        "CompletionTime",
+        "FailureReason",
+        "Settings",
+        "ModelSettings",
+        "JobExecutionSettings",
+        "ContentRedaction",
+        "IdentifyLanguage",
+        "IdentifyMultipleLanguages",
+        "LanguageOptions",
+        "IdentifiedLanguageScore",
+        "LanguageCodes",
+        "Tags",
+        "Subtitles",
+        "LanguageIdSettings",
+        "ToxicityDetection"
+      ],
+      "Transcript": [
+        "TranscriptFileUri",
+        "RedactedTranscriptFileUri"
+      ],
+      "LanguageCodeItem": [
+        "LanguageCode",
+        "DurationInSeconds"
+      ],
+      "SubtitlesOutput": [
+        "Formats",
+        "SubtitleFileUris",
+        "OutputStartIndex"
+      ],
+      "GetTranscriptionJobRequest": [
+        "TranscriptionJobName"
+      ],
+      "GetTranscriptionJobResponse": [
+        "TranscriptionJob"
+      ],
+      "ListTranscriptionJobsRequest": [
+        "Status",
+        "JobNameContains",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListTranscriptionJobsResponse": [
+        "Status",
+        "NextToken",
+        "TranscriptionJobSummaries"
+      ],
+      "TranscriptionJobSummary": [
+        "TranscriptionJobName",
+        "CreationTime",
+        "StartTime",
+        "CompletionTime",
+        "LanguageCode",
+        "TranscriptionJobStatus",
+        "FailureReason",
+        "OutputLocationType",
+        "ContentRedaction",
+        "ModelSettings",
+        "IdentifyLanguage",
+        "IdentifyMultipleLanguages",
+        "IdentifiedLanguageScore",
+        "LanguageCodes",
+        "ToxicityDetection"
+      ],
+      "DeleteTranscriptionJobRequest": [
+        "TranscriptionJobName"
+      ],
+      "CreateVocabularyRequest": [
+        "VocabularyName",
+        "LanguageCode",
+        "Phrases",
+        "VocabularyFileUri",
+        "Tags"
+      ],
+      "EncryptionConfiguration": [
+        "KMSEncryptionContext",
+        "KMSKey"
+      ],
+      "CreateVocabularyResponse": [
+        "VocabularyName",
+        "LanguageCode",
+        "VocabularyState",
+        "LastModifiedTime",
+        "FailureReason"
+      ],
+      "UpdateVocabularyRequest": [
+        "VocabularyName",
+        "LanguageCode",
+        "Phrases",
+        "VocabularyFileUri"
+      ],
+      "UpdateVocabularyResponse": [
+        "VocabularyName",
+        "LanguageCode",
+        "LastModifiedTime",
+        "VocabularyState"
+      ],
+      "GetVocabularyRequest": [
+        "VocabularyName"
+      ],
+      "GetVocabularyResponse": [
+        "VocabularyName",
+        "LanguageCode",
+        "VocabularyState",
+        "LastModifiedTime",
+        "FailureReason",
+        "DownloadUri",
+        "DataAccessRoleArn",
+        "EncryptionConfiguration"
+      ],
+      "ListVocabulariesRequest": [
+        "NextToken",
+        "MaxResults",
+        "StateEquals",
+        "NameContains"
+      ],
+      "ListVocabulariesResponse": [
+        "Status",
+        "NextToken",
+        "Vocabularies"
+      ],
+      "VocabularyInfo": [
+        "VocabularyName",
+        "LanguageCode",
+        "LastModifiedTime",
+        "VocabularyState"
+      ],
+      "DeleteVocabularyRequest": [
+        "VocabularyName"
+      ],
+      "CreateVocabularyFilterRequest": [
+        "VocabularyFilterName",
+        "LanguageCode",
+        "Words",
+        "VocabularyFilterFileUri",
+        "Tags"
+      ],
+      "CreateVocabularyFilterResponse": [
+        "VocabularyFilterName",
+        "LanguageCode",
+        "LastModifiedTime"
+      ],
+      "UpdateVocabularyFilterRequest": [
+        "VocabularyFilterName",
+        "Words",
+        "VocabularyFilterFileUri"
+      ],
+      "UpdateVocabularyFilterResponse": [
+        "VocabularyFilterName",
+        "LanguageCode",
+        "LastModifiedTime"
+      ],
+      "GetVocabularyFilterRequest": [
+        "VocabularyFilterName"
+      ],
+      "GetVocabularyFilterResponse": [
+        "VocabularyFilterName",
+        "LanguageCode",
+        "LastModifiedTime",
+        "DownloadUri",
+        "DataAccessRoleArn",
+        "EncryptionConfiguration"
+      ],
+      "ListVocabularyFiltersRequest": [
+        "NextToken",
+        "MaxResults",
+        "NameContains"
+      ],
+      "ListVocabularyFiltersResponse": [
+        "NextToken",
+        "VocabularyFilters"
+      ],
+      "VocabularyFilterInfo": [
+        "VocabularyFilterName",
+        "LanguageCode",
+        "LastModifiedTime"
+      ],
+      "DeleteVocabularyFilterRequest": [
+        "VocabularyFilterName"
+      ],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "ListTagsForResourceRequest": [
+        "ResourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "ResourceArn",
+        "Tags"
+      ]
+    }
   }
 }

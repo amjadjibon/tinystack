@@ -49,6 +49,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: machineLearning,
 		icon: "translate",
 	},
+	transcribe: {
+		title: "Amazon Transcribe",
+		category: machineLearning,
+		icon: "transcribe",
+	},
 	mediaconvert: {
 		title: "AWS Elemental MediaConvert",
 		category: mediaServices,

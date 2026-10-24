@@ -132,6 +132,7 @@ import (
 	stsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
 	swfapi "github.com/amjadjibon/tinystack/internal/aws/generated/swf"
 	timestreamwriteapi "github.com/amjadjibon/tinystack/internal/aws/generated/timestreamwrite"
+	transcribeapi "github.com/amjadjibon/tinystack/internal/aws/generated/transcribe"
 	transferapi "github.com/amjadjibon/tinystack/internal/aws/generated/transfer"
 	translateapi "github.com/amjadjibon/tinystack/internal/aws/generated/translate"
 	verifiedpermissionsapi "github.com/amjadjibon/tinystack/internal/aws/generated/verifiedpermissions"
@@ -262,6 +263,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/sts"
 	"github.com/amjadjibon/tinystack/internal/services/swf"
 	"github.com/amjadjibon/tinystack/internal/services/timestreamwrite"
+	"github.com/amjadjibon/tinystack/internal/services/transcribe"
 	"github.com/amjadjibon/tinystack/internal/services/transfer"
 	"github.com/amjadjibon/tinystack/internal/services/translate"
 	"github.com/amjadjibon/tinystack/internal/services/verifiedpermissions"
@@ -497,6 +499,12 @@ func build(
 		return nil, err
 	}
 
+	transcribeRecords := transcribe.New(store, buckets)
+	a.onStop(transcribeRecords.Stop)
+	if err = transcribeRecords.Start(ctx); err != nil {
+		return nil, err
+	}
+
 	dataSyncRecords := datasync.New(store, buckets, roles)
 	a.onStop(dataSyncRecords.Stop)
 	s3FilesRecords := s3files.New(store, network, buckets, roles, keys)
@@ -643,6 +651,7 @@ func build(
 		mediaconvertapi.Descriptor(mediaConvertRecords),
 		datasyncapi.Descriptor(dataSyncRecords),
 		translateapi.Descriptor(translateRecords),
+		transcribeapi.Descriptor(transcribeRecords),
 		s3filesapi.Descriptor(s3FilesRecords),
 		mediaconnectapi.Descriptor(mediaConnectRecords),
 		accessanalyzerapi.Descriptor(accessAnalyzerRecords),
@@ -875,6 +884,9 @@ func build(
 	translateFixtures := translate.Handler(store, cfg.Defaults.Account)
 	handler.Handle("translate/fixtures", translateFixtures)
 	handler.Handle("translate/fixtures/", translateFixtures)
+	transcribeFixtures := transcribe.Handler(store, cfg.Defaults.Account)
+	handler.Handle("transcribe/fixtures", transcribeFixtures)
+	handler.Handle("transcribe/fixtures/", transcribeFixtures)
 	fixtures := costdata.Handler(store, cfg.Defaults.Account)
 	handler.Handle("costs/fixtures", fixtures)
 	handler.Handle("costs/fixtures/", fixtures)

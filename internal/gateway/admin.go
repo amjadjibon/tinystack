@@ -25,6 +25,7 @@ const AdminSigningName = "tinystack"
 // an administrator once the console signs people in.
 var adminPaths = []string{
 	"/_tinystack/translate/fixtures",
+	"/_tinystack/transcribe/fixtures",
 	"/_tinystack/bedrock/fixtures",
 	"/_tinystack/costs/fixtures",
 	"/_tinystack/reset",

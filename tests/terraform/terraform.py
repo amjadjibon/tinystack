@@ -96,8 +96,9 @@ def main():
                 # MediaConvert queue tags update in place (+1); name/pricing_plan are ForceNew and unchanged.
                 # Glue job, trigger and workflow tags update in place (+3); ForceNew names/types are unchanged.
                 # Glue crawler tags update in place (+1); classifier has no tags and its name is unchanged.
+                # Transcribe vocabulary/filter tags update in place (+2); ForceNew names/languages stay unchanged.
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "8 added, 141 changed, 8 destroyed" in updated, updated
+                assert "8 added, 143 changed, 8 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"
                 terraform("plan", "-detailed-exitcode", team="platform")
                 # The provider replaces the monitor when its name changes. The subscription

@@ -144,6 +144,7 @@ func EnsureEndpointArg(args []string, endpoint string) []string {
 var TerraformServices = []string{
 	"mediaconvert",
 	"mediaconnect",
+	"transcribe",
 	"datasync",
 	"servicecatalog",
 	"accessanalyzer",
