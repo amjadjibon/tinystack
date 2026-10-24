@@ -23,7 +23,6 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Amazon Redshift runtime and snapshots](services/redshift-runtime.md) | Proposed | Extend the records-only control plane with explicit runtime and snapshot support. |
 | [Amazon S3 Glacier archives and jobs](services/glacier-runtime.md) | Proposed | Extend the vault control plane with archive storage and retrieval job workflows. |
 | [Amazon Timestream records and queries](services/timestream-query.md) | Proposed | Store written records and serve the Timestream query API over them. |
-| [AppSync Events](services/appsync-events.md) | Proposed | Implement `CreateApi`, `GetApi`, `ListApis`. |
 | [Application Auto Scaling execution and advanced policies](services/applicationautoscaling-runtime.md) | Proposed | Extend records-only configuration to a truthful capacity and metric evaluation contract. |
 | [Aurora DSQL](services/dsql.md) | Proposed | Implement `CreateCluster`, `GetCluster`, `ListClusters`. |
 | [Bedrock Agent Runtime](services/bedrock-agent-runtime.md) | Proposed | Implement `InvokeAgent`, `InvokeInlineAgent`, `GetAgentMemory`. |

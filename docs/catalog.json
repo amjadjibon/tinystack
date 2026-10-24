@@ -612,20 +612,26 @@
       "package": "apigatewayv2"
     },
     "appsync": {
-      "title": "AppSync GraphQL",
+      "title": "AppSync GraphQL and Events",
       "category": "Application Integration",
-      "summary": "Run GraphQL APIs with local resolvers and WebSocket subscriptions.",
+      "summary": "Run GraphQL APIs with local resolvers and Event APIs with HTTP publishing and WebSocket subscriptions.",
       "features": [
         "GraphQL APIs, API keys, schema/type operations, data sources, functions and resolvers",
         "Unit and pipeline resolvers using APPSYNC_JS or a VTL subset",
         "NONE, Lambda, HTTP, DynamoDB and EventBridge data sources",
         "Authentication with API keys, IAM callers, Cognito, OIDC and Lambda",
-        "Lambda resolver batching and enhanced subscription filters"
+        "Lambda resolver batching and enhanced subscription filters",
+        "Event API and channel namespace CRUD, pagination, tags and shared API keys",
+        "Local HTTP and WebSocket event publishing, wildcard subscriptions and APPSYNC_JS onPublish/onSubscribe handlers",
+        "Event connection, publish and subscribe authorization with API keys, IAM, Cognito, OIDC and Lambda",
+        "CloudFormation AWS::AppSync::Api and AWS::AppSync::ChannelNamespace"
       ],
       "gaps": [
         "JavaScript utilities and VTL form a local subset of AppSync runtimes",
         "Subscriptions live in memory and close on shutdown",
-        "AppSync Events is a separate unimplemented surface",
+        "Event handlerConfigs, direct data source integrations, S3-hosted handlers and logging configuration are rejected",
+        "Event subscriptions are transient; API, namespace, handler and key records survive sqlite restarts",
+        "Event authorization updates apply immediately; Lambda authorization results are not cached",
         "Production scaling, caching and every upstream resolver/data-source option are not reproduced",
         "Reset keeps real-time WebSocket connections and their subscriptions"
       ],
@@ -2947,12 +2953,6 @@
       "state": "Proposed",
       "slice": "Extend the records-only control plane with explicit runtime and snapshot support.",
       "features": "- [ ] SQL warehouse runtime and JDBC/ODBC execution\n- [ ] Snapshot create/list/delete/restore and final snapshots\n- [ ] Pause/resume/reboot/resize lifecycle\n- [ ] Parameter values and application\n- [ ] Redshift Data API and Serverless"
-    },
-    "appsync-events": {
-      "title": "AppSync Events",
-      "state": "Proposed",
-      "slice": "Implement `CreateApi`, `GetApi`, `ListApis`.",
-      "features": "- [ ] `CreateApi`\n- [ ] `GetApi`\n- [ ] `ListApis`\n- [ ] `CreateChannelNamespace`\n- [ ] `Publish`\n- [ ] `Subscribe`"
     },
     "bedrock-agent-runtime": {
       "title": "Bedrock Agent Runtime",

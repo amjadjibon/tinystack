@@ -141,7 +141,7 @@ nav:
           - "Amazon MQ": services/mq.md
           - "Amazon MWAA": services/mwaa.md
           - "Amazon Simple Workflow Service": services/swf.md
-          - "AppSync GraphQL": services/appsync.md
+          - "AppSync GraphQL and Events": services/appsync.md
           - "EventBridge": services/eventbridge.md
           - "EventBridge Pipes": services/pipes.md
           - "EventBridge Scheduler": services/scheduler.md
@@ -273,7 +273,6 @@ nav:
           - "Amazon Redshift runtime and snapshots": roadmap/services/redshift-runtime.md
           - "Amazon S3 Glacier archives and jobs": roadmap/services/glacier-runtime.md
           - "Amazon Timestream records and queries": roadmap/services/timestream-query.md
-          - "AppSync Events": roadmap/services/appsync-events.md
           - "Application Auto Scaling execution and advanced policies": roadmap/services/applicationautoscaling-runtime.md
           - "Aurora DSQL": roadmap/services/dsql.md
           - "Bedrock Agent Runtime": roadmap/services/bedrock-agent-runtime.md
