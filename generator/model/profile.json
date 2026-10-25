@@ -3735,8 +3735,32 @@
       "ListInvalidations",
       "ListOriginAccessControls",
       "UpdateDistribution",
-      "UpdateOriginAccessControl"
-    ]
+      "UpdateOriginAccessControl",
+      "CreateKeyValueStore",
+      "DescribeKeyValueStore",
+      "ListKeyValueStores",
+      "UpdateKeyValueStore",
+      "DeleteKeyValueStore",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "validation": {
+      "code": "InvalidArgument"
+    }
+  },
+  "cloudfrontkeyvaluestore": {
+    "operations": [
+      "DescribeKeyValueStore",
+      "GetKey",
+      "ListKeys",
+      "PutKey",
+      "DeleteKey",
+      "UpdateKeys"
+    ],
+    "validation": {
+      "code": "ValidationException"
+    }
   },
   "cloudwatch": {
     "query": {

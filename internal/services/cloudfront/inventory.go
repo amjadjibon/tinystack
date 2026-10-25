@@ -53,6 +53,19 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 						"Enabled":    enabled,
 					},
 				})
+			case kindKVS:
+				rec, found, readErr := storage.Read[KVSRecord](tx, k)
+				if readErr != nil {
+					return readErr
+				}
+				if !found {
+					continue
+				}
+				out = append(out, catalog.Resource{
+					Type: kindKVS, Account: account,
+					Name: common.Value(rec.Store.Name), ARN: common.Value(rec.Store.ARN), Tags: rec.Tags,
+					Details: map[string]any{"Status": common.Value(rec.Store.Status)},
+				})
 			case kindOAC:
 				rec, found, readErr := storage.Read[oacRecord](tx, k)
 				if readErr != nil {

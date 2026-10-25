@@ -3,8 +3,13 @@ package cloudfront
 
 import (
 	"context"
+	"encoding/xml"
+	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/validation"
+	"regexp"
 	"time"
+	"unicode/utf8"
 )
 
 type Aliases struct {
@@ -648,6 +653,1433 @@ type UpdateOriginAccessControlResult struct {
 	OriginAccessControl *OriginAccessControl `json:"-" xml:"-"`
 }
 
+type ImportSource struct {
+	SourceARN  *string `json:"SourceARN,omitempty" xml:"SourceARN,omitempty"`
+	SourceType *string `json:"SourceType,omitempty" xml:"SourceType,omitempty"`
+}
+
+type CreateKeyValueStoreRequest struct {
+	XMLName      xml.Name      `json:"-" xml:"http://cloudfront.amazonaws.com/doc/2020-05-31/ CreateKeyValueStoreRequest"`
+	Comment      *string       `json:"Comment,omitempty" xml:"Comment,omitempty"`
+	ImportSource *ImportSource `json:"ImportSource,omitempty" xml:"ImportSource,omitempty"`
+	Name         *string       `json:"Name,omitempty" xml:"Name,omitempty"`
+	Tags         *Tags         `json:"Tags,omitempty" xml:"Tags,omitempty"`
+}
+
+type KeyValueStore struct {
+	ARN              *string    `json:"ARN,omitempty" xml:"ARN,omitempty"`
+	Comment          *string    `json:"Comment,omitempty" xml:"Comment,omitempty"`
+	Id               *string    `json:"Id,omitempty" xml:"Id,omitempty"`
+	LastModifiedTime *time.Time `json:"LastModifiedTime,omitempty" xml:"LastModifiedTime,omitempty"`
+	Name             *string    `json:"Name,omitempty" xml:"Name,omitempty"`
+	Status           *string    `json:"Status,omitempty" xml:"Status,omitempty"`
+}
+
+type CreateKeyValueStoreResult struct {
+	ETag          *string        `json:"-" xml:"-"`
+	KeyValueStore *KeyValueStore `json:"-" xml:"-"`
+	Location      *string        `json:"-" xml:"-"`
+}
+
+type DescribeKeyValueStoreRequest struct {
+	Name *string `json:"-" xml:"-"`
+}
+
+type DescribeKeyValueStoreResult struct {
+	ETag          *string        `json:"-" xml:"-"`
+	KeyValueStore *KeyValueStore `json:"-" xml:"-"`
+}
+
+type ListKeyValueStoresRequest struct {
+	Marker   *string `json:"-" xml:"-"`
+	MaxItems *int64  `json:"-" xml:"-"`
+	Status   *string `json:"-" xml:"-"`
+}
+
+type KeyValueStoreList struct {
+	Items      []KeyValueStore `json:"Items,omitempty" xml:"Items>KeyValueStore,omitempty"`
+	MaxItems   *int64          `json:"MaxItems,omitempty" xml:"MaxItems,omitempty"`
+	NextMarker *string         `json:"NextMarker,omitempty" xml:"NextMarker,omitempty"`
+	Quantity   *int64          `json:"Quantity,omitempty" xml:"Quantity,omitempty"`
+}
+
+type ListKeyValueStoresResult struct {
+	KeyValueStoreList *KeyValueStoreList `json:"-" xml:"-"`
+}
+
+type UpdateKeyValueStoreRequest struct {
+	XMLName xml.Name `json:"-" xml:"http://cloudfront.amazonaws.com/doc/2020-05-31/ UpdateKeyValueStoreRequest"`
+	Comment *string  `json:"Comment,omitempty" xml:"Comment,omitempty"`
+	IfMatch *string  `json:"-" xml:"-"`
+	Name    *string  `json:"-" xml:"-"`
+}
+
+type UpdateKeyValueStoreResult struct {
+	ETag          *string        `json:"-" xml:"-"`
+	KeyValueStore *KeyValueStore `json:"-" xml:"-"`
+}
+
+type DeleteKeyValueStoreOutput struct{}
+
+type DeleteKeyValueStoreRequest struct {
+	IfMatch *string `json:"-" xml:"-"`
+	Name    *string `json:"-" xml:"-"`
+}
+
+type TagResourceOutput struct{}
+
+type TagResourceRequest struct {
+	Resource *string `json:"-" xml:"-"`
+	Tags     *Tags   `json:"-" xml:"-"`
+}
+
+type UntagResourceOutput struct{}
+
+type TagKeys struct {
+	Items []string `json:"Items,omitempty" xml:"Items>Key,omitempty"`
+}
+
+type UntagResourceRequest struct {
+	Resource *string  `json:"-" xml:"-"`
+	TagKeys  *TagKeys `json:"-" xml:"-"`
+}
+
+type ListTagsForResourceRequest struct {
+	Resource *string `json:"-" xml:"-"`
+}
+
+type ListTagsForResourceResult struct {
+	Tags *Tags `json:"-" xml:"-"`
+}
+
+var enum0 = []string{"DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"}
+
+var enum1 = []string{"allow-all", "https-only", "redirect-to-https"}
+
+var enum2 = []string{"all", "none", "whitelist"}
+
+var pattern0 = regexp.MustCompile("^[a-zA-Z0-9-_]{1,64}$")
+
+var enum3 = []string{"dualstack", "ipv4", "ipv6"}
+
+var enum4 = []string{"http-only", "https-only", "match-viewer"}
+
+var enum5 = []string{"direct", "tenant-only"}
+
+var enum6 = []string{"http1.1", "http2", "http2and3", "http3"}
+
+var enum7 = []string{"None", "PriceClass_100", "PriceClass_200", "PriceClass_All"}
+
+var enum8 = []string{"origin-request", "origin-response", "viewer-request", "viewer-response"}
+
+var pattern1 = regexp.MustCompile("^arn:aws:cloudfront::[0-9]{12}:function\\/[a-zA-Z0-9-_]{1,64}$")
+
+var enum9 = []string{"blacklist", "none", "whitelist"}
+
+var enum10 = []string{"S3"}
+
+var pattern2 = regexp.MustCompile("^arn:aws(-cn)?:cloudfront::[0-9]+:")
+
+var enum11 = []string{"lambda", "mediapackagev2", "mediastore", "s3"}
+
+var enum12 = []string{"always", "always-amz-auth", "never", "no-override"}
+
+var enum13 = []string{"sigv4", "sigv4a"}
+
+var enum14 = []string{"default", "media-quality-based"}
+
+var pattern3 = regexp.MustCompile("^[a-z]{2}-[a-z]+-\\d$")
+
+var enum15 = []string{"SSLv3", "TLSv1", "TLSv1.1", "TLSv1.2"}
+
+var pattern4 = regexp.MustCompile("^[a-zA-Z0-9-_]+$")
+
+var pattern5 = regexp.MustCompile("^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$")
+
+var enum16 = []string{"acm", "cloudfront", "iam"}
+
+var enum17 = []string{"SSLv3", "TLSv1", "TLSv1.1_2016", "TLSv1.2_2018", "TLSv1.2_2019", "TLSv1.2_2021", "TLSv1.2_2025", "TLSv1.3_2025", "TLSv1_2016"}
+
+var enum18 = []string{"sni-only", "static-ip", "vip"}
+
+var enum19 = []string{"optional", "passthrough", "required"}
+
+func (v *Aliases) Validate(path string) error {
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *AllowedMethods) Validate(path string) error {
+	if v.CachedMethods != nil {
+		if err := (*v.CachedMethods).Validate(path + "CachedMethods" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Items", v.Items != nil); err != nil {
+		return err
+	}
+	if v.Items != nil {
+		for i0, e0 := range v.Items {
+			if err := validation.Enum(validation.Index(path+"Items", i0), e0, enum0); err != nil {
+				return err
+			}
+		}
+	}
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *CacheBehavior) Validate(path string) error {
+	if v.AllowedMethods != nil {
+		if err := (*v.AllowedMethods).Validate(path + "AllowedMethods" + "."); err != nil {
+			return err
+		}
+	}
+	if v.ForwardedValues != nil {
+		if err := (*v.ForwardedValues).Validate(path + "ForwardedValues" + "."); err != nil {
+			return err
+		}
+	}
+	if v.FunctionAssociations != nil {
+		if err := (*v.FunctionAssociations).Validate(path + "FunctionAssociations" + "."); err != nil {
+			return err
+		}
+	}
+	if v.GrpcConfig != nil {
+		if err := (*v.GrpcConfig).Validate(path + "GrpcConfig" + "."); err != nil {
+			return err
+		}
+	}
+	if v.LambdaFunctionAssociations != nil {
+		if err := (*v.LambdaFunctionAssociations).Validate(path + "LambdaFunctionAssociations" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"PathPattern", v.PathPattern != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"TargetOriginId", v.TargetOriginId != nil); err != nil {
+		return err
+	}
+	if v.TrustedKeyGroups != nil {
+		if err := (*v.TrustedKeyGroups).Validate(path + "TrustedKeyGroups" + "."); err != nil {
+			return err
+		}
+	}
+	if v.TrustedSigners != nil {
+		if err := (*v.TrustedSigners).Validate(path + "TrustedSigners" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"ViewerProtocolPolicy", v.ViewerProtocolPolicy != nil); err != nil {
+		return err
+	}
+	if v.ViewerProtocolPolicy != nil {
+		if err := validation.Enum(path+"ViewerProtocolPolicy", (*v.ViewerProtocolPolicy), enum1); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CacheBehaviors) Validate(path string) error {
+	if v.Items != nil {
+		for i0, e0 := range v.Items {
+			if err := e0.Validate(validation.Index(path+"Items", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *CacheTagConfig) Validate(path string) error {
+	if err := validation.Required(path+"HeaderName", v.HeaderName != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *CachedMethods) Validate(path string) error {
+	if err := validation.Required(path+"Items", v.Items != nil); err != nil {
+		return err
+	}
+	if v.Items != nil {
+		for i0, e0 := range v.Items {
+			if err := validation.Enum(validation.Index(path+"Items", i0), e0, enum0); err != nil {
+				return err
+			}
+		}
+	}
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *ConnectionFunctionAssociation) Validate(path string) error {
+	if err := validation.Required(path+"Id", v.Id != nil); err != nil {
+		return err
+	}
+	if v.Id != nil {
+		if err := validation.Length(path+"Id", utf8.RuneCountInString((*v.Id)), new(int64(1)), new(int64(64))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CookieNames) Validate(path string) error {
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *CookiePreference) Validate(path string) error {
+	if err := validation.Required(path+"Forward", v.Forward != nil); err != nil {
+		return err
+	}
+	if v.Forward != nil {
+		if err := validation.Enum(path+"Forward", (*v.Forward), enum2); err != nil {
+			return err
+		}
+	}
+	if v.WhitelistedNames != nil {
+		if err := (*v.WhitelistedNames).Validate(path + "WhitelistedNames" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreateDistributionRequest) Validate(path string) error {
+	if err := validation.Required(path+"DistributionConfig", v.DistributionConfig != nil); err != nil {
+		return err
+	}
+	if v.DistributionConfig != nil {
+		if err := (*v.DistributionConfig).Validate(path + "DistributionConfig" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreateDistributionWithTagsRequest) Validate(path string) error {
+	if err := validation.Required(path+"DistributionConfigWithTags", v.DistributionConfigWithTags != nil); err != nil {
+		return err
+	}
+	if v.DistributionConfigWithTags != nil {
+		if err := (*v.DistributionConfigWithTags).Validate(path + "DistributionConfigWithTags" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreateInvalidationRequest) Validate(path string) error {
+	if err := validation.Required(path+"DistributionId", v.DistributionId != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"InvalidationBatch", v.InvalidationBatch != nil); err != nil {
+		return err
+	}
+	if v.InvalidationBatch != nil {
+		if err := (*v.InvalidationBatch).Validate(path + "InvalidationBatch" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreateKeyValueStoreRequest) Validate(path string) error {
+	if v.Comment != nil {
+		if err := validation.Length(path+"Comment", utf8.RuneCountInString((*v.Comment)), new(int64(0)), new(int64(128))); err != nil {
+			return err
+		}
+	}
+	if v.ImportSource != nil {
+		if err := (*v.ImportSource).Validate(path + "ImportSource" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Name", (*v.Name), pattern0, nil, "^[a-zA-Z0-9-_]{1,64}$"); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		if err := (*v.Tags).Validate(path + "Tags" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreateOriginAccessControlRequest) Validate(path string) error {
+	if err := validation.Required(path+"OriginAccessControlConfig", v.OriginAccessControlConfig != nil); err != nil {
+		return err
+	}
+	if v.OriginAccessControlConfig != nil {
+		if err := (*v.OriginAccessControlConfig).Validate(path + "OriginAccessControlConfig" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CustomErrorResponse) Validate(path string) error {
+	if err := validation.Required(path+"ErrorCode", v.ErrorCode != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *CustomErrorResponses) Validate(path string) error {
+	if v.Items != nil {
+		for i0, e0 := range v.Items {
+			if err := e0.Validate(validation.Index(path+"Items", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *CustomHeaders) Validate(path string) error {
+	if v.Items != nil {
+		for i0, e0 := range v.Items {
+			if err := e0.Validate(validation.Index(path+"Items", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *CustomOriginConfig) Validate(path string) error {
+	if err := validation.Required(path+"HTTPPort", v.HTTPPort != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"HTTPSPort", v.HTTPSPort != nil); err != nil {
+		return err
+	}
+	if v.IpAddressType != nil {
+		if err := validation.Enum(path+"IpAddressType", (*v.IpAddressType), enum3); err != nil {
+			return err
+		}
+	}
+	if v.OriginMtlsConfig != nil {
+		if err := (*v.OriginMtlsConfig).Validate(path + "OriginMtlsConfig" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"OriginProtocolPolicy", v.OriginProtocolPolicy != nil); err != nil {
+		return err
+	}
+	if v.OriginProtocolPolicy != nil {
+		if err := validation.Enum(path+"OriginProtocolPolicy", (*v.OriginProtocolPolicy), enum4); err != nil {
+			return err
+		}
+	}
+	if v.OriginSslProtocols != nil {
+		if err := (*v.OriginSslProtocols).Validate(path + "OriginSslProtocols" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DefaultCacheBehavior) Validate(path string) error {
+	if v.AllowedMethods != nil {
+		if err := (*v.AllowedMethods).Validate(path + "AllowedMethods" + "."); err != nil {
+			return err
+		}
+	}
+	if v.ForwardedValues != nil {
+		if err := (*v.ForwardedValues).Validate(path + "ForwardedValues" + "."); err != nil {
+			return err
+		}
+	}
+	if v.FunctionAssociations != nil {
+		if err := (*v.FunctionAssociations).Validate(path + "FunctionAssociations" + "."); err != nil {
+			return err
+		}
+	}
+	if v.GrpcConfig != nil {
+		if err := (*v.GrpcConfig).Validate(path + "GrpcConfig" + "."); err != nil {
+			return err
+		}
+	}
+	if v.LambdaFunctionAssociations != nil {
+		if err := (*v.LambdaFunctionAssociations).Validate(path + "LambdaFunctionAssociations" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"TargetOriginId", v.TargetOriginId != nil); err != nil {
+		return err
+	}
+	if v.TrustedKeyGroups != nil {
+		if err := (*v.TrustedKeyGroups).Validate(path + "TrustedKeyGroups" + "."); err != nil {
+			return err
+		}
+	}
+	if v.TrustedSigners != nil {
+		if err := (*v.TrustedSigners).Validate(path + "TrustedSigners" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"ViewerProtocolPolicy", v.ViewerProtocolPolicy != nil); err != nil {
+		return err
+	}
+	if v.ViewerProtocolPolicy != nil {
+		if err := validation.Enum(path+"ViewerProtocolPolicy", (*v.ViewerProtocolPolicy), enum1); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteDistributionRequest) Validate(path string) error {
+	if err := validation.Required(path+"Id", v.Id != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *DeleteKeyValueStoreRequest) Validate(path string) error {
+	if err := validation.Required(path+"IfMatch", v.IfMatch != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Name", (*v.Name), pattern0, nil, "^[a-zA-Z0-9-_]{1,64}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteOriginAccessControlRequest) Validate(path string) error {
+	if err := validation.Required(path+"Id", v.Id != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *DescribeKeyValueStoreRequest) Validate(path string) error {
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Name", (*v.Name), pattern0, nil, "^[a-zA-Z0-9-_]{1,64}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DistributionConfig) Validate(path string) error {
+	if v.Aliases != nil {
+		if err := (*v.Aliases).Validate(path + "Aliases" + "."); err != nil {
+			return err
+		}
+	}
+	if v.CacheBehaviors != nil {
+		if err := (*v.CacheBehaviors).Validate(path + "CacheBehaviors" + "."); err != nil {
+			return err
+		}
+	}
+	if v.CacheTagConfig != nil {
+		if err := (*v.CacheTagConfig).Validate(path + "CacheTagConfig" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"CallerReference", v.CallerReference != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"Comment", v.Comment != nil); err != nil {
+		return err
+	}
+	if v.ConnectionFunctionAssociation != nil {
+		if err := (*v.ConnectionFunctionAssociation).Validate(path + "ConnectionFunctionAssociation" + "."); err != nil {
+			return err
+		}
+	}
+	if v.ConnectionMode != nil {
+		if err := validation.Enum(path+"ConnectionMode", (*v.ConnectionMode), enum5); err != nil {
+			return err
+		}
+	}
+	if v.CustomErrorResponses != nil {
+		if err := (*v.CustomErrorResponses).Validate(path + "CustomErrorResponses" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"DefaultCacheBehavior", v.DefaultCacheBehavior != nil); err != nil {
+		return err
+	}
+	if v.DefaultCacheBehavior != nil {
+		if err := (*v.DefaultCacheBehavior).Validate(path + "DefaultCacheBehavior" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Enabled", v.Enabled != nil); err != nil {
+		return err
+	}
+	if v.HttpVersion != nil {
+		if err := validation.Enum(path+"HttpVersion", (*v.HttpVersion), enum6); err != nil {
+			return err
+		}
+	}
+	if v.Logging != nil {
+		if err := (*v.Logging).Validate(path + "Logging" + "."); err != nil {
+			return err
+		}
+	}
+	if v.OriginGroups != nil {
+		if err := (*v.OriginGroups).Validate(path + "OriginGroups" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Origins", v.Origins != nil); err != nil {
+		return err
+	}
+	if v.Origins != nil {
+		if err := (*v.Origins).Validate(path + "Origins" + "."); err != nil {
+			return err
+		}
+	}
+	if v.PriceClass != nil {
+		if err := validation.Enum(path+"PriceClass", (*v.PriceClass), enum7); err != nil {
+			return err
+		}
+	}
+	if v.Restrictions != nil {
+		if err := (*v.Restrictions).Validate(path + "Restrictions" + "."); err != nil {
+			return err
+		}
+	}
+	if v.TenantConfig != nil {
+		if err := (*v.TenantConfig).Validate(path + "TenantConfig" + "."); err != nil {
+			return err
+		}
+	}
+	if v.ViewerCertificate != nil {
+		if err := (*v.ViewerCertificate).Validate(path + "ViewerCertificate" + "."); err != nil {
+			return err
+		}
+	}
+	if v.ViewerMtlsConfig != nil {
+		if err := (*v.ViewerMtlsConfig).Validate(path + "ViewerMtlsConfig" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DistributionConfigWithTags) Validate(path string) error {
+	if err := validation.Required(path+"DistributionConfig", v.DistributionConfig != nil); err != nil {
+		return err
+	}
+	if v.DistributionConfig != nil {
+		if err := (*v.DistributionConfig).Validate(path + "DistributionConfig" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Tags", v.Tags != nil); err != nil {
+		return err
+	}
+	if v.Tags != nil {
+		if err := (*v.Tags).Validate(path + "Tags" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ForwardedValues) Validate(path string) error {
+	if err := validation.Required(path+"Cookies", v.Cookies != nil); err != nil {
+		return err
+	}
+	if v.Cookies != nil {
+		if err := (*v.Cookies).Validate(path + "Cookies" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Headers != nil {
+		if err := (*v.Headers).Validate(path + "Headers" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"QueryString", v.QueryString != nil); err != nil {
+		return err
+	}
+	if v.QueryStringCacheKeys != nil {
+		if err := (*v.QueryStringCacheKeys).Validate(path + "QueryStringCacheKeys" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *FunctionAssociation) Validate(path string) error {
+	if err := validation.Required(path+"EventType", v.EventType != nil); err != nil {
+		return err
+	}
+	if v.EventType != nil {
+		if err := validation.Enum(path+"EventType", (*v.EventType), enum8); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"FunctionARN", v.FunctionARN != nil); err != nil {
+		return err
+	}
+	if v.FunctionARN != nil {
+		if err := validation.Length(path+"FunctionARN", utf8.RuneCountInString((*v.FunctionARN)), new(int64(0)), new(int64(108))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"FunctionARN", (*v.FunctionARN), pattern1, nil, "^arn:aws:cloudfront::[0-9]{12}:function\\/[a-zA-Z0-9-_]{1,64}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *FunctionAssociations) Validate(path string) error {
+	if v.Items != nil {
+		for i0, e0 := range v.Items {
+			if err := e0.Validate(validation.Index(path+"Items", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *GeoRestriction) Validate(path string) error {
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"RestrictionType", v.RestrictionType != nil); err != nil {
+		return err
+	}
+	if v.RestrictionType != nil {
+		if err := validation.Enum(path+"RestrictionType", (*v.RestrictionType), enum9); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetDistributionConfigRequest) Validate(path string) error {
+	if err := validation.Required(path+"Id", v.Id != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *GetDistributionRequest) Validate(path string) error {
+	if err := validation.Required(path+"Id", v.Id != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *GetInvalidationRequest) Validate(path string) error {
+	if err := validation.Required(path+"DistributionId", v.DistributionId != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"Id", v.Id != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *GetOriginAccessControlConfigRequest) Validate(path string) error {
+	if err := validation.Required(path+"Id", v.Id != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *GetOriginAccessControlRequest) Validate(path string) error {
+	if err := validation.Required(path+"Id", v.Id != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *GrpcConfig) Validate(path string) error {
+	if err := validation.Required(path+"Enabled", v.Enabled != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *Headers) Validate(path string) error {
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *ImportSource) Validate(path string) error {
+	if err := validation.Required(path+"SourceARN", v.SourceARN != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"SourceType", v.SourceType != nil); err != nil {
+		return err
+	}
+	if v.SourceType != nil {
+		if err := validation.Enum(path+"SourceType", (*v.SourceType), enum10); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *InvalidationBatch) Validate(path string) error {
+	if err := validation.Required(path+"CallerReference", v.CallerReference != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"Paths", v.Paths != nil); err != nil {
+		return err
+	}
+	if v.Paths != nil {
+		if err := (*v.Paths).Validate(path + "Paths" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *LambdaFunctionAssociation) Validate(path string) error {
+	if err := validation.Required(path+"EventType", v.EventType != nil); err != nil {
+		return err
+	}
+	if v.EventType != nil {
+		if err := validation.Enum(path+"EventType", (*v.EventType), enum8); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"LambdaFunctionARN", v.LambdaFunctionARN != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *LambdaFunctionAssociations) Validate(path string) error {
+	if v.Items != nil {
+		for i0, e0 := range v.Items {
+			if err := e0.Validate(validation.Index(path+"Items", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *ListDistributionsRequest) Validate(path string) error {
+	return nil
+}
+
+func (v *ListInvalidationsRequest) Validate(path string) error {
+	if err := validation.Required(path+"DistributionId", v.DistributionId != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *ListKeyValueStoresRequest) Validate(path string) error {
+	return nil
+}
+
+func (v *ListOriginAccessControlsRequest) Validate(path string) error {
+	return nil
+}
+
+func (v *ListTagsForResourceRequest) Validate(path string) error {
+	if err := validation.Required(path+"Resource", v.Resource != nil); err != nil {
+		return err
+	}
+	if v.Resource != nil {
+		if err := validation.Pattern(path+"Resource", (*v.Resource), pattern2, nil, "^arn:aws(-cn)?:cloudfront::[0-9]+:"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *LoggingConfig) Validate(path string) error {
+	return nil
+}
+
+func (v *Origin) Validate(path string) error {
+	if v.CustomHeaders != nil {
+		if err := (*v.CustomHeaders).Validate(path + "CustomHeaders" + "."); err != nil {
+			return err
+		}
+	}
+	if v.CustomOriginConfig != nil {
+		if err := (*v.CustomOriginConfig).Validate(path + "CustomOriginConfig" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"DomainName", v.DomainName != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"Id", v.Id != nil); err != nil {
+		return err
+	}
+	if v.OriginShield != nil {
+		if err := (*v.OriginShield).Validate(path + "OriginShield" + "."); err != nil {
+			return err
+		}
+	}
+	if v.S3OriginConfig != nil {
+		if err := (*v.S3OriginConfig).Validate(path + "S3OriginConfig" + "."); err != nil {
+			return err
+		}
+	}
+	if v.VpcOriginConfig != nil {
+		if err := (*v.VpcOriginConfig).Validate(path + "VpcOriginConfig" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *OriginAccessControlConfig) Validate(path string) error {
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"OriginAccessControlOriginType", v.OriginAccessControlOriginType != nil); err != nil {
+		return err
+	}
+	if v.OriginAccessControlOriginType != nil {
+		if err := validation.Enum(path+"OriginAccessControlOriginType", (*v.OriginAccessControlOriginType), enum11); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"SigningBehavior", v.SigningBehavior != nil); err != nil {
+		return err
+	}
+	if v.SigningBehavior != nil {
+		if err := validation.Enum(path+"SigningBehavior", (*v.SigningBehavior), enum12); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"SigningProtocol", v.SigningProtocol != nil); err != nil {
+		return err
+	}
+	if v.SigningProtocol != nil {
+		if err := validation.Enum(path+"SigningProtocol", (*v.SigningProtocol), enum13); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *OriginCustomHeader) Validate(path string) error {
+	if err := validation.Required(path+"HeaderName", v.HeaderName != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"HeaderValue", v.HeaderValue != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *OriginGroup) Validate(path string) error {
+	if err := validation.Required(path+"FailoverCriteria", v.FailoverCriteria != nil); err != nil {
+		return err
+	}
+	if v.FailoverCriteria != nil {
+		if err := (*v.FailoverCriteria).Validate(path + "FailoverCriteria" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Id", v.Id != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"Members", v.Members != nil); err != nil {
+		return err
+	}
+	if v.Members != nil {
+		if err := (*v.Members).Validate(path + "Members" + "."); err != nil {
+			return err
+		}
+	}
+	if v.SelectionCriteria != nil {
+		if err := validation.Enum(path+"SelectionCriteria", (*v.SelectionCriteria), enum14); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *OriginGroupFailoverCriteria) Validate(path string) error {
+	if err := validation.Required(path+"StatusCodes", v.StatusCodes != nil); err != nil {
+		return err
+	}
+	if v.StatusCodes != nil {
+		if err := (*v.StatusCodes).Validate(path + "StatusCodes" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *OriginGroupMember) Validate(path string) error {
+	if err := validation.Required(path+"OriginId", v.OriginId != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *OriginGroupMembers) Validate(path string) error {
+	if err := validation.Required(path+"Items", v.Items != nil); err != nil {
+		return err
+	}
+	if v.Items != nil {
+		if err := validation.Length(path+"Items", len(v.Items), new(int64(2)), new(int64(2))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.Items {
+			if err := e0.Validate(validation.Index(path+"Items", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *OriginGroups) Validate(path string) error {
+	if v.Items != nil {
+		for i0, e0 := range v.Items {
+			if err := e0.Validate(validation.Index(path+"Items", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *OriginMtlsConfig) Validate(path string) error {
+	if err := validation.Required(path+"ClientCertificateArn", v.ClientCertificateArn != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *OriginShield) Validate(path string) error {
+	if err := validation.Required(path+"Enabled", v.Enabled != nil); err != nil {
+		return err
+	}
+	if v.OriginShieldRegion != nil {
+		if err := validation.Length(path+"OriginShieldRegion", utf8.RuneCountInString((*v.OriginShieldRegion)), new(int64(1)), new(int64(32))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"OriginShieldRegion", (*v.OriginShieldRegion), pattern3, nil, "^[a-z]{2}-[a-z]+-\\d$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *OriginSslProtocols) Validate(path string) error {
+	if err := validation.Required(path+"Items", v.Items != nil); err != nil {
+		return err
+	}
+	if v.Items != nil {
+		for i0, e0 := range v.Items {
+			if err := validation.Enum(validation.Index(path+"Items", i0), e0, enum15); err != nil {
+				return err
+			}
+		}
+	}
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *Origins) Validate(path string) error {
+	if err := validation.Required(path+"Items", v.Items != nil); err != nil {
+		return err
+	}
+	if v.Items != nil {
+		if err := validation.Length(path+"Items", len(v.Items), new(int64(1)), nil); err != nil {
+			return err
+		}
+		for i0, e0 := range v.Items {
+			if err := e0.Validate(validation.Index(path+"Items", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *ParameterDefinition) Validate(path string) error {
+	if err := validation.Required(path+"Definition", v.Definition != nil); err != nil {
+		return err
+	}
+	if v.Definition != nil {
+		if err := (*v.Definition).Validate(path + "Definition" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(128))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Name", (*v.Name), pattern4, nil, "^[a-zA-Z0-9-_]+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ParameterDefinitionSchema) Validate(path string) error {
+	if v.StringSchema != nil {
+		if err := (*v.StringSchema).Validate(path + "StringSchema" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *Paths) Validate(path string) error {
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *QueryStringCacheKeys) Validate(path string) error {
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *Restrictions) Validate(path string) error {
+	if err := validation.Required(path+"GeoRestriction", v.GeoRestriction != nil); err != nil {
+		return err
+	}
+	if v.GeoRestriction != nil {
+		if err := (*v.GeoRestriction).Validate(path + "GeoRestriction" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *S3OriginConfig) Validate(path string) error {
+	return nil
+}
+
+func (v *StatusCodes) Validate(path string) error {
+	if err := validation.Required(path+"Items", v.Items != nil); err != nil {
+		return err
+	}
+	if v.Items != nil {
+		if err := validation.Length(path+"Items", len(v.Items), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *StringSchemaConfig) Validate(path string) error {
+	if v.DefaultValue != nil {
+		if err := validation.Length(path+"DefaultValue", utf8.RuneCountInString((*v.DefaultValue)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Required", v.Required != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *Tag) Validate(path string) error {
+	if err := validation.Required(path+"Key", v.Key != nil); err != nil {
+		return err
+	}
+	if v.Key != nil {
+		if err := validation.Length(path+"Key", utf8.RuneCountInString((*v.Key)), new(int64(1)), new(int64(128))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Key", (*v.Key), pattern5, nil, "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
+			return err
+		}
+	}
+	if v.Value != nil {
+		if err := validation.Length(path+"Value", utf8.RuneCountInString((*v.Value)), new(int64(0)), new(int64(256))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Value", (*v.Value), pattern5, nil, "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *TagKeys) Validate(path string) error {
+	if v.Items != nil {
+		for i0, e0 := range v.Items {
+			if err := validation.Length(validation.Index(path+"Items", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(128))); err != nil {
+				return err
+			}
+			if err := validation.Pattern(validation.Index(path+"Items", i0), e0, pattern5, nil, "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *TagResourceRequest) Validate(path string) error {
+	if err := validation.Required(path+"Resource", v.Resource != nil); err != nil {
+		return err
+	}
+	if v.Resource != nil {
+		if err := validation.Pattern(path+"Resource", (*v.Resource), pattern2, nil, "^arn:aws(-cn)?:cloudfront::[0-9]+:"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Tags", v.Tags != nil); err != nil {
+		return err
+	}
+	if v.Tags != nil {
+		if err := (*v.Tags).Validate(path + "Tags" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *Tags) Validate(path string) error {
+	if v.Items != nil {
+		for i0, e0 := range v.Items {
+			if err := e0.Validate(validation.Index(path+"Items", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *TenantConfig) Validate(path string) error {
+	if v.ParameterDefinitions != nil {
+		for i0, e0 := range v.ParameterDefinitions {
+			if err := e0.Validate(validation.Index(path+"ParameterDefinitions", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *TrustStoreConfig) Validate(path string) error {
+	if err := validation.Required(path+"TrustStoreId", v.TrustStoreId != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *TrustedKeyGroups) Validate(path string) error {
+	if err := validation.Required(path+"Enabled", v.Enabled != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *TrustedSigners) Validate(path string) error {
+	if err := validation.Required(path+"Enabled", v.Enabled != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"Quantity", v.Quantity != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *UntagResourceRequest) Validate(path string) error {
+	if err := validation.Required(path+"Resource", v.Resource != nil); err != nil {
+		return err
+	}
+	if v.Resource != nil {
+		if err := validation.Pattern(path+"Resource", (*v.Resource), pattern2, nil, "^arn:aws(-cn)?:cloudfront::[0-9]+:"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"TagKeys", v.TagKeys != nil); err != nil {
+		return err
+	}
+	if v.TagKeys != nil {
+		if err := (*v.TagKeys).Validate(path + "TagKeys" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *UpdateDistributionRequest) Validate(path string) error {
+	if err := validation.Required(path+"DistributionConfig", v.DistributionConfig != nil); err != nil {
+		return err
+	}
+	if v.DistributionConfig != nil {
+		if err := (*v.DistributionConfig).Validate(path + "DistributionConfig" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Id", v.Id != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *UpdateKeyValueStoreRequest) Validate(path string) error {
+	if err := validation.Required(path+"Comment", v.Comment != nil); err != nil {
+		return err
+	}
+	if v.Comment != nil {
+		if err := validation.Length(path+"Comment", utf8.RuneCountInString((*v.Comment)), new(int64(0)), new(int64(128))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"IfMatch", v.IfMatch != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Name", (*v.Name), pattern0, nil, "^[a-zA-Z0-9-_]{1,64}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *UpdateOriginAccessControlRequest) Validate(path string) error {
+	if err := validation.Required(path+"Id", v.Id != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"OriginAccessControlConfig", v.OriginAccessControlConfig != nil); err != nil {
+		return err
+	}
+	if v.OriginAccessControlConfig != nil {
+		if err := (*v.OriginAccessControlConfig).Validate(path + "OriginAccessControlConfig" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ViewerCertificate) Validate(path string) error {
+	if v.CertificateSource != nil {
+		if err := validation.Enum(path+"CertificateSource", (*v.CertificateSource), enum16); err != nil {
+			return err
+		}
+	}
+	if v.IAMCertificateId != nil {
+		if err := validation.Length(path+"IAMCertificateId", utf8.RuneCountInString((*v.IAMCertificateId)), nil, new(int64(32))); err != nil {
+			return err
+		}
+	}
+	if v.MinimumProtocolVersion != nil {
+		if err := validation.Enum(path+"MinimumProtocolVersion", (*v.MinimumProtocolVersion), enum17); err != nil {
+			return err
+		}
+	}
+	if v.SSLSupportMethod != nil {
+		if err := validation.Enum(path+"SSLSupportMethod", (*v.SSLSupportMethod), enum18); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ViewerMtlsConfig) Validate(path string) error {
+	if v.Mode != nil {
+		if err := validation.Enum(path+"Mode", (*v.Mode), enum19); err != nil {
+			return err
+		}
+	}
+	if v.TrustStoreConfig != nil {
+		if err := (*v.TrustStoreConfig).Validate(path + "TrustStoreConfig" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *VpcOriginConfig) Validate(path string) error {
+	if err := validation.Required(path+"VpcOriginId", v.VpcOriginId != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 type API interface {
 	CreateDistribution(context.Context, *CreateDistributionRequest) (*CreateDistributionResult, error)
 	CreateDistributionWithTags(context.Context, *CreateDistributionWithTagsRequest) (*CreateDistributionWithTagsResult, error)
@@ -665,57 +2097,185 @@ type API interface {
 	ListOriginAccessControls(context.Context, *ListOriginAccessControlsRequest) (*ListOriginAccessControlsResult, error)
 	UpdateDistribution(context.Context, *UpdateDistributionRequest) (*UpdateDistributionResult, error)
 	UpdateOriginAccessControl(context.Context, *UpdateOriginAccessControlRequest) (*UpdateOriginAccessControlResult, error)
+	CreateKeyValueStore(context.Context, *CreateKeyValueStoreRequest) (*CreateKeyValueStoreResult, error)
+	DescribeKeyValueStore(context.Context, *DescribeKeyValueStoreRequest) (*DescribeKeyValueStoreResult, error)
+	ListKeyValueStores(context.Context, *ListKeyValueStoresRequest) (*ListKeyValueStoresResult, error)
+	UpdateKeyValueStore(context.Context, *UpdateKeyValueStoreRequest) (*UpdateKeyValueStoreResult, error)
+	DeleteKeyValueStore(context.Context, *DeleteKeyValueStoreRequest) (*DeleteKeyValueStoreOutput, error)
+	TagResource(context.Context, *TagResourceRequest) (*TagResourceOutput, error)
+	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceOutput, error)
+	ListTagsForResource(context.Context, *ListTagsForResourceRequest) (*ListTagsForResourceResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "cloudfront", SigningName: "cloudfront", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "cloudfront", TargetPrefix: "", QueryCompatible: false, WrappedErrors: true, XMLNamespace: "http://cloudfront.amazonaws.com/doc/2020-05-31/", Protocols: []string{"restXml"}, Errors: map[string]catalog.ErrorBinding{"AccessDenied": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 403}, "BatchTooLarge": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 413}, "CNAMEAlreadyExists": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "ContinuousDeploymentPolicyInUse": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "DistributionAlreadyExists": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "DistributionNotDisabled": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "EntityLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "EntityNotFound": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "IllegalFieldLevelEncryptionConfigAssociationWithCacheBehavior": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "IllegalOriginAccessConfiguration": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "IllegalUpdate": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InconsistentQuantities": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidArgument": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidDefaultRootObject": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidDomainNameForOriginAccessControl": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidErrorCode": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidForwardCookies": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidFunctionAssociation": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidGeoRestrictionParameter": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidHeadersForS3Origin": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidIfMatchVersion": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidLambdaFunctionAssociation": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidLocationCode": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidMinimumProtocolVersion": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidOrigin": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidOriginAccessControl": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidOriginAccessIdentity": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidOriginKeepaliveTimeout": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidOriginReadTimeout": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidProtocolSettings": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidQueryStringParameters": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidRelativePath": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidRequiredProtocol": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidResponseCode": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidTTLOrder": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidTagging": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidViewerCertificate": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidWebACLId": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "MissingBody": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "NoSuchCachePolicy": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchContinuousDeploymentPolicy": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchDistribution": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchFieldLevelEncryptionConfig": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchInvalidation": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchOrigin": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchOriginAccessControl": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchOriginRequestPolicy": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchRealtimeLogConfig": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchResponseHeadersPolicy": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "OriginAccessControlAlreadyExists": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "OriginAccessControlInUse": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "PreconditionFailed": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 412}, "RealtimeLogConfigOwnerMismatch": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 401}, "ResourceInUse": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "StagingDistributionInUse": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "TooManyCacheBehaviors": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyCertificates": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyCookieNamesInWhiteList": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionCNAMEs": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributions": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionsAssociatedToCachePolicy": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionsAssociatedToFieldLevelEncryptionConfig": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionsAssociatedToKeyGroup": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionsAssociatedToOriginAccessControl": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionsAssociatedToOriginRequestPolicy": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionsAssociatedToResponseHeadersPolicy": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionsWithFunctionAssociations": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionsWithLambdaAssociations": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionsWithSingleFunctionARN": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyFunctionAssociations": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyHeadersInForwardedValues": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyInvalidationsInProgress": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyKeyGroupsAssociatedToDistribution": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyLambdaFunctionAssociations": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyOriginAccessControls": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyOriginCustomHeaders": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyOriginGroupsPerDistribution": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyOrigins": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyQueryStringParameters": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyTrustedSigners": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TrustedKeyGroupDoesNotExist": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TrustedSignerDoesNotExist": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "cloudfront", SigningName: "cloudfront", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "cloudfront", TargetPrefix: "", QueryCompatible: false, WrappedErrors: true, XMLNamespace: "http://cloudfront.amazonaws.com/doc/2020-05-31/", Protocols: []string{"restXml"}, Errors: map[string]catalog.ErrorBinding{"AccessDenied": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 403}, "BatchTooLarge": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 413}, "CNAMEAlreadyExists": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "CannotDeleteEntityWhileInUse": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "ContinuousDeploymentPolicyInUse": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "DistributionAlreadyExists": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "DistributionNotDisabled": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "EntityAlreadyExists": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "EntityLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "EntityNotFound": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "EntitySizeLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 413}, "IllegalFieldLevelEncryptionConfigAssociationWithCacheBehavior": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "IllegalOriginAccessConfiguration": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "IllegalUpdate": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InconsistentQuantities": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidArgument": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidDefaultRootObject": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidDomainNameForOriginAccessControl": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidErrorCode": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidForwardCookies": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidFunctionAssociation": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidGeoRestrictionParameter": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidHeadersForS3Origin": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidIfMatchVersion": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidLambdaFunctionAssociation": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidLocationCode": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidMinimumProtocolVersion": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidOrigin": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidOriginAccessControl": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidOriginAccessIdentity": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidOriginKeepaliveTimeout": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidOriginReadTimeout": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidProtocolSettings": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidQueryStringParameters": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidRelativePath": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidRequiredProtocol": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidResponseCode": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidTTLOrder": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidTagging": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidViewerCertificate": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidWebACLId": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "MissingBody": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "NoSuchCachePolicy": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchContinuousDeploymentPolicy": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchDistribution": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchFieldLevelEncryptionConfig": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchInvalidation": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchOrigin": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchOriginAccessControl": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchOriginRequestPolicy": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchRealtimeLogConfig": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchResource": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchResponseHeadersPolicy": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "OriginAccessControlAlreadyExists": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "OriginAccessControlInUse": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "PreconditionFailed": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 412}, "RealtimeLogConfigOwnerMismatch": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 401}, "ResourceInUse": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "StagingDistributionInUse": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "TooManyCacheBehaviors": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyCertificates": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyCookieNamesInWhiteList": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionCNAMEs": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributions": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionsAssociatedToCachePolicy": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionsAssociatedToFieldLevelEncryptionConfig": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionsAssociatedToKeyGroup": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionsAssociatedToOriginAccessControl": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionsAssociatedToOriginRequestPolicy": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionsAssociatedToResponseHeadersPolicy": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionsWithFunctionAssociations": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionsWithLambdaAssociations": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyDistributionsWithSingleFunctionARN": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyFunctionAssociations": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyHeadersInForwardedValues": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyInvalidationsInProgress": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyKeyGroupsAssociatedToDistribution": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyLambdaFunctionAssociations": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyOriginAccessControls": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyOriginCustomHeaders": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyOriginGroupsPerDistribution": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyOrigins": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyQueryStringParameters": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TooManyTrustedSigners": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TrustedKeyGroupDoesNotExist": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "TrustedSignerDoesNotExist": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "UnsupportedOperation": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateDistribution": {Name: "CreateDistribution", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "cloudfront:CreateDistribution", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"DistributionConfig": catalog.MemberBinding{Location: "payload", Name: "DistributionConfig", Format: ""}}, Output: map[string]catalog.MemberBinding{"Distribution": catalog.MemberBinding{Location: "payload", Name: "Distribution", Format: ""}, "ETag": catalog.MemberBinding{Location: "header", Name: "ETag", Format: ""}, "Location": catalog.MemberBinding{Location: "header", Name: "Location", Format: ""}}, Method: "POST", URI: "/2020-05-31/distribution", Target: "", Version: "", ContentType: "application/xml", StatusCode: 201}}, NewInput: func() any { return &CreateDistributionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateDistribution(ctx, input.(*CreateDistributionRequest))
+			in := input.(*CreateDistributionRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.CreateDistribution(ctx, in)
 		}},
 		"CreateDistributionWithTags": {Name: "CreateDistributionWithTags", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "cloudfront:CreateDistributionWithTags", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"DistributionConfigWithTags": catalog.MemberBinding{Location: "payload", Name: "DistributionConfigWithTags", Format: ""}}, Output: map[string]catalog.MemberBinding{"Distribution": catalog.MemberBinding{Location: "payload", Name: "Distribution", Format: ""}, "ETag": catalog.MemberBinding{Location: "header", Name: "ETag", Format: ""}, "Location": catalog.MemberBinding{Location: "header", Name: "Location", Format: ""}}, Method: "POST", URI: "/2020-05-31/distribution?WithTags", Target: "", Version: "", ContentType: "application/xml", StatusCode: 201}}, NewInput: func() any { return &CreateDistributionWithTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateDistributionWithTags(ctx, input.(*CreateDistributionWithTagsRequest))
+			in := input.(*CreateDistributionWithTagsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.CreateDistributionWithTags(ctx, in)
 		}},
 		"CreateInvalidation": {Name: "CreateInvalidation", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudfront:CreateInvalidation", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"DistributionId": catalog.MemberBinding{Location: "label", Name: "DistributionId", Format: ""}, "InvalidationBatch": catalog.MemberBinding{Location: "payload", Name: "InvalidationBatch", Format: ""}}, Output: map[string]catalog.MemberBinding{"Invalidation": catalog.MemberBinding{Location: "payload", Name: "Invalidation", Format: ""}, "Location": catalog.MemberBinding{Location: "header", Name: "Location", Format: ""}}, Method: "POST", URI: "/2020-05-31/distribution/{DistributionId}/invalidation", Target: "", Version: "", ContentType: "application/xml", StatusCode: 201}}, NewInput: func() any { return &CreateInvalidationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateInvalidation(ctx, input.(*CreateInvalidationRequest))
+			in := input.(*CreateInvalidationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.CreateInvalidation(ctx, in)
 		}},
 		"CreateOriginAccessControl": {Name: "CreateOriginAccessControl", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudfront:CreateOriginAccessControl", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"OriginAccessControlConfig": catalog.MemberBinding{Location: "payload", Name: "OriginAccessControlConfig", Format: ""}}, Output: map[string]catalog.MemberBinding{"ETag": catalog.MemberBinding{Location: "header", Name: "ETag", Format: ""}, "Location": catalog.MemberBinding{Location: "header", Name: "Location", Format: ""}, "OriginAccessControl": catalog.MemberBinding{Location: "payload", Name: "OriginAccessControl", Format: ""}}, Method: "POST", URI: "/2020-05-31/origin-access-control", Target: "", Version: "", ContentType: "application/xml", StatusCode: 201}}, NewInput: func() any { return &CreateOriginAccessControlRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateOriginAccessControl(ctx, input.(*CreateOriginAccessControlRequest))
+			in := input.(*CreateOriginAccessControlRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.CreateOriginAccessControl(ctx, in)
 		}},
 		"DeleteDistribution": {Name: "DeleteDistribution", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "cloudfront:DeleteDistribution", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Id": catalog.MemberBinding{Location: "label", Name: "Id", Format: ""}, "IfMatch": catalog.MemberBinding{Location: "header", Name: "If-Match", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/2020-05-31/distribution/{Id}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteDistributionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteDistribution(ctx, input.(*DeleteDistributionRequest))
+			in := input.(*DeleteDistributionRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.DeleteDistribution(ctx, in)
 		}},
 		"DeleteOriginAccessControl": {Name: "DeleteOriginAccessControl", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "cloudfront:DeleteOriginAccessControl", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Id": catalog.MemberBinding{Location: "label", Name: "Id", Format: ""}, "IfMatch": catalog.MemberBinding{Location: "header", Name: "If-Match", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/2020-05-31/origin-access-control/{Id}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteOriginAccessControlRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteOriginAccessControl(ctx, input.(*DeleteOriginAccessControlRequest))
+			in := input.(*DeleteOriginAccessControlRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.DeleteOriginAccessControl(ctx, in)
 		}},
 		"GetDistribution": {Name: "GetDistribution", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "cloudfront:GetDistribution", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Id": catalog.MemberBinding{Location: "label", Name: "Id", Format: ""}}, Output: map[string]catalog.MemberBinding{"Distribution": catalog.MemberBinding{Location: "payload", Name: "Distribution", Format: ""}, "ETag": catalog.MemberBinding{Location: "header", Name: "ETag", Format: ""}}, Method: "GET", URI: "/2020-05-31/distribution/{Id}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetDistributionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.GetDistribution(ctx, input.(*GetDistributionRequest))
+			in := input.(*GetDistributionRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.GetDistribution(ctx, in)
 		}},
 		"GetDistributionConfig": {Name: "GetDistributionConfig", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "cloudfront:GetDistributionConfig", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Id": catalog.MemberBinding{Location: "label", Name: "Id", Format: ""}}, Output: map[string]catalog.MemberBinding{"DistributionConfig": catalog.MemberBinding{Location: "payload", Name: "DistributionConfig", Format: ""}, "ETag": catalog.MemberBinding{Location: "header", Name: "ETag", Format: ""}}, Method: "GET", URI: "/2020-05-31/distribution/{Id}/config", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetDistributionConfigRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.GetDistributionConfig(ctx, input.(*GetDistributionConfigRequest))
+			in := input.(*GetDistributionConfigRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.GetDistributionConfig(ctx, in)
 		}},
 		"GetInvalidation": {Name: "GetInvalidation", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudfront:GetInvalidation", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"DistributionId": catalog.MemberBinding{Location: "label", Name: "DistributionId", Format: ""}, "Id": catalog.MemberBinding{Location: "label", Name: "Id", Format: ""}}, Output: map[string]catalog.MemberBinding{"Invalidation": catalog.MemberBinding{Location: "payload", Name: "Invalidation", Format: ""}}, Method: "GET", URI: "/2020-05-31/distribution/{DistributionId}/invalidation/{Id}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetInvalidationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.GetInvalidation(ctx, input.(*GetInvalidationRequest))
+			in := input.(*GetInvalidationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.GetInvalidation(ctx, in)
 		}},
 		"GetOriginAccessControl": {Name: "GetOriginAccessControl", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudfront:GetOriginAccessControl", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Id": catalog.MemberBinding{Location: "label", Name: "Id", Format: ""}}, Output: map[string]catalog.MemberBinding{"ETag": catalog.MemberBinding{Location: "header", Name: "ETag", Format: ""}, "OriginAccessControl": catalog.MemberBinding{Location: "payload", Name: "OriginAccessControl", Format: ""}}, Method: "GET", URI: "/2020-05-31/origin-access-control/{Id}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetOriginAccessControlRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.GetOriginAccessControl(ctx, input.(*GetOriginAccessControlRequest))
+			in := input.(*GetOriginAccessControlRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.GetOriginAccessControl(ctx, in)
 		}},
 		"GetOriginAccessControlConfig": {Name: "GetOriginAccessControlConfig", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudfront:GetOriginAccessControlConfig", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Id": catalog.MemberBinding{Location: "label", Name: "Id", Format: ""}}, Output: map[string]catalog.MemberBinding{"ETag": catalog.MemberBinding{Location: "header", Name: "ETag", Format: ""}, "OriginAccessControlConfig": catalog.MemberBinding{Location: "payload", Name: "OriginAccessControlConfig", Format: ""}}, Method: "GET", URI: "/2020-05-31/origin-access-control/{Id}/config", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetOriginAccessControlConfigRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.GetOriginAccessControlConfig(ctx, input.(*GetOriginAccessControlConfigRequest))
+			in := input.(*GetOriginAccessControlConfigRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.GetOriginAccessControlConfig(ctx, in)
 		}},
 		"ListDistributions": {Name: "ListDistributions", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "cloudfront:ListDistributions", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Marker": catalog.MemberBinding{Location: "query", Name: "Marker", Format: ""}, "MaxItems": catalog.MemberBinding{Location: "query", Name: "MaxItems", Format: ""}}, Output: map[string]catalog.MemberBinding{"DistributionList": catalog.MemberBinding{Location: "payload", Name: "DistributionList", Format: ""}}, Method: "GET", URI: "/2020-05-31/distribution", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &ListDistributionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListDistributions(ctx, input.(*ListDistributionsRequest))
+			in := input.(*ListDistributionsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.ListDistributions(ctx, in)
 		}},
 		"ListInvalidations": {Name: "ListInvalidations", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudfront:ListInvalidations", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"DistributionId": catalog.MemberBinding{Location: "label", Name: "DistributionId", Format: ""}, "Marker": catalog.MemberBinding{Location: "query", Name: "Marker", Format: ""}, "MaxItems": catalog.MemberBinding{Location: "query", Name: "MaxItems", Format: ""}}, Output: map[string]catalog.MemberBinding{"InvalidationList": catalog.MemberBinding{Location: "payload", Name: "InvalidationList", Format: ""}}, Method: "GET", URI: "/2020-05-31/distribution/{DistributionId}/invalidation", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &ListInvalidationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListInvalidations(ctx, input.(*ListInvalidationsRequest))
+			in := input.(*ListInvalidationsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.ListInvalidations(ctx, in)
 		}},
 		"ListOriginAccessControls": {Name: "ListOriginAccessControls", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudfront:ListOriginAccessControls", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Marker": catalog.MemberBinding{Location: "query", Name: "Marker", Format: ""}, "MaxItems": catalog.MemberBinding{Location: "query", Name: "MaxItems", Format: ""}}, Output: map[string]catalog.MemberBinding{"OriginAccessControlList": catalog.MemberBinding{Location: "payload", Name: "OriginAccessControlList", Format: ""}}, Method: "GET", URI: "/2020-05-31/origin-access-control", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &ListOriginAccessControlsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListOriginAccessControls(ctx, input.(*ListOriginAccessControlsRequest))
+			in := input.(*ListOriginAccessControlsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.ListOriginAccessControls(ctx, in)
 		}},
 		"UpdateDistribution": {Name: "UpdateDistribution", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "cloudfront:UpdateDistribution", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"DistributionConfig": catalog.MemberBinding{Location: "payload", Name: "DistributionConfig", Format: ""}, "Id": catalog.MemberBinding{Location: "label", Name: "Id", Format: ""}, "IfMatch": catalog.MemberBinding{Location: "header", Name: "If-Match", Format: ""}}, Output: map[string]catalog.MemberBinding{"Distribution": catalog.MemberBinding{Location: "payload", Name: "Distribution", Format: ""}, "ETag": catalog.MemberBinding{Location: "header", Name: "ETag", Format: ""}}, Method: "PUT", URI: "/2020-05-31/distribution/{Id}/config", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &UpdateDistributionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UpdateDistribution(ctx, input.(*UpdateDistributionRequest))
+			in := input.(*UpdateDistributionRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.UpdateDistribution(ctx, in)
 		}},
 		"UpdateOriginAccessControl": {Name: "UpdateOriginAccessControl", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudfront:UpdateOriginAccessControl", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Id": catalog.MemberBinding{Location: "label", Name: "Id", Format: ""}, "IfMatch": catalog.MemberBinding{Location: "header", Name: "If-Match", Format: ""}, "OriginAccessControlConfig": catalog.MemberBinding{Location: "payload", Name: "OriginAccessControlConfig", Format: ""}}, Output: map[string]catalog.MemberBinding{"ETag": catalog.MemberBinding{Location: "header", Name: "ETag", Format: ""}, "OriginAccessControl": catalog.MemberBinding{Location: "payload", Name: "OriginAccessControl", Format: ""}}, Method: "PUT", URI: "/2020-05-31/origin-access-control/{Id}/config", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &UpdateOriginAccessControlRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UpdateOriginAccessControl(ctx, input.(*UpdateOriginAccessControlRequest))
+			in := input.(*UpdateOriginAccessControlRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.UpdateOriginAccessControl(ctx, in)
+		}},
+		"CreateKeyValueStore": {Name: "CreateKeyValueStore", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudfront:CreateKeyValueStore", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Comment": catalog.MemberBinding{Location: "document", Name: "Comment", Format: ""}, "ImportSource": catalog.MemberBinding{Location: "document", Name: "ImportSource", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "Name", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Output: map[string]catalog.MemberBinding{"ETag": catalog.MemberBinding{Location: "header", Name: "ETag", Format: ""}, "KeyValueStore": catalog.MemberBinding{Location: "payload", Name: "KeyValueStore", Format: ""}, "Location": catalog.MemberBinding{Location: "header", Name: "Location", Format: ""}}, Method: "POST", URI: "/2020-05-31/key-value-store", Target: "", Version: "", ContentType: "application/xml", StatusCode: 201}}, NewInput: func() any { return &CreateKeyValueStoreRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*CreateKeyValueStoreRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.CreateKeyValueStore(ctx, in)
+		}},
+		"DescribeKeyValueStore": {Name: "DescribeKeyValueStore", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudfront:DescribeKeyValueStore", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Name": catalog.MemberBinding{Location: "label", Name: "Name", Format: ""}}, Output: map[string]catalog.MemberBinding{"ETag": catalog.MemberBinding{Location: "header", Name: "ETag", Format: ""}, "KeyValueStore": catalog.MemberBinding{Location: "payload", Name: "KeyValueStore", Format: ""}}, Method: "GET", URI: "/2020-05-31/key-value-store/{Name}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &DescribeKeyValueStoreRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*DescribeKeyValueStoreRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.DescribeKeyValueStore(ctx, in)
+		}},
+		"ListKeyValueStores": {Name: "ListKeyValueStores", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudfront:ListKeyValueStores", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Marker": catalog.MemberBinding{Location: "query", Name: "Marker", Format: ""}, "MaxItems": catalog.MemberBinding{Location: "query", Name: "MaxItems", Format: ""}, "Status": catalog.MemberBinding{Location: "query", Name: "Status", Format: ""}}, Output: map[string]catalog.MemberBinding{"KeyValueStoreList": catalog.MemberBinding{Location: "payload", Name: "KeyValueStoreList", Format: ""}}, Method: "GET", URI: "/2020-05-31/key-value-store", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &ListKeyValueStoresRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListKeyValueStoresRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.ListKeyValueStores(ctx, in)
+		}},
+		"UpdateKeyValueStore": {Name: "UpdateKeyValueStore", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudfront:UpdateKeyValueStore", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Comment": catalog.MemberBinding{Location: "document", Name: "Comment", Format: ""}, "IfMatch": catalog.MemberBinding{Location: "header", Name: "If-Match", Format: ""}, "Name": catalog.MemberBinding{Location: "label", Name: "Name", Format: ""}}, Output: map[string]catalog.MemberBinding{"ETag": catalog.MemberBinding{Location: "header", Name: "ETag", Format: ""}, "KeyValueStore": catalog.MemberBinding{Location: "payload", Name: "KeyValueStore", Format: ""}}, Method: "PUT", URI: "/2020-05-31/key-value-store/{Name}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &UpdateKeyValueStoreRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*UpdateKeyValueStoreRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.UpdateKeyValueStore(ctx, in)
+		}},
+		"DeleteKeyValueStore": {Name: "DeleteKeyValueStore", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "cloudfront:DeleteKeyValueStore", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"IfMatch": catalog.MemberBinding{Location: "header", Name: "If-Match", Format: ""}, "Name": catalog.MemberBinding{Location: "label", Name: "Name", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/2020-05-31/key-value-store/{Name}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteKeyValueStoreRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*DeleteKeyValueStoreRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.DeleteKeyValueStore(ctx, in)
+		}},
+		"TagResource": {Name: "TagResource", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "cloudfront:TagResource", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Resource": catalog.MemberBinding{Location: "query", Name: "Resource", Format: ""}, "Tags": catalog.MemberBinding{Location: "payload", Name: "Tags", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/2020-05-31/tagging?Operation=Tag", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &TagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*TagResourceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.TagResource(ctx, in)
+		}},
+		"UntagResource": {Name: "UntagResource", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "cloudfront:UntagResource", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Resource": catalog.MemberBinding{Location: "query", Name: "Resource", Format: ""}, "TagKeys": catalog.MemberBinding{Location: "payload", Name: "TagKeys", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/2020-05-31/tagging?Operation=Untag", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &UntagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*UntagResourceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.UntagResource(ctx, in)
+		}},
+		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudfront:ListTagsForResource", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Resource": catalog.MemberBinding{Location: "query", Name: "Resource", Format: ""}}, Output: map[string]catalog.MemberBinding{"Tags": catalog.MemberBinding{Location: "payload", Name: "Tags", Format: ""}}, Method: "GET", URI: "/2020-05-31/tagging", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListTagsForResourceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidArgument", err.Error())
+			}
+			return api.ListTagsForResource(ctx, in)
 		}},
 	}}
 }

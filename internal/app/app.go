@@ -466,6 +466,7 @@ func build(
 
 	dns := route53.New(store)
 	cdn := cloudfront.New(store)
+	cdn.UseS3(buckets)
 	timers := scheduler.New(store, logger)
 	a.onStop(timers.Stop)
 	scaling := autoscaling.New(store, logger)

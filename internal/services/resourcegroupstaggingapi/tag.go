@@ -424,6 +424,9 @@ var taggers = map[string]tagger{
 	"lambda":  resourceOperations("lambda", "Resource", plain),
 	"logs":    resourceOperations("logs", "ResourceArn", plain),
 	"pipes":   resourceOperations("pipes", "ResourceArn", plain),
+	"cloudfront": operations("cloudfront", "TagResource", "UntagResource", byARN("Resource"), "Tags",
+		func(tags map[string]string) any { return map[string]any{"Items": pairs(tags)} }, "TagKeys",
+		func(keys []string) any { return map[string]any{"Items": names(keys)} }),
 	"route53": operations(
 		"route53",
 		"ChangeTagsForResource",

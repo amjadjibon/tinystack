@@ -109,6 +109,7 @@ var namespaces = map[string]string{
 // typeNames are the CloudFormation names of the inventory types whose name is
 // not the inventory type in PascalCase, by "service/type".
 var typeNames = map[string]string{
+	"cloudfront/key-value-store":             "KeyValueStore",
 	"bedrockagent/agent":                     "Agent",
 	"bedrockagent/alias":                     "AgentAlias",
 	"bedrockagent/knowledge-base":            "KnowledgeBase",
