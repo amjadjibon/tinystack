@@ -21,6 +21,7 @@ var namespaces = map[string]string{
 	"resourceexplorer2":         "ResourceExplorer2",
 	"apprunner":                 "AppRunner",
 	"amplify":                   "Amplify",
+	"bedrockagent":              "Bedrock",
 	"bedrock":                   "Bedrock",
 	"elasticbeanstalk":          "ElasticBeanstalk",
 	"signer":                    "Signer",
@@ -107,6 +108,10 @@ var namespaces = map[string]string{
 // typeNames are the CloudFormation names of the inventory types whose name is
 // not the inventory type in PascalCase, by "service/type".
 var typeNames = map[string]string{
+	"bedrockagent/agent":                     "Agent",
+	"bedrockagent/alias":                     "AgentAlias",
+	"bedrockagent/knowledge-base":            "KnowledgeBase",
+	"bedrockagent/datasource":                "DataSource",
 	"glue/classifier":                        "Classifier",
 	"glue/crawler":                           "Crawler",
 	"glue/job":                               "Job",

@@ -238,6 +238,16 @@ type re2Pattern struct {
 
 // re2Patterns maps such model patterns to their RE2 renderings.
 var re2Patterns = map[string]re2Pattern{
+	// The pinned model writes /d where \d is meant, rejecting real Bedrock ARNs (bedrock-agent TaggableResourcesArn).
+	`(^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:(agent|agent-alias|knowledge-base|flow|prompt)` +
+		`/[A-Z0-9]{10}(?:/[A-Z0-9]{10})?$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:flow/([A-Z0-9]` +
+		`{10})/alias/([A-Z0-9]{10})$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:prompt/([A-Z0-9]{10` +
+		`})?(?::/d+)?$)`: {
+		match: `(^arn:aws:bedrock:[a-zA-Z0-9-]+:\d{12}:(agent|agent-alias|knowledge-base|flow|prompt)` +
+			`/[A-Z0-9]{10}(?:/[A-Z0-9]{10})?$|^arn:aws:bedrock:[a-zA-Z0-9-]+:\d{12}:flow/([A-Z0-9]` +
+			`{10})/alias/([A-Z0-9]{10})$|^arn:aws:bedrock:[a-zA-Z0-9-]+:\d{12}:prompt/([A-Z0-9]{10` +
+			`})?(?::\d+)?$)`,
+	},
 	// Step Functions alias names require at least one nonnumeric character.
 	`^(?=.*[a-zA-Z_\-\.])[a-zA-Z0-9_\-\.]+$`: {
 		match: `^[a-zA-Z0-9_.-]+$`, reject: `^[0-9]+$`,

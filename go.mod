@@ -4,7 +4,7 @@ go 1.27
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.47.4
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.22
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.24
 	github.com/aws/aws-sdk-go-v2/credentials v1.20.9
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.3
 	github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager v0.4.16
@@ -27,6 +27,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/backup v1.69.1
 	github.com/aws/aws-sdk-go-v2/service/batch v1.78.3
 	github.com/aws/aws-sdk-go-v2/service/bedrock v1.73.4
+	github.com/aws/aws-sdk-go-v2/service/bedrockagent v1.69.1
+	github.com/aws/aws-sdk-go-v2/service/bedrockagentruntime v1.65.2
 	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.63.4
 	github.com/aws/aws-sdk-go-v2/service/budgets v1.53.1
 	github.com/aws/aws-sdk-go-v2/service/cloudcontrol v1.38.4

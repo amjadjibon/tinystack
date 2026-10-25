@@ -486,6 +486,14 @@
     "transcribe": {
       "path": "codegen/sdk-codegen/aws-models/transcribe.json",
       "sha256": "d530e27cd85dfce6fc14e96a0a7174a405e907518a3596cd18e957e292f451b7"
+    },
+    "bedrockagent": {
+      "path": "codegen/sdk-codegen/aws-models/bedrock-agent.json",
+      "sha256": "7d4b8ff0c8cfa3c49e9c9520fa0bf853d3560666d96e6a8db246700e584706b1"
+    },
+    "bedrockagentruntime": {
+      "path": "codegen/sdk-codegen/aws-models/bedrock-agent-runtime.json",
+      "sha256": "77fa0f809a1abdad81ebccc01cd681bd62b9e037ec654e81fe288d73a8a5566f"
     }
   }
 }

@@ -41370,5 +41370,853 @@
         "Tags"
       ]
     }
+  },
+  "bedrockagent": {
+    "validation": {
+      "code": "ValidationException"
+    },
+    "operations": [
+      "CreateAgent",
+      "GetAgent",
+      "ListAgents",
+      "UpdateAgent",
+      "DeleteAgent",
+      "PrepareAgent",
+      "CreateAgentActionGroup",
+      "GetAgentActionGroup",
+      "ListAgentActionGroups",
+      "UpdateAgentActionGroup",
+      "DeleteAgentActionGroup",
+      "CreateAgentAlias",
+      "GetAgentAlias",
+      "ListAgentAliases",
+      "UpdateAgentAlias",
+      "DeleteAgentAlias",
+      "GetAgentVersion",
+      "ListAgentVersions",
+      "DeleteAgentVersion",
+      "CreateKnowledgeBase",
+      "GetKnowledgeBase",
+      "ListKnowledgeBases",
+      "UpdateKnowledgeBase",
+      "DeleteKnowledgeBase",
+      "CreateDataSource",
+      "GetDataSource",
+      "ListDataSources",
+      "UpdateDataSource",
+      "DeleteDataSource",
+      "AssociateAgentKnowledgeBase",
+      "GetAgentKnowledgeBase",
+      "ListAgentKnowledgeBases",
+      "UpdateAgentKnowledgeBase",
+      "DisassociateAgentKnowledgeBase",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateAgentRequest": [
+        "agentName",
+        "clientToken",
+        "instruction",
+        "foundationModel",
+        "description",
+        "idleSessionTTLInSeconds",
+        "agentResourceRoleArn",
+        "customerEncryptionKeyArn",
+        "tags",
+        "promptOverrideConfiguration",
+        "guardrailConfiguration",
+        "memoryConfiguration",
+        "agentCollaboration"
+      ],
+      "CustomOrchestration": [
+        "executor"
+      ],
+      "OrchestrationExecutor": [
+        "lambda"
+      ],
+      "PromptOverrideConfiguration": [
+        "promptConfigurations",
+        "overrideLambda"
+      ],
+      "PromptConfiguration": [
+        "promptType",
+        "promptCreationMode",
+        "promptState",
+        "basePromptTemplate",
+        "inferenceConfiguration",
+        "parserMode",
+        "foundationModel",
+        "additionalModelRequestFields"
+      ],
+      "InferenceConfiguration": [
+        "temperature",
+        "topP",
+        "topK",
+        "maximumLength",
+        "stopSequences"
+      ],
+      "GuardrailConfiguration": [
+        "guardrailIdentifier",
+        "guardrailVersion"
+      ],
+      "MemoryConfiguration": [
+        "enabledMemoryTypes",
+        "storageDays",
+        "sessionSummaryConfiguration"
+      ],
+      "SessionSummaryConfiguration": [
+        "maxRecentSessions"
+      ],
+      "CreateAgentResponse": [
+        "agent"
+      ],
+      "Agent": [
+        "agentId",
+        "agentName",
+        "agentArn",
+        "agentVersion",
+        "clientToken",
+        "instruction",
+        "agentStatus",
+        "foundationModel",
+        "description",
+        "orchestrationType",
+        "customOrchestration",
+        "idleSessionTTLInSeconds",
+        "agentResourceRoleArn",
+        "customerEncryptionKeyArn",
+        "createdAt",
+        "updatedAt",
+        "preparedAt",
+        "failureReasons",
+        "recommendedActions",
+        "promptOverrideConfiguration",
+        "guardrailConfiguration",
+        "memoryConfiguration",
+        "agentCollaboration"
+      ],
+      "GetAgentRequest": [
+        "agentId"
+      ],
+      "GetAgentResponse": [
+        "agent"
+      ],
+      "ListAgentsRequest": [
+        "maxResults",
+        "nextToken"
+      ],
+      "ListAgentsResponse": [
+        "agentSummaries",
+        "nextToken"
+      ],
+      "AgentSummary": [
+        "agentId",
+        "agentName",
+        "agentStatus",
+        "description",
+        "updatedAt",
+        "latestAgentVersion",
+        "guardrailConfiguration"
+      ],
+      "UpdateAgentRequest": [
+        "agentId",
+        "agentName",
+        "instruction",
+        "foundationModel",
+        "description",
+        "idleSessionTTLInSeconds",
+        "agentResourceRoleArn",
+        "customerEncryptionKeyArn",
+        "promptOverrideConfiguration",
+        "guardrailConfiguration",
+        "memoryConfiguration",
+        "agentCollaboration"
+      ],
+      "UpdateAgentResponse": [
+        "agent"
+      ],
+      "DeleteAgentRequest": [
+        "agentId",
+        "skipResourceInUseCheck"
+      ],
+      "DeleteAgentResponse": [
+        "agentId",
+        "agentStatus"
+      ],
+      "PrepareAgentRequest": [
+        "agentId"
+      ],
+      "PrepareAgentResponse": [
+        "agentId",
+        "agentStatus",
+        "agentVersion",
+        "preparedAt"
+      ],
+      "CreateAgentActionGroupRequest": [
+        "agentId",
+        "agentVersion",
+        "actionGroupName",
+        "clientToken",
+        "description",
+        "parentActionGroupSignature",
+        "parentActionGroupSignatureParams",
+        "actionGroupExecutor",
+        "apiSchema",
+        "actionGroupState",
+        "functionSchema"
+      ],
+      "ActionGroupExecutor": [
+        "lambda",
+        "customControl"
+      ],
+      "APISchema": [
+        "s3",
+        "payload"
+      ],
+      "S3Identifier": [
+        "s3BucketName",
+        "s3ObjectKey"
+      ],
+      "FunctionSchema": [
+        "functions"
+      ],
+      "Function": [
+        "name",
+        "description",
+        "parameters",
+        "requireConfirmation"
+      ],
+      "ParameterDetail": [
+        "description",
+        "type",
+        "required"
+      ],
+      "CreateAgentActionGroupResponse": [
+        "agentActionGroup"
+      ],
+      "AgentActionGroup": [
+        "agentId",
+        "agentVersion",
+        "actionGroupId",
+        "actionGroupName",
+        "clientToken",
+        "description",
+        "createdAt",
+        "updatedAt",
+        "parentActionSignature",
+        "parentActionGroupSignatureParams",
+        "actionGroupExecutor",
+        "apiSchema",
+        "functionSchema",
+        "actionGroupState"
+      ],
+      "GetAgentActionGroupRequest": [
+        "agentId",
+        "agentVersion",
+        "actionGroupId"
+      ],
+      "GetAgentActionGroupResponse": [
+        "agentActionGroup"
+      ],
+      "ListAgentActionGroupsRequest": [
+        "agentId",
+        "agentVersion",
+        "maxResults",
+        "nextToken"
+      ],
+      "ListAgentActionGroupsResponse": [
+        "actionGroupSummaries",
+        "nextToken"
+      ],
+      "ActionGroupSummary": [
+        "actionGroupId",
+        "actionGroupName",
+        "actionGroupState",
+        "description",
+        "updatedAt"
+      ],
+      "UpdateAgentActionGroupRequest": [
+        "agentId",
+        "agentVersion",
+        "actionGroupId",
+        "actionGroupName",
+        "description",
+        "parentActionGroupSignature",
+        "parentActionGroupSignatureParams",
+        "actionGroupExecutor",
+        "actionGroupState",
+        "apiSchema",
+        "functionSchema"
+      ],
+      "UpdateAgentActionGroupResponse": [
+        "agentActionGroup"
+      ],
+      "DeleteAgentActionGroupRequest": [
+        "agentId",
+        "agentVersion",
+        "actionGroupId",
+        "skipResourceInUseCheck"
+      ],
+      "DeleteAgentActionGroupResponse": [],
+      "CreateAgentAliasRequest": [
+        "agentId",
+        "agentAliasName",
+        "clientToken",
+        "description",
+        "routingConfiguration",
+        "tags"
+      ],
+      "AgentAliasRoutingConfigurationListItem": [
+        "agentVersion",
+        "provisionedThroughput"
+      ],
+      "CreateAgentAliasResponse": [
+        "agentAlias"
+      ],
+      "AgentAlias": [
+        "agentId",
+        "agentAliasId",
+        "agentAliasName",
+        "agentAliasArn",
+        "clientToken",
+        "description",
+        "routingConfiguration",
+        "createdAt",
+        "updatedAt",
+        "agentAliasHistoryEvents",
+        "agentAliasStatus",
+        "failureReasons",
+        "aliasInvocationState"
+      ],
+      "AgentAliasHistoryEvent": [
+        "routingConfiguration",
+        "endDate",
+        "startDate"
+      ],
+      "GetAgentAliasRequest": [
+        "agentId",
+        "agentAliasId"
+      ],
+      "GetAgentAliasResponse": [
+        "agentAlias"
+      ],
+      "ListAgentAliasesRequest": [
+        "agentId",
+        "maxResults",
+        "nextToken"
+      ],
+      "ListAgentAliasesResponse": [
+        "agentAliasSummaries",
+        "nextToken"
+      ],
+      "AgentAliasSummary": [
+        "agentAliasId",
+        "agentAliasName",
+        "description",
+        "routingConfiguration",
+        "agentAliasStatus",
+        "createdAt",
+        "updatedAt",
+        "aliasInvocationState"
+      ],
+      "UpdateAgentAliasRequest": [
+        "agentId",
+        "agentAliasId",
+        "agentAliasName",
+        "description",
+        "routingConfiguration",
+        "aliasInvocationState"
+      ],
+      "UpdateAgentAliasResponse": [
+        "agentAlias"
+      ],
+      "DeleteAgentAliasRequest": [
+        "agentId",
+        "agentAliasId"
+      ],
+      "DeleteAgentAliasResponse": [
+        "agentId",
+        "agentAliasId",
+        "agentAliasStatus"
+      ],
+      "GetAgentVersionRequest": [
+        "agentId",
+        "agentVersion"
+      ],
+      "GetAgentVersionResponse": [
+        "agentVersion"
+      ],
+      "AgentVersion": [
+        "agentId",
+        "agentName",
+        "agentArn",
+        "version",
+        "instruction",
+        "agentStatus",
+        "foundationModel",
+        "description",
+        "idleSessionTTLInSeconds",
+        "agentResourceRoleArn",
+        "customerEncryptionKeyArn",
+        "createdAt",
+        "updatedAt",
+        "failureReasons",
+        "recommendedActions",
+        "promptOverrideConfiguration",
+        "guardrailConfiguration",
+        "memoryConfiguration",
+        "agentCollaboration"
+      ],
+      "ListAgentVersionsRequest": [
+        "agentId",
+        "maxResults",
+        "nextToken"
+      ],
+      "ListAgentVersionsResponse": [
+        "agentVersionSummaries",
+        "nextToken"
+      ],
+      "AgentVersionSummary": [
+        "agentName",
+        "agentStatus",
+        "agentVersion",
+        "createdAt",
+        "updatedAt",
+        "description",
+        "guardrailConfiguration"
+      ],
+      "DeleteAgentVersionRequest": [
+        "agentId",
+        "agentVersion",
+        "skipResourceInUseCheck"
+      ],
+      "DeleteAgentVersionResponse": [
+        "agentId",
+        "agentVersion",
+        "agentStatus"
+      ],
+      "CreateKnowledgeBaseRequest": [
+        "clientToken",
+        "name",
+        "description",
+        "roleArn",
+        "knowledgeBaseConfiguration",
+        "storageConfiguration",
+        "tags"
+      ],
+      "KnowledgeBaseConfiguration": [
+        "type",
+        "vectorKnowledgeBaseConfiguration"
+      ],
+      "VectorKnowledgeBaseConfiguration": [
+        "embeddingModelArn",
+        "embeddingModelConfiguration",
+        "supplementalDataStorageConfiguration"
+      ],
+      "EmbeddingModelConfiguration": [
+        "bedrockEmbeddingModelConfiguration"
+      ],
+      "BedrockEmbeddingModelConfiguration": [
+        "dimensions",
+        "embeddingDataType",
+        "audio",
+        "video",
+        "modelConfiguration"
+      ],
+      "AudioConfiguration": [
+        "segmentationConfiguration"
+      ],
+      "AudioSegmentationConfiguration": [
+        "fixedLengthDuration"
+      ],
+      "VideoConfiguration": [
+        "segmentationConfiguration"
+      ],
+      "VideoSegmentationConfiguration": [
+        "fixedLengthDuration"
+      ],
+      "SupplementalDataStorageConfiguration": [
+        "storageLocations"
+      ],
+      "SupplementalDataStorageLocation": [
+        "type",
+        "s3Location"
+      ],
+      "S3Location": [
+        "uri"
+      ],
+      "ServerSideEncryptionConfiguration": [
+        "kmsKeyArn"
+      ],
+      "StorageConfiguration": [
+        "type",
+        "opensearchServerlessConfiguration",
+        "pineconeConfiguration",
+        "redisEnterpriseCloudConfiguration",
+        "rdsConfiguration",
+        "mongoDbAtlasConfiguration",
+        "neptuneAnalyticsConfiguration",
+        "s3VectorsConfiguration"
+      ],
+      "OpenSearchServerlessConfiguration": [
+        "collectionArn",
+        "vectorIndexName",
+        "fieldMapping"
+      ],
+      "OpenSearchServerlessFieldMapping": [
+        "vectorField",
+        "textField",
+        "metadataField"
+      ],
+      "PineconeConfiguration": [
+        "connectionString",
+        "credentialsSecretArn",
+        "namespace",
+        "fieldMapping"
+      ],
+      "PineconeFieldMapping": [
+        "textField",
+        "metadataField"
+      ],
+      "RedisEnterpriseCloudConfiguration": [
+        "endpoint",
+        "vectorIndexName",
+        "credentialsSecretArn",
+        "fieldMapping"
+      ],
+      "RedisEnterpriseCloudFieldMapping": [
+        "vectorField",
+        "textField",
+        "metadataField"
+      ],
+      "RdsConfiguration": [
+        "resourceArn",
+        "credentialsSecretArn",
+        "databaseName",
+        "tableName",
+        "fieldMapping"
+      ],
+      "RdsFieldMapping": [
+        "primaryKeyField",
+        "vectorField",
+        "textField",
+        "metadataField",
+        "customMetadataField"
+      ],
+      "MongoDbAtlasConfiguration": [
+        "endpoint",
+        "databaseName",
+        "collectionName",
+        "vectorIndexName",
+        "credentialsSecretArn",
+        "fieldMapping",
+        "endpointServiceName",
+        "textIndexName"
+      ],
+      "MongoDbAtlasFieldMapping": [
+        "vectorField",
+        "textField",
+        "metadataField"
+      ],
+      "NeptuneAnalyticsConfiguration": [
+        "graphArn",
+        "fieldMapping"
+      ],
+      "NeptuneAnalyticsFieldMapping": [
+        "textField",
+        "metadataField"
+      ],
+      "S3VectorsConfiguration": [
+        "vectorBucketArn",
+        "indexArn",
+        "indexName"
+      ],
+      "CreateKnowledgeBaseResponse": [
+        "knowledgeBase"
+      ],
+      "KnowledgeBase": [
+        "knowledgeBaseId",
+        "name",
+        "knowledgeBaseArn",
+        "description",
+        "roleArn",
+        "knowledgeBaseConfiguration",
+        "storageConfiguration",
+        "status",
+        "createdAt",
+        "updatedAt",
+        "failureReasons"
+      ],
+      "GetKnowledgeBaseRequest": [
+        "knowledgeBaseId"
+      ],
+      "GetKnowledgeBaseResponse": [
+        "knowledgeBase"
+      ],
+      "ListKnowledgeBasesRequest": [
+        "maxResults",
+        "nextToken"
+      ],
+      "ListKnowledgeBasesResponse": [
+        "knowledgeBaseSummaries",
+        "nextToken"
+      ],
+      "KnowledgeBaseSummary": [
+        "knowledgeBaseId",
+        "name",
+        "description",
+        "status",
+        "updatedAt"
+      ],
+      "UpdateKnowledgeBaseRequest": [
+        "knowledgeBaseId",
+        "name",
+        "description",
+        "roleArn",
+        "knowledgeBaseConfiguration",
+        "storageConfiguration"
+      ],
+      "UpdateKnowledgeBaseResponse": [
+        "knowledgeBase"
+      ],
+      "DeleteKnowledgeBaseRequest": [
+        "knowledgeBaseId"
+      ],
+      "DeleteKnowledgeBaseResponse": [
+        "knowledgeBaseId",
+        "status"
+      ],
+      "CreateDataSourceRequest": [
+        "knowledgeBaseId",
+        "clientToken",
+        "name",
+        "description",
+        "dataSourceConfiguration",
+        "dataDeletionPolicy",
+        "serverSideEncryptionConfiguration",
+        "vectorIngestionConfiguration"
+      ],
+      "DataSourceConfiguration": [
+        "type",
+        "s3Configuration"
+      ],
+      "S3DataSourceConfiguration": [
+        "bucketArn",
+        "inclusionPrefixes",
+        "bucketOwnerAccountId"
+      ],
+      "VectorIngestionConfiguration": [
+        "chunkingConfiguration",
+        "customTransformationConfiguration",
+        "parsingConfiguration",
+        "contextEnrichmentConfiguration"
+      ],
+      "ChunkingConfiguration": [
+        "chunkingStrategy",
+        "fixedSizeChunkingConfiguration",
+        "hierarchicalChunkingConfiguration",
+        "semanticChunkingConfiguration"
+      ],
+      "FixedSizeChunkingConfiguration": [
+        "maxTokens",
+        "overlapPercentage"
+      ],
+      "HierarchicalChunkingConfiguration": [
+        "levelConfigurations",
+        "overlapTokens"
+      ],
+      "HierarchicalChunkingLevelConfiguration": [
+        "maxTokens"
+      ],
+      "SemanticChunkingConfiguration": [
+        "maxTokens",
+        "bufferSize",
+        "breakpointPercentileThreshold"
+      ],
+      "CustomTransformationConfiguration": [
+        "intermediateStorage",
+        "transformations"
+      ],
+      "IntermediateStorage": [
+        "s3Location"
+      ],
+      "Transformation": [
+        "transformationFunction",
+        "stepToApply"
+      ],
+      "TransformationFunction": [
+        "transformationLambdaConfiguration"
+      ],
+      "TransformationLambdaConfiguration": [
+        "lambdaArn"
+      ],
+      "ParsingConfiguration": [
+        "parsingStrategy",
+        "bedrockFoundationModelConfiguration",
+        "bedrockDataAutomationConfiguration"
+      ],
+      "BedrockFoundationModelConfiguration": [
+        "modelArn",
+        "parsingPrompt",
+        "parsingModality"
+      ],
+      "ParsingPrompt": [
+        "parsingPromptText"
+      ],
+      "BedrockDataAutomationConfiguration": [
+        "parsingModality"
+      ],
+      "ContextEnrichmentConfiguration": [
+        "type",
+        "bedrockFoundationModelConfiguration"
+      ],
+      "BedrockFoundationModelContextEnrichmentConfiguration": [
+        "enrichmentStrategyConfiguration",
+        "modelArn"
+      ],
+      "EnrichmentStrategyConfiguration": [
+        "method"
+      ],
+      "CreateDataSourceResponse": [
+        "dataSource"
+      ],
+      "DataSource": [
+        "knowledgeBaseId",
+        "dataSourceId",
+        "name",
+        "status",
+        "description",
+        "dataSourceConfiguration",
+        "serverSideEncryptionConfiguration",
+        "vectorIngestionConfiguration",
+        "dataDeletionPolicy",
+        "createdAt",
+        "updatedAt",
+        "failureReasons"
+      ],
+      "GetDataSourceRequest": [
+        "knowledgeBaseId",
+        "dataSourceId"
+      ],
+      "GetDataSourceResponse": [
+        "dataSource"
+      ],
+      "ListDataSourcesRequest": [
+        "knowledgeBaseId",
+        "maxResults",
+        "nextToken"
+      ],
+      "ListDataSourcesResponse": [
+        "dataSourceSummaries",
+        "nextToken"
+      ],
+      "DataSourceSummary": [
+        "knowledgeBaseId",
+        "dataSourceId",
+        "name",
+        "status",
+        "description",
+        "updatedAt"
+      ],
+      "UpdateDataSourceRequest": [
+        "knowledgeBaseId",
+        "dataSourceId",
+        "name",
+        "description",
+        "dataSourceConfiguration",
+        "dataDeletionPolicy",
+        "serverSideEncryptionConfiguration",
+        "vectorIngestionConfiguration"
+      ],
+      "UpdateDataSourceResponse": [
+        "dataSource"
+      ],
+      "DeleteDataSourceRequest": [
+        "knowledgeBaseId",
+        "dataSourceId"
+      ],
+      "DeleteDataSourceResponse": [
+        "knowledgeBaseId",
+        "dataSourceId",
+        "status"
+      ],
+      "AssociateAgentKnowledgeBaseRequest": [
+        "agentId",
+        "agentVersion",
+        "knowledgeBaseId",
+        "description",
+        "knowledgeBaseState"
+      ],
+      "AssociateAgentKnowledgeBaseResponse": [
+        "agentKnowledgeBase"
+      ],
+      "AgentKnowledgeBase": [
+        "agentId",
+        "agentVersion",
+        "knowledgeBaseId",
+        "description",
+        "createdAt",
+        "updatedAt",
+        "knowledgeBaseState"
+      ],
+      "GetAgentKnowledgeBaseRequest": [
+        "agentId",
+        "agentVersion",
+        "knowledgeBaseId"
+      ],
+      "GetAgentKnowledgeBaseResponse": [
+        "agentKnowledgeBase"
+      ],
+      "ListAgentKnowledgeBasesRequest": [
+        "agentId",
+        "agentVersion",
+        "maxResults",
+        "nextToken"
+      ],
+      "ListAgentKnowledgeBasesResponse": [
+        "agentKnowledgeBaseSummaries",
+        "nextToken"
+      ],
+      "AgentKnowledgeBaseSummary": [
+        "knowledgeBaseId",
+        "description",
+        "knowledgeBaseState",
+        "updatedAt"
+      ],
+      "UpdateAgentKnowledgeBaseRequest": [
+        "agentId",
+        "agentVersion",
+        "knowledgeBaseId",
+        "description",
+        "knowledgeBaseState"
+      ],
+      "UpdateAgentKnowledgeBaseResponse": [
+        "agentKnowledgeBase"
+      ],
+      "DisassociateAgentKnowledgeBaseRequest": [
+        "agentId",
+        "agentVersion",
+        "knowledgeBaseId"
+      ],
+      "DisassociateAgentKnowledgeBaseResponse": [],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "ListTagsForResourceRequest": [
+        "resourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "tags"
+      ]
+    }
   }
 }

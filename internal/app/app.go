@@ -37,6 +37,7 @@ import (
 	backupapi "github.com/amjadjibon/tinystack/internal/aws/generated/backup"
 	batchapi "github.com/amjadjibon/tinystack/internal/aws/generated/batch"
 	bedrockapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrock"
+	bedrockagentapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockagent"
 	bedrockruntimeapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockruntime"
 	budgetsapi "github.com/amjadjibon/tinystack/internal/aws/generated/budgets"
 	cloudcontrolapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudcontrol"
@@ -166,6 +167,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/backup"
 	"github.com/amjadjibon/tinystack/internal/services/batch"
 	"github.com/amjadjibon/tinystack/internal/services/bedrock"
+	"github.com/amjadjibon/tinystack/internal/services/bedrockagent"
 	"github.com/amjadjibon/tinystack/internal/services/bedrockruntime"
 	"github.com/amjadjibon/tinystack/internal/services/budgets"
 	"github.com/amjadjibon/tinystack/internal/services/cloudcontrol"
@@ -610,6 +612,7 @@ func build(
 	signing := signer.New(store, buckets, certificates)
 	foundationModels := bedrock.New(store)
 	inference := bedrockruntime.New(store, foundationModels)
+	agents := bedrockagent.New(store, foundationModels)
 	tags := resourcegroupstaggingapi.New()
 	groups := resourcegroups.New(store)
 	services := []catalog.Service{
@@ -680,6 +683,7 @@ func build(
 		lakeformationapi.Descriptor(lakeRecords),
 		signerapi.Descriptor(signing),
 		bedrockapi.Descriptor(foundationModels),
+		bedrockagentapi.Descriptor(agents),
 		bedrockruntimeapi.Descriptor(inference),
 		mq.ProtectCredentials(mqapi.Descriptor(brokers)),
 		kafkaapi.Descriptor(kafkaClusters),
@@ -739,6 +743,7 @@ func build(
 	// Step Functions' Task states and Firehose's deliveries call the other
 	// services in-process.
 	caller := catalog.NewCaller(services...)
+	agents.UseCaller(caller)
 	mediaConvertRecords.UseCaller(caller)
 	shieldRecords.UseCaller(caller)
 	dataSyncRecords.UseCaller(caller)

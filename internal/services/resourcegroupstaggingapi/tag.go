@@ -201,6 +201,8 @@ var taggers = map[string]tagger{
 		"TagsToRemove",
 		names,
 	),
+	"bedrockagent": resourceOperations("bedrockagent", "ResourceArn", plain),
+
 	"bedrock": resourceOperations("bedrock", "ResourceARN", pairs),
 	"signer":  resourceOperations("signer", "ResourceArn", plain),
 	"emr": operations("emr", "AddTags", "RemoveTags",

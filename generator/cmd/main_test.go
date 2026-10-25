@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -562,6 +563,32 @@ func TestJSONIgnoresHTTPMemberBindings(t *testing.T) {
 	for _, want := range []string{`json:"Name,omitempty"`, `json:"Filter,omitempty"`, `json:"Header,omitempty"`} {
 		if !strings.Contains(string(source), want) {
 			t.Fatalf("missing document binding %s", want)
+		}
+	}
+}
+
+func TestBedrockTaggableResourcesARNPattern(t *testing.T) {
+	const source = `(^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:(agent|agent-alias|knowledge-base|flow|prompt)` +
+		`/[A-Z0-9]{10}(?:/[A-Z0-9]{10})?$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:flow/([A-Z0-9]` +
+		`{10})/alias/([A-Z0-9]{10})$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:prompt/([A-Z0-9]{10` +
+		`})?(?::/d+)?$)`
+	rendering, ok := re2Patterns[source]
+	if !ok {
+		t.Fatal("missing exact pinned-model correction")
+	}
+
+	pattern := regexp.MustCompile(rendering.match)
+	for _, tc := range []struct {
+		arn  string
+		want bool
+	}{
+		{"arn:aws:bedrock:us-east-1:123456789012:agent/ABCDEFGHIJ", true},
+		{"arn:aws:bedrock:us-east-1:123456789012:agent-alias/ABCDEFGHIJ/KLMNOPQRST", true},
+		{"arn:aws:bedrock:us-east-1:12345678901:agent/ABCDEFGHIJ", false},
+		{"arn:aws:bedrock:us-east-1:/dddddddddddd:agent/ABCDEFGHIJ", false},
+	} {
+		if got := pattern.MatchString(tc.arn); got != tc.want {
+			t.Errorf("%s: got %t", tc.arn, got)
 		}
 	}
 }

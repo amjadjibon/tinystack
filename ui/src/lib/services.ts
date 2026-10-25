@@ -112,6 +112,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: management,
 		icon: "cloudwatch",
 	},
+	bedrockagent: {
+		title: "Bedrock Agents",
+		category: machineLearning,
+		icon: "bedrockagent",
+	},
 	bedrock: { title: "Amazon Bedrock", category: machineLearning },
 	bedrockruntime: {
 		title: "Amazon Bedrock Runtime",
