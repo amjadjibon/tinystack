@@ -29,6 +29,8 @@ func TestLoad(t *testing.T) {
 		{"docker containers", "ecs:\n  containers: docker", true},
 		{"docker databases", "rds:\n  instances: docker", true},
 		{"bad databases", "rds:\n  instances: podman", false},
+		{"docker domains", "opensearch:\n  domains: docker", true},
+		{"bad domains", "opensearch:\n  domains: podman", false},
 		{"bad containers", "ecs:\n  containers: podman", false},
 		{"k3s clusters", "eks:\n  clusters: k3s", true},
 		{"bad clusters", "eks:\n  clusters: kind", false},

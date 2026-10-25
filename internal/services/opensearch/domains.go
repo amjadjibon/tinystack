@@ -47,6 +47,12 @@ func (s *Service) CreateDomain(
 		}
 	}
 
+	if s.runtime != nil {
+		if _, engineErr := engineSpec(engineVer); engineErr != nil {
+			return nil, engineErr
+		}
+	}
+
 	tags, err := tagMap(in.TagList)
 	if err != nil {
 		return nil, err
@@ -59,7 +65,6 @@ func (s *Service) CreateDomain(
 	key := scope.Key(serviceName, domainKind, name)
 	arn := domainARN(scope.Region, scope.AccountID, name)
 	domainID := scope.AccountID + "/" + name
-	endpoint := domainEndpoint(name, scope.Region)
 	now := time.Now().UTC()
 
 	status := &api.DomainStatus{
@@ -69,9 +74,15 @@ func (s *Service) CreateDomain(
 		Created:        new(true),
 		Deleted:        new(false),
 		Processing:     new(false),
-		Endpoint:       new(endpoint),
 		EngineVersion:  new(engineVer),
 		AccessPolicies: in.AccessPolicies,
+	}
+
+	if s.runtime == nil {
+		status.Endpoint = new(domainEndpoint(name, scope.Region))
+	} else {
+		// The engine's loopback port is known once its container runs; the domain processes until then.
+		status.Processing = new(true)
 	}
 
 	base := baseDomain()
@@ -96,6 +107,7 @@ func (s *Service) CreateDomain(
 		Tags:          tags,
 		CreatedAt:     now,
 		UpdatedAt:     now,
+		Since:         now,
 		UpdateVersion: 1,
 	}
 
@@ -118,6 +130,12 @@ func (s *Service) CreateDomain(
 
 		if found {
 			return alreadyExists("Domain %s already exists", name)
+		}
+
+		if s.runtime != nil {
+			if writeErr := storage.Write(tx, indexKey(scope, name), true); writeErr != nil {
+				return writeErr
+			}
 		}
 
 		return storage.Write(tx, key, rec)
@@ -322,13 +340,15 @@ func (s *Service) UpdateDomainConfig(
 			return notFound("Domain not found: %s", *in.DomainName)
 		}
 
-		candidate := domainRecord{
-			Status:        common.Clone(rec.Status),
-			Tags:          common.CloneTags(rec.Tags),
-			CreatedAt:     rec.CreatedAt,
-			UpdatedAt:     time.Now().UTC(),
-			UpdateVersion: rec.UpdateVersion + 1,
+		if common.Value(rec.Status.Deleted) {
+			return invalid("Domain %s is being deleted", *in.DomainName)
 		}
+
+		candidate := *rec
+		candidate.Status = common.Clone(rec.Status)
+		candidate.Tags = common.CloneTags(rec.Tags)
+		candidate.UpdatedAt = time.Now().UTC()
+		candidate.UpdateVersion = rec.UpdateVersion + 1
 
 		if in.AccessPolicies != nil {
 			candidate.Status.AccessPolicies = in.AccessPolicies
@@ -380,12 +400,23 @@ func (s *Service) DeleteDomain(
 			return notFound("Domain not found: %s", *in.DomainName)
 		}
 
-		tx.Delete(key)
+		if s.runtime == nil {
+			tx.Delete(key)
 
+			deletedStatus = common.Clone(rec.Status)
+			deletedStatus.Deleted = new(true)
+			deletedStatus.Processing = new(false)
+			return nil
+		}
+
+		// The domain processes until its container and volume are gone, and keeps its name until then.
+		rec.Status.Deleted, rec.Status.Processing = new(true), new(true)
 		deletedStatus = common.Clone(rec.Status)
-		deletedStatus.Deleted = new(true)
-		deletedStatus.Processing = new(false)
-		return nil
+		if writeErr := storage.Write(tx, indexKey(scope, *in.DomainName), true); writeErr != nil {
+			return writeErr
+		}
+
+		return storage.Write(tx, key, *rec)
 	})
 	if err != nil {
 		return nil, err

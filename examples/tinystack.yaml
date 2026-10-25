@@ -26,6 +26,9 @@ eks:
 elasticache:
   # records keeps caches as records; docker also runs each node in a container.
   caches: records
+opensearch:
+  # records keeps domains as records; docker runs each domain's engine in a container with a named data volume.
+  domains: records
 rds:
   # records has no SQL listener; docker runs database containers with named data volumes.
   instances: records

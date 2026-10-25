@@ -50,26 +50,22 @@ func HostPort(ctx context.Context, id string, containerPort int64) (int64, error
 
 // ListLabeled returns container IDs and the values of their ownership label.
 func ListLabeled(ctx context.Context, label string) (map[string]string, error) {
-	out, err := Run(
-		ctx,
-		nil,
-		"ps",
-		"-a",
-		"--filter",
-		"label="+label,
-		"--format",
-		"{{.ID}} {{.Label \""+label+"\"}}",
-	)
+	return listLabeled(ctx, label, "ps", "-a", "--format", "{{.ID}} {{.Label \""+label+"\"}}")
+}
+
+// ListLabeledVolumes returns volume names and the values of their ownership label.
+func ListLabeledVolumes(ctx context.Context, label string) (map[string]string, error) {
+	return listLabeled(ctx, label, "volume", "ls", "--format", "{{.Name}} {{.Label \""+label+"\"}}")
+}
+
+func listLabeled(ctx context.Context, label string, command ...string) (map[string]string, error) {
+	out, err := Run(ctx, nil, append(command, "--filter", "label="+label)...)
 	if err != nil {
 		return nil, err
 	}
 
 	res := map[string]string{}
 	for line := range strings.SplitSeq(out, "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
 		parts := strings.Fields(line)
 		if len(parts) >= 2 {
 			res[parts[0]] = parts[1]

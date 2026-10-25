@@ -33,9 +33,13 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			}
 
 			details := map[string]any{
-				"RecordsOnly":    true,
-				"ExecutionReady": false,
+				"RecordsOnly":    s.runtime == nil,
+				"ExecutionReady": s.runtime != nil && rec.ready(),
 				"Configuration":  rec.Status,
+			}
+
+			if rec.Failure != "" {
+				details["Failure"] = rec.Failure
 			}
 
 			r := catalog.Resource{

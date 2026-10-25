@@ -56,6 +56,13 @@ const (
 	CachesDocker  = "docker"
 )
 
+// OpenSearch domain modes: records keeps domains as records only; docker also runs
+// each domain's engine in a container with the docker CLI.
+const (
+	DomainsRecords = "records"
+	DomainsDocker  = "docker"
+)
+
 // Lambda executor modes select containers, host interpreters, or daemon detection.
 const (
 	ExecutorAuto   = "auto"
@@ -270,6 +277,9 @@ type Config struct {
 	ElastiCache struct {
 		Caches string `yaml:"caches"`
 	} `yaml:"elasticache"`
+	OpenSearch struct {
+		Domains string `yaml:"domains"`
+	} `yaml:"opensearch"`
 	// Init configures the init hooks: scripts that run at the boot, start,
 	// ready, and shutdown stages.
 	Init struct {
@@ -330,6 +340,7 @@ func Default() Config {
 	c.ECS.Containers = ContainersRecords
 	c.EKS.Clusters = ClustersRecords
 	c.ElastiCache.Caches = CachesRecords
+	c.OpenSearch.Domains = DomainsRecords
 	c.RDS.Instances = InstancesRecords
 	c.Init.Dir = DefaultInitDir
 	c.Init.LocalStackDir = DefaultLocalStackInitDir
@@ -512,6 +523,10 @@ func (c *Config) Validate() error {
 
 	if c.ElastiCache.Caches != CachesRecords && c.ElastiCache.Caches != CachesDocker {
 		return fmt.Errorf("elasticache.caches must be records or docker")
+	}
+
+	if c.OpenSearch.Domains != DomainsRecords && c.OpenSearch.Domains != DomainsDocker {
+		return fmt.Errorf("opensearch.domains must be records or docker")
 	}
 
 	if p := c.IoT.MQTTSPort; p < 0 || p > 65535 || (p != 0 && (p == c.Server.Port || p == c.Server.ConsolePort)) {

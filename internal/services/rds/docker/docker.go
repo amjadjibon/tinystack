@@ -40,22 +40,18 @@ func (r *Runtime) Resources(ctx context.Context) ([]*rds.Spec, error) {
 		return nil, err
 	}
 
-	out, err := dockercli.Run(ctx, nil, "volume", "ls", "--filter", "label=tinystack.rds",
-		"--format", `{{.Name}} {{.Label "tinystack.rds"}}`)
+	volumes, err := dockercli.ListLabeledVolumes(ctx, "tinystack.rds")
 	if err != nil {
 		return nil, err
 	}
 
-	specs := make([]*rds.Spec, 0, len(containers))
+	specs := make([]*rds.Spec, 0, len(containers)+len(volumes))
 	for id, arn := range containers {
 		specs = append(specs, &rds.Spec{Name: id, ARN: arn})
 	}
 
-	for line := range strings.SplitSeq(out, "\n") {
-		fields := strings.Fields(line)
-		if len(fields) == 2 {
-			specs = append(specs, &rds.Spec{Volume: fields[0], ARN: fields[1]})
-		}
+	for name, arn := range volumes {
+		specs = append(specs, &rds.Spec{Volume: name, ARN: arn})
 	}
 
 	return specs, nil

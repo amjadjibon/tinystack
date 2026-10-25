@@ -229,6 +229,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/mwaa"
 	"github.com/amjadjibon/tinystack/internal/services/networkfirewall"
 	"github.com/amjadjibon/tinystack/internal/services/opensearch"
+	opensearchdocker "github.com/amjadjibon/tinystack/internal/services/opensearch/docker"
 	"github.com/amjadjibon/tinystack/internal/services/opensearchserverless"
 	"github.com/amjadjibon/tinystack/internal/services/organizations"
 	"github.com/amjadjibon/tinystack/internal/services/pipes"
@@ -538,6 +539,8 @@ func build(
 	wafRecords := wafv2.New(store)
 	networkFirewallRecords := networkfirewall.New(store, network)
 	opensearchRecords := opensearch.New(store)
+	a.onStop(opensearchRecords.Stop)
+	a.onReset(opensearchRecords.Reset)
 	resolverRecords := route53resolver.New(store, network)
 	xrayRecords := xray.New(store)
 	glacierRecords := glacier.New(store)
@@ -878,6 +881,12 @@ func build(
 
 	if cfg.ElastiCache.Caches == config.CachesDocker {
 		caches.UseRuntime(cachedocker.New(), logger)
+	}
+
+	if cfg.OpenSearch.Domains == config.DomainsDocker {
+		if err = opensearchRecords.UseRuntime(opensearchdocker.New(), logger); err != nil {
+			return nil, err
+		}
 	}
 
 	bedrockFixtures := bedrockruntime.Handler(store, cfg.Defaults.Account)

@@ -1,17 +1,21 @@
-// Package opensearch stores Amazon OpenSearch Service domains and tags.
-// It provides records-only control-plane operations and does not run
-// an OpenSearch or Elasticsearch search engine runtime.
+// Package opensearch stores Amazon OpenSearch Service domains and tags. Without
+// a Runtime, domains are records only. With a Docker runtime (UseRuntime), each
+// domain runs one single-node OpenSearch or Elasticsearch container, and the
+// domain's endpoint is the container's loopback port.
 package opensearch
 
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"regexp"
+	"sync"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/opensearch"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -33,14 +37,26 @@ var (
 )
 
 type (
-	Service struct{ store storage.Store }
+	Service struct {
+		store       storage.Store
+		runtime     Runtime
+		logger      *slog.Logger
+		bg          *background.Group
+		mu          sync.Mutex
+		orphansDone bool
+	}
 
 	domainRecord struct {
 		Status        *api.DomainStatus
 		Tags          map[string]string
 		CreatedAt     time.Time
 		UpdatedAt     time.Time
+		Since         time.Time // when the current container started, for the startup deadline
+		Container     string
+		Failure       string // why the container could not start; the domain keeps no endpoint
+		Port          int64  // the container's published loopback port
 		UpdateVersion int64
+		Initialized   bool // the volume has held a ready engine, so a failure keeps it
 	}
 )
 
@@ -52,6 +68,12 @@ func invalid(format string, args ...any) error {
 
 func notFound(format string, args ...any) error {
 	err := awserror.New("ResourceNotFoundException", fmt.Sprintf(format, args...))
+	err.StatusCode = 409
+	return err
+}
+
+func unsupported(format string, args ...any) error {
+	err := awserror.New("DisabledOperationException", fmt.Sprintf(format, args...))
 	err.StatusCode = 409
 	return err
 }

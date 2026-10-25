@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 )
 
 const (
@@ -42,6 +43,36 @@ func openSearchAccessPolicy(v any) string {
 	}
 
 	return string(b)
+}
+
+// readyOpenSearch waits until the domain stops processing, which a domain backed by an engine container does once
+// the engine answers, and returns its status. A domain that stops processing without an endpoint failed to start.
+func readyOpenSearch(ctx context.Context, c *client, name string, res map[string]any) (map[string]any, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		status, _ := res["DomainStatus"].(map[string]any)
+		if processing, _ := status["Processing"].(bool); !processing {
+			if endpoint, _ := status["Endpoint"].(string); endpoint == "" {
+				return nil, fmt.Errorf("OpenSearch domain %s failed to start", name)
+			}
+
+			return status, nil
+		}
+
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-ticker.C:
+		}
+
+		var err error
+		if res, err = c.call(ctx, "opensearch", "DescribeDomain", map[string]any{memberDomainName: name}); err != nil {
+			return nil, err
+		}
+	}
 }
 
 func init() {
@@ -90,7 +121,11 @@ func init() {
 				return "", nil, err
 			}
 
-			status, _ := res["DomainStatus"].(map[string]any)
+			status, err := readyOpenSearch(ctx, c, name, res)
+			if err != nil {
+				return "", nil, err
+			}
+
 			arn, _ := status["ARN"].(string)
 			endpoint, _ := status["Endpoint"].(string)
 			id, _ := status["DomainId"].(string)
