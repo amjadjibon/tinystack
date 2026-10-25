@@ -3250,24 +3250,12 @@
       "features": "- [ ] GetTableMetadataLocation\n- [ ] UpdateTableMetadataLocation\n- [ ] Genuine warehouse and metadata/data-file ownership with object reads/writes\n- [ ] Iceberg REST catalog and query-engine integration\n- [ ] Table schemas/nested types, partition specs and sort orders\n- [ ] Maintenance, compaction, snapshots, expiration and replication\n- [ ] AWS-managed buckets/tables and catalog analytics integrations\n- [ ] Encryption/KMS/IAM execution and runtime readiness\n- [ ] CloudFormation schema-backed Table, WarehouseLocation and advanced maintenance/encryption/storage/metrics/replication properties",
       "integration": "Sixteen hierarchy/tag APIs and three finite CloudFormation resource subsets are implemented records only. See the [records guide](../../guides/s3tables-records.md). Metadata-location calls must not succeed until truthful file ownership and version semantics are implemented."
     },
-    "transcribe": {
-      "title": "Transcribe",
-      "state": "Proposed",
-      "slice": "Implement `StartTranscriptionJob`, `GetTranscriptionJob`, `ListTranscriptionJobs`.",
-      "features": "- [ ] `StartTranscriptionJob`\n- [ ] `GetTranscriptionJob`\n- [ ] `ListTranscriptionJobs`\n- [ ] `DeleteTranscriptionJob`\n- [ ] `TagResource`\n- [ ] `UntagResource`\n- [ ] `ListTagsForResource`"
-    },
     "transfer-runtime": {
       "title": "Transfer Family runtime and advanced configuration",
       "state": "Proposed",
       "slice": "Extend the implemented server/user/public-key records with explicitly configured runtime and advanced records.",
       "features": "- [ ] StartServer and StopServer with real lifecycle/readiness\n- [ ] SFTP/FTP/FTPS/AS2 listeners, authentication and file transfers\n- [ ] Endpoint DNS/IP allocation, host-key ownership, runtime restart and cleanup\n- [ ] VPC/EFS/certificates/custom identity providers\n- [ ] Logical directories, session policies, POSIX and advanced user options\n- [ ] CloudFormation ownership/reconciliation of SshPublicKeys\n- [ ] Workflows, connectors, execution and transfer results\n- [ ] Security-policy discovery and wider eligible configuration matrix\n- [ ] Logging, metrics and other advanced server metadata",
       "integration": "The implemented slice stores records only; no State, endpoint, fingerprint or execution readiness is fabricated. See the [records guide](../../guides/transfer-records.md). Runtime success requires an explicit adapter and lifecycle contract."
-    },
-    "translate": {
-      "title": "Translate",
-      "state": "Proposed",
-      "slice": "Implement `StartTextTranslationJob`, `DescribeTextTranslationJob`, `ListTextTranslationJobs`.",
-      "features": "- [ ] `StartTextTranslationJob`\n- [ ] `DescribeTextTranslationJob`\n- [ ] `ListTextTranslationJobs`\n- [ ] `StopTextTranslationJob`\n- [ ] `ListLanguages`\n- [ ] `TagResource`\n- [ ] `UntagResource`\n- [ ] `ListTagsForResource`"
     },
     "batch-runtime": {
       "title": "AWS Batch job execution",
