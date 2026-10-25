@@ -23,9 +23,7 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Amazon S3 Glacier archives and jobs](services/glacier-runtime.md) | Proposed | Extend the vault control plane with archive storage and retrieval job workflows. |
 | [Amazon Timestream records and queries](services/timestream-query.md) | Proposed | Store written records and serve the Timestream query API over them. |
 | [Application Auto Scaling execution and advanced policies](services/applicationautoscaling-runtime.md) | Proposed | Extend records-only configuration to a truthful capacity and metric evaluation contract. |
-| [Bedrock Agent Runtime](services/bedrock-agent-runtime.md) | Proposed | Implement `InvokeAgent`, `InvokeInlineAgent`, `GetAgentMemory`. |
 | [Bedrock AgentCore](services/bedrock-agentcore.md) | Proposed | Implement `CreateAgentRuntime`, `GetAgentRuntime`, `ListAgentRuntimes`. |
-| [Bedrock Agents](services/bedrock-agent.md) | Proposed | Implement `CreateAgent`, `GetAgent`, `ListAgents`. |
 | [CloudFront KeyValueStore](services/cloudfront-keyvaluestore.md) | Proposed | Implement `DescribeKeyValueStore`, `ListKeys`, `GetKey`. |
 | [CodeBuild advanced build execution](services/codebuild-runtime.md) | Future extensions | Docker workers, build history, CloudWatch logs, S3 source/artifacts and buildspec 0.2 are implemented. Extend the remaining runtime features separately. |
 | [CodeDeploy deployment execution and agents](services/codedeploy-runtime.md) | Proposed | Extend application, deployment configuration and group records to real deployment execution. |

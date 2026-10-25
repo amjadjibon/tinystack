@@ -101,3 +101,64 @@ explicitly. Invocation logging configuration is stored without delivering logs.
 `InvokeModelWithResponseStream` and `ConverseStream` return `NotImplemented`.
 TinyStack's REST JSON codec currently has no AWS event-stream framing encoder;
 streaming operations are excluded from the generated operation profile.
+
+## Agent fixtures
+
+Bedrock Agents use a separate admin endpoint, `/_tinystack/bedrock-agent/fixtures`,
+with the same GET, PUT and DELETE paths and authorization as the model fixtures
+above. Agent fixtures require `agentId`, optional `aliasId`, exactly one of
+`contains` or `regex` matching `inputText`, and `text`. The first matching fixture
+ID in storage key order wins. A missing match fails explicitly naming this endpoint.
+Prepare the agent before invoking `TSTALIASID`; numbered aliases require a prepared
+snapshot. The existing Bedrock Runtime default reply remains unchanged.
+
+```json
+{
+  "agentId": "ABCDEFGHIJ",
+  "contains": "order",
+  "steps": [
+    {"actionGroup": "orders", "function": "lookup", "parameters": {"orderId": "42"}}
+  ],
+  "text": "The fixture-defined final answer.",
+  "memorySummary": "An optional user-authored summary."
+}
+```
+
+Steps run in order. Use either `function` or both `apiPath` and `httpMethod`;
+`parameters` maps names to string values. API steps may also specify `requestBody`
+in the documented Lambda event shape. Lambda action groups execute through the
+local Lambda service with message version `1.0`; malformed responses fail the turn.
+Session attributes from successful Lambda responses persist for subsequent turns.
+See the [AWS Lambda action-group event and response formats](https://docs.aws.amazon.com/bedrock/latest/userguide/agents-lambda.html).
+
+A `RETURN_CONTROL` group emits a `returnControl` event and pauses the fixture.
+Call `InvokeAgent` again with the same session and matching
+`sessionState.invocationId` and `returnControlInvocationResults` to execute the
+remaining steps. The final event is a `chunk` containing only the fixture text.
+There are no synthesized traces, retrieval results, or citations, including when
+`enableTrace` is true. Built-in UserInput and CodeInterpreter configurations are
+stored but do not execute.
+
+Memory must be enabled on the agent. When `endSession` is true, a fixture's
+`memorySummary` is recorded under the supplied `memoryId`, with the configured
+storage days (default 30). `GetAgentMemory` returns these unexpired summaries or
+an empty list; TinyStack never generates summaries.
+
+Standalone session-management APIs store checkpoints independently of agent
+conversation sessions. They support active and ended sessions, invocations and
+text/image steps, with [AWS's documented session limits](https://docs.aws.amazon.com/bedrock/latest/userguide/sessions.html#sessions-considerations):
+1000 steps per session, 50 MB per step, one-hour idle expiry and 30-day retention.
+Expiry and retention are evaluated on access. Runtime session tagging is a gap;
+`CreateSession.tags` and the runtime tag APIs are unsupported.
+
+The control plane stores VECTOR knowledge-base configuration and S3 data-source
+metadata without embedding or ingestion. Managed OpenSearch domain storage is
+unsupported. Other remote vector stores whose services are absent are stored as
+metadata; existing OpenSearch Serverless collections and RDS clusters must exist.
+
+The [UpdateKnowledgeBase API reference](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_agent_UpdateKnowledgeBase.html)
+requires unchanged knowledge-base and storage configuration, even though the
+CloudFormation resource specification marks KnowledgeBaseConfiguration mutable.
+TinyStack rejects API configuration changes explicitly; CloudFormation sends
+mutable-property updates in place and surfaces that validation error rather than
+replacing a resource contrary to its specification.

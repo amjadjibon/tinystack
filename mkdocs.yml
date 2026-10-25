@@ -189,6 +189,8 @@ nav:
           - "IoT Jobs Data Plane": services/iotjobsdataplane.md
       - "Machine Learning":
           - "Amazon Bedrock": services/bedrock.md
+          - "Amazon Bedrock Agent Runtime": services/bedrockagentruntime.md
+          - "Amazon Bedrock Agents": services/bedrockagent.md
           - "Amazon Bedrock Runtime": services/bedrockruntime.md
           - "Amazon Transcribe": services/transcribe.md
           - "Amazon Translate": services/translate.md
@@ -281,9 +283,7 @@ nav:
           - "Amazon S3 Glacier archives and jobs": roadmap/services/glacier-runtime.md
           - "Amazon Timestream records and queries": roadmap/services/timestream-query.md
           - "Application Auto Scaling execution and advanced policies": roadmap/services/applicationautoscaling-runtime.md
-          - "Bedrock Agent Runtime": roadmap/services/bedrock-agent-runtime.md
           - "Bedrock AgentCore": roadmap/services/bedrock-agentcore.md
-          - "Bedrock Agents": roadmap/services/bedrock-agent.md
           - "CloudFront KeyValueStore": roadmap/services/cloudfront-keyvaluestore.md
           - "CodeBuild advanced build execution": roadmap/services/codebuild-runtime.md
           - "CodeDeploy deployment execution and agents": roadmap/services/codedeploy-runtime.md

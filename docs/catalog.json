@@ -2694,6 +2694,48 @@
       "execution": "Local behavior",
       "package": "bedrock"
     },
+    "bedrockagent": {
+      "title": "Amazon Bedrock Agents",
+      "category": "Machine Learning",
+      "scope": "Account and Region",
+      "summary": "Manage local agents, immutable versions, aliases, action groups and vector knowledge-base metadata.",
+      "features": [
+        "37 REST JSON operations covering agents, preparation, DRAFT action groups, immutable versions, aliases, VECTOR knowledge bases, S3 data sources, agent knowledge-base associations and resource tags",
+        "Deterministic lifecycle transitions: create/update/prepare return intermediate states; the first Get observes the intermediate state and advances storage to NOT_PREPARED or PREPARED; DeleteAgent is finalized after one Get observes DELETING",
+        "TSTALIASID routes to DRAFT; aliases without explicit routing snapshot a PREPARED DRAFT and its action groups and associations into a numbered version",
+        "Existing IAM roles, model/profile IDs, KMS keys, guardrails, Lambda functions, S3 schema objects and buckets, OpenSearch Serverless collections and RDS clusters are validated locally; OpenAPI 3 JSON/YAML schemas are checked",
+        "CloudFormation Agent (inline action groups, knowledge bases, AutoPrepare and test alias tags), AgentAlias, KnowledgeBase and DataSource; Terraform agent, alias, action group and knowledge base; inventory and Resource Groups tagging"
+      ],
+      "gaps": [
+        "Managed OpenSearch domain storage is unsupported and its configuration member is not whitelisted. Pinecone, Redis Enterprise Cloud, MongoDB Atlas, Neptune Analytics and S3 Vectors stores are metadata only because their services are absent",
+        "No embeddings, ingestion jobs, documents, retrieval, flows, prompts, collaborators, supervisor modes, VPC configurations or resource policies; only S3 data sources and VECTOR knowledge bases are supported",
+        "Knowledge-base configuration changes fail explicitly as documented by UpdateKnowledgeBase; CloudFormation still treats StorageConfiguration as replacement and sends other updates in place. Prompt overrides and memory configuration are stored faithfully as configuration; prompts are not run and summaries are never synthesized. An agent without overrides returns an empty promptOverrideConfiguration rather than AWS's default prompt templates. Custom orchestration and provisioned throughput alias routing are unsupported",
+        "Numbered versions retain snapshots. Alias deletion is synchronous; agent deletion remains visible until GetAgent observes DELETING. These deterministic transitions do not simulate AWS timing"
+      ],
+      "execution": "Records only",
+      "package": "bedrockagent"
+    },
+    "bedrockagentruntime": {
+      "title": "Amazon Bedrock Agent Runtime",
+      "category": "Machine Learning",
+      "scope": "Account and Region; fixtures are default-account-wide",
+      "summary": "Execute only user-defined agent fixtures and store session checkpoints locally.",
+      "features": [
+        "14 REST JSON operations: InvokeAgent, Create/Get/Update/End/Delete/ListSession, Create/ListInvocations, Put/Get/ListInvocationSteps and Get/DeleteAgentMemory",
+        "Agent fixtures at /_tinystack/bedrock-agent/fixtures match agentId, optional aliasId and contains or regex in inputText; the first matching fixture ID in storage order wins. Missing fixtures fail explicitly naming the admin endpoint",
+        "Fixture steps call real local Lambda action groups with documented messageVersion 1.0 events, validate their responses, retain session attributes, or emit returnControl and continue after matching invocation results",
+        "Final text is emitted as an AWS event-stream chunk. Session-summary memory contains only fixture memorySummary recorded at endSession, subject to configured storage days",
+        "Standalone session storage supports ACTIVE, ENDED and EXPIRED states, UUID/ARN lookup, invocation checkpoints, pagination, 1000 steps per session, 50 MB step payloads, one-hour idle expiry and 30-day retention checked lazily on access"
+      ],
+      "gaps": [
+        "No model inference, invented trace events, citations, knowledge-base retrieval, inline agents, flows, Retrieve, RetrieveAndGenerate, Rerank, GenerateQuery or OptimizePrompt. enableTrace emits no trace events",
+        "Runtime session tagging is unsupported: runtime TagResource/UntagResource/ListTagsForResource and CreateSession.tags are not whitelisted, avoiding shared-signing-name /tags route collisions with bedrockagent",
+        "Fixture steps define the complete action plan and final answer; Lambda results do not trigger model orchestration. Built-in UserInput/CodeInterpreter groups are stored only; fixture execution requires Lambda or RETURN_CONTROL",
+        "Standalone session KMS keys are validated but records use the configured TinyStack storage backend; no AWS KMS encryption or remote vector-store execution"
+      ],
+      "execution": "Local behavior",
+      "package": "bedrockagentruntime"
+    },
     "bedrockruntime": {
       "title": "Amazon Bedrock Runtime",
       "category": "Machine Learning",
@@ -3206,18 +3248,6 @@
       "state": "Proposed",
       "slice": "Extend the records-only control plane with explicit runtime and snapshot support.",
       "features": "- [ ] SQL warehouse runtime and JDBC/ODBC execution\n- [ ] Snapshot create/list/delete/restore and final snapshots\n- [ ] Pause/resume/reboot/resize lifecycle\n- [ ] Parameter values and application\n- [ ] Redshift Data API and Serverless"
-    },
-    "bedrock-agent-runtime": {
-      "title": "Bedrock Agent Runtime",
-      "state": "Proposed",
-      "slice": "Implement `InvokeAgent`, `InvokeInlineAgent`, `GetAgentMemory`.",
-      "features": "- [ ] `InvokeAgent`\n- [ ] `InvokeInlineAgent`\n- [ ] `GetAgentMemory`\n- [ ] `DeleteAgentMemory`\n- [ ] `CreateSession`\n- [ ] `GetSession`\n- [ ] `UpdateSession`\n- [ ] `DeleteSession`\n- [ ] `ListSessions`\n- [ ] `CreateInvocation`\n- [ ] `ListInvocations`\n- [ ] `PutInvocationStep`\n- [ ] `GetInvocationStep`\n- [ ] `ListInvocationSteps`\n- [ ] `InvokeFlow`"
-    },
-    "bedrock-agent": {
-      "title": "Bedrock Agents",
-      "state": "Proposed",
-      "slice": "Implement `CreateAgent`, `GetAgent`, `ListAgents`.",
-      "features": "- [ ] `CreateAgent`\n- [ ] `GetAgent`\n- [ ] `ListAgents`\n- [ ] `PrepareAgent`"
     },
     "bedrock-agentcore": {
       "title": "Bedrock AgentCore",
