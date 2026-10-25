@@ -13,7 +13,7 @@ Manage distribution and origin access control metadata for infrastructure tests.
 | API version | `2020-05-31` |
 | Scope | Account-wide |
 | Execution | Records only |
-| Selected operations | 16 of 167 in the pinned model |
+| Selected operations | 24 of 167 in the pinned model |
 
 ## Implemented behavior
 
@@ -23,7 +23,7 @@ See the [implemented feature catalogue](catalogue.md#cloudfront) for this servic
 
 - No CDN caching, edge delivery or origin proxy runtime.
 - Only selected distribution/configuration fields are implemented.
-- CloudFront KeyValueStore is a separate future candidate.
+- No CloudFront Functions operations or key value store function associations.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -40,9 +40,12 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `CreateDistribution` | `POST /2020-05-31/distribution` |
 | `CreateDistributionWithTags` | `POST /2020-05-31/distribution?WithTags` |
 | `CreateInvalidation` | `POST /2020-05-31/distribution/{DistributionId}/invalidation` |
+| `CreateKeyValueStore` | `POST /2020-05-31/key-value-store` |
 | `CreateOriginAccessControl` | `POST /2020-05-31/origin-access-control` |
 | `DeleteDistribution` | `DELETE /2020-05-31/distribution/{Id}` |
+| `DeleteKeyValueStore` | `DELETE /2020-05-31/key-value-store/{Name}` |
 | `DeleteOriginAccessControl` | `DELETE /2020-05-31/origin-access-control/{Id}` |
+| `DescribeKeyValueStore` | `GET /2020-05-31/key-value-store/{Name}` |
 | `GetDistribution` | `GET /2020-05-31/distribution/{Id}` |
 | `GetDistributionConfig` | `GET /2020-05-31/distribution/{Id}/config` |
 | `GetInvalidation` | `GET /2020-05-31/distribution/{DistributionId}/invalidation/{Id}` |
@@ -50,13 +53,18 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `GetOriginAccessControlConfig` | `GET /2020-05-31/origin-access-control/{Id}/config` |
 | `ListDistributions` | `GET /2020-05-31/distribution` |
 | `ListInvalidations` | `GET /2020-05-31/distribution/{DistributionId}/invalidation` |
+| `ListKeyValueStores` | `GET /2020-05-31/key-value-store` |
 | `ListOriginAccessControls` | `GET /2020-05-31/origin-access-control` |
+| `ListTagsForResource` | `GET /2020-05-31/tagging` |
+| `TagResource` | `POST /2020-05-31/tagging?Operation=Tag` |
+| `UntagResource` | `POST /2020-05-31/tagging?Operation=Untag` |
 | `UpdateDistribution` | `PUT /2020-05-31/distribution/{Id}/config` |
+| `UpdateKeyValueStore` | `PUT /2020-05-31/key-value-store/{Name}` |
 | `UpdateOriginAccessControl` | `PUT /2020-05-31/origin-access-control/{Id}/config` |
 
 ## Operations not implemented
 
-??? info "151 modeled operations outside the implementation"
+??? info "143 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -76,7 +84,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `CreateFunction`
     - `CreateInvalidationForDistributionTenant`
     - `CreateKeyGroup`
-    - `CreateKeyValueStore`
     - `CreateMonitoringSubscription`
     - `CreateOriginRequestPolicy`
     - `CreatePublicKey`
@@ -97,7 +104,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteFieldLevelEncryptionProfile`
     - `DeleteFunction`
     - `DeleteKeyGroup`
-    - `DeleteKeyValueStore`
     - `DeleteMonitoringSubscription`
     - `DeleteOriginRequestPolicy`
     - `DeletePublicKey`
@@ -109,7 +115,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteVpcOrigin`
     - `DescribeConnectionFunction`
     - `DescribeFunction`
-    - `DescribeKeyValueStore`
     - `DisassociateDistributionTenantWebACL`
     - `DisassociateDistributionWebACL`
     - `GetAnycastIpList`
@@ -173,22 +178,18 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListFunctions`
     - `ListInvalidationsForDistributionTenant`
     - `ListKeyGroups`
-    - `ListKeyValueStores`
     - `ListOriginRequestPolicies`
     - `ListPublicKeys`
     - `ListRealtimeLogConfigs`
     - `ListResponseHeadersPolicies`
     - `ListStreamingDistributions`
-    - `ListTagsForResource`
     - `ListTrustStores`
     - `ListVpcOrigins`
     - `PublishConnectionFunction`
     - `PublishFunction`
     - `PutResourcePolicy`
-    - `TagResource`
     - `TestConnectionFunction`
     - `TestFunction`
-    - `UntagResource`
     - `UpdateAnycastIpList`
     - `UpdateCachePolicy`
     - `UpdateCloudFrontOriginAccessIdentity`
@@ -202,7 +203,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `UpdateFieldLevelEncryptionProfile`
     - `UpdateFunction`
     - `UpdateKeyGroup`
-    - `UpdateKeyValueStore`
     - `UpdateOriginRequestPolicy`
     - `UpdatePublicKey`
     - `UpdateRealtimeLogConfig`
@@ -217,5 +217,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/cloudfront)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/cloudfront/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/cloudfront.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [cloudfront_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudfront_test.go).
+- SDK integration examples: [cloudfront_kvs_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudfront_kvs_test.go), [cloudfront_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudfront_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

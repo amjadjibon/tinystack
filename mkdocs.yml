@@ -236,6 +236,7 @@ nav:
           - "Amazon Route 53 Resolver": services/route53resolver.md
           - "Cloud Map": services/servicediscovery.md
           - "CloudFront": services/cloudfront.md
+          - "CloudFront KeyValueStore": services/cloudfrontkeyvaluestore.md
           - "Elastic Load Balancing (Classic)": services/elb.md
           - "Elastic Load Balancing v2": services/elbv2.md
           - "Route 53": services/route53.md
@@ -288,7 +289,6 @@ nav:
           - "Amazon Timestream records and queries": roadmap/services/timestream-query.md
           - "Application Auto Scaling execution and advanced policies": roadmap/services/applicationautoscaling-runtime.md
           - "Bedrock AgentCore": roadmap/services/bedrock-agentcore.md
-          - "CloudFront KeyValueStore": roadmap/services/cloudfront-keyvaluestore.md
           - "CodeBuild advanced build execution": roadmap/services/codebuild-runtime.md
           - "CodeDeploy deployment execution and agents": roadmap/services/codedeploy-runtime.md
           - "CodePipeline execution and release automation": roadmap/services/codepipeline-execution.md
