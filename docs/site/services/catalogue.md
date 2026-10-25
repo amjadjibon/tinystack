@@ -709,12 +709,18 @@ Execute SQL through the AWS Data API against local Aurora Docker engines.
 
 #### RDS, DocumentDB and Neptune
 
-Manage RDS instances and Aurora clusters with optional Docker engines, plus records-only DocumentDB and Neptune clusters.
+Manage RDS instances, Aurora, DocumentDB and Neptune clusters with optional Docker engines.
 
 **Execution:** Records / optional Docker. **Selected operations:** 32.
 
+- Docker DocumentDB versions 3.6, 4.0 and 5.0 map exactly to official mongo:3.6, mongo:4.0 and mongo:5.0; an image that cannot be pulled or started marks the cluster failed, and no other major is substituted.
+- Docker DocumentDB root credentials initialize MongoDB; TCP and authenticated admin ping readiness use mongo for 3.6/4.0 and mongosh for 5.0; ModifyDBCluster changes the running root password. ManageMasterUserPassword reuses the Secrets Manager path in Docker mode; managed rotation and custom secret KMS keys are unsupported.
+- Docker Neptune 1.2.1.0 maps to tinkerpop/gremlin-server:3.6.2 and 1.3.2.0 to 3.7.1, matching AWS release compatibility; TCP plus HTTP Gremlin g.inject(1) readiness precedes availability; Gremlin HTTP and WebSocket queries use the shared loopback port without credentials.
+- DocumentDB and Neptune reuse the Aurora cluster runtime for creating-to-available readiness, member endpoints, cluster stop/start, deletion/reset cleanup, shutdown volume retention, SQLite recovery and startup orphan cleanup. DocumentDB /data/db named volumes retain documents across container recreation.
+- CloudFormation DocumentDB/Neptune clusters and members wait for available before publishing endpoint attributes; the database details console shows mongosh or Gremlin HTTP connection commands.
+- DocumentDB example: `mongosh 'mongodb://127.0.0.1:<PORT>/?authSource=admin&tls=false' --username masteruser --password`; Neptune example: `curl http://127.0.0.1:<PORT>/gremlin -H 'Content-Type: application/json' -d '{"gremlin":"g.inject(1)"}'`.
 - Create, describe, modify, stop, start, reboot and delete scoped DB instances; modeled duplicate, missing and state errors.
-- PostgreSQL majors 14, 15, 16 (default), 17 map to postgres:<major>; MySQL 8.0 maps to mysql:8.0; MariaDB 11 maps to mariadb:11; DocumentDB and Neptune cluster members use records only; other engines and versions fail explicitly.
+- PostgreSQL majors 14, 15, 16 (default), 17 map to postgres:<major>; MySQL 8.0 maps to mysql:8.0; MariaDB 11 maps to mariadb:11; DocumentDB and Neptune cluster members share their cluster engine; other engines and versions fail explicitly.
 - Describe instances supports db-instance-id, engine and db-subnet-group exact-value filters; MaxRecords 20–100 and Marker pagination also work for subnet and parameter group lists.
 - Subnet groups validate existing EC2 subnets in one VPC; parameter groups are records with engine-family validation and in-use deletion checks.
 - Instance and group tags, diagnostic inventory and Resource Groups Tagging API integration.
@@ -728,13 +734,13 @@ Manage RDS instances and Aurora clusters with optional Docker engines, plus reco
 - Omitted DBName uses the instance identifier with hyphens replaced by underscores for the Docker database name; default AllocatedStorage is 20 GiB of metadata.
 - CloudFormation DBInstance creation waits for availability before publishing endpoint attributes.
 - AWS-style scoped console for databases, engine selection, connection commands and URLs, status polling, immediate password/class changes, tags, stop/start/reboot, confirmed deletion without snapshots, and subnet and parameter group creation and deletion.
-- DocumentDB (Engine docdb) and Neptune (Engine neptune) SDKs use the existing RDS Query API: create, describe, modify and delete records-only clusters and cluster member instances, scoped by account and Region.
-- Cluster identifiers, DocumentDB credentials, retention 1–35 days, ports 1150–65535, subnet/security-group references, encryption metadata, deletion protection and tags are validated; DocumentDB passwords are discarded after validation.
-- DocumentDB versions 3.6, 4.0 and 5.0 (default); Neptune versions 1.2.1.0 and 1.3.2.0 (default); default ports 27017 and 8182 respectively; stable resource IDs and AWS-style cluster/reader endpoints report metadata only.
+- DocumentDB (Engine docdb) and Neptune (Engine neptune) SDKs share the RDS Query API for scoped cluster and member lifecycles; records mode retains the existing metadata-only behavior.
+- Cluster identifiers, DocumentDB credentials, retention 1–35 days, ports 1150–65535, subnet/security-group references, encryption metadata, deletion protection and tags are validated; DocumentDB passwords are discarded after validation in records mode and retained privately in Docker mode.
+- DocumentDB versions 3.6, 4.0 and 5.0 (default); Neptune versions 1.2.1.0 and 1.3.2.0 (default); default ports 27017 and 8182 respectively; stable resource IDs; Docker cluster, reader and member endpoints share one loopback host port.
 - DescribeDBClusters shares both engines across RDS, DocumentDB and Neptune clients; engine, db-cluster-id and db-cluster-resource-id filters select exact values; MaxRecords 20–100 (default 100) uses stable Marker cursors.
 - Cluster member endpoints and ports follow their parent cluster; DBClusterMembers tracks membership and writer metadata; cluster deletion requires no members and no deletion protection; DocumentDB/Neptune also require SkipFinalSnapshot=true.
 - CloudFormation AWS::DocDB::DBCluster/DBInstance and AWS::Neptune::DBCluster/DBInstance share a provider: selected mutable properties and tags update, immutable properties replace, version changes fail and roll back; Ref and cluster/instance endpoint attributes are supported.
-- DocumentDB/Neptune cluster/member inventory records mark RecordsOnly=true; RGTA uses rds:cluster/rds:db ARN types and Resource Groups selects AWS::DocDB and AWS::Neptune resource types; Terraform endpoint overrides include rds, docdb and neptune; console groups both under RDS.
+- DocumentDB/Neptune cluster/member inventory records mark RecordsOnly=true in records mode; RGTA uses rds:cluster/rds:db ARN types and Resource Groups selects AWS::DocDB and AWS::Neptune resource types; Terraform endpoint overrides include rds, docdb and neptune; console groups both under RDS.
 - CreateDBSnapshot, DescribeDBSnapshots, DeleteDBSnapshot and same-account/Region CopyDBSnapshot for standalone RDS instances; lowercase identifiers and local ARNs, manual snapshot metadata, creating-to-available status and 0-to-100 progress, modeled duplicate/missing/state errors.
 - DescribeDBSnapshots supports instance/snapshot identifiers, DbiResourceId, manual or automated type selection, db-instance-id (including ARNs), db-snapshot-id, dbi-resource-id, snapshot-type and engine exact filters; MaxRecords 20–100 and Marker pagination.
 - RestoreDBInstanceFromDBSnapshot creates an independent instance from captured engine, version, storage, database and credential settings; selected class/storage/subnet/parameter-group overrides and tags; records mode restores metadata only.
