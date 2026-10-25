@@ -14,9 +14,14 @@ type VpcConfigRequest struct {
 	PublicAccessCidrs     []string `json:"publicAccessCidrs,omitempty"`
 }
 
+type ElasticLoadBalancing struct {
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
 type KubernetesNetworkConfigRequest struct {
-	ServiceIpv4Cidr *string `json:"serviceIpv4Cidr,omitempty"`
-	IpFamily        *string `json:"ipFamily,omitempty"`
+	ServiceIpv4Cidr      *string               `json:"serviceIpv4Cidr,omitempty"`
+	IpFamily             *string               `json:"ipFamily,omitempty"`
+	ElasticLoadBalancing *ElasticLoadBalancing `json:"elasticLoadBalancing,omitempty"`
 }
 
 type LogSetup struct {
@@ -50,6 +55,18 @@ type ZonalShiftConfigRequest struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
+type ComputeConfigRequest struct {
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+type BlockStorage struct {
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+type StorageConfigRequest struct {
+	BlockStorage *BlockStorage `json:"blockStorage,omitempty"`
+}
+
 type CreateClusterRequest struct {
 	Name                       *string                         `json:"name,omitempty"`
 	Version                    *string                         `json:"version,omitempty"`
@@ -65,6 +82,8 @@ type CreateClusterRequest struct {
 	UpgradePolicy              *UpgradePolicyRequest           `json:"upgradePolicy,omitempty"`
 	ZonalShiftConfig           *ZonalShiftConfigRequest        `json:"zonalShiftConfig,omitempty"`
 	DeletionProtection         *bool                           `json:"deletionProtection,omitempty"`
+	ComputeConfig              *ComputeConfigRequest           `json:"computeConfig,omitempty"`
+	StorageConfig              *StorageConfigRequest           `json:"storageConfig,omitempty"`
 }
 
 type VpcConfigResponse struct {
@@ -77,8 +96,9 @@ type VpcConfigResponse struct {
 }
 
 type KubernetesNetworkConfigResponse struct {
-	ServiceIpv4Cidr *string `json:"serviceIpv4Cidr,omitempty"`
-	IpFamily        *string `json:"ipFamily,omitempty"`
+	ServiceIpv4Cidr      *string               `json:"serviceIpv4Cidr,omitempty"`
+	IpFamily             *string               `json:"ipFamily,omitempty"`
+	ElasticLoadBalancing *ElasticLoadBalancing `json:"elasticLoadBalancing,omitempty"`
 }
 
 type OIDC struct {
@@ -116,6 +136,14 @@ type ZonalShiftConfigResponse struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
+type ComputeConfigResponse struct {
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+type StorageConfigResponse struct {
+	BlockStorage *BlockStorage `json:"blockStorage,omitempty"`
+}
+
 type Cluster struct {
 	Name                    *string                          `json:"name,omitempty"`
 	Arn                     *string                          `json:"arn,omitempty"`
@@ -139,6 +167,8 @@ type Cluster struct {
 	UpgradePolicy           *UpgradePolicyResponse           `json:"upgradePolicy,omitempty"`
 	ZonalShiftConfig        *ZonalShiftConfigResponse        `json:"zonalShiftConfig,omitempty"`
 	DeletionProtection      *bool                            `json:"deletionProtection,omitempty"`
+	ComputeConfig           *ComputeConfigResponse           `json:"computeConfig,omitempty"`
+	StorageConfig           *StorageConfigResponse           `json:"storageConfig,omitempty"`
 }
 
 type CreateClusterResponse struct {
@@ -996,7 +1026,7 @@ type API interface {
 
 func Descriptor(api API) catalog.Service {
 	return catalog.Service{Name: "eks", SigningName: "eks", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "eks", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"BadRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ClientException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidParameterException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ResourceInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "ResourceLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServerException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "ServiceUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 503}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "UnsupportedAvailabilityZoneException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
-		"CreateCluster": {Name: "CreateCluster", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "eks:CreateCluster", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccessConfig": catalog.MemberBinding{Location: "document", Name: "accessConfig", Format: ""}, "BootstrapSelfManagedAddons": catalog.MemberBinding{Location: "document", Name: "bootstrapSelfManagedAddons", Format: ""}, "ClientRequestToken": catalog.MemberBinding{Location: "document", Name: "clientRequestToken", Format: ""}, "DeletionProtection": catalog.MemberBinding{Location: "document", Name: "deletionProtection", Format: ""}, "EncryptionConfig": catalog.MemberBinding{Location: "document", Name: "encryptionConfig", Format: ""}, "KubernetesNetworkConfig": catalog.MemberBinding{Location: "document", Name: "kubernetesNetworkConfig", Format: ""}, "Logging": catalog.MemberBinding{Location: "document", Name: "logging", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "ResourcesVpcConfig": catalog.MemberBinding{Location: "document", Name: "resourcesVpcConfig", Format: ""}, "RoleArn": catalog.MemberBinding{Location: "document", Name: "roleArn", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}, "UpgradePolicy": catalog.MemberBinding{Location: "document", Name: "upgradePolicy", Format: ""}, "Version": catalog.MemberBinding{Location: "document", Name: "version", Format: ""}, "ZonalShiftConfig": catalog.MemberBinding{Location: "document", Name: "zonalShiftConfig", Format: ""}}, Output: map[string]catalog.MemberBinding{"Cluster": catalog.MemberBinding{Location: "document", Name: "cluster", Format: ""}}, Method: "POST", URI: "/clusters", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateClusterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"CreateCluster": {Name: "CreateCluster", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "eks:CreateCluster", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccessConfig": catalog.MemberBinding{Location: "document", Name: "accessConfig", Format: ""}, "BootstrapSelfManagedAddons": catalog.MemberBinding{Location: "document", Name: "bootstrapSelfManagedAddons", Format: ""}, "ClientRequestToken": catalog.MemberBinding{Location: "document", Name: "clientRequestToken", Format: ""}, "ComputeConfig": catalog.MemberBinding{Location: "document", Name: "computeConfig", Format: ""}, "DeletionProtection": catalog.MemberBinding{Location: "document", Name: "deletionProtection", Format: ""}, "EncryptionConfig": catalog.MemberBinding{Location: "document", Name: "encryptionConfig", Format: ""}, "KubernetesNetworkConfig": catalog.MemberBinding{Location: "document", Name: "kubernetesNetworkConfig", Format: ""}, "Logging": catalog.MemberBinding{Location: "document", Name: "logging", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "ResourcesVpcConfig": catalog.MemberBinding{Location: "document", Name: "resourcesVpcConfig", Format: ""}, "RoleArn": catalog.MemberBinding{Location: "document", Name: "roleArn", Format: ""}, "StorageConfig": catalog.MemberBinding{Location: "document", Name: "storageConfig", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}, "UpgradePolicy": catalog.MemberBinding{Location: "document", Name: "upgradePolicy", Format: ""}, "Version": catalog.MemberBinding{Location: "document", Name: "version", Format: ""}, "ZonalShiftConfig": catalog.MemberBinding{Location: "document", Name: "zonalShiftConfig", Format: ""}}, Output: map[string]catalog.MemberBinding{"Cluster": catalog.MemberBinding{Location: "document", Name: "cluster", Format: ""}}, Method: "POST", URI: "/clusters", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateClusterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateCluster(ctx, input.(*CreateClusterRequest))
 		}},
 		"DescribeCluster": {Name: "DescribeCluster", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "eks:DescribeCluster", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Name": catalog.MemberBinding{Location: "label", Name: "name", Format: ""}}, Output: map[string]catalog.MemberBinding{"Cluster": catalog.MemberBinding{Location: "document", Name: "cluster", Format: ""}}, Method: "GET", URI: "/clusters/{name}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeClusterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {

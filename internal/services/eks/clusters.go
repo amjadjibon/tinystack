@@ -64,6 +64,9 @@ type cluster struct {
 	Created time.Time
 	Network api.KubernetesNetworkConfigResponse
 	Tags    map[string]string
+	// Compute and Storage record a disabled Auto Mode configuration, reported once it is set.
+	Compute *api.ComputeConfigResponse
+	Storage *api.StorageConfigResponse
 	// ZonalShift is reported only once it is configured.
 	ZonalShift *bool
 	Status     string
@@ -122,6 +125,8 @@ func (c *cluster) output(scope request.Scope) *api.Cluster {
 		},
 		UpgradePolicy:      &api.UpgradePolicyResponse{SupportType: new(c.Support)},
 		DeletionProtection: new(c.DeletionProtection),
+		ComputeConfig:      c.Compute,
+		StorageConfig:      c.Storage,
 	}
 	if c.Token != "" {
 		out.ClientRequestToken = new(c.Token)
@@ -346,7 +351,31 @@ func (s *Service) newCluster(ctx context.Context, scope request.Scope, in *api.C
 
 // clusterOptions applies CreateCluster's optional settings to c.
 func (s *Service) clusterOptions(c *cluster, in *api.CreateClusterRequest) error {
+	if in.ComputeConfig != nil {
+		if common.Value(in.ComputeConfig.Enabled) {
+			return invalidParameter("TinyStack does not support enabled EKS Auto Mode compute.")
+		}
+
+		c.Compute = &api.ComputeConfigResponse{Enabled: new(false)}
+	}
+
+	if in.StorageConfig != nil && in.StorageConfig.BlockStorage != nil {
+		if common.Value(in.StorageConfig.BlockStorage.Enabled) {
+			return invalidParameter("TinyStack does not support enabled EKS Auto Mode block storage.")
+		}
+
+		c.Storage = &api.StorageConfigResponse{BlockStorage: &api.BlockStorage{Enabled: new(false)}}
+	}
+
 	if n := in.KubernetesNetworkConfig; n != nil {
+		if n.ElasticLoadBalancing != nil {
+			if common.Value(n.ElasticLoadBalancing.Enabled) {
+				return invalidParameter("TinyStack does not support enabled EKS Auto Mode load balancing.")
+			}
+
+			c.Network.ElasticLoadBalancing = &api.ElasticLoadBalancing{Enabled: new(false)}
+		}
+
 		if !oneOf(n.IpFamily, "ipv4") {
 			return invalidParameter("TinyStack supports only the ipv4 IP family.")
 		}

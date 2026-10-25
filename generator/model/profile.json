@@ -10744,7 +10744,9 @@
         "bootstrapSelfManagedAddons",
         "upgradePolicy",
         "zonalShiftConfig",
-        "deletionProtection"
+        "deletionProtection",
+        "computeConfig",
+        "storageConfig"
       ],
       "VpcConfigRequest": [
         "subnetIds",
@@ -10755,7 +10757,8 @@
       ],
       "KubernetesNetworkConfigRequest": [
         "serviceIpv4Cidr",
-        "ipFamily"
+        "ipFamily",
+        "elasticLoadBalancing"
       ],
       "Logging": [
         "clusterLogging"
@@ -10806,7 +10809,9 @@
         "accessConfig",
         "upgradePolicy",
         "zonalShiftConfig",
-        "deletionProtection"
+        "deletionProtection",
+        "computeConfig",
+        "storageConfig"
       ],
       "VpcConfigResponse": [
         "subnetIds",
@@ -10818,7 +10823,8 @@
       ],
       "KubernetesNetworkConfigResponse": [
         "serviceIpv4Cidr",
-        "ipFamily"
+        "ipFamily",
+        "elasticLoadBalancing"
       ],
       "Identity": [
         "oidc"
@@ -11297,6 +11303,24 @@
       ],
       "DisassociateIdentityProviderConfigResponse": [
         "update"
+      ],
+      "ComputeConfigRequest": [
+        "enabled"
+      ],
+      "ComputeConfigResponse": [
+        "enabled"
+      ],
+      "BlockStorage": [
+        "enabled"
+      ],
+      "ElasticLoadBalancing": [
+        "enabled"
+      ],
+      "StorageConfigRequest": [
+        "blockStorage"
+      ],
+      "StorageConfigResponse": [
+        "blockStorage"
       ]
     }
   },
@@ -40767,8 +40791,7 @@
         "WirelessDeviceId"
       ]
     }
-  }
-,
+  },
   "translate": {
     "validation": {
       "code": "InvalidRequestException"
@@ -42939,8 +42962,7 @@
       ],
       "DeleteAgentMemoryResponse": []
     }
-  }
-,
+  },
   "bedrockagentcorecontrol": {
     "validation": {
       "code": "ValidationException",
