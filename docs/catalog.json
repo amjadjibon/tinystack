@@ -3348,6 +3348,52 @@
         "SDKs prefix the endpoint host with the account ID, so the endpoint must be a name under localhost (or another name that resolves with any prefix); an IP address endpoint cannot reach S3 Control",
         "The pinned S3ResourceArn pattern excludes regionless bucket ARNs; the generator rewrites it to also accept arn:aws:s3:::bucket, as AWS does"
       ]
+    },
+    "redshiftserverless": {
+      "title": "Amazon Redshift Serverless",
+      "category": "Analytics",
+      "scope": "Account and Region",
+      "summary": "Manage namespaces, workgroups, snapshots, usage limits and private endpoint records without a warehouse.",
+      "execution": "Configuration records only",
+      "package": "redshiftserverless",
+      "features": [
+        "Thirty JSON 1.1 operations for namespaces, workgroups, snapshots, usage limits, endpoint access, temporary credentials and tags",
+        "Existing IAM roles, KMS keys and EC2 subnet/security-group references; omitted networking uses existing default VPC subnets and security group",
+        "Managed admin passwords use Secrets Manager; explicit passwords are validated by the model and omitted from records",
+        "Workgroups return CREATING; a restart-safe worker makes them AVAILABLE after a recorded 150 ms delay. Namespace/workgroup updates similarly use MODIFYING, then AVAILABLE. Deletes remove metadata immediately and return DELETING",
+        "Snapshot restore copies namespace settings only; no database data exists",
+        "Native tags, resource inventory, Resource Groups Tagging, AWS::RedshiftServerless::Namespace and AWS::RedshiftServerless::Workgroup CloudFormation types",
+        "Terraform namespace, workgroup, snapshot and usage-limit resources"
+      ],
+      "gaps": [
+        "No SQL engine, recovery points, scheduled actions, custom domains, reservations, managed workgroups, tracks, resource policies, cross-account access or snapshot copy",
+        "CloudFormation DbName updates fail explicitly because UpdateNamespace has no dbName member; unsupported properties and property removal fail explicitly",
+        "Usage limits and endpoint access are metadata only; no usage enforcement or network interface allocation",
+        "Temporary credentials expire after 900-3600 seconds but authenticate no engine; snapshot retention is metadata, without automatic expiry",
+        "Regional RPU availability and capacity quotas are not enforced; metadata accepts documented base-capacity increments up to 1024 RPUs and Max capacity -1 or 4-5632 RPUs"
+      ]
+    },
+    "redshiftdata": {
+      "title": "Amazon Redshift Data API",
+      "category": "Analytics",
+      "scope": "Account and Region",
+      "summary": "Run deterministic statement lifecycles against user-supplied fixture answers.",
+      "execution": "Fixture-backed statements; no SQL engine",
+      "package": "redshiftdata",
+      "features": [
+        "Seven JSON 1.1 operations: ExecuteStatement, BatchExecuteStatement, DescribeStatement, ListStatements, CancelStatement, GetStatementResult and GetStatementResultV2",
+        "Register strict user fixtures with PUT /_tinystack/redshift-data/fixtures/<id>; optional target {clusterIdentifier or workgroupName}, database, exactly one contains or regex, columnMetadata, records, optional numberOfRecordsUpdated or error. First matching fixture ID in storage order wins",
+        "Bind parameters become quoted SQL string literals before matching; SQL strings, quoted identifiers, comments, dollar quotes and PostgreSQL casts are preserved",
+        "Existing provisioned cluster and serverless workgroup targets and Secrets Manager references; cluster temporary credentials require DbUser",
+        "Restart-safe 150 ms SUBMITTED to STARTED and another 150 ms to FINISHED or FAILED; missing fixtures fail with the registration endpoint. Batch failure aborts other sub-statements",
+        "JSON and CSV results with immutable 1000-row pages; sub-statement IDs fetch batch result sets, statements expire after 24 hours, client-token replay lasts eight hours",
+        "Terraform aws_redshiftdata_statement with a fixture registered by the test harness before apply"
+      ],
+      "gaps": [
+        "No SQL parsing or execution, database catalog, ListDatabases/ListSchemas/ListTables/DescribeTable, sessions, synchronous execution or wait-time requests",
+        "WithEvent=true and RoleLevel selection are explicitly unsupported; no EventBridge query events or per-IAM-role statement ownership",
+        "CSV conversion uses fixture fields and metadata, not database-specific type formatting"
+      ]
     }
   },
   "future": {

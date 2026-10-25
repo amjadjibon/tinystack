@@ -134,6 +134,8 @@ nav:
           - "Amazon OpenSearch Serverless": services/opensearchserverless.md
           - "Amazon OpenSearch Service": services/opensearch.md
           - "Amazon Redshift": services/redshift.md
+          - "Amazon Redshift Data API": services/redshiftdata.md
+          - "Amazon Redshift Serverless": services/redshiftserverless.md
           - "Athena": services/athena.md
           - "Data Firehose": services/firehose.md
           - "Glue": services/glue.md
