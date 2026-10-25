@@ -456,6 +456,7 @@ const catalog: Record<string, ServiceInfo> = {
 		category: management,
 	},
 	route53: { title: "Route 53", category: networking, icon: "route53" },
+	s3control: { title: "S3 Control", category: storage, icon: "s3" },
 	s3: { title: "S3", category: storage, icon: "s3" },
 	scheduler: {
 		title: "EventBridge Scheduler",

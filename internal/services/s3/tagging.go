@@ -247,3 +247,22 @@ func (s *Service) GetObjectTagging(
 
 	return &api.GetObjectTaggingOutput{TagSet: tagSet(f.obj.Tags), VersionId: f.version}, nil
 }
+
+// MergeBucketTags atomically merges or removes S3 Control tags in the same
+// bucket record used by the S3 bucket tagging APIs.
+func (s *Service) MergeBucketTags(
+	ctx context.Context,
+	bucket, owner *string,
+	add map[string]string,
+	remove []string,
+) error {
+	return s.editBucket(ctx, bucket, owner, func(meta *bucketMeta) error {
+		tags, err := tagging.Merge(meta.Tags, add)
+		if err != nil {
+			return invalidTag(err.Error())
+		}
+
+		meta.Tags = tagging.Remove(tags, remove)
+		return nil
+	})
+}

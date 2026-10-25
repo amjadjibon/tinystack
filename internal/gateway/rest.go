@@ -225,11 +225,12 @@ func (s *Server) restOperation(r *http.Request, c *call) (map[string]string, err
 	// end in a slash, though some models write their URIs with one, as Bedrock Agents' and AgentCore's do, and SDKs
 	// send them.
 	if len(segments) == 2 && segments[1] == "" || len(segments) > 2 && segments[len(segments)-1] == "" &&
-		c.service.SigningName != "s3" {
+		c.service.Name != "s3" {
 		segments = segments[:len(segments)-1]
 	}
 
-	if c.service.SigningName == "s3" {
+	// S3 Control signs as s3 too, but its host carries the account ID, not a bucket.
+	if c.service.Name == "s3" {
 		if bucket := virtualBucket(r.Host); bucket != "" {
 			segments = append([]string{bucket}, segments...)
 		}
@@ -237,7 +238,7 @@ func (s *Server) restOperation(r *http.Request, c *call) (map[string]string, err
 
 	// A presigned URL's signature parameters belong to no operation.
 	query := r.URL.Query()
-	if c.service.SigningName == "s3" && r.Method == http.MethodPost &&
+	if c.service.Name == "s3" && r.Method == http.MethodPost &&
 		len(segments) == 1 && len(query) == 0 &&
 		strings.HasPrefix(strings.ToLower(r.Header.Get("Content-Type")), "multipart/form-data") {
 		c.meta.Operation = opPostObject

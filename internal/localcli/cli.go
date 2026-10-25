@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -211,6 +213,7 @@ var TerraformServices = []string{
 	"route53resolver",
 	"route53",
 	"s3",
+	"s3control",
 	"scheduler",
 	"secretsmanager",
 	"sesv2",
@@ -236,6 +239,8 @@ func TerraformOverrideConfig(endpoint string) ([]byte, error) {
 		endpoints[svc] = endpoint
 	}
 
+	endpoints["s3control"] = controlEndpoint(endpoint)
+
 	override := map[string]any{
 		"provider": map[string]any{
 			"aws": map[string]any{
@@ -252,6 +257,23 @@ func TerraformOverrideConfig(endpoint string) ([]byte, error) {
 	}
 
 	return json.MarshalIndent(override, "", "  ")
+}
+
+// controlEndpoint returns endpoint with a loopback IP address replaced by localhost. S3 Control prefixes the host with
+// the account ID, which no IP address accepts, while every name under localhost resolves to loopback.
+func controlEndpoint(endpoint string) string {
+	u, err := url.Parse(endpoint)
+	if err != nil || !net.ParseIP(u.Hostname()).IsLoopback() {
+		return endpoint
+	}
+
+	port := u.Port()
+	u.Host = "localhost"
+	if port != "" {
+		u.Host = net.JoinHostPort(u.Host, port)
+	}
+
+	return u.String()
 }
 
 // FindTerraformWorkDir inspects arguments for -chdir=<dir> or -chdir <dir>.

@@ -116,6 +116,7 @@ import (
 	route53api "github.com/amjadjibon/tinystack/internal/aws/generated/route53"
 	route53resolverapi "github.com/amjadjibon/tinystack/internal/aws/generated/route53resolver"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
+	s3controlapi "github.com/amjadjibon/tinystack/internal/aws/generated/s3control"
 	s3filesapi "github.com/amjadjibon/tinystack/internal/aws/generated/s3files"
 	s3tablesapi "github.com/amjadjibon/tinystack/internal/aws/generated/s3tables"
 	schedulerapi "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
@@ -254,6 +255,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/route53"
 	"github.com/amjadjibon/tinystack/internal/services/route53resolver"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
+	"github.com/amjadjibon/tinystack/internal/services/s3control"
 	"github.com/amjadjibon/tinystack/internal/services/s3files"
 	"github.com/amjadjibon/tinystack/internal/services/s3tables"
 	"github.com/amjadjibon/tinystack/internal/services/scheduler"
@@ -635,6 +637,7 @@ func build(
 		sqsapi.Descriptor(queues),
 		snsapi.Descriptor(topics),
 		s3api.Descriptor(buckets),
+		s3controlapi.Descriptor(s3control.New(buckets)),
 		lambdaapi.Descriptor(functions),
 		eventbridgeapi.Descriptor(rules),
 		iamapi.Descriptor(roles),

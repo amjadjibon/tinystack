@@ -43164,5 +43164,40 @@
         "sessionId"
       ]
     }
+  },
+  "s3control": {
+    "operations": [
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "TagResourceRequest": [
+        "AccountId",
+        "ResourceArn",
+        "Tags"
+      ],
+      "TagResourceResult": [],
+      "UntagResourceRequest": [
+        "AccountId",
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "UntagResourceResult": [],
+      "ListTagsForResourceRequest": [
+        "AccountId",
+        "ResourceArn"
+      ],
+      "ListTagsForResourceResult": [
+        "Tags"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ]
+    },
+    "validation": {
+      "code": "InvalidRequest"
+    }
   }
 }

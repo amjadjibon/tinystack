@@ -593,7 +593,7 @@ func TestBedrockTaggableResourcesARNPattern(t *testing.T) {
 	}
 }
 
-func TestIoTPOSIXPatterns(t *testing.T) {
+func TestPatternRewrites(t *testing.T) {
 	for _, tc := range []struct {
 		source  string
 		valid   []string
@@ -601,6 +601,11 @@ func TestIoTPOSIXPatterns(t *testing.T) {
 	}{
 		{`^[\p{Upper}\p{Digit}_]+$`, []string{"CANCELLED_1"}, []string{"lower", "A B", ""}},
 		{`^[\p{Graph}\x20]*$`, []string{"", "Description 123!?"}, []string{"line\nbreak", "\x00"}},
+		{
+			`^arn:[^:]+:s3(express)?:[^:]`,
+			[]string{"arn:aws:s3:::assets", "arn:aws:s3:us-east-1:000000000000:accesspoint/ap"},
+			[]string{"arn:aws:s3:::", "arn:aws:sqs:us-east-1:000000000000:queue"},
+		},
 	} {
 		rendering, ok := re2Patterns[tc.source]
 		if !ok {

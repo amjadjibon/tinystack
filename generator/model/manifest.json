@@ -502,6 +502,10 @@
     "bedrockagentcore": {
       "path": "codegen/sdk-codegen/aws-models/bedrock-agentcore.json",
       "sha256": "ae45818de50255db523c923d86368798d5664a1dc8b8e0e4ea4bb151a48278be"
+    },
+    "s3control": {
+      "path": "codegen/sdk-codegen/aws-models/s3-control.json",
+      "sha256": "52274064e1a4357ead7a6c57f07c93efbdff2674a16741898aceb7f81dcd17b2"
     }
   }
 }

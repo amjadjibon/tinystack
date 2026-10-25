@@ -683,8 +683,17 @@ func (s *Server) restServices(r *http.Request) []*catalog.Service {
 		return nil
 	}
 
+	// S3 Control shares S3's signing name; local endpoints cannot use its account
+	// host prefix. Require both its versioned path and account header so a normal
+	// S3 path-style bucket named v20180820 still routes to S3.
+	control := name == "s3" && strings.HasPrefix(r.URL.Path, "/v20180820/") &&
+		r.Header.Get("x-amz-account-id") != ""
 	var out []*catalog.Service
 	for _, service := range s.services {
+		if name == "s3" && ((service.Name == "s3control") != control) {
+			continue
+		}
+
 		if restProtocol(service) != "" && service.SigningName == name {
 			out = append(out, service)
 		}

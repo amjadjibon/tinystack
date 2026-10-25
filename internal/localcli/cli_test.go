@@ -63,6 +63,20 @@ func TestEnsureEndpointArg(t *testing.T) {
 	})
 }
 
+func TestControlEndpoint(t *testing.T) {
+	for endpoint, want := range map[string]string{
+		"http://127.0.0.1:4566":      "http://localhost:4566",
+		"http://[::1]:4566":          "http://localhost:4566",
+		"http://127.0.0.1":           "http://localhost",
+		"http://localhost:4566":      "http://localhost:4566",
+		"https://tinystack.internal": "https://tinystack.internal",
+	} {
+		if got := controlEndpoint(endpoint); got != want {
+			t.Errorf("controlEndpoint(%q) = %q, want %q", endpoint, got, want)
+		}
+	}
+}
+
 func TestFindTerraformWorkDir(t *testing.T) {
 	t.Run("no chdir", func(t *testing.T) {
 		if dir := FindTerraformWorkDir([]string{"apply", "-auto-approve"}); dir != "." {
@@ -122,6 +136,9 @@ func TestTerraformOverrideConfig(t *testing.T) {
 	}
 	if endpoints["s3"] != "http://127.0.0.1:4566" {
 		t.Fatalf("expected s3 endpoint set, got %v", endpoints["s3"])
+	}
+	if endpoints["s3control"] != "http://localhost:4566" {
+		t.Fatalf("expected S3 Control endpoint under localhost, got %v", endpoints["s3control"])
 	}
 }
 
