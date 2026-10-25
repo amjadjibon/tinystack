@@ -43223,5 +43223,276 @@
     "validation": {
       "code": "InvalidRequest"
     }
+  },
+  "redshiftserverless": {
+    "validation": {
+      "code": "ValidationException"
+    },
+    "operations": [
+      "CreateNamespace",
+      "GetNamespace",
+      "ListNamespaces",
+      "UpdateNamespace",
+      "DeleteNamespace",
+      "CreateWorkgroup",
+      "GetWorkgroup",
+      "ListWorkgroups",
+      "UpdateWorkgroup",
+      "DeleteWorkgroup",
+      "CreateSnapshot",
+      "GetSnapshot",
+      "ListSnapshots",
+      "UpdateSnapshot",
+      "DeleteSnapshot",
+      "RestoreFromSnapshot",
+      "CreateUsageLimit",
+      "GetUsageLimit",
+      "ListUsageLimits",
+      "UpdateUsageLimit",
+      "DeleteUsageLimit",
+      "CreateEndpointAccess",
+      "GetEndpointAccess",
+      "ListEndpointAccess",
+      "UpdateEndpointAccess",
+      "DeleteEndpointAccess",
+      "GetCredentials",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateNamespaceRequest": [
+        "namespaceName",
+        "adminUsername",
+        "adminUserPassword",
+        "dbName",
+        "kmsKeyId",
+        "defaultIamRoleArn",
+        "iamRoles",
+        "logExports",
+        "tags",
+        "manageAdminPassword",
+        "adminPasswordSecretKmsKeyId"
+      ],
+      "GetNamespaceRequest": [
+        "namespaceName"
+      ],
+      "ListNamespacesRequest": [
+        "nextToken",
+        "maxResults"
+      ],
+      "UpdateNamespaceRequest": [
+        "namespaceName",
+        "adminUserPassword",
+        "adminUsername",
+        "kmsKeyId",
+        "defaultIamRoleArn",
+        "iamRoles",
+        "logExports",
+        "manageAdminPassword",
+        "adminPasswordSecretKmsKeyId"
+      ],
+      "DeleteNamespaceRequest": [
+        "namespaceName",
+        "finalSnapshotName",
+        "finalSnapshotRetentionPeriod"
+      ],
+      "CreateWorkgroupRequest": [
+        "workgroupName",
+        "namespaceName",
+        "baseCapacity",
+        "enhancedVpcRouting",
+        "configParameters",
+        "securityGroupIds",
+        "subnetIds",
+        "publiclyAccessible",
+        "tags",
+        "port",
+        "maxCapacity"
+      ],
+      "GetWorkgroupRequest": [
+        "workgroupName"
+      ],
+      "ListWorkgroupsRequest": [
+        "nextToken",
+        "maxResults"
+      ],
+      "UpdateWorkgroupRequest": [
+        "workgroupName",
+        "baseCapacity",
+        "enhancedVpcRouting",
+        "configParameters",
+        "publiclyAccessible",
+        "subnetIds",
+        "securityGroupIds",
+        "port",
+        "maxCapacity"
+      ],
+      "DeleteWorkgroupRequest": [
+        "workgroupName"
+      ],
+      "CreateSnapshotRequest": [
+        "namespaceName",
+        "snapshotName",
+        "retentionPeriod",
+        "tags"
+      ],
+      "GetSnapshotRequest": [
+        "snapshotName",
+        "snapshotArn"
+      ],
+      "ListSnapshotsRequest": [
+        "nextToken",
+        "maxResults",
+        "namespaceName",
+        "namespaceArn",
+        "startTime",
+        "endTime"
+      ],
+      "UpdateSnapshotRequest": [
+        "snapshotName",
+        "retentionPeriod"
+      ],
+      "DeleteSnapshotRequest": [
+        "snapshotName"
+      ],
+      "RestoreFromSnapshotRequest": [
+        "namespaceName",
+        "workgroupName",
+        "snapshotName",
+        "snapshotArn",
+        "ownerAccount",
+        "manageAdminPassword",
+        "adminPasswordSecretKmsKeyId"
+      ],
+      "CreateUsageLimitRequest": [
+        "resourceArn",
+        "usageType",
+        "amount",
+        "period",
+        "breachAction"
+      ],
+      "GetUsageLimitRequest": [
+        "usageLimitId"
+      ],
+      "ListUsageLimitsRequest": [
+        "resourceArn",
+        "usageType",
+        "nextToken",
+        "maxResults"
+      ],
+      "UpdateUsageLimitRequest": [
+        "usageLimitId",
+        "amount",
+        "breachAction"
+      ],
+      "DeleteUsageLimitRequest": [
+        "usageLimitId"
+      ],
+      "CreateEndpointAccessRequest": [
+        "endpointName",
+        "subnetIds",
+        "workgroupName",
+        "vpcSecurityGroupIds"
+      ],
+      "GetEndpointAccessRequest": [
+        "endpointName"
+      ],
+      "ListEndpointAccessRequest": [
+        "nextToken",
+        "maxResults",
+        "workgroupName",
+        "vpcId"
+      ],
+      "UpdateEndpointAccessRequest": [
+        "endpointName",
+        "vpcSecurityGroupIds"
+      ],
+      "DeleteEndpointAccessRequest": [
+        "endpointName"
+      ],
+      "GetCredentialsRequest": [
+        "dbName",
+        "durationSeconds",
+        "workgroupName"
+      ],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "ListTagsForResourceRequest": [
+        "resourceArn"
+      ]
+    }
+  },
+  "redshiftdata": {
+    "validation": {
+      "code": "ValidationException"
+    },
+    "operations": [
+      "ExecuteStatement",
+      "BatchExecuteStatement",
+      "DescribeStatement",
+      "ListStatements",
+      "CancelStatement",
+      "GetStatementResult",
+      "GetStatementResultV2"
+    ],
+    "shapes": {
+      "ExecuteStatementInput": [
+        "Sql",
+        "ClusterIdentifier",
+        "SecretArn",
+        "DbUser",
+        "Database",
+        "StatementName",
+        "Parameters",
+        "WorkgroupName",
+        "ClientToken",
+        "ResultFormat",
+        "WithEvent"
+      ],
+      "BatchExecuteStatementInput": [
+        "Sqls",
+        "ClusterIdentifier",
+        "SecretArn",
+        "DbUser",
+        "Database",
+        "StatementName",
+        "Parameters",
+        "WorkgroupName",
+        "ClientToken",
+        "ResultFormat",
+        "WithEvent"
+      ],
+      "DescribeStatementRequest": [
+        "Id"
+      ],
+      "ListStatementsRequest": [
+        "NextToken",
+        "MaxResults",
+        "StatementName",
+        "Status",
+        "RoleLevel",
+        "Database",
+        "ClusterIdentifier",
+        "WorkgroupName"
+      ],
+      "CancelStatementRequest": [
+        "Id"
+      ],
+      "GetStatementResultRequest": [
+        "Id",
+        "NextToken"
+      ],
+      "GetStatementResultV2Request": [
+        "Id",
+        "NextToken"
+      ]
+    }
   }
 }

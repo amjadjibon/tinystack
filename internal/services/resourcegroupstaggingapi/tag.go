@@ -258,6 +258,7 @@ var taggers = map[string]tagger{
 	"securityhub":         resourceOperations("securityhub", "ResourceArn", plain),
 	"amp":                 resourceOperations("amp", "ResourceArn", plain),
 	"resourceexplorer2":   resourceOperations("resourceexplorer2", "ResourceArn", plain),
+	"redshiftserverless":  resourceOperations("redshiftserverless", "ResourceArn", pairs),
 	"dsql":                resourceOperations("dsql", "ResourceArn", plain),
 	"s3files":             resourceOperations("s3files", resourceIDMember, pairs),
 	"fis":                 resourceOperations("fis", "ResourceArn", plain),

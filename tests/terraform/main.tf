@@ -21,6 +21,7 @@ provider "aws" {
     bedrockagent         = var.endpoint
     bedrockagentcore     = var.endpoint
     transcribe           = var.endpoint
+    redshiftserverless   = var.endpoint
     dsql                 = var.endpoint
     mediaconnect         = var.endpoint
     shield               = var.endpoint
@@ -2953,3 +2954,35 @@ resource "aws_cloudfrontkeyvaluestore_key" "team" {
   key                 = "team"
   value               = var.team
 }
+
+resource "aws_redshiftserverless_namespace" "local" {
+  namespace_name      = "local-warehouse"
+  admin_username      = "admin"
+  admin_user_password = "Password123!"
+  db_name             = "dev"
+  tags                = { team = var.team }
+}
+
+resource "aws_redshiftserverless_workgroup" "local" {
+  workgroup_name     = "local-warehouse"
+  namespace_name     = aws_redshiftserverless_namespace.local.namespace_name
+  base_capacity      = 8
+  subnet_ids         = [data.aws_subnets.default.ids[0]]
+  security_group_ids = [aws_security_group.web.id]
+  tags               = { team = var.team }
+}
+
+resource "aws_redshiftserverless_usage_limit" "local" {
+  resource_arn = aws_redshiftserverless_workgroup.local.arn
+  usage_type   = "serverless-compute"
+  amount       = 100
+  period       = "monthly"
+}
+
+resource "aws_redshiftserverless_snapshot" "local" {
+  namespace_name   = aws_redshiftserverless_namespace.local.namespace_name
+  snapshot_name    = "local-warehouse-backup"
+  retention_period = 7
+  depends_on       = [aws_redshiftserverless_workgroup.local]
+}
+

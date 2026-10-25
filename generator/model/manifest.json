@@ -510,6 +510,14 @@
     "cloudfrontkeyvaluestore": {
       "path": "codegen/sdk-codegen/aws-models/cloudfront-keyvaluestore.json",
       "sha256": "cc14f46944bb1c3440f689b1a54a8c5d0c0ea8939eb370f36fe661a78c26d208"
+    },
+    "redshiftserverless": {
+      "path": "codegen/sdk-codegen/aws-models/redshift-serverless.json",
+      "sha256": "e224019b802277cb155501e8a241193b2ebafaacad28ec21aa6c2e0b36e640f5"
+    },
+    "redshiftdata": {
+      "path": "codegen/sdk-codegen/aws-models/redshift-data.json",
+      "sha256": "490eb86f020e950ef94c4d6dce4fff44c3a1ee2039a81a4a6b626aeb3a683f07"
     }
   }
 }

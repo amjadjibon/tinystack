@@ -155,6 +155,7 @@ var TerraformServices = []string{
 	"shield",
 	"swf",
 	"globalaccelerator",
+	"redshiftserverless",
 	"dsql",
 	"fis",
 	"inspector2",

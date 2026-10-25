@@ -174,6 +174,11 @@ const catalog: Record<string, ServiceInfo> = {
 		icon: "identitysso",
 	},
 	memorydb: { title: "Amazon MemoryDB", category: database, icon: "memorydb" },
+	redshiftserverless: {
+		title: "Amazon Redshift Serverless",
+		category: analytics,
+		icon: "redshift",
+	},
 	redshift: { title: "Amazon Redshift", category: analytics, icon: "redshift" },
 	s3tables: { title: "Amazon S3 Tables", category: storage, icon: "s3" },
 	s3files: { title: "Amazon S3 Files", category: storage, icon: "s3" },

@@ -15,6 +15,7 @@ var namespaces = map[string]string{
 	"translate":                 "Translate",
 	"transcribe":                "Transcribe",
 	"globalaccelerator":         "GlobalAccelerator",
+	"redshiftserverless":        "RedshiftServerless",
 	"dsql":                      "DSQL",
 	"bedrockagentcorecontrol":   "BedrockAgentCore",
 	"s3files":                   "S3Files",
@@ -120,6 +121,9 @@ var typeNames = map[string]string{
 	"glue/trigger":                           "Trigger",
 	"glue/workflow":                          "Workflow",
 	"globalaccelerator/endpointgroup":        "EndpointGroup",
+	"redshiftserverless/namespace":           "Namespace",
+	"redshiftserverless/workgroup":           "Workgroup",
+	"redshiftserverless/snapshot":            "Snapshot",
 	"dsql/cluster":                           "Cluster",
 	"s3files/file-system":                    "FileSystem",
 	"s3files/mount-target":                   "MountTarget",
@@ -243,6 +247,11 @@ func pascal(kind string) string {
 // "AWS::SQS::Queue", derived from the service that holds it and its inventory
 // type. It reports false for the resources of a service with no namespace.
 func resourceType(r *catalog.Owned) (string, bool) {
+	// Redshift Serverless endpoints and usage limits have no official CloudFormation types.
+	if r.Service == "redshiftserverless" && (r.Type == "endpoint" || r.Type == "usagelimit") {
+		return "", false
+	}
+
 	// MediaConvert jobs have no CloudFormation resource type.
 	if r.Service == "mediaconvert" && r.Type == "job" {
 		return "", false

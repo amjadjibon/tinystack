@@ -104,8 +104,10 @@ def main():
                 # and memory tags update in place (+3 changes); names, roles, protocol,
                 # artifact and memory event expiry remain unchanged.
                 # CloudFront KVS tags and its key value update in place (+2); names/ARN/key are unchanged.
+                # Redshift Serverless namespace and workgroup tags update in place (+2).
+                # Snapshot and usage limit have no team-dependent attributes.
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "8 added, 151 changed, 8 destroyed" in updated, updated
+                assert "8 added, 153 changed, 8 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"
                 terraform("plan", "-detailed-exitcode", team="platform")
                 # The provider replaces the monitor when its name changes. The subscription

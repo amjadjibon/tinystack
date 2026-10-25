@@ -111,6 +111,7 @@ import (
 	rdsapi "github.com/amjadjibon/tinystack/internal/aws/generated/rds"
 	rdsdataapi "github.com/amjadjibon/tinystack/internal/aws/generated/rdsdata"
 	redshiftapi "github.com/amjadjibon/tinystack/internal/aws/generated/redshift"
+	redshiftserverlessapi "github.com/amjadjibon/tinystack/internal/aws/generated/redshiftserverless"
 	resourceexplorer2api "github.com/amjadjibon/tinystack/internal/aws/generated/resourceexplorer2"
 	resourcegroupsapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroups"
 	resourcegroupstaggingapiapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroupstaggingapi"
@@ -251,6 +252,7 @@ import (
 	rdsdocker "github.com/amjadjibon/tinystack/internal/services/rds/docker"
 	"github.com/amjadjibon/tinystack/internal/services/rdsdata"
 	"github.com/amjadjibon/tinystack/internal/services/redshift"
+	"github.com/amjadjibon/tinystack/internal/services/redshiftserverless"
 	"github.com/amjadjibon/tinystack/internal/services/resourceexplorer2"
 	"github.com/amjadjibon/tinystack/internal/services/resourcegroups"
 	"github.com/amjadjibon/tinystack/internal/services/resourcegroupstaggingapi"
@@ -503,6 +505,8 @@ func build(
 	resourceExplorerRecords := resourceexplorer2.New(store)
 	serviceCatalogRecords := servicecatalog.New(store)
 	globalAcceleratorRecords := globalaccelerator.New(store, network, balancers, buckets)
+	redshiftServerlessRecords := redshiftserverless.New(store, network, secrets)
+	a.onStop(redshiftServerlessRecords.Stop)
 	dsqlRecords := dsql.New(store)
 	a.onStop(dsqlRecords.Stop)
 	fisRecords := fis.New(store)
@@ -689,6 +693,7 @@ func build(
 		shieldapi.Descriptor(shieldRecords),
 		swfapi.Descriptor(swfRecords),
 		globalacceleratorapi.Descriptor(globalAcceleratorRecords),
+		redshiftserverlessapi.Descriptor(redshiftServerlessRecords),
 		dsqlapi.Descriptor(dsqlRecords),
 		fisapi.Descriptor(fisRecords),
 		resourceexplorer2api.Descriptor(resourceExplorerRecords),
@@ -834,6 +839,7 @@ func build(
 	// Groups resolve their queries against the same resources, and read CloudFormation stacks.
 	groups.UseCaller(caller)
 	resourceExplorerRecords.UseCaller(caller)
+	redshiftServerlessRecords.UseCaller(caller)
 	fisRecords.UseCaller(caller)
 	// The credentials provider exchanges certificates for role credentials.
 	things.UseRoleCredentials(tokens.AssumeRoleForService)
