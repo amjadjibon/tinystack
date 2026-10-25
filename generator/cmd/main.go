@@ -248,7 +248,13 @@ func (g *generator) typeName(id string) (string, error) {
 // xmlBodyMap distinguishes document maps from maps bound to HTTP headers.
 func (g *generator) xmlBodyMap(id string) bool {
 	for shapeID, members := range g.profile.Shapes {
-		sh := g.model.Shapes[g.namespace+"#"+shapeID]
+		var sh shape
+		for id, candidate := range g.model.Shapes {
+			if short(id) == shapeID {
+				sh = candidate
+				break
+			}
+		}
 		for _, name := range members {
 			member := sh.Members[name]
 			if member.Target == id && !httpBound(member) {

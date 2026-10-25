@@ -43201,7 +43201,10 @@
       "PutAccessPointPolicy",
       "GetAccessPointPolicy",
       "DeleteAccessPointPolicy",
-      "GetAccessPointPolicyStatus"
+      "GetAccessPointPolicyStatus",
+      "GetPublicAccessBlock",
+      "PutPublicAccessBlock",
+      "DeletePublicAccessBlock"
     ],
     "shapes": {
       "TagResourceRequest": [
@@ -43321,6 +43324,19 @@
       ],
       "PolicyStatus": [
         "IsPublic"
+      ],
+      "GetPublicAccessBlockRequest": [
+        "AccountId"
+      ],
+      "GetPublicAccessBlockOutput": [
+        "PublicAccessBlockConfiguration"
+      ],
+      "PutPublicAccessBlockRequest": [
+        "PublicAccessBlockConfiguration",
+        "AccountId"
+      ],
+      "DeletePublicAccessBlockRequest": [
+        "AccountId"
       ]
     },
     "validation": {

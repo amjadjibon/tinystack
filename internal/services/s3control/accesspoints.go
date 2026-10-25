@@ -2,6 +2,7 @@ package s3control
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -22,8 +23,8 @@ const serviceName = "s3control"
 
 type accessPointRecord struct {
 	api.GetAccessPointResult
-	Policy string
 	Tags   map[string]string
+	Policy string
 }
 
 func scopeFor(ctx context.Context, account *string) (request.Scope, error) {
@@ -46,12 +47,16 @@ func controlError(status int, code, message string) error {
 func missingPoint() error {
 	return controlError(404, "NoSuchAccessPoint", "The specified access point does not exist")
 }
+
 func missingPolicy() error {
 	return controlError(404, "NoSuchAccessPointPolicy", "The access point policy does not exist")
 }
 
 func pointName(scope request.Scope, name *string) string {
-	return strings.TrimPrefix(common.Value(name), fmt.Sprintf("arn:aws:s3:%s:%s:accesspoint/", scope.Region, scope.AccountID))
+	return strings.TrimPrefix(
+		common.Value(name),
+		fmt.Sprintf("arn:aws:s3:%s:%s:accesspoint/", scope.Region, scope.AccountID),
+	)
 }
 
 func readPoint(tx storage.ReadTx, scope request.Scope, name *string) (*accessPointRecord, error) {
@@ -69,14 +74,18 @@ func readPoint(tx storage.ReadTx, scope request.Scope, name *string) (*accessPoi
 
 var pointPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$`)
 
-func (s *Service) CreateAccessPoint(ctx context.Context, in *api.CreateAccessPointRequest) (*api.CreateAccessPointResult, error) {
+func (s *Service) CreateAccessPoint(
+	ctx context.Context,
+	in *api.CreateAccessPointRequest,
+) (*api.CreateAccessPointResult, error) {
 	scope, err := scopeFor(ctx, in.AccountId)
 	if err != nil {
 		return nil, err
 	}
 
 	name := common.Value(in.Name)
-	if !pointPattern.MatchString(name) || strings.HasPrefix(name, "xn--") || strings.HasSuffix(name, "-s3alias") || strings.HasSuffix(name, "--ol-s3") {
+	if !pointPattern.MatchString(name) || strings.HasPrefix(name, "xn--") || strings.HasSuffix(name, "-s3alias") ||
+		strings.HasSuffix(name, "--ol-s3") {
 		return nil, controlError(400, "InvalidAccessPointName", "Invalid general purpose access point name")
 	}
 
@@ -84,7 +93,10 @@ func (s *Service) CreateAccessPoint(ctx context.Context, in *api.CreateAccessPoi
 		return nil, controlError(403, "AccessDenied", "Bucket account does not match")
 	}
 
-	if _, err = s.buckets.HeadBucket(ctx, &s3api.HeadBucketRequest{Bucket: in.Bucket, ExpectedBucketOwner: in.AccountId}); err != nil {
+	if _, err = s.buckets.HeadBucket(
+		ctx,
+		&s3api.HeadBucketRequest{Bucket: in.Bucket, ExpectedBucketOwner: in.AccountId},
+	); err != nil {
 		return nil, err
 	}
 
@@ -104,7 +116,12 @@ func (s *Service) CreateAccessPoint(ctx context.Context, in *api.CreateAccessPoi
 
 	config := common.Clone(in.PublicAccessBlockConfiguration)
 	if config == nil {
-		config = &api.PublicAccessBlockConfiguration{BlockPublicAcls: new(true), IgnorePublicAcls: new(true), BlockPublicPolicy: new(true), RestrictPublicBuckets: new(true)}
+		config = &api.PublicAccessBlockConfiguration{
+			BlockPublicAcls:       new(true),
+			IgnorePublicAcls:      new(true),
+			BlockPublicPolicy:     new(true),
+			RestrictPublicBuckets: new(true),
+		}
 	}
 
 	origin := "Internet"
@@ -115,9 +132,18 @@ func (s *Service) CreateAccessPoint(ctx context.Context, in *api.CreateAccessPoi
 	arn := fmt.Sprintf("arn:aws:s3:%s:%s:accesspoint/%s", scope.Region, scope.AccountID, name)
 	alias := name + "-" + common.RandomID(24, "abcdefghijklmnopqrstuvwxyz0123456789") + "-s3alias"
 	r := accessPointRecord{GetAccessPointResult: api.GetAccessPointResult{
-		Name: in.Name, Bucket: in.Bucket, NetworkOrigin: new(origin), VpcConfiguration: in.VpcConfiguration,
-		PublicAccessBlockConfiguration: config, CreationDate: new(time.Now().UTC()), Alias: new(alias), AccessPointArn: new(arn),
-		BucketAccountId: in.AccountId, Endpoints: map[string]string{"ipv4": fmt.Sprintf("%s-%s.s3-accesspoint.%s.amazonaws.com", name, scope.AccountID, scope.Region)},
+		Name:                           in.Name,
+		Bucket:                         in.Bucket,
+		NetworkOrigin:                  new(origin),
+		VpcConfiguration:               in.VpcConfiguration,
+		PublicAccessBlockConfiguration: config,
+		CreationDate:                   new(time.Now().UTC()),
+		Alias:                          new(alias),
+		AccessPointArn:                 new(arn),
+		BucketAccountId:                in.AccountId,
+		Endpoints: map[string]string{
+			"ipv4": fmt.Sprintf("%s-%s.s3-accesspoint.%s.amazonaws.com", name, scope.AccountID, scope.Region),
+		},
 	}, Tags: tags}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		key := scope.Key(serviceName, "accesspoint", name)
@@ -126,50 +152,65 @@ func (s *Service) CreateAccessPoint(ctx context.Context, in *api.CreateAccessPoi
 		}
 
 		if in.VpcConfiguration != nil {
-			if _, err := s.network.MountVPC(tx, scope, common.Value(in.VpcConfiguration.VpcId)); err != nil {
-				return err
+			if _, refErr := s.network.MountVPC(tx, scope, common.Value(in.VpcConfiguration.VpcId)); refErr != nil {
+				return refErr
 			}
 		}
 
-		if err := storage.Write(tx, key, r); err != nil {
-			return err
+		if writeErr := storage.Write(tx, key, r); writeErr != nil {
+			return writeErr
 		}
 
-		return storage.Write(tx, "aws/s3control/aliases/"+alias, aliasRecord{Bucket: common.Value(in.Bucket), Account: scope.AccountID, Region: scope.Region, Name: name})
+		return storage.Write(
+			tx,
+			"aws/s3control/aliases/"+alias,
+			aliasRecord{Bucket: common.Value(in.Bucket), Account: scope.AccountID, Region: scope.Region, Name: name},
+		)
 	})
 	return &api.CreateAccessPointResult{AccessPointArn: new(arn), Alias: new(alias)}, err
 }
 
 type aliasRecord struct{ Bucket, Account, Region, Name string }
 
-func (s *Service) GetAccessPoint(ctx context.Context, in *api.GetAccessPointRequest) (*api.GetAccessPointResult, error) {
+func (s *Service) GetAccessPoint(
+	ctx context.Context,
+	in *api.GetAccessPointRequest,
+) (*api.GetAccessPointResult, error) {
 	scope, err := scopeFor(ctx, in.AccountId)
 	if err != nil {
 		return nil, err
 	}
 
 	var r *accessPointRecord
-	err = s.store.View(ctx, func(tx storage.ReadTx) error { var e error; r, e = readPoint(tx, scope, in.Name); return e })
+	err = s.store.View(
+		ctx,
+		func(tx storage.ReadTx) error { var e error; r, e = readPoint(tx, scope, in.Name); return e },
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	return &r.GetAccessPointResult, nil
+	return new(r.GetAccessPointResult), nil
 }
 
-func (s *Service) DeleteAccessPoint(ctx context.Context, in *api.DeleteAccessPointRequest) (*api.DeleteAccessPointOutput, error) {
+func (s *Service) DeleteAccessPoint(
+	ctx context.Context,
+	in *api.DeleteAccessPointRequest,
+) (*api.DeleteAccessPointOutput, error) {
 	scope, err := scopeFor(ctx, in.AccountId)
 	if err != nil {
 		return nil, err
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		r, err := readPoint(tx, scope, in.Name)
-		if err != nil {
-			if e, ok := err.(*awserror.Error); ok && e.Code == "NoSuchAccessPoint" {
+		r, txErr := readPoint(tx, scope, in.Name)
+		if txErr != nil {
+			var e *awserror.Error
+			if errors.As(txErr, &e) && e.Code == "NoSuchAccessPoint" {
 				return nil
 			}
-			return err
+
+			return txErr
 		}
 
 		tx.Delete("aws/s3control/aliases/" + common.Value(r.Alias))
@@ -179,7 +220,10 @@ func (s *Service) DeleteAccessPoint(ctx context.Context, in *api.DeleteAccessPoi
 	return &api.DeleteAccessPointOutput{}, err
 }
 
-func (s *Service) ListAccessPoints(ctx context.Context, in *api.ListAccessPointsRequest) (*api.ListAccessPointsResult, error) {
+func (s *Service) ListAccessPoints(
+	ctx context.Context,
+	in *api.ListAccessPointsRequest,
+) (*api.ListAccessPointsResult, error) {
 	scope, err := scopeFor(ctx, in.AccountId)
 	if err != nil {
 		return nil, err
@@ -187,9 +231,9 @@ func (s *Service) ListAccessPoints(ctx context.Context, in *api.ListAccessPoints
 
 	var items []api.AccessPoint
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		records, err := storage.Records[accessPointRecord](tx, scope.Prefix(serviceName, "accesspoint"))
-		if err != nil {
-			return err
+		records, txErr := storage.Records[accessPointRecord](tx, scope.Prefix(serviceName, "accesspoint"))
+		if txErr != nil {
+			return txErr
 		}
 
 		for _, r := range records {
@@ -197,7 +241,18 @@ func (s *Service) ListAccessPoints(ctx context.Context, in *api.ListAccessPoints
 				continue
 			}
 
-			items = append(items, api.AccessPoint{Name: r.Name, Bucket: r.Bucket, NetworkOrigin: r.NetworkOrigin, VpcConfiguration: r.VpcConfiguration, AccessPointArn: r.AccessPointArn, Alias: r.Alias, BucketAccountId: r.BucketAccountId})
+			items = append(
+				items,
+				api.AccessPoint{
+					Name:             r.Name,
+					Bucket:           r.Bucket,
+					NetworkOrigin:    r.NetworkOrigin,
+					VpcConfiguration: r.VpcConfiguration,
+					AccessPointArn:   r.AccessPointArn,
+					Alias:            r.Alias,
+					BucketAccountId:  r.BucketAccountId,
+				},
+			)
 		}
 
 		return nil
@@ -206,7 +261,13 @@ func (s *Service) ListAccessPoints(ctx context.Context, in *api.ListAccessPoints
 		return nil, err
 	}
 
-	page, token, err := common.Page(items, func(r api.AccessPoint) string { return common.Value(r.Name) }, in.NextToken, int(common.Value(common.OrElse(in.MaxResults, new(int64(1000))))), awserror.New("InvalidToken", "Invalid next token"))
+	page, token, err := common.Page(
+		items,
+		func(r api.AccessPoint) string { return common.Value(r.Name) },
+		in.NextToken,
+		pageLimit(in.MaxResults),
+		awserror.New("InvalidToken", "Invalid next token"),
+	)
 	return &api.ListAccessPointsResult{AccessPointList: page, NextToken: token}, err
 }
 
@@ -224,13 +285,38 @@ func (s *Service) editPointPolicy(ctx context.Context, account, name, policy *st
 		}
 	}
 
-	return s.store.Update(ctx, func(tx storage.WriteTx) error {
-		r, err := readPoint(tx, scope, name)
-		if err != nil {
+	accountBlocks, err := s.AccountBlocksPublicPolicy(ctx)
+	if err != nil {
+		return err
+	}
+
+	point, err := s.GetAccessPoint(ctx, &api.GetAccessPointRequest{AccountId: account, Name: name})
+	if err != nil {
+		return err
+	}
+
+	bucketBlocks := false
+	config, err := s.buckets.GetPublicAccessBlock(
+		ctx,
+		&s3api.GetPublicAccessBlockRequest{Bucket: point.Bucket, ExpectedBucketOwner: account},
+	)
+	if err != nil {
+		var e *awserror.Error
+		if !errors.As(err, &e) || e.Code != "NoSuchPublicAccessBlockConfiguration" {
 			return err
 		}
+	} else {
+		bucketBlocks = common.Value(config.PublicAccessBlockConfiguration.BlockPublicPolicy)
+	}
 
-		if policy != nil && isPublic && common.Value(r.PublicAccessBlockConfiguration.BlockPublicPolicy) {
+	return s.store.Update(ctx, func(tx storage.WriteTx) error {
+		r, txErr := readPoint(tx, scope, name)
+		if txErr != nil {
+			return txErr
+		}
+
+		if policy != nil && isPublic &&
+			(accountBlocks || bucketBlocks || common.Value(r.PublicAccessBlockConfiguration.BlockPublicPolicy)) {
 			return controlError(403, "AccessDenied", "Public access point policies are blocked")
 		}
 
@@ -239,17 +325,26 @@ func (s *Service) editPointPolicy(ctx context.Context, account, name, policy *st
 	})
 }
 
-func (s *Service) PutAccessPointPolicy(ctx context.Context, in *api.PutAccessPointPolicyRequest) (*api.PutAccessPointPolicyOutput, error) {
+func (s *Service) PutAccessPointPolicy(
+	ctx context.Context,
+	in *api.PutAccessPointPolicyRequest,
+) (*api.PutAccessPointPolicyOutput, error) {
 	err := s.editPointPolicy(ctx, in.AccountId, in.Name, in.Policy)
 	return &api.PutAccessPointPolicyOutput{}, err
 }
 
-func (s *Service) DeleteAccessPointPolicy(ctx context.Context, in *api.DeleteAccessPointPolicyRequest) (*api.DeleteAccessPointPolicyOutput, error) {
+func (s *Service) DeleteAccessPointPolicy(
+	ctx context.Context,
+	in *api.DeleteAccessPointPolicyRequest,
+) (*api.DeleteAccessPointPolicyOutput, error) {
 	err := s.editPointPolicy(ctx, in.AccountId, in.Name, nil)
 	return &api.DeleteAccessPointPolicyOutput{}, err
 }
 
-func (s *Service) GetAccessPointPolicy(ctx context.Context, in *api.GetAccessPointPolicyRequest) (*api.GetAccessPointPolicyResult, error) {
+func (s *Service) GetAccessPointPolicy(
+	ctx context.Context,
+	in *api.GetAccessPointPolicyRequest,
+) (*api.GetAccessPointPolicyResult, error) {
 	scope, err := scopeFor(ctx, in.AccountId)
 	if err != nil {
 		return nil, err
@@ -257,9 +352,9 @@ func (s *Service) GetAccessPointPolicy(ctx context.Context, in *api.GetAccessPoi
 
 	var policy string
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		r, err := readPoint(tx, scope, in.Name)
-		if err != nil {
-			return err
+		r, txErr := readPoint(tx, scope, in.Name)
+		if txErr != nil {
+			return txErr
 		}
 
 		if r.Policy == "" {
@@ -272,7 +367,10 @@ func (s *Service) GetAccessPointPolicy(ctx context.Context, in *api.GetAccessPoi
 	return &api.GetAccessPointPolicyResult{Policy: new(policy)}, err
 }
 
-func (s *Service) GetAccessPointPolicyStatus(ctx context.Context, in *api.GetAccessPointPolicyStatusRequest) (*api.GetAccessPointPolicyStatusResult, error) {
+func (s *Service) GetAccessPointPolicyStatus(
+	ctx context.Context,
+	in *api.GetAccessPointPolicyStatusRequest,
+) (*api.GetAccessPointPolicyStatusResult, error) {
 	out, err := s.GetAccessPointPolicy(ctx, &api.GetAccessPointPolicyRequest{AccountId: in.AccountId, Name: in.Name})
 	if err != nil {
 		return nil, err
@@ -280,4 +378,36 @@ func (s *Service) GetAccessPointPolicyStatus(ctx context.Context, in *api.GetAcc
 
 	public, err := s3.PolicyIsPublic(common.Value(out.Policy))
 	return &api.GetAccessPointPolicyStatusResult{PolicyStatus: &api.PolicyStatus{IsPublic: new(public)}}, err
+}
+
+// CloudFormationPublicAccessBlock applies CloudFormation's documented in-place configuration update.
+// The public S3 Control API has no corresponding update operation.
+func (s *Service) CloudFormationPublicAccessBlock(
+	ctx context.Context,
+	name string,
+	config *api.PublicAccessBlockConfiguration,
+) error {
+	scope, err := request.RegionalScope(ctx)
+	if err != nil {
+		return err
+	}
+
+	if config == nil {
+		config = &api.PublicAccessBlockConfiguration{
+			BlockPublicAcls:       new(true),
+			IgnorePublicAcls:      new(true),
+			BlockPublicPolicy:     new(true),
+			RestrictPublicBuckets: new(true),
+		}
+	}
+
+	return s.store.Update(ctx, func(tx storage.WriteTx) error {
+		r, txErr := readPoint(tx, scope, new(name))
+		if txErr != nil {
+			return txErr
+		}
+
+		r.PublicAccessBlockConfiguration = common.Clone(config)
+		return storage.Write(tx, scope.Key(serviceName, "accesspoint", name), r)
+	})
 }

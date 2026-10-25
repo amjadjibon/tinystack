@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/protocol/xmlmap"
 	"github.com/amjadjibon/tinystack/internal/aws/validation"
 	"regexp"
 	"time"
@@ -89,7 +90,7 @@ type GetAccessPointResult struct {
 	CreationDate                   *time.Time                      `json:"CreationDate,omitempty" xml:"CreationDate,omitempty"`
 	Alias                          *string                         `json:"Alias,omitempty" xml:"Alias,omitempty"`
 	AccessPointArn                 *string                         `json:"AccessPointArn,omitempty" xml:"AccessPointArn,omitempty"`
-	Endpoints                      map[string]string               `json:"Endpoints,omitempty" xml:"Endpoints,omitempty"`
+	Endpoints                      xmlmap.Strings                  `json:"Endpoints,omitempty" xml:"Endpoints,omitempty"`
 	BucketAccountId                *string                         `json:"BucketAccountId,omitempty" xml:"BucketAccountId,omitempty"`
 	DataSourceId                   *string                         `json:"DataSourceId,omitempty" xml:"DataSourceId,omitempty"`
 	DataSourceType                 *string                         `json:"DataSourceType,omitempty" xml:"DataSourceType,omitempty"`
@@ -165,6 +166,27 @@ type PolicyStatus struct {
 type GetAccessPointPolicyStatusResult struct {
 	XMLName      xml.Name      `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ GetAccessPointPolicyStatusResult"`
 	PolicyStatus *PolicyStatus `json:"PolicyStatus,omitempty" xml:"PolicyStatus,omitempty"`
+}
+
+type GetPublicAccessBlockRequest struct {
+	AccountId *string `json:"-" xml:"-"`
+}
+
+type GetPublicAccessBlockOutput struct {
+	PublicAccessBlockConfiguration *PublicAccessBlockConfiguration `json:"-" xml:"-"`
+}
+
+type PutPublicAccessBlockOutput struct{}
+
+type PutPublicAccessBlockRequest struct {
+	PublicAccessBlockConfiguration *PublicAccessBlockConfiguration `json:"-" xml:"-"`
+	AccountId                      *string                         `json:"-" xml:"-"`
+}
+
+type DeletePublicAccessBlockOutput struct{}
+
+type DeletePublicAccessBlockRequest struct {
+	AccountId *string `json:"-" xml:"-"`
 }
 
 var pattern0 = regexp.MustCompile("^\\d{12}$")
@@ -278,6 +300,21 @@ func (v *DeleteAccessPointRequest) Validate(path string) error {
 	return nil
 }
 
+func (v *DeletePublicAccessBlockRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (v *GetAccessPointPolicyRequest) Validate(path string) error {
 	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
 		return err
@@ -341,6 +378,21 @@ func (v *GetAccessPointRequest) Validate(path string) error {
 	}
 	if v.Name != nil {
 		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(3)), new(int64(255))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetPublicAccessBlockRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
 			return err
 		}
 	}
@@ -429,6 +481,29 @@ func (v *PutAccessPointPolicyRequest) Validate(path string) error {
 	}
 	if err := validation.Required(path+"Policy", v.Policy != nil); err != nil {
 		return err
+	}
+	return nil
+}
+
+func (v *PutPublicAccessBlockRequest) Validate(path string) error {
+	if err := validation.Required(path+"PublicAccessBlockConfiguration", v.PublicAccessBlockConfiguration != nil); err != nil {
+		return err
+	}
+	if v.PublicAccessBlockConfiguration != nil {
+		if err := (*v.PublicAccessBlockConfiguration).Validate(path + "PublicAccessBlockConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -564,10 +639,13 @@ type API interface {
 	GetAccessPointPolicy(context.Context, *GetAccessPointPolicyRequest) (*GetAccessPointPolicyResult, error)
 	DeleteAccessPointPolicy(context.Context, *DeleteAccessPointPolicyRequest) (*DeleteAccessPointPolicyOutput, error)
 	GetAccessPointPolicyStatus(context.Context, *GetAccessPointPolicyStatusRequest) (*GetAccessPointPolicyStatusResult, error)
+	GetPublicAccessBlock(context.Context, *GetPublicAccessBlockRequest) (*GetPublicAccessBlockOutput, error)
+	PutPublicAccessBlock(context.Context, *PutPublicAccessBlockRequest) (*PutPublicAccessBlockOutput, error)
+	DeletePublicAccessBlock(context.Context, *DeletePublicAccessBlockRequest) (*DeletePublicAccessBlockOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "s3control", SigningName: "s3", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "s3", TargetPrefix: "", QueryCompatible: false, WrappedErrors: true, XMLNamespace: "http://awss3control.amazonaws.com/doc/2018-08-20/", Protocols: []string{"restXml"}, Errors: map[string]catalog.ErrorBinding{}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "s3control", SigningName: "s3", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "s3", TargetPrefix: "", QueryCompatible: false, WrappedErrors: true, XMLNamespace: "http://awss3control.amazonaws.com/doc/2018-08-20/", Protocols: []string{"restXml"}, Errors: map[string]catalog.ErrorBinding{"NoSuchPublicAccessBlockConfiguration": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}}, Operations: map[string]catalog.Operation{
 		"TagResource": {Name: "TagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:TagResource", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "ResourceArn": catalog.MemberBinding{Location: "label", Name: "ResourceArn", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/v20180820/tags/{ResourceArn+}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &TagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*TagResourceRequest)
 			if err := in.Validate(""); err != nil {
@@ -644,6 +722,27 @@ func Descriptor(api API) catalog.Service {
 				return nil, awserror.New("InvalidRequest", err.Error())
 			}
 			return api.GetAccessPointPolicyStatus(ctx, in)
+		}},
+		"GetPublicAccessBlock": {Name: "GetPublicAccessBlock", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetPublicAccessBlock", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}}, Output: map[string]catalog.MemberBinding{"PublicAccessBlockConfiguration": catalog.MemberBinding{Location: "payload", Name: "PublicAccessBlockConfiguration", Format: ""}}, Method: "GET", URI: "/v20180820/configuration/publicAccessBlock", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetPublicAccessBlockRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*GetPublicAccessBlockRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.GetPublicAccessBlock(ctx, in)
+		}},
+		"PutPublicAccessBlock": {Name: "PutPublicAccessBlock", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "s3:PutPublicAccessBlock", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "PublicAccessBlockConfiguration": catalog.MemberBinding{Location: "payload", Name: "PublicAccessBlockConfiguration", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/v20180820/configuration/publicAccessBlock", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutPublicAccessBlockRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*PutPublicAccessBlockRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.PutPublicAccessBlock(ctx, in)
+		}},
+		"DeletePublicAccessBlock": {Name: "DeletePublicAccessBlock", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "s3:DeletePublicAccessBlock", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/v20180820/configuration/publicAccessBlock", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &DeletePublicAccessBlockRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*DeletePublicAccessBlockRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.DeletePublicAccessBlock(ctx, in)
 		}},
 	}}
 }

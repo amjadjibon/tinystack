@@ -57,9 +57,10 @@ type Service struct {
 	deliveries *delivery.Log
 	// authorizer checks notifications to queues, topics, and functions against their resource policies;
 	// see UseServiceAuthorizer.
-	authorizer     catalog.ServiceAuthorizer
-	now            func() time.Time
-	maxObjectBytes int64
+	accountBlocksPublicPolicy func(context.Context) (bool, error)
+	authorizer                catalog.ServiceAuthorizer
+	now                       func() time.Time
+	maxObjectBytes            int64
 }
 
 // New owns the supplied file facility, or creates a temporary one for standalone use.
@@ -453,4 +454,9 @@ func (s *Service) Stop() {
 		_ = s.collect(context.Background())
 		_ = s.blobs.Close()
 	}
+}
+
+// UseAccountPublicAccessBlock connects the S3 Control account setting lookup before serving.
+func (s *Service) UseAccountPublicAccessBlock(lookup func(context.Context) (bool, error)) {
+	s.accountBlocksPublicPolicy = lookup
 }

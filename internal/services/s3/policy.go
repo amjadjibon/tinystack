@@ -128,8 +128,17 @@ func (s *Service) PutBucketPolicy(
 		return nil, fail(http.StatusBadRequest, "MalformedPolicy", err.Error())
 	}
 
+	accountBlocks := false
+	if s.accountBlocksPublicPolicy != nil {
+		accountBlocks, err = s.accountBlocksPublicPolicy(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	err = s.editBucket(ctx, in.Bucket, in.ExpectedBucketOwner, func(meta *bucketMeta) error {
-		if b := meta.PublicAccessBlock; b != nil && common.Value(b.BlockPublicPolicy) && public(statements) {
+		if b := meta.PublicAccessBlock; (accountBlocks || (b != nil && common.Value(b.BlockPublicPolicy))) &&
+			public(statements) {
 			return fail(http.StatusForbidden, "AccessDenied", "User is not authorized to perform: s3:PutBucketPolicy "+
 				"on resource because public policies are blocked by the BlockPublicPolicy block public access setting.")
 		}

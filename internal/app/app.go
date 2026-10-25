@@ -438,6 +438,8 @@ func build(
 	// Stop closes real-time connections, which shutdown leaves open.
 	a.onStop(graphQL.Stop)
 	network := ec2.New(store)
+	bucketControl := s3control.New(store, buckets, network)
+	buckets.UseAccountPublicAccessBlock(bucketControl.AccountBlocksPublicPolicy)
 	network.UseInstanceProfiles(roles.InstanceProfileOf)
 	kube := eks.New(store, network)
 	// Stop ends the cluster runner and removes k3s containers.
@@ -648,7 +650,7 @@ func build(
 		sqsapi.Descriptor(queues),
 		snsapi.Descriptor(topics),
 		s3api.Descriptor(buckets),
-		s3controlapi.Descriptor(s3control.New(store, buckets, network)),
+		s3controlapi.Descriptor(bucketControl),
 		lambdaapi.Descriptor(functions),
 		eventbridgeapi.Descriptor(rules),
 		iamapi.Descriptor(roles),
