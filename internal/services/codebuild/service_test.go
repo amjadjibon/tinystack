@@ -22,6 +22,7 @@ func buildContext(account, region string) context.Context {
 		request.Metadata{Scope: request.Scope{AccountID: account, Region: region}},
 	)
 }
+
 func localContext() context.Context { return buildContext("000000000000", "us-east-1") }
 func projectInput() *api.CreateProjectInput {
 	return &api.CreateProjectInput{
@@ -82,6 +83,7 @@ func getProject(t *testing.T, s *Service, ctx context.Context, name string) *api
 	if e != nil || len(out.Projects) != 1 {
 		t.Fatalf("get %v %v", out, e)
 	}
+
 	return &out.Projects[0]
 }
 
@@ -93,20 +95,24 @@ func TestProjectCRUDDefaultsTagsAndAtomicUpdates(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
+
 	before := common.Clone(out.Project)
 	if *before.Arn != "arn:aws:codebuild:us-east-1:000000000000:project/project" ||
 		*before.Created != *before.LastModified ||
 		*before.Created <= 0 {
 		t.Fatal(before)
 	}
+
 	if !reflect.DeepEqual(getProject(t, s, ctx, *before.Arn), before) {
 		t.Fatal("read changed complete metadata")
 	}
+
 	*in.Source.Location = "mutated"
 	*out.Project.Environment.EnvironmentVariables[0].Value = "mutated"
 	if !reflect.DeepEqual(getProject(t, s, ctx, "project"), before) {
 		t.Fatal("input/output aliased stored record")
 	}
+
 	_, e = s.CreateProject(ctx, projectInput())
 	wantError(t, e, "ResourceAlreadyExistsException")
 	_, e = s.UpdateProject(ctx, &api.UpdateProjectInput{Name: new("missing"), Description: new("x")})
@@ -124,6 +130,7 @@ func TestProjectCRUDDefaultsTagsAndAtomicUpdates(t *testing.T) {
 	if !reflect.DeepEqual(getProject(t, s, ctx, "project"), before) {
 		t.Fatal("failed effective-candidate update mutated metadata/timestamp")
 	}
+
 	updated, e := s.UpdateProject(
 		ctx,
 		&api.UpdateProjectInput{
@@ -135,22 +142,27 @@ func TestProjectCRUDDefaultsTagsAndAtomicUpdates(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
+
 	if len(updated.Project.Tags) != 1 || *updated.Project.Tags[0].Key != "new" ||
 		*updated.Project.Created != *before.Created ||
 		*updated.Project.LastModified <= *before.LastModified ||
 		*updated.Project.Arn != *before.Arn {
 		t.Fatal("update failed identity/tag replacement", updated)
 	}
+
 	cleared, e := s.UpdateProject(ctx, &api.UpdateProjectInput{Name: new("project"), Tags: []api.Tag{}})
 	if e != nil || len(cleared.Project.Tags) != 0 {
 		t.Fatalf("clear tags %v %v", cleared, e)
 	}
+
 	if _, e = s.DeleteProject(ctx, &api.DeleteProjectInput{Name: new("project")}); e != nil {
 		t.Fatal(e)
 	}
+
 	if _, e = s.DeleteProject(ctx, &api.DeleteProjectInput{Name: new("project")}); e != nil {
 		t.Fatal("missing delete must be idempotent", e)
 	}
+
 	defaults := projectInput()
 	defaults.Name = new("defaults")
 	defaults.TimeoutInMinutes = nil
@@ -163,6 +175,7 @@ func TestProjectCRUDDefaultsTagsAndAtomicUpdates(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
+
 	if *d.Project.TimeoutInMinutes != 60 || *d.Project.QueuedTimeoutInMinutes != 60 ||
 		*d.Project.Environment.PrivilegedMode ||
 		*d.Project.Environment.EnvironmentVariables[0].Type != plaintext {
@@ -324,6 +337,7 @@ func TestProjectValidation(t *testing.T) {
 			p.Tags[0].Value = new("bad!")
 		},
 	}
+
 	for name, mutate := range tests {
 		t.Run(name, func(t *testing.T) {
 			s := New(&memory.Store{})
@@ -347,18 +361,22 @@ func TestProjectTagLimitsAndSourceVariants(t *testing.T) {
 	for i := range 50 {
 		in.Tags = append(in.Tags, api.Tag{Key: new(fmt.Sprintf("key%02d", i)), Value: new("value")})
 	}
+
 	out, e := s.CreateProject(ctx, in)
 	if e != nil {
 		t.Fatal(e)
 	}
+
 	tags := []api.Tag{}
 	for i := range 50 {
 		tags = append(tags, api.Tag{Key: new(fmt.Sprintf("other%02d", i)), Value: new("new")})
 	}
+
 	u, e := s.UpdateProject(ctx, &api.UpdateProjectInput{Name: in.Name, Tags: tags})
 	if e != nil || len(u.Project.Tags) != 50 {
 		t.Fatalf("disjoint replacement %v %v", u, e)
 	}
+
 	before := common.Clone(u.Project)
 	tags = append(tags, api.Tag{Key: new("overflow"), Value: new("")})
 	_, e = s.UpdateProject(ctx, &api.UpdateProjectInput{Name: in.Name, Description: new("fail"), Tags: tags})
@@ -366,6 +384,7 @@ func TestProjectTagLimitsAndSourceVariants(t *testing.T) {
 	if !reflect.DeepEqual(before, getProject(t, s, ctx, *out.Project.Name)) {
 		t.Fatal("failed tags changed config")
 	}
+
 	sources := []*api.ProjectSource{
 		{Type: new(s3Type), Location: new("source-bucket/folder/")},
 		{
@@ -373,12 +392,14 @@ func TestProjectTagLimitsAndSourceVariants(t *testing.T) {
 			GitCloneDepth: new(int64(0)),
 		},
 	}
+
 	for _, source := range sources {
 		u, e = s.UpdateProject(ctx, &api.UpdateProjectInput{Name: in.Name, Source: source, SourceVersion: new("")})
 		if e != nil || !reflect.DeepEqual(u.Project.Source, source) {
 			t.Fatalf("source retention %v %v", u, e)
 		}
 	}
+
 	_, e = s.DeleteProject(ctx, &api.DeleteProjectInput{Name: out.Project.Arn})
 	wantError(t, e, "InvalidInputException")
 	_, e = s.UpdateProject(ctx, &api.UpdateProjectInput{Name: out.Project.Arn})
@@ -393,6 +414,7 @@ func TestProjectPaginationScopeSortingAndConcurrency(t *testing.T) {
 	for range 20 {
 		wg.Go(func() { _, e := s.CreateProject(ctx, projectInput()); results <- e })
 	}
+
 	wg.Wait()
 	close(results)
 	success := 0
@@ -403,9 +425,11 @@ func TestProjectPaginationScopeSortingAndConcurrency(t *testing.T) {
 			wantError(t, e, "ResourceAlreadyExistsException")
 		}
 	}
+
 	if success != 1 {
 		t.Fatal("concurrent name uniqueness", success)
 	}
+
 	for i := range 201 {
 		p := projectInput()
 		p.Name = new(fmt.Sprintf("p%03d", i))
@@ -413,21 +437,26 @@ func TestProjectPaginationScopeSortingAndConcurrency(t *testing.T) {
 			t.Fatal(e)
 		}
 	}
+
 	first, e := s.ListProjects(ctx, &api.ListProjectsInput{})
 	if e != nil || len(first.Projects) != 100 || first.NextToken == nil || first.Projects[0] != "p000" {
 		t.Fatalf("page1 %v %v", first, e)
 	}
+
 	if _, e = s.DeleteProject(ctx, &api.DeleteProjectInput{Name: new("p099")}); e != nil {
 		t.Fatal(e)
 	}
+
 	next, e := s.ListProjects(ctx, &api.ListProjectsInput{NextToken: first.NextToken})
 	if e != nil || len(next.Projects) != 100 || next.Projects[0] != "p100" {
 		t.Fatalf("resume deleted cursor %v %v", next, e)
 	}
+
 	last, e := s.ListProjects(ctx, &api.ListProjectsInput{NextToken: next.NextToken})
 	if e != nil || len(last.Projects) != 2 || last.NextToken != nil {
 		t.Fatalf("last page %v %v", last, e)
 	}
+
 	for _, other := range []context.Context{
 		buildContext("111111111111", "us-east-1"),
 		buildContext("000000000000", "us-west-2"),
@@ -439,6 +468,7 @@ func TestProjectPaginationScopeSortingAndConcurrency(t *testing.T) {
 			t.Fatal("scope leak")
 		}
 	}
+
 	_, e = s.ListProjects(ctx, &api.ListProjectsInput{SortOrder: new("DESCENDING"), NextToken: first.NextToken})
 	wantError(t, e, "InvalidInputException")
 	_, e = s.ListProjects(ctx, &api.ListProjectsInput{SortBy: new("CREATED_TIME"), NextToken: first.NextToken})
@@ -450,10 +480,12 @@ func TestProjectPaginationScopeSortingAndConcurrency(t *testing.T) {
 		if err != nil || len(out.Projects) != 100 {
 			t.Fatal(out, err)
 		}
+
 		if by != sortName && out.Projects[0] != "p200" {
 			t.Fatal("incorrect time sort", out)
 		}
 	}
+
 	mixed, e := s.BatchGetProjects(
 		ctx,
 		&api.BatchGetProjectsInput{
@@ -468,12 +500,14 @@ func TestProjectPaginationScopeSortingAndConcurrency(t *testing.T) {
 	if e != nil || len(mixed.Projects) != 1 || len(mixed.ProjectsNotFound) != 2 {
 		t.Fatalf("mixed duplicates/foreign %v %v", mixed, e)
 	}
+
 	for _, names := range [][]string{
 		nil, make([]string, 101), {"arn:aws-cn:codebuild:us-east-1:000000000000:project/project"}, {""},
 	} {
 		_, e = s.BatchGetProjects(ctx, &api.BatchGetProjectsInput{Names: names})
 		wantError(t, e, "InvalidInputException")
 	}
+
 	wg = sync.WaitGroup{}
 	for i := range 10 {
 		wg.Go(func() {
@@ -486,6 +520,7 @@ func TestProjectPaginationScopeSortingAndConcurrency(t *testing.T) {
 			}
 		})
 	}
+
 	wg.Wait()
 	p := getProject(t, s, ctx, "project")
 	if *p.LastModified <= *p.Created {

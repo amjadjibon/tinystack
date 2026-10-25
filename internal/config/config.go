@@ -49,6 +49,13 @@ const (
 	ClustersK3s     = "k3s"
 )
 
+// CodeBuild build modes: records rejects StartBuild; docker runs each build's
+// buildspec in a container with the docker CLI.
+const (
+	BuildsRecords = "records"
+	BuildsDocker  = "docker"
+)
+
 // ElastiCache cache modes: records keeps caches as records only; docker also runs
 // each cache node's container with the docker CLI.
 const (
@@ -265,6 +272,9 @@ type Config struct {
 			Node   string `yaml:"node"`
 		} `yaml:"local"`
 	} `yaml:"lambda"`
+	CodeBuild struct {
+		Builds string `yaml:"builds"`
+	} `yaml:"codebuild"`
 	ECS struct {
 		Containers string `yaml:"containers"`
 	} `yaml:"ecs"`
@@ -337,6 +347,7 @@ func Default() Config {
 	c.Lambda.Executor = ExecutorAuto
 	c.Lambda.Local.Python = "python3"
 	c.Lambda.Local.Node = "node"
+	c.CodeBuild.Builds = BuildsRecords
 	c.ECS.Containers = ContainersRecords
 	c.EKS.Clusters = ClustersRecords
 	c.ElastiCache.Caches = CachesRecords
@@ -507,6 +518,10 @@ func (c *Config) Validate() error {
 
 	if c.Lambda.Local.Python == "" || c.Lambda.Local.Node == "" {
 		return fmt.Errorf("lambda.local.python and lambda.local.node must name interpreters")
+	}
+
+	if c.CodeBuild.Builds != BuildsRecords && c.CodeBuild.Builds != BuildsDocker {
+		return fmt.Errorf("codebuild.builds must be records or docker")
 	}
 
 	if c.ECS.Containers != ContainersRecords && c.ECS.Containers != ContainersDocker {

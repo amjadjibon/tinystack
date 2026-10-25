@@ -24822,7 +24822,13 @@
       "BatchGetProjects",
       "ListProjects",
       "UpdateProject",
-      "DeleteProject"
+      "DeleteProject",
+      "StartBuild",
+      "BatchGetBuilds",
+      "StopBuild",
+      "ListBuilds",
+      "ListBuildsForProject",
+      "BatchDeleteBuilds"
     ],
     "shapes": {
       "CreateProjectInput": [
@@ -24835,7 +24841,8 @@
         "serviceRole",
         "timeoutInMinutes",
         "queuedTimeoutInMinutes",
-        "tags"
+        "tags",
+        "logsConfig"
       ],
       "CreateProjectOutput": [
         "project"
@@ -24850,7 +24857,8 @@
         "serviceRole",
         "timeoutInMinutes",
         "queuedTimeoutInMinutes",
-        "tags"
+        "tags",
+        "logsConfig"
       ],
       "UpdateProjectOutput": [
         "project"
@@ -24888,7 +24896,8 @@
         "tags",
         "arn",
         "created",
-        "lastModified"
+        "lastModified",
+        "logsConfig"
       ],
       "ProjectSource": [
         "type",
@@ -24921,7 +24930,117 @@
       "Tag": [
         "key",
         "value"
+      ],
+      "StartBuildInput": [
+        "projectName",
+        "sourceVersion",
+        "buildspecOverride",
+        "imageOverride",
+        "privilegedModeOverride",
+        "environmentVariablesOverride",
+        "timeoutInMinutesOverride",
+        "artifactsOverride",
+        "logsConfigOverride"
+      ],
+      "BatchGetBuildsInput": [
+        "ids"
+      ],
+      "StopBuildInput": [
+        "id"
+      ],
+      "ListBuildsInput": [
+        "sortOrder",
+        "nextToken"
+      ],
+      "ListBuildsForProjectInput": [
+        "projectName",
+        "sortOrder",
+        "nextToken"
+      ],
+      "BatchDeleteBuildsInput": [
+        "ids"
+      ],
+      "StartBuildOutput": [
+        "build"
+      ],
+      "StopBuildOutput": [
+        "build"
+      ],
+      "BatchGetBuildsOutput": [
+        "builds",
+        "buildsNotFound"
+      ],
+      "ListBuildsOutput": [
+        "ids",
+        "nextToken"
+      ],
+      "ListBuildsForProjectOutput": [
+        "ids",
+        "nextToken"
+      ],
+      "BatchDeleteBuildsOutput": [
+        "buildsDeleted",
+        "buildsNotDeleted"
+      ],
+      "LogsConfig": [
+        "cloudWatchLogs"
+      ],
+      "CloudWatchLogsConfig": [
+        "status",
+        "groupName",
+        "streamName"
+      ],
+      "Build": [
+        "id",
+        "arn",
+        "buildNumber",
+        "startTime",
+        "endTime",
+        "currentPhase",
+        "buildStatus",
+        "sourceVersion",
+        "projectName",
+        "phases",
+        "source",
+        "artifacts",
+        "environment",
+        "serviceRole",
+        "timeoutInMinutes",
+        "queuedTimeoutInMinutes",
+        "logs",
+        "buildComplete",
+        "initiator"
+      ],
+      "BuildPhase": [
+        "phaseType",
+        "phaseStatus",
+        "startTime",
+        "endTime",
+        "durationInSeconds",
+        "contexts"
+      ],
+      "PhaseContext": [
+        "statusCode",
+        "message"
+      ],
+      "BuildArtifacts": [
+        "location",
+        "encryptionDisabled"
+      ],
+      "LogsLocation": [
+        "groupName",
+        "streamName",
+        "deepLink",
+        "cloudWatchLogsArn",
+        "cloudWatchLogs"
+      ],
+      "BuildNotDeleted": [
+        "id",
+        "statusCode"
       ]
+    },
+    "validation": {
+      "code": "InvalidInputException"
     }
   },
   "codecommit": {

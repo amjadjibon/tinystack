@@ -3,7 +3,11 @@ package codebuild
 
 import (
 	"context"
+	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/validation"
+	"regexp"
+	"unicode/utf8"
 )
 
 type ProjectSource struct {
@@ -43,6 +47,16 @@ type Tag struct {
 	Value *string `json:"value,omitempty"`
 }
 
+type CloudWatchLogsConfig struct {
+	Status     *string `json:"status,omitempty"`
+	GroupName  *string `json:"groupName,omitempty"`
+	StreamName *string `json:"streamName,omitempty"`
+}
+
+type LogsConfig struct {
+	CloudWatchLogs *CloudWatchLogsConfig `json:"cloudWatchLogs,omitempty"`
+}
+
 type CreateProjectInput struct {
 	Name                   *string             `json:"name,omitempty"`
 	Description            *string             `json:"description,omitempty"`
@@ -54,6 +68,7 @@ type CreateProjectInput struct {
 	TimeoutInMinutes       *int64              `json:"timeoutInMinutes,omitempty"`
 	QueuedTimeoutInMinutes *int64              `json:"queuedTimeoutInMinutes,omitempty"`
 	Tags                   []Tag               `json:"tags,omitempty"`
+	LogsConfig             *LogsConfig         `json:"logsConfig,omitempty"`
 }
 
 type Project struct {
@@ -70,6 +85,7 @@ type Project struct {
 	Arn                    *string             `json:"arn,omitempty"`
 	Created                *float64            `json:"created,omitempty"`
 	LastModified           *float64            `json:"lastModified,omitempty"`
+	LogsConfig             *LogsConfig         `json:"logsConfig,omitempty"`
 }
 
 type CreateProjectOutput struct {
@@ -107,6 +123,7 @@ type UpdateProjectInput struct {
 	TimeoutInMinutes       *int64              `json:"timeoutInMinutes,omitempty"`
 	QueuedTimeoutInMinutes *int64              `json:"queuedTimeoutInMinutes,omitempty"`
 	Tags                   []Tag               `json:"tags,omitempty"`
+	LogsConfig             *LogsConfig         `json:"logsConfig,omitempty"`
 }
 
 type UpdateProjectOutput struct {
@@ -120,30 +137,672 @@ type DeleteProjectInput struct {
 type DeleteProjectOutput struct {
 }
 
+type StartBuildInput struct {
+	ProjectName                  *string               `json:"projectName,omitempty"`
+	SourceVersion                *string               `json:"sourceVersion,omitempty"`
+	BuildspecOverride            *string               `json:"buildspecOverride,omitempty"`
+	ImageOverride                *string               `json:"imageOverride,omitempty"`
+	PrivilegedModeOverride       *bool                 `json:"privilegedModeOverride,omitempty"`
+	EnvironmentVariablesOverride []EnvironmentVariable `json:"environmentVariablesOverride,omitempty"`
+	TimeoutInMinutesOverride     *int64                `json:"timeoutInMinutesOverride,omitempty"`
+	ArtifactsOverride            *ProjectArtifacts     `json:"artifactsOverride,omitempty"`
+	LogsConfigOverride           *LogsConfig           `json:"logsConfigOverride,omitempty"`
+}
+
+type PhaseContext struct {
+	StatusCode *string `json:"statusCode,omitempty"`
+	Message    *string `json:"message,omitempty"`
+}
+
+type BuildPhase struct {
+	PhaseType         *string        `json:"phaseType,omitempty"`
+	PhaseStatus       *string        `json:"phaseStatus,omitempty"`
+	StartTime         *float64       `json:"startTime,omitempty"`
+	EndTime           *float64       `json:"endTime,omitempty"`
+	DurationInSeconds *int64         `json:"durationInSeconds,omitempty"`
+	Contexts          []PhaseContext `json:"contexts,omitempty"`
+}
+
+type BuildArtifacts struct {
+	Location           *string `json:"location,omitempty"`
+	EncryptionDisabled *bool   `json:"encryptionDisabled,omitempty"`
+}
+
+type LogsLocation struct {
+	GroupName         *string               `json:"groupName,omitempty"`
+	StreamName        *string               `json:"streamName,omitempty"`
+	DeepLink          *string               `json:"deepLink,omitempty"`
+	CloudWatchLogsArn *string               `json:"cloudWatchLogsArn,omitempty"`
+	CloudWatchLogs    *CloudWatchLogsConfig `json:"cloudWatchLogs,omitempty"`
+}
+
+type Build struct {
+	Id                     *string             `json:"id,omitempty"`
+	Arn                    *string             `json:"arn,omitempty"`
+	BuildNumber            *int64              `json:"buildNumber,omitempty"`
+	StartTime              *float64            `json:"startTime,omitempty"`
+	EndTime                *float64            `json:"endTime,omitempty"`
+	CurrentPhase           *string             `json:"currentPhase,omitempty"`
+	BuildStatus            *string             `json:"buildStatus,omitempty"`
+	SourceVersion          *string             `json:"sourceVersion,omitempty"`
+	ProjectName            *string             `json:"projectName,omitempty"`
+	Phases                 []BuildPhase        `json:"phases,omitempty"`
+	Source                 *ProjectSource      `json:"source,omitempty"`
+	Artifacts              *BuildArtifacts     `json:"artifacts,omitempty"`
+	Environment            *ProjectEnvironment `json:"environment,omitempty"`
+	ServiceRole            *string             `json:"serviceRole,omitempty"`
+	TimeoutInMinutes       *int64              `json:"timeoutInMinutes,omitempty"`
+	QueuedTimeoutInMinutes *int64              `json:"queuedTimeoutInMinutes,omitempty"`
+	Logs                   *LogsLocation       `json:"logs,omitempty"`
+	BuildComplete          *bool               `json:"buildComplete,omitempty"`
+	Initiator              *string             `json:"initiator,omitempty"`
+}
+
+type StartBuildOutput struct {
+	Build *Build `json:"build,omitempty"`
+}
+
+type BatchGetBuildsInput struct {
+	Ids []string `json:"ids,omitempty"`
+}
+
+type BatchGetBuildsOutput struct {
+	Builds         []Build  `json:"builds,omitempty"`
+	BuildsNotFound []string `json:"buildsNotFound,omitempty"`
+}
+
+type StopBuildInput struct {
+	Id *string `json:"id,omitempty"`
+}
+
+type StopBuildOutput struct {
+	Build *Build `json:"build,omitempty"`
+}
+
+type ListBuildsInput struct {
+	SortOrder *string `json:"sortOrder,omitempty"`
+	NextToken *string `json:"nextToken,omitempty"`
+}
+
+type ListBuildsOutput struct {
+	Ids       []string `json:"ids,omitempty"`
+	NextToken *string  `json:"nextToken,omitempty"`
+}
+
+type ListBuildsForProjectInput struct {
+	ProjectName *string `json:"projectName,omitempty"`
+	SortOrder   *string `json:"sortOrder,omitempty"`
+	NextToken   *string `json:"nextToken,omitempty"`
+}
+
+type ListBuildsForProjectOutput struct {
+	Ids       []string `json:"ids,omitempty"`
+	NextToken *string  `json:"nextToken,omitempty"`
+}
+
+type BatchDeleteBuildsInput struct {
+	Ids []string `json:"ids,omitempty"`
+}
+
+type BuildNotDeleted struct {
+	Id         *string `json:"id,omitempty"`
+	StatusCode *string `json:"statusCode,omitempty"`
+}
+
+type BatchDeleteBuildsOutput struct {
+	BuildsDeleted    []string          `json:"buildsDeleted,omitempty"`
+	BuildsNotDeleted []BuildNotDeleted `json:"buildsNotDeleted,omitempty"`
+}
+
+var enum0 = []string{"DISABLED", "ENABLED"}
+
+var pattern0 = regexp.MustCompile("^[A-Za-z0-9][A-Za-z0-9\\-_]{1,149}$")
+
+var enum1 = []string{"PARAMETER_STORE", "PLAINTEXT", "SECRETS_MANAGER"}
+
+var enum2 = []string{"ASCENDING", "DESCENDING"}
+
+var enum3 = []string{"CREATED_TIME", "LAST_MODIFIED_TIME", "NAME"}
+
+var enum4 = []string{"CODEPIPELINE", "NO_ARTIFACTS", "S3"}
+
+var enum5 = []string{"BUILD_ID", "NONE"}
+
+var enum6 = []string{"NONE", "ZIP"}
+
+var enum7 = []string{"ARM_CONTAINER", "ARM_EC2", "ARM_LAMBDA_CONTAINER", "LINUX_CONTAINER", "LINUX_EC2", "LINUX_GPU_CONTAINER", "LINUX_LAMBDA_CONTAINER", "MAC_ARM", "WINDOWS_CONTAINER", "WINDOWS_EC2", "WINDOWS_SERVER_2019_CONTAINER", "WINDOWS_SERVER_2022_CONTAINER"}
+
+var enum8 = []string{"ATTRIBUTE_BASED_COMPUTE", "BUILD_GENERAL1_2XLARGE", "BUILD_GENERAL1_LARGE", "BUILD_GENERAL1_MEDIUM", "BUILD_GENERAL1_SMALL", "BUILD_GENERAL1_XLARGE", "BUILD_LAMBDA_10GB", "BUILD_LAMBDA_1GB", "BUILD_LAMBDA_2GB", "BUILD_LAMBDA_4GB", "BUILD_LAMBDA_8GB", "CUSTOM_INSTANCE_TYPE"}
+
+var enum9 = []string{"BITBUCKET", "CODECOMMIT", "CODEPIPELINE", "GITHUB", "GITHUB_ENTERPRISE", "GITLAB", "GITLAB_SELF_MANAGED", "NO_SOURCE", "S3"}
+
+var pattern1 = regexp.MustCompile("^([\\p{L}\\p{Z}\\p{N}_.:/=@+\\-]*)$")
+
+func (v *BatchDeleteBuildsInput) Validate(path string) error {
+	if err := validation.Required(path+"ids", v.Ids != nil); err != nil {
+		return err
+	}
+	if v.Ids != nil {
+		if err := validation.Length(path+"ids", len(v.Ids), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.Ids {
+			if err := validation.Length(validation.Index(path+"ids", i0), utf8.RuneCountInString(e0), new(int64(1)), nil); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *BatchGetBuildsInput) Validate(path string) error {
+	if err := validation.Required(path+"ids", v.Ids != nil); err != nil {
+		return err
+	}
+	if v.Ids != nil {
+		if err := validation.Length(path+"ids", len(v.Ids), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.Ids {
+			if err := validation.Length(validation.Index(path+"ids", i0), utf8.RuneCountInString(e0), new(int64(1)), nil); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *BatchGetProjectsInput) Validate(path string) error {
+	if err := validation.Required(path+"names", v.Names != nil); err != nil {
+		return err
+	}
+	if v.Names != nil {
+		if err := validation.Length(path+"names", len(v.Names), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.Names {
+			if err := validation.Length(validation.Index(path+"names", i0), utf8.RuneCountInString(e0), new(int64(1)), nil); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *CloudWatchLogsConfig) Validate(path string) error {
+	if err := validation.Required(path+"status", v.Status != nil); err != nil {
+		return err
+	}
+	if v.Status != nil {
+		if err := validation.Enum(path+"status", (*v.Status), enum0); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreateProjectInput) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(2)), new(int64(150))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"name", (*v.Name), pattern0, nil, "^[A-Za-z0-9][A-Za-z0-9\\-_]{1,149}$"); err != nil {
+			return err
+		}
+	}
+	if v.Description != nil {
+		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(255))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"source", v.Source != nil); err != nil {
+		return err
+	}
+	if v.Source != nil {
+		if err := (*v.Source).Validate(path + "source" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"artifacts", v.Artifacts != nil); err != nil {
+		return err
+	}
+	if v.Artifacts != nil {
+		if err := (*v.Artifacts).Validate(path + "artifacts" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"environment", v.Environment != nil); err != nil {
+		return err
+	}
+	if v.Environment != nil {
+		if err := (*v.Environment).Validate(path + "environment" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"serviceRole", v.ServiceRole != nil); err != nil {
+		return err
+	}
+	if v.ServiceRole != nil {
+		if err := validation.Length(path+"serviceRole", utf8.RuneCountInString((*v.ServiceRole)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if v.TimeoutInMinutes != nil {
+		if err := validation.Range(path+"timeoutInMinutes", float64((*v.TimeoutInMinutes)), new(float64(5)), new(float64(2160))); err != nil {
+			return err
+		}
+	}
+	if v.QueuedTimeoutInMinutes != nil {
+		if err := validation.Range(path+"queuedTimeoutInMinutes", float64((*v.QueuedTimeoutInMinutes)), new(float64(5)), new(float64(480))); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		if err := validation.Length(path+"tags", len(v.Tags), new(int64(0)), new(int64(50))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.LogsConfig != nil {
+		if err := (*v.LogsConfig).Validate(path + "logsConfig" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteProjectInput) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *EnvironmentVariable) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"value", v.Value != nil); err != nil {
+		return err
+	}
+	if v.Type != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum1); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListBuildsForProjectInput) Validate(path string) error {
+	if err := validation.Required(path+"projectName", v.ProjectName != nil); err != nil {
+		return err
+	}
+	if v.ProjectName != nil {
+		if err := validation.Length(path+"projectName", utf8.RuneCountInString((*v.ProjectName)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if v.SortOrder != nil {
+		if err := validation.Enum(path+"sortOrder", (*v.SortOrder), enum2); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListBuildsInput) Validate(path string) error {
+	if v.SortOrder != nil {
+		if err := validation.Enum(path+"sortOrder", (*v.SortOrder), enum2); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListProjectsInput) Validate(path string) error {
+	if v.SortBy != nil {
+		if err := validation.Enum(path+"sortBy", (*v.SortBy), enum3); err != nil {
+			return err
+		}
+	}
+	if v.SortOrder != nil {
+		if err := validation.Enum(path+"sortOrder", (*v.SortOrder), enum2); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *LogsConfig) Validate(path string) error {
+	if v.CloudWatchLogs != nil {
+		if err := (*v.CloudWatchLogs).Validate(path + "cloudWatchLogs" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ProjectArtifacts) Validate(path string) error {
+	if err := validation.Required(path+"type", v.Type != nil); err != nil {
+		return err
+	}
+	if v.Type != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum4); err != nil {
+			return err
+		}
+	}
+	if v.NamespaceType != nil {
+		if err := validation.Enum(path+"namespaceType", (*v.NamespaceType), enum5); err != nil {
+			return err
+		}
+	}
+	if v.Packaging != nil {
+		if err := validation.Enum(path+"packaging", (*v.Packaging), enum6); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ProjectEnvironment) Validate(path string) error {
+	if err := validation.Required(path+"type", v.Type != nil); err != nil {
+		return err
+	}
+	if v.Type != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum7); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"image", v.Image != nil); err != nil {
+		return err
+	}
+	if v.Image != nil {
+		if err := validation.Length(path+"image", utf8.RuneCountInString((*v.Image)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"computeType", v.ComputeType != nil); err != nil {
+		return err
+	}
+	if v.ComputeType != nil {
+		if err := validation.Enum(path+"computeType", (*v.ComputeType), enum8); err != nil {
+			return err
+		}
+	}
+	if v.EnvironmentVariables != nil {
+		for i0, e0 := range v.EnvironmentVariables {
+			if err := e0.Validate(validation.Index(path+"environmentVariables", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *ProjectSource) Validate(path string) error {
+	if err := validation.Required(path+"type", v.Type != nil); err != nil {
+		return err
+	}
+	if v.Type != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum9); err != nil {
+			return err
+		}
+	}
+	if v.GitCloneDepth != nil {
+		if err := validation.Range(path+"gitCloneDepth", float64((*v.GitCloneDepth)), new(float64(0)), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *StartBuildInput) Validate(path string) error {
+	if err := validation.Required(path+"projectName", v.ProjectName != nil); err != nil {
+		return err
+	}
+	if v.ProjectName != nil {
+		if err := validation.Length(path+"projectName", utf8.RuneCountInString((*v.ProjectName)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if v.ImageOverride != nil {
+		if err := validation.Length(path+"imageOverride", utf8.RuneCountInString((*v.ImageOverride)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if v.EnvironmentVariablesOverride != nil {
+		for i0, e0 := range v.EnvironmentVariablesOverride {
+			if err := e0.Validate(validation.Index(path+"environmentVariablesOverride", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.TimeoutInMinutesOverride != nil {
+		if err := validation.Range(path+"timeoutInMinutesOverride", float64((*v.TimeoutInMinutesOverride)), new(float64(5)), new(float64(2160))); err != nil {
+			return err
+		}
+	}
+	if v.ArtifactsOverride != nil {
+		if err := (*v.ArtifactsOverride).Validate(path + "artifactsOverride" + "."); err != nil {
+			return err
+		}
+	}
+	if v.LogsConfigOverride != nil {
+		if err := (*v.LogsConfigOverride).Validate(path + "logsConfigOverride" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *StopBuildInput) Validate(path string) error {
+	if err := validation.Required(path+"id", v.Id != nil); err != nil {
+		return err
+	}
+	if v.Id != nil {
+		if err := validation.Length(path+"id", utf8.RuneCountInString((*v.Id)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *Tag) Validate(path string) error {
+	if v.Key != nil {
+		if err := validation.Length(path+"key", utf8.RuneCountInString((*v.Key)), new(int64(1)), new(int64(127))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"key", (*v.Key), pattern1, nil, "^([\\p{L}\\p{Z}\\p{N}_.:/=@+\\-]*)$"); err != nil {
+			return err
+		}
+	}
+	if v.Value != nil {
+		if err := validation.Length(path+"value", utf8.RuneCountInString((*v.Value)), new(int64(0)), new(int64(255))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"value", (*v.Value), pattern1, nil, "^([\\p{L}\\p{Z}\\p{N}_.:/=@+\\-]*)$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *UpdateProjectInput) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if v.Description != nil {
+		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(255))); err != nil {
+			return err
+		}
+	}
+	if v.Source != nil {
+		if err := (*v.Source).Validate(path + "source" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Artifacts != nil {
+		if err := (*v.Artifacts).Validate(path + "artifacts" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Environment != nil {
+		if err := (*v.Environment).Validate(path + "environment" + "."); err != nil {
+			return err
+		}
+	}
+	if v.ServiceRole != nil {
+		if err := validation.Length(path+"serviceRole", utf8.RuneCountInString((*v.ServiceRole)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if v.TimeoutInMinutes != nil {
+		if err := validation.Range(path+"timeoutInMinutes", float64((*v.TimeoutInMinutes)), new(float64(5)), new(float64(2160))); err != nil {
+			return err
+		}
+	}
+	if v.QueuedTimeoutInMinutes != nil {
+		if err := validation.Range(path+"queuedTimeoutInMinutes", float64((*v.QueuedTimeoutInMinutes)), new(float64(5)), new(float64(480))); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		if err := validation.Length(path+"tags", len(v.Tags), new(int64(0)), new(int64(50))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.LogsConfig != nil {
+		if err := (*v.LogsConfig).Validate(path + "logsConfig" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type API interface {
 	CreateProject(context.Context, *CreateProjectInput) (*CreateProjectOutput, error)
 	BatchGetProjects(context.Context, *BatchGetProjectsInput) (*BatchGetProjectsOutput, error)
 	ListProjects(context.Context, *ListProjectsInput) (*ListProjectsOutput, error)
 	UpdateProject(context.Context, *UpdateProjectInput) (*UpdateProjectOutput, error)
 	DeleteProject(context.Context, *DeleteProjectInput) (*DeleteProjectOutput, error)
+	StartBuild(context.Context, *StartBuildInput) (*StartBuildOutput, error)
+	BatchGetBuilds(context.Context, *BatchGetBuildsInput) (*BatchGetBuildsOutput, error)
+	StopBuild(context.Context, *StopBuildInput) (*StopBuildOutput, error)
+	ListBuilds(context.Context, *ListBuildsInput) (*ListBuildsOutput, error)
+	ListBuildsForProject(context.Context, *ListBuildsForProjectInput) (*ListBuildsForProjectOutput, error)
+	BatchDeleteBuilds(context.Context, *BatchDeleteBuildsInput) (*BatchDeleteBuildsOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
 	return catalog.Service{Name: "codebuild", SigningName: "codebuild", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "codebuild", TargetPrefix: "CodeBuild_20161006", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"AccountLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidInputException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateProject": {Name: "CreateProject", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:CreateProject", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.CreateProject", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateProjectInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateProject(ctx, input.(*CreateProjectInput))
+			in := input.(*CreateProjectInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.CreateProject(ctx, in)
 		}},
 		"BatchGetProjects": {Name: "BatchGetProjects", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:BatchGetProjects", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.BatchGetProjects", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchGetProjectsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.BatchGetProjects(ctx, input.(*BatchGetProjectsInput))
+			in := input.(*BatchGetProjectsInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.BatchGetProjects(ctx, in)
 		}},
 		"ListProjects": {Name: "ListProjects", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:ListProjects", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.ListProjects", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListProjectsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListProjects(ctx, input.(*ListProjectsInput))
+			in := input.(*ListProjectsInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.ListProjects(ctx, in)
 		}},
 		"UpdateProject": {Name: "UpdateProject", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:UpdateProject", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.UpdateProject", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateProjectInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UpdateProject(ctx, input.(*UpdateProjectInput))
+			in := input.(*UpdateProjectInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.UpdateProject(ctx, in)
 		}},
 		"DeleteProject": {Name: "DeleteProject", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:DeleteProject", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.DeleteProject", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteProjectInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteProject(ctx, input.(*DeleteProjectInput))
+			in := input.(*DeleteProjectInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.DeleteProject(ctx, in)
+		}},
+		"StartBuild": {Name: "StartBuild", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:StartBuild", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.StartBuild", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StartBuildInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*StartBuildInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.StartBuild(ctx, in)
+		}},
+		"BatchGetBuilds": {Name: "BatchGetBuilds", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:BatchGetBuilds", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.BatchGetBuilds", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchGetBuildsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*BatchGetBuildsInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.BatchGetBuilds(ctx, in)
+		}},
+		"StopBuild": {Name: "StopBuild", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:StopBuild", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.StopBuild", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StopBuildInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*StopBuildInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.StopBuild(ctx, in)
+		}},
+		"ListBuilds": {Name: "ListBuilds", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:ListBuilds", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.ListBuilds", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListBuildsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListBuildsInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.ListBuilds(ctx, in)
+		}},
+		"ListBuildsForProject": {Name: "ListBuildsForProject", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:ListBuildsForProject", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.ListBuildsForProject", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListBuildsForProjectInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListBuildsForProjectInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.ListBuildsForProject(ctx, in)
+		}},
+		"BatchDeleteBuilds": {Name: "BatchDeleteBuilds", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:BatchDeleteBuilds", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.BatchDeleteBuilds", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchDeleteBuildsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*BatchDeleteBuildsInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.BatchDeleteBuilds(ctx, in)
 		}},
 	}}
 }

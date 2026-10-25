@@ -31,9 +31,11 @@ func sortValue(p *api.Project, by string) cursor {
 	if by == "CREATED_TIME" {
 		v.Time = common.Value(p.Created)
 	}
+
 	if by == "LAST_MODIFIED_TIME" {
 		v.Time = common.Value(p.LastModified)
 	}
+
 	return v
 }
 
@@ -41,6 +43,7 @@ func compare(a, b cursor) int {
 	if c := cmp.Compare(a.Time, b.Time); c != 0 {
 		return c
 	}
+
 	return strings.Compare(a.Name, b.Name)
 }
 
@@ -49,17 +52,20 @@ func (s *Service) ListProjects(ctx context.Context, in *api.ListProjectsInput) (
 	if e != nil {
 		return nil, e
 	}
+
 	by := common.Value(common.OrElse(in.SortBy, new(sortName)))
 	order := common.Value(common.OrElse(in.SortOrder, new(ascending)))
 	if by != sortName && by != "CREATED_TIME" && by != "LAST_MODIFIED_TIME" {
 		return nil, invalid("Invalid SortBy")
 	}
+
 	direction := 1
 	if order == "DESCENDING" {
 		direction = -1
 	} else if order != ascending {
 		return nil, invalid("Invalid SortOrder")
 	}
+
 	sum := sha256.Sum256([]byte(scope.AccountID + "/" + scope.Region + "/ListProjects/" + by + "/" + order))
 	prefix := hex.EncodeToString(sum[:]) + ":"
 	var after *cursor
@@ -72,8 +78,10 @@ func (s *Service) ListProjects(ctx context.Context, in *api.ListProjectsInput) (
 			v.Time < 0 {
 			return nil, invalid("Invalid NextToken for this scope and sort")
 		}
+
 		after = &v
 	}
+
 	var rows []*api.Project
 	e = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var err error
@@ -83,6 +91,7 @@ func (s *Service) ListProjects(ctx context.Context, in *api.ListProjectsInput) (
 	if e != nil {
 		return nil, e
 	}
+
 	slices.SortFunc(
 		rows,
 		func(a, b *api.Project) int { return direction * compare(sortValue(a, by), sortValue(b, by)) },
@@ -93,20 +102,25 @@ func (s *Service) ListProjects(ctx context.Context, in *api.ListProjectsInput) (
 			func(p *api.Project) bool { return direction*compare(sortValue(p, by), *after) <= 0 },
 		)
 	}
+
 	out := &api.ListProjectsOutput{Projects: []string{}}
 	selected := rows
 	if len(selected) > 100 {
 		selected = selected[:100]
 	}
+
 	for _, p := range selected {
 		out.Projects = append(out.Projects, *p.Name)
 	}
+
 	if len(rows) > 100 {
 		raw, err := json.Marshal(sortValue(selected[99], by))
 		if err != nil {
 			return nil, err
 		}
+
 		out.NextToken = new(base64.RawURLEncoding.EncodeToString([]byte(prefix + string(raw))))
 	}
+
 	return out, nil
 }

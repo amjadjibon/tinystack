@@ -3,6 +3,7 @@
 package dockercli
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -73,4 +74,53 @@ func listLabeled(ctx context.Context, label string, command ...string) (map[stri
 	}
 
 	return res, nil
+}
+
+// Stream runs a CLI command with merged output, delivering each complete line as it arrives.
+// A callback failure cancels the command; the owning runtime still removes its container.
+func Stream(ctx context.Context, stdin io.Reader, emit func(string) error, args ...string) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	// #nosec G204 -- runtimes construct Docker arguments without a host shell.
+	cmd := exec.CommandContext(ctx, "docker", args...)
+	cmd.Stdin = stdin
+	reader, writer := io.Pipe()
+	cmd.Stdout, cmd.Stderr = writer, writer
+	if err := cmd.Start(); err != nil {
+		_ = reader.Close()
+		_ = writer.Close()
+		return err
+	}
+
+	done := make(chan error, 1)
+	go func() {
+		err := cmd.Wait()
+		_ = writer.Close()
+		done <- err
+	}()
+
+	// ReadString avoids Scanner's arbitrary line limit for user build output.
+	buffered := bufio.NewReader(reader)
+	var callbackErr error
+	for {
+		line, err := buffered.ReadString('\n')
+		if line != "" && callbackErr == nil {
+			callbackErr = emit(strings.TrimRight(line, "\r\n"))
+			if callbackErr != nil {
+				cancel()
+			}
+		}
+
+		if err != nil {
+			break
+		}
+	}
+
+	_ = reader.Close()
+	err := <-done
+	if callbackErr != nil {
+		return callbackErr
+	}
+
+	return err
 }

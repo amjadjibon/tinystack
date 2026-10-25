@@ -175,6 +175,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/services/codeartifact"
 	"github.com/amjadjibon/tinystack/internal/services/codebuild"
+	builddocker "github.com/amjadjibon/tinystack/internal/services/codebuild/docker"
 	"github.com/amjadjibon/tinystack/internal/services/codecommit"
 	"github.com/amjadjibon/tinystack/internal/services/codeconnections"
 	"github.com/amjadjibon/tinystack/internal/services/codedeploy"
@@ -746,6 +747,20 @@ func build(
 	wafClassicRecords.UseCaller(caller)
 	budgetRecords.Start(caller)
 	containers.UseCaller(caller)
+	buildProjects.UseCaller(caller)
+	if cfg.CodeBuild.Builds == config.BuildsDocker {
+		if err = buildProjects.UseRuntime(
+			ctx,
+			builddocker.New(),
+			"http://"+net.JoinHostPort("host.docker.internal", strconv.Itoa(cfg.Server.Port)),
+			logGroups.Append,
+		); err != nil {
+			return nil, err
+		}
+	}
+
+	a.onStop(buildProjects.Stop)
+	a.onReset(buildProjects.Reset)
 	workflows.UseCaller(caller)
 	firehoses.UseCaller(caller)
 	// Pipes enrich and deliver to Lambda, SQS, SNS, EventBridge, Step Functions, and Kinesis.

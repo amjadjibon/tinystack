@@ -266,7 +266,7 @@ func TestCodeBuildWireProtocolUnsupportedAndErrors(t *testing.T) {
 	unsupported := []string{
 		`{"badgeEnabled":false}`,
 		`{"cache":null}`,
-		`{"logsConfig":{}}`,
+		`{"logsConfig":{"s3Logs":{}}}`,
 		`{"secondarySources":[]}`,
 		`{"encryptionKey":""}`,
 		`{"source":{"type":"GITHUB","auth":null}}`,
@@ -312,7 +312,7 @@ func TestCodeBuildWireProtocolUnsupportedAndErrors(t *testing.T) {
 		t.Fatal("query supplied required body-only names", status, out)
 	}
 	for _, op := range []string{
-		"StartBuild", "BatchGetBuilds", "StopBuild", "ListBuilds", "CreateWebhook",
+		"CreateWebhook",
 		"ImportSourceCredentials", "TagResource", "UntagResource",
 	} {
 		status, out = codebuildWire(t, s, "POST", "/", target+op, `{}`)

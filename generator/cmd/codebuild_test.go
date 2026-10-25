@@ -36,7 +36,8 @@ func TestCodeBuildPinnedJSONBindingsAndSelection(t *testing.T) {
 			t.Fatalf("%s: %+v", op, b)
 		}
 	}
-	if len(p["codebuild"].Operations) != 5 {
+
+	if len(p["codebuild"].Operations) != 11 {
 		t.Fatal("unexpected operation surface")
 	}
 	if len(p["codebuild"].Shapes["ProjectSource"]) != 4 || len(p["codebuild"].Shapes["ProjectEnvironment"]) != 5 {
