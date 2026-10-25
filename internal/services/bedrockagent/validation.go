@@ -134,7 +134,11 @@ func (s *Service) validateGroup(
 		}
 
 		version, _ := document["openapi"].(string)
-		if !strings.HasPrefix(version, "3.") {
+		info, infoOK := document["info"].(map[string]any)
+		_, pathsOK := document["paths"].(map[string]any)
+		title, _ := info["title"].(string)
+		infoVersion, _ := info["version"].(string)
+		if !strings.HasPrefix(version, "3.") || !infoOK || !pathsOK || title == "" || infoVersion == "" {
 			return invalid("API schema must be an OpenAPI 3 document.")
 		}
 	}
@@ -207,6 +211,7 @@ func (s *Service) validateKnowledgeBase(
 			secret = store.RdsConfiguration.CredentialsSecretArn
 		}
 	}
+
 	if secret != nil {
 		if secretErr := s.reference(
 			ctx,
@@ -217,6 +222,7 @@ func (s *Service) validateKnowledgeBase(
 			return secretErr
 		}
 	}
+
 	switch common.Value(store.Type) {
 	case "OPENSEARCH_SERVERLESS":
 		if store.OpensearchServerlessConfiguration == nil {

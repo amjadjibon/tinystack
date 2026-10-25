@@ -17,6 +17,7 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
+    bedrockagent         = var.endpoint
     transcribe           = var.endpoint
     dsql                 = var.endpoint
     mediaconnect         = var.endpoint
@@ -2848,4 +2849,54 @@ resource "aws_transcribe_vocabulary_filter" "fixtures" {
   language_code          = "en-US"
   words                  = ["example"]
   tags                   = { team = var.team }
+}
+
+# Bedrock Agents: tags on agent, alias, and knowledge base update in place.
+resource "aws_bedrockagent_agent" "assistant" {
+  agent_name                  = "local-assistant"
+  agent_resource_role_arn     = aws_iam_role.eks.arn
+  foundation_model            = "anthropic.claude-sonnet-4-5-20250929-v1:0"
+  instruction                 = "Use only the user supplied fixtures for deterministic local responses."
+  idle_session_ttl_in_seconds = 600
+  skip_resource_in_use_check  = true
+  tags                        = local.tags
+}
+
+resource "aws_bedrockagent_agent_action_group" "input" {
+  agent_id                      = aws_bedrockagent_agent.assistant.agent_id
+  agent_version                 = "DRAFT"
+  action_group_name             = "user-input"
+  parent_action_group_signature = "AMAZON.UserInput"
+  skip_resource_in_use_check    = true
+}
+
+resource "aws_bedrockagent_agent_alias" "assistant" {
+  agent_id         = aws_bedrockagent_agent.assistant.agent_id
+  agent_alias_name = "production"
+  depends_on       = [aws_bedrockagent_agent_action_group.input]
+  tags             = local.tags
+}
+
+resource "aws_bedrockagent_knowledge_base" "documents" {
+  name     = "local-documents"
+  role_arn = aws_iam_role.eks.arn
+  knowledge_base_configuration {
+    type = "VECTOR"
+    vector_knowledge_base_configuration {
+      embedding_model_arn = "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0"
+    }
+  }
+  storage_configuration {
+    type = "OPENSEARCH_SERVERLESS"
+    opensearch_serverless_configuration {
+      collection_arn    = aws_opensearchserverless_collection.search.arn
+      vector_index_name = "documents"
+      field_mapping {
+        vector_field   = "vector"
+        text_field     = "text"
+        metadata_field = "metadata"
+      }
+    }
+  }
+  tags = local.tags
 }

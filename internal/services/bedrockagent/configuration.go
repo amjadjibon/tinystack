@@ -2,6 +2,7 @@ package bedrockagent
 
 import (
 	"context"
+	"reflect"
 	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockagent"
@@ -73,6 +74,7 @@ func (s *Service) CreateAgentActionGroup(
 			if readErr != nil {
 				return readErr
 			}
+
 			for _, r := range records {
 				if r.Token == *in.ClientToken {
 					value = r.Group
@@ -290,6 +292,7 @@ func (s *Service) CreateKnowledgeBase(
 			if readErr != nil {
 				return readErr
 			}
+
 			for _, r := range records {
 				if r.Token == *in.ClientToken {
 					value = r.KnowledgeBase
@@ -344,6 +347,12 @@ func (s *Service) UpdateKnowledgeBase(
 		kindKnowledgeBase,
 		common.Value(in.KnowledgeBaseId),
 		func(_ storage.WriteTx, _ request.Scope, r *record) error {
+			// UpdateKnowledgeBase requires the original immutable configurations (AWS API reference).
+			if !reflect.DeepEqual(r.KnowledgeBase.KnowledgeBaseConfiguration, in.KnowledgeBaseConfiguration) ||
+				!reflect.DeepEqual(r.KnowledgeBase.StorageConfiguration, in.StorageConfiguration) {
+				return invalid("knowledgeBaseConfiguration and storageConfiguration cannot be changed.")
+			}
+
 			r.KnowledgeBase.Name = in.Name
 			r.KnowledgeBase.Description = in.Description
 			r.KnowledgeBase.RoleArn = in.RoleArn
@@ -475,6 +484,7 @@ func (s *Service) CreateDataSource(
 			if readErr != nil {
 				return readErr
 			}
+
 			for _, r := range records {
 				if r.Token == *in.ClientToken {
 					value = r.DataSource

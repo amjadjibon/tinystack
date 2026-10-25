@@ -42218,5 +42218,726 @@
         "tags"
       ]
     }
+  },
+  "bedrockagentruntime": {
+    "validation": {
+      "code": "ValidationException"
+    },
+    "operations": [
+      "InvokeAgent",
+      "CreateSession",
+      "GetSession",
+      "UpdateSession",
+      "EndSession",
+      "DeleteSession",
+      "ListSessions",
+      "CreateInvocation",
+      "ListInvocations",
+      "PutInvocationStep",
+      "GetInvocationStep",
+      "ListInvocationSteps",
+      "GetAgentMemory",
+      "DeleteAgentMemory"
+    ],
+    "shapes": {
+      "InvokeAgentRequest": [
+        "sessionState",
+        "agentId",
+        "agentAliasId",
+        "sessionId",
+        "endSession",
+        "enableTrace",
+        "inputText",
+        "memoryId"
+      ],
+      "SessionState": [
+        "sessionAttributes",
+        "promptSessionAttributes",
+        "returnControlInvocationResults",
+        "invocationId"
+      ],
+      "InvocationResultMember": [
+        "apiResult",
+        "functionResult"
+      ],
+      "ApiResult": [
+        "actionGroup",
+        "httpMethod",
+        "apiPath",
+        "confirmationState",
+        "responseState",
+        "httpStatusCode",
+        "responseBody",
+        "agentId"
+      ],
+      "ContentBody": [
+        "body",
+        "images"
+      ],
+      "ImageInput": [
+        "format",
+        "source"
+      ],
+      "ImageInputSource": [
+        "bytes"
+      ],
+      "FunctionResult": [
+        "actionGroup",
+        "confirmationState",
+        "function",
+        "responseBody",
+        "responseState",
+        "agentId"
+      ],
+      "InvokeAgentResponse": [
+        "completion",
+        "contentType",
+        "sessionId",
+        "memoryId"
+      ],
+      "ResponseStream": [
+        "chunk",
+        "trace",
+        "returnControl",
+        "internalServerException",
+        "validationException",
+        "resourceNotFoundException",
+        "serviceQuotaExceededException",
+        "throttlingException",
+        "accessDeniedException",
+        "conflictException",
+        "dependencyFailedException",
+        "badGatewayException",
+        "modelNotReadyException",
+        "files"
+      ],
+      "PayloadPart": [
+        "bytes",
+        "attribution"
+      ],
+      "Attribution": [
+        "citations"
+      ],
+      "Citation": [
+        "generatedResponsePart",
+        "retrievedReferences"
+      ],
+      "GeneratedResponsePart": [
+        "textResponsePart"
+      ],
+      "TextResponsePart": [
+        "text",
+        "span"
+      ],
+      "Span": [
+        "start",
+        "end"
+      ],
+      "RetrievedReference": [
+        "content",
+        "location",
+        "metadata"
+      ],
+      "RetrievalResultContent": [
+        "type",
+        "text",
+        "byteContent",
+        "video",
+        "audio",
+        "row"
+      ],
+      "VideoSegment": [
+        "s3Uri",
+        "summary"
+      ],
+      "AudioSegment": [
+        "s3Uri",
+        "transcription"
+      ],
+      "RetrievalResultContentColumn": [
+        "columnName",
+        "columnValue",
+        "type"
+      ],
+      "RetrievalResultLocation": [
+        "type",
+        "s3Location",
+        "webLocation",
+        "confluenceLocation",
+        "salesforceLocation",
+        "sharePointLocation",
+        "customDocumentLocation",
+        "kendraDocumentLocation",
+        "sqlLocation",
+        "oneDriveLocation",
+        "googleDriveLocation"
+      ],
+      "RetrievalResultS3Location": [
+        "uri"
+      ],
+      "RetrievalResultWebLocation": [
+        "url"
+      ],
+      "RetrievalResultConfluenceLocation": [
+        "url"
+      ],
+      "RetrievalResultSalesforceLocation": [
+        "url"
+      ],
+      "RetrievalResultSharePointLocation": [
+        "url"
+      ],
+      "RetrievalResultCustomDocumentLocation": [
+        "id"
+      ],
+      "RetrievalResultKendraDocumentLocation": [
+        "uri"
+      ],
+      "RetrievalResultSqlLocation": [
+        "query"
+      ],
+      "RetrievalResultOneDriveLocation": [
+        "url"
+      ],
+      "RetrievalResultGoogleDriveLocation": [
+        "url"
+      ],
+      "TracePart": [
+        "sessionId",
+        "trace",
+        "callerChain",
+        "eventTime",
+        "collaboratorName",
+        "agentId",
+        "agentAliasId",
+        "agentVersion"
+      ],
+      "Trace": [
+        "guardrailTrace",
+        "preProcessingTrace",
+        "orchestrationTrace",
+        "postProcessingTrace",
+        "routingClassifierTrace",
+        "failureTrace",
+        "customOrchestrationTrace"
+      ],
+      "GuardrailTrace": [
+        "action",
+        "traceId",
+        "inputAssessments",
+        "outputAssessments",
+        "metadata"
+      ],
+      "GuardrailAssessment": [
+        "topicPolicy",
+        "contentPolicy",
+        "wordPolicy",
+        "sensitiveInformationPolicy"
+      ],
+      "GuardrailTopicPolicyAssessment": [
+        "topics"
+      ],
+      "GuardrailTopic": [
+        "name",
+        "type",
+        "action"
+      ],
+      "GuardrailContentPolicyAssessment": [
+        "filters"
+      ],
+      "GuardrailContentFilter": [
+        "type",
+        "confidence",
+        "action"
+      ],
+      "GuardrailWordPolicyAssessment": [
+        "customWords",
+        "managedWordLists"
+      ],
+      "GuardrailCustomWord": [
+        "match",
+        "action"
+      ],
+      "GuardrailManagedWord": [
+        "match",
+        "type",
+        "action"
+      ],
+      "GuardrailSensitiveInformationPolicyAssessment": [
+        "piiEntities",
+        "regexes"
+      ],
+      "GuardrailPiiEntityFilter": [
+        "type",
+        "match",
+        "action"
+      ],
+      "GuardrailRegexFilter": [
+        "name",
+        "regex",
+        "match",
+        "action"
+      ],
+      "Metadata": [
+        "startTime",
+        "endTime",
+        "totalTimeMs",
+        "operationTotalTimeMs",
+        "clientRequestId",
+        "usage"
+      ],
+      "Usage": [
+        "inputTokens",
+        "outputTokens"
+      ],
+      "PreProcessingTrace": [
+        "modelInvocationInput",
+        "modelInvocationOutput"
+      ],
+      "ModelInvocationInput": [
+        "traceId",
+        "text",
+        "type",
+        "overrideLambda",
+        "promptCreationMode",
+        "inferenceConfiguration",
+        "parserMode",
+        "foundationModel"
+      ],
+      "InferenceConfiguration": [
+        "temperature",
+        "topP",
+        "topK",
+        "maximumLength",
+        "stopSequences"
+      ],
+      "PreProcessingModelInvocationOutput": [
+        "traceId",
+        "parsedResponse",
+        "rawResponse",
+        "metadata",
+        "reasoningContent"
+      ],
+      "PreProcessingParsedResponse": [
+        "rationale",
+        "isValid"
+      ],
+      "RawResponse": [
+        "content"
+      ],
+      "ReasoningContentBlock": [
+        "reasoningText",
+        "redactedContent"
+      ],
+      "ReasoningTextBlock": [
+        "text",
+        "signature"
+      ],
+      "OrchestrationTrace": [
+        "rationale",
+        "invocationInput",
+        "observation",
+        "modelInvocationInput",
+        "modelInvocationOutput"
+      ],
+      "Rationale": [
+        "traceId",
+        "text"
+      ],
+      "InvocationInput": [
+        "traceId",
+        "invocationType",
+        "actionGroupInvocationInput",
+        "knowledgeBaseLookupInput",
+        "codeInterpreterInvocationInput",
+        "agentCollaboratorInvocationInput"
+      ],
+      "ActionGroupInvocationInput": [
+        "actionGroupName",
+        "verb",
+        "apiPath",
+        "parameters",
+        "requestBody",
+        "function",
+        "executionType",
+        "invocationId"
+      ],
+      "Parameter": [
+        "name",
+        "type",
+        "value"
+      ],
+      "RequestBody": [
+        "content"
+      ],
+      "KnowledgeBaseLookupInput": [
+        "text",
+        "knowledgeBaseId"
+      ],
+      "CodeInterpreterInvocationInput": [
+        "code",
+        "files"
+      ],
+      "AgentCollaboratorInvocationInput": [
+        "agentCollaboratorName",
+        "agentCollaboratorAliasArn",
+        "input"
+      ],
+      "AgentCollaboratorInputPayload": [
+        "type",
+        "text",
+        "returnControlResults"
+      ],
+      "ReturnControlResults": [
+        "invocationId",
+        "returnControlInvocationResults"
+      ],
+      "Observation": [
+        "traceId",
+        "type",
+        "actionGroupInvocationOutput",
+        "agentCollaboratorInvocationOutput",
+        "knowledgeBaseLookupOutput",
+        "finalResponse",
+        "repromptResponse",
+        "codeInterpreterInvocationOutput"
+      ],
+      "ActionGroupInvocationOutput": [
+        "text",
+        "metadata"
+      ],
+      "AgentCollaboratorInvocationOutput": [
+        "agentCollaboratorName",
+        "agentCollaboratorAliasArn",
+        "output",
+        "metadata"
+      ],
+      "AgentCollaboratorOutputPayload": [
+        "type",
+        "text",
+        "returnControlPayload"
+      ],
+      "ReturnControlPayload": [
+        "invocationInputs",
+        "invocationId"
+      ],
+      "InvocationInputMember": [
+        "apiInvocationInput",
+        "functionInvocationInput"
+      ],
+      "ApiInvocationInput": [
+        "actionGroup",
+        "httpMethod",
+        "apiPath",
+        "parameters",
+        "requestBody",
+        "actionInvocationType",
+        "agentId",
+        "collaboratorName"
+      ],
+      "ApiParameter": [
+        "name",
+        "type",
+        "value"
+      ],
+      "ApiRequestBody": [
+        "content"
+      ],
+      "PropertyParameters": [
+        "properties"
+      ],
+      "FunctionInvocationInput": [
+        "actionGroup",
+        "parameters",
+        "function",
+        "actionInvocationType",
+        "agentId",
+        "collaboratorName"
+      ],
+      "FunctionParameter": [
+        "name",
+        "type",
+        "value"
+      ],
+      "KnowledgeBaseLookupOutput": [
+        "retrievedReferences",
+        "metadata"
+      ],
+      "FinalResponse": [
+        "text",
+        "metadata"
+      ],
+      "RepromptResponse": [
+        "text",
+        "source"
+      ],
+      "CodeInterpreterInvocationOutput": [
+        "executionOutput",
+        "executionError",
+        "files",
+        "executionTimeout",
+        "metadata"
+      ],
+      "OrchestrationModelInvocationOutput": [
+        "traceId",
+        "rawResponse",
+        "metadata",
+        "reasoningContent"
+      ],
+      "PostProcessingTrace": [
+        "modelInvocationInput",
+        "modelInvocationOutput"
+      ],
+      "PostProcessingModelInvocationOutput": [
+        "traceId",
+        "parsedResponse",
+        "rawResponse",
+        "metadata",
+        "reasoningContent"
+      ],
+      "PostProcessingParsedResponse": [
+        "text"
+      ],
+      "RoutingClassifierTrace": [
+        "invocationInput",
+        "observation",
+        "modelInvocationInput",
+        "modelInvocationOutput"
+      ],
+      "RoutingClassifierModelInvocationOutput": [
+        "traceId",
+        "rawResponse",
+        "metadata"
+      ],
+      "FailureTrace": [
+        "traceId",
+        "failureReason",
+        "failureCode",
+        "metadata"
+      ],
+      "CustomOrchestrationTrace": [
+        "traceId",
+        "event"
+      ],
+      "CustomOrchestrationTraceEvent": [
+        "text"
+      ],
+      "Caller": [
+        "agentAliasArn"
+      ],
+      "InternalServerException": [
+        "message",
+        "reason"
+      ],
+      "ValidationException": [
+        "message"
+      ],
+      "ResourceNotFoundException": [
+        "message"
+      ],
+      "ServiceQuotaExceededException": [
+        "message"
+      ],
+      "ThrottlingException": [
+        "message"
+      ],
+      "AccessDeniedException": [
+        "message"
+      ],
+      "ConflictException": [
+        "message"
+      ],
+      "DependencyFailedException": [
+        "message",
+        "resourceName"
+      ],
+      "BadGatewayException": [
+        "message",
+        "resourceName"
+      ],
+      "ModelNotReadyException": [
+        "message"
+      ],
+      "FilePart": [
+        "files"
+      ],
+      "OutputFile": [
+        "name",
+        "type",
+        "bytes"
+      ],
+      "CreateSessionRequest": [
+        "sessionMetadata",
+        "encryptionKeyArn"
+      ],
+      "CreateSessionResponse": [
+        "sessionId",
+        "sessionArn",
+        "sessionStatus",
+        "createdAt"
+      ],
+      "GetSessionRequest": [
+        "sessionIdentifier"
+      ],
+      "GetSessionResponse": [
+        "sessionId",
+        "sessionArn",
+        "sessionStatus",
+        "createdAt",
+        "lastUpdatedAt",
+        "sessionMetadata",
+        "encryptionKeyArn"
+      ],
+      "UpdateSessionRequest": [
+        "sessionMetadata",
+        "sessionIdentifier"
+      ],
+      "UpdateSessionResponse": [
+        "sessionId",
+        "sessionArn",
+        "sessionStatus",
+        "createdAt",
+        "lastUpdatedAt"
+      ],
+      "EndSessionRequest": [
+        "sessionIdentifier"
+      ],
+      "EndSessionResponse": [
+        "sessionId",
+        "sessionArn",
+        "sessionStatus"
+      ],
+      "DeleteSessionRequest": [
+        "sessionIdentifier"
+      ],
+      "DeleteSessionResponse": [],
+      "ListSessionsRequest": [
+        "maxResults",
+        "nextToken"
+      ],
+      "ListSessionsResponse": [
+        "sessionSummaries",
+        "nextToken"
+      ],
+      "SessionSummary": [
+        "sessionId",
+        "sessionArn",
+        "sessionStatus",
+        "createdAt",
+        "lastUpdatedAt"
+      ],
+      "CreateInvocationRequest": [
+        "invocationId",
+        "description",
+        "sessionIdentifier"
+      ],
+      "CreateInvocationResponse": [
+        "sessionId",
+        "invocationId",
+        "createdAt"
+      ],
+      "ListInvocationsRequest": [
+        "nextToken",
+        "maxResults",
+        "sessionIdentifier"
+      ],
+      "ListInvocationsResponse": [
+        "invocationSummaries",
+        "nextToken"
+      ],
+      "InvocationSummary": [
+        "sessionId",
+        "invocationId",
+        "createdAt"
+      ],
+      "PutInvocationStepRequest": [
+        "sessionIdentifier",
+        "invocationIdentifier",
+        "invocationStepTime",
+        "payload",
+        "invocationStepId"
+      ],
+      "InvocationStepPayload": [
+        "contentBlocks"
+      ],
+      "BedrockSessionContentBlock": [
+        "text",
+        "image"
+      ],
+      "ImageBlock": [
+        "format",
+        "source"
+      ],
+      "ImageSource": [
+        "bytes",
+        "s3Location"
+      ],
+      "S3Location": [
+        "uri"
+      ],
+      "PutInvocationStepResponse": [
+        "invocationStepId"
+      ],
+      "GetInvocationStepRequest": [
+        "invocationIdentifier",
+        "invocationStepId",
+        "sessionIdentifier"
+      ],
+      "GetInvocationStepResponse": [
+        "invocationStep"
+      ],
+      "InvocationStep": [
+        "sessionId",
+        "invocationId",
+        "invocationStepId",
+        "invocationStepTime",
+        "payload"
+      ],
+      "ListInvocationStepsRequest": [
+        "invocationIdentifier",
+        "nextToken",
+        "maxResults",
+        "sessionIdentifier"
+      ],
+      "ListInvocationStepsResponse": [
+        "invocationStepSummaries",
+        "nextToken"
+      ],
+      "InvocationStepSummary": [
+        "sessionId",
+        "invocationId",
+        "invocationStepId",
+        "invocationStepTime"
+      ],
+      "GetAgentMemoryRequest": [
+        "nextToken",
+        "maxItems",
+        "agentId",
+        "agentAliasId",
+        "memoryType",
+        "memoryId"
+      ],
+      "GetAgentMemoryResponse": [
+        "nextToken",
+        "memoryContents"
+      ],
+      "Memory": [
+        "sessionSummary"
+      ],
+      "MemorySessionSummary": [
+        "memoryId",
+        "sessionId",
+        "sessionStartTime",
+        "sessionExpiryTime",
+        "summaryText"
+      ],
+      "DeleteAgentMemoryRequest": [
+        "agentId",
+        "agentAliasId",
+        "memoryId",
+        "sessionId"
+      ],
+      "DeleteAgentMemoryResponse": []
+    }
   }
 }

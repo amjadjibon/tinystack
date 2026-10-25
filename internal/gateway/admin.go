@@ -27,6 +27,7 @@ var adminPaths = []string{
 	"/_tinystack/translate/fixtures",
 	"/_tinystack/transcribe/fixtures",
 	"/_tinystack/bedrock/fixtures",
+	"/_tinystack/bedrock-agent/fixtures",
 	"/_tinystack/costs/fixtures",
 	"/_tinystack/reset",
 	"/_tinystack/faults",

@@ -142,7 +142,7 @@ func EnsureEndpointArg(args []string, endpoint string) []string {
 
 // Terraform Services supported by TinyStack.
 var TerraformServices = []string{
-	"bedrockagent",
+	"bedrockagent", "bedrockagentruntime",
 	"mediaconvert",
 	"mediaconnect",
 	"transcribe",

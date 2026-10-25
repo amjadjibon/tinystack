@@ -38,6 +38,7 @@ import (
 	batchapi "github.com/amjadjibon/tinystack/internal/aws/generated/batch"
 	bedrockapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrock"
 	bedrockagentapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockagent"
+	bedrockagentruntimeapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockagentruntime"
 	bedrockruntimeapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockruntime"
 	budgetsapi "github.com/amjadjibon/tinystack/internal/aws/generated/budgets"
 	cloudcontrolapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudcontrol"
@@ -168,6 +169,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/batch"
 	"github.com/amjadjibon/tinystack/internal/services/bedrock"
 	"github.com/amjadjibon/tinystack/internal/services/bedrockagent"
+	"github.com/amjadjibon/tinystack/internal/services/bedrockagentruntime"
 	"github.com/amjadjibon/tinystack/internal/services/bedrockruntime"
 	"github.com/amjadjibon/tinystack/internal/services/budgets"
 	"github.com/amjadjibon/tinystack/internal/services/cloudcontrol"
@@ -613,6 +615,7 @@ func build(
 	foundationModels := bedrock.New(store)
 	inference := bedrockruntime.New(store, foundationModels)
 	agents := bedrockagent.New(store, foundationModels)
+	agentRuntime := bedrockagentruntime.New(store, agents)
 	tags := resourcegroupstaggingapi.New()
 	groups := resourcegroups.New(store)
 	services := []catalog.Service{
@@ -684,6 +687,7 @@ func build(
 		signerapi.Descriptor(signing),
 		bedrockapi.Descriptor(foundationModels),
 		bedrockagentapi.Descriptor(agents),
+		bedrockagentruntimeapi.Descriptor(agentRuntime),
 		bedrockruntimeapi.Descriptor(inference),
 		mq.ProtectCredentials(mqapi.Descriptor(brokers)),
 		kafkaapi.Descriptor(kafkaClusters),
@@ -744,6 +748,7 @@ func build(
 	// services in-process.
 	caller := catalog.NewCaller(services...)
 	agents.UseCaller(caller)
+	agentRuntime.UseCaller(caller)
 	mediaConvertRecords.UseCaller(caller)
 	shieldRecords.UseCaller(caller)
 	dataSyncRecords.UseCaller(caller)
@@ -909,6 +914,9 @@ func build(
 		}
 	}
 
+	agentFixtures := bedrockagentruntime.Handler(store, cfg.Defaults.Account)
+	handler.Handle("bedrock-agent/fixtures", agentFixtures)
+	handler.Handle("bedrock-agent/fixtures/", agentFixtures)
 	bedrockFixtures := bedrockruntime.Handler(store, cfg.Defaults.Account)
 	handler.Handle("bedrock/fixtures", bedrockFixtures)
 	handler.Handle("bedrock/fixtures/", bedrockFixtures)
