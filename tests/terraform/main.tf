@@ -2,7 +2,7 @@
 
 terraform {
   required_providers {
-    aws = { source = "hashicorp/aws", version = "~> 5.0" }
+    aws = { source = "hashicorp/aws", version = "~> 6.0" }
   }
 }
 
@@ -18,6 +18,7 @@ provider "aws" {
 
   endpoints {
     bedrockagent         = var.endpoint
+    bedrockagentcore     = var.endpoint
     transcribe           = var.endpoint
     dsql                 = var.endpoint
     mediaconnect         = var.endpoint
@@ -81,6 +82,9 @@ provider "aws" {
     ssm                  = var.endpoint
     sts                  = var.endpoint
     timestreamwrite      = var.endpoint
+
+    # S3 Control prefixes the host with the account ID, and only a name under localhost resolves to loopback.
+    s3control = replace(var.endpoint, "127.0.0.1", "localhost")
   }
 }
 
@@ -618,8 +622,11 @@ resource "aws_dynamodb_table" "users" {
 
   global_secondary_index {
     name            = "by-email"
-    hash_key        = "email"
     projection_type = "KEYS_ONLY"
+    key_schema {
+      attribute_name = "email"
+      key_type       = "HASH"
+    }
   }
 
   stream_enabled   = true
@@ -2899,4 +2906,35 @@ resource "aws_bedrockagent_knowledge_base" "documents" {
     }
   }
   tags = local.tags
+}
+
+# Bedrock AgentCore: records mode stores the runtime without running its image. A description change creates a new
+# runtime version, which the DEFAULT endpoint follows; the named endpoint stays on version 1.
+resource "aws_bedrockagentcore_agent_runtime" "assistant" {
+  agent_runtime_name = "local_assistant"
+  description        = "Owned by ${var.team}"
+  role_arn           = aws_iam_role.eks.arn
+  agent_runtime_artifact {
+    container_configuration {
+      container_uri = "000000000000.dkr.ecr.us-east-1.amazonaws.com/assistant:latest"
+    }
+  }
+  network_configuration {
+    network_mode = "PUBLIC"
+  }
+  environment_variables = { TEAM = var.team }
+  tags                  = local.tags
+}
+
+resource "aws_bedrockagentcore_agent_runtime_endpoint" "assistant" {
+  name                  = "production"
+  agent_runtime_id      = aws_bedrockagentcore_agent_runtime.assistant.agent_runtime_id
+  agent_runtime_version = "1"
+  tags                  = local.tags
+}
+
+resource "aws_bedrockagentcore_memory" "assistant" {
+  name                  = "local_memory"
+  event_expiry_duration = 30
+  tags                  = local.tags
 }

@@ -87,7 +87,7 @@ def main():
                 # Network Firewall rule group, policy and firewall tags add three; Inspector filter tags add one;
                 # Resource Explorer index and view tags add two; Service Catalog portfolio and product tags add two.
                 # Global Accelerator accelerator tags add one; its listener and endpoint group stay unchanged.
-                # FIS experiment-template tags force replacement in provider 5.x: one extra add and destroy.
+                # FIS experiment-template tags force replacement in provider 6.x: one extra add and destroy.
                 # Shield protection and protection-group tags update in place: +2 changes.
                 # DataSync IAM role, two S3 locations and task tags add four.
                 # SWF domain tags update in place (+1); name, description and retention are ForceNew and unchanged.
@@ -100,8 +100,11 @@ def main():
                 # Bedrock agent, alias and knowledge-base tags update in place (+3 changes).
                 # Agent role, alias agent_id and KB storage_configuration are ForceNew and unchanged;
                 # the action group has no tags and none of its properties changes.
+                # AgentCore runtime description/environment/tags, runtime endpoint tags,
+                # and memory tags update in place (+3 changes); names, roles, protocol,
+                # artifact and memory event expiry remain unchanged.
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "8 added, 146 changed, 8 destroyed" in updated, updated
+                assert "8 added, 149 changed, 8 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"
                 terraform("plan", "-detailed-exitcode", team="platform")
                 # The provider replaces the monitor when its name changes. The subscription
