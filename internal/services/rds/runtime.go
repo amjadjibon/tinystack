@@ -182,8 +182,8 @@ func (s *Service) Reset(ctx context.Context) {
 				continue
 			}
 
-			if (r.Cluster != nil && !aurora(common.Value(r.Cluster.Engine))) ||
-				(r.Kind == kindSnapshot && r.Volume == "") || (r.Instance != nil && r.Instance.DBClusterIdentifier != nil) {
+			if (r.Kind == kindSnapshot && r.Volume == "") ||
+				(r.Instance != nil && r.Instance.DBClusterIdentifier != nil) {
 				continue
 			}
 

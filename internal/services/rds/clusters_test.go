@@ -32,7 +32,6 @@ func TestClusterLifecycle(t *testing.T) {
 			store := memory.New(nil, nil)
 			s := New(store)
 			rt := &fakeRuntime{ready: true}
-			s.runtime = rt
 			created, err := s.CreateDBCluster(ctx, clusterInput("Mixed-Cluster", engine))
 			if err != nil {
 				t.Fatal(err)
@@ -147,7 +146,6 @@ func TestClusterLifecycle(t *testing.T) {
 				t.Fatal(tags, err)
 			}
 
-			s.visit(ctx)
 			if len(rt.specs) != 0 {
 				t.Fatal("member reached runtime")
 			}

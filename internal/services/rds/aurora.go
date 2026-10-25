@@ -85,6 +85,10 @@ func (s *Service) clusterSpec(scope request.Scope, r *record) *Spec {
 		engine, image, port = EnginePostgres, "postgres:"+strings.Split(common.Value(c.EngineVersion), ".")[0], 5432
 	}
 
+	if common.Value(c.Engine) == EngineDocDB {
+		engine, image, port = EngineDocDB, "mongo:"+common.Value(c.EngineVersion), 27017
+	}
+
 	resourceARN := arn(scope, r.Kind, r.Name)
 	hash := sha256.Sum256([]byte(resourceARN))
 	name := fmt.Sprintf("tinystack-rds-%x", hash[:16])
@@ -235,7 +239,7 @@ func (s *Service) modifyCluster(ctx context.Context, in *api.ModifyDBClusterMess
 	}
 
 	c := r.Cluster
-	if aurora(common.Value(c.Engine)) && in.ApplyImmediately != nil && !*in.ApplyImmediately {
+	if (aurora(common.Value(c.Engine)) || s.runtime != nil) && in.ApplyImmediately != nil && !*in.ApplyImmediately {
 		return nil, invalid("Deferred modifications are unsupported")
 	}
 
@@ -251,6 +255,13 @@ func (s *Service) modifyCluster(ctx context.Context, in *api.ModifyDBClusterMess
 		return nil, invalid("Changing Aurora ports is unsupported")
 	}
 
+	if in.Port != nil && s.runtime != nil && !aurora(common.Value(c.Engine)) {
+		_, port, _ := clusterEngine(common.Value(c.Engine), common.Value(c.EngineVersion))
+		if *in.Port != port {
+			return nil, invalid("Changing cluster engine ports is unsupported in Docker mode")
+		}
+	}
+
 	if in.MasterUserPassword != nil && c.MasterUserSecret != nil {
 		return nil, invalid("Password is managed by Secrets Manager")
 	}
@@ -263,7 +274,7 @@ func (s *Service) modifyCluster(ctx context.Context, in *api.ModifyDBClusterMess
 		c.BackupRetentionPeriod = in.BackupRetentionPeriod
 	}
 
-	if in.Port != nil {
+	if in.Port != nil && s.runtime == nil {
 		c.Port = in.Port
 	}
 
@@ -288,7 +299,7 @@ func (s *Service) modifyCluster(ctx context.Context, in *api.ModifyDBClusterMess
 
 	// The host port is assigned by Docker; validate the configured engine port instead.
 	candidate := common.Clone(c)
-	if aurora(common.Value(c.Engine)) {
+	if aurora(common.Value(c.Engine)) || s.runtime != nil {
 		_, port, _ := clusterEngine(common.Value(c.Engine), common.Value(c.EngineVersion))
 		candidate.Port = new(port)
 	}
@@ -304,7 +315,7 @@ func (s *Service) modifyCluster(ctx context.Context, in *api.ModifyDBClusterMess
 		return nil, err
 	}
 
-	if in.MasterUserPassword != nil && aurora(common.Value(c.Engine)) {
+	if in.MasterUserPassword != nil && (aurora(common.Value(c.Engine)) || s.runtime != nil) {
 		if s.runtime != nil {
 			if err := s.runtime.Password(ctx, s.clusterSpec(scope, r), *in.MasterUserPassword); err != nil {
 				return nil, err
@@ -337,7 +348,7 @@ func (s *Service) changeCluster(ctx context.Context, id, action string) (*api.DB
 		return nil, err
 	}
 
-	if !aurora(common.Value(r.Cluster.Engine)) {
+	if !aurora(common.Value(r.Cluster.Engine)) && s.runtime == nil {
 		return nil, invalid("Start/stop requires Aurora")
 	}
 
@@ -462,7 +473,7 @@ func (s *Service) deleteCluster(ctx context.Context, in *api.DeleteDBClusterMess
 		}
 	}
 
-	if s.runtime != nil && aurora(common.Value(r.Cluster.Engine)) {
+	if s.runtime != nil {
 		if removeErr := s.runtime.Remove(ctx, s.clusterSpec(scope, r), true); removeErr != nil {
 			return nil, removeErr
 		}

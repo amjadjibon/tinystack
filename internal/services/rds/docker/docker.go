@@ -3,6 +3,7 @@ package docker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"maps"
 	"net"
@@ -99,6 +100,10 @@ func (r *Runtime) Ensure(ctx context.Context, spec *rds.Spec) (rds.Started, erro
 			path = "/var/lib/postgresql/data"
 			args = append(args, "-e", "POSTGRES_USER="+spec.Username, "-e", "POSTGRES_PASSWORD="+spec.Password,
 				"-e", "POSTGRES_DB="+spec.Database)
+		} else if spec.Engine == rds.EngineDocDB {
+			path = "/data/db"
+			args = append(args, "-e", "MONGO_INITDB_ROOT_USERNAME="+spec.Username,
+				"-e", "MONGO_INITDB_ROOT_PASSWORD="+spec.Password)
 		} else {
 			prefix := "MYSQL_"
 			if spec.Engine == rds.EngineMariaDB {
@@ -139,7 +144,7 @@ func (r *Runtime) Probe(ctx context.Context, spec *rds.Spec, started rds.Started
 	}
 
 	args := []string{execCommand, spec.Name, "pg_isready", "-U", spec.Username, "-d", spec.Database}
-	if spec.Engine != rds.EnginePostgres {
+	if spec.Engine != rds.EnginePostgres && spec.Engine != rds.EngineDocDB {
 		command := "mysqladmin"
 		if spec.Engine == rds.EngineMariaDB {
 			command = "mariadb-admin"
@@ -149,6 +154,10 @@ func (r *Runtime) Probe(ctx context.Context, spec *rds.Spec, started rds.Started
 			execCommand, "-e", "MYSQL_PWD=" + spec.Password, spec.Name, command, "ping", "--silent", "-h", "127.0.0.1",
 			"-u", spec.Username,
 		}
+	}
+
+	if spec.Engine == rds.EngineDocDB {
+		args = mongoCommand(spec, "if (db.adminCommand({ping:1}).ok !== 1) { quit(1); }")
 	}
 
 	_, err = dockercli.Run(ctx, nil, args...)
@@ -164,6 +173,17 @@ func (r *Runtime) Action(ctx context.Context, spec *rds.Spec, action string) err
 }
 
 func (r *Runtime) Password(ctx context.Context, spec *rds.Spec, password string) error {
+	if spec.Engine == rds.EngineDocDB {
+		encoded, err := json.Marshal(password)
+		if err != nil {
+			return err
+		}
+
+		_, err = dockercli.Run(ctx, nil, mongoCommand(spec, "db.changeUserPassword("+
+			strconv.Quote(spec.Username)+", "+string(encoded)+")")...)
+		return err
+	}
+
 	escaped := strings.ReplaceAll(password, "'", "''")
 	args := []string{
 		execCommand,
@@ -234,5 +254,39 @@ func (r *Runtime) Close() {
 	r.mu.Unlock()
 	for _, spec := range specs {
 		_ = r.Remove(context.Background(), spec, false)
+	}
+}
+
+// Validate resolves the requested tag on the Docker host before committing a cluster record.
+// Never substitute another MongoDB major when an image is unavailable for this host.
+func (r *Runtime) Validate(ctx context.Context, spec *rds.Spec) error {
+	if spec.Engine != rds.EngineDocDB {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+	if _, err := dockercli.Run(ctx, nil, "pull", spec.Image); err != nil {
+		return fmt.Errorf("DocumentDB image %s cannot run on this Docker host: %w", spec.Image, err)
+	}
+
+	if _, err := dockercli.Run(ctx, nil, "run", "--rm", "--network", "none", "--entrypoint", "mongod",
+		spec.Image, "--version"); err != nil {
+		return fmt.Errorf("DocumentDB image %s cannot execute on this Docker host: %w", spec.Image, err)
+	}
+
+	return nil
+}
+
+func mongoCommand(spec *rds.Spec, script string) []string {
+	shell := "mongo"
+	if spec.Image == "mongo:5.0" {
+		shell = "mongosh"
+	}
+
+	return []string{
+		execCommand, spec.Name, shell, "--quiet", "--host", "127.0.0.1",
+		"--username", spec.Username, "--password", spec.Password, "--authenticationDatabase", "admin",
+		"admin", "--eval", script,
 	}
 }

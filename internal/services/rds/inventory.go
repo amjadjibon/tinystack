@@ -45,7 +45,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				details["Engine"] = common.Value(r.Instance.Engine)
 				details["Status"] = common.Value(instance(r).DBInstanceStatus)
 				if r.Instance.DBClusterIdentifier != nil {
-					details["RecordsOnly"] = !aurora(common.Value(r.Instance.Engine))
+					details["RecordsOnly"] = s.runtime == nil && !aurora(common.Value(r.Instance.Engine))
 					details["DBClusterIdentifier"] = common.Value(r.Instance.DBClusterIdentifier)
 				}
 			}
@@ -53,7 +53,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			if r.Cluster != nil && r.Kind == kindCluster {
 				details["Engine"] = common.Value(r.Cluster.Engine)
 				details["Status"] = common.Value(cluster(r).Status)
-				details["RecordsOnly"] = !aurora(common.Value(r.Cluster.Engine))
+				details["RecordsOnly"] = s.runtime == nil && !aurora(common.Value(r.Cluster.Engine))
 			}
 
 			if r.ClusterSnapshot != nil {

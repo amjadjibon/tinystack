@@ -15,8 +15,10 @@ import (
 )
 
 const (
-	engineDocDB     = "docdb"
-	engineNeptune   = "neptune"
+	EngineDocDB     = "docdb"
+	engineDocDB     = EngineDocDB
+	EngineNeptune   = "neptune"
+	engineNeptune   = EngineNeptune
 	clusterIDFilter = "db-cluster-id"
 )
 
@@ -48,7 +50,7 @@ func clusterEngine(engine, version string) (resolved string, port int64, err err
 	return version, port, nil
 }
 
-// DocumentDB credentials are validated and discarded: there is no database runtime to use them.
+// Records mode validates DocumentDB credentials without retaining them.
 func checkClusterPassword(engine string, password *string, required bool) error {
 	if engine == engineNeptune {
 		if password != nil {
@@ -208,11 +210,11 @@ func (s *Service) CreateDBCluster(
 		return nil, versionErr
 	}
 
-	if !aurora(engine) && in.ManageMasterUserPassword != nil {
+	if !aurora(engine) && !(engine == engineDocDB && s.runtime != nil) && in.ManageMasterUserPassword != nil {
 		return nil, invalid("ManageMasterUserPassword requires Aurora")
 	}
 
-	if common.Value(in.ManageMasterUserPassword) && (!aurora(engine) || in.MasterUserPassword != nil) {
+	if common.Value(in.ManageMasterUserPassword) && (engine == engineNeptune || in.MasterUserPassword != nil) {
 		return nil, invalid("ManageMasterUserPassword requires Aurora and conflicts with MasterUserPassword")
 	}
 
@@ -288,8 +290,18 @@ func (s *Service) CreateDBCluster(
 		Since:        time.Now().UTC(),
 	}
 
-	if !aurora(engine) {
+	if !aurora(engine) && (s.runtime == nil || engine == engineNeptune) {
 		r.Password, r.RootPassword = "", ""
+	}
+
+	if s.runtime != nil {
+		if validator, ok := s.runtime.(interface {
+			Validate(context.Context, *Spec) error
+		}); ok {
+			if err := validator.Validate(ctx, s.clusterSpec(scope, r)); err != nil {
+				return nil, invalid(err.Error())
+			}
+		}
 	}
 
 	s.mu.Lock()
@@ -305,7 +317,7 @@ func (s *Service) CreateDBCluster(
 			return err
 		}
 
-		if aurora(engine) {
+		if aurora(engine) || s.runtime != nil {
 			if common.Value(in.ManageMasterUserPassword) {
 				r.Password = common.RandomID(32)
 				r.RootPassword = r.Password

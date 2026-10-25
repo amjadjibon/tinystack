@@ -3,8 +3,10 @@ package cloudformation
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
+	"time"
 )
 
 const (
@@ -65,6 +67,16 @@ func clusterProvider(engine string, isCluster bool) *resourceType {
 			}
 
 			out, err := c.call(ctx, "rds", createOp, params)
+			if err != nil {
+				return "", nil, err
+			}
+
+			if isCluster {
+				out, err = readyDBCluster(ctx, c, id, out)
+			} else {
+				out, err = readyRDS(ctx, c, id, out)
+			}
+
 			if err != nil {
 				return "", nil, err
 			}
@@ -220,5 +232,42 @@ func clusterRefreshMemberAttributes(st *stack, parent *resource) {
 			member.Attributes[propertyEndpoint] = parent.Attributes[propertyEndpoint]
 			member.Attributes[memberPort] = parent.Attributes[memberPort]
 		}
+	}
+}
+
+// readyDBCluster publishes endpoints only after the shared runtime has passed readiness.
+func readyDBCluster(ctx context.Context, c *client, id string, out map[string]any) (map[string]any, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		cluster, _ := out["DBCluster"].(map[string]any)
+		status, _ := cluster["Status"].(string)
+		if status == "available" {
+			return out, nil
+		}
+
+		if status == "failed" {
+			return nil, fmt.Errorf("RDS cluster %s failed to start", id)
+		}
+
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-ticker.C:
+		}
+
+		described, err := c.call(ctx, "rds", "DescribeDBClusters", map[string]any{memberDBClusterIdentifier: id})
+		if err != nil {
+			return nil, err
+		}
+
+		clusters, _ := described["DBClusters"].([]any)
+		if len(clusters) != 1 {
+			return nil, fmt.Errorf("RDS cluster %s disappeared during creation", id)
+		}
+
+		out = map[string]any{"DBCluster": clusters[0]}
 	}
 }
