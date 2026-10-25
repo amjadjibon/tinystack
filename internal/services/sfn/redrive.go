@@ -31,6 +31,8 @@ type resumePoint struct {
 // redrivable reports why an execution cannot be redriven, or "" when it can.
 func (e *execution) redrivable(now time.Time) string {
 	switch {
+	case e.HasMapRuns || e.MapRunARN != "":
+		return "TinyStack does not support redriving distributed Map executions."
 	case e.Status != statusFailed && e.Status != statusTimedOut && e.Status != statusAborted:
 		return "Execution is " + e.Status + "."
 	case e.Resume == nil || e.Definition == "":

@@ -3,7 +3,11 @@ package sfn
 
 import (
 	"context"
+	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/validation"
+	"regexp"
+	"unicode/utf8"
 )
 
 type CloudWatchLogsLogGroup struct {
@@ -185,6 +189,7 @@ type DescribeExecutionOutput struct {
 }
 
 type ListExecutionsInput struct {
+	MapRunArn       *string `json:"mapRunArn,omitempty"`
 	StateMachineArn *string `json:"stateMachineArn,omitempty"`
 	StatusFilter    *string `json:"statusFilter,omitempty"`
 	MaxResults      *int64  `json:"maxResults,omitempty"`
@@ -795,6 +800,922 @@ type TestStateOutput struct {
 	Status         *string         `json:"status,omitempty"`
 }
 
+type DescribeMapRunInput struct {
+	MapRunArn *string `json:"mapRunArn,omitempty"`
+}
+
+type MapRunExecutionCounts struct {
+	Aborted               *int64 `json:"aborted,omitempty"`
+	Failed                *int64 `json:"failed,omitempty"`
+	FailuresNotRedrivable *int64 `json:"failuresNotRedrivable,omitempty"`
+	Pending               *int64 `json:"pending,omitempty"`
+	PendingRedrive        *int64 `json:"pendingRedrive,omitempty"`
+	ResultsWritten        *int64 `json:"resultsWritten,omitempty"`
+	Running               *int64 `json:"running,omitempty"`
+	Succeeded             *int64 `json:"succeeded,omitempty"`
+	TimedOut              *int64 `json:"timedOut,omitempty"`
+	Total                 *int64 `json:"total,omitempty"`
+}
+
+type MapRunItemCounts struct {
+	Aborted               *int64 `json:"aborted,omitempty"`
+	Failed                *int64 `json:"failed,omitempty"`
+	FailuresNotRedrivable *int64 `json:"failuresNotRedrivable,omitempty"`
+	Pending               *int64 `json:"pending,omitempty"`
+	PendingRedrive        *int64 `json:"pendingRedrive,omitempty"`
+	ResultsWritten        *int64 `json:"resultsWritten,omitempty"`
+	Running               *int64 `json:"running,omitempty"`
+	Succeeded             *int64 `json:"succeeded,omitempty"`
+	TimedOut              *int64 `json:"timedOut,omitempty"`
+	Total                 *int64 `json:"total,omitempty"`
+}
+
+type DescribeMapRunOutput struct {
+	ExecutionArn               *string                `json:"executionArn,omitempty"`
+	ExecutionCounts            *MapRunExecutionCounts `json:"executionCounts,omitempty"`
+	ItemCounts                 *MapRunItemCounts      `json:"itemCounts,omitempty"`
+	MapRunArn                  *string                `json:"mapRunArn,omitempty"`
+	MaxConcurrency             *int64                 `json:"maxConcurrency,omitempty"`
+	RedriveCount               *int64                 `json:"redriveCount,omitempty"`
+	RedriveDate                *float64               `json:"redriveDate,omitempty"`
+	StartDate                  *float64               `json:"startDate,omitempty"`
+	Status                     *string                `json:"status,omitempty"`
+	StopDate                   *float64               `json:"stopDate,omitempty"`
+	ToleratedFailureCount      *int64                 `json:"toleratedFailureCount,omitempty"`
+	ToleratedFailurePercentage *float64               `json:"toleratedFailurePercentage,omitempty"`
+}
+
+type ListMapRunsInput struct {
+	ExecutionArn *string `json:"executionArn,omitempty"`
+	MaxResults   *int64  `json:"maxResults,omitempty"`
+	NextToken    *string `json:"nextToken,omitempty"`
+}
+
+type MapRunListItem struct {
+	ExecutionArn    *string  `json:"executionArn,omitempty"`
+	MapRunArn       *string  `json:"mapRunArn,omitempty"`
+	StartDate       *float64 `json:"startDate,omitempty"`
+	StateMachineArn *string  `json:"stateMachineArn,omitempty"`
+	StopDate        *float64 `json:"stopDate,omitempty"`
+}
+
+type ListMapRunsOutput struct {
+	MapRuns   []MapRunListItem `json:"mapRuns,omitempty"`
+	NextToken *string          `json:"nextToken,omitempty"`
+}
+
+type UpdateMapRunInput struct {
+	MapRunArn                  *string  `json:"mapRunArn,omitempty"`
+	MaxConcurrency             *int64   `json:"maxConcurrency,omitempty"`
+	ToleratedFailurePercentage *float64 `json:"toleratedFailurePercentage,omitempty"`
+	ToleratedFailureCount      *int64   `json:"toleratedFailureCount,omitempty"`
+}
+
+type UpdateMapRunOutput struct {
+}
+
+var pattern0 = regexp.MustCompile("^[a-zA-Z0-9_.-]+$")
+
+var pattern1 = regexp.MustCompile("^[0-9]+$")
+
+var enum0 = []string{"EXPRESS", "STANDARD"}
+
+var enum1 = []string{"ABORTED", "FAILED", "PENDING_REDRIVE", "RUNNING", "SUCCEEDED", "TIMED_OUT"}
+
+var enum2 = []string{"ALL", "ERROR", "FATAL", "OFF"}
+
+var pattern2 = regexp.MustCompile("^[!-~]+$")
+
+var enum3 = []string{"DEBUG", "INFO", "TRACE"}
+
+var enum4 = []string{"ERROR", "WARNING"}
+
+func (v *CloudWatchLogsLogGroup) Validate(path string) error {
+	if v.LogGroupArn != nil {
+		if err := validation.Length(path+"logGroupArn", utf8.RuneCountInString((*v.LogGroupArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreateActivityInput) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(80))); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *CreateStateMachineAliasInput) Validate(path string) error {
+	if v.Description != nil {
+		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(80))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"name", (*v.Name), pattern0, pattern1, "^(?=.*[a-zA-Z_\\-\\.])[a-zA-Z0-9_\\-\\.]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"routingConfiguration", v.RoutingConfiguration != nil); err != nil {
+		return err
+	}
+	if v.RoutingConfiguration != nil {
+		if err := validation.Length(path+"routingConfiguration", len(v.RoutingConfiguration), new(int64(1)), new(int64(2))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.RoutingConfiguration {
+			if err := e0.Validate(validation.Index(path+"routingConfiguration", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *CreateStateMachineInput) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(80))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"definition", v.Definition != nil); err != nil {
+		return err
+	}
+	if v.Definition != nil {
+		if err := validation.Length(path+"definition", utf8.RuneCountInString((*v.Definition)), new(int64(1)), new(int64(1048576))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"roleArn", v.RoleArn != nil); err != nil {
+		return err
+	}
+	if v.RoleArn != nil {
+		if err := validation.Length(path+"roleArn", utf8.RuneCountInString((*v.RoleArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if v.Type != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum0); err != nil {
+			return err
+		}
+	}
+	if v.LoggingConfiguration != nil {
+		if err := (*v.LoggingConfiguration).Validate(path + "loggingConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.TracingConfiguration != nil {
+		if err := (*v.TracingConfiguration).Validate(path + "tracingConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.VersionDescription != nil {
+		if err := validation.Length(path+"versionDescription", utf8.RuneCountInString((*v.VersionDescription)), new(int64(0)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteActivityInput) Validate(path string) error {
+	if err := validation.Required(path+"activityArn", v.ActivityArn != nil); err != nil {
+		return err
+	}
+	if v.ActivityArn != nil {
+		if err := validation.Length(path+"activityArn", utf8.RuneCountInString((*v.ActivityArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteStateMachineAliasInput) Validate(path string) error {
+	if err := validation.Required(path+"stateMachineAliasArn", v.StateMachineAliasArn != nil); err != nil {
+		return err
+	}
+	if v.StateMachineAliasArn != nil {
+		if err := validation.Length(path+"stateMachineAliasArn", utf8.RuneCountInString((*v.StateMachineAliasArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteStateMachineInput) Validate(path string) error {
+	if err := validation.Required(path+"stateMachineArn", v.StateMachineArn != nil); err != nil {
+		return err
+	}
+	if v.StateMachineArn != nil {
+		if err := validation.Length(path+"stateMachineArn", utf8.RuneCountInString((*v.StateMachineArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteStateMachineVersionInput) Validate(path string) error {
+	if err := validation.Required(path+"stateMachineVersionArn", v.StateMachineVersionArn != nil); err != nil {
+		return err
+	}
+	if v.StateMachineVersionArn != nil {
+		if err := validation.Length(path+"stateMachineVersionArn", utf8.RuneCountInString((*v.StateMachineVersionArn)), new(int64(1)), new(int64(2000))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DescribeActivityInput) Validate(path string) error {
+	if err := validation.Required(path+"activityArn", v.ActivityArn != nil); err != nil {
+		return err
+	}
+	if v.ActivityArn != nil {
+		if err := validation.Length(path+"activityArn", utf8.RuneCountInString((*v.ActivityArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DescribeExecutionInput) Validate(path string) error {
+	if err := validation.Required(path+"executionArn", v.ExecutionArn != nil); err != nil {
+		return err
+	}
+	if v.ExecutionArn != nil {
+		if err := validation.Length(path+"executionArn", utf8.RuneCountInString((*v.ExecutionArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DescribeMapRunInput) Validate(path string) error {
+	if err := validation.Required(path+"mapRunArn", v.MapRunArn != nil); err != nil {
+		return err
+	}
+	if v.MapRunArn != nil {
+		if err := validation.Length(path+"mapRunArn", utf8.RuneCountInString((*v.MapRunArn)), new(int64(1)), new(int64(2000))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DescribeStateMachineAliasInput) Validate(path string) error {
+	if err := validation.Required(path+"stateMachineAliasArn", v.StateMachineAliasArn != nil); err != nil {
+		return err
+	}
+	if v.StateMachineAliasArn != nil {
+		if err := validation.Length(path+"stateMachineAliasArn", utf8.RuneCountInString((*v.StateMachineAliasArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DescribeStateMachineForExecutionInput) Validate(path string) error {
+	if err := validation.Required(path+"executionArn", v.ExecutionArn != nil); err != nil {
+		return err
+	}
+	if v.ExecutionArn != nil {
+		if err := validation.Length(path+"executionArn", utf8.RuneCountInString((*v.ExecutionArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DescribeStateMachineInput) Validate(path string) error {
+	if err := validation.Required(path+"stateMachineArn", v.StateMachineArn != nil); err != nil {
+		return err
+	}
+	if v.StateMachineArn != nil {
+		if err := validation.Length(path+"stateMachineArn", utf8.RuneCountInString((*v.StateMachineArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetActivityTaskInput) Validate(path string) error {
+	if err := validation.Required(path+"activityArn", v.ActivityArn != nil); err != nil {
+		return err
+	}
+	if v.ActivityArn != nil {
+		if err := validation.Length(path+"activityArn", utf8.RuneCountInString((*v.ActivityArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if v.WorkerName != nil {
+		if err := validation.Length(path+"workerName", utf8.RuneCountInString((*v.WorkerName)), new(int64(1)), new(int64(80))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetExecutionHistoryInput) Validate(path string) error {
+	if err := validation.Required(path+"executionArn", v.ExecutionArn != nil); err != nil {
+		return err
+	}
+	if v.ExecutionArn != nil {
+		if err := validation.Length(path+"executionArn", utf8.RuneCountInString((*v.ExecutionArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(0)), new(float64(1000))); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListActivitiesInput) Validate(path string) error {
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(0)), new(float64(1000))); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListExecutionsInput) Validate(path string) error {
+	if v.MapRunArn != nil {
+		if err := validation.Length(path+"mapRunArn", utf8.RuneCountInString((*v.MapRunArn)), new(int64(1)), new(int64(2000))); err != nil {
+			return err
+		}
+	}
+	if v.StateMachineArn != nil {
+		if err := validation.Length(path+"stateMachineArn", utf8.RuneCountInString((*v.StateMachineArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if v.StatusFilter != nil {
+		if err := validation.Enum(path+"statusFilter", (*v.StatusFilter), enum1); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(0)), new(float64(1000))); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(3096))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListMapRunsInput) Validate(path string) error {
+	if err := validation.Required(path+"executionArn", v.ExecutionArn != nil); err != nil {
+		return err
+	}
+	if v.ExecutionArn != nil {
+		if err := validation.Length(path+"executionArn", utf8.RuneCountInString((*v.ExecutionArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(0)), new(float64(1000))); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListStateMachineAliasesInput) Validate(path string) error {
+	if err := validation.Required(path+"stateMachineArn", v.StateMachineArn != nil); err != nil {
+		return err
+	}
+	if v.StateMachineArn != nil {
+		if err := validation.Length(path+"stateMachineArn", utf8.RuneCountInString((*v.StateMachineArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(0)), new(float64(1000))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListStateMachineVersionsInput) Validate(path string) error {
+	if err := validation.Required(path+"stateMachineArn", v.StateMachineArn != nil); err != nil {
+		return err
+	}
+	if v.StateMachineArn != nil {
+		if err := validation.Length(path+"stateMachineArn", utf8.RuneCountInString((*v.StateMachineArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(0)), new(float64(1000))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListStateMachinesInput) Validate(path string) error {
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(0)), new(float64(1000))); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListTagsForResourceInput) Validate(path string) error {
+	if err := validation.Required(path+"resourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if v.ResourceArn != nil {
+		if err := validation.Length(path+"resourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *LogDestination) Validate(path string) error {
+	if v.CloudWatchLogsLogGroup != nil {
+		if err := (*v.CloudWatchLogsLogGroup).Validate(path + "cloudWatchLogsLogGroup" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *LoggingConfiguration) Validate(path string) error {
+	if v.Destinations != nil {
+		for i0, e0 := range v.Destinations {
+			if err := e0.Validate(validation.Index(path+"destinations", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.Level != nil {
+		if err := validation.Enum(path+"level", (*v.Level), enum2); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *PublishStateMachineVersionInput) Validate(path string) error {
+	if err := validation.Required(path+"stateMachineArn", v.StateMachineArn != nil); err != nil {
+		return err
+	}
+	if v.StateMachineArn != nil {
+		if err := validation.Length(path+"stateMachineArn", utf8.RuneCountInString((*v.StateMachineArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if v.Description != nil {
+		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *RedriveExecutionInput) Validate(path string) error {
+	if err := validation.Required(path+"executionArn", v.ExecutionArn != nil); err != nil {
+		return err
+	}
+	if v.ExecutionArn != nil {
+		if err := validation.Length(path+"executionArn", utf8.RuneCountInString((*v.ExecutionArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if v.ClientToken != nil {
+		if err := validation.Length(path+"clientToken", utf8.RuneCountInString((*v.ClientToken)), new(int64(1)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"clientToken", (*v.ClientToken), pattern2, nil, "^[!-~]+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *RoutingConfigurationListItem) Validate(path string) error {
+	if err := validation.Required(path+"stateMachineVersionArn", v.StateMachineVersionArn != nil); err != nil {
+		return err
+	}
+	if v.StateMachineVersionArn != nil {
+		if err := validation.Length(path+"stateMachineVersionArn", utf8.RuneCountInString((*v.StateMachineVersionArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if v.Weight != nil {
+		if err := validation.Range(path+"weight", float64((*v.Weight)), new(float64(0)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *SendTaskFailureInput) Validate(path string) error {
+	if v.Cause != nil {
+		if err := validation.Length(path+"cause", utf8.RuneCountInString((*v.Cause)), new(int64(0)), new(int64(32768))); err != nil {
+			return err
+		}
+	}
+	if v.Error != nil {
+		if err := validation.Length(path+"error", utf8.RuneCountInString((*v.Error)), new(int64(0)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"taskToken", v.TaskToken != nil); err != nil {
+		return err
+	}
+	if v.TaskToken != nil {
+		if err := validation.Length(path+"taskToken", utf8.RuneCountInString((*v.TaskToken)), new(int64(1)), new(int64(2048))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *SendTaskHeartbeatInput) Validate(path string) error {
+	if err := validation.Required(path+"taskToken", v.TaskToken != nil); err != nil {
+		return err
+	}
+	if v.TaskToken != nil {
+		if err := validation.Length(path+"taskToken", utf8.RuneCountInString((*v.TaskToken)), new(int64(1)), new(int64(2048))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *SendTaskSuccessInput) Validate(path string) error {
+	if err := validation.Required(path+"output", v.Output != nil); err != nil {
+		return err
+	}
+	if v.Output != nil {
+		if err := validation.Length(path+"output", utf8.RuneCountInString((*v.Output)), new(int64(0)), new(int64(262144))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"taskToken", v.TaskToken != nil); err != nil {
+		return err
+	}
+	if v.TaskToken != nil {
+		if err := validation.Length(path+"taskToken", utf8.RuneCountInString((*v.TaskToken)), new(int64(1)), new(int64(2048))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *StartExecutionInput) Validate(path string) error {
+	if err := validation.Required(path+"stateMachineArn", v.StateMachineArn != nil); err != nil {
+		return err
+	}
+	if v.StateMachineArn != nil {
+		if err := validation.Length(path+"stateMachineArn", utf8.RuneCountInString((*v.StateMachineArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(80))); err != nil {
+			return err
+		}
+	}
+	if v.Input != nil {
+		if err := validation.Length(path+"input", utf8.RuneCountInString((*v.Input)), new(int64(0)), new(int64(262144))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *StartSyncExecutionInput) Validate(path string) error {
+	if err := validation.Required(path+"stateMachineArn", v.StateMachineArn != nil); err != nil {
+		return err
+	}
+	if v.StateMachineArn != nil {
+		if err := validation.Length(path+"stateMachineArn", utf8.RuneCountInString((*v.StateMachineArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(80))); err != nil {
+			return err
+		}
+	}
+	if v.Input != nil {
+		if err := validation.Length(path+"input", utf8.RuneCountInString((*v.Input)), new(int64(0)), new(int64(262144))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *StopExecutionInput) Validate(path string) error {
+	if v.Cause != nil {
+		if err := validation.Length(path+"cause", utf8.RuneCountInString((*v.Cause)), new(int64(0)), new(int64(32768))); err != nil {
+			return err
+		}
+	}
+	if v.Error != nil {
+		if err := validation.Length(path+"error", utf8.RuneCountInString((*v.Error)), new(int64(0)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"executionArn", v.ExecutionArn != nil); err != nil {
+		return err
+	}
+	if v.ExecutionArn != nil {
+		if err := validation.Length(path+"executionArn", utf8.RuneCountInString((*v.ExecutionArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *Tag) Validate(path string) error {
+	if v.Key != nil {
+		if err := validation.Length(path+"key", utf8.RuneCountInString((*v.Key)), new(int64(1)), new(int64(128))); err != nil {
+			return err
+		}
+	}
+	if v.Value != nil {
+		if err := validation.Length(path+"value", utf8.RuneCountInString((*v.Value)), new(int64(0)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *TagResourceInput) Validate(path string) error {
+	if err := validation.Required(path+"resourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if v.ResourceArn != nil {
+		if err := validation.Length(path+"resourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"tags", v.Tags != nil); err != nil {
+		return err
+	}
+	if v.Tags != nil {
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *TestStateInput) Validate(path string) error {
+	if err := validation.Required(path+"definition", v.Definition != nil); err != nil {
+		return err
+	}
+	if v.Definition != nil {
+		if err := validation.Length(path+"definition", utf8.RuneCountInString((*v.Definition)), new(int64(1)), new(int64(1048576))); err != nil {
+			return err
+		}
+	}
+	if v.RoleArn != nil {
+		if err := validation.Length(path+"roleArn", utf8.RuneCountInString((*v.RoleArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if v.Input != nil {
+		if err := validation.Length(path+"input", utf8.RuneCountInString((*v.Input)), new(int64(0)), new(int64(262144))); err != nil {
+			return err
+		}
+	}
+	if v.InspectionLevel != nil {
+		if err := validation.Enum(path+"inspectionLevel", (*v.InspectionLevel), enum3); err != nil {
+			return err
+		}
+	}
+	if v.Variables != nil {
+		if err := validation.Length(path+"variables", utf8.RuneCountInString((*v.Variables)), new(int64(0)), new(int64(262144))); err != nil {
+			return err
+		}
+	}
+	if v.StateName != nil {
+		if err := validation.Length(path+"stateName", utf8.RuneCountInString((*v.StateName)), new(int64(1)), new(int64(80))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *TracingConfiguration) Validate(path string) error {
+	return nil
+}
+
+func (v *UntagResourceInput) Validate(path string) error {
+	if err := validation.Required(path+"resourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if v.ResourceArn != nil {
+		if err := validation.Length(path+"resourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"tagKeys", v.TagKeys != nil); err != nil {
+		return err
+	}
+	if v.TagKeys != nil {
+		for i0, e0 := range v.TagKeys {
+			if err := validation.Length(validation.Index(path+"tagKeys", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(128))); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *UpdateMapRunInput) Validate(path string) error {
+	if err := validation.Required(path+"mapRunArn", v.MapRunArn != nil); err != nil {
+		return err
+	}
+	if v.MapRunArn != nil {
+		if err := validation.Length(path+"mapRunArn", utf8.RuneCountInString((*v.MapRunArn)), new(int64(1)), new(int64(2000))); err != nil {
+			return err
+		}
+	}
+	if v.MaxConcurrency != nil {
+		if err := validation.Range(path+"maxConcurrency", float64((*v.MaxConcurrency)), new(float64(0)), nil); err != nil {
+			return err
+		}
+	}
+	if v.ToleratedFailurePercentage != nil {
+		if err := validation.Range(path+"toleratedFailurePercentage", float64((*v.ToleratedFailurePercentage)), new(float64(0)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	if v.ToleratedFailureCount != nil {
+		if err := validation.Range(path+"toleratedFailureCount", float64((*v.ToleratedFailureCount)), new(float64(0)), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *UpdateStateMachineAliasInput) Validate(path string) error {
+	if err := validation.Required(path+"stateMachineAliasArn", v.StateMachineAliasArn != nil); err != nil {
+		return err
+	}
+	if v.StateMachineAliasArn != nil {
+		if err := validation.Length(path+"stateMachineAliasArn", utf8.RuneCountInString((*v.StateMachineAliasArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if v.Description != nil {
+		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if v.RoutingConfiguration != nil {
+		if err := validation.Length(path+"routingConfiguration", len(v.RoutingConfiguration), new(int64(1)), new(int64(2))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.RoutingConfiguration {
+			if err := e0.Validate(validation.Index(path+"routingConfiguration", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *UpdateStateMachineInput) Validate(path string) error {
+	if err := validation.Required(path+"stateMachineArn", v.StateMachineArn != nil); err != nil {
+		return err
+	}
+	if v.StateMachineArn != nil {
+		if err := validation.Length(path+"stateMachineArn", utf8.RuneCountInString((*v.StateMachineArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if v.Definition != nil {
+		if err := validation.Length(path+"definition", utf8.RuneCountInString((*v.Definition)), new(int64(1)), new(int64(1048576))); err != nil {
+			return err
+		}
+	}
+	if v.RoleArn != nil {
+		if err := validation.Length(path+"roleArn", utf8.RuneCountInString((*v.RoleArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if v.LoggingConfiguration != nil {
+		if err := (*v.LoggingConfiguration).Validate(path + "loggingConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.TracingConfiguration != nil {
+		if err := (*v.TracingConfiguration).Validate(path + "tracingConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.VersionDescription != nil {
+		if err := validation.Length(path+"versionDescription", utf8.RuneCountInString((*v.VersionDescription)), new(int64(0)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ValidateStateMachineDefinitionInput) Validate(path string) error {
+	if err := validation.Required(path+"definition", v.Definition != nil); err != nil {
+		return err
+	}
+	if v.Definition != nil {
+		if err := validation.Length(path+"definition", utf8.RuneCountInString((*v.Definition)), new(int64(1)), new(int64(1048576))); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(0)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	if v.Severity != nil {
+		if err := validation.Enum(path+"severity", (*v.Severity), enum4); err != nil {
+			return err
+		}
+	}
+	if v.Type != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum0); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type API interface {
 	CreateStateMachine(context.Context, *CreateStateMachineInput) (*CreateStateMachineOutput, error)
 	DescribeStateMachine(context.Context, *DescribeStateMachineInput) (*DescribeStateMachineOutput, error)
@@ -830,109 +1751,271 @@ type API interface {
 	ListStateMachineAliases(context.Context, *ListStateMachineAliasesInput) (*ListStateMachineAliasesOutput, error)
 	RedriveExecution(context.Context, *RedriveExecutionInput) (*RedriveExecutionOutput, error)
 	TestState(context.Context, *TestStateInput) (*TestStateOutput, error)
+	DescribeMapRun(context.Context, *DescribeMapRunInput) (*DescribeMapRunOutput, error)
+	ListMapRuns(context.Context, *ListMapRunsInput) (*ListMapRunsOutput, error)
+	UpdateMapRun(context.Context, *UpdateMapRunInput) (*UpdateMapRunOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
 	return catalog.Service{Name: "sfn", SigningName: "states", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "states", TargetPrefix: "AWSStepFunctions", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_0"}, Errors: map[string]catalog.ErrorBinding{"ActivityAlreadyExists": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ActivityDoesNotExist": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ActivityLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ActivityWorkerLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "ExecutionAlreadyExists": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExecutionDoesNotExist": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExecutionLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExecutionNotRedrivable": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidArn": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidDefinition": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidEncryptionConfiguration": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidExecutionInput": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidLoggingConfiguration": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidName": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidOutput": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidToken": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidTracingConfiguration": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "KmsAccessDeniedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "KmsInvalidStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "KmsThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "MissingRequiredParameter": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFound": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServiceQuotaExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 402}, "StateMachineAlreadyExists": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "StateMachineDeleting": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "StateMachineDoesNotExist": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "StateMachineLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "StateMachineTypeNotSupported": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TaskDoesNotExist": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TaskTimedOut": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TooManyTags": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateStateMachine": {Name: "CreateStateMachine", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:CreateStateMachine", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.CreateStateMachine", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &CreateStateMachineInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateStateMachine(ctx, input.(*CreateStateMachineInput))
+			in := input.(*CreateStateMachineInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.CreateStateMachine(ctx, in)
 		}},
 		"DescribeStateMachine": {Name: "DescribeStateMachine", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:DescribeStateMachine", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.DescribeStateMachine", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeStateMachineInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DescribeStateMachine(ctx, input.(*DescribeStateMachineInput))
+			in := input.(*DescribeStateMachineInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.DescribeStateMachine(ctx, in)
 		}},
 		"ListStateMachines": {Name: "ListStateMachines", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:ListStateMachines", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.ListStateMachines", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListStateMachinesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListStateMachines(ctx, input.(*ListStateMachinesInput))
+			in := input.(*ListStateMachinesInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.ListStateMachines(ctx, in)
 		}},
 		"UpdateStateMachine": {Name: "UpdateStateMachine", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:UpdateStateMachine", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.UpdateStateMachine", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &UpdateStateMachineInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UpdateStateMachine(ctx, input.(*UpdateStateMachineInput))
+			in := input.(*UpdateStateMachineInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.UpdateStateMachine(ctx, in)
 		}},
 		"DeleteStateMachine": {Name: "DeleteStateMachine", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:DeleteStateMachine", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.DeleteStateMachine", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DeleteStateMachineInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteStateMachine(ctx, input.(*DeleteStateMachineInput))
+			in := input.(*DeleteStateMachineInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.DeleteStateMachine(ctx, in)
 		}},
 		"StartExecution": {Name: "StartExecution", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:StartExecution", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.StartExecution", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &StartExecutionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.StartExecution(ctx, input.(*StartExecutionInput))
+			in := input.(*StartExecutionInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.StartExecution(ctx, in)
 		}},
 		"StartSyncExecution": {Name: "StartSyncExecution", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:StartSyncExecution", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.StartSyncExecution", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &StartSyncExecutionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.StartSyncExecution(ctx, input.(*StartSyncExecutionInput))
+			in := input.(*StartSyncExecutionInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.StartSyncExecution(ctx, in)
 		}},
 		"DescribeExecution": {Name: "DescribeExecution", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:DescribeExecution", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.DescribeExecution", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeExecutionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DescribeExecution(ctx, input.(*DescribeExecutionInput))
+			in := input.(*DescribeExecutionInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.DescribeExecution(ctx, in)
 		}},
 		"ListExecutions": {Name: "ListExecutions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:ListExecutions", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.ListExecutions", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListExecutionsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListExecutions(ctx, input.(*ListExecutionsInput))
+			in := input.(*ListExecutionsInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.ListExecutions(ctx, in)
 		}},
 		"StopExecution": {Name: "StopExecution", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:StopExecution", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.StopExecution", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &StopExecutionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.StopExecution(ctx, input.(*StopExecutionInput))
+			in := input.(*StopExecutionInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.StopExecution(ctx, in)
 		}},
 		"GetExecutionHistory": {Name: "GetExecutionHistory", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:GetExecutionHistory", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.GetExecutionHistory", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &GetExecutionHistoryInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.GetExecutionHistory(ctx, input.(*GetExecutionHistoryInput))
+			in := input.(*GetExecutionHistoryInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.GetExecutionHistory(ctx, in)
 		}},
 		"DescribeStateMachineForExecution": {Name: "DescribeStateMachineForExecution", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:DescribeStateMachineForExecution", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.DescribeStateMachineForExecution", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeStateMachineForExecutionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DescribeStateMachineForExecution(ctx, input.(*DescribeStateMachineForExecutionInput))
+			in := input.(*DescribeStateMachineForExecutionInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.DescribeStateMachineForExecution(ctx, in)
 		}},
 		"SendTaskSuccess": {Name: "SendTaskSuccess", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:SendTaskSuccess", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.SendTaskSuccess", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &SendTaskSuccessInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.SendTaskSuccess(ctx, input.(*SendTaskSuccessInput))
+			in := input.(*SendTaskSuccessInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.SendTaskSuccess(ctx, in)
 		}},
 		"SendTaskFailure": {Name: "SendTaskFailure", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:SendTaskFailure", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.SendTaskFailure", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &SendTaskFailureInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.SendTaskFailure(ctx, input.(*SendTaskFailureInput))
+			in := input.(*SendTaskFailureInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.SendTaskFailure(ctx, in)
 		}},
 		"SendTaskHeartbeat": {Name: "SendTaskHeartbeat", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:SendTaskHeartbeat", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.SendTaskHeartbeat", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &SendTaskHeartbeatInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.SendTaskHeartbeat(ctx, input.(*SendTaskHeartbeatInput))
+			in := input.(*SendTaskHeartbeatInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.SendTaskHeartbeat(ctx, in)
 		}},
 		"CreateActivity": {Name: "CreateActivity", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:CreateActivity", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.CreateActivity", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &CreateActivityInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateActivity(ctx, input.(*CreateActivityInput))
+			in := input.(*CreateActivityInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.CreateActivity(ctx, in)
 		}},
 		"DescribeActivity": {Name: "DescribeActivity", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:DescribeActivity", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.DescribeActivity", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeActivityInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DescribeActivity(ctx, input.(*DescribeActivityInput))
+			in := input.(*DescribeActivityInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.DescribeActivity(ctx, in)
 		}},
 		"ListActivities": {Name: "ListActivities", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:ListActivities", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.ListActivities", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListActivitiesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListActivities(ctx, input.(*ListActivitiesInput))
+			in := input.(*ListActivitiesInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.ListActivities(ctx, in)
 		}},
 		"DeleteActivity": {Name: "DeleteActivity", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:DeleteActivity", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.DeleteActivity", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DeleteActivityInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteActivity(ctx, input.(*DeleteActivityInput))
+			in := input.(*DeleteActivityInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.DeleteActivity(ctx, in)
 		}},
 		"GetActivityTask": {Name: "GetActivityTask", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:GetActivityTask", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.GetActivityTask", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &GetActivityTaskInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.GetActivityTask(ctx, input.(*GetActivityTaskInput))
+			in := input.(*GetActivityTaskInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.GetActivityTask(ctx, in)
 		}},
 		"ValidateStateMachineDefinition": {Name: "ValidateStateMachineDefinition", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:ValidateStateMachineDefinition", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.ValidateStateMachineDefinition", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ValidateStateMachineDefinitionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ValidateStateMachineDefinition(ctx, input.(*ValidateStateMachineDefinitionInput))
+			in := input.(*ValidateStateMachineDefinitionInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.ValidateStateMachineDefinition(ctx, in)
 		}},
 		"TagResource": {Name: "TagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:TagResource", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.TagResource", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &TagResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.TagResource(ctx, input.(*TagResourceInput))
+			in := input.(*TagResourceInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.TagResource(ctx, in)
 		}},
 		"UntagResource": {Name: "UntagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:UntagResource", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.UntagResource", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &UntagResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UntagResource(ctx, input.(*UntagResourceInput))
+			in := input.(*UntagResourceInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.UntagResource(ctx, in)
 		}},
 		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:ListTagsForResource", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.ListTagsForResource", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceInput))
+			in := input.(*ListTagsForResourceInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.ListTagsForResource(ctx, in)
 		}},
 		"ListStateMachineVersions": {Name: "ListStateMachineVersions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:ListStateMachineVersions", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.ListStateMachineVersions", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListStateMachineVersionsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListStateMachineVersions(ctx, input.(*ListStateMachineVersionsInput))
+			in := input.(*ListStateMachineVersionsInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.ListStateMachineVersions(ctx, in)
 		}},
 		"PublishStateMachineVersion": {Name: "PublishStateMachineVersion", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:PublishStateMachineVersion", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.PublishStateMachineVersion", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &PublishStateMachineVersionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.PublishStateMachineVersion(ctx, input.(*PublishStateMachineVersionInput))
+			in := input.(*PublishStateMachineVersionInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.PublishStateMachineVersion(ctx, in)
 		}},
 		"DeleteStateMachineVersion": {Name: "DeleteStateMachineVersion", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:DeleteStateMachineVersion", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.DeleteStateMachineVersion", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DeleteStateMachineVersionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteStateMachineVersion(ctx, input.(*DeleteStateMachineVersionInput))
+			in := input.(*DeleteStateMachineVersionInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.DeleteStateMachineVersion(ctx, in)
 		}},
 		"CreateStateMachineAlias": {Name: "CreateStateMachineAlias", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:CreateStateMachineAlias", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.CreateStateMachineAlias", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &CreateStateMachineAliasInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateStateMachineAlias(ctx, input.(*CreateStateMachineAliasInput))
+			in := input.(*CreateStateMachineAliasInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.CreateStateMachineAlias(ctx, in)
 		}},
 		"DescribeStateMachineAlias": {Name: "DescribeStateMachineAlias", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:DescribeStateMachineAlias", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.DescribeStateMachineAlias", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeStateMachineAliasInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DescribeStateMachineAlias(ctx, input.(*DescribeStateMachineAliasInput))
+			in := input.(*DescribeStateMachineAliasInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.DescribeStateMachineAlias(ctx, in)
 		}},
 		"UpdateStateMachineAlias": {Name: "UpdateStateMachineAlias", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:UpdateStateMachineAlias", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.UpdateStateMachineAlias", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &UpdateStateMachineAliasInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UpdateStateMachineAlias(ctx, input.(*UpdateStateMachineAliasInput))
+			in := input.(*UpdateStateMachineAliasInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.UpdateStateMachineAlias(ctx, in)
 		}},
 		"DeleteStateMachineAlias": {Name: "DeleteStateMachineAlias", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:DeleteStateMachineAlias", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.DeleteStateMachineAlias", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DeleteStateMachineAliasInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteStateMachineAlias(ctx, input.(*DeleteStateMachineAliasInput))
+			in := input.(*DeleteStateMachineAliasInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.DeleteStateMachineAlias(ctx, in)
 		}},
 		"ListStateMachineAliases": {Name: "ListStateMachineAliases", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:ListStateMachineAliases", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.ListStateMachineAliases", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListStateMachineAliasesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListStateMachineAliases(ctx, input.(*ListStateMachineAliasesInput))
+			in := input.(*ListStateMachineAliasesInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.ListStateMachineAliases(ctx, in)
 		}},
 		"RedriveExecution": {Name: "RedriveExecution", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:RedriveExecution", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.RedriveExecution", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &RedriveExecutionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.RedriveExecution(ctx, input.(*RedriveExecutionInput))
+			in := input.(*RedriveExecutionInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.RedriveExecution(ctx, in)
 		}},
-		"TestState": {Name: "TestState", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:TestState", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.TestState", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &TestStateInput{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.TestState(ctx, input.(*TestStateInput)) }},
+		"TestState": {Name: "TestState", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:TestState", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.TestState", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &TestStateInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*TestStateInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.TestState(ctx, in)
+		}},
+		"DescribeMapRun": {Name: "DescribeMapRun", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:DescribeMapRun", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.DescribeMapRun", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeMapRunInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*DescribeMapRunInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.DescribeMapRun(ctx, in)
+		}},
+		"ListMapRuns": {Name: "ListMapRuns", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:ListMapRuns", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.ListMapRuns", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListMapRunsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListMapRunsInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.ListMapRuns(ctx, in)
+		}},
+		"UpdateMapRun": {Name: "UpdateMapRun", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:UpdateMapRun", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.UpdateMapRun", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &UpdateMapRunInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*UpdateMapRunInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.UpdateMapRun(ctx, in)
+		}},
 	}}
 }

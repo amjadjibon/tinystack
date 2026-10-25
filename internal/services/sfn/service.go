@@ -33,6 +33,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
+	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -78,6 +79,7 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
+	s3     *s3.Service
 	store  storage.Store
 	logs   *logs.Service
 	caller *catalog.Caller
@@ -125,6 +127,9 @@ func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
 	s.authorizer = authorizer
 }
 
+// UseS3 supplies the object service used by distributed Map readers and writers.
+func (s *Service) UseS3(objects *s3.Service) { s.s3 = objects }
+
 // Stop ends running executions and waits for them.
 func (s *Service) Stop() { s.bg.Stop() }
 
@@ -132,6 +137,26 @@ func (s *Service) Stop() { s.bg.Stop() }
 func (s *Service) abortOrphans() error {
 	return s.store.Update(context.Background(), func(tx storage.WriteTx) error {
 		for _, key := range tx.Keys("") {
+			if _, _, rest, ok := storage.Scoped(key, service); ok && strings.HasPrefix(rest, kindMapRun+"/") {
+				mr, _, err := storage.Read[mapRun](tx, key)
+				if err != nil {
+					return err
+				}
+
+				if mr.Status == statusRunning {
+					mr.Status, mr.Stop = statusAborted, common.Unix(s.now())
+					mr.Items.Aborted += mr.Items.Running
+					mr.Items.Running = 0
+					mr.Executions.Aborted += mr.Executions.Running
+					mr.Executions.Running = 0
+					if err := storage.Write(tx, key, mr); err != nil {
+						return err
+					}
+				}
+
+				continue
+			}
+
 			if _, _, rest, ok := storage.Scoped(key, service); !ok || !strings.HasPrefix(rest, kindExecution+"/") {
 				continue
 			}
@@ -181,25 +206,28 @@ type stateMachine struct {
 // Redrives counts redrives, with RedriveDate and RedriveToken the last's.
 type execution struct {
 	Resume          *resumePoint `json:",omitempty"`
-	RedriveToken    string       `json:",omitempty"`
+	Endpoint        string
+	Cause           string `json:",omitempty"`
+	RedriveToken    string `json:",omitempty"`
 	Status          string
 	StateMachineARN string
 	Name            string
 	AliasARN        string `json:",omitempty"`
 	Definition      string `json:",omitempty"`
 	ARN             string
-	Endpoint        string
-	StateMachine    string
-	Cause           string `json:",omitempty"`
+	MapRunARN       string `json:",omitempty"`
+	Error           string `json:",omitempty"`
 	VersionARN      string `json:",omitempty"`
+	StateMachine    string
 	Input           string
 	Output          string  `json:",omitempty"`
-	Error           string  `json:",omitempty"`
 	RedriveDate     float64 `json:",omitempty"`
 	Redrives        int64   `json:",omitempty"`
 	Start           float64
 	Stop            float64 `json:",omitempty"`
 	Events          int64
+	ItemCount       int64 `json:",omitempty"`
+	HasMapRuns      bool  `json:",omitempty"`
 }
 
 // activity is an activity's record.

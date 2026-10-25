@@ -108,7 +108,8 @@ func (s *Service) CreateStateMachine(
 		return nil, checkErr
 	}
 
-	if _, problems := parseDefinition(common.Value(in.Definition)); len(problems) > 0 {
+	def, problems := parseDefinition(common.Value(in.Definition))
+	if len(problems) > 0 {
 		return nil, invalidDefinition(problems)
 	}
 
@@ -118,6 +119,10 @@ func (s *Service) CreateStateMachine(
 		kind = typeStandard
 	case kind != typeStandard && kind != typeExpress:
 		return nil, awserror.Validation("type must be STANDARD or EXPRESS")
+	}
+
+	if kind == typeExpress && def.containsDistributed() {
+		return nil, invalidDefinition([]string{"SCHEMA_VALIDATION_FAILED: Distributed Map requires a STANDARD parent"})
 	}
 
 	switch {
@@ -331,6 +336,15 @@ func (s *Service) UpdateStateMachine(
 			return scopeErr
 		}
 
+		if in.Definition != nil && loaded.Type == typeExpress {
+			def, _ := parseDefinition(*in.Definition)
+			if def.containsDistributed() {
+				return invalidDefinition(
+					[]string{"SCHEMA_VALIDATION_FAILED: Distributed Map requires a STANDARD parent"},
+				)
+			}
+		}
+
 		sm = loaded
 		sm.Definition, sm.RoleArn = common.Value(
 			common.OrElse(in.Definition, &sm.Definition),
@@ -421,7 +435,11 @@ func (s *Service) ValidateStateMachineDefinition(
 	_ context.Context,
 	in *api.ValidateStateMachineDefinitionInput,
 ) (*api.ValidateStateMachineDefinitionOutput, error) {
-	_, problems := parseDefinition(common.Value(in.Definition))
+	def, problems := parseDefinition(common.Value(in.Definition))
+	if len(problems) == 0 && common.Value(in.Type) == typeExpress && def.containsDistributed() {
+		problems = append(problems, "SCHEMA_VALIDATION_FAILED: Distributed Map requires a STANDARD parent")
+	}
+
 	out := &api.ValidateStateMachineDefinitionOutput{
 		Result: new("OK"), Diagnostics: []api.ValidateStateMachineDefinitionDiagnostic{}, Truncated: new(false),
 	}

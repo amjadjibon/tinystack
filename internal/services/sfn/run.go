@@ -142,7 +142,7 @@ func (r *run) contextObject(name string, entered time.Time, item map[string]any)
 	_ = json.Unmarshal([]byte(r.exec.Input), &input)
 	c := map[string]any{
 		"Execution": map[string]any{
-			"Id": r.exec.ARN, "Input": input, keyName: r.exec.Name, "RoleArn": r.machine.RoleArn,
+			"Id": r.exec.ARN, fieldInput: input, keyName: r.exec.Name, "RoleArn": r.machine.RoleArn,
 			"StartTime": r.started.UTC().Format(time.RFC3339Nano), "RedriveCount": float64(r.exec.Redrives),
 		},
 		"StateMachine": map[string]any{"Id": r.exec.StateMachineARN, keyName: r.machine.Name},
@@ -151,7 +151,7 @@ func (r *run) contextObject(name string, entered time.Time, item map[string]any)
 		},
 	}
 	if item != nil {
-		c[stateMap] = map[string]any{"Item": item}
+		c[stateMap] = map[string]any{fieldItem: item}
 	}
 
 	return c
@@ -517,14 +517,14 @@ func sleep(ctx context.Context, d time.Duration) error {
 }
 
 // matches reports whether an error name matches a retrier's or catcher's
-// ErrorEquals. States.ALL matches every error but States.Runtime, and
+// ErrorEquals. States.ALL excludes States.Runtime and States.DataLimitExceeded, and
 // States.TaskFailed every one but States.Timeout and States.Runtime.
 func matches(names []string, err string) bool {
 	for _, n := range names {
 		switch {
 		case n == err:
 			return true
-		case n == "States.ALL" && err != errRuntime:
+		case n == "States.ALL" && err != errRuntime && err != errDataLimit:
 			return true
 		case n == errTaskFailed && err != errTimeout && err != errRuntime &&
 			!strings.HasPrefix(err, "States.") || n == errTaskFailed && err == errHeartbeat:
@@ -745,6 +745,10 @@ func (r *run) items(s *state, input any, e *env) (any, error) {
 }
 
 func (r *run) mapItems(ctx context.Context, s *state, input any, e *env) (any, error) {
+	if s.distributed() {
+		return r.distributedMap(ctx, s, input, e)
+	}
+
 	v, err := r.items(s, input, e)
 	if err != nil {
 		return nil, err
@@ -812,7 +816,7 @@ func (r *run) mapItems(ctx context.Context, s *state, input any, e *env) (any, e
 			itemInput := value
 			if selector != nil {
 				itemEnv := &env{ctx: ctx, context: maps.Clone(e.context), vars: e.vars}
-				itemEnv.context[stateMap] = map[string]any{"Item": item}
+				itemEnv.context[stateMap] = map[string]any{fieldItem: item}
 				var selectErr error
 				if s.jsonata {
 					itemInput, selectErr = itemEnv.evaluate(selector, map[string]any{keyInput: input})

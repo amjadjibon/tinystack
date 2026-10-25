@@ -43,8 +43,21 @@ type number struct {
 
 func (n *number) UnmarshalJSON(data []byte) error {
 	n.set = true
-	if bytes.HasPrefix(bytes.TrimSpace(data), []byte(`"`)) {
-		return json.Unmarshal(data, &n.expr)
+	data = bytes.TrimSpace(data)
+	if bytes.Equal(data, []byte("null")) {
+		return fmt.Errorf("numeric fields cannot be null")
+	}
+
+	if bytes.HasPrefix(data, []byte(`"`)) {
+		if err := json.Unmarshal(data, &n.expr); err != nil {
+			return err
+		}
+
+		if _, ok := expression(n.expr); !ok {
+			return fmt.Errorf("numeric fields must be numbers or JSONata expressions")
+		}
+
+		return nil
 	}
 
 	return json.Unmarshal(data, &n.value)

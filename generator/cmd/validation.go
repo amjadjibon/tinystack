@@ -238,6 +238,10 @@ type re2Pattern struct {
 
 // re2Patterns maps such model patterns to their RE2 renderings.
 var re2Patterns = map[string]re2Pattern{
+	// Step Functions alias names require at least one nonnumeric character.
+	`^(?=.*[a-zA-Z_\-\.])[a-zA-Z0-9_\-\.]+$`: {
+		match: `^[a-zA-Z0-9_.-]+$`, reject: `^[0-9]+$`,
+	},
 	// A DNS name: labels of 1 to 63 letters, digits and hyphens that neither start with a hyphen nor end with one,
 	// the last label at least two characters, and an optional trailing dot (Amplify DomainName).
 	`^(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])(\.)?$`: {match: `^(([A-Za-z0-9]` +

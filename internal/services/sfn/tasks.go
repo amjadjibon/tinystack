@@ -450,7 +450,7 @@ func (r *run) integrate(ctx context.Context, resourceType, action, suffix string
 	case "sns:publish":
 		jsonField(fields, "Message")
 	case "states:startExecution":
-		jsonField(fields, "Input")
+		jsonField(fields, fieldInput)
 		return r.startChild(ctx, fields, suffix)
 	case "events:putEvents":
 		entries, _ := fields["Entries"].([]any)
@@ -506,7 +506,7 @@ func (r *run) startChild(ctx context.Context, params map[string]any, suffix stri
 			continue
 		case statusSucceeded:
 			if suffix == sync2Suffix {
-				for _, k := range []string{"Input", "Output"} {
+				for _, k := range []string{fieldInput, "Output"} {
 					var parsed any
 					if s, ok := described[k].(string); ok && json.Unmarshal([]byte(s), &parsed) == nil {
 						described[k] = parsed

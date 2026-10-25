@@ -349,7 +349,7 @@ func (s *Service) DescribeExecution(
 
 	out := &api.DescribeExecutionOutput{
 		ExecutionArn: new(e.ARN), StateMachineArn: new(e.StateMachineARN), Name: new(e.Name), Status: new(e.Status),
-		StartDate: new(e.Start), Input: new(e.Input),
+		StartDate: new(e.Start), Input: new(e.Input), MapRunArn: optional(e.MapRunARN),
 		InputDetails:  &api.CloudWatchEventsExecutionDataDetails{Included: new(true)},
 		RedriveStatus: new("REDRIVABLE"), StateMachineVersionArn: optional(e.VersionARN),
 		StateMachineAliasArn: optional(e.AliasARN), RedriveCount: new(e.Redrives),
@@ -392,6 +392,28 @@ func (s *Service) DescribeStateMachineForExecution(
 			return loadErr
 		}
 
+		if e.MapRunARN != "" {
+			mr, mapErr := loadMapRun(tx, &m, new(e.MapRunARN))
+			if mapErr != nil {
+				return mapErr
+			}
+
+			_, _, rootName, _ := parseARN(mr.StateMachineARN)
+			rootName, _, _ = strings.Cut(rootName, "/")
+			_, sm, machineErr := loadMachine(tx, new(machineARN(m.Scope, rootName)))
+			if machineErr != nil {
+				return machineErr
+			}
+
+			out = &api.DescribeStateMachineForExecutionOutput{
+				StateMachineArn: new(e.StateMachineARN), Name: new(e.StateMachine),
+				Definition: new(e.Definition), RoleArn: new(sm.RoleArn), UpdateDate: new(e.Start),
+				LoggingConfiguration: sm.Logging, TracingConfiguration: sm.Tracing,
+			}
+
+			return nil
+		}
+
 		target := e.StateMachineARN
 		if e.VersionARN != "" {
 			target = e.VersionARN
@@ -419,7 +441,7 @@ func (s *Service) DescribeStateMachineForExecution(
 
 var statuses = []string{statusRunning, statusSucceeded, statusFailed, statusTimedOut, statusAborted, "PENDING_REDRIVE"}
 
-// ListExecutions lists a state machine's executions, newest first.
+// ListExecutions lists a state machine's or Map Run's Standard executions in storage key order.
 func (s *Service) ListExecutions(ctx context.Context, in *api.ListExecutionsInput) (*api.ListExecutionsOutput, error) {
 	m, err := request.Regional(ctx)
 	if err != nil {
@@ -432,12 +454,28 @@ func (s *Service) ListExecutions(ctx context.Context, in *api.ListExecutionsInpu
 
 	out := &api.ListExecutionsOutput{Executions: []api.ExecutionListItem{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		t, loadErr := loadTarget(tx, in.StateMachineArn)
-		if loadErr != nil {
-			return loadErr
+		var scope request.Scope
+		var sm *stateMachine
+		if (in.MapRunArn == nil) == (in.StateMachineArn == nil) {
+			return awserror.Validation("Specify exactly one of stateMachineArn or mapRunArn")
 		}
 
-		scope, sm := t.scope, t.machine
+		if in.MapRunArn != nil {
+			mr, loadErr := loadMapRun(tx, new(m), in.MapRunArn)
+			if loadErr != nil {
+				return loadErr
+			}
+
+			scope = m.Scope
+			sm = &stateMachine{Name: mr.ChildMachine, Type: typeStandard}
+		} else {
+			t, loadErr := loadTarget(tx, in.StateMachineArn)
+			if loadErr != nil {
+				return loadErr
+			}
+
+			scope, sm = t.scope, t.machine
+		}
 		if scopeErr := inScope(&m, scope, in.StateMachineArn); scopeErr != nil {
 			return scopeErr
 		}
@@ -460,19 +498,31 @@ func (s *Service) ListExecutions(ctx context.Context, in *api.ListExecutionsInpu
 				return readErr
 			}
 
+			if in.MapRunArn != nil && e.MapRunARN != *in.MapRunArn {
+				continue
+			}
+
+			if in.MapRunArn == nil && e.MapRunARN != "" {
+				continue
+			}
+
 			if (in.StatusFilter == nil || e.Status == *in.StatusFilter) &&
 				(qualifiedARN == "" || e.VersionARN == qualifiedARN || e.AliasARN == qualifiedARN) {
 				all = append(all, e)
 			}
 		}
 
-		slices.SortStableFunc(all, func(a, b *execution) int { return cmpFloat(b.Start, a.Start) })
 		items := make([]api.ExecutionListItem, 0, len(all))
 		for _, e := range all {
 			item := api.ExecutionListItem{
 				ExecutionArn: new(e.ARN), StateMachineArn: new(e.StateMachineARN), Name: new(e.Name),
 				Status: new(e.Status), StartDate: new(e.Start), RedriveCount: new(int64(0)),
 				StateMachineVersionArn: optional(e.VersionARN), StateMachineAliasArn: optional(e.AliasARN),
+				MapRunArn: optional(e.MapRunARN),
+			}
+
+			if e.MapRunARN != "" {
+				item.ItemCount = new(e.ItemCount)
 			}
 			if e.Redrives > 0 {
 				item.RedriveCount, item.RedriveDate = new(e.Redrives), new(e.RedriveDate)

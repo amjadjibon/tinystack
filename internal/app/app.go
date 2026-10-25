@@ -429,6 +429,8 @@ func build(
 		return nil, err
 	}
 
+	workflows.UseS3(buckets)
+
 	// Stop ends running executions.
 	a.onStop(workflows.Stop)
 	firehoses := firehose.New(store, streams, deliveries, logger)

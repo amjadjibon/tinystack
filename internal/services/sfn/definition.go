@@ -56,52 +56,63 @@ type catcher struct {
 }
 
 type processor struct {
-	ProcessorConfig *struct{ Mode string }
+	ProcessorConfig *struct {
+		Mode          string
+		ExecutionType string
+	}
 	machine
+	raw json.RawMessage
 }
 
 // state is one state of a definition, of any type.
 type state struct {
-	Result               any
-	Parameters           any
-	ResultSelector       any
-	ItemSelector         any
-	Arguments            any
-	Output               any
-	Items                any
-	Assign               any
-	ItemReader           any
-	ResultWriter         any
-	ItemProcessor        *processor
-	Iterator             *machine
-	Type                 string
-	Comment              string
-	Next                 string
-	Resource             string
-	Cause                string
-	CausePath            string
-	Error                string
-	ErrorPath            string
-	Default              string
-	Timestamp            string
-	SecondsPath          string
-	TimestampPath        string
-	TimeoutSecondsPath   string
-	HeartbeatSecondsPath string
-	QueryLanguage        string
-	ItemsPath            string
-	Choices              []map[string]json.RawMessage
-	OutputPath           optionalPath
-	ResultPath           optionalPath
-	InputPath            optionalPath
-	Branches             []machine
-	Catch                []catcher
-	Retry                []retrier
-	Seconds              number
-	MaxConcurrency       number
-	HeartbeatSeconds     number
-	TimeoutSeconds       number
-	End                  bool
+	Result                         any
+	Parameters                     any
+	ResultSelector                 any
+	ItemSelector                   any
+	Arguments                      any
+	Output                         any
+	Items                          any
+	Assign                         any
+	ItemReader                     *mapReader
+	ResultWriter                   *mapWriter
+	ItemProcessor                  *processor
+	ItemBatcher                    *mapBatcher
+	Label                          string
+	MaxConcurrencyPath             string
+	ToleratedFailurePercentage     number
+	ToleratedFailurePercentagePath string
+	ToleratedFailureCount          number
+	ToleratedFailureCountPath      string
+	Iterator                       *machine
+	Type                           string
+	Comment                        string
+	Next                           string
+	Resource                       string
+	Cause                          string
+	CausePath                      string
+	Error                          string
+	ErrorPath                      string
+	Default                        string
+	Timestamp                      string
+	SecondsPath                    string
+	TimestampPath                  string
+	TimeoutSecondsPath             string
+	HeartbeatSecondsPath           string
+	QueryLanguage                  string
+	ItemsPath                      string
+	Choices                        []map[string]json.RawMessage
+	OutputPath                     optionalPath
+	ResultPath                     optionalPath
+	InputPath                      optionalPath
+	Branches                       []machine
+	Catch                          []catcher
+	Retry                          []retrier
+	Seconds                        number
+	MaxConcurrency                 number
+	HeartbeatSeconds               number
+	TimeoutSeconds                 number
+	End                            bool
 	// jsonata is set by validate for states that use JSONata.
 	jsonata bool
 }
@@ -129,6 +140,33 @@ func parseDefinition(definition string) (def *machine, problems []string) {
 	m.validate("", langJSONPath, func(format string, args ...any) {
 		problems = append(problems, fmt.Sprintf(format, args...))
 	})
+	labels := map[string]bool{}
+	var visit func(*machine)
+	visit = func(current *machine) {
+		for _, s := range current.States {
+			if s.Label != "" {
+				if labels[s.Label] {
+					problems = append(problems, "SCHEMA_VALIDATION_FAILED: Duplicate Map Label "+s.Label)
+				}
+
+				labels[s.Label] = true
+			}
+
+			for i := range s.Branches {
+				visit(&s.Branches[i])
+			}
+
+			if s.Iterator != nil {
+				visit(s.Iterator)
+			}
+
+			if s.ItemProcessor != nil {
+				visit(&s.ItemProcessor.machine)
+			}
+		}
+	}
+
+	visit(new(m))
 	return &m, problems
 }
 
@@ -235,6 +273,12 @@ func (s *state) validate(m *machine, at, lang string, add func(string, ...any)) 
 		add("SCHEMA_VALIDATION_FAILED: %s states cannot have 'Next' or 'End' at %s", s.Type, at)
 	}
 
+	if s.Type != stateMap && (s.ItemBatcher != nil || s.Label != "" || s.MaxConcurrencyPath != "" ||
+		s.ToleratedFailureCount.set || s.ToleratedFailureCountPath != "" || s.ToleratedFailurePercentage.set ||
+		s.ToleratedFailurePercentagePath != "" || s.ItemReader != nil || s.ResultWriter != nil) {
+		add("SCHEMA_VALIDATION_FAILED: Distributed Map fields require a Map state at %s", at)
+	}
+
 	s.jsonata = language(s.QueryLanguage, lang, at, add) == langJSONata
 	if s.jsonata {
 		s.checkJSONata(at, add)
@@ -330,22 +374,24 @@ func (s *state) validate(m *machine, at, lang string, add func(string, ...any)) 
 			s.Branches[i].validate(fmt.Sprintf("%s/Branches[%d]", at, i), lang, add)
 		}
 	case stateMap:
+		s.validateDistributed(at, add)
 		iterator := s.Iterator
 		if s.ItemProcessor != nil {
-			if s.ItemProcessor.ProcessorConfig != nil && s.ItemProcessor.ProcessorConfig.Mode == "DISTRIBUTED" {
-				add("SCHEMA_VALIDATION_FAILED: TinyStack supports INLINE Map states only at %s/ItemProcessor", at)
-			}
-
 			iterator = &s.ItemProcessor.machine
 		}
 
 		switch {
 		case iterator == nil:
 			add("SCHEMA_VALIDATION_FAILED: Map states need an ItemProcessor at %s", at)
-		case s.ItemReader != nil || s.ResultWriter != nil:
+		case !s.distributed() && (s.ItemReader != nil || s.ResultWriter != nil || s.ItemBatcher != nil):
 			add("SCHEMA_VALIDATION_FAILED: ItemReader and ResultWriter are for distributed Map states at %s", at)
 		default:
-			iterator.validate(at+"/ItemProcessor", lang, add)
+			iteratorLang := lang
+			if s.jsonata {
+				iteratorLang = langJSONata
+			}
+
+			iterator.validate(at+"/ItemProcessor", iteratorLang, add)
 		}
 	}
 }
@@ -389,7 +435,7 @@ func (s *state) checkJSONPath(at string, add func(string, ...any)) {
 	}{
 		{"Arguments", s.Arguments != nil},
 		{fieldOutput, s.Output != nil},
-		{"Items", s.Items != nil},
+		{fieldItems, s.Items != nil},
 		{"Seconds", s.Seconds.expr != ""},
 		{"TimeoutSeconds", s.TimeoutSeconds.expr != ""},
 		{"HeartbeatSeconds", s.HeartbeatSeconds.expr != ""},
@@ -462,7 +508,7 @@ func (s *state) checkJSONata(at string, add func(string, ...any)) {
 	}
 
 	for name, v := range map[string]any{
-		"Arguments": s.Arguments, fieldOutput: s.Output, "Items": s.Items, "ItemSelector": s.ItemSelector,
+		"Arguments": s.Arguments, fieldOutput: s.Output, fieldItems: s.Items, "ItemSelector": s.ItemSelector,
 		fieldAssign: s.Assign, "Error": s.Error, "Cause": s.Cause, "Timestamp": s.Timestamp,
 	} {
 		checkJSONata(v, at+"/"+name, add)

@@ -20178,6 +20178,9 @@
     }
   },
   "sfn": {
+    "validation": {
+      "code": "ValidationException"
+    },
     "operations": [
       "CreateStateMachine",
       "DescribeStateMachine",
@@ -20212,9 +20215,26 @@
       "DeleteStateMachineAlias",
       "ListStateMachineAliases",
       "RedriveExecution",
-      "TestState"
+      "TestState",
+      "DescribeMapRun",
+      "ListMapRuns",
+      "UpdateMapRun"
     ],
     "shapes": {
+      "DescribeMapRunInput": [
+        "mapRunArn"
+      ],
+      "ListMapRunsInput": [
+        "executionArn",
+        "maxResults",
+        "nextToken"
+      ],
+      "UpdateMapRunInput": [
+        "mapRunArn",
+        "maxConcurrency",
+        "toleratedFailurePercentage",
+        "toleratedFailureCount"
+      ],
       "CreateStateMachineInput": [
         "name",
         "definition",
@@ -20255,6 +20275,7 @@
         "input"
       ],
       "ListExecutionsInput": [
+        "mapRunArn",
         "stateMachineArn",
         "statusFilter",
         "maxResults",
