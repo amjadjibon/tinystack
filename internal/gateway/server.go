@@ -390,12 +390,14 @@ func (s *Server) identify(r *http.Request, m *request.Metadata) (string, error) 
 		if regionSet == "" {
 			regionSet = r.URL.Query().Get("X-Amz-Region-Set")
 		}
+
 		first, _, _ := strings.Cut(regionSet, ",")
 		m.Region = strings.TrimSpace(first)
-		if m.Region == "" || strings.Contains(m.Region, "*") {
+		if m.Region == "" || m.Region == "*" {
 			m.Region = s.cfg.Defaults.Region
 		}
 	}
+
 	m.Service = a.Service
 	// A 12-digit key is provisional: resolveCredentials lets issued credentials win.
 	if account, _, ok := s.keyAccount(m.AccessKey); ok {

@@ -353,6 +353,11 @@ const catalog: Record<string, ServiceInfo> = {
 		icon: "cloudformation",
 	},
 	cloudfront: { title: "CloudFront", category: networking, icon: "cloudfront" },
+	cloudfrontkeyvaluestore: {
+		title: "CloudFront KeyValueStore",
+		category: networking,
+		icon: "cloudfrontkeyvaluestore",
+	},
 	cloudwatch: { title: "CloudWatch", category: management, icon: "cloudwatch" },
 	cognitoidentity: {
 		title: "Cognito Identity Pools",

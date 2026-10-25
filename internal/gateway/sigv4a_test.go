@@ -23,12 +23,16 @@ func TestSigV4aIdentity(t *testing.T) {
 			for _, regionSet := range []string{"ap-southeast-1,us-east-1", "*"} {
 				cfg := config.Default()
 				cfg.Identity.Mode = mode
-				cfg.Identity.SecretKeys = map[string]string{"mapped": "secret"}
+				if mode == config.IdentityVerify {
+					cfg.Identity.SecretKeys = map[string]string{"mapped": "secret"}
+				}
+
 				cfg.Identity.Accounts = map[string]string{"mapped": "111111111111"}
 				s, err := New(cfg, slog.New(slog.NewTextHandler(io.Discard, nil)))
 				if err != nil {
 					t.Fatal(err)
 				}
+
 				r := httptest.NewRequest(http.MethodGet, "http://localhost/", http.NoBody)
 				if presigned {
 					q := url.Values{
@@ -37,6 +41,7 @@ func TestSigV4aIdentity(t *testing.T) {
 						"X-Amz-Expires":    {"60"},
 						"X-Amz-Region-Set": {regionSet},
 					}
+
 					r.URL.RawQuery = q.Encode()
 				} else {
 					r.Header.Set(
@@ -46,26 +51,32 @@ func TestSigV4aIdentity(t *testing.T) {
 					)
 					r.Header.Set("X-Amz-Region-Set", regionSet)
 				}
+
 				m := request.Metadata{
 					Scope: request.Scope{AccountID: cfg.Defaults.Account, Region: cfg.Defaults.Region},
 				}
+
 				service, err := s.identify(r, &m)
 				if err != nil || service != "cloudfront-keyvaluestore" || m.AccountID != "111111111111" {
 					t.Fatalf("identity: %+v %s %v", m, service, err)
 				}
+
 				wantRegion := "ap-southeast-1"
 				if regionSet == "*" {
 					wantRegion = cfg.Defaults.Region
 				}
+
 				if m.Region != wantRegion {
 					t.Fatal(m.Region)
 				}
+
 				c := &call{meta: m}
 				c.meta.Protocol = catalog.RESTJSON
 				err = s.authenticate(httptest.NewRecorder(), r, c)
 				if mode == config.IdentityParse && err != nil {
 					t.Fatal(err)
 				}
+
 				if mode == config.IdentityVerify {
 					var awsErr *awserror.Error
 					if !errors.As(err, &awsErr) || awsErr.Code != "InvalidSignatureException" ||
@@ -84,6 +95,7 @@ func TestSigV4aIssuedCredentials(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	s.UseCredentials(func(context.Context, string) (request.Credentials, bool, error) {
 		return request.Credentials{AccountID: "222222222222"}, true, nil
 	})
@@ -97,9 +109,11 @@ func TestSigV4aIssuedCredentials(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := s.resolveCredentials(r.Context(), c); err != nil {
 		t.Fatal(err)
 	}
+
 	if c.meta.AccountID != "222222222222" {
 		t.Fatal(c.meta.AccountID)
 	}

@@ -17,6 +17,7 @@ provider "aws" {
   skip_metadata_api_check = true
 
   endpoints {
+    cloudfront           = var.endpoint
     bedrockagent         = var.endpoint
     bedrockagentcore     = var.endpoint
     transcribe           = var.endpoint
@@ -83,8 +84,10 @@ provider "aws" {
     sts                  = var.endpoint
     timestreamwrite      = var.endpoint
 
-    # S3 Control prefixes the host with the account ID, and only a name under localhost resolves to loopback.
-    s3control = replace(var.endpoint, "127.0.0.1", "localhost")
+    # S3 Control and CloudFront KeyValueStore prefix the host with the account ID, and only a name under localhost
+    # resolves to loopback.
+    s3control               = replace(var.endpoint, "127.0.0.1", "localhost")
+    cloudfrontkeyvaluestore = replace(var.endpoint, "127.0.0.1", "localhost")
   }
 }
 
@@ -2937,4 +2940,16 @@ resource "aws_bedrockagentcore_memory" "assistant" {
   name                  = "local_memory"
   event_expiry_duration = 30
   tags                  = local.tags
+}
+
+resource "aws_cloudfront_key_value_store" "config" {
+  name    = "tinystack-config"
+  comment = "TinyStack local configuration"
+  tags    = local.tags
+}
+
+resource "aws_cloudfrontkeyvaluestore_key" "team" {
+  key_value_store_arn = aws_cloudfront_key_value_store.config.arn
+  key                 = "team"
+  value               = var.team
 }

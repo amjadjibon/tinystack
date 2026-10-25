@@ -103,8 +103,9 @@ def main():
                 # AgentCore runtime description/environment/tags, runtime endpoint tags,
                 # and memory tags update in place (+3 changes); names, roles, protocol,
                 # artifact and memory event expiry remain unchanged.
+                # CloudFront KVS tags and its key value update in place (+2); names/ARN/key are unchanged.
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "8 added, 149 changed, 8 destroyed" in updated, updated
+                assert "8 added, 151 changed, 8 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"
                 terraform("plan", "-detailed-exitcode", team="platform")
                 # The provider replaces the monitor when its name changes. The subscription

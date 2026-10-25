@@ -92,6 +92,7 @@ func (a *Authorization) setCredential(credential string) error {
 		if len(scope) != 4 || scope[0] == "" || len(scope[1]) != 8 || scope[2] == "" || scope[3] != terminator {
 			return errors.New("malformed SigV4a credential scope")
 		}
+
 		a.AccessKey, a.Date, a.Service = scope[0], scope[1], scope[2]
 		return nil
 	}

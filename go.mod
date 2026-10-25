@@ -36,6 +36,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudcontrol v1.38.4
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.82.1
 	github.com/aws/aws-sdk-go-v2/service/cloudfront v1.74.3
+	github.com/aws/aws-sdk-go-v2/service/cloudfrontkeyvaluestore v1.22.0
 	github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.65.4
 	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.73.3
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.89.3
@@ -166,7 +167,7 @@ require (
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.7 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.7 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.6 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.21 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.11.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.13.6 // indirect

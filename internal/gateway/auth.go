@@ -148,6 +148,7 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request, c *call) e
 		if errors.As(failure, &signatureError) {
 			signatureError.Message = "SigV4a verification is not supported yet"
 		}
+
 		return failure
 	}
 

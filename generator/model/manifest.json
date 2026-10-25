@@ -506,6 +506,10 @@
     "s3control": {
       "path": "codegen/sdk-codegen/aws-models/s3-control.json",
       "sha256": "52274064e1a4357ead7a6c57f07c93efbdff2674a16741898aceb7f81dcd17b2"
+    },
+    "cloudfrontkeyvaluestore": {
+      "path": "codegen/sdk-codegen/aws-models/cloudfront-keyvaluestore.json",
+      "sha256": "cc14f46944bb1c3440f689b1a54a8c5d0c0ea8939eb370f36fe661a78c26d208"
     }
   }
 }

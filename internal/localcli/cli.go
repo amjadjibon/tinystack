@@ -144,6 +144,7 @@ func EnsureEndpointArg(args []string, endpoint string) []string {
 
 // Terraform Services supported by TinyStack.
 var TerraformServices = []string{
+	"cloudfront", "cloudfrontkeyvaluestore",
 	"bedrockagent", "bedrockagentruntime",
 	"mediaconvert",
 	"mediaconnect",
@@ -240,6 +241,7 @@ func TerraformOverrideConfig(endpoint string) ([]byte, error) {
 	}
 
 	endpoints["s3control"] = controlEndpoint(endpoint)
+	endpoints["cloudfrontkeyvaluestore"] = controlEndpoint(endpoint)
 
 	override := map[string]any{
 		"provider": map[string]any{
@@ -259,8 +261,9 @@ func TerraformOverrideConfig(endpoint string) ([]byte, error) {
 	return json.MarshalIndent(override, "", "  ")
 }
 
-// controlEndpoint returns endpoint with a loopback IP address replaced by localhost. S3 Control prefixes the host with
-// the account ID, which no IP address accepts, while every name under localhost resolves to loopback.
+// controlEndpoint returns endpoint with a loopback IP address replaced by localhost. S3 Control and CloudFront
+// KeyValueStore prefix the host with the account ID, which no IP address accepts, while every name under localhost
+// resolves to loopback.
 func controlEndpoint(endpoint string) string {
 	u, err := url.Parse(endpoint)
 	if err != nil || !net.ParseIP(u.Hostname()).IsLoopback() {

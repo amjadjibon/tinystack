@@ -36,8 +36,8 @@ github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.7 h1:fSNAt6hs4qLjb9tMZc
 github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.7/go.mod h1:TMav+EuXQu5kNpZZz/6rIC8xx4mCsW+6AKHrjvOSAsE=
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.7 h1:7NS6kqBjkWIN8P/AEdmtyq6eQGAhN1oHTZdzXclpH6Y=
 github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.7/go.mod h1:1PFqtAUsIgF1nEVojzRJSf/v88zjzqrGW+w+UAtkXyQ=
-github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.6 h1:Qmn60RWuk9+bd2ddvJJqwf3Cpac3VvGMOdbGemtUhX4=
-github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.6/go.mod h1:h/YJhe4AVyQxEUMluph10iqV7mjajH7A9L+BHF5ppis=
+github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.7 h1:wYu55QUHARwu9YzeuY5yEJUTsIu8ahkmp1l3QmbzHn8=
+github.com/aws/aws-sdk-go-v2/internal/v4a v1.5.7/go.mod h1:OteEkhFAgFwQtZft/3myWo3tVWxdAo7cwV+7AbcpAtQ=
 github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.57.6 h1:Mbyv9FrT2A7nuaO3rfQk3RIVulS1A1qJQ8uQrCKqByo=
 github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.57.6/go.mod h1:F+N0Wbf5nk/v0cRNnXY/wH0qGzRxtvxB/huq3A4NpTA=
 github.com/aws/aws-sdk-go-v2/service/account v1.42.3 h1:kBUSY0FR4aj/R5VosjNDafKU6wuxiMnr08iufcgsuL8=
@@ -94,6 +94,8 @@ github.com/aws/aws-sdk-go-v2/service/cloudformation v1.82.1 h1:sVRr9yWco8Ylj+YkO
 github.com/aws/aws-sdk-go-v2/service/cloudformation v1.82.1/go.mod h1:0zom4vEU9kCbiQGvMzLPw4j54I7Q6fUOUi1f8NLRFsc=
 github.com/aws/aws-sdk-go-v2/service/cloudfront v1.74.3 h1:ILwRoJXwNXB7cv05A5/lBWcr+TgURL3UpebKXpW8u8g=
 github.com/aws/aws-sdk-go-v2/service/cloudfront v1.74.3/go.mod h1:5rq9QqYcITMO2u+6/pFYDyRRTrGckvCZsQq+52joO8Q=
+github.com/aws/aws-sdk-go-v2/service/cloudfrontkeyvaluestore v1.22.0 h1:vaAj+r2jB5eH74fE6+G1B+lK+gCBgZ3bXWrcLKvtsLM=
+github.com/aws/aws-sdk-go-v2/service/cloudfrontkeyvaluestore v1.22.0/go.mod h1:YVrg7Tm7Axk/pLdI6ZS9zo/WSQ9fxsnnUcHl0x86p2g=
 github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.65.4 h1:X+AYJ7DKcCpvq2dnY4oNPlL6NqMga+aLq3V7Ei8bAeU=
 github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.65.4/go.mod h1:VU2PgU7YTdvw3xr65f7PWgCT2oWNIBZE7zj2M5rW2Ic=
 github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.73.3 h1:VmR1+YQW2vc3Sy2fLGSFtijUq9bAOMzzFxNC1zmHiA0=

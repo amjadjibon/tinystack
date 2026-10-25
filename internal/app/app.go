@@ -46,6 +46,7 @@ import (
 	cloudcontrolapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudcontrol"
 	cloudformationapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudformation"
 	cloudfrontapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
+	cloudfrontkeyvaluestoreapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfrontkeyvaluestore"
 	cloudtrailapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudtrail"
 	cloudwatchapi "github.com/amjadjibon/tinystack/internal/aws/generated/cloudwatch"
 	codeartifactapi "github.com/amjadjibon/tinystack/internal/aws/generated/codeartifact"
@@ -181,6 +182,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/cloudcontrol"
 	"github.com/amjadjibon/tinystack/internal/services/cloudformation"
 	"github.com/amjadjibon/tinystack/internal/services/cloudfront"
+	"github.com/amjadjibon/tinystack/internal/services/cloudfrontkeyvaluestore"
 	"github.com/amjadjibon/tinystack/internal/services/cloudtrail"
 	"github.com/amjadjibon/tinystack/internal/services/cloudwatch"
 	"github.com/amjadjibon/tinystack/internal/services/codeartifact"
@@ -739,6 +741,7 @@ func build(
 		kinesisapi.Descriptor(streams),
 		route53api.Descriptor(dns),
 		cloudfrontapi.Descriptor(cdn),
+		cloudfrontkeyvaluestoreapi.Descriptor(cloudfrontkeyvaluestore.New(cdn)),
 		schedulerapi.Descriptor(timers),
 		autoscalingapi.Descriptor(scaling),
 		elbv2api.Descriptor(balancers),

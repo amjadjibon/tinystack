@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
+	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
@@ -26,6 +28,7 @@ type KVSRecord struct {
 	ETag          string
 	DataETag      string
 	Created       time.Time
+	DataModified  time.Time
 	FailureReason string
 	TargetStatus  string
 }
@@ -51,6 +54,7 @@ func CheckKVSLimits(k, v string) error {
 	if len(k) > 512 || len(v) > 1024 {
 		return awserror.New("ValidationException", "Keys are limited to 512 bytes and values to 1024 bytes")
 	}
+
 	return nil
 }
 
@@ -59,15 +63,18 @@ func readKVS(tx storage.WriteTx, account, name string) (*KVSRecord, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if !ok {
 		return nil, awserror.New("EntityNotFound", "Key value store does not exist")
 	}
+
 	if common.Value(r.Store.Status) == "PROVISIONING" {
 		r.Store.Status = new(r.TargetStatus)
 		if err := storage.Write(tx, key(account, kindKVS, name), r); err != nil {
 			return nil, err
 		}
 	}
+
 	return r, nil
 }
 
@@ -82,23 +89,28 @@ func (s *Service) KVSTransaction(
 	if err != nil {
 		return err
 	}
+
 	prefix := fmt.Sprintf("arn:aws:cloudfront::%s:key-value-store/", m.AccountID)
 	id, ok := strings.CutPrefix(arn, prefix)
 	if !ok || id == "" {
 		return awserror.New("ResourceNotFoundException", "Key value store does not exist")
 	}
+
 	return s.store.Update(ctx, func(tx storage.WriteTx) error {
 		b, found := tx.Get(key(m.AccountID, "kvs-id", id))
 		if !found {
 			return awserror.New("ResourceNotFoundException", "Key value store does not exist")
 		}
+
 		r, err := readKVS(tx, m.AccountID, string(b))
 		if err != nil {
 			return err
 		}
+
 		if err := fn(tx, KVSKeysPrefix(m.AccountID, id), r); err != nil {
 			return err
 		}
+
 		return storage.Write(tx, key(m.AccountID, kindKVS, string(b)), r)
 	})
 }
@@ -107,33 +119,61 @@ func (s *Service) importKVS(ctx context.Context, source *api.ImportSource) ([]KV
 	if source == nil {
 		return nil, "", nil
 	}
+
 	if common.Value(source.SourceType) != "S3" {
 		return nil, "", invalidArgument("Only S3 import sources are supported")
 	}
+
 	path, ok := strings.CutPrefix(common.Value(source.SourceARN), "arn:aws:s3:::")
 	bucket, object, found := strings.Cut(path, "/")
 	if !ok || !found || bucket == "" || object == "" {
 		return nil, "", invalidArgument("ImportSource must name an S3 object")
 	}
+
 	if s.buckets == nil {
 		return nil, "", invalidArgument("S3 imports are unavailable")
 	}
-	body, err := s.buckets.Object(ctx, bucket, object, "")
+
+	listing, err := s.buckets.ListBuckets(ctx, &s3api.ListBucketsRequest{})
+	if err != nil {
+		return nil, "", err
+	}
+
+	sourceContext := ctx
+	for _, b := range listing.Buckets {
+		if common.Value(b.Name) == bucket {
+			metadata, _ := request.FromContext(ctx)
+			metadata.Region = common.Value(b.BucketRegion)
+			sourceContext = request.WithMetadata(ctx, metadata)
+			break
+		}
+	}
+
+	body, err := s.buckets.Object(sourceContext, bucket, object, "")
 	if err != nil {
 		return nil, "", invalidArgument("Import source does not exist in TinyStack S3: " + err.Error())
 	}
+
+	if !utf8.Valid(body) {
+		return nil, "Import file must be UTF-8", nil
+	}
+
 	if len(body) > KVSMaxBytes {
 		return nil, "Import file exceeds 5 MiB", nil
 	}
+
 	var doc struct {
 		Data *[]struct {
 			Key   *string `json:"key"`
 			Value *string `json:"value"`
 		} `json:"data"`
 	}
+
 	if err := json.Unmarshal(body, &doc); err != nil || doc.Data == nil {
+		//nolint:nilerr // Invalid imports become failed stores rather than API errors.
 		return nil, "Import must be a JSON object containing a data array", nil
 	}
+
 	seen := map[string]bool{}
 	var items []KVSKey
 	size := 0
@@ -141,19 +181,25 @@ func (s *Service) importKVS(ctx context.Context, source *api.ImportSource) ([]KV
 		if p.Key == nil || p.Value == nil || *p.Key == "" {
 			return nil, "Import entries require key and value strings", nil
 		}
+
 		if seen[*p.Key] {
 			return nil, "Import contains duplicate keys", nil
 		}
+
 		if err := CheckKVSLimits(*p.Key, *p.Value); err != nil {
+			//nolint:nilerr // Invalid imports become failed stores rather than API errors.
 			return nil, err.Error(), nil
 		}
+
 		seen[*p.Key] = true
 		size += len(*p.Key) + len(*p.Value)
 		items = append(items, KVSKey{Key: *p.Key, Value: *p.Value})
 	}
+
 	if size > KVSMaxBytes {
 		return nil, "Key value store exceeds 5 MiB", nil
 	}
+
 	return items, "", nil
 }
 
@@ -165,14 +211,17 @@ func (s *Service) CreateKeyValueStore(
 	if err != nil {
 		return nil, err
 	}
+
 	tags, err := kvsTags(in.Tags)
 	if err != nil {
 		return nil, err
 	}
+
 	items, reason, err := s.importKVS(ctx, in.ImportSource)
 	if err != nil {
 		return nil, err
 	}
+
 	id := uuid.New().String()
 	now := s.now().UTC()
 	r := KVSRecord{
@@ -188,26 +237,32 @@ func (s *Service) CreateKeyValueStore(
 		ETag:          newID("E"),
 		DataETag:      newID("KV"),
 		Created:       now,
+		DataModified:  now,
 		TargetStatus:  "READY",
 		FailureReason: reason,
 	}
+
 	if reason != "" {
 		r.TargetStatus = "IMPORT_FAILED"
 	}
+
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		k := key(m.AccountID, kindKVS, *in.Name)
 		if _, ok := tx.Get(k); ok {
 			return awserror.New("EntityAlreadyExists", "Key value store name already exists")
 		}
-		if err := storage.Write(tx, k, r); err != nil {
-			return err
+
+		if writeErr := storage.Write(tx, k, r); writeErr != nil {
+			return writeErr
 		}
+
 		tx.Put(key(m.AccountID, "kvs-id", id), []byte(*in.Name))
 		for _, p := range items {
-			if err := storage.Write(tx, KVSKeysPrefix(m.AccountID, id)+p.Key, p); err != nil {
-				return err
+			if writeErr := storage.Write(tx, KVSKeysPrefix(m.AccountID, id)+p.Key, p); writeErr != nil {
+				return writeErr
 			}
 		}
+
 		return nil
 	})
 	return &api.CreateKeyValueStoreResult{
@@ -225,6 +280,7 @@ func (s *Service) DescribeKeyValueStore(
 	if err != nil {
 		return nil, err
 	}
+
 	var r *KVSRecord
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		var e error
@@ -234,6 +290,7 @@ func (s *Service) DescribeKeyValueStore(
 	if err != nil {
 		return nil, err
 	}
+
 	return &api.DescribeKeyValueStoreResult{KeyValueStore: &r.Store, ETag: new(r.ETag)}, nil
 }
 
@@ -241,6 +298,7 @@ func kvsMatch(match *string, etag string) error {
 	if common.Value(match) == "" {
 		return invalidIfMatchVersion()
 	}
+
 	if *match != etag {
 		return &awserror.Error{
 			Code:       "PreconditionFailed",
@@ -248,6 +306,7 @@ func kvsMatch(match *string, etag string) error {
 			StatusCode: 412,
 		}
 	}
+
 	return nil
 }
 
@@ -259,6 +318,7 @@ func (s *Service) UpdateKeyValueStore(
 	if err != nil {
 		return nil, err
 	}
+
 	var r *KVSRecord
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		var e error
@@ -266,9 +326,11 @@ func (s *Service) UpdateKeyValueStore(
 		if e != nil {
 			return e
 		}
+
 		if e := kvsMatch(in.IfMatch, r.ETag); e != nil {
 			return e
 		}
+
 		r.Store.Comment = in.Comment
 		r.Store.LastModifiedTime = new(s.now().UTC())
 		r.ETag = newID("E")
@@ -277,6 +339,7 @@ func (s *Service) UpdateKeyValueStore(
 	if err != nil {
 		return nil, err
 	}
+
 	return &api.UpdateKeyValueStoreResult{KeyValueStore: &r.Store, ETag: new(r.ETag)}, nil
 }
 
@@ -288,17 +351,21 @@ func (s *Service) DeleteKeyValueStore(
 	if err != nil {
 		return nil, err
 	}
+
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		r, e := readKVS(tx, m.AccountID, common.Value(in.Name))
 		if e != nil {
 			return e
 		}
+
 		if e := kvsMatch(in.IfMatch, r.ETag); e != nil {
 			return e
 		}
+
 		for _, k := range tx.Keys(KVSKeysPrefix(m.AccountID, *r.Store.Id)) {
 			tx.Delete(k)
 		}
+
 		tx.Delete(key(m.AccountID, "kvs-id", *r.Store.Id))
 		tx.Delete(key(m.AccountID, kindKVS, *in.Name))
 		return nil
@@ -314,12 +381,15 @@ func (s *Service) ListKeyValueStores(
 	if err != nil {
 		return nil, err
 	}
+
 	if in.MaxItems != nil && *in.MaxItems <= 0 {
 		return nil, invalidArgument("MaxItems must be positive")
 	}
+
 	if in.Status != nil && *in.Status != "READY" && *in.Status != "PROVISIONING" && *in.Status != "IMPORT_FAILED" {
 		return nil, invalidArgument("Invalid key value store status")
 	}
+
 	var items []api.KeyValueStore
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		for _, k := range tx.Keys(key(m.AccountID, kindKVS, "")) {
@@ -327,15 +397,18 @@ func (s *Service) ListKeyValueStores(
 			if e != nil {
 				return e
 			}
+
 			if in.Status == nil || *in.Status == common.Value(r.Store.Status) {
 				items = append(items, r.Store)
 			}
 		}
+
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
+
 	limit := common.Value(common.OrElse(in.MaxItems, new(int64(100))))
 	page, next, err := common.Page(
 		items,

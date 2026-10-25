@@ -140,6 +140,9 @@ func TestTerraformOverrideConfig(t *testing.T) {
 	if endpoints["s3control"] != "http://localhost:4566" {
 		t.Fatalf("expected S3 Control endpoint under localhost, got %v", endpoints["s3control"])
 	}
+	if endpoints["cloudfrontkeyvaluestore"] != "http://localhost:4566" {
+		t.Fatalf("expected KeyValueStore endpoint under localhost, got %v", endpoints["cloudfrontkeyvaluestore"])
+	}
 }
 
 func TestSetupTerraformOverride(t *testing.T) {
