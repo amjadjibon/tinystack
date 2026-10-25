@@ -266,7 +266,7 @@ func (s *Service) StopTextTranslationJob(
 	return &api.StopTextTranslationJobResponse{JobId: in.JobId, JobStatus: new(status)}, err
 }
 
-// Start recovers interrupted jobs before starting the persistent queue.
+// Start fails jobs a previous process claimed but never finished; submitted jobs stay queued and run.
 func (s *Service) Start(ctx context.Context) error {
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		for _, key := range tx.Keys(indexPrefix) {
@@ -282,6 +282,10 @@ func (s *Service) Start(ctx context.Context) error {
 			r, e := read[jobRecord](tx, w.Scope, "job", w.Name)
 			if e != nil {
 				return e
+			}
+
+			if common.Value(r.Properties.JobStatus) != statusInProgress {
+				continue
 			}
 
 			r.Properties.JobStatus = new(statusFailed)

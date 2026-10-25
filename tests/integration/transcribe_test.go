@@ -294,36 +294,75 @@ func TestTranscribeAndTranslateSQLiteRestart(t *testing.T) {
 		`{"mediaFileUri":"s3://media/audio.wav","languageCode":"en-US","transcript":"persisted"}`,
 		200,
 	)
+	objects := s3Client(s, "test", "us-east-1")
+	for _, bucket := range []string{"restart-in", "restart-out"} {
+		if _, err := objects.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: new(bucket)}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	_, err := objects.PutObject(
+		ctx,
+		&s3.PutObjectInput{Bucket: new("restart-in"), Key: new("docs/a.txt"), Body: strings.NewReader("restart")},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	stop()
-	// Seed the exact durable state left by a process dying after its transactional claim.
+	// Seed the durable state left by a process dying after claiming one job and before claiming another.
 	store, err := sqlite.Open(ctx, dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	scope := request.Scope{AccountID: "000000000000", Region: "us-east-1"}
+	translateJob := func(name, status string) map[string]any {
+		return map[string]any{
+			"Properties": map[string]any{
+				"JobId":               name,
+				"JobStatus":           status,
+				"SourceLanguageCode":  "en",
+				"TargetLanguageCodes": []string{"fr"},
+				"InputDataConfig":     map[string]any{"S3Uri": "s3://restart-in/docs/", "ContentType": "text/plain"},
+				"OutputDataConfig":    map[string]any{"S3Uri": "s3://restart-out/out/"},
+			},
+			"Input": []string{"docs/a.txt"},
+		}
+	}
+	transcribeJob := func(name, status string) map[string]any {
+		return map[string]any{
+			"Name":     name,
+			"State":    status,
+			"Language": "en-US",
+			"Bucket":   "restart-out",
+			"Key":      name + ".json",
+			"Job": map[string]any{
+				"TranscriptionJobName":   name,
+				"TranscriptionJobStatus": status,
+				"Media":                  map[string]any{"MediaFileUri": "s3://media/audio.wav"},
+			},
+		}
+	}
+	rows := []struct {
+		row                 map[string]any
+		service, kind, name string
+	}{
+		{translateJob("interrupted", "IN_PROGRESS"), "translate", "job", "interrupted"},
+		{translateJob("queued", "SUBMITTED"), "translate", "job", "queued"},
+		{transcribeJob("interrupted", "IN_PROGRESS"), "transcribe", "transcription-job", "interrupted"},
+		{transcribeJob("queued", "QUEUED"), "transcribe", "transcription-job", "queued"},
+	}
 	err = store.Update(ctx, func(tx storage.WriteTx) error {
-		for service, kind := range map[string]string{"translate": "job", "transcribe": "transcription-job"} {
-			row := map[string]any{"Properties": map[string]any{"JobId": "interrupted", "JobStatus": "IN_PROGRESS"}}
-			if service == "transcribe" {
-				row = map[string]any{
-					"Name":  "interrupted",
-					"State": "IN_PROGRESS",
-					"Job": map[string]any{
-						"TranscriptionJobName":   "interrupted",
-						"TranscriptionJobStatus": "IN_PROGRESS",
-					},
-				}
-			}
-
-			if e := storage.Write(tx, scope.Key(service, kind, "interrupted"), row); e != nil {
+		for _, r := range rows {
+			if e := storage.Write(tx, scope.Key(r.service, r.kind, r.name), r.row); e != nil {
 				return e
 			}
 
 			if e := storage.Write(
 				tx,
-				"aws/"+service+"/index/"+scope.AccountID+"/"+scope.Region+"/"+kind+"/interrupted",
-				map[string]any{"Scope": scope, "Kind": kind, "Name": "interrupted"},
+				"aws/"+r.service+"/index/"+scope.AccountID+"/"+scope.Region+"/"+r.kind+"/"+r.name,
+				map[string]any{"Scope": scope, "Kind": r.kind, "Name": r.name},
 			); e != nil {
 				return e
 			}
@@ -363,6 +402,32 @@ func TestTranscribeAndTranslateSQLiteRestart(t *testing.T) {
 	).DescribeTextTranslationJob(ctx, &translate.DescribeTextTranslationJobInput{JobId: new("interrupted")})
 	if err != nil || aws.ToString(batch.TextTranslationJobProperties.Message) != "interrupted by service restart" {
 		t.Fatal(batch, err)
+	}
+
+	// Jobs no process had claimed are still queued, so the restarted workers run them.
+	pollML(t, func() bool {
+		queued, e := transcribeClient(
+			s,
+		).GetTranscriptionJob(ctx, &sdk.GetTranscriptionJobInput{TranscriptionJobName: new("queued")})
+		return e == nil && queued.TranscriptionJob.TranscriptionJobStatus == types.TranscriptionJobStatusCompleted
+	})
+	pollML(t, func() bool {
+		queued, e := translateClient(
+			s,
+		).DescribeTextTranslationJob(ctx, &translate.DescribeTextTranslationJobInput{JobId: new("queued")})
+		return e == nil && queued.TextTranslationJobProperties.JobStatus == "COMPLETED"
+	})
+	out, err := s3Client(s, "test", "us-east-1").GetObject(
+		ctx,
+		&s3.GetObjectInput{Bucket: new("restart-out"), Key: new("out/000000000000-TranslateText-queued/fr.a.txt")},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	body, err := io.ReadAll(out.Body)
+	if err != nil || string(body) != "redémarrer" {
+		t.Fatal(string(body), err)
 	}
 
 	mlFixture(t, s, "POST", "reset", "", 200)

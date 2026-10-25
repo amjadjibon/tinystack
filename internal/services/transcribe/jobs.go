@@ -185,6 +185,7 @@ func (s *Service) ListTranscriptionJobs(
 	return &api.ListTranscriptionJobsResponse{TranscriptionJobSummaries: page, NextToken: next, Status: in.Status}, err
 }
 
+// Start fails jobs a previous process claimed but never finished; queued jobs stay queued and run.
 func (s *Service) Start(ctx context.Context) error {
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		for _, key := range tx.Keys(indexPrefix) {
@@ -200,6 +201,10 @@ func (s *Service) Start(ctx context.Context) error {
 			r, e := read(tx, w.Scope, w.Kind, w.Name)
 			if e != nil {
 				return e
+			}
+
+			if r.State != statusInProgress {
+				continue
 			}
 
 			r.State = statusFailed

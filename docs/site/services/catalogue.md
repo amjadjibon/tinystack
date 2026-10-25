@@ -1005,7 +1005,7 @@ Create local S3 transcription job output exclusively from registered URI/languag
 
 - 17 pinned model operations for transcription jobs, vocabularies, vocabulary filters and tags, with generated BadRequestException validation.
 - Media and output buckets must exist in TinyStack S3; OutputKey is honored and service-managed output is rejected.
-- QUEUED to IN_PROGRESS to COMPLETED or FAILED in a transactionally claimed background queue; unfinished jobs fail explicitly after restart.
+- QUEUED to IN_PROGRESS to COMPLETED or FAILED in a transactionally claimed background queue; IN_PROGRESS jobs fail explicitly after restart and QUEUED jobs run.
 - Output JSON contains jobName, accountId, status and results.transcripts; transcript text comes only from exact URI/language fixtures.
 - Vocabularies and filters validate Phrases/Words or existing local S3 files; vocabulary readiness advances through a worker.
 - Named vocabularies and filters must exist, be READY and match the job language; record tags and key-order lists with model filters/pagination.
@@ -1026,7 +1026,7 @@ Return exact user-registered translation fixtures and run local fixture-backed S
 - Import CSV, TSV and TMX terminologies, overwrite, list, delete, KMS reference validation and record tags.
 - Parallel data validates existing local S3 files and parses real CSV/TSV/TMX; background CREATING/UPDATING to ACTIVE.
 - Batch jobs require an existing IAM role and S3 prefix; exact fixtures produce target-prefixed output objects and auxiliary details in an account-TranslateText-job folder.
-- Background jobs are transactionally claimed, perform S3 I/O outside transactions and fail explicitly after restart.
+- Background jobs are transactionally claimed, perform S3 I/O outside transactions; jobs claimed by a stopped process fail after restart, jobs still SUBMITTED run.
 - Inventory, Resource Groups Tagging API, and CloudFormation AWS::Translate::Terminology and AWS::Translate::ParallelData.
 
 [Supported operations](translate.md#supported-operations) · [Limitations](translate.md#limitations-and-future-work)
