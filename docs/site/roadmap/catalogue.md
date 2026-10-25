@@ -35,7 +35,6 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Lambda Core](services/lambda-core.md) | Proposed | Implement `CreateNetworkConnector`, `GetNetworkConnector`, `ListNetworkConnectors`. |
 | [Lambda Durable Execution](services/lambda-durable.md) | Proposed | Implement `CheckpointDurableExecution`, `GetDurableExecutionState`, `GetDurableExecution`. |
 | [Lambda MicroVMs](services/lambda-microvms.md) | Proposed | Implement `CreateMicrovmImage`, `RunMicrovm`, `GetMicrovm`. |
-| [OpenSearch Service runtime engine](services/opensearch-runtime.md) | Runtime decision required | create one OpenSearch domain, obtain its endpoint, index a document, search it, and delete the domain through AWS-style management calls. |
 | [Route 53 Resolver DNS Firewall, query logging and runtime](services/route53resolver-runtime.md) | Proposed | Extend the records-only endpoint, rule and association slice with separate advanced control-plane and truthful DNS execution contracts. |
 | [S3 Tables runtime and broader metadata](services/s3tables-runtime.md) | Proposed | Define a coherent metadata-location and actual Iceberg file/runtime contract beyond the implemented customer metadata records. |
 | [Transfer Family runtime and advanced configuration](services/transfer-runtime.md) | Proposed | Extend the implemented server/user/public-key records with explicitly configured runtime and advanced records. |

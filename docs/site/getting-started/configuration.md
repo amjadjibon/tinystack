@@ -41,6 +41,7 @@ Use `./bin/tinystack start --help` for the current command help.
 | `ecs.containers` | `records` | `records` or `docker` |
 | `eks.clusters` | `records` | `records` or `k3s` |
 | `elasticache.caches` | `records` | `records` or `docker` |
+| `opensearch.domains` | `records` | `records` or `docker`; docker runs each domain as a single-node OpenSearch container (see [OpenSearch Service](../services/opensearch.md)) |
 | `lambda.executor` | `auto` | `docker`, `local` or `auto`; auto uses Docker when the CLI reaches a daemon, otherwise host Python/Node |
 | `lambda.local.python` | `python3` | Python executable from PATH or an explicit path |
 | `lambda.local.node` | `node` | Node executable from PATH or an explicit path |

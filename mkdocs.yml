@@ -293,7 +293,6 @@ nav:
           - "Lambda Core": roadmap/services/lambda-core.md
           - "Lambda Durable Execution": roadmap/services/lambda-durable.md
           - "Lambda MicroVMs": roadmap/services/lambda-microvms.md
-          - "OpenSearch Service runtime engine": roadmap/services/opensearch-runtime.md
           - "Route 53 Resolver DNS Firewall, query logging and runtime": roadmap/services/route53resolver-runtime.md
           - "S3 Tables runtime and broader metadata": roadmap/services/s3tables-runtime.md
           - "Transfer Family runtime and advanced configuration": roadmap/services/transfer-runtime.md

@@ -132,9 +132,9 @@ Manage collection and security policy records; no search data plane is served.
 
 #### Amazon OpenSearch Service
 
-Store OpenSearch and Elasticsearch domain configurations and tags as records without running search clusters.
+Manage OpenSearch and Elasticsearch domain configurations and tags, with an optional Docker engine runtime.
 
-**Execution:** Configuration records only. **Selected operations:** 10.
+**Execution:** Records / optional Docker. **Selected operations:** 10.
 
 - Ten pinned REST JSON domain, domain config, and tag operations with AWS SDK v2 integration.
 - Deterministic domain lifecycle with unique names, cluster config, EBS options, encryption at rest, node-to-node encryption, endpoint options, and access policies.
@@ -143,7 +143,14 @@ Store OpenSearch and Elasticsearch domain configurations and tags as records wit
 - ListDomainNames filtering by OpenSearch and Elasticsearch engine types.
 - Resource tagging on domain ARNs with AddTags, ListTags, RemoveTags, and RGTA support.
 - AWS::OpenSearchService::Domain CloudFormation resource with Ref DomainName, Fn::GetAtt (Arn, DomainArn, DomainEndpoint, Id), and retagging.
-- RecordsOnly=true / ExecutionReady=false inventory, official AWS OpenSearch Service icon and Terraform opensearch endpoint key.
+- Inventory reports RecordsOnly and ExecutionReady (true once a Docker domain's engine answers), with the official AWS OpenSearch Service icon and Terraform opensearch endpoint key.
+- Set opensearch.domains: docker to run each domain as one single-node container through the docker CLI; default opensearch.domains: records keeps configuration records with a metadata endpoint.
+- Docker EngineVersion OpenSearch_X.Y maps to opensearchproject/opensearch:X.Y.0 for 1.0-1.3, 2.0-2.19 and 3.0-3.9 (arm64 images exist for all but 1.0); Elasticsearch_7.10 maps to docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2; any other version fails with DisabledOperationException.
+- Docker containers run discovery.type=single-node with the security plugin disabled so port 9200 serves plain HTTP, a 512 MiB heap (a TinyStack choice, not an AWS setting), and data in a named volume.
+- Docker creation returns Processing=true without an endpoint; GET /_cluster/health?wait_for_status=yellow answering 200 sets Processing=false and publishes Endpoint 127.0.0.1:<host port> (loopback, no scheme); an engine that stops answering is started again and the domain processes until it does.
+- A Docker domain whose container cannot start, or whose engine is not healthy within five minutes, keeps its record with Processing=false, no endpoint and a Failure inventory detail; delete it as usual.
+- Docker DeleteDomain returns Deleted=true and Processing=true and keeps the name until the container and volume are removed; reset removes both; shutdown removes containers and keeps volumes; persistent restart recreates containers from records against their volumes; startup removes orphaned containers and volumes whose domain record is gone.
+- CloudFormation domain creation waits for the Docker engine before publishing Ref and DomainEndpoint.
 
 [Supported operations](opensearch.md#supported-operations) · [Limitations](opensearch.md#limitations-and-future-work)
 

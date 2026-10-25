@@ -20,7 +20,7 @@ Future services and unimplemented extensions live in the [roadmap](../roadmap/in
 | [Amazon MSK](kafka.md) | 8 | Configuration records only |
 | [Amazon Managed Service for Apache Flink](kinesisanalyticsv2.md) | 20 | Records only |
 | [Amazon OpenSearch Serverless](opensearchserverless.md) | 21 | Records only |
-| [Amazon OpenSearch Service](opensearch.md) | 10 | Configuration records only |
+| [Amazon OpenSearch Service](opensearch.md) | 10 | Records / optional Docker |
 | [Amazon Redshift](redshift.md) | 14 | Configuration records only |
 | [Athena](athena.md) | 25 | SQLite SQL engine with local S3 reads/writes and Glue catalog updates |
 | [Data Firehose](firehose.md) | 12 | Local behavior |
