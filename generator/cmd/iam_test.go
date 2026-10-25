@@ -21,6 +21,7 @@ func TestIAMModelMappings(t *testing.T) {
 		{"s3", "DeleteBucketOwnershipControls", "s3:PutBucketOwnershipControls"},
 		{"sns", "PublishBatch", "sns:Publish"},
 		{"iotdataplane", "GetThingShadow", "iot:GetThingShadow"},
+		{"iot", "ListThingPrincipalsV2", "iot:ListThingPrincipals"},
 		{"iotjobsdataplane", "DescribeJobExecution", "iotjobsdata:DescribeJobExecution"},
 		{"appconfigdata", "StartConfigurationSession", "appconfig:StartConfigurationSession"},
 		{"cloudcontrol", "CreateResource", "cloudformation:CreateResource"},

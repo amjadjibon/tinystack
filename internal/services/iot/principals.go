@@ -418,3 +418,49 @@ func (s *Service) ListPrincipalThings(
 
 	return &api.ListPrincipalThingsResponse{Things: selected, NextToken: next}, nil
 }
+
+// ListThingPrincipalsV2 lists a thing's principals with their attachment types, optionally only those of one type.
+func (s *Service) ListThingPrincipalsV2(
+	ctx context.Context, in *api.ListThingPrincipalsV2Request,
+) (*api.ListThingPrincipalsV2Response, error) {
+	var objects []api.ThingPrincipalObject
+	err := s.view(ctx, func(tx storage.ReadTx, scope request.Scope) error {
+		t, err := loadThing(tx, scope, common.Value(in.ThingName))
+		if err != nil {
+			return err
+		}
+
+		for _, id := range t.Principals {
+			p, err := loadPrincipal(tx, scope, id)
+			if err != nil {
+				return err
+			}
+
+			kind := nonExclusive
+			if p.Exclusive {
+				kind = exclusiveThing
+			}
+
+			if in.ThingPrincipalType == nil || *in.ThingPrincipalType == kind {
+				objects = append(objects, api.ThingPrincipalObject{Principal: new(id), ThingPrincipalType: new(kind)})
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	selected, next, err := page(
+		objects,
+		func(p api.ThingPrincipalObject) string { return *p.Principal },
+		in.NextToken,
+		in.MaxResults,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.ListThingPrincipalsV2Response{ThingPrincipalObjects: selected, NextToken: next}, nil
+}

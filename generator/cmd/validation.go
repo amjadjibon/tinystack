@@ -238,6 +238,9 @@ type re2Pattern struct {
 
 // re2Patterns maps such model patterns to their RE2 renderings.
 var re2Patterns = map[string]re2Pattern{
+	`^[\p{Graph}\x20]*$`: {match: `^[[:graph:]\x20]*$`},
+	// IoT reason codes use Java/POSIX character class names absent from RE2.
+	`^[\p{Upper}\p{Digit}_]+$`: {match: `^[[:upper:][:digit:]_]+$`},
 	// The pinned model writes /d where \d is meant, rejecting real Bedrock ARNs (bedrock-agent TaggableResourcesArn).
 	`(^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:(agent|agent-alias|knowledge-base|flow|prompt)` +
 		`/[A-Z0-9]{10}(?:/[A-Z0-9]{10})?$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:flow/([A-Z0-9]` +

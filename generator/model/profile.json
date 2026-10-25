@@ -14846,7 +14846,8 @@
       "GetIndexingConfiguration",
       "DescribeIndex",
       "ListIndices",
-      "SearchIndex"
+      "SearchIndex",
+      "ListThingPrincipalsV2"
     ],
     "shapes": {
       "CreateThingRequest": [
@@ -16055,7 +16056,24 @@
         "thingGroupDescription",
         "attributes",
         "parentGroupNames"
+      ],
+      "ListThingPrincipalsV2Request": [
+        "nextToken",
+        "maxResults",
+        "thingName",
+        "thingPrincipalType"
+      ],
+      "ListThingPrincipalsV2Response": [
+        "thingPrincipalObjects",
+        "nextToken"
+      ],
+      "ThingPrincipalObject": [
+        "principal",
+        "thingPrincipalType"
       ]
+    },
+    "validation": {
+      "code": "InvalidRequestException"
     }
   },
   "iotdataplane": {

@@ -51,6 +51,8 @@ const (
 )
 
 var iamOverrides = map[string]map[string]string{
+	// https://docs.aws.amazon.com/iot/latest/apireference/API_ListThingPrincipalsV2.html
+	"iot": {"ListThingPrincipalsV2": "ListThingPrincipals"},
 	// Converse uses the same permission as InvokeModel.
 	// https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html
 	// Streaming Converse shares the native streaming invocation permission.

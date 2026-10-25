@@ -592,3 +592,32 @@ func TestBedrockTaggableResourcesARNPattern(t *testing.T) {
 		}
 	}
 }
+
+func TestIoTPOSIXPatterns(t *testing.T) {
+	for _, tc := range []struct {
+		source  string
+		valid   []string
+		invalid []string
+	}{
+		{`^[\p{Upper}\p{Digit}_]+$`, []string{"CANCELLED_1"}, []string{"lower", "A B", ""}},
+		{`^[\p{Graph}\x20]*$`, []string{"", "Description 123!?"}, []string{"line\nbreak", "\x00"}},
+	} {
+		rendering, ok := re2Patterns[tc.source]
+		if !ok {
+			t.Fatalf("missing pattern %q", tc.source)
+		}
+
+		pattern := regexp.MustCompile(rendering.match)
+		for _, value := range tc.valid {
+			if !pattern.MatchString(value) {
+				t.Fatalf("%q rejected %q", tc.source, value)
+			}
+		}
+
+		for _, value := range tc.invalid {
+			if pattern.MatchString(value) {
+				t.Fatalf("%q accepted %q", tc.source, value)
+			}
+		}
+	}
+}
