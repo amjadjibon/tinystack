@@ -299,6 +299,7 @@ type FirewallPolicy struct {
 	StatefulRuleGroupReferences     []StatefulRuleGroupReference  `json:"StatefulRuleGroupReferences,omitempty"`
 	StatefulDefaultActions          []string                      `json:"StatefulDefaultActions,omitempty"`
 	StatefulEngineOptions           *StatefulEngineOptions        `json:"StatefulEngineOptions,omitempty"`
+	EnableTLSSessionHolding         *bool                         `json:"EnableTLSSessionHolding,omitempty"`
 }
 
 type CreateFirewallPolicyRequest struct {

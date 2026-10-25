@@ -24,6 +24,10 @@ func validateFirewallPolicy(policy *api.FirewallPolicy) error {
 		return awserror.New("InvalidRequestException", "StatelessFragmentDefaultActions cannot be empty")
 	}
 
+	if common.Value(policy.EnableTLSSessionHolding) {
+		return awserror.New("InvalidRequestException", "TinyStack does not support TLS session holding.")
+	}
+
 	return nil
 }
 

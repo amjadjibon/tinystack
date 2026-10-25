@@ -36051,7 +36051,8 @@
         "StatelessCustomActions",
         "StatefulRuleGroupReferences",
         "StatefulDefaultActions",
-        "StatefulEngineOptions"
+        "StatefulEngineOptions",
+        "EnableTLSSessionHolding"
       ],
       "StatelessRuleGroupReference": [
         "ResourceArn",
