@@ -111,6 +111,7 @@ import (
 	rdsapi "github.com/amjadjibon/tinystack/internal/aws/generated/rds"
 	rdsdataapi "github.com/amjadjibon/tinystack/internal/aws/generated/rdsdata"
 	redshiftapi "github.com/amjadjibon/tinystack/internal/aws/generated/redshift"
+	redshiftdataapi "github.com/amjadjibon/tinystack/internal/aws/generated/redshiftdata"
 	redshiftserverlessapi "github.com/amjadjibon/tinystack/internal/aws/generated/redshiftserverless"
 	resourceexplorer2api "github.com/amjadjibon/tinystack/internal/aws/generated/resourceexplorer2"
 	resourcegroupsapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroups"
@@ -252,6 +253,7 @@ import (
 	rdsdocker "github.com/amjadjibon/tinystack/internal/services/rds/docker"
 	"github.com/amjadjibon/tinystack/internal/services/rdsdata"
 	"github.com/amjadjibon/tinystack/internal/services/redshift"
+	"github.com/amjadjibon/tinystack/internal/services/redshiftdata"
 	"github.com/amjadjibon/tinystack/internal/services/redshiftserverless"
 	"github.com/amjadjibon/tinystack/internal/services/resourceexplorer2"
 	"github.com/amjadjibon/tinystack/internal/services/resourcegroups"
@@ -575,6 +577,8 @@ func build(
 	privateAuthorities := acmpca.New(store, buckets)
 	verifiedpermissionsRecords := verifiedpermissions.New(store)
 	redshiftRecords := redshift.New(store, network)
+	redshiftDataRecords := redshiftdata.New(store, redshiftRecords, redshiftServerlessRecords)
+	a.onStop(redshiftDataRecords.Stop)
 	memoryDBRecords := memorydb.New(store, network)
 	classicBalancers := elb.New(store, network)
 	a.onReset(trails.Reset)
@@ -734,6 +738,7 @@ func build(
 		acmpcaapi.Descriptor(privateAuthorities),
 		verifiedpermissionsapi.Descriptor(verifiedpermissionsRecords),
 		redshiftapi.Descriptor(redshiftRecords),
+		redshiftdataapi.Descriptor(redshiftDataRecords),
 		memorydbapi.Descriptor(memoryDBRecords),
 		elbapi.Descriptor(classicBalancers),
 		rdsapi.Descriptor(databases),
@@ -839,6 +844,7 @@ func build(
 	// Groups resolve their queries against the same resources, and read CloudFormation stacks.
 	groups.UseCaller(caller)
 	resourceExplorerRecords.UseCaller(caller)
+	redshiftDataRecords.UseCaller(caller)
 	redshiftServerlessRecords.UseCaller(caller)
 	fisRecords.UseCaller(caller)
 	// The credentials provider exchanges certificates for role credentials.
@@ -951,6 +957,9 @@ func build(
 		}
 	}
 
+	redshiftFixtures := redshiftdata.Handler(store, cfg.Defaults.Account)
+	handler.Handle("redshift-data/fixtures", redshiftFixtures)
+	handler.Handle("redshift-data/fixtures/", redshiftFixtures)
 	bedrockFixtures := bedrockruntime.Handler(store, cfg.Defaults.Account)
 	handler.Handle("bedrock/fixtures", bedrockFixtures)
 	handler.Handle("bedrock/fixtures/", bedrockFixtures)

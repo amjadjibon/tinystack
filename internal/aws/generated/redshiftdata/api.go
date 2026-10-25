@@ -121,7 +121,6 @@ type ListStatementsRequest struct {
 	MaxResults        *int64  `json:"MaxResults,omitempty"`
 	StatementName     *string `json:"StatementName,omitempty"`
 	Status            *string `json:"Status,omitempty"`
-	RoleLevel         *bool   `json:"RoleLevel,omitempty"`
 	Database          *string `json:"Database,omitempty"`
 	ClusterIdentifier *string `json:"ClusterIdentifier,omitempty"`
 	WorkgroupName     *string `json:"WorkgroupName,omitempty"`

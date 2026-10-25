@@ -22,6 +22,7 @@ provider "aws" {
     bedrockagentcore     = var.endpoint
     transcribe           = var.endpoint
     redshiftserverless   = var.endpoint
+    redshiftdata         = var.endpoint
     dsql                 = var.endpoint
     mediaconnect         = var.endpoint
     shield               = var.endpoint
@@ -2986,3 +2987,9 @@ resource "aws_redshiftserverless_snapshot" "local" {
   depends_on       = [aws_redshiftserverless_workgroup.local]
 }
 
+resource "aws_redshiftdata_statement" "local" {
+  workgroup_name = aws_redshiftserverless_workgroup.local.workgroup_name
+  database       = "dev"
+  sql            = "select tinystack_fixture"
+  statement_name = "local-fixture"
+}

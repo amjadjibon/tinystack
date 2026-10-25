@@ -67,6 +67,14 @@ def main():
                         time.sleep(0.05)
                 else:
                     raise RuntimeError("server never became healthy")
+                fixture = {"target": {"workgroupName": "local-warehouse"}, "database": "dev",
+                           "contains": "select tinystack_fixture", "columnMetadata": [{"name": "answer"}],
+                           "records": [[{"stringValue": "user fixture"}]]}
+                request = urllib.request.Request(endpoint + "/_tinystack/redshift-data/fixtures/terraform",
+                                                 data=json.dumps(fixture).encode(), method="PUT",
+                                                 headers={"Content-Type": "application/json"})
+                with urllib.request.urlopen(request, timeout=5) as response:
+                    assert response.status == 200
                 terraform("init")
                 terraform("apply", "-auto-approve")
                 assert terraform("output", "-raw", "vpc_endpoint_service") == "com.amazonaws.us-east-1.s3"
@@ -105,7 +113,7 @@ def main():
                 # artifact and memory event expiry remain unchanged.
                 # CloudFront KVS tags and its key value update in place (+2); names/ARN/key are unchanged.
                 # Redshift Serverless namespace and workgroup tags update in place (+2).
-                # Snapshot and usage limit have no team-dependent attributes.
+                # Snapshot, usage limit and Data API statement have no team-dependent attributes.
                 updated = terraform("apply", "-auto-approve", team="platform")
                 assert "8 added, 153 changed, 8 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"

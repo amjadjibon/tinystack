@@ -43477,7 +43477,6 @@
         "MaxResults",
         "StatementName",
         "Status",
-        "RoleLevel",
         "Database",
         "ClusterIdentifier",
         "WorkgroupName"
