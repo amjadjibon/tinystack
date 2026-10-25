@@ -245,9 +245,14 @@ func (s *Service) CreateBucket(ctx context.Context, in *api.CreateBucketRequest)
 		return nil, fail(http.StatusNotImplemented, "NotImplemented", "TinyStack only supports the private canned ACL.")
 	}
 
+	var tags map[string]string
 	constraint := ""
 	if in.CreateBucketConfiguration != nil {
 		constraint = common.Value(in.CreateBucketConfiguration.LocationConstraint)
+		tags, err = tagMap(in.CreateBucketConfiguration.Tags)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	switch {
@@ -285,7 +290,7 @@ func (s *Service) CreateBucket(ctx context.Context, in *api.CreateBucketRequest)
 			return guardErr
 		}
 
-		meta := bucketMeta{CreatedAt: now}
+		meta := bucketMeta{CreatedAt: now, Tags: tags}
 		if common.Value(in.ObjectLockEnabledForBucket) {
 			meta.Versioning = versioningEnabled
 			meta.ObjectLock = &api.ObjectLockConfiguration{

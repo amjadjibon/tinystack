@@ -8,8 +8,14 @@ import (
 	"time"
 )
 
+type Tag struct {
+	Key   *string `json:"Key,omitempty" xml:"Key,omitempty"`
+	Value *string `json:"Value,omitempty" xml:"Value,omitempty"`
+}
+
 type CreateBucketConfiguration struct {
 	LocationConstraint *string `json:"LocationConstraint,omitempty" xml:"LocationConstraint,omitempty"`
+	Tags               []Tag   `json:"Tags,omitempty" xml:"Tags>Tag,omitempty"`
 }
 
 type CreateBucketRequest struct {
@@ -218,11 +224,6 @@ type ListObjectsV2Output struct {
 }
 
 type PutBucketTaggingOutput struct{}
-
-type Tag struct {
-	Key   *string `json:"Key,omitempty" xml:"Key,omitempty"`
-	Value *string `json:"Value,omitempty" xml:"Value,omitempty"`
-}
 
 type Tagging struct {
 	TagSet []Tag `json:"TagSet,omitempty" xml:"TagSet>Tag,omitempty"`
