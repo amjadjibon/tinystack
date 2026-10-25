@@ -42940,4 +42940,175 @@
       "DeleteAgentMemoryResponse": []
     }
   }
+,
+  "bedrockagentcorecontrol": {
+    "validation": {
+      "code": "ValidationException",
+      "deferred": [
+        "CreateMemoryInput.encryptionKeyArn",
+        "CreateMemoryInput.memoryExecutionRoleArn",
+        "InvocationConfigurationInput.topicArn",
+        "ModifyInvocationConfigurationInput.topicArn",
+        "UpdateMemoryInput.memoryExecutionRoleArn"
+      ]
+    },
+    "operations": [
+      "CreateAgentRuntime",
+      "GetAgentRuntime",
+      "ListAgentRuntimes",
+      "UpdateAgentRuntime",
+      "DeleteAgentRuntime",
+      "ListAgentRuntimeVersions",
+      "CreateAgentRuntimeEndpoint",
+      "GetAgentRuntimeEndpoint",
+      "ListAgentRuntimeEndpoints",
+      "UpdateAgentRuntimeEndpoint",
+      "DeleteAgentRuntimeEndpoint",
+      "CreateMemory",
+      "GetMemory",
+      "ListMemories",
+      "UpdateMemory",
+      "DeleteMemory",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "CreateAgentRuntimeRequest": [
+        "agentRuntimeArtifact",
+        "agentRuntimeName",
+        "authorizerConfiguration",
+        "clientToken",
+        "description",
+        "environmentVariables",
+        "lifecycleConfiguration",
+        "networkConfiguration",
+        "protocolConfiguration",
+        "requestHeaderConfiguration",
+        "roleArn",
+        "tags"
+      ],
+      "CreateAgentRuntimeResponse": [
+        "agentRuntimeArn",
+        "agentRuntimeId",
+        "agentRuntimeVersion",
+        "createdAt",
+        "status"
+      ],
+      "GetAgentRuntimeResponse": [
+        "agentRuntimeArn",
+        "agentRuntimeArtifact",
+        "agentRuntimeId",
+        "agentRuntimeName",
+        "agentRuntimeVersion",
+        "authorizerConfiguration",
+        "createdAt",
+        "description",
+        "environmentVariables",
+        "failureReason",
+        "lastUpdatedAt",
+        "lifecycleConfiguration",
+        "networkConfiguration",
+        "protocolConfiguration",
+        "requestHeaderConfiguration",
+        "roleArn",
+        "status"
+      ],
+      "UpdateAgentRuntimeRequest": [
+        "agentRuntimeArtifact",
+        "agentRuntimeId",
+        "authorizerConfiguration",
+        "clientToken",
+        "description",
+        "environmentVariables",
+        "lifecycleConfiguration",
+        "networkConfiguration",
+        "protocolConfiguration",
+        "requestHeaderConfiguration",
+        "roleArn"
+      ],
+      "UpdateAgentRuntimeResponse": [
+        "agentRuntimeArn",
+        "agentRuntimeId",
+        "agentRuntimeVersion",
+        "createdAt",
+        "lastUpdatedAt",
+        "status"
+      ],
+      "CustomJWTAuthorizerConfiguration": [
+        "allowedAudience",
+        "allowedClients",
+        "allowedScopes",
+        "customClaims",
+        "discoveryUrl"
+      ],
+      "CreateMemoryInput": [
+        "clientToken",
+        "description",
+        "encryptionKeyArn",
+        "eventExpiryDuration",
+        "memoryExecutionRoleArn",
+        "memoryStrategies",
+        "name",
+        "tags"
+      ],
+      "UpdateMemoryInput": [
+        "clientToken",
+        "description",
+        "eventExpiryDuration",
+        "memoryExecutionRoleArn",
+        "memoryId",
+        "memoryStrategies"
+      ],
+      "Memory": [
+        "arn",
+        "createdAt",
+        "description",
+        "encryptionKeyArn",
+        "eventExpiryDuration",
+        "failureReason",
+        "id",
+        "memoryExecutionRoleArn",
+        "name",
+        "status",
+        "strategies",
+        "updatedAt"
+      ],
+      "MemorySummary": [
+        "arn",
+        "createdAt",
+        "id",
+        "status",
+        "updatedAt"
+      ]
+    }
+  },
+  "bedrockagentcore": {
+    "validation": {
+      "code": "ValidationException"
+    },
+    "operations": [
+      "InvokeAgentRuntime",
+      "StopRuntimeSession",
+      "CreateEvent",
+      "GetEvent",
+      "ListEvents",
+      "DeleteEvent",
+      "ListActors",
+      "ListSessions"
+    ],
+    "shapes": {
+      "CreateEventInput": [
+        "actorId",
+        "branch",
+        "clientToken",
+        "eventTimestamp",
+        "extractionMode",
+        "memoryId",
+        "metadata",
+        "payload",
+        "sessionId"
+      ]
+    }
+  }
 }

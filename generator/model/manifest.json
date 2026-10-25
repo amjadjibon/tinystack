@@ -494,6 +494,14 @@
     "bedrockagentruntime": {
       "path": "codegen/sdk-codegen/aws-models/bedrock-agent-runtime.json",
       "sha256": "77fa0f809a1abdad81ebccc01cd681bd62b9e037ec654e81fe288d73a8a5566f"
+    },
+    "bedrockagentcorecontrol": {
+      "path": "codegen/sdk-codegen/aws-models/bedrock-agentcore-control.json",
+      "sha256": "25162232916f610d27eb5aaad05eb0f5a92b02c76c9e59359f1fdae2fde818a5"
+    },
+    "bedrockagentcore": {
+      "path": "codegen/sdk-codegen/aws-models/bedrock-agentcore.json",
+      "sha256": "ae45818de50255db523c923d86368798d5664a1dc8b8e0e4ea4bb151a48278be"
     }
   }
 }

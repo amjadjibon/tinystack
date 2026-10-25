@@ -38,6 +38,7 @@ import (
 	batchapi "github.com/amjadjibon/tinystack/internal/aws/generated/batch"
 	bedrockapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrock"
 	bedrockagentapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockagent"
+	bedrockagentcorecontrolapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockagentcorecontrol"
 	bedrockagentruntimeapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockagentruntime"
 	bedrockruntimeapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockruntime"
 	budgetsapi "github.com/amjadjibon/tinystack/internal/aws/generated/budgets"
@@ -169,6 +170,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/batch"
 	"github.com/amjadjibon/tinystack/internal/services/bedrock"
 	"github.com/amjadjibon/tinystack/internal/services/bedrockagent"
+	"github.com/amjadjibon/tinystack/internal/services/bedrockagentcorecontrol"
 	"github.com/amjadjibon/tinystack/internal/services/bedrockagentruntime"
 	"github.com/amjadjibon/tinystack/internal/services/bedrockruntime"
 	"github.com/amjadjibon/tinystack/internal/services/budgets"
@@ -517,6 +519,8 @@ func build(
 	a.onStop(dataSyncRecords.Stop)
 	s3FilesRecords := s3files.New(store, network, buckets, roles, keys)
 	a.onStop(s3FilesRecords.Stop)
+	agentCoreControl := bedrockagentcorecontrol.New(store, network, roles, keys)
+	a.onStop(agentCoreControl.Stop)
 	shieldRecords := shield.New(store)
 	accessAnalyzerRecords := accessanalyzer.New(store)
 	swfRecords := swf.New(store)
@@ -665,6 +669,7 @@ func build(
 		translateapi.Descriptor(translateRecords),
 		transcribeapi.Descriptor(transcribeRecords),
 		s3filesapi.Descriptor(s3FilesRecords),
+		bedrockagentcorecontrolapi.Descriptor(agentCoreControl),
 		mediaconnectapi.Descriptor(mediaConnectRecords),
 		accessanalyzerapi.Descriptor(accessAnalyzerRecords),
 		shieldapi.Descriptor(shieldRecords),

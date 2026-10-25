@@ -87,6 +87,14 @@ const catalog: Record<string, ServiceInfo> = {
 	},
 	shield: { title: "AWS Shield Advanced", category: security, icon: "shield" },
 	dsql: { title: "Amazon Aurora DSQL", category: database, icon: "dsql" },
+	bedrockagentcorecontrol: {
+		title: "Amazon Bedrock AgentCore",
+		category: machineLearning,
+	},
+	bedrockagentcore: {
+		title: "Amazon Bedrock AgentCore Data Plane",
+		category: machineLearning,
+	},
 	fis: {
 		title: "Fault Injection Service",
 		category: management,

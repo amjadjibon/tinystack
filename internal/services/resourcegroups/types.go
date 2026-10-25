@@ -16,6 +16,7 @@ var namespaces = map[string]string{
 	"transcribe":                "Transcribe",
 	"globalaccelerator":         "GlobalAccelerator",
 	"dsql":                      "DSQL",
+	"bedrockagentcorecontrol":   "BedrockAgentCore",
 	"s3files":                   "S3Files",
 	"fis":                       "FIS",
 	"resourceexplorer2":         "ResourceExplorer2",
@@ -221,6 +222,8 @@ var typeNames = map[string]string{
 	"verifiedpermissions/policy-store":       "PolicyStore",
 	"verifiedpermissions/policy":             "Policy",
 	"rds/db-cluster-snapshot":                "DBClusterSnapshot",
+
+	"bedrockagentcorecontrol/runtime-endpoint": "RuntimeEndpoint",
 }
 
 // pascal writes a kebab-case inventory type as a CloudFormation name.

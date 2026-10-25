@@ -222,7 +222,8 @@ func (s *Server) restOperation(r *http.Request, c *call) (map[string]string, err
 		}
 	}
 	// S3 treats "/bucket/" as the bucket itself, and keeps a key's trailing slash. Other services' routes do not
-	// end in a slash, though some models write their URIs with one, as Bedrock Agents' do, and SDKs send it.
+	// end in a slash, though some models write their URIs with one, as Bedrock Agents' and AgentCore's do, and SDKs
+	// send them.
 	if len(segments) == 2 && segments[1] == "" || len(segments) > 2 && segments[len(segments)-1] == "" &&
 		c.service.SigningName != "s3" {
 		segments = segments[:len(segments)-1]

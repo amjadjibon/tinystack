@@ -458,6 +458,8 @@ var taggers = map[string]tagger{
 	"sqs":            operations("sqs", "TagQueue", "UntagQueue", queue, "Tags", plain, "TagKeys", names),
 	"ssm": operations("ssm", "AddTagsToResource", "RemoveTagsFromResource", ssmResource, "Tags", pairs, "TagKeys",
 		names),
+
+	"bedrockagentcorecontrol": resourceOperations("bedrockagentcorecontrol", "ResourceArn", plain),
 }
 
 // failure is how TagResources and UntagResources report one resource's error:

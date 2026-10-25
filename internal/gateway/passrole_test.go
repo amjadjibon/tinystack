@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	agentcoreapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockagentcorecontrol"
 	cognitoapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidentity"
 	userpoolapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
 	ec2api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
@@ -81,6 +82,16 @@ func TestPassedRoleInputs(t *testing.T) {
 		{
 			"cognitoidp", "CreateGroup", "cognito-identity.amazonaws.com",
 			&userpoolapi.CreateGroupRequest{RoleArn: new(role)},
+			[]string{role},
+		},
+		{
+			"bedrockagentcorecontrol", "CreateAgentRuntime", "bedrock-agentcore.amazonaws.com",
+			&agentcoreapi.CreateAgentRuntimeRequest{RoleArn: new(role)},
+			[]string{role},
+		},
+		{
+			"bedrockagentcorecontrol", "UpdateMemory", "bedrock-agentcore.amazonaws.com",
+			&agentcoreapi.UpdateMemoryInput{MemoryExecutionRoleArn: new(role)},
 			[]string{role},
 		},
 		{"eks", "CreateNodegroup", "eks.amazonaws.com", &eksapi.CreateNodegroupRequest{NodeRole: new(role)}, []string{role}},

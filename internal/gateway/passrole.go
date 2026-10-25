@@ -30,6 +30,8 @@ const (
 	ecsTasksServicePrincipal = "ecs-tasks.amazonaws.com"
 	eksServicePrincipal      = "eks.amazonaws.com"
 	iotServicePrincipal      = "iot.amazonaws.com"
+
+	bedrockAgentCorePrincipal = "bedrock-agentcore.amazonaws.com"
 )
 
 type passedRoleInput struct {
@@ -163,6 +165,18 @@ var passedRoleInputs = map[string][]passedRoleInput{
 			operations: []string{"CreateProject", "UpdateProject"},
 			principal:  "codebuild.amazonaws.com",
 			paths:      []string{inputServiceRole},
+		},
+	},
+	"bedrockagentcorecontrol": {
+		{
+			operations: []string{"CreateAgentRuntime", "UpdateAgentRuntime"},
+			principal:  bedrockAgentCorePrincipal,
+			paths:      []string{inputRoleARN},
+		},
+		{
+			operations: []string{"CreateMemory", "UpdateMemory"},
+			principal:  bedrockAgentCorePrincipal,
+			paths:      []string{"MemoryExecutionRoleArn"},
 		},
 	},
 	"codepipeline": {
