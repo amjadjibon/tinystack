@@ -285,7 +285,7 @@ nav:
           - "Bedrock AgentCore": roadmap/services/bedrock-agentcore.md
           - "Bedrock Agents": roadmap/services/bedrock-agent.md
           - "CloudFront KeyValueStore": roadmap/services/cloudfront-keyvaluestore.md
-          - "CodeBuild build execution": roadmap/services/codebuild-runtime.md
+          - "CodeBuild advanced build execution": roadmap/services/codebuild-runtime.md
           - "CodeDeploy deployment execution and agents": roadmap/services/codedeploy-runtime.md
           - "CodePipeline execution and release automation": roadmap/services/codepipeline-execution.md
           - "Elastic Load Balancing (Classic) policies and traffic": roadmap/services/elb-policies.md

@@ -27,7 +27,7 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Bedrock AgentCore](services/bedrock-agentcore.md) | Proposed | Implement `CreateAgentRuntime`, `GetAgentRuntime`, `ListAgentRuntimes`. |
 | [Bedrock Agents](services/bedrock-agent.md) | Proposed | Implement `CreateAgent`, `GetAgent`, `ListAgents`. |
 | [CloudFront KeyValueStore](services/cloudfront-keyvaluestore.md) | Proposed | Implement `DescribeKeyValueStore`, `ListKeys`, `GetKey`. |
-| [CodeBuild build execution](services/codebuild-runtime.md) | Proposed extension | Extend the implemented project metadata with an explicit build execution/runtime contract. |
+| [CodeBuild advanced build execution](services/codebuild-runtime.md) | Future extensions | Docker workers, build history, CloudWatch logs, S3 source/artifacts and buildspec 0.2 are implemented. Extend the remaining runtime features separately. |
 | [CodeDeploy deployment execution and agents](services/codedeploy-runtime.md) | Proposed | Extend application, deployment configuration and group records to real deployment execution. |
 | [CodePipeline execution and release automation](services/codepipeline-execution.md) | Proposed | Extend records-only pipeline declarations to executions, stage transitions, approvals and triggers. |
 | [Elastic Load Balancing (Classic) policies and traffic](services/elb-policies.md) | Proposed | Extend the records-only Classic Load Balancer control plane with policies, placement changes and a data plane. |

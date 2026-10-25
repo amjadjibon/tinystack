@@ -38,6 +38,7 @@ Use `./bin/tinystack start --help` for the current command help.
 | `storage.mode` | `memory` | `memory` or `persistent` |
 | `storage.s3_max_object_bytes` | `268435456` (256 MiB) | `1`–`5368709120` (5 GiB); limits S3 PUTs, individual parts and completed objects; uploads use bounded HTTP streaming |
 | `storage.path` | Unset | Required in `persistent`, forbidden in `memory`; `~` expands to your home directory |
+| `codebuild.builds` | `records` | `records` or `docker`; records rejects StartBuild; Docker executes buildspec 0.2 |
 | `ecs.containers` | `records` | `records` or `docker` |
 | `eks.clusters` | `records` | `records` or `k3s` |
 | `elasticache.caches` | `records` | `records` or `docker` |
@@ -214,3 +215,13 @@ last MiB per invocation; process output files are removed with their environment
 
 Function credentials reuse the same creator-account logic as Docker. `AWS_ENDPOINT_URL` points back to TinyStack;
 functions can override it explicitly through their configured environment. See [hot reload](../guides/lambda-hot-reload.md).
+
+## CodeBuild execution
+
+Set `codebuild.builds: docker` to run builds using the project's Docker image. Docker must be available
+to TinyStack; source and output directories are transferred with docker cp. `records` is the default and rejects
+StartBuild explicitly: project configuration alone cannot produce a successful build.
+
+Build containers reach this endpoint through `host.docker.internal`, as ECS containers do. Sources and
+artifacts stay in TinyStack S3. See [CodeBuild projects and builds](../guides/codebuild-records.md) for
+buildspec support, local credentials and execution limits.

@@ -1693,27 +1693,34 @@
     "codebuild": {
       "title": "CodeBuild",
       "category": "Developer Tools",
-      "summary": "Persist regional build-project configuration and tags without starting builds or provisioning workers.",
+      "summary": "Persist build projects and run buildspec 0.2 commands in opt-in Docker workers with build history, CloudWatch logs and S3 artifacts.",
       "features": [
-        "Five AWS JSON 1.1 project metadata operations: CreateProject, BatchGetProjects, ListProjects, UpdateProject and DeleteProject",
+        "Project CRUD plus StartBuild, BatchGetBuilds, StopBuild, ListBuilds, ListBuildsForProject and BatchDeleteBuilds through AWS JSON 1.1",
         "Stable scoped names and commercial ARNs, creation and successful-update timestamps; complete nested configuration survives SQLite restart and offline export/import with shared reset",
         "Finite NO_SOURCE/GITHUB/CODECOMMIT/S3 source metadata, NO_ARTIFACTS/S3 artifact metadata and LINUX_CONTAINER environments with SMALL/MEDIUM/LARGE compute classes, image tags/digests, variables and privileged-mode configuration",
         "Caller-account IAM role ARN syntax without role lookup; descriptions, source versions and build/queue timeout configuration with documented 60-minute defaults",
         "Atomic effective-candidate updates, replacement tags including empty-list clearing, modeled CodeBuild tag limits and characters, concurrent name uniqueness and scope isolation",
         "Batch reads accept names or ARNs; lists use fixed 100-project pages, all three sort criteria and both orders with scope/sort-bound deletion-resilient cursors",
         "CloudFormation AWS::CodeBuild::Project with Ref name/GetAtt Arn, mutable configuration and owned tags in one atomic write, optional-property defaults, create-first name replacement and rollback of previous live configuration",
-        "Resource browser marks RecordsOnly=true and ExecutionReady=false; Resource Groups Tagging API uses real UpdateProject tag replacement; official AWS icon and Terraform codebuild endpoint"
+        "Project inventory reports ExecutionReady=true in Docker mode; Resource Groups Tagging API and CloudFormation project records remain available",
+        "codebuild.builds defaults to records; StartBuild fails explicitly until Docker execution is enabled",
+        "Transactional queue claims, project build numbers, scoped build IDs/ARNs, phases with timestamps/status/contexts, StopBuild cancellation, real build timeout, SQLite history and restart recovery",
+        "NO_SOURCE inline YAML and S3 zip sources; buildspec overrides and source-relative buildspec.yml; persistent shell for install/pre_build/build/post_build commands and finally blocks with ABORT/CONTINUE",
+        "Project and override images, privileged containers, CodeBuild metadata and endpoint environment variables; PLAINTEXT, in-process SSM Parameter Store and Secrets Manager variables",
+        "CloudWatch Logs streaming with configurable status/group/stream prefix and build log location; NO_ARTIFACTS or S3 ZIP/NONE output with file patterns, base directory, discard-paths and artifact names",
+        "Build state and completed-phase events sent to the default EventBridge bus; store-owned orphan cleanup, shutdown/reset container removal and failed interrupted build records"
       ],
       "gaps": [
-        "No StartBuild, build history/status, batch builds, workers, image pulls, source checkout, artifact publication, logs, webhook execution, report groups or report generation",
-        "No credential import/authentication API or stored source tokens, IAM/KMS evaluation, secret resolution or network provisioning. EncryptionKey is excluded; no fabricated default encryption key, badge, URL or runtime identifier",
-        "Source authentication, webhook/status reporting, Git submodules/SSL flags, secondary sources/artifacts, cache, VPC, logs, filesystems, Docker server, fleets, registry credentials and advanced settings fail explicitly even false/null/empty",
-        "Finite local validation restricts Git provider URLs, bucket/key references, Docker image format and environment variable names/count/value lengths. References are configuration only; bucket/role/image/secret existence and access are not checked",
-        "Update/Delete require names; BatchGetProjects alone accepts project ARNs. Cross-scope ARNs are reported in projectsNotFound; shared project access is absent. Duplicate request identifiers collapse in first-input order",
-        "Nested source/artifact/environment objects supplied to UpdateProject replace that configuration with create-style defaults. Omitted top-level members retain their previous values. A successful compensating CloudFormation update advances LastModified while preserving Created/Arn",
-        "No dedicated mutation console. The [records guide](../guides/codebuild-records.md) lists every selected member, nested boundary, default, tag/reference/update rule and executable lifecycle"
+        "No RetryBuild, batch builds, webhook execution, reports, report groups, automatic retries, cached builds, VPC networking, fleets, secondary sources/artifacts, registry credentials or managed runtime installation. Unsupported API members and buildspec sections fail explicitly",
+        "GitHub source execution and CodeCommit git content are unavailable; project Git source metadata is retained. Only S3 zip objects are downloaded; S3 folder sources and S3 ARN buildspec references are not executed",
+        "Build lists return storage key order with 100-record pages; DESCENDING ordering fails explicitly. No AWS timestamp sort, shared/cross-account builds or dedicated build console",
+        "Only LINUX_CONTAINER environments and bash or /bin/sh shells; the selected image must contain the shell. Compute classes remain metadata; no CPU/memory quotas, Docker socket mount or ECR login. Source and output use docker cp, including with remote daemons",
+        "No S3 logs, KMS artifact encryption, service-role IAM evaluation or real AWS credentials. Container credentials are local account credentials for parse-mode identity; verify-mode container API calls require configured matching credentials",
+        "Artifact shell expressions, symlink artifacts and colliding flattened names fail explicitly. Artifacts and source archives are processed in memory; no extra CodeBuild-specific size limit. Existing project metadata bounds remain local constraints",
+        "Secret environment references support local names and optional JSON key/version selectors, not secret ARNs or binary secrets; missing values fail DOWNLOAD_SOURCE. Secrets are not automatically masked from user command output",
+        "UpdateProject nested configuration replaces objects with defaults; only projects appear in inventory. See the [CodeBuild guide](../guides/codebuild-records.md) for selected members and execution details"
       ],
-      "execution": "Records only",
+      "execution": "Records by default; opt-in Docker builds",
       "package": "codebuild"
     },
     "mq": {
@@ -3226,11 +3233,11 @@
       "integration": "The proposed resource scope is account-wide; define persistence and cross-service effects accordingly."
     },
     "codebuild-runtime": {
-      "title": "CodeBuild build execution",
-      "state": "Proposed extension",
-      "slice": "Extend the implemented project metadata with an explicit build execution/runtime contract.",
-      "features": "- [ ] `StartBuild`\n- [ ] `BatchGetBuilds`\n- [ ] `StopBuild`\n- [ ] `ListBuilds`\n- [ ] `ListBuildsForProject`\n- [ ] `BatchDeleteBuilds`\n- [ ] Batch builds, workers, source checkout and artifact publication\n- [ ] Webhooks, report groups and report generation",
-      "integration": "Project metadata is delivered; build execution must define workers, lifecycle, logs, artifacts, credentials and readiness separately."
+      "title": "CodeBuild advanced build execution",
+      "state": "Future extensions",
+      "slice": "Docker workers, build history, CloudWatch logs, S3 source/artifacts and buildspec 0.2 are implemented. Extend the remaining runtime features separately.",
+      "features": "- [ ] RetryBuild and automatic retry policies\n- [ ] Batch builds\n- [ ] Git source checkout and authentication\n- [ ] Webhooks, report groups and report generation\n- [ ] Cache, managed runtime installation and secondary sources/artifacts\n- [ ] Service-role credentials, KMS encryption and S3 logs",
+      "integration": "Use the implemented worker lifecycle and transactional build records. See the [CodeBuild guide](../../guides/codebuild-records.md) for the delivered subset and explicit execution boundaries."
     },
     "lambda-core": {
       "title": "Lambda Core",

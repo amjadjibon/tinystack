@@ -1,14 +1,14 @@
-# CodeBuild project records
+# CodeBuild projects and builds
 
-TinyStack stores project configuration and tags. It does not start builds, provision workers, pull
-images, fetch source, execute buildspecs, publish artifacts, resolve secrets or evaluate IAM/KMS.
-The resource browser reports `RecordsOnly: true` and `ExecutionReady: false`.
+TinyStack stores project configuration and tags. Set `codebuild.builds: docker` to execute builds;
+the default `records` mode rejects StartBuild with InvalidInputException, because it has no worker.
+Project inventory reports `ExecutionReady: true` when Docker execution is enabled.
 
 ## Operations and identity
 
 | Operation | Selected request members |
 | --- | --- |
-| `CreateProject` | `name`, `description`, `source`, `sourceVersion`, `artifacts`, `environment`, `serviceRole`, `timeoutInMinutes`, `queuedTimeoutInMinutes`, `tags` |
+| `CreateProject` | `name`, `description`, `source`, `sourceVersion`, `artifacts`, `environment`, `serviceRole`, `timeoutInMinutes`, `queuedTimeoutInMinutes`, `tags`, `logsConfig` |
 | `UpdateProject` | The same members; only `name` is required |
 | `BatchGetProjects` | `names` |
 | `ListProjects` | `sortBy`, `sortOrder`, `nextToken` |
@@ -19,7 +19,7 @@ ASCII letters/digits/hyphens/underscores and start with a letter or digit. Uniqu
 and Region. The stable ARN is `arn:aws:codebuild:REGION:ACCOUNT:project/NAME`. Duplicate create returns
 `ResourceAlreadyExistsException`/400. Missing update returns `ResourceNotFoundException`/400.
 Deleting an absent valid name succeeds. Update and Delete accept names; BatchGet alone accepts ARNs.
-No runtime URLs, badges, build identifiers or default encryption key are synthesized.
+Project records do not synthesize badges or a default encryption key. Builds have their own identifiers and log locations.
 
 BatchGet requires 1–100 identifiers. It returns complete matching project metadata and the original
 missing identifiers in `projectsNotFound`, including well-formed foreign-account/Region ARNs.
@@ -38,7 +38,7 @@ listing is not a snapshot across requests.
 
 `description` permits 0–255 characters. Empty clears it. Both timeout members default to 60 minutes
 on create. `timeoutInMinutes` accepts 5–2160 and `queuedTimeoutInMinutes` accepts 5–480. These are
-retained configuration, with no timer or queue engine. `sourceVersion` is a retained provider version,
+enforced during Docker execution. `sourceVersion` is a retained provider version,
 branch/tag/commit or S3 object version, locally bounded to 1024 characters. Empty selects the provider
 default; nonempty is rejected for NO_SOURCE. Provider version existence is not checked.
 
@@ -53,7 +53,7 @@ Every source object requires `type`. Only the following source members are selec
 | --- | --- |
 | `type` | `NO_SOURCE`, `GITHUB`, `CODECOMMIT`, `S3` |
 | `location` | Required for sources other than NO_SOURCE; at most 2048 characters |
-| `buildspec` | Optional except NO_SOURCE; 0–65536 characters, retained without YAML parsing or execution |
+| `buildspec` | Optional except NO_SOURCE; 0–65536 characters, retained at project creation; parsed when starting a build |
 | `gitCloneDepth` | Optional Git-only integer 0–2147483647; zero records full history |
 
 NO_SOURCE requires a nonempty multiline inline `buildspec`; a file reference is rejected. It cannot
@@ -67,7 +67,7 @@ For sources with a repository, an absent/empty buildspec records the normal root
 Inline text and relative file references are retained. An ARN buildspec reference must have the form
 `arn:aws:s3:::BUCKET/KEY`; the bucket's actual Region is not looked up. Other partitions, malformed
 bucket names and traversal/control characters in S3 object references are rejected. TinyStack does
-not read or parse the referenced file.
+read source-relative files during Docker builds. S3 ARN buildspec references are rejected by StartBuild.
 
 Every artifacts object requires `type`:
 
@@ -86,22 +86,21 @@ NO_ARTIFACTS accepts only `type` locally. AWS ignores several other artifact fie
 TinyStack rejects them to keep this finite configuration boundary explicit. `encryptionDisabled`
 is S3-only in AWS as well. S3 object names/paths are bounded to 1024 bytes, exclude traversal segments,
 NUL/CR/LF, URLs and ARNs. Bucket names use the finite DNS bucket syntax, excluding IP addresses and
-reserved bucket suffixes. Bucket/key existence and ownership are not checked. No output is created,
-and BUILD_ID does not synthesize a build identifier.
+reserved bucket suffixes. Bucket/key existence is checked during execution and publication, outside storage transactions.
 
 Environment selects `type`, `image`, `computeType`, `environmentVariables`, `privilegedMode`:
 
 - Type is `LINUX_CONTAINER`; image and compute type are required.
 - Compute type is `BUILD_GENERAL1_SMALL`, `BUILD_GENERAL1_MEDIUM` or `BUILD_GENERAL1_LARGE`.
 - Image is a Docker repository with a tag or a 64-hex SHA-256 digest, locally bounded to 1024
-  characters. Registry ports, schemes and credentials are excluded. No image pull or existence check.
-- Privileged mode defaults to false. Both values are configuration only; no Docker daemon starts.
+  characters. Registry ports, schemes and credentials are excluded. Docker pulls the selected image during execution.
+- Privileged mode defaults to false. Docker execution maps true to --privileged.
 - Variables are a complete list of at most 100 locally. Each requires `name` and `value`; empty
   PLAINTEXT values are valid. Names are unique shell identifiers of 1–256 characters and cannot start
   with reserved `CODEBUILD_`. Values are bounded to 4096 characters and exclude NUL.
 - Variable `type` defaults to `PLAINTEXT`. `PARAMETER_STORE` retains a finite parameter name/path;
   `SECRETS_MANAGER` retains a secret name with optional JSON-key/version selectors. ARN references
-  are excluded for these local reference types. Values are never resolved.
+  are excluded for these local reference types. Values resolve during Docker build preparation.
 
 The name/count/value/image bounds are explicit local constraints where the Smithy model does not
 supply upper limits. Lambda/ARM/Windows environments, larger/reserved compute classes, fleets,
@@ -176,8 +175,8 @@ The [SDK lifecycle test](https://github.com/amjadjibon/tinystack/blob/main/tests
 provides the complete five-operation example, signature checks and exact persistence workflow.
 Use [offline state fixtures](state-fixtures.md) with TinyStack stopped for export/import.
 
-All omitted modeled inputs fail explicitly, including false/null/empty advanced fields. Build execution,
-credentials, reports and webhooks remain [future work](../roadmap/services/codebuild-runtime.md).
+All omitted modeled inputs fail explicitly, including false/null/empty advanced fields. Reports and
+webhooks remain [future work](../roadmap/services/codebuild-runtime.md).
 
 Sources: [pinned Smithy model](https://github.com/aws/aws-sdk-go-v2/blob/2ba0e39015ddf9c91c6c378f8a4fb79dcb4353da/codegen/sdk-codegen/aws-models/codebuild.json),
 [AWS create-project configuration](https://docs.aws.amazon.com/codebuild/latest/userguide/create-project.html),
@@ -187,3 +186,80 @@ Sources: [pinned Smithy model](https://github.com/aws/aws-sdk-go-v2/blob/2ba0e39
 [API ListProjects](https://docs.aws.amazon.com/codebuild/latest/APIReference/API_ListProjects.html),
 [API BatchGetProjects](https://docs.aws.amazon.com/codebuild/latest/APIReference/API_BatchGetProjects.html),
 [CloudFormation Project](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-codebuild-project.html).
+
+## Docker build operations
+
+| Operation | Selected request members |
+| --- | --- |
+| StartBuild | projectName, sourceVersion, buildspecOverride, imageOverride, privilegedModeOverride, environmentVariablesOverride, timeoutInMinutesOverride, artifactsOverride, logsConfigOverride |
+| BatchGetBuilds | ids |
+| StopBuild | id |
+| ListBuilds | sortOrder, nextToken |
+| ListBuildsForProject | projectName, sortOrder, nextToken |
+| BatchDeleteBuilds | ids |
+
+Other overrides fail explicitly. RetryBuild is not implemented. Build reads and StopBuild accept local
+build IDs or ARNs. Lists use storage key order, 100-record pages and deletion-resilient cursors;
+ASCENDING or an omitted sortOrder selects this order. DESCENDING fails explicitly. Deleting an active
+build returns BUILD_IN_PROGRESS in buildsNotDeleted. Deleting history retains CloudWatch logs.
+Project build numbers increase transactionally, including across restart and history deletion.
+
+StartBuild snapshots the project and applies overrides only to that build, following the
+[AWS StartBuild API](https://docs.aws.amazon.com/codebuild/latest/APIReference/API_StartBuild.html).
+NO_SOURCE needs inline YAML. S3 sources download a zip object from BUCKET/KEY, optionally at sourceVersion.
+Archive paths cannot traverse outside the workspace; archive symlinks are rejected. GitHub is not
+fetched, and TinyStack CodeCommit currently has no git content. An omitted S3 buildspec uses
+buildspec.yml; explicit relative paths and inline YAML are supported.
+
+Buildspec version 0.2 supports env.variables, env.parameter-store, env.secrets-manager, env.shell,
+install/pre_build/build/post_build commands, finally, on-failure ABORT/CONTINUE, and artifacts.
+Other fields (including reports, runtime-versions, run-as, cache, batch and retry policies) fail
+explicitly. The image must include /bin/sh (default) or bash when selected by env.shell. Commands run
+in a single shell, preserving exported variables and cd across phases. The first failed command skips
+remaining commands in that block; finally still runs. Failed install/pre_build goes to FINALIZING unless
+CONTINUE is selected. An explicit ABORT skips subsequent command phases. post_build follows a failed build. CODEBUILD_BUILD_SUCCEEDING is 0 after failure;
+a later successful phase does not erase the failure. These rules come from the
+[AWS buildspec reference](https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html).
+
+The build records SUBMITTED, QUEUED, PROVISIONING, DOWNLOAD_SOURCE, present command phases,
+UPLOAD_ARTIFACTS, FINALIZING and COMPLETED. Each finished phase has timestamps, integer duration,
+status and failure context. Artifact upload is attempted after BUILD failure, as required by
+[AWS phase transitions](https://docs.aws.amazon.com/codebuild/latest/userguide/view-build-details-phases.html).
+StopBuild records STOPPED and cancels the worker, which removes its container. Execution timeout
+records TIMED_OUT; queued timeout is checked before claiming work. Shutdown/reset joins workers and
+removes their containers. Interrupted execution becomes FAILED with an explanatory context; startup
+also recovers interrupted records and removes orphan containers belonging to the same persisted store.
+Queued records run after restart.
+
+Project/request variables override buildspec values. SSM parameters resolve with decryption through
+TinyStack; Secrets Manager supports name:json-key:version-stage:version-id and string secrets. Missing
+parameters, secrets or JSON keys fail DOWNLOAD_SOURCE. CODEBUILD_* variables are reserved. Metadata
+includes build/project IDs and ARNs, build number/image, source directory/version, initiator, start time,
+Region and source repository URL when applicable, following
+[AWS environment variables](https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-env-vars.html).
+Containers receive AWS_ENDPOINT_URL pointing at TinyStack and local account credentials (account ID / test).
+Those credentials support parse identity; verify identity needs matching configured credentials. No
+real AWS credentials or IAM service-role credentials are issued. Secret values echoed by commands are
+not masked. Compute classes do not allocate CPU/memory quotas. Privileged mode sets --privileged but
+TinyStack does not mount the host Docker socket or configure image registry credentials.
+
+## Build logs and artifacts
+
+logsConfig supports cloudWatchLogs.status (ENABLED/DISABLED), groupName and streamName. Defaults are
+/aws/codebuild/PROJECT and the build UUID. A configured streamName is a prefix before /UUID. Build logs
+report groupName, streamName and deepLink. Output streams through TinyStack CloudWatch Logs and is
+readable with GetLogEvents while the build runs. S3 logs remain outside the profile.
+
+NO_ARTIFACTS skips publication. S3 artifacts use artifacts.files patterns (*, ?, character classes,
+recursive **), optional base-directory and discard-paths. Project packaging ZIP uploads an archive;
+NONE uploads individual objects. path, namespaceType NONE/BUILD_ID and name determine the destination
+according to [ProjectArtifacts](https://docs.aws.amazon.com/codebuild/latest/APIReference/API_ProjectArtifacts.html).
+A static buildspec artifacts.name overrides project name only when overrideArtifactName is true.
+Shell expressions in artifact names, artifact symlinks and duplicate flattened names fail explicitly.
+Missing destination buckets or failed publication fail UPLOAD_ARTIFACTS. Sources/artifacts are processed
+in memory; there is no additional CodeBuild size quota. KMS encryption and S3 log publication are absent.
+
+Build state and completed-phase events use source aws.codebuild on the default EventBridge bus with
+CodeBuild Build State Change and CodeBuild Build Phase Change detail types. Event publication is best
+effort after committing state. No dedicated build console, shared projects, reports, batch builds,
+Git checkout, secondary sources/artifacts or RetryBuild are implemented.
