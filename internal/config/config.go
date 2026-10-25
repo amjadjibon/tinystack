@@ -70,6 +70,13 @@ const (
 	DomainsDocker  = "docker"
 )
 
+// AgentCore runtime modes: records keeps agent runtimes as records and rejects InvokeAgentRuntime; docker also runs
+// each runtime session's container with the docker CLI.
+const (
+	RuntimesRecords = "records"
+	RuntimesDocker  = "docker"
+)
+
 // Lambda executor modes select containers, host interpreters, or daemon detection.
 const (
 	ExecutorAuto   = "auto"
@@ -290,6 +297,9 @@ type Config struct {
 	OpenSearch struct {
 		Domains string `yaml:"domains"`
 	} `yaml:"opensearch"`
+	BedrockAgentCore struct {
+		Runtimes string `yaml:"runtimes"`
+	} `yaml:"bedrockagentcore"`
 	// Init configures the init hooks: scripts that run at the boot, start,
 	// ready, and shutdown stages.
 	Init struct {
@@ -352,6 +362,7 @@ func Default() Config {
 	c.EKS.Clusters = ClustersRecords
 	c.ElastiCache.Caches = CachesRecords
 	c.OpenSearch.Domains = DomainsRecords
+	c.BedrockAgentCore.Runtimes = RuntimesRecords
 	c.RDS.Instances = InstancesRecords
 	c.Init.Dir = DefaultInitDir
 	c.Init.LocalStackDir = DefaultLocalStackInitDir
@@ -542,6 +553,10 @@ func (c *Config) Validate() error {
 
 	if c.OpenSearch.Domains != DomainsRecords && c.OpenSearch.Domains != DomainsDocker {
 		return fmt.Errorf("opensearch.domains must be records or docker")
+	}
+
+	if c.BedrockAgentCore.Runtimes != RuntimesRecords && c.BedrockAgentCore.Runtimes != RuntimesDocker {
+		return fmt.Errorf("bedrockagentcore.runtimes must be records or docker")
 	}
 
 	if p := c.IoT.MQTTSPort; p < 0 || p > 65535 || (p != 0 && (p == c.Server.Port || p == c.Server.ConsolePort)) {

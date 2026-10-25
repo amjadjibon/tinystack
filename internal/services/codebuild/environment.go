@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/dockercli"
 )
 
 func (s *Service) resolve(ctx context.Context, kind, ref string) (string, error) {
@@ -113,7 +114,7 @@ func (s *Service) environment(ctx context.Context, r *buildRecord, spec *buildsp
 
 	endpoint := s.endpoint
 	if r.Endpoint != "" {
-		endpoint = containerEndpoint(r.Endpoint)
+		endpoint = dockercli.ContainerEndpoint(r.Endpoint)
 	}
 
 	builtins := map[string]string{

@@ -38,6 +38,7 @@ import (
 	batchapi "github.com/amjadjibon/tinystack/internal/aws/generated/batch"
 	bedrockapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrock"
 	bedrockagentapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockagent"
+	bedrockagentcoreapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockagentcore"
 	bedrockagentcorecontrolapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockagentcorecontrol"
 	bedrockagentruntimeapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockagentruntime"
 	bedrockruntimeapi "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockruntime"
@@ -170,6 +171,8 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/batch"
 	"github.com/amjadjibon/tinystack/internal/services/bedrock"
 	"github.com/amjadjibon/tinystack/internal/services/bedrockagent"
+	"github.com/amjadjibon/tinystack/internal/services/bedrockagentcore"
+	agentcoredocker "github.com/amjadjibon/tinystack/internal/services/bedrockagentcore/docker"
 	"github.com/amjadjibon/tinystack/internal/services/bedrockagentcorecontrol"
 	"github.com/amjadjibon/tinystack/internal/services/bedrockagentruntime"
 	"github.com/amjadjibon/tinystack/internal/services/bedrockruntime"
@@ -521,6 +524,10 @@ func build(
 	a.onStop(s3FilesRecords.Stop)
 	agentCoreControl := bedrockagentcorecontrol.New(store, network, roles, keys)
 	a.onStop(agentCoreControl.Stop)
+	agentCoreData := bedrockagentcore.New(store, cfg.Identity.SecretKeys)
+	a.onStop(agentCoreData.Stop)
+	a.onReset(agentCoreData.Reset)
+	agentCoreControl.UseObserver(agentCoreData)
 	shieldRecords := shield.New(store)
 	accessAnalyzerRecords := accessanalyzer.New(store)
 	swfRecords := swf.New(store)
@@ -670,6 +677,7 @@ func build(
 		transcribeapi.Descriptor(transcribeRecords),
 		s3filesapi.Descriptor(s3FilesRecords),
 		bedrockagentcorecontrolapi.Descriptor(agentCoreControl),
+		bedrockagentcoreapi.Descriptor(agentCoreData),
 		mediaconnectapi.Descriptor(mediaConnectRecords),
 		accessanalyzerapi.Descriptor(accessAnalyzerRecords),
 		shieldapi.Descriptor(shieldRecords),
@@ -922,6 +930,14 @@ func build(
 	agentFixtures := bedrockagentruntime.Handler(store, cfg.Defaults.Account)
 	handler.Handle("bedrock-agent/fixtures", agentFixtures)
 	handler.Handle("bedrock-agent/fixtures/", agentFixtures)
+
+	if cfg.BedrockAgentCore.Runtimes == config.RuntimesDocker {
+		endpoint := "http://" + net.JoinHostPort("host.docker.internal", strconv.Itoa(cfg.Server.Port))
+		if err = agentCoreData.UseRuntime(ctx, agentcoredocker.New(), endpoint, logger); err != nil {
+			return nil, err
+		}
+	}
+
 	bedrockFixtures := bedrockruntime.Handler(store, cfg.Defaults.Account)
 	handler.Handle("bedrock/fixtures", bedrockFixtures)
 	handler.Handle("bedrock/fixtures/", bedrockFixtures)

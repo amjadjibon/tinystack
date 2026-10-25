@@ -964,6 +964,16 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// A REST JSON operation may stream its response body, such as InvokeAgentRuntime relaying a container's
+	// event stream, instead of returning it whole.
+	if c.meta.Protocol == catalog.RESTJSON {
+		if c.payload == nil {
+			c.payload = &request.Payload{}
+		}
+
+		ctx = request.WithPayload(ctx, c.payload)
+	}
+
 	output, err := op.Invoke(ctx, input)
 	if err != nil {
 		s.fail(w, c, err)
@@ -986,6 +996,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		return
 	case catalog.RESTJSON:
+		if c.payload != nil && c.payload.Body != nil {
+			response := restbindings.Encode(w, &binding, output)
+			w.WriteHeader(response.Status)
+			copyFlushing(w, c.payload.Body)
+
+			return
+		}
+
 		restjson.Write(w, &binding, output)
 		return
 	case catalog.RPCV2CBOR:
@@ -1087,4 +1105,25 @@ func (s *Server) record(r *http.Request, c *call, start time.Time, body *capturi
 		"injected", rec.Injected,
 		"duration_ms", rec.DurationMS,
 	)
+}
+
+// copyFlushing copies a streamed response body, flushing after each chunk so that server-sent events reach the
+// client as the service produces them.
+func copyFlushing(w http.ResponseWriter, body io.Reader) {
+	flush := http.NewResponseController(w)
+	buffer := make([]byte, 32<<10)
+	for {
+		n, err := body.Read(buffer)
+		if n > 0 {
+			if _, writeErr := w.Write(buffer[:n]); writeErr != nil {
+				return
+			}
+
+			_ = flush.Flush()
+		}
+
+		if err != nil {
+			return
+		}
+	}
 }

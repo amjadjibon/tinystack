@@ -33,6 +33,8 @@ func TestLoad(t *testing.T) {
 		{"bad databases", "rds:\n  instances: podman", false},
 		{"docker domains", "opensearch:\n  domains: docker", true},
 		{"bad domains", "opensearch:\n  domains: podman", false},
+		{"docker runtimes", "bedrockagentcore:\n  runtimes: docker", true},
+		{"bad runtimes", "bedrockagentcore:\n  runtimes: podman", false},
 		{"bad containers", "ecs:\n  containers: podman", false},
 		{"k3s clusters", "eks:\n  clusters: k3s", true},
 		{"bad clusters", "eks:\n  clusters: kind", false},

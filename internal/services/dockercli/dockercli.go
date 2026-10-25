@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -31,6 +32,21 @@ func Run(ctx context.Context, stdin io.Reader, args ...string) (string, error) {
 // Gone reports whether err is Run's error for a container that does not exist.
 func Gone(err error) bool {
 	return err != nil && strings.Contains(strings.ToLower(err.Error()), "no such")
+}
+
+// ContainerEndpoint rewrites the endpoint a client reached TinyStack at so a container can reach it too: a loopback
+// host becomes host.docker.internal, which the containers resolve with --add-host=host.docker.internal:host-gateway.
+func ContainerEndpoint(endpoint string) string {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return endpoint
+	}
+
+	if u.Hostname() == "127.0.0.1" || u.Hostname() == "localhost" || u.Hostname() == "::1" {
+		u.Host = "host.docker.internal:" + u.Port()
+	}
+
+	return u.String()
 }
 
 // HostPort returns the loopback host port Docker allocated for a published TCP port.

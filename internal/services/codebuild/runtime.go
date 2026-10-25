@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -438,17 +437,4 @@ func (s *Service) execute(parent context.Context, key string, r *buildRecord) {
 	if !failed {
 		finalStatus = "SUCCEEDED"
 	}
-}
-
-func containerEndpoint(endpoint string) string {
-	u, err := url.Parse(endpoint)
-	if err != nil {
-		return endpoint
-	}
-
-	if u.Hostname() == "127.0.0.1" || u.Hostname() == "localhost" || u.Hostname() == "::1" {
-		u.Host = "host.docker.internal:" + u.Port()
-	}
-
-	return u.String()
 }
