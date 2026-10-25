@@ -195,15 +195,21 @@ func describeGlobal(
 		return api.GlobalSecondaryIndexDescription{}, err
 	}
 
+	warm := tableWarmThroughput(pt)
 	return api.GlobalSecondaryIndexDescription{
 		IndexName:             g.IndexName,
 		KeySchema:             g.KeySchema,
 		Projection:            g.Projection,
 		IndexStatus:           new("ACTIVE"),
 		ProvisionedThroughput: pt,
-		IndexSizeBytes:        new(int64(0)),
-		ItemCount:             new(int64(0)),
-		IndexArn:              new(tableArn + "/index/" + *g.IndexName),
+		WarmThroughput: &api.GlobalSecondaryIndexWarmThroughputDescription{
+			ReadUnitsPerSecond:  warm.ReadUnitsPerSecond,
+			WriteUnitsPerSecond: warm.WriteUnitsPerSecond,
+			Status:              warm.Status,
+		},
+		IndexSizeBytes: new(int64(0)),
+		ItemCount:      new(int64(0)),
+		IndexArn:       new(tableArn + "/index/" + *g.IndexName),
 	}, nil
 }
 

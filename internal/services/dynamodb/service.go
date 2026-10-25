@@ -170,6 +170,7 @@ func (s *Service) CreateTable(ctx context.Context, in *api.CreateTableInput) (*a
 			AttributeDefinitions:   in.AttributeDefinitions,
 			BillingModeSummary:     &api.BillingModeSummary{BillingMode: &mode},
 			ProvisionedThroughput:  tableThroughput,
+			WarmThroughput:         tableWarmThroughput(tableThroughput),
 			ItemCount:              new(int64(0)),
 			TableSizeBytes:         new(int64(0)),
 			GlobalSecondaryIndexes: globals,

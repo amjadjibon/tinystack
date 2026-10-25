@@ -6405,7 +6405,8 @@
         "StreamSpecification",
         "LatestStreamLabel",
         "LatestStreamArn",
-        "RestoreSummary"
+        "RestoreSummary",
+        "WarmThroughput"
       ],
       "Tag": [
         "Key",
@@ -6476,7 +6477,8 @@
         "ProvisionedThroughput",
         "IndexSizeBytes",
         "ItemCount",
-        "IndexArn"
+        "IndexArn",
+        "WarmThroughput"
       ],
       "LocalSecondaryIndexDescription": [
         "IndexName",
@@ -6878,6 +6880,16 @@
       ],
       "UpdateKinesisStreamingConfiguration": [
         "ApproximateCreationDateTimePrecision"
+      ],
+      "TableWarmThroughputDescription": [
+        "ReadUnitsPerSecond",
+        "WriteUnitsPerSecond",
+        "Status"
+      ],
+      "GlobalSecondaryIndexWarmThroughputDescription": [
+        "ReadUnitsPerSecond",
+        "WriteUnitsPerSecond",
+        "Status"
       ]
     }
   },

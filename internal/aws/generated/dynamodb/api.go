@@ -74,15 +74,22 @@ type ProvisionedThroughputDescription struct {
 	WriteCapacityUnits     *int64   `json:"WriteCapacityUnits,omitempty"`
 }
 
+type GlobalSecondaryIndexWarmThroughputDescription struct {
+	ReadUnitsPerSecond  *int64  `json:"ReadUnitsPerSecond,omitempty"`
+	WriteUnitsPerSecond *int64  `json:"WriteUnitsPerSecond,omitempty"`
+	Status              *string `json:"Status,omitempty"`
+}
+
 type GlobalSecondaryIndexDescription struct {
-	IndexName             *string                           `json:"IndexName,omitempty"`
-	KeySchema             []KeySchemaElement                `json:"KeySchema,omitempty"`
-	Projection            *Projection                       `json:"Projection,omitempty"`
-	IndexStatus           *string                           `json:"IndexStatus,omitempty"`
-	ProvisionedThroughput *ProvisionedThroughputDescription `json:"ProvisionedThroughput,omitempty"`
-	IndexSizeBytes        *int64                            `json:"IndexSizeBytes,omitempty"`
-	ItemCount             *int64                            `json:"ItemCount,omitempty"`
-	IndexArn              *string                           `json:"IndexArn,omitempty"`
+	IndexName             *string                                        `json:"IndexName,omitempty"`
+	KeySchema             []KeySchemaElement                             `json:"KeySchema,omitempty"`
+	Projection            *Projection                                    `json:"Projection,omitempty"`
+	IndexStatus           *string                                        `json:"IndexStatus,omitempty"`
+	ProvisionedThroughput *ProvisionedThroughputDescription              `json:"ProvisionedThroughput,omitempty"`
+	IndexSizeBytes        *int64                                         `json:"IndexSizeBytes,omitempty"`
+	ItemCount             *int64                                         `json:"ItemCount,omitempty"`
+	IndexArn              *string                                        `json:"IndexArn,omitempty"`
+	WarmThroughput        *GlobalSecondaryIndexWarmThroughputDescription `json:"WarmThroughput,omitempty"`
 }
 
 type LocalSecondaryIndexDescription struct {
@@ -99,6 +106,12 @@ type RestoreSummary struct {
 	SourceTableArn    *string  `json:"SourceTableArn,omitempty"`
 	RestoreDateTime   *float64 `json:"RestoreDateTime,omitempty"`
 	RestoreInProgress *bool    `json:"RestoreInProgress,omitempty"`
+}
+
+type TableWarmThroughputDescription struct {
+	ReadUnitsPerSecond  *int64  `json:"ReadUnitsPerSecond,omitempty"`
+	WriteUnitsPerSecond *int64  `json:"WriteUnitsPerSecond,omitempty"`
+	Status              *string `json:"Status,omitempty"`
 }
 
 type TableDescription struct {
@@ -119,6 +132,7 @@ type TableDescription struct {
 	LatestStreamLabel      *string                           `json:"LatestStreamLabel,omitempty"`
 	LatestStreamArn        *string                           `json:"LatestStreamArn,omitempty"`
 	RestoreSummary         *RestoreSummary                   `json:"RestoreSummary,omitempty"`
+	WarmThroughput         *TableWarmThroughputDescription   `json:"WarmThroughput,omitempty"`
 }
 
 type CreateTableOutput struct {
