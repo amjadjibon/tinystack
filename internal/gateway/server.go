@@ -30,6 +30,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/restxml"
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/rpcv2cbor"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/aws/sigv4"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/recent"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
@@ -384,6 +385,17 @@ func (s *Server) identify(r *http.Request, m *request.Metadata) (string, error) 
 
 	m.AccessKey = a.AccessKey
 	m.Region = a.Region
+	if a.Algorithm == sigv4.AlgorithmV4A {
+		regionSet := r.Header.Get("X-Amz-Region-Set")
+		if regionSet == "" {
+			regionSet = r.URL.Query().Get("X-Amz-Region-Set")
+		}
+		first, _, _ := strings.Cut(regionSet, ",")
+		m.Region = strings.TrimSpace(first)
+		if m.Region == "" || strings.Contains(m.Region, "*") {
+			m.Region = s.cfg.Defaults.Region
+		}
+	}
 	m.Service = a.Service
 	// A 12-digit key is provisional: resolveCredentials lets issued credentials win.
 	if account, _, ok := s.keyAccount(m.AccessKey); ok {

@@ -17,8 +17,10 @@ import (
 )
 
 const (
-	// Algorithm is the only signing algorithm TinyStack accepts.
+	// Algorithm identifies SigV4 HMAC signatures.
 	Algorithm = "AWS4-HMAC-SHA256"
+	// AlgorithmV4A identifies SigV4a scopes; verification is not implemented.
+	AlgorithmV4A = "AWS4-ECDSA-P256-SHA256"
 	// MaxSkew is how far a request's signing time may be from the server clock.
 	MaxSkew = 15 * time.Minute
 	// MaxExpires is the longest a presigned URL may be valid.
@@ -49,6 +51,7 @@ var (
 
 // Authorization is a parsed SigV4 Authorization header or presigned URL.
 type Authorization struct {
+	Algorithm                                   string
 	AccessKey, Date, Region, Service, Signature string
 	SignedHeaders                               []string
 	// Expires is how long a presigned URL is valid; it is zero for a header.
@@ -58,12 +61,12 @@ type Authorization struct {
 // Parse parses an Authorization header. SignedHeaders and Signature may be
 // empty; Verify rejects them.
 func Parse(header string) (*Authorization, error) {
-	fields, ok := strings.CutPrefix(header, Algorithm+" ")
-	if !ok {
+	algorithm, fields, ok := strings.Cut(header, " ")
+	if !ok || (algorithm != Algorithm && algorithm != AlgorithmV4A) {
 		return nil, errors.New("expected " + Algorithm)
 	}
 
-	a := &Authorization{}
+	a := &Authorization{Algorithm: algorithm}
 	credential := ""
 	for field := range strings.SplitSeq(fields, ",") {
 		k, v, _ := strings.Cut(strings.TrimSpace(field), "=")
@@ -85,6 +88,14 @@ func Parse(header string) (*Authorization, error) {
 // "<access key>/<date>/<region>/<service>/aws4_request".
 func (a *Authorization) setCredential(credential string) error {
 	scope := strings.Split(credential, "/")
+	if a.Algorithm == AlgorithmV4A {
+		if len(scope) != 4 || scope[0] == "" || len(scope[1]) != 8 || scope[2] == "" || scope[3] != terminator {
+			return errors.New("malformed SigV4a credential scope")
+		}
+		a.AccessKey, a.Date, a.Service = scope[0], scope[1], scope[2]
+		return nil
+	}
+
 	if len(scope) != 5 || scope[0] == "" || len(scope[1]) != 8 || scope[2] == "" || scope[3] == "" ||
 		scope[4] != terminator {
 		return errors.New("malformed credential scope")
@@ -104,7 +115,7 @@ func Presigned(query url.Values) bool {
 func QueryParameter(name string) bool {
 	switch name {
 	case queryAlgorithm, queryCredential, queryDate, queryExpires, querySignedHeaders, querySignature,
-		QuerySecurityToken:
+		QuerySecurityToken, "X-Amz-Region-Set":
 		return true
 	default:
 		return false
@@ -114,7 +125,8 @@ func QueryParameter(name string) bool {
 // ParseQuery parses the signature of a presigned URL. Signature may be empty;
 // Verify rejects it.
 func ParseQuery(query url.Values, missingExpires time.Duration) (*Authorization, error) {
-	if query.Get(queryAlgorithm) != Algorithm {
+	algorithm := query.Get(queryAlgorithm)
+	if algorithm != Algorithm && algorithm != AlgorithmV4A {
 		return nil, errors.New("expected " + queryAlgorithm + "=" + Algorithm)
 	}
 
@@ -128,7 +140,7 @@ func ParseQuery(query url.Values, missingExpires time.Duration) (*Authorization,
 		expires = time.Duration(seconds) * time.Second
 	}
 
-	a := &Authorization{Signature: query.Get(querySignature), Expires: expires}
+	a := &Authorization{Algorithm: algorithm, Signature: query.Get(querySignature), Expires: expires}
 	if headers := query.Get(querySignedHeaders); headers != "" {
 		a.SignedHeaders = strings.Split(headers, ";")
 	}
@@ -147,6 +159,10 @@ func (a *Authorization) scope() string {
 // valid from its signing time until it expires. S3 signs its URI path as sent;
 // other services encode it once more.
 func Verify(r *http.Request, a *Authorization, secret, payloadHash string, s3 bool, now time.Time) error {
+	if a.Algorithm == AlgorithmV4A {
+		return errors.Join(ErrMalformed, errors.New("SigV4a verification is not supported yet"))
+	}
+
 	if a.Signature == "" || len(a.SignedHeaders) == 0 || !slices.Contains(a.SignedHeaders, "host") {
 		return errors.Join(ErrMalformed, errors.New("the signature must sign at least the host header"))
 	}

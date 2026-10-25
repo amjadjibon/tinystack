@@ -142,6 +142,15 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request, c *call) e
 		return authError(protocol, missingToken)
 	}
 
+	if a.Algorithm == sigv4.AlgorithmV4A {
+		failure := authError(protocol, badSignature)
+		var signatureError *awserror.Error
+		if errors.As(failure, &signatureError) {
+			signatureError.Message = "SigV4a verification is not supported yet"
+		}
+		return failure
+	}
+
 	secret, ok := s.cfg.Identity.SecretKeys[a.AccessKey]
 	if !ok {
 		// An issued key must come with its token: a session's, or none for an
