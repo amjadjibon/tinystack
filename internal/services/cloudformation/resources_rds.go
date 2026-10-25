@@ -93,7 +93,7 @@ func init() {
 				return "", nil, err
 			}
 
-			out, err = readyRDS(ctx, c, id, out)
+			out, err = readyRDS(ctx, c, id, out, false)
 			if err != nil {
 				return "", nil, err
 			}
@@ -179,34 +179,46 @@ func rdsAttributes(out map[string]any) map[string]any {
 	return attrs
 }
 
-// readyRDS keeps stack outputs usable when the database runtime starts asynchronously.
-func readyRDS(ctx context.Context, c *client, id string, out map[string]any) (map[string]any, error) {
+// readyRDS keeps stack outputs usable when an instance or cluster runtime starts asynchronously.
+func readyRDS(ctx context.Context, c *client, id string, out map[string]any, cluster bool) (map[string]any, error) {
+	object, status, describe, list, member, noun := "DBInstance", "DBInstanceStatus", "DescribeDBInstances",
+		"DBInstances", memberDBInstanceIdentifier, "instance"
+	if cluster {
+		object, status, describe, list, member, noun = objectDBCluster, memberStatus, "DescribeDBClusters", "DBClusters",
+			memberDBClusterIdentifier, "cluster"
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	for {
-		db, _ := out["DBInstance"].(map[string]any)
-		status, _ := db["DBInstanceStatus"].(string)
-		if status == "available" {
+		db, _ := out[object].(map[string]any)
+		state, _ := db[status].(string)
+		if state == "available" {
 			return out, nil
 		}
-		if status == "failed" {
-			return nil, fmt.Errorf("RDS instance %s failed to start", id)
+
+		if state == "failed" {
+			return nil, fmt.Errorf("RDS %s %s failed to start", noun, id)
 		}
+
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		case <-ticker.C:
 		}
-		described, err := c.call(ctx, "rds", "DescribeDBInstances", map[string]any{memberDBInstanceIdentifier: id})
+
+		described, err := c.call(ctx, "rds", describe, map[string]any{member: id})
 		if err != nil {
 			return nil, err
 		}
-		instances, _ := described["DBInstances"].([]any)
-		if len(instances) != 1 {
-			return nil, fmt.Errorf("RDS instance %s disappeared during creation", id)
+
+		found, _ := described[list].([]any)
+		if len(found) != 1 {
+			return nil, fmt.Errorf("RDS %s %s disappeared during creation", noun, id)
 		}
-		out = map[string]any{"DBInstance": instances[0]}
+
+		out = map[string]any{object: found[0]}
 	}
 }

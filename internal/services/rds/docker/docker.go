@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"maps"
 	"net"
+	"net/http"
 	"slices"
 	"strconv"
 	"strings"
@@ -96,15 +97,19 @@ func (r *Runtime) Ensure(ctx context.Context, spec *rds.Spec) (rds.Started, erro
 		}
 
 		path := "/var/lib/mysql"
-		if spec.Engine == rds.EnginePostgres {
+		switch spec.Engine {
+		case rds.EnginePostgres:
 			path = "/var/lib/postgresql/data"
 			args = append(args, "-e", "POSTGRES_USER="+spec.Username, "-e", "POSTGRES_PASSWORD="+spec.Password,
 				"-e", "POSTGRES_DB="+spec.Database)
-		} else if spec.Engine == rds.EngineDocDB {
+		case rds.EngineNeptune:
+			// The stock TinkerGraph is in-memory. This owned volume holds no graph data.
+			path = "/data"
+		case rds.EngineDocDB:
 			path = "/data/db"
-			args = append(args, "-e", "MONGO_INITDB_ROOT_USERNAME="+spec.Username,
+			args = append(args, "--tmpfs", "/data/configdb", "-e", "MONGO_INITDB_ROOT_USERNAME="+spec.Username,
 				"-e", "MONGO_INITDB_ROOT_PASSWORD="+spec.Password)
-		} else {
+		default:
 			prefix := "MYSQL_"
 			if spec.Engine == rds.EngineMariaDB {
 				prefix = "MARIADB_"
@@ -117,7 +122,14 @@ func (r *Runtime) Ensure(ctx context.Context, spec *rds.Spec) (rds.Started, erro
 			}
 		}
 
-		args = append(args, "-v", spec.Volume+":"+path, "--", spec.Image)
+		args = append(args, "-v", spec.Volume+":"+path)
+		if spec.Engine == rds.EngineNeptune {
+			// Bound JIT startup work, including when Docker emulates the amd64-only 3.6.2 image.
+			args = append(args, "-e", "JAVA_OPTIONS=-XX:TieredStopAtLevel=1",
+				"--entrypoint", "sh", "--", spec.Image, "-c", gremlinStartup)
+		} else {
+			args = append(args, "--", spec.Image)
+		}
 		id, err = dockercli.Run(ctx, nil, args...)
 		if err != nil {
 			return rds.Started{}, err
@@ -141,6 +153,10 @@ func (r *Runtime) Probe(ctx context.Context, spec *rds.Spec, started rds.Started
 
 	if closeErr := conn.Close(); closeErr != nil {
 		return closeErr
+	}
+
+	if spec.Engine == rds.EngineNeptune {
+		return probeGremlin(ctx, started.Port)
 	}
 
 	args := []string{execCommand, spec.Name, "pg_isready", "-U", spec.Username, "-d", spec.Database}
@@ -257,27 +273,6 @@ func (r *Runtime) Close() {
 	}
 }
 
-// Validate resolves the requested tag on the Docker host before committing a cluster record.
-// Never substitute another MongoDB major when an image is unavailable for this host.
-func (r *Runtime) Validate(ctx context.Context, spec *rds.Spec) error {
-	if spec.Engine != rds.EngineDocDB {
-		return nil
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
-	defer cancel()
-	if _, err := dockercli.Run(ctx, nil, "pull", spec.Image); err != nil {
-		return fmt.Errorf("DocumentDB image %s cannot run on this Docker host: %w", spec.Image, err)
-	}
-
-	if _, err := dockercli.Run(ctx, nil, "run", "--rm", "--network", "none", "--entrypoint", "mongod",
-		spec.Image, "--version"); err != nil {
-		return fmt.Errorf("DocumentDB image %s cannot execute on this Docker host: %w", spec.Image, err)
-	}
-
-	return nil
-}
-
 func mongoCommand(spec *rds.Spec, script string) []string {
 	shell := "mongo"
 	if spec.Image == "mongo:5.0" {
@@ -289,4 +284,34 @@ func mongoCommand(spec *rds.Spec, script string) []string {
 		"--username", spec.Username, "--password", spec.Password, "--authenticationDatabase", "admin",
 		"admin", "--eval", script,
 	}
+}
+
+// Enable Gremlin HTTP alongside WebSocket; the image entrypoint sets the container's bind address.
+const gremlinStartup = `sed -i 's/WebSocketChannelizer/WsAndHttpChannelizer/' conf/gremlin-server.yaml &&
+exec /docker-entrypoint.sh conf/gremlin-server.yaml`
+
+func probeGremlin(ctx context.Context, port int64) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		fmt.Sprintf("http://127.0.0.1:%d/gremlin", port), strings.NewReader(`{"gremlin":"g.inject(1)"}`))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer func() { _ = response.Body.Close() }()
+	var result struct{ Status struct{ Code int } }
+	if err := json.NewDecoder(response.Body).Decode(&result); err != nil {
+		return err
+	}
+
+	if response.StatusCode != http.StatusOK || result.Status.Code != http.StatusOK {
+		return fmt.Errorf("gremlin readiness failed: HTTP %d, Gremlin %d", response.StatusCode, result.Status.Code)
+	}
+
+	return nil
 }

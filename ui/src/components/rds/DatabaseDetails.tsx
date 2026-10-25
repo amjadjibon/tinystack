@@ -63,12 +63,20 @@ export function DatabaseDetails({
 	const host = d.Endpoint?.Address ?? "",
 		port = d.Endpoint?.Port ?? 0,
 		endpoint = port ? `${host}:${port}` : "Pending";
-	const postgres = d.Engine === "postgres",
+	const postgres = d.Engine === "postgres" || d.Engine === "aurora-postgresql",
 		db = d.DBName || (postgres ? d.MasterUsername : "");
-	const command = postgres
+	let command = postgres
 		? `psql -h '${host}' -p ${port} -U '${d.MasterUsername}' -d '${db}' -W`
 		: `mysql -h '${host}' -P ${port} -u '${d.MasterUsername}' -p${db ? ` '${db}'` : ""}`;
-	const url = `${postgres ? "postgresql" : "mysql"}://${encodeURIComponent(d.MasterUsername)}:<PASSWORD>@${host}:${port}/${encodeURIComponent(db)}`;
+	let url = `${postgres ? "postgresql" : "mysql"}://${encodeURIComponent(d.MasterUsername)}:<PASSWORD>@${host}:${port}/${encodeURIComponent(db)}`;
+	if (d.Engine === "docdb") {
+		url = `mongodb://${encodeURIComponent(d.MasterUsername)}:<PASSWORD>@${host}:${port}/?authSource=admin&tls=false`;
+		command = `mongosh 'mongodb://${host}:${port}/?authSource=admin&tls=false' --username '${d.MasterUsername}' --password`;
+	} else if (d.Engine === "neptune") {
+		url = `http://${host}:${port}/gremlin`;
+		command = `curl '${url}' -H 'Content-Type: application/json' -d '{"gremlin":"g.inject(1)"}'`;
+	}
+
 	return (
 		<SpaceBetween size="l">
 			<Header

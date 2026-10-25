@@ -55,3 +55,39 @@ func TestDocumentClusterRuntime(t *testing.T) {
 		})
 	}
 }
+
+func TestNeptuneClusterRuntime(t *testing.T) {
+	for version, image := range map[string]string{
+		"1.2.1.0": "tinkerpop/gremlin-server:3.6.2",
+		"1.3.2.0": "tinkerpop/gremlin-server:3.7.1",
+	} {
+		t.Run(version, func(t *testing.T) {
+			s := New(memory.New(nil, nil))
+			rt := &fakeRuntime{ready: true}
+			s.runtime = rt
+			in := clusterInput("graph", EngineNeptune)
+			in.EngineVersion = new(version)
+			if _, err := s.CreateDBCluster(runtimeContext(), in); err != nil {
+				t.Fatal(err)
+			}
+
+			s.visit(runtimeContext())
+			if len(rt.specs) != 1 || rt.specs[0].Image != image || rt.specs[0].Engine != EngineNeptune ||
+				rt.specs[0].Port != 8182 || rt.specs[0].Password != "" {
+				t.Fatal(rt.specs)
+			}
+		})
+	}
+}
+
+func TestClusterRuntimeRejectsCustomPort(t *testing.T) {
+	for _, engine := range []string{EngineDocDB, EngineNeptune} {
+		s := New(memory.New(nil, nil))
+		s.runtime = &fakeRuntime{}
+		in := clusterInput("custom-port", engine)
+		in.Port = new(int64(27018))
+		if _, err := s.CreateDBCluster(runtimeContext(), in); err == nil {
+			t.Fatal("custom runtime port accepted", engine)
+		}
+	}
+}

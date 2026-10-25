@@ -16,9 +16,7 @@ import (
 
 const (
 	EngineDocDB     = "docdb"
-	engineDocDB     = EngineDocDB
 	EngineNeptune   = "neptune"
-	engineNeptune   = EngineNeptune
 	clusterIDFilter = "db-cluster-id"
 )
 
@@ -31,9 +29,9 @@ func clusterEngine(engine, version string) (resolved string, port int64, err err
 		versions, port = []string{"17.7", "16.11", "16.6", "15.10"}, 5432
 	case EngineAuroraMySQL:
 		versions, port = []string{"8.0.mysql_aurora.3.12.0", "8.0.mysql_aurora.3.11.1", "8.0.mysql_aurora.3.08.0"}, 3306
-	case engineDocDB:
+	case EngineDocDB:
 		versions, port = []string{"5.0", "4.0", "3.6"}, 27017
-	case engineNeptune:
+	case EngineNeptune:
 		versions, port = []string{"1.3.2.0", "1.2.1.0"}, 8182
 	default:
 		return "", 0, invalid("Unsupported cluster engine")
@@ -52,7 +50,7 @@ func clusterEngine(engine, version string) (resolved string, port int64, err err
 
 // Records mode validates DocumentDB credentials without retaining them.
 func checkClusterPassword(engine string, password *string, required bool) error {
-	if engine == engineNeptune {
+	if engine == EngineNeptune {
 		if password != nil {
 			return invalid("MasterUserPassword is not supported by Neptune")
 		}
@@ -97,7 +95,7 @@ func checkCluster(c *api.DBCluster) error {
 	}
 
 	switch {
-	case engine == engineDocDB:
+	case engine == EngineDocDB:
 		username := common.Value(c.MasterUsername)
 		if !clusterUsername.MatchString(username) || len(username) > 63 || strings.EqualFold(username, "admin") {
 			return invalid("Invalid MasterUsername (admin is reserved by DocumentDB)")
@@ -210,11 +208,15 @@ func (s *Service) CreateDBCluster(
 		return nil, versionErr
 	}
 
-	if !aurora(engine) && !(engine == engineDocDB && s.runtime != nil) && in.ManageMasterUserPassword != nil {
+	if s.runtime != nil && !aurora(engine) && in.Port != nil && *in.Port != port {
+		return nil, invalid("Custom cluster engine ports are unsupported in Docker mode")
+	}
+
+	if !aurora(engine) && (engine != EngineDocDB || s.runtime == nil) && in.ManageMasterUserPassword != nil {
 		return nil, invalid("ManageMasterUserPassword requires Aurora")
 	}
 
-	if common.Value(in.ManageMasterUserPassword) && (engine == engineNeptune || in.MasterUserPassword != nil) {
+	if common.Value(in.ManageMasterUserPassword) && (engine == EngineNeptune || in.MasterUserPassword != nil) {
 		return nil, invalid("ManageMasterUserPassword requires Aurora and conflicts with MasterUserPassword")
 	}
 
@@ -290,18 +292,8 @@ func (s *Service) CreateDBCluster(
 		Since:        time.Now().UTC(),
 	}
 
-	if !aurora(engine) && (s.runtime == nil || engine == engineNeptune) {
+	if !aurora(engine) && (s.runtime == nil || engine == EngineNeptune) {
 		r.Password, r.RootPassword = "", ""
-	}
-
-	if s.runtime != nil {
-		if validator, ok := s.runtime.(interface {
-			Validate(context.Context, *Spec) error
-		}); ok {
-			if err := validator.Validate(ctx, s.clusterSpec(scope, r)); err != nil {
-				return nil, invalid(err.Error())
-			}
-		}
 	}
 
 	s.mu.Lock()

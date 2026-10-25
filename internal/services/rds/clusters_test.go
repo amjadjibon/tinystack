@@ -18,7 +18,7 @@ func clusterInput(id, engine string) *api.CreateDBClusterMessage {
 		Tags: []api.Tag{{Key: new("owner"), Value: new("test")}},
 	}
 
-	if engine == engineDocDB {
+	if engine == EngineDocDB {
 		in.MasterUsername, in.MasterUserPassword = new("masteruser"), new(strings.Repeat("p", 100))
 	}
 
@@ -26,12 +26,11 @@ func clusterInput(id, engine string) *api.CreateDBClusterMessage {
 }
 
 func TestClusterLifecycle(t *testing.T) {
-	for _, engine := range []string{engineDocDB, engineNeptune} {
+	for _, engine := range []string{EngineDocDB, EngineNeptune} {
 		t.Run(engine, func(t *testing.T) {
 			ctx := runtimeContext()
 			store := memory.New(nil, nil)
 			s := New(store)
-			rt := &fakeRuntime{ready: true}
 			created, err := s.CreateDBCluster(ctx, clusterInput("Mixed-Cluster", engine))
 			if err != nil {
 				t.Fatal(err)
@@ -146,10 +145,6 @@ func TestClusterLifecycle(t *testing.T) {
 				t.Fatal(tags, err)
 			}
 
-			if len(rt.specs) != 0 {
-				t.Fatal("member reached runtime")
-			}
-
 			_, err = s.ModifyDBInstance(ctx, &api.ModifyDBInstanceMessage{
 				DBInstanceIdentifier: new("member"),
 				DBInstanceClass:      new("db.r5.xlarge"), ApplyImmediately: new(false),
@@ -159,7 +154,7 @@ func TestClusterLifecycle(t *testing.T) {
 			}
 
 			deleted, err := s.DeleteDBInstance(ctx, &api.DeleteDBInstanceMessage{DBInstanceIdentifier: new("member")})
-			if err != nil || common.Value(deleted.DBInstance.DBInstanceStatus) != "deleting" || len(rt.removed) != 0 {
+			if err != nil || common.Value(deleted.DBInstance.DBInstanceStatus) != "deleting" {
 				t.Fatal(deleted, err)
 			}
 
@@ -224,7 +219,7 @@ func TestClusterValidationAndPagination(t *testing.T) {
 	}
 
 	for i := range 21 {
-		in := clusterInput(fmt.Sprintf("cluster-%02d", i), engineDocDB)
+		in := clusterInput(fmt.Sprintf("cluster-%02d", i), EngineDocDB)
 		if _, err := s.CreateDBCluster(ctx, in); err != nil {
 			t.Fatal(err)
 		}
@@ -268,7 +263,7 @@ func TestClusterValidationAndPagination(t *testing.T) {
 		t.Fatal("invalid marker accepted")
 	}
 
-	in := clusterInput("invalid", engineDocDB)
+	in := clusterInput("invalid", EngineDocDB)
 	for _, mutate := range []func(*api.CreateDBClusterMessage){
 		func(in *api.CreateDBClusterMessage) { in.DBClusterIdentifier = new("a--b") },
 		func(in *api.CreateDBClusterMessage) { in.MasterUsername = new("admin") },
@@ -302,7 +297,7 @@ func TestClusterPasswordNotStored(t *testing.T) {
 	ctx := runtimeContext()
 	store := memory.New(nil, nil)
 	s := New(store)
-	in := clusterInput("secret", engineDocDB)
+	in := clusterInput("secret", EngineDocDB)
 	if _, err := s.CreateDBCluster(ctx, in); err != nil {
 		t.Fatal(err)
 	}

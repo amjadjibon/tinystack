@@ -89,6 +89,16 @@ func (s *Service) clusterSpec(scope request.Scope, r *record) *Spec {
 		engine, image, port = EngineDocDB, "mongo:"+common.Value(c.EngineVersion), 27017
 	}
 
+	if common.Value(c.Engine) == EngineNeptune {
+		// AWS release compatibility: 1.2.1.0 uses TinkerPop 3.6.2; 1.3.2.0 uses 3.7.1.
+		// https://docs.aws.amazon.com/neptune/latest/userguide/engine-releases-1.2.1.0.html
+		// https://docs.aws.amazon.com/neptune/latest/userguide/engine-releases-1.3.2.0.html
+		engine, image, port = EngineNeptune, "tinkerpop/gremlin-server:3.7.1", 8182
+		if common.Value(c.EngineVersion) == "1.2.1.0" {
+			image = "tinkerpop/gremlin-server:3.6.2"
+		}
+	}
+
 	resourceARN := arn(scope, r.Kind, r.Name)
 	hash := sha256.Sum256([]byte(resourceARN))
 	name := fmt.Sprintf("tinystack-rds-%x", hash[:16])

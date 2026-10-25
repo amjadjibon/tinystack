@@ -3,13 +3,12 @@ package cloudformation
 import (
 	"context"
 	"errors"
-	"fmt"
 	"reflect"
 	"strings"
-	"time"
 )
 
 const (
+	objectDBCluster             = "DBCluster"
 	clusterEngineDocDB          = "docdb"
 	clusterEngineNeptune        = "neptune"
 	docDBClusterType            = "AWS::DocDB::DBCluster"
@@ -38,7 +37,7 @@ func clusterProvider(engine string, isCluster bool) *resourceType {
 	attributes := []string{propertyEndpoint, memberPort}
 	mutable := []string{memberDBInstanceClass}
 	if isCluster {
-		name, object, createOp, modifyOp, deleteOp = memberDBClusterIdentifier, "DBCluster", "CreateDBCluster",
+		name, object, createOp, modifyOp, deleteOp = memberDBClusterIdentifier, objectDBCluster, "CreateDBCluster",
 			"ModifyDBCluster", "DeleteDBCluster"
 		properties = []string{
 			memberDBClusterIdentifier, memberEngineVersion, memberDBSubnetGroupName,
@@ -71,12 +70,7 @@ func clusterProvider(engine string, isCluster bool) *resourceType {
 				return "", nil, err
 			}
 
-			if isCluster {
-				out, err = readyDBCluster(ctx, c, id, out)
-			} else {
-				out, err = readyRDS(ctx, c, id, out)
-			}
-
+			out, err = readyRDS(ctx, c, id, out, isCluster)
 			if err != nil {
 				return "", nil, err
 			}
@@ -154,7 +148,7 @@ func clusterProvider(engine string, isCluster bool) *resourceType {
 
 func clusterAttributes(out map[string]any, object string) map[string]any {
 	record, _ := out[object].(map[string]any)
-	if object == "DBCluster" {
+	if object == objectDBCluster {
 		return map[string]any{
 			"ClusterResourceId": record["DbClusterResourceId"], propertyEndpoint: record[propertyEndpoint],
 			"ReadEndpoint": record["ReaderEndpoint"], memberPort: record[memberPort],
@@ -232,42 +226,5 @@ func clusterRefreshMemberAttributes(st *stack, parent *resource) {
 			member.Attributes[propertyEndpoint] = parent.Attributes[propertyEndpoint]
 			member.Attributes[memberPort] = parent.Attributes[memberPort]
 		}
-	}
-}
-
-// readyDBCluster publishes endpoints only after the shared runtime has passed readiness.
-func readyDBCluster(ctx context.Context, c *client, id string, out map[string]any) (map[string]any, error) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
-	defer cancel()
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-	for {
-		cluster, _ := out["DBCluster"].(map[string]any)
-		status, _ := cluster["Status"].(string)
-		if status == "available" {
-			return out, nil
-		}
-
-		if status == "failed" {
-			return nil, fmt.Errorf("RDS cluster %s failed to start", id)
-		}
-
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-ticker.C:
-		}
-
-		described, err := c.call(ctx, "rds", "DescribeDBClusters", map[string]any{memberDBClusterIdentifier: id})
-		if err != nil {
-			return nil, err
-		}
-
-		clusters, _ := described["DBClusters"].([]any)
-		if len(clusters) != 1 {
-			return nil, fmt.Errorf("RDS cluster %s disappeared during creation", id)
-		}
-
-		out = map[string]any{"DBCluster": clusters[0]}
 	}
 }

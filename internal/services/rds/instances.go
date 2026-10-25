@@ -70,7 +70,7 @@ func (s *Service) CreateDBInstance(
 		return nil, err
 	}
 
-	if common.Value(in.Engine) == engineDocDB || common.Value(in.Engine) == engineNeptune ||
+	if common.Value(in.Engine) == EngineDocDB || common.Value(in.Engine) == EngineNeptune ||
 		aurora(common.Value(in.Engine)) {
 		return s.createClusterInstance(ctx, in)
 	}

@@ -1,7 +1,13 @@
 package docker
 
 import (
+	"encoding/json"
+	"net"
+	"net/http"
+	"net/http/httptest"
 	"slices"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/amjadjibon/tinystack/internal/services/rds"
@@ -22,5 +28,40 @@ func TestMongoReadinessCommand(t *testing.T) {
 			!slices.Contains(args, "password") {
 			t.Fatal(args)
 		}
+	}
+}
+
+func TestGremlinReadiness(t *testing.T) {
+	for _, gremlinCode := range []int{200, 500} {
+		t.Run(strconv.Itoa(gremlinCode), func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost || r.URL.Path != "/gremlin" ||
+					r.Header.Get("Content-Type") != "application/json" {
+					t.Error("invalid readiness request", r.Method, r.URL, r.Header)
+				}
+
+				var query map[string]string
+				if err := json.NewDecoder(r.Body).Decode(&query); err != nil || query["gremlin"] != "g.inject(1)" {
+					t.Error(query, err)
+				}
+
+				_ = json.NewEncoder(w).Encode(map[string]any{"status": map[string]int{"code": gremlinCode}})
+			}))
+			defer server.Close()
+			_, port, err := net.SplitHostPort(strings.TrimPrefix(server.URL, "http://"))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			number, err := strconv.ParseInt(port, 10, 64)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = probeGremlin(t.Context(), number)
+			if (err == nil) != (gremlinCode == 200) {
+				t.Fatal("incorrect readiness", gremlinCode, err)
+			}
+		})
 	}
 }
