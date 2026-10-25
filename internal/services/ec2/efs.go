@@ -52,3 +52,18 @@ func (s *Service) MountGroups(tx storage.ReadTx, scope request.Scope, vpcID stri
 	slices.SortFunc(out, strings.Compare)
 	return out, nil
 }
+
+// MountVPC reads an existing VPC in the caller's transaction without allocating defaults.
+func (s *Service) MountVPC(tx storage.ReadTx, scope request.Scope, id string) (*api.Vpc, error) {
+	v, ok, err := storage.Read[vpc](tx, scope.Key("ec2", kindVPC, id))
+	if err != nil {
+		return nil, err
+	}
+
+	if !ok {
+		return nil, vpcNotFound(id)
+	}
+
+	out := vpcOutput(scope, v)
+	return &out, nil
+}

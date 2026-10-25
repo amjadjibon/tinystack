@@ -336,7 +336,8 @@ func (c *Context) known(key string) bool {
 		"aws:currenttime", "aws:securetransport", "aws:requestedregion", "aws:sourcearn", "aws:sourceaccount",
 		"aws:sourceowner", "aws:principalservicename", "iam:passedtoservice", "events:source", "events:detail-type",
 		"events:eventbusinvocation", "events:creatoraccount", "events:targetarn",
-		"lambda:functionurlauthtype", "lambda:invokedviafunctionurl":
+		"lambda:functionurlauthtype", "lambda:invokedviafunctionurl",
+		"s3:dataaccesspointarn", "s3:dataaccesspointaccount":
 		return true
 	}
 

@@ -8,6 +8,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/aws/validation"
 	"regexp"
+	"time"
 	"unicode/utf8"
 )
 
@@ -45,11 +46,336 @@ type ListTagsForResourceResult struct {
 	Tags    []Tag    `json:"Tags,omitempty" xml:"Tags>Tag,omitempty"`
 }
 
+type VpcConfiguration struct {
+	VpcId *string `json:"VpcId,omitempty" xml:"VpcId,omitempty"`
+}
+
+type PublicAccessBlockConfiguration struct {
+	BlockPublicAcls       *bool `json:"BlockPublicAcls,omitempty" xml:"BlockPublicAcls,omitempty"`
+	IgnorePublicAcls      *bool `json:"IgnorePublicAcls,omitempty" xml:"IgnorePublicAcls,omitempty"`
+	BlockPublicPolicy     *bool `json:"BlockPublicPolicy,omitempty" xml:"BlockPublicPolicy,omitempty"`
+	RestrictPublicBuckets *bool `json:"RestrictPublicBuckets,omitempty" xml:"RestrictPublicBuckets,omitempty"`
+}
+
+type CreateAccessPointRequest struct {
+	XMLName                        xml.Name                        `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ CreateAccessPointRequest"`
+	AccountId                      *string                         `json:"-" xml:"-"`
+	Name                           *string                         `json:"-" xml:"-"`
+	Bucket                         *string                         `json:"Bucket,omitempty" xml:"Bucket,omitempty"`
+	VpcConfiguration               *VpcConfiguration               `json:"VpcConfiguration,omitempty" xml:"VpcConfiguration,omitempty"`
+	PublicAccessBlockConfiguration *PublicAccessBlockConfiguration `json:"PublicAccessBlockConfiguration,omitempty" xml:"PublicAccessBlockConfiguration,omitempty"`
+	BucketAccountId                *string                         `json:"BucketAccountId,omitempty" xml:"BucketAccountId,omitempty"`
+	Tags                           []Tag                           `json:"Tags,omitempty" xml:"Tags>Tag,omitempty"`
+}
+
+type CreateAccessPointResult struct {
+	XMLName        xml.Name `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ CreateAccessPointResult"`
+	AccessPointArn *string  `json:"AccessPointArn,omitempty" xml:"AccessPointArn,omitempty"`
+	Alias          *string  `json:"Alias,omitempty" xml:"Alias,omitempty"`
+}
+
+type GetAccessPointRequest struct {
+	AccountId *string `json:"-" xml:"-"`
+	Name      *string `json:"-" xml:"-"`
+}
+
+type GetAccessPointResult struct {
+	XMLName                        xml.Name                        `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ GetAccessPointResult"`
+	Name                           *string                         `json:"Name,omitempty" xml:"Name,omitempty"`
+	Bucket                         *string                         `json:"Bucket,omitempty" xml:"Bucket,omitempty"`
+	NetworkOrigin                  *string                         `json:"NetworkOrigin,omitempty" xml:"NetworkOrigin,omitempty"`
+	VpcConfiguration               *VpcConfiguration               `json:"VpcConfiguration,omitempty" xml:"VpcConfiguration,omitempty"`
+	PublicAccessBlockConfiguration *PublicAccessBlockConfiguration `json:"PublicAccessBlockConfiguration,omitempty" xml:"PublicAccessBlockConfiguration,omitempty"`
+	CreationDate                   *time.Time                      `json:"CreationDate,omitempty" xml:"CreationDate,omitempty"`
+	Alias                          *string                         `json:"Alias,omitempty" xml:"Alias,omitempty"`
+	AccessPointArn                 *string                         `json:"AccessPointArn,omitempty" xml:"AccessPointArn,omitempty"`
+	Endpoints                      map[string]string               `json:"Endpoints,omitempty" xml:"Endpoints,omitempty"`
+	BucketAccountId                *string                         `json:"BucketAccountId,omitempty" xml:"BucketAccountId,omitempty"`
+	DataSourceId                   *string                         `json:"DataSourceId,omitempty" xml:"DataSourceId,omitempty"`
+	DataSourceType                 *string                         `json:"DataSourceType,omitempty" xml:"DataSourceType,omitempty"`
+}
+
+type DeleteAccessPointOutput struct{}
+
+type DeleteAccessPointRequest struct {
+	AccountId *string `json:"-" xml:"-"`
+	Name      *string `json:"-" xml:"-"`
+}
+
+type ListAccessPointsRequest struct {
+	AccountId  *string `json:"-" xml:"-"`
+	Bucket     *string `json:"-" xml:"-"`
+	NextToken  *string `json:"-" xml:"-"`
+	MaxResults *int64  `json:"-" xml:"-"`
+}
+
+type AccessPoint struct {
+	Name             *string           `json:"Name,omitempty" xml:"Name,omitempty"`
+	NetworkOrigin    *string           `json:"NetworkOrigin,omitempty" xml:"NetworkOrigin,omitempty"`
+	VpcConfiguration *VpcConfiguration `json:"VpcConfiguration,omitempty" xml:"VpcConfiguration,omitempty"`
+	Bucket           *string           `json:"Bucket,omitempty" xml:"Bucket,omitempty"`
+	AccessPointArn   *string           `json:"AccessPointArn,omitempty" xml:"AccessPointArn,omitempty"`
+	Alias            *string           `json:"Alias,omitempty" xml:"Alias,omitempty"`
+	BucketAccountId  *string           `json:"BucketAccountId,omitempty" xml:"BucketAccountId,omitempty"`
+	DataSourceId     *string           `json:"DataSourceId,omitempty" xml:"DataSourceId,omitempty"`
+	DataSourceType   *string           `json:"DataSourceType,omitempty" xml:"DataSourceType,omitempty"`
+}
+
+type ListAccessPointsResult struct {
+	XMLName         xml.Name      `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ ListAccessPointsResult"`
+	AccessPointList []AccessPoint `json:"AccessPointList,omitempty" xml:"AccessPointList>AccessPoint,omitempty"`
+	NextToken       *string       `json:"NextToken,omitempty" xml:"NextToken,omitempty"`
+}
+
+type PutAccessPointPolicyOutput struct{}
+
+type PutAccessPointPolicyRequest struct {
+	XMLName   xml.Name `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ PutAccessPointPolicyRequest"`
+	AccountId *string  `json:"-" xml:"-"`
+	Name      *string  `json:"-" xml:"-"`
+	Policy    *string  `json:"Policy,omitempty" xml:"Policy,omitempty"`
+}
+
+type GetAccessPointPolicyRequest struct {
+	AccountId *string `json:"-" xml:"-"`
+	Name      *string `json:"-" xml:"-"`
+}
+
+type GetAccessPointPolicyResult struct {
+	XMLName xml.Name `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ GetAccessPointPolicyResult"`
+	Policy  *string  `json:"Policy,omitempty" xml:"Policy,omitempty"`
+}
+
+type DeleteAccessPointPolicyOutput struct{}
+
+type DeleteAccessPointPolicyRequest struct {
+	AccountId *string `json:"-" xml:"-"`
+	Name      *string `json:"-" xml:"-"`
+}
+
+type GetAccessPointPolicyStatusRequest struct {
+	AccountId *string `json:"-" xml:"-"`
+	Name      *string `json:"-" xml:"-"`
+}
+
+type PolicyStatus struct {
+	IsPublic *bool `json:"IsPublic,omitempty" xml:"IsPublic,omitempty"`
+}
+
+type GetAccessPointPolicyStatusResult struct {
+	XMLName      xml.Name      `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ GetAccessPointPolicyStatusResult"`
+	PolicyStatus *PolicyStatus `json:"PolicyStatus,omitempty" xml:"PolicyStatus,omitempty"`
+}
+
 var pattern0 = regexp.MustCompile("^\\d{12}$")
 
 var pattern1 = regexp.MustCompile("^arn:[^:]+:s3(express)?:[^:]|^arn:[^:]+:s3:::[^:/]")
 
 var pattern2 = regexp.MustCompile("^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$")
+
+func (v *CreateAccessPointRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(3)), new(int64(255))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Bucket", v.Bucket != nil); err != nil {
+		return err
+	}
+	if v.Bucket != nil {
+		if err := validation.Length(path+"Bucket", utf8.RuneCountInString((*v.Bucket)), new(int64(3)), new(int64(255))); err != nil {
+			return err
+		}
+	}
+	if v.VpcConfiguration != nil {
+		if err := (*v.VpcConfiguration).Validate(path + "VpcConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.PublicAccessBlockConfiguration != nil {
+		if err := (*v.PublicAccessBlockConfiguration).Validate(path + "PublicAccessBlockConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.BucketAccountId != nil {
+		if err := validation.Length(path+"BucketAccountId", utf8.RuneCountInString((*v.BucketAccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"BucketAccountId", (*v.BucketAccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		if err := validation.Length(path+"Tags", len(v.Tags), new(int64(0)), new(int64(50))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"Tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *DeleteAccessPointPolicyRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(3)), new(int64(255))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteAccessPointRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(3)), new(int64(255))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetAccessPointPolicyRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(3)), new(int64(255))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetAccessPointPolicyStatusRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(3)), new(int64(255))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetAccessPointRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(3)), new(int64(255))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListAccessPointsRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	if v.Bucket != nil {
+		if err := validation.Length(path+"Bucket", utf8.RuneCountInString((*v.Bucket)), new(int64(3)), new(int64(255))); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"MaxResults", float64((*v.MaxResults)), new(float64(0)), new(float64(1000))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 func (v *ListTagsForResourceRequest) Validate(path string) error {
 	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
@@ -73,6 +399,36 @@ func (v *ListTagsForResourceRequest) Validate(path string) error {
 		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern1, nil, "^arn:[^:]+:s3(express)?:[^:]"); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (v *PublicAccessBlockConfiguration) Validate(path string) error {
+	return nil
+}
+
+func (v *PutAccessPointPolicyRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(3)), new(int64(255))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Policy", v.Policy != nil); err != nil {
+		return err
 	}
 	return nil
 }
@@ -184,10 +540,30 @@ func (v *UntagResourceRequest) Validate(path string) error {
 	return nil
 }
 
+func (v *VpcConfiguration) Validate(path string) error {
+	if err := validation.Required(path+"VpcId", v.VpcId != nil); err != nil {
+		return err
+	}
+	if v.VpcId != nil {
+		if err := validation.Length(path+"VpcId", utf8.RuneCountInString((*v.VpcId)), new(int64(1)), new(int64(1024))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type API interface {
 	TagResource(context.Context, *TagResourceRequest) (*TagResourceResult, error)
 	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceResult, error)
 	ListTagsForResource(context.Context, *ListTagsForResourceRequest) (*ListTagsForResourceResult, error)
+	CreateAccessPoint(context.Context, *CreateAccessPointRequest) (*CreateAccessPointResult, error)
+	GetAccessPoint(context.Context, *GetAccessPointRequest) (*GetAccessPointResult, error)
+	DeleteAccessPoint(context.Context, *DeleteAccessPointRequest) (*DeleteAccessPointOutput, error)
+	ListAccessPoints(context.Context, *ListAccessPointsRequest) (*ListAccessPointsResult, error)
+	PutAccessPointPolicy(context.Context, *PutAccessPointPolicyRequest) (*PutAccessPointPolicyOutput, error)
+	GetAccessPointPolicy(context.Context, *GetAccessPointPolicyRequest) (*GetAccessPointPolicyResult, error)
+	DeleteAccessPointPolicy(context.Context, *DeleteAccessPointPolicyRequest) (*DeleteAccessPointPolicyOutput, error)
+	GetAccessPointPolicyStatus(context.Context, *GetAccessPointPolicyStatusRequest) (*GetAccessPointPolicyStatusResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -212,6 +588,62 @@ func Descriptor(api API) catalog.Service {
 				return nil, awserror.New("InvalidRequest", err.Error())
 			}
 			return api.ListTagsForResource(ctx, in)
+		}},
+		"CreateAccessPoint": {Name: "CreateAccessPoint", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:CreateAccessPoint", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "Bucket": catalog.MemberBinding{Location: "document", Name: "Bucket", Format: ""}, "BucketAccountId": catalog.MemberBinding{Location: "document", Name: "BucketAccountId", Format: ""}, "Name": catalog.MemberBinding{Location: "label", Name: "Name", Format: ""}, "PublicAccessBlockConfiguration": catalog.MemberBinding{Location: "document", Name: "PublicAccessBlockConfiguration", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}, "VpcConfiguration": catalog.MemberBinding{Location: "document", Name: "VpcConfiguration", Format: ""}}, Output: map[string]catalog.MemberBinding{"AccessPointArn": catalog.MemberBinding{Location: "document", Name: "AccessPointArn", Format: ""}, "Alias": catalog.MemberBinding{Location: "document", Name: "Alias", Format: ""}}, Method: "PUT", URI: "/v20180820/accesspoint/{Name}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &CreateAccessPointRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*CreateAccessPointRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.CreateAccessPoint(ctx, in)
+		}},
+		"GetAccessPoint": {Name: "GetAccessPoint", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetAccessPoint", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "Name": catalog.MemberBinding{Location: "label", Name: "Name", Format: ""}}, Output: map[string]catalog.MemberBinding{"AccessPointArn": catalog.MemberBinding{Location: "document", Name: "AccessPointArn", Format: ""}, "Alias": catalog.MemberBinding{Location: "document", Name: "Alias", Format: ""}, "Bucket": catalog.MemberBinding{Location: "document", Name: "Bucket", Format: ""}, "BucketAccountId": catalog.MemberBinding{Location: "document", Name: "BucketAccountId", Format: ""}, "CreationDate": catalog.MemberBinding{Location: "document", Name: "CreationDate", Format: ""}, "DataSourceId": catalog.MemberBinding{Location: "document", Name: "DataSourceId", Format: ""}, "DataSourceType": catalog.MemberBinding{Location: "document", Name: "DataSourceType", Format: ""}, "Endpoints": catalog.MemberBinding{Location: "document", Name: "Endpoints", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "Name", Format: ""}, "NetworkOrigin": catalog.MemberBinding{Location: "document", Name: "NetworkOrigin", Format: ""}, "PublicAccessBlockConfiguration": catalog.MemberBinding{Location: "document", Name: "PublicAccessBlockConfiguration", Format: ""}, "VpcConfiguration": catalog.MemberBinding{Location: "document", Name: "VpcConfiguration", Format: ""}}, Method: "GET", URI: "/v20180820/accesspoint/{Name}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetAccessPointRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*GetAccessPointRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.GetAccessPoint(ctx, in)
+		}},
+		"DeleteAccessPoint": {Name: "DeleteAccessPoint", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "s3:DeleteAccessPoint", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "Name": catalog.MemberBinding{Location: "label", Name: "Name", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/v20180820/accesspoint/{Name}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &DeleteAccessPointRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*DeleteAccessPointRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.DeleteAccessPoint(ctx, in)
+		}},
+		"ListAccessPoints": {Name: "ListAccessPoints", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:ListAccessPoints", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "Bucket": catalog.MemberBinding{Location: "query", Name: "bucket", Format: ""}, "DataSourceId": catalog.MemberBinding{Location: "unsupported:query", Name: "dataSourceId", Format: ""}, "DataSourceType": catalog.MemberBinding{Location: "unsupported:query", Name: "dataSourceType", Format: ""}, "MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"AccessPointList": catalog.MemberBinding{Location: "document", Name: "AccessPointList", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}}, Method: "GET", URI: "/v20180820/accesspoint", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &ListAccessPointsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListAccessPointsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.ListAccessPoints(ctx, in)
+		}},
+		"PutAccessPointPolicy": {Name: "PutAccessPointPolicy", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "s3:PutAccessPointPolicy", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "Name": catalog.MemberBinding{Location: "label", Name: "Name", Format: ""}, "Policy": catalog.MemberBinding{Location: "document", Name: "Policy", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/v20180820/accesspoint/{Name}/policy", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutAccessPointPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*PutAccessPointPolicyRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.PutAccessPointPolicy(ctx, in)
+		}},
+		"GetAccessPointPolicy": {Name: "GetAccessPointPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetAccessPointPolicy", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "Name": catalog.MemberBinding{Location: "label", Name: "Name", Format: ""}}, Output: map[string]catalog.MemberBinding{"Policy": catalog.MemberBinding{Location: "document", Name: "Policy", Format: ""}}, Method: "GET", URI: "/v20180820/accesspoint/{Name}/policy", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetAccessPointPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*GetAccessPointPolicyRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.GetAccessPointPolicy(ctx, in)
+		}},
+		"DeleteAccessPointPolicy": {Name: "DeleteAccessPointPolicy", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "s3:DeleteAccessPointPolicy", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "Name": catalog.MemberBinding{Location: "label", Name: "Name", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/v20180820/accesspoint/{Name}/policy", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &DeleteAccessPointPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*DeleteAccessPointPolicyRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.DeleteAccessPointPolicy(ctx, in)
+		}},
+		"GetAccessPointPolicyStatus": {Name: "GetAccessPointPolicyStatus", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetAccessPointPolicyStatus", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "Name": catalog.MemberBinding{Location: "label", Name: "Name", Format: ""}}, Output: map[string]catalog.MemberBinding{"PolicyStatus": catalog.MemberBinding{Location: "document", Name: "PolicyStatus", Format: ""}}, Method: "GET", URI: "/v20180820/accesspoint/{Name}/policyStatus", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetAccessPointPolicyStatusRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*GetAccessPointPolicyStatusRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.GetAccessPointPolicyStatus(ctx, in)
 		}},
 	}}
 }

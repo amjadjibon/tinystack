@@ -205,3 +205,17 @@ func public(statements []statement) bool {
 
 	return false
 }
+
+// PolicyIsPublic validates a resource policy and shares S3's public-policy analysis with S3 Control.
+func PolicyIsPublic(document string) (bool, error) {
+	statements, err := parsePolicy(document)
+	if err != nil {
+		return false, err
+	}
+
+	if err := iampolicy.ValidateResource(document); err != nil {
+		return false, fail(400, "MalformedPolicy", err.Error())
+	}
+
+	return public(statements), nil
+}

@@ -202,6 +202,19 @@ func writeJSON(tx storage.WriteTx, key string, v any) error {
 //
 //nolint:gocritic // Metadata is an immutable request snapshot.
 func resolve(tx storage.ReadTx, m request.Metadata, name, expectedOwner *string) (string, error) {
+	if strings.HasSuffix(common.Value(name), "-s3alias") && m.Operation != "" &&
+		!strings.Contains(m.Operation, "Object") &&
+		!strings.Contains(m.Operation, "Multipart") &&
+		!strings.Contains(m.Operation, "Part") {
+		return "", fail(400, "InvalidRequest", "Access point aliases support object operations only")
+	}
+
+	resolvedName, err := aliasBucket(tx, m.Scope, common.Value(name))
+	if err != nil {
+		return "", err
+	}
+
+	name = new(resolvedName)
 	var index bucketIndex
 	found, err := readJSON(tx, indexPrefix+common.Value(name), &index)
 	if err != nil {
@@ -322,6 +335,15 @@ func (s *Service) DeleteBucket(ctx context.Context, in *api.DeleteBucketRequest)
 
 		if len(tx.Keys(key+"/o/")) > 0 || len(tx.Keys(key+"/v/")) > 0 || len(tx.Keys(key+"/u/")) > 0 {
 			return fail(http.StatusConflict, "BucketNotEmpty", "The bucket you tried to delete is not empty")
+		}
+
+		used, referenceErr := bucketHasAccessPoints(tx, m.Scope, common.Value(in.Bucket))
+		if referenceErr != nil {
+			return referenceErr
+		}
+
+		if used {
+			return fail(409, "BucketHasAccessPointsAttached", "The bucket has access points attached")
 		}
 
 		tx.Delete(indexPrefix + *in.Bucket)

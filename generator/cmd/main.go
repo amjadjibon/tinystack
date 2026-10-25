@@ -228,6 +228,15 @@ func (g *generator) typeName(id string) (string, error) {
 		t, e := g.typeName(s.Member.Target)
 		return "[]" + t, e
 	case shapeMap:
+		if g.xml && g.xmlBodyMap(id) {
+			if g.model.Shapes[s.Value.Target].Type != shapeString {
+				return "", fmt.Errorf("REST XML maps require string values")
+			}
+
+			g.imports["github.com/amjadjibon/tinystack/internal/aws/protocol/xmlmap"] = true
+			return "xmlmap.Strings", nil
+		}
+
 		t, e := g.typeName(s.Value.Target)
 		return "map[string]" + t, e
 	default:
@@ -236,6 +245,21 @@ func (g *generator) typeName(id string) (string, error) {
 }
 
 // restTraits are the HTTP binding traits REST protocols support.
+// xmlBodyMap distinguishes document maps from maps bound to HTTP headers.
+func (g *generator) xmlBodyMap(id string) bool {
+	for shapeID, members := range g.profile.Shapes {
+		sh := g.model.Shapes[g.namespace+"#"+shapeID]
+		for _, name := range members {
+			member := sh.Members[name]
+			if member.Target == id && !httpBound(member) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 var restTraits = map[string]bool{
 	"smithy.api#http":              true,
 	"smithy.api#httpLabel":         true,
@@ -495,7 +519,7 @@ func (g *generator) xmlTag(member reference, name string) (string, error) {
 	target := g.model.Shapes[member.Target]
 	switch target.Type {
 	case shapeMap:
-		return "", fmt.Errorf("maps in REST XML bodies are not supported")
+		// String maps use the Smithy entry/key/value representation.
 	case shapeList:
 		if kind := g.model.Shapes[target.Member.Target].Type; kind == shapeList || kind == shapeMap {
 			return "", fmt.Errorf("nested collections are not supported by the REST XML codec")

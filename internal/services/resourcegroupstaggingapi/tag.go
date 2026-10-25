@@ -438,6 +438,18 @@ var taggers = map[string]tagger{
 		"RemoveTagKeys",
 		names,
 	),
+	"s3control": operations(
+		"s3control",
+		"TagResource",
+		"UntagResource",
+		func(_ context.Context, _ *catalog.Caller, r *catalog.Owned) (map[string]any, error) {
+			return map[string]any{"AccountId": r.Account, "ResourceArn": r.ARN}, nil
+		},
+		"Tags",
+		pairs,
+		"TagKeys",
+		names,
+	),
 	"s3": {
 		tag: func(ctx context.Context, c *catalog.Caller, r *catalog.Owned, tags map[string]string) error {
 			merged := maps.Clone(r.Tags)

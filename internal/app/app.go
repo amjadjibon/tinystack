@@ -648,7 +648,7 @@ func build(
 		sqsapi.Descriptor(queues),
 		snsapi.Descriptor(topics),
 		s3api.Descriptor(buckets),
-		s3controlapi.Descriptor(s3control.New(buckets)),
+		s3controlapi.Descriptor(s3control.New(store, buckets, network)),
 		lambdaapi.Descriptor(functions),
 		eventbridgeapi.Descriptor(rules),
 		iamapi.Descriptor(roles),

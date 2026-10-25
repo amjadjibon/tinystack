@@ -90,7 +90,7 @@ func TestS3ControlBucketTags(t *testing.T) {
 
 	for _, tc := range []struct{ arn, account, code string }{
 		{"arn:aws:s3:::missing-bucket", "000000000000", "NoSuchBucket"},
-		{"arn:aws:s3:us-east-1:000000000000:accesspoint/test", "000000000000", "InvalidRequest"},
+		{"arn:aws:s3:us-east-1:000000000000:accesspoint/test", "000000000000", "NoSuchAccessPoint"},
 		{*arn, "111111111111", "AccessDenied"},
 	} {
 		_, err = c.ListTagsForResource(

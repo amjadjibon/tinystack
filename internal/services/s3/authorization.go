@@ -112,6 +112,7 @@ func (s *Service) authorizationTargets(
 		out = append(out, catalog.AuthorizationResource{ARN: base + "/" + key, Action: actionBypassGovernanceRetention})
 		versions = append(versions, common.Value(in.VersionId))
 	}
+
 	if operation == "CopyObject" || operation == "UploadPartCopy" {
 		source, err := url.QueryUnescape(catalog.InputString(input, "CopySource"))
 		if err != nil {
@@ -210,16 +211,37 @@ func (s *Service) AuthorizationResources(
 			}
 
 			if meta != nil {
-				targets[i].Policy = meta.Policy
+				policy, policyErr := restrictPublicPolicy(
+					tx,
+					request.Scope{AccountID: targets[i].OwnerAccount, Region: m.Region},
+					m.Principal,
+					meta.Policy,
+					meta.PublicAccessBlock,
+				)
+				if policyErr != nil {
+					return policyErr
+				}
+
+				targets[i].Policy = policy
 			}
 		}
 
 		return nil
 	})
-	return targets, err
+	if err != nil {
+		return nil, err
+	}
+
+	return s.accessPointTargets(ctx, targets)
 }
 
 func authorizationBucketKey(tx storage.ReadTx, account, region, bucket string) (string, error) {
+	resolved, err := aliasBucket(tx, request.Scope{AccountID: account, Region: region}, bucket)
+	if err != nil {
+		return "", err
+	}
+
+	bucket = resolved
 	var index bucketIndex
 	found, err := readJSON(tx, indexPrefix+bucket, &index)
 	if err != nil {

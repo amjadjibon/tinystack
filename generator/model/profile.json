@@ -43193,7 +43193,15 @@
     "operations": [
       "TagResource",
       "UntagResource",
-      "ListTagsForResource"
+      "ListTagsForResource",
+      "CreateAccessPoint",
+      "GetAccessPoint",
+      "DeleteAccessPoint",
+      "ListAccessPoints",
+      "PutAccessPointPolicy",
+      "GetAccessPointPolicy",
+      "DeleteAccessPointPolicy",
+      "GetAccessPointPolicyStatus"
     ],
     "shapes": {
       "TagResourceRequest": [
@@ -43218,6 +43226,101 @@
       "Tag": [
         "Key",
         "Value"
+      ],
+      "CreateAccessPointRequest": [
+        "AccountId",
+        "Name",
+        "Bucket",
+        "VpcConfiguration",
+        "PublicAccessBlockConfiguration",
+        "BucketAccountId",
+        "Tags"
+      ],
+      "VpcConfiguration": [
+        "VpcId"
+      ],
+      "PublicAccessBlockConfiguration": [
+        "BlockPublicAcls",
+        "IgnorePublicAcls",
+        "BlockPublicPolicy",
+        "RestrictPublicBuckets"
+      ],
+      "Scope": [
+        "Prefixes",
+        "Permissions"
+      ],
+      "CreateAccessPointResult": [
+        "AccessPointArn",
+        "Alias"
+      ],
+      "GetAccessPointRequest": [
+        "AccountId",
+        "Name"
+      ],
+      "GetAccessPointResult": [
+        "Name",
+        "Bucket",
+        "NetworkOrigin",
+        "VpcConfiguration",
+        "PublicAccessBlockConfiguration",
+        "CreationDate",
+        "Alias",
+        "AccessPointArn",
+        "Endpoints",
+        "BucketAccountId",
+        "DataSourceId",
+        "DataSourceType"
+      ],
+      "DeleteAccessPointRequest": [
+        "AccountId",
+        "Name"
+      ],
+      "ListAccessPointsRequest": [
+        "AccountId",
+        "Bucket",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListAccessPointsResult": [
+        "AccessPointList",
+        "NextToken"
+      ],
+      "AccessPoint": [
+        "Name",
+        "NetworkOrigin",
+        "VpcConfiguration",
+        "Bucket",
+        "AccessPointArn",
+        "Alias",
+        "BucketAccountId",
+        "DataSourceId",
+        "DataSourceType"
+      ],
+      "PutAccessPointPolicyRequest": [
+        "AccountId",
+        "Name",
+        "Policy"
+      ],
+      "GetAccessPointPolicyRequest": [
+        "AccountId",
+        "Name"
+      ],
+      "GetAccessPointPolicyResult": [
+        "Policy"
+      ],
+      "DeleteAccessPointPolicyRequest": [
+        "AccountId",
+        "Name"
+      ],
+      "GetAccessPointPolicyStatusRequest": [
+        "AccountId",
+        "Name"
+      ],
+      "GetAccessPointPolicyStatusResult": [
+        "PolicyStatus"
+      ],
+      "PolicyStatus": [
+        "IsPublic"
       ]
     },
     "validation": {

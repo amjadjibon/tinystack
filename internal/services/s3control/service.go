@@ -1,5 +1,4 @@
-// Package s3control exposes general purpose bucket tagging over S3 Control.
-// Buckets and their inventory remain owned by S3; this service has no records.
+// Package s3control stores S3 access points and delegates bucket tags to S3.
 package s3control
 
 import (
@@ -12,14 +11,22 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3control"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/ec2"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
+	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
 // Service delegates to S3 so both API families observe the same tag set.
-type Service struct{ buckets *s3.Service }
+type Service struct {
+	buckets *s3.Service
+	store   storage.Store
+	network *ec2.Service
+}
 
-func New(buckets *s3.Service) *Service { return &Service{buckets: buckets} }
+func New(store storage.Store, buckets *s3.Service, network *ec2.Service) *Service {
+	return &Service{store: store, buckets: buckets, network: network}
+}
 
 func bucket(ctx context.Context, account, arn *string) (*string, error) {
 	scope, err := request.RegionalScope(ctx)
@@ -40,6 +47,11 @@ func bucket(ctx context.Context, account, arn *string) (*string, error) {
 }
 
 func (s *Service) TagResource(ctx context.Context, in *api.TagResourceRequest) (*api.TagResourceResult, error) {
+	if handled, tags, err := s.pointTags(ctx, in.AccountId, in.ResourceArn, in.Tags, nil); handled {
+		_ = tags
+		return &api.TagResourceResult{}, err
+	}
+
 	name, err := bucket(ctx, in.AccountId, in.ResourceArn)
 	if err != nil {
 		return nil, err
@@ -67,6 +79,11 @@ func (s *Service) TagResource(ctx context.Context, in *api.TagResourceRequest) (
 }
 
 func (s *Service) UntagResource(ctx context.Context, in *api.UntagResourceRequest) (*api.UntagResourceResult, error) {
+	if handled, tags, err := s.pointTags(ctx, in.AccountId, in.ResourceArn, nil, in.TagKeys); handled {
+		_ = tags
+		return &api.UntagResourceResult{}, err
+	}
+
 	name, err := bucket(ctx, in.AccountId, in.ResourceArn)
 	if err != nil {
 		return nil, err
@@ -89,6 +106,10 @@ func (s *Service) ListTagsForResource(
 	ctx context.Context,
 	in *api.ListTagsForResourceRequest,
 ) (*api.ListTagsForResourceResult, error) {
+	if handled, tags, err := s.pointTags(ctx, in.AccountId, in.ResourceArn, nil, nil); handled {
+		return &api.ListTagsForResourceResult{Tags: tags}, err
+	}
+
 	name, err := bucket(ctx, in.AccountId, in.ResourceArn)
 	if err != nil {
 		return nil, err
