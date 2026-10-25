@@ -25,6 +25,7 @@ See the [implemented feature catalogue](catalogue.md#aws-network-firewall) for t
 - VPC endpoints and sync states are deterministic mock records reporting READY status.
 - TLS inspection configurations and rule group analysis/summary metrics are outside the subset.
 - Transit gateway attached firewalls are not supported: CreateFirewall requires VpcId and SubnetMappings.
+- Enabled TLS session holding fails explicitly because TLS inspection is outside the subset.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -136,5 +137,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/networkfirewall)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/networkfirewall/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/networkfirewall.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [networkfirewall_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/networkfirewall_test.go).
+- SDK integration examples: [networkfirewall_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/networkfirewall_test.go), [networkfirewall_tls_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/networkfirewall_tls_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

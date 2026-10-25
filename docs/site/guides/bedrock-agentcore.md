@@ -135,4 +135,9 @@ Properties TinyStack does not support (`PlatformVersion`, `FilesystemConfigurati
 `MemoryStrategies`, `IndexedKeys`, `NamespaceKeys`, `StreamDeliveryResources`) are rejected. A property removed from a
 memory template keeps its value, because `UpdateMemory` cannot clear it.
 
-The pinned Terraform AWS provider (5.x) has no `aws_bedrockagentcore_*` resources, which arrived in 6.x.
+## Terraform
+
+`aws_bedrockagentcore_agent_runtime`, `aws_bedrockagentcore_agent_runtime_endpoint` and `aws_bedrockagentcore_memory`
+(AWS provider 6.x) use the same operations; set the `bedrockagentcore` endpoint to TinyStack. Changing a runtime's
+description, environment or artifact makes a new version, which the `DEFAULT` endpoint follows. The arguments
+CloudFormation rejects above are rejected here too.

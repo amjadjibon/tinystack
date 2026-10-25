@@ -29,7 +29,6 @@ See [Amazon Bedrock AgentCore](../guides/bedrock-agentcore.md) for the runtime l
 - CREATE_FAILED and UPDATE_FAILED are never entered: TinyStack does not resolve the image or the role's trust policy at create time. A runtime whose image cannot start fails when its first session starts.
 - memoryStrategies, indexedKeys, namespaceKeys and streamDeliveryResources fail explicitly: long-term strategies extract records with a model and TinyStack does not invent model output; updates cannot add, change or remove them. An eventExpiryDuration change applies to events created afterwards.
 - UpdateAgentRuntime replaces the whole configuration, as a PUT; clientToken replay is supported only for the three create operations. Deleting one version removes it at once without a DELETING status.
-- Terraform's aws_bedrockagentcore_* resources need the AWS provider 6.x; the pinned test provider is 5.x, so no Terraform case runs here.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

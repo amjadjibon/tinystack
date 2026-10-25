@@ -26,6 +26,7 @@ See the [implemented feature catalogue](catalogue.md#eks) for this service's cap
 - Cluster data and upgrades do not persist across restart.
 - No Auto Mode, Outposts, hybrid nodes or CloudWatch log delivery.
 - Reset removes the k3s containers it started; a cluster starting during the reset can outlive it until shutdown.
+- Enabled Auto Mode compute, block storage and load balancing requests fail explicitly; Auto Mode update blocks remain outside the profile.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -122,5 +123,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/eks)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/eks/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/eks.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [eks_k3s_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eks_k3s_test.go), [eks_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eks_test.go).
+- SDK integration examples: [eks_automode_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eks_automode_test.go), [eks_k3s_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eks_k3s_test.go), [eks_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/eks_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

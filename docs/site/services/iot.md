@@ -13,7 +13,7 @@ Connect devices and manage registry, policies, rules, jobs, provisioning, and fl
 | API version | `2015-05-28` |
 | Scope | Account and region |
 | Execution | MQTT broker / local APIs |
-| Selected operations | 103 of 272 in the pinned model |
+| Selected operations | 104 of 272 in the pinned model |
 
 ## Implemented behavior
 
@@ -120,6 +120,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `ListThingGroups` | `GET /thing-groups` |
 | `ListThingGroupsForThing` | `GET /things/{thingName}/thing-groups` |
 | `ListThingPrincipals` | `GET /things/{thingName}/principals` |
+| `ListThingPrincipalsV2` | `GET /things/{thingName}/principals-v2` |
 | `ListThingTypes` | `GET /thing-types` |
 | `ListThings` | `GET /things` |
 | `ListThingsInThingGroup` | `GET /thing-groups/{thingGroupName}/things` |
@@ -147,7 +148,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "169 modeled operations outside the implementation"
+??? info "168 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -276,7 +277,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListSecurityProfilesForTarget`
     - `ListStreams`
     - `ListTargetsForSecurityProfile`
-    - `ListThingPrincipalsV2`
     - `ListThingRegistrationTaskReports`
     - `ListThingRegistrationTasks`
     - `ListThingsInBillingGroup`
@@ -326,5 +326,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/iot)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/iot/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/iot.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [iot_authorizer_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_authorizer_test.go), [iot_certificate_lifecycle_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_certificate_lifecycle_test.go), [iot_credentials_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_credentials_test.go), [iot_indexing_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_indexing_test.go), [iot_jobs_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_jobs_test.go), [iot_mqtt_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_mqtt_test.go), [iot_provisioning_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_provisioning_test.go), [iot_rules_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_rules_test.go), [iot_shadow_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_shadow_test.go), [iot_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_test.go).
+- SDK integration examples: [iot_authorizer_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_authorizer_test.go), [iot_certificate_lifecycle_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_certificate_lifecycle_test.go), [iot_credentials_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_credentials_test.go), [iot_indexing_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_indexing_test.go), [iot_jobs_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_jobs_test.go), [iot_mqtt_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_mqtt_test.go), [iot_principals_v2_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_principals_v2_test.go), [iot_provisioning_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_provisioning_test.go), [iot_rules_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_rules_test.go), [iot_shadow_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_shadow_test.go), [iot_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iot_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

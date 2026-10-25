@@ -26,7 +26,7 @@ See the [implemented feature catalogue](catalogue.md#amazon-translate) for this 
 - GetTerminology fails explicitly because a retrievable presigned download URL is not implemented.
 - Only text/plain and text/html documents/batch inputs; no remote S3, role assumption, document format conversion or encrypted data execution.
 - S3 writes are not atomic with job state; cancellation or process interruption can leave partial output objects.
-- Terraform provider 5.100 has no Translate resources; the current official CloudFormation specification does include Translate types, contrary to the original task note.
+- Terraform AWS provider 6.70 has no Translate resources; the current official CloudFormation specification does include Translate types, contrary to the original task note.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

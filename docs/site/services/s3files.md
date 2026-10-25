@@ -21,6 +21,7 @@ See the [implemented feature catalogue](catalogue.md#amazon-s3-files) for this s
 
 ## Limitations and future work
 
+- Terraform AWS provider 6.x has aws_s3files_* resources, but no Terraform case covers them yet.
 - No NFS server, file I/O, object import/export or actual synchronization; mount target IP addresses are metadata only and no EC2 network interface or IP allocation is created.
 - Policies, POSIX identities, creation permissions and IAM role trust/permissions are not evaluated; no CloudWatch metrics, EventBridge rules, S3 notifications or real encryption is performed.
 - Lifecycle transitions are deterministic local timers, not AWS health or readiness; failed and misconfigured states are not simulated.

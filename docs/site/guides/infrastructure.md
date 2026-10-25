@@ -27,7 +27,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 6.0"
     }
   }
 }
@@ -42,6 +42,8 @@ provider "aws" {
     sts = "http://127.0.0.1:4566"
     sqs = "http://127.0.0.1:4566"
     s3  = "http://127.0.0.1:4566"
+    # S3 Control prefixes the host with the account ID, which only a name under localhost accepts.
+    s3control = "http://localhost:4566"
   }
 }
 
@@ -50,7 +52,10 @@ resource "aws_sqs_queue" "jobs" {
 }
 ```
 
-Add endpoint overrides for every service your project uses. STS provides local account lookup.
+Add endpoint overrides for every service your project uses. STS provides local account lookup. Provider 6 reads and
+writes `aws_s3_bucket` tags through S3 Control, so a project with buckets also needs the `s3control` endpoint. Every
+name under `localhost` resolves to loopback, so `000000000000.localhost` reaches TinyStack, where
+`000000000000.127.0.0.1` does not resolve; the wrapper rewrites a loopback address to `localhost` for this endpoint.
 [tests/terraform/main.tf](https://github.com/amjadjibon/tinystack/blob/main/tests/terraform/main.tf)
 is the working fixture for supported resources/properties beyond this small example.
 
