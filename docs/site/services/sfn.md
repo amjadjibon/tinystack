@@ -12,8 +12,8 @@ Execute a local Amazon States Language subset with service integrations.
 | Wire protocol | AWS JSON 1.0 |
 | API version | `2016-11-23` |
 | Scope | Account and region |
-| Execution | Local behavior |
-| Selected operations | 34 of 37 in the pinned model |
+| Execution | Local workflows and S3 access. Distributed Map requires a Standard parent and runs up to 10,000 concurrent child workflows when MaxConcurrency is zero; updates govern subsequent dispatch and threshold checks. Standard children are retained and can be listed by Map Run ARN; Express children are not retained. Results without S3 export are subject to the 256 KiB state payload limit |
+| Selected operations | 37 of 37 in the pinned model |
 
 ## Implemented behavior
 
@@ -21,9 +21,11 @@ See the [implemented feature catalogue](catalogue.md#step-functions) for this se
 
 ## Limitations and future work
 
-- No distributed Map, map runs, execution retention or IAM role checks.
+- No execution retention.
+- Distributed Map does not support Map Run redrive, MANIFEST or Parquet readers, compressed inputs, ItemsPointer or LOAD_AND_FLATTEN; unsupported definition fields fail validation.
+- Distributed Map datasets and result exports are buffered in memory rather than streamed; MaxConcurrencyPath on Inline Map is outside the subset.
 - JSONPath filters and recursive descent are outside the subset.
-- Running executions abort after restart; activity queues and task tokens are in memory.
+- Running executions and Map Runs abort after restart; stopping a parent aborts its running child workflows; activity queues and task tokens are in memory.
 - Express execution results are not retained; console results last until leaving or reloading the page.
 - Versions, aliases, activities, TestState and redrive remain available through the AWS CLI or SDK; verify-mode console management requires an authenticated root console session.
 - Reset does not stop executions already running.
@@ -50,6 +52,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `DeleteStateMachineVersion` | `POST /` |
 | `DescribeActivity` | `POST /` |
 | `DescribeExecution` | `POST /` |
+| `DescribeMapRun` | `POST /` |
 | `DescribeStateMachine` | `POST /` |
 | `DescribeStateMachineAlias` | `POST /` |
 | `DescribeStateMachineForExecution` | `POST /` |
@@ -57,6 +60,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `GetExecutionHistory` | `POST /` |
 | `ListActivities` | `POST /` |
 | `ListExecutions` | `POST /` |
+| `ListMapRuns` | `POST /` |
 | `ListStateMachineAliases` | `POST /` |
 | `ListStateMachineVersions` | `POST /` |
 | `ListStateMachines` | `POST /` |
@@ -72,24 +76,19 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `TagResource` | `POST /` |
 | `TestState` | `POST /` |
 | `UntagResource` | `POST /` |
+| `UpdateMapRun` | `POST /` |
 | `UpdateStateMachine` | `POST /` |
 | `UpdateStateMachineAlias` | `POST /` |
 | `ValidateStateMachineDefinition` | `POST /` |
 
 ## Operations not implemented
 
-??? info "3 modeled operations outside the implementation"
-
-    These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
-
-    - `DescribeMapRun`
-    - `ListMapRuns`
-    - `UpdateMapRun`
+All operations in this pinned model are selected. Member and behavior limits still apply.
 
 ## Source and examples
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/sfn)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/sfn/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/sfn.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [sfn_jsonata_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_jsonata_test.go), [sfn_redrive_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_redrive_test.go), [sfn_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_test.go), [sfn_teststate_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_teststate_test.go), [sfn_variables_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_variables_test.go), [sfn_versions_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_versions_test.go).
+- SDK integration examples: [sfn_distributed_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_distributed_test.go), [sfn_jsonata_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_jsonata_test.go), [sfn_redrive_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_redrive_test.go), [sfn_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_test.go), [sfn_teststate_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_teststate_test.go), [sfn_variables_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_variables_test.go), [sfn_versions_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_versions_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

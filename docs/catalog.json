@@ -1090,20 +1090,25 @@
         "JSONPath and JSONata evaluation, supported state types, Retry/Catch and callbacks",
         "In-process AWS SDK integrations can call implemented operations",
         "TestState and redrive support",
+        "Distributed Map Runs with Standard or Express child workflows, separate child histories, DescribeMapRun, ListMapRuns and live UpdateMapRun settings",
+        "S3 JSON, JSONL and CSV ItemReader datasets, listObjectsV2 readers, ItemSelector, item batching and tolerated failure thresholds",
+        "ResultWriter exports status files and manifests to S3, with JSON or JSONL output and NONE, COMPACT or FLATTEN transformations; WriterConfig-only output previews",
         "AWS-style console for scoped state machine creation, ASL validation and editing, execution roles, logging configuration and tags",
         "Console starts and stops Standard executions with paginated execution history, input, output and failure details; Express workflows return synchronous results",
         "With authorization on, Task states assume the state machine's role, whose trust policy must allow states.amazonaws.com for the state machine (aws:SourceArn) and account, and are decided by the role's policies, including child executions and SDK integrations; a denial fails the Task with <Service>.AccessDeniedException and the denial as its cause, so Retry and Catch apply, and soft mode records the check"
       ],
       "gaps": [
-        "No distributed Map, map runs, execution retention or IAM role checks",
+        "No execution retention",
+        "Distributed Map does not support Map Run redrive, MANIFEST or Parquet readers, compressed inputs, ItemsPointer or LOAD_AND_FLATTEN; unsupported definition fields fail validation",
+        "Distributed Map datasets and result exports are buffered in memory rather than streamed; MaxConcurrencyPath on Inline Map is outside the subset",
         "JSONPath filters and recursive descent are outside the subset",
-        "Running executions abort after restart; activity queues and task tokens are in memory",
+        "Running executions and Map Runs abort after restart; stopping a parent aborts its running child workflows; activity queues and task tokens are in memory",
         "Express execution results are not retained; console results last until leaving or reloading the page",
         "Versions, aliases, activities, TestState and redrive remain available through the AWS CLI or SDK; verify-mode console management requires an authenticated root console session",
         "Reset does not stop executions already running",
         "A denied Task fails with the target service's own error name and message (such as SQS.AccessDeniedException) rather than AWS's"
       ],
-      "execution": "Local behavior",
+      "execution": "Local workflows and S3 access. Distributed Map requires a Standard parent and runs up to 10,000 concurrent child workflows when MaxConcurrency is zero; updates govern subsequent dispatch and threshold checks. Standard children are retained and can be listed by Map Run ARN; Express children are not retained. Results without S3 export are subject to the 256 KiB state payload limit",
       "package": "sfn"
     },
     "sesv2": {
