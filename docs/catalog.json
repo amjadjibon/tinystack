@@ -3240,6 +3240,62 @@
       ],
       "execution": "Real local workflow coordination; workers and deciders run in clients",
       "package": "swf"
+    },
+    "bedrockagentcorecontrol": {
+      "title": "Amazon Bedrock AgentCore control plane",
+      "category": "Machine Learning",
+      "scope": "Account and Region",
+      "summary": "Manage AgentCore agent runtimes with their versions and endpoints, and short-term memories; sessions of a runtime run in containers through the AgentCore data plane.",
+      "execution": "Records",
+      "package": "bedrockagentcorecontrol",
+      "guide": "See [Amazon Bedrock AgentCore](../guides/bedrock-agentcore.md) for the runtime lifecycle, versions and endpoints, memories, and how a runtime runs once the data plane's Docker mode is on.",
+      "features": [
+        "Nineteen of 171 pinned REST JSON operations: runtime create/get/list/update/delete and version listing, endpoint create/get/list/update/delete, memory create/get/list/update/delete and the three tagging operations, with generated ValidationException constraints",
+        "Runtimes take a container image (agentRuntimeArtifact.containerConfiguration.containerUri), an existing IAM role, PUBLIC networking or VPC networking whose subnets and security groups exist in TinyStack EC2, the HTTP, MCP and A2A protocols, environment variables, lifecycle settings (idleRuntimeSessionTimeout 900 s and maxLifetime 28800 s by default), a customJWTAuthorizer and a request header allowlist",
+        "Status lifecycle CREATING to READY, UPDATING to READY and DELETING, settled by a 100 ms worker after a 200 ms transition delay and resumed after a SQLite restart; every update replaces the configuration, creates the next version and moves the DEFAULT endpoint to it",
+        "Endpoints: the DEFAULT endpoint every runtime gets follows the latest version; named endpoints serve the version they were given (liveVersion and targetVersion) until updated; a version can be deleted when no endpoint uses it, and deleting a runtime deletes its versions and endpoints",
+        "Memories keep short-term events for eventExpiryDuration days with an optional execution role and KMS key that exist in TinyStack; CREATING or UPDATING to ACTIVE, DELETING, unique names, client-token replay for creates",
+        "Tags in the records of runtimes, endpoints and memories, storage-key-order pagination, inventory and Resource Groups Tagging API integration, and iam:PassRole checks for roleArn and memoryExecutionRoleArn",
+        "CloudFormation AWS::BedrockAgentCore::Runtime, AWS::BedrockAgentCore::RuntimeEndpoint and AWS::BedrockAgentCore::Memory: Ref returns the ARN, an immutable name replaces the resource and every other property updates in place"
+      ],
+      "gaps": [
+        "Outside the profile: gateways, identity and credential providers, browsers, code interpreters, evaluations, policy engines, payments, registries, harnesses, datasets, A/B tests, capacity providers, configuration bundles, resource policies and workload identities",
+        "codeConfiguration (S3 code with a managed Python or Node.js runtime), AGUI, filesystemConfigurations, capacityProviderConfiguration and platformVersion fail explicitly: TinyStack has no managed language runtime and these members have no local meaning. Workload identity is not created, so CloudFormation exposes no WorkloadIdentityDetails attributes",
+        "The customJWTAuthorizer, requestHeaderConfiguration and VPC networking are stored and described but not enforced: the SDK invokes agents with SigV4, bearer tokens cannot reach the data plane, and containers are not placed in the VPC",
+        "CREATE_FAILED and UPDATE_FAILED are never entered: TinyStack does not resolve the image or the role's trust policy at create time. A runtime whose image cannot start fails when its first session starts",
+        "memoryStrategies, indexedKeys, namespaceKeys and streamDeliveryResources fail explicitly: long-term strategies extract records with a model and TinyStack does not invent model output; updates cannot add, change or remove them. An eventExpiryDuration change applies to events created afterwards",
+        "UpdateAgentRuntime replaces the whole configuration, as a PUT; clientToken replay is supported only for the three create operations. Deleting one version removes it at once without a DELETING status",
+        "Terraform's aws_bedrockagentcore_* resources need the AWS provider 6.x; the pinned test provider is 5.x, so no Terraform case runs here"
+      ]
+    },
+    "bedrockagentcore": {
+      "title": "Amazon Bedrock AgentCore data plane",
+      "category": "Machine Learning",
+      "scope": "Account and Region",
+      "summary": "Invoke AgentCore agent runtimes in Docker containers, one per runtime session, and store short-term memory events with expiry.",
+      "execution": "Records events / optional Docker runtimes",
+      "package": "bedrockagentcore",
+      "guide": "Set `bedrockagentcore.runtimes: docker` to run sessions in containers; the default `records` mode rejects InvokeAgentRuntime with ValidationException. See [Amazon Bedrock AgentCore](../guides/bedrock-agentcore.md) and [configuration](../getting-started/configuration.md#agentcore-runtime-execution).",
+      "features": [
+        "Eight of 67 pinned REST JSON operations: InvokeAgentRuntime, StopRuntimeSession, CreateEvent, GetEvent, ListEvents, DeleteEvent, ListActors and ListSessions (memory sessions), sharing the signing name bedrock-agentcore with the control plane; a gateway test proves every operation's route reaches only its own service",
+        "InvokeAgentRuntime resolves a runtime ARN, or an ID with accountId, and the qualifier endpoint (DEFAULT when omitted), starts the container of the endpoint's live version on a session's first call, and reuses it for the session; the runtimeSessionId is generated when absent and returned",
+        "The runtime service contract: HTTP agents get POST /invocations and GET /ping on 8080 (ready on a 200), MCP servers POST /mcp on 8000 and A2A agents POST / on 9000 (ready on any HTTP answer); the payload, content type, Accept, MCP, user and trace headers go through, and the response status, Content-Type, Mcp-Session-Id and trace headers come back",
+        "Responses stream: a text/event-stream passes through chunk by chunk and the SDK output is a streaming blob; a non-2xx answer or a container that cannot start or answer is RuntimeClientError (424) with the container's status and message",
+        "Containers run with --platform linux/arm64 as AWS requires, with the runtime's environment variables over AWS_REGION, AWS_DEFAULT_REGION, AWS_ENDPOINT_URL (host.docker.internal and TinyStack's port) and the creating caller's access key and configured secret, as Lambda containers get them",
+        "A session's container is removed after idleRuntimeSessionTimeout idle seconds or maxLifetime seconds, by StopRuntimeSession, when its runtime, endpoint or version is deleted, on reset and on shutdown; containers an earlier run of the same store left behind are removed at startup",
+        "Short-term memory events are real storage: CreateEvent with conversational, blob and JSON payloads, metadata, branches that fork from a root event and an idempotent client token; GetEvent, DeleteEvent, ListEvents (oldest first, includePayloads, metadata EQUALS_TO/EXISTS/NOT_EXISTS filters, branch filter with parent branches), ListActors and ListSessions, with pagination",
+        "An event expires eventExpiryDuration days after it was created; a background sweeper deletes it with its token, and deleting a memory deletes its events. Events survive a SQLite restart"
+      ],
+      "gaps": [
+        "Records mode (the default) cannot run an agent: InvokeAgentRuntime fails with ValidationException, the error shape CodeBuild's StartBuild uses, because no response would be an agent's. StopRuntimeSession then finds no session and answers ResourceNotFoundException",
+        "AWS runs each session in its own microVM; TinyStack runs a container. Images must be arm64 (or run emulated, which is slow on x86_64 hosts) and must already be local or pullable by the Docker daemon, including public.ecr.aws references; TinyStack's ECR is not consulted. Session state, MMDS and filesystem mounts are not emulated",
+        "A session keeps the version it started on until it ends. Calls do not carry the customJWTAuthorizer or the request header allowlist, and a bearer-token request cannot reach this service; GetAgentCard, InvokeAgentRuntimeCommand and AGUI are out of the profile",
+        "Containers reach TinyStack through host.docker.internal; on Linux, start TinyStack on an address the Docker bridge reaches. They sign with the creator's static credentials, not STS role credentials, as Lambda functions do, so the runtime's role is not assumed",
+        "Memory records, RetrieveMemoryRecords, extraction jobs, IngestData and the batch record operations are out of the profile because a memory has no strategies; extractionConfig on CreateEvent is not supported and extractionMode only accepts SKIP, which holds trivially",
+        "Event timestamps order events, so an event created with an earlier timestamp lists first; ListSessions reports a session's first event creation time and a session disappears with its last event rather than after the one day AWS keeps empty sessions",
+        "Tokens, expiry indexes and sessions are in TinyStack: the sweepers visit once a second and the container sessions are not recovered after a restart",
+        "Resource-based policies are out of the profile, so invoking another account's runtime fails with AccessDeniedException"
+      ]
     }
   },
   "future": {

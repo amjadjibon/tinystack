@@ -43,6 +43,7 @@ Use `./bin/tinystack start --help` for the current command help.
 | `eks.clusters` | `records` | `records` or `k3s` |
 | `elasticache.caches` | `records` | `records` or `docker` |
 | `opensearch.domains` | `records` | `records` or `docker`; docker runs each domain as a single-node OpenSearch container (see [OpenSearch Service](../services/opensearch.md)) |
+| `bedrockagentcore.runtimes` | `records` | `records` or `docker`; records rejects InvokeAgentRuntime, docker runs one container per runtime session (see [AgentCore runtime execution](#agentcore-runtime-execution)) |
 | `lambda.executor` | `auto` | `docker`, `local` or `auto`; auto uses Docker when the CLI reaches a daemon, otherwise host Python/Node |
 | `lambda.local.python` | `python3` | Python executable from PATH or an explicit path |
 | `lambda.local.node` | `node` | Node executable from PATH or an explicit path |
@@ -225,3 +226,15 @@ StartBuild explicitly: project configuration alone cannot produce a successful b
 Build containers reach this endpoint through `host.docker.internal`, as ECS containers do. Sources and
 artifacts stay in TinyStack S3. See [CodeBuild projects and builds](../guides/codebuild-records.md) for
 buildspec support, local credentials and execution limits.
+
+## AgentCore runtime execution
+
+Set `bedrockagentcore.runtimes: docker` to run each AgentCore runtime session in its own container, started on the
+session's first `InvokeAgentRuntime` and removed after the runtime's idle timeout or maximum lifetime, by
+`StopRuntimeSession`, when its runtime or endpoint is deleted, on reset and on shutdown. Docker must be available to
+TinyStack. `records` is the default; it keeps runtimes as records and rejects `InvokeAgentRuntime` with a
+ValidationException that names this setting.
+
+Containers run `--platform linux/arm64`, as AgentCore requires, so an x86_64 host emulates them. They reach this endpoint
+through `host.docker.internal` with the credentials Lambda containers get. See
+[Amazon Bedrock AgentCore](../guides/bedrock-agentcore.md) for the runtime service contract, session lifecycle and limits.

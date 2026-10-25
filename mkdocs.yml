@@ -99,6 +99,7 @@ nav:
       - EFS records: guides/efs-records.md
       - Batch records: guides/batch-records.md
       - CodeBuild records: guides/codebuild-records.md
+      - Amazon Bedrock AgentCore: guides/bedrock-agentcore.md
       - Amazon MQ records: guides/mq-records.md
       - Amazon MSK records: guides/msk-records.md
       - Amazon MWAA records: guides/mwaa-records.md
@@ -190,6 +191,8 @@ nav:
       - "Machine Learning":
           - "Amazon Bedrock": services/bedrock.md
           - "Amazon Bedrock Agent Runtime": services/bedrockagentruntime.md
+          - "Amazon Bedrock AgentCore control plane": services/bedrockagentcorecontrol.md
+          - "Amazon Bedrock AgentCore data plane": services/bedrockagentcore.md
           - "Amazon Bedrock Agents": services/bedrockagent.md
           - "Amazon Bedrock Runtime": services/bedrockruntime.md
           - "Amazon Transcribe": services/transcribe.md
