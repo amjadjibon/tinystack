@@ -1792,6 +1792,7 @@ Read and write keys in local CloudFront key value stores.
 - Shares CloudFront-owned global account records; control and data ETags are distinct as in [AWS](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/kvs-with-functions-kvp.html).
 - Terraform aws_cloudfrontkeyvaluestore_key and persistent restart coverage.
 - SigV4a scopes use normal access-key account resolution; first X-Amz-Region-Set entry selects Region, with * using the configured default Region.
+- identity.mode verify checks SigV4a header and presigned signatures against the ECDSA P-256 key derived from the access key pair, as the SDKs derive it.
 
 [Supported operations](cloudfrontkeyvaluestore.md#supported-operations) · [Limitations](cloudfrontkeyvaluestore.md#limitations-and-future-work)
 

@@ -21,7 +21,6 @@ See the [implemented feature catalogue](catalogue.md#cloudfront-keyvaluestore) f
 
 ## Limitations and future work
 
-- SigV4a signature verification is not implemented: identity.mode verify explicitly rejects it with InvalidSignatureException.
 - SDKs prefix the endpoint host with the store's account ID, so the endpoint must be a name under localhost (or another name that resolves with any prefix); an IP address endpoint cannot reach the data plane, and terraform-local points it at localhost.
 - No edge replication or CloudFront Functions runtime; local writes are immediately visible.
 - Stores and tags are inventoried by CloudFront; keys have no separate CloudFormation resource type.

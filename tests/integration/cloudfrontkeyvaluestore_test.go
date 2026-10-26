@@ -225,20 +225,35 @@ func TestCloudFrontKVSRestart(t *testing.T) {
 	}
 }
 
-func TestCloudFrontKVSVerifyRejected(t *testing.T) {
+func TestCloudFrontKVSVerify(t *testing.T) {
 	cfg := testConfig()
 	cfg.Identity.Mode = config.IdentityVerify
 	cfg.Identity.SecretKeys = map[string]string{"test": "test"}
 	s := serverConfig(t, cfg, &fakeRuntime{})
-	_, err := kvsClient(
-		s,
-	).DescribeKeyValueStore(context.Background(), &sdk.DescribeKeyValueStoreInput{
-		KvsARN: new("arn:aws:cloudfront::000000000000:key-value-store/00000000-0000-0000-0000-000000000000"),
-	})
-	wantAccessAnalyzerError(t, err, "InvalidSignatureException")
-	if !strings.Contains(err.Error(), "SigV4a verification is not supported yet") {
+	ctx := context.Background()
+	store, err := cloudfrontClient(s).CreateKeyValueStore(ctx, &cf.CreateKeyValueStoreInput{Name: new("verified")})
+	if err != nil {
 		t.Fatal(err)
 	}
+
+	// The SDK signs every data-plane call with SigV4a; a verified one reaches the store.
+	described, err := kvsClient(s).DescribeKeyValueStore(ctx, &sdk.DescribeKeyValueStoreInput{
+		KvsARN: store.KeyValueStore.ARN,
+	})
+	if err != nil || aws.ToString(described.KvsARN) != aws.ToString(store.KeyValueStore.ARN) {
+		t.Fatalf("verified SigV4a call: %+v %v", described, err)
+	}
+
+	forged := sdk.New(sdk.Options{
+		Region:       "us-east-1",
+		BaseEndpoint: new(strings.Replace(s.URL, "127.0.0.1", "localhost", 1)),
+		Credentials: aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) {
+			return aws.Credentials{AccessKeyID: "test", SecretAccessKey: "wrong"}, nil
+		}),
+		Retryer: aws.NopRetryer{},
+	})
+	_, err = forged.DescribeKeyValueStore(ctx, &sdk.DescribeKeyValueStoreInput{KvsARN: store.KeyValueStore.ARN})
+	wantAccessAnalyzerError(t, err, "InvalidSignatureException")
 }
 
 func TestCloudFrontKVSStoreLimit(t *testing.T) {

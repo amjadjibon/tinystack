@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -70,17 +69,17 @@ func TestSigV4aIdentity(t *testing.T) {
 					t.Fatal(m.Region)
 				}
 
-				c := &call{meta: m}
+				c := &call{meta: m, service: &catalog.Service{SigningName: "cloudfront-keyvaluestore"}}
 				c.meta.Protocol = catalog.RESTJSON
 				err = s.authenticate(httptest.NewRecorder(), r, c)
 				if mode == config.IdentityParse && err != nil {
 					t.Fatal(err)
 				}
 
+				// The forged signature fails verification; TestCloudFrontKVSVerify covers a genuine one.
 				if mode == config.IdentityVerify {
 					var awsErr *awserror.Error
-					if !errors.As(err, &awsErr) || awsErr.Code != "InvalidSignatureException" ||
-						!strings.Contains(awsErr.Message, "SigV4a verification is not supported yet") {
+					if !errors.As(err, &awsErr) {
 						t.Fatal(err)
 					}
 				}

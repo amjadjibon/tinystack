@@ -818,10 +818,10 @@
         "512-byte keys, 1 KiB values, 50-key batch and 5 MiB store limits; see [AWS quotas](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cloudfront-limits.html#limits-keyvaluestores)",
         "Shares CloudFront-owned global account records; control and data ETags are distinct as in [AWS](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/kvs-with-functions-kvp.html)",
         "Terraform aws_cloudfrontkeyvaluestore_key and persistent restart coverage",
-        "SigV4a scopes use normal access-key account resolution; first X-Amz-Region-Set entry selects Region, with * using the configured default Region"
+        "SigV4a scopes use normal access-key account resolution; first X-Amz-Region-Set entry selects Region, with * using the configured default Region",
+        "identity.mode verify checks SigV4a header and presigned signatures against the ECDSA P-256 key derived from the access key pair, as the SDKs derive it"
       ],
       "gaps": [
-        "SigV4a signature verification is not implemented: identity.mode verify explicitly rejects it with InvalidSignatureException",
         "SDKs prefix the endpoint host with the store's account ID, so the endpoint must be a name under localhost (or another name that resolves with any prefix); an IP address endpoint cannot reach the data plane, and terraform-local points it at localhost",
         "No edge replication or CloudFront Functions runtime; local writes are immediately visible",
         "Stores and tags are inventoried by CloudFront; keys have no separate CloudFormation resource type",

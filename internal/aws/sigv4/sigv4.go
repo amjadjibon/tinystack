@@ -19,7 +19,7 @@ import (
 const (
 	// Algorithm identifies SigV4 HMAC signatures.
 	Algorithm = "AWS4-HMAC-SHA256"
-	// AlgorithmV4A identifies SigV4a scopes; verification is not implemented.
+	// AlgorithmV4A identifies SigV4a ECDSA P-256 signatures, whose scope names no Region.
 	AlgorithmV4A = "AWS4-ECDSA-P256-SHA256"
 	// MaxSkew is how far a request's signing time may be from the server clock.
 	MaxSkew = 15 * time.Minute
@@ -151,6 +151,10 @@ func ParseQuery(query url.Values, missingExpires time.Duration) (*Authorization,
 }
 
 func (a *Authorization) scope() string {
+	if a.Algorithm == AlgorithmV4A {
+		return strings.Join([]string{a.Date, a.Service, terminator}, "/")
+	}
+
 	return strings.Join([]string{a.Date, a.Region, a.Service, terminator}, "/")
 }
 
@@ -160,10 +164,6 @@ func (a *Authorization) scope() string {
 // valid from its signing time until it expires. S3 signs its URI path as sent;
 // other services encode it once more.
 func Verify(r *http.Request, a *Authorization, secret, payloadHash string, s3 bool, now time.Time) error {
-	if a.Algorithm == AlgorithmV4A {
-		return errors.Join(ErrMalformed, errors.New("SigV4a verification is not supported yet"))
-	}
-
 	if a.Signature == "" || len(a.SignedHeaders) == 0 || !slices.Contains(a.SignedHeaders, "host") {
 		return errors.Join(ErrMalformed, errors.New("the signature must sign at least the host header"))
 	}
@@ -202,9 +202,13 @@ func Verify(r *http.Request, a *Authorization, secret, payloadHash string, s3 bo
 
 	digest := sha256.Sum256([]byte(canonical))
 	stringToSign := strings.Join(
-		[]string{Algorithm, signedAt.Format(timeFormat), a.scope(), hex.EncodeToString(digest[:])},
+		[]string{a.Algorithm, signedAt.Format(timeFormat), a.scope(), hex.EncodeToString(digest[:])},
 		"\n",
 	)
+	if a.Algorithm == AlgorithmV4A {
+		return verifyV4A(a.AccessKey, secret, stringToSign, a.Signature)
+	}
+
 	key := SigningKey(secret, a.Date, a.Region, a.Service)
 	want := hex.EncodeToString(HMACSHA256(key, stringToSign))
 	if !hmac.Equal([]byte(want), []byte(a.Signature)) {

@@ -17,7 +17,8 @@ The account comes from, in this order:
 3. the access key itself, when it is exactly 12 ASCII digits (`123456789012` is account `123456789012`);
 4. `defaults.account`, for any other key and for unsigned requests.
 
-Region comes from SigV4 scope, then a recognized regional hostname, then `defaults.region`. Other key text is
+Region comes from SigV4 scope (for SigV4a, which has no Region in its scope, the first `X-Amz-Region-Set`
+entry, or `defaults.region` for `*`), then a recognized regional hostname, then `defaults.region`. Other key text is
 not converted into an account ID. The 12-digit rule only chooses the account: in `verify` mode the key still
 needs an `identity.secret_keys` entry, and a 12-digit key without one fails with `InvalidClientTokenId`.
 Because every service reads the account from the request, ARNs, queue URLs, `GetCallerIdentity` and cross-account
@@ -29,9 +30,11 @@ same [CDK app](../guides/cdk.md) in several accounts without configuration.
 | Mode | What it checks | What it does not imply |
 | --- | --- | --- |
 | `parse` | Extract identity and route the request | Signature authentication |
-| `verify` | Validate SigV4 against configured secrets, active IAM keys, or unexpired STS sessions | IAM permission checks unless `identity.authorization` enables them |
+| `verify` | Validate SigV4 and SigV4a against configured secrets, active IAM keys, or unexpired STS sessions | IAM permission checks unless `identity.authorization` enables them |
 
-Verify mode requires at least one configured `identity.secret_keys` entry. Locally issued session credentials
+SigV4a (`AWS4-ECDSA-P256-SHA256`, used by CloudFront KeyValueStore and Multi-Region Access Points) is checked
+against the ECDSA P-256 key the SDKs derive from the same access key pair. Verify mode requires at least one
+configured `identity.secret_keys` entry. Locally issued session credentials
 also require the matching session token; expired sessions fail. Model-marked anonymous APIs, such as selected
 Cognito sign-in operations, retain their anonymous contract.
 
