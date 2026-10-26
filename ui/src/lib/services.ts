@@ -254,6 +254,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: database,
 		icon: "timestreamwrite",
 	},
+	timestreamquery: {
+		title: "Amazon Timestream Query",
+		category: database,
+		icon: "timestreamquery",
+	},
 	codeartifact: {
 		title: "CodeArtifact",
 		category: developerTools,

@@ -12,6 +12,7 @@ const appSyncAPIType = "Api"
 // resource types ("sqs" to "AWS::SQS::..."). A service missing here has no
 // resource types a group can select.
 var namespaces = map[string]string{
+	"timestreamquery":           "Timestream",
 	"translate":                 "Translate",
 	"transcribe":                "Transcribe",
 	"globalaccelerator":         "GlobalAccelerator",
@@ -112,6 +113,7 @@ var namespaces = map[string]string{
 // not the inventory type in PascalCase, by "service/type".
 var typeNames = map[string]string{
 	"cloudfront/key-value-store":             "KeyValueStore",
+	"timestreamquery/scheduled-query":        "ScheduledQuery",
 	"bedrockagent/agent":                     "Agent",
 	"bedrockagent/alias":                     "AgentAlias",
 	"bedrockagent/knowledge-base":            "KnowledgeBase",

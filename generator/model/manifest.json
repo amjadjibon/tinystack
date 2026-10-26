@@ -518,6 +518,10 @@
     "redshiftdata": {
       "path": "codegen/sdk-codegen/aws-models/redshift-data.json",
       "sha256": "490eb86f020e950ef94c4d6dce4fff44c3a1ee2039a81a4a6b626aeb3a683f07"
+    },
+    "timestreamquery": {
+      "path": "codegen/sdk-codegen/aws-models/timestream-query.json",
+      "sha256": "e209f2ccf023f01ce7d2fcc1388519fe2583aaca344f6a395ad001a8d9af70aa"
     }
   }
 }

@@ -85,6 +85,7 @@ provider "aws" {
     ssm                  = var.endpoint
     sts                  = var.endpoint
     timestreamwrite      = var.endpoint
+    timestreamquery      = var.endpoint
 
     # S3 Control and CloudFront KeyValueStore prefix the host with the account ID, and only a name under localhost
     # resolves to loopback.
@@ -3025,6 +3026,56 @@ resource "aws_s3control_multi_region_access_point" "control" {
     name = "tinystack-control-mrap"
     region {
       bucket = aws_s3_bucket.assets.id
+    }
+  }
+}
+
+# Fixed tags: on a tag-only update provider 6.70 leaves state, creation_time and the invocation times unknown
+# without reading them back ("Provider returned invalid result object after apply"), against AWS too.
+resource "aws_timestreamquery_scheduled_query" "cpu_hourly" {
+  name               = "tf-cpu-hourly"
+  execution_role_arn = aws_iam_role.lambda.arn
+  kms_key_id         = aws_kms_key.data.arn
+  query_string       = "SELECT BIN(time, 1m) AS binned_timestamp, AVG(cpu) AS avg_cpu FROM tf-metrics.cpu"
+  tags               = { owner = "tinystack" }
+
+  schedule_configuration {
+    schedule_expression = "rate(1 hour)"
+  }
+
+  notification_configuration {
+    sns_configuration {
+      topic_arn = aws_sns_topic.alerts.arn
+    }
+  }
+
+  error_report_configuration {
+    s3_configuration {
+      bucket_name       = aws_s3_bucket.assets.bucket
+      object_key_prefix = "timestream-errors/"
+      encryption_option = "SSE_S3"
+    }
+  }
+
+  target_configuration {
+    timestream_configuration {
+      database_name = aws_timestreamwrite_database.metrics.database_name
+      table_name    = aws_timestreamwrite_table.cpu.table_name
+      time_column   = "binned_timestamp"
+
+      dimension_mapping {
+        name                 = "host"
+        dimension_value_type = "VARCHAR"
+      }
+
+      multi_measure_mappings {
+        target_multi_measure_name = "cpu_metrics"
+
+        multi_measure_attribute_mapping {
+          source_column      = "avg_cpu"
+          measure_value_type = "DOUBLE"
+        }
+      }
     }
   }
 }

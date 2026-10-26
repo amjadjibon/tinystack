@@ -116,6 +116,7 @@ def main():
                 # Snapshot, usage limit and Data API statement have no team-dependent attributes.
                 # S3 access point tags update in place (+1); its bucket/name/VPC/BPA are ForceNew.
                 # The account BPA booleans and policy stay fixed; MRAP details are ForceNew and untaggable.
+                # The Timestream Query scheduled query has fixed tags (see main.tf) and does not change.
                 updated = terraform("apply", "-auto-approve", team="platform")
                 assert "8 added, 154 changed, 8 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"

@@ -1,6 +1,7 @@
 // Package timestreamwrite stores Amazon Timestream databases and tables as metadata. WriteRecords validates every
 // record against the documented rules and the table's retention windows and counts what it accepts, but it
-// discards the data: nothing is stored or queryable, and the query API (timestream-query) is not served.
+// discards the data: nothing is stored or queryable, and timestreamquery serves scheduled query and account setting
+// records without executing queries.
 package timestreamwrite
 
 import (
@@ -66,6 +67,17 @@ func databaseNotFound(db string) error {
 
 func tableNotFound(db, table string) error {
 	return fault("ResourceNotFoundException", "The table %s does not exist in database %s.", table, db)
+}
+
+// HasTable reports whether database and table exist in scope.
+func (s *Service) HasTable(ctx context.Context, scope request.Scope, database, table string) (bool, error) {
+	var found bool
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+		_, ok, err := storage.Read[tableRecord](tx, tableKey(scope, database, table))
+		found = ok
+		return err
+	})
+	return found, err
 }
 
 func checkName(what string, value *string) (string, error) {

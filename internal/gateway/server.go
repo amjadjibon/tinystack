@@ -506,10 +506,33 @@ func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType st
 		return c, awserror.New("UnknownOperationException", "X-Amz-Target must identify an operation")
 	}
 
+	var fallback, matched *catalog.Service
+	var shared bool
 	for _, service := range s.services {
-		if service.TargetPrefix == prefix && jsonProtocol(service) != "" {
-			c.service = service
+		if service.TargetPrefix != prefix || jsonProtocol(service) == "" {
+			continue
 		}
+
+		if fallback == nil || service.Name < fallback.Name {
+			fallback = service
+		}
+
+		if _, hasOp := service.Operations[op]; hasOp {
+			if matched != nil {
+				shared = true
+			}
+
+			matched = service
+		}
+	}
+
+	switch {
+	case shared:
+		c.service = s.timestreamService(w, r, c, op, fallback)
+	case matched != nil:
+		c.service = matched
+	default:
+		c.service = fallback
 	}
 
 	if c.service == nil {
@@ -525,6 +548,40 @@ func (s *Server) classify(w http.ResponseWriter, r *http.Request, contentType st
 	c.meta.Service = c.service.Name
 	c.meta.Operation = op
 	return c, nil
+}
+
+// timestreamService resolves operations that both timestreamwrite and timestreamquery implement. Both services share
+// the "Timestream_20181101" target prefix and are separated in AWS only by their discovered endpoint hosts:
+// tagging operations route by the resource type in ResourceARN (:scheduled-query/ goes to timestreamquery and
+// anything else goes to timestreamwrite), while DescribeEndpoints answers identically in both and goes to
+// timestreamwrite.
+func (s *Server) timestreamService(
+	w http.ResponseWriter,
+	r *http.Request,
+	c *call,
+	op string,
+	fallback *catalog.Service,
+) *catalog.Service {
+	switch op {
+	case "TagResource", "UntagResource", "ListTagsForResource":
+		c.service = fallback
+		if body, err := s.readBody(w, r, c); err == nil && len(body) > 0 {
+			var probe struct {
+				ResourceARN string `json:"ResourceARN"`
+			}
+			if json.Unmarshal(body, &probe) == nil && strings.Contains(probe.ResourceARN, ":scheduled-query/") {
+				if svc, ok := s.services["timestreamquery"]; ok {
+					return svc
+				}
+			}
+		}
+	}
+
+	if svc, ok := s.services["timestreamwrite"]; ok {
+		return svc
+	}
+
+	return fallback
 }
 
 // classifyCBOR resolves an RPC v2 CBOR request's service and operation from

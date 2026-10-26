@@ -139,6 +139,7 @@ import (
 	ssoadminapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssoadmin"
 	stsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
 	swfapi "github.com/amjadjibon/tinystack/internal/aws/generated/swf"
+	timestreamqueryapi "github.com/amjadjibon/tinystack/internal/aws/generated/timestreamquery"
 	timestreamwriteapi "github.com/amjadjibon/tinystack/internal/aws/generated/timestreamwrite"
 	transcribeapi "github.com/amjadjibon/tinystack/internal/aws/generated/transcribe"
 	transferapi "github.com/amjadjibon/tinystack/internal/aws/generated/transfer"
@@ -281,6 +282,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/ssoadmin"
 	"github.com/amjadjibon/tinystack/internal/services/sts"
 	"github.com/amjadjibon/tinystack/internal/services/swf"
+	"github.com/amjadjibon/tinystack/internal/services/timestreamquery"
 	"github.com/amjadjibon/tinystack/internal/services/timestreamwrite"
 	"github.com/amjadjibon/tinystack/internal/services/transcribe"
 	"github.com/amjadjibon/tinystack/internal/services/transfer"
@@ -499,6 +501,7 @@ func build(
 	codecommitRecords := codecommit.New(store)
 	artifactRecords := codeartifact.New(store)
 	timestreamRecords := timestreamwrite.New(store)
+	timestreamQueryRecords := timestreamquery.New(store, timestreamRecords, topics, roles, buckets, keys)
 	costExplorerRecords := costexplorer.New(store)
 	curRecords := costandusagereportservice.New(store)
 	budgetRecords := budgets.New(store, deliveries, logger)
@@ -681,6 +684,7 @@ func build(
 		codepipelineapi.Descriptor(codePipelines),
 		codecommitapi.Descriptor(codecommitRecords),
 		codeartifactapi.Descriptor(artifactRecords),
+		timestreamqueryapi.Descriptor(timestreamQueryRecords),
 		timestreamwriteapi.Descriptor(timestreamRecords),
 		budgetsapi.Descriptor(budgetRecords),
 		apprunnerapi.Descriptor(appRunnerRecords),

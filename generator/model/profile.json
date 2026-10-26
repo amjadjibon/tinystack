@@ -23999,6 +23999,265 @@
       ]
     }
   },
+  "timestreamquery": {
+    "operations": [
+      "CreateScheduledQuery",
+      "DeleteScheduledQuery",
+      "DescribeAccountSettings",
+      "DescribeEndpoints",
+      "DescribeScheduledQuery",
+      "ListScheduledQueries",
+      "ListTagsForResource",
+      "TagResource",
+      "UntagResource",
+      "UpdateAccountSettings",
+      "UpdateScheduledQuery"
+    ],
+    "shapes": {
+      "AccountSettingsNotificationConfiguration": [
+        "SnsConfiguration",
+        "RoleArn"
+      ],
+      "CreateScheduledQueryRequest": [
+        "Name",
+        "QueryString",
+        "ScheduleConfiguration",
+        "NotificationConfiguration",
+        "TargetConfiguration",
+        "ClientToken",
+        "ScheduledQueryExecutionRoleArn",
+        "Tags",
+        "KmsKeyId",
+        "ErrorReportConfiguration"
+      ],
+      "CreateScheduledQueryResponse": [
+        "Arn"
+      ],
+      "DeleteScheduledQueryRequest": [
+        "ScheduledQueryArn"
+      ],
+      "DescribeAccountSettingsRequest": [],
+      "DescribeAccountSettingsResponse": [
+        "MaxQueryTCU",
+        "QueryPricingModel",
+        "QueryCompute"
+      ],
+      "DescribeEndpointsRequest": [],
+      "DescribeEndpointsResponse": [
+        "Endpoints"
+      ],
+      "DescribeScheduledQueryRequest": [
+        "ScheduledQueryArn"
+      ],
+      "DescribeScheduledQueryResponse": [
+        "ScheduledQuery"
+      ],
+      "DimensionMapping": [
+        "Name",
+        "DimensionValueType"
+      ],
+      "Endpoint": [
+        "Address",
+        "CachePeriodInMinutes"
+      ],
+      "ErrorReportConfiguration": [
+        "S3Configuration"
+      ],
+      "ErrorReportLocation": [
+        "S3ReportLocation"
+      ],
+      "ExecutionStats": [
+        "ExecutionTimeInMillis",
+        "DataWrites",
+        "BytesMetered",
+        "CumulativeBytesScanned",
+        "RecordsIngested",
+        "QueryResultRows"
+      ],
+      "LastUpdate": [
+        "TargetQueryTCU",
+        "Status",
+        "StatusMessage"
+      ],
+      "ListScheduledQueriesRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListScheduledQueriesResponse": [
+        "ScheduledQueries",
+        "NextToken"
+      ],
+      "ListTagsForResourceRequest": [
+        "ResourceARN",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags",
+        "NextToken"
+      ],
+      "MixedMeasureMapping": [
+        "MeasureName",
+        "SourceColumn",
+        "TargetMeasureName",
+        "MeasureValueType",
+        "MultiMeasureAttributeMappings"
+      ],
+      "MultiMeasureAttributeMapping": [
+        "SourceColumn",
+        "TargetMultiMeasureAttributeName",
+        "MeasureValueType"
+      ],
+      "MultiMeasureMappings": [
+        "TargetMultiMeasureName",
+        "MultiMeasureAttributeMappings"
+      ],
+      "NotificationConfiguration": [
+        "SnsConfiguration"
+      ],
+      "ProvisionedCapacityRequest": [
+        "TargetQueryTCU",
+        "NotificationConfiguration"
+      ],
+      "ProvisionedCapacityResponse": [
+        "ActiveQueryTCU",
+        "NotificationConfiguration",
+        "LastUpdate"
+      ],
+      "QueryComputeRequest": [
+        "ComputeMode",
+        "ProvisionedCapacity"
+      ],
+      "QueryComputeResponse": [
+        "ComputeMode",
+        "ProvisionedCapacity"
+      ],
+      "QuerySpatialCoverage": [
+        "Max"
+      ],
+      "QuerySpatialCoverageMax": [
+        "Value",
+        "TableArn",
+        "PartitionKey"
+      ],
+      "QueryTemporalRange": [
+        "Max"
+      ],
+      "QueryTemporalRangeMax": [
+        "Value",
+        "TableArn"
+      ],
+      "S3Configuration": [
+        "BucketName",
+        "ObjectKeyPrefix",
+        "EncryptionOption"
+      ],
+      "S3ReportLocation": [
+        "BucketName",
+        "ObjectKey"
+      ],
+      "ScheduleConfiguration": [
+        "ScheduleExpression"
+      ],
+      "ScheduledQuery": [
+        "Arn",
+        "Name",
+        "CreationTime",
+        "State",
+        "PreviousInvocationTime",
+        "NextInvocationTime",
+        "ErrorReportConfiguration",
+        "TargetDestination",
+        "LastRunStatus"
+      ],
+      "ScheduledQueryDescription": [
+        "Arn",
+        "Name",
+        "QueryString",
+        "CreationTime",
+        "State",
+        "PreviousInvocationTime",
+        "NextInvocationTime",
+        "ScheduleConfiguration",
+        "NotificationConfiguration",
+        "TargetConfiguration",
+        "ScheduledQueryExecutionRoleArn",
+        "KmsKeyId",
+        "ErrorReportConfiguration",
+        "LastRunSummary",
+        "RecentlyFailedRuns"
+      ],
+      "ScheduledQueryInsightsResponse": [
+        "QuerySpatialCoverage",
+        "QueryTemporalRange",
+        "QueryTableCount",
+        "OutputRows",
+        "OutputBytes"
+      ],
+      "ScheduledQueryRunSummary": [
+        "InvocationTime",
+        "TriggerTime",
+        "RunStatus",
+        "ExecutionStats",
+        "QueryInsightsResponse",
+        "ErrorReportLocation",
+        "FailureReason"
+      ],
+      "SnsConfiguration": [
+        "TopicArn"
+      ],
+      "Tag": [
+        "Key",
+        "Value"
+      ],
+      "TagResourceRequest": [
+        "ResourceARN",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "TargetConfiguration": [
+        "TimestreamConfiguration"
+      ],
+      "TargetDestination": [
+        "TimestreamDestination"
+      ],
+      "TimestreamConfiguration": [
+        "DatabaseName",
+        "TableName",
+        "TimeColumn",
+        "DimensionMappings",
+        "MultiMeasureMappings",
+        "MixedMeasureMappings",
+        "MeasureNameColumn"
+      ],
+      "TimestreamDestination": [
+        "DatabaseName",
+        "TableName"
+      ],
+      "UntagResourceRequest": [
+        "ResourceARN",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "UpdateAccountSettingsRequest": [
+        "MaxQueryTCU",
+        "QueryPricingModel",
+        "QueryCompute"
+      ],
+      "UpdateAccountSettingsResponse": [
+        "MaxQueryTCU",
+        "QueryPricingModel",
+        "QueryCompute"
+      ],
+      "UpdateScheduledQueryRequest": [
+        "ScheduledQueryArn",
+        "State"
+      ]
+    },
+    "validation": {
+      "code": "ValidationException"
+    }
+  },
   "timestreamwrite": {
     "operations": [
       "CreateDatabase",
