@@ -21,12 +21,12 @@ See the [implemented feature catalogue](catalogue.md#amazon-s3-files) for this s
 
 ## Limitations and future work
 
-- Terraform AWS provider 6.x has aws_s3files_* resources, but no Terraform case covers them yet.
 - No NFS server, file I/O, object import/export or actual synchronization; mount target IP addresses are metadata only and no EC2 network interface or IP allocation is created.
 - Policies, POSIX identities, creation permissions and IAM role trust/permissions are not evaluated; no CloudWatch metrics, EventBridge rules, S3 notifications or real encryption is performed.
 - Lifecycle transitions are deterministic local timers, not AWS health or readiness; failed and misconfigured states are not simulated.
 - Large-prefix warning detection counts current live objects only and uses the documented approximate 12 million-object threshold; AWS warning heuristics, rename duration and costs are not simulated.
 - Removing CloudFormation SynchronizationConfiguration is explicitly unsupported; provide replacement rules instead. NetworkInterfaceId is absent because no interface is allocated.
+- Terraform provider 6.70 drops access-point root_directory on import and cannot reconstruct mount-target ip_address_type; the Terraform fixture omits these optional attributes to keep imported state stable.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

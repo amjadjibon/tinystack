@@ -76,6 +76,7 @@ provider "aws" {
     networkfirewall      = var.endpoint
     route53              = var.endpoint
     s3                   = var.endpoint
+    s3files              = var.endpoint
     scheduler            = var.endpoint
     secretsmanager       = var.endpoint
     servicequotas        = var.endpoint
@@ -3077,5 +3078,55 @@ resource "aws_timestreamquery_scheduled_query" "cpu_hourly" {
         }
       }
     }
+  }
+}
+
+# S3 Files control-plane resources share the existing versioned bucket, role and subnet.
+resource "aws_s3files_file_system" "local" {
+  bucket     = aws_s3_bucket.assets.arn
+  role_arn   = aws_iam_role.datasync.arn
+  prefix     = "files/"
+  tags       = local.tags
+  depends_on = [aws_s3_bucket_versioning.assets]
+}
+
+resource "aws_s3files_mount_target" "local" {
+  # Provider 6.70 cannot reconstruct ip_address_type on import; use the service default.
+  file_system_id = aws_s3files_file_system.local.id
+  subnet_id      = aws_subnet.public.id
+}
+
+resource "aws_s3files_access_point" "local" {
+  file_system_id = aws_s3files_file_system.local.id
+  tags           = local.tags
+  posix_user {
+    uid = 1000
+    gid = 1000
+  }
+  # Provider 6.70 preserves a null root_directory during import, even when the API returns it.
+}
+
+resource "aws_s3files_file_system_policy" "local" {
+  file_system_id = aws_s3files_file_system.local.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { AWS = aws_iam_role.datasync.arn }
+      Action    = "s3files:ClientMount"
+      Resource  = aws_s3files_file_system.local.arn
+    }]
+  })
+}
+
+resource "aws_s3files_synchronization_configuration" "local" {
+  file_system_id = aws_s3files_file_system.local.id
+  import_data_rule {
+    prefix         = "files/"
+    size_less_than = 131072
+    trigger        = "ON_DIRECTORY_FIRST_ACCESS"
+  }
+  expiration_data_rule {
+    days_after_last_access = 30
   }
 }

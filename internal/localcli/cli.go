@@ -218,6 +218,7 @@ var TerraformServices = []string{
 	"route53",
 	"s3",
 	"s3control",
+	"s3files",
 	"scheduler",
 	"secretsmanager",
 	"sesv2",

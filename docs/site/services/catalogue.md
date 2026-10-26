@@ -2229,6 +2229,7 @@ Manage S3-backed file system, mount target and access point records with durable
 - Synchronization configuration stores import and expiration rules: omit latestVersionNumber on first write, then supply the current version for each update; conflicting versions fail with ConflictException.
 - Tags on file systems and access points, paginated list APIs in storage key order, inventory, Resource Groups and the Resource Groups Tagging API; console uses the existing S3 icon.
 - Official CloudFormation types AWS::S3Files::FileSystem, MountTarget, AccessPoint and FileSystemPolicy, with specification-based replacement and in-place tag, policy, security-group and synchronization-rule updates.
+- Terraform AWS provider 6.70 coverage for file systems, mount targets, access points, file system policies and synchronization configuration, including apply, refresh, tag updates, import and destroy; s3files endpoint override.
 
 [Supported operations](s3files.md#supported-operations) · [Limitations](s3files.md#limitations-and-future-work)
 

@@ -1883,15 +1883,16 @@
         "Access points replay reused client tokens without changing the original resource, as documented by AWS, and preserve POSIX users, secondary groups, root directories and creation permissions; file system policies require a JSON object containing Statement and are stored verbatim",
         "Synchronization configuration stores import and expiration rules: omit latestVersionNumber on first write, then supply the current version for each update; conflicting versions fail with ConflictException",
         "Tags on file systems and access points, paginated list APIs in storage key order, inventory, Resource Groups and the Resource Groups Tagging API; console uses the existing S3 icon",
-        "Official CloudFormation types AWS::S3Files::FileSystem, MountTarget, AccessPoint and FileSystemPolicy, with specification-based replacement and in-place tag, policy, security-group and synchronization-rule updates"
+        "Official CloudFormation types AWS::S3Files::FileSystem, MountTarget, AccessPoint and FileSystemPolicy, with specification-based replacement and in-place tag, policy, security-group and synchronization-rule updates",
+        "Terraform AWS provider 6.70 coverage for file systems, mount targets, access points, file system policies and synchronization configuration, including apply, refresh, tag updates, import and destroy; s3files endpoint override"
       ],
       "gaps": [
-        "Terraform AWS provider 6.x has aws_s3files_* resources, but no Terraform case covers them yet",
         "No NFS server, file I/O, object import/export or actual synchronization; mount target IP addresses are metadata only and no EC2 network interface or IP allocation is created",
         "Policies, POSIX identities, creation permissions and IAM role trust/permissions are not evaluated; no CloudWatch metrics, EventBridge rules, S3 notifications or real encryption is performed",
         "Lifecycle transitions are deterministic local timers, not AWS health or readiness; failed and misconfigured states are not simulated",
         "Large-prefix warning detection counts current live objects only and uses the documented approximate 12 million-object threshold; AWS warning heuristics, rename duration and costs are not simulated",
-        "Removing CloudFormation SynchronizationConfiguration is explicitly unsupported; provide replacement rules instead. NetworkInterfaceId is absent because no interface is allocated"
+        "Removing CloudFormation SynchronizationConfiguration is explicitly unsupported; provide replacement rules instead. NetworkInterfaceId is absent because no interface is allocated",
+        "Terraform provider 6.70 drops access-point root_directory on import and cannot reconstruct mount-target ip_address_type; the Terraform fixture omits these optional attributes to keep imported state stable"
       ],
       "execution": "Records only; deterministic local lifecycle worker",
       "package": "s3files"

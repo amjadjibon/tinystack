@@ -117,8 +117,9 @@ def main():
                 # S3 access point tags update in place (+1); its bucket/name/VPC/BPA are ForceNew.
                 # The account BPA booleans and policy stay fixed; MRAP details are ForceNew and untaggable.
                 # The Timestream Query scheduled query has fixed tags (see main.tf) and does not change.
+                # S3 Files file-system and access-point tags update in place (+2); other properties stay fixed.
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "8 added, 154 changed, 8 destroyed" in updated, updated
+                assert "8 added, 156 changed, 8 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"
                 terraform("plan", "-detailed-exitcode", team="platform")
                 # The provider replaces the monitor when its name changes. The subscription
@@ -130,6 +131,14 @@ def main():
                 resources = {r["address"]: r for r in state["values"]["root_module"]["resources"]}
                 for address in ("aws_ce_anomaly_monitor.services", "aws_ce_anomaly_subscription.daily", "aws_ce_cost_category.team"):
                     resource_id = resources[address]["values"]["id"]
+                    subprocess.run(["terraform", "state", "rm", address], cwd=work, check=True, capture_output=True)
+                    terraform("import", address, resource_id, team="platform")
+                for kind in ("file_system", "mount_target", "access_point", "file_system_policy",
+                             "synchronization_configuration"):
+                    address = f"aws_s3files_{kind}.local"
+                    values = resources[address]["values"]
+                    resource_id = values["file_system_id"] if kind in (
+                        "file_system_policy", "synchronization_configuration") else values["id"]
                     subprocess.run(["terraform", "state", "rm", address], cwd=work, check=True, capture_output=True)
                     terraform("import", address, resource_id, team="platform")
                 terraform("plan", "-detailed-exitcode", team="platform")
