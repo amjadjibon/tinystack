@@ -384,6 +384,8 @@ func (s *Service) perform(ctx context.Context,
 	scope request.Scope, st *stack, next *step,
 ) (physical string, attributes map[string]any, err error) {
 	c := &client{
+		s3control: s.s3control,
+
 		mediaConvert: s.mediaConvert,
 		mediaConnect: s.mediaConnect,
 

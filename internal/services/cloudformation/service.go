@@ -50,6 +50,8 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
+	s3control s3ControlRecords
+
 	mediaConvert mediaConvertRecords
 	mediaConnect mediaConnectRecords
 

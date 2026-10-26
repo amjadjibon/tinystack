@@ -439,6 +439,7 @@ func build(
 	a.onStop(graphQL.Stop)
 	network := ec2.New(store)
 	bucketControl := s3control.New(store, buckets, network)
+	a.onStop(bucketControl.Stop)
 	buckets.UseAccountPublicAccessBlock(bucketControl.AccountBlocksPublicPolicy)
 	network.UseInstanceProfiles(roles.InstanceProfileOf)
 	kube := eks.New(store, network)
@@ -827,6 +828,7 @@ func build(
 	stacks.UseTransfer(transferRecords)
 	stacks.UseLocation(locationTrackers)
 	stacks.UseS3Tables(tableRecords)
+	stacks.UseS3Control(bucketControl)
 	stacks.UseCaller(caller)
 	// Subscription filters deliver to Lambda, Kinesis, and Firehose.
 	logGroups.UseCaller(caller)

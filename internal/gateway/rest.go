@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"errors"
 	"net"
 	"net/http"
 	"net/url"
@@ -74,8 +75,10 @@ func routes(service *catalog.Service) []route {
 			rt.segments = strings.Split(trimmed, "/")
 		}
 
-		if n := len(rt.segments); n > 0 && strings.HasSuffix(rt.segments[n-1], "+}") {
-			rt.greedy = true
+		for _, segment := range rt.segments {
+			if strings.HasSuffix(segment, "+}") {
+				rt.greedy = true
+			}
 		}
 
 		for _, pair := range strings.Split(rawQuery, "&") {
@@ -93,6 +96,7 @@ func routes(service *catalog.Service) []route {
 				rt.allowed[mb.Name] = true
 			}
 		}
+
 		// S3's multipart routes share their method and object path with
 		// ordinary object operations. Their upload query parameters distinguish
 		// the operations even when the optional x-id parameter is absent.
@@ -114,9 +118,15 @@ func routes(service *catalog.Service) []route {
 // score ranks a matching route: routes that need a header and then routes with
 // more query literals are more specific.
 func (rt *route) score() int {
-	n := len(rt.literals)
+	n := len(rt.literals) * 100
 	if rt.header != "" {
-		n += 100
+		n += 10000
+	}
+
+	for _, segment := range rt.segments {
+		if !strings.HasPrefix(segment, "{") {
+			n++
+		}
 	}
 
 	return n
@@ -146,6 +156,7 @@ func (rt *route) match(
 			return nil, false
 		}
 	}
+
 	for _, k := range rt.required {
 		if len(query[k]) != 1 || query.Get(k) == "" {
 			return nil, false
@@ -159,10 +170,12 @@ func (rt *route) match(
 	}
 
 	labels := map[string]string{}
+	offset := 0
 	for i, seg := range rt.segments {
+		actual := i + offset
 		label, isLabel := strings.CutPrefix(seg, "{")
 		if !isLabel {
-			if segments[i] != seg {
+			if segments[actual] != seg {
 				return nil, false
 			}
 
@@ -170,9 +183,11 @@ func (rt *route) match(
 		}
 
 		label = strings.TrimSuffix(label, "}")
-		value := segments[i]
+		value := segments[actual]
 		if greedy := strings.TrimSuffix(label, "+"); greedy != label {
-			label, value = greedy, strings.Join(segments[i:], "/")
+			end := len(segments) - (len(rt.segments) - i - 1)
+			label, value = greedy, strings.Join(segments[actual:end], "/")
+			offset = end - actual - 1
 		}
 
 		if value == "" {
@@ -221,6 +236,7 @@ func (s *Server) restOperation(r *http.Request, c *call) (map[string]string, err
 			segments = append(segments, decoded)
 		}
 	}
+
 	// S3 treats "/bucket/" as the bucket itself, and keeps a key's trailing slash. Other services' routes do not
 	// end in a slash, though some models write their URIs with one, as Bedrock Agents' and AgentCore's do, and SDKs
 	// send them.
@@ -244,6 +260,7 @@ func (s *Server) restOperation(r *http.Request, c *call) (map[string]string, err
 		c.meta.Operation = opPostObject
 		return map[string]string{"Bucket": segments[0]}, nil
 	}
+
 	for k := range query {
 		if sigv4.QueryParameter(k) {
 			delete(query, k)
@@ -276,9 +293,11 @@ func (s *Server) decodeREST(w http.ResponseWriter, r *http.Request, c *call, op 
 		if streamErr != nil {
 			return nil, streamErr
 		}
+
 		if c.payload == nil {
 			c.payload = &request.Payload{}
 		}
+
 		c.payload.Stream = stream
 		c.payload.Trailers = trailers
 
@@ -288,7 +307,8 @@ func (s *Server) decodeREST(w http.ResponseWriter, r *http.Request, c *call, op 
 
 	body, err := rest.ReadBody(w, r, s.restBodyLimit(c))
 	if err != nil {
-		if _, ok := err.(*awserror.Error); ok { //nolint:errorlint // ReadBody returns awserror values directly.
+		var awsErr *awserror.Error
+		if errors.As(err, &awsErr) {
 			return nil, err
 		}
 
@@ -300,9 +320,11 @@ func (s *Server) decodeREST(w http.ResponseWriter, r *http.Request, c *call, op 
 		if decodeErr := restjson.Decode(r, &binding, c.labels, body, input); decodeErr != nil {
 			return input, decodeErr
 		}
+
 		if c.service.Name == authorizationBatch {
 			return input, batchUniqueJSON(body)
 		}
+
 		return input, nil
 	}
 
@@ -314,5 +336,6 @@ func (s *Server) restBodyLimit(c *call) int64 {
 	if c.service.SigningName == "s3" && (c.meta.Operation == opPutObject || c.meta.Operation == opUploadPart) {
 		return s.cfg.Storage.MaxObjectBytes
 	}
+
 	return restMaxBody
 }

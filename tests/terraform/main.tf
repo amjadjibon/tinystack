@@ -2993,3 +2993,38 @@ resource "aws_redshiftdata_statement" "local" {
   sql            = "select tinystack_fixture"
   statement_name = "local-fixture"
 }
+
+resource "aws_s3_access_point" "control" {
+  bucket = aws_s3_bucket.assets.id
+  name   = "tinystack-control-access-point"
+  tags   = local.tags
+}
+
+resource "aws_s3control_access_point_policy" "control" {
+  access_point_arn = aws_s3_access_point.control.arn
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { AWS = "arn:aws:iam::000000000000:root" }
+      Action    = "s3:GetObject"
+      Resource  = "${aws_s3_access_point.control.arn}/object/*"
+    }]
+  })
+}
+
+resource "aws_s3_account_public_access_block" "control" {
+  block_public_acls       = true
+  ignore_public_acls      = true
+  block_public_policy     = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3control_multi_region_access_point" "control" {
+  details {
+    name = "tinystack-control-mrap"
+    region {
+      bucket = aws_s3_bucket.assets.id
+    }
+  }
+}

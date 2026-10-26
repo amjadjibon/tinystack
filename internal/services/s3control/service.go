@@ -5,12 +5,14 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3control"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/ec2"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
@@ -22,10 +24,13 @@ type Service struct {
 	buckets *s3.Service
 	store   storage.Store
 	network *ec2.Service
+	workers *background.Group
 }
 
 func New(store storage.Store, buckets *s3.Service, network *ec2.Service) *Service {
-	return &Service{store: store, buckets: buckets, network: network}
+	s := &Service{store: store, buckets: buckets, network: network, workers: background.New()}
+	s.workers.Every(100*time.Millisecond, s.advanceMRAP)
+	return s
 }
 
 func bucket(ctx context.Context, account, arn *string) (*string, error) {
@@ -134,4 +139,15 @@ func (s *Service) ListTagsForResource(
 	}
 
 	return &api.ListTagsForResourceResult{Tags: tags}, nil
+}
+
+// Stop joins the persistent MRAP operation worker.
+func (s *Service) Stop() { s.workers.Stop() }
+
+func pageLimit(limit *int64) int {
+	if common.Value(limit) == 0 {
+		return 1000
+	}
+
+	return int(*limit)
 }

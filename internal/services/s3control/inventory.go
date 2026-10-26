@@ -2,6 +2,7 @@ package s3control
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
@@ -14,16 +15,51 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, k := range tx.Keys("") {
 			account, region, rest, ok := storage.Scoped(k, serviceName)
-			if !ok || !strings.HasPrefix(rest, "accesspoint/") {
+			if !ok {
 				continue
 			}
 
-			r, _, err := storage.Read[accessPointRecord](tx, k)
-			if err != nil {
-				return err
+			if strings.HasPrefix(rest, "mrap/") {
+				r, _, txErr := storage.Read[mrapRecord](tx, k)
+				if txErr != nil {
+					return txErr
+				}
+
+				out = append(
+					out,
+					catalog.Resource{
+						Account: account,
+						Region:  region,
+						Type:    "mrap",
+						Name:    common.Value(r.Name),
+						ARN:     fmt.Sprintf("arn:aws:s3::%s:accesspoint/%s", account, common.Value(r.Alias)),
+						Details: map[string]any{"Configuration": r.MultiRegionAccessPointReport, "RecordsOnly": true},
+					},
+				)
+				continue
 			}
 
-			out = append(out, catalog.Resource{Account: account, Region: region, Type: "accesspoint", Name: common.Value(r.Name), ARN: common.Value(r.AccessPointArn), Tags: common.CloneTags(r.Tags), Details: map[string]any{"Configuration": r.GetAccessPointResult}})
+			if !strings.HasPrefix(rest, "accesspoint/") {
+				continue
+			}
+
+			r, _, txErr := storage.Read[accessPointRecord](tx, k)
+			if txErr != nil {
+				return txErr
+			}
+
+			out = append(
+				out,
+				catalog.Resource{
+					Account: account,
+					Region:  region,
+					Type:    "accesspoint",
+					Name:    common.Value(r.Name),
+					ARN:     common.Value(r.AccessPointArn),
+					Tags:    common.CloneTags(r.Tags),
+					Details: map[string]any{"Configuration": r.GetAccessPointResult},
+				},
+			)
 		}
 
 		return nil

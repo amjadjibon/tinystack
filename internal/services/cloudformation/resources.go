@@ -300,6 +300,8 @@ func (t *resourceType) createsFirst(old, p props) bool {
 
 // client calls other services for one stack resource.
 type client struct {
+	s3control s3ControlRecords
+
 	mediaConvert mediaConvertRecords
 	mediaConnect mediaConnectRecords
 

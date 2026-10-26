@@ -244,6 +244,9 @@ var re2Patterns = map[string]re2Pattern{
 	// The pinned model requires a Region, rejecting the general purpose bucket ARNs (arn:aws:s3:::bucket) that S3
 	// Control's tagging operations accept (s3control S3ResourceArn).
 	`^arn:[^:]+:s3(express)?:[^:]`: {match: `^arn:[^:]+:s3(express)?:[^:]|^arn:[^:]+:s3:::[^:/]`},
+	// S3 Control documents Mrap as a Multi-Region Access Point ARN, but the pinned pattern omits the resource slash
+	// (s3control MultiRegionAccessPointId).
+	`^[a-zA-Z0-9\:.-]{3,200}$`: {match: `^[a-zA-Z0-9:/.-]{3,200}$`},
 	// The pinned model writes /d where \d is meant, rejecting real Bedrock ARNs (bedrock-agent TaggableResourcesArn).
 	`(^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:(agent|agent-alias|knowledge-base|flow|prompt)` +
 		`/[A-Z0-9]{10}(?:/[A-Z0-9]{10})?$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:flow/([A-Z0-9]` +

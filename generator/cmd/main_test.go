@@ -606,6 +606,11 @@ func TestPatternRewrites(t *testing.T) {
 			[]string{"arn:aws:s3:::assets", "arn:aws:s3:us-east-1:000000000000:accesspoint/ap"},
 			[]string{"arn:aws:s3:::", "arn:aws:sqs:us-east-1:000000000000:queue"},
 		},
+		{
+			`^[a-zA-Z0-9\:.-]{3,200}$`,
+			[]string{"arn:aws:s3::000000000000:accesspoint/mfzwi23gnjvgw.mrap", "mfzwi23gnjvgw.mrap"},
+			[]string{"ab", "arn aws"},
+		},
 	} {
 		rendering, ok := re2Patterns[tc.source]
 		if !ok {

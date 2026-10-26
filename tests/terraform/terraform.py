@@ -114,8 +114,10 @@ def main():
                 # CloudFront KVS tags and its key value update in place (+2); names/ARN/key are unchanged.
                 # Redshift Serverless namespace and workgroup tags update in place (+2).
                 # Snapshot, usage limit and Data API statement have no team-dependent attributes.
+                # S3 access point tags update in place (+1); its bucket/name/VPC/BPA are ForceNew.
+                # The account BPA booleans and policy stay fixed; MRAP details are ForceNew and untaggable.
                 updated = terraform("apply", "-auto-approve", team="platform")
-                assert "8 added, 153 changed, 8 destroyed" in updated, updated
+                assert "8 added, 154 changed, 8 destroyed" in updated, updated
                 assert terraform("output", "-raw", "stack_parameter") == "team-platform"
                 terraform("plan", "-detailed-exitcode", team="platform")
                 # The provider replaces the monitor when its name changes. The subscription

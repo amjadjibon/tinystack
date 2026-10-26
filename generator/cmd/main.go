@@ -244,17 +244,17 @@ func (g *generator) typeName(id string) (string, error) {
 	}
 }
 
-// restTraits are the HTTP binding traits REST protocols support.
 // xmlBodyMap distinguishes document maps from maps bound to HTTP headers.
 func (g *generator) xmlBodyMap(id string) bool {
 	for shapeID, members := range g.profile.Shapes {
 		var sh shape
-		for id, candidate := range g.model.Shapes {
+		for id := range g.model.Shapes {
 			if short(id) == shapeID {
-				sh = candidate
+				sh = g.model.Shapes[id]
 				break
 			}
 		}
+
 		for _, name := range members {
 			member := sh.Members[name]
 			if member.Target == id && !httpBound(member) {
@@ -266,6 +266,7 @@ func (g *generator) xmlBodyMap(id string) bool {
 	return false
 }
 
+// restTraits are the HTTP binding traits REST protocols support.
 var restTraits = map[string]bool{
 	"smithy.api#http":              true,
 	"smithy.api#httpLabel":         true,
@@ -301,6 +302,11 @@ func httpBound(member reference) bool {
 // also accept the HTTP binding traits.
 func checkTraits(traits map[string]json.RawMessage, rest bool) error {
 	for t := range traits {
+		// REST XML verifies Content-MD5 in its decoder.
+		if rest && t == "smithy.api#httpChecksumRequired" {
+			continue
+		}
+
 		// AWS JSON and Query serialize members in the document, ignoring HTTP bindings.
 		if !rest && (t == traitLabel || t == traitQuery || t == traitHeader) {
 			continue
@@ -417,6 +423,7 @@ func (g *generator) queryTag(member reference, name string) (string, error) {
 		if !g.queryOnly {
 			opts = append(opts, "timestamp")
 		}
+
 	case shapeList:
 		if nested(target.Member.Target) {
 			return "", fmt.Errorf("nested collections are not supported by the query codec")
@@ -434,6 +441,7 @@ func (g *generator) queryTag(member reference, name string) (string, error) {
 		if !flat && memberName != "member" {
 			opts = append(opts, "member="+memberName)
 		}
+
 	case shapeMap:
 		if nested(target.Value.Target) {
 			return "", fmt.Errorf("nested collections are not supported by the query codec")

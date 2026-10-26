@@ -43204,7 +43204,17 @@
       "GetAccessPointPolicyStatus",
       "GetPublicAccessBlock",
       "PutPublicAccessBlock",
-      "DeletePublicAccessBlock"
+      "DeletePublicAccessBlock",
+      "CreateMultiRegionAccessPoint",
+      "DeleteMultiRegionAccessPoint",
+      "DescribeMultiRegionAccessPointOperation",
+      "GetMultiRegionAccessPoint",
+      "ListMultiRegionAccessPoints",
+      "PutMultiRegionAccessPointPolicy",
+      "GetMultiRegionAccessPointPolicy",
+      "GetMultiRegionAccessPointPolicyStatus",
+      "GetMultiRegionAccessPointRoutes",
+      "SubmitMultiRegionAccessPointRoutes"
     ],
     "shapes": {
       "TagResourceRequest": [
@@ -43337,7 +43347,156 @@
       ],
       "DeletePublicAccessBlockRequest": [
         "AccountId"
-      ]
+      ],
+      "CreateMultiRegionAccessPointRequest": [
+        "AccountId",
+        "ClientToken",
+        "Details"
+      ],
+      "CreateMultiRegionAccessPointInput": [
+        "Name",
+        "PublicAccessBlock",
+        "Regions"
+      ],
+      "Region": [
+        "Bucket",
+        "BucketAccountId"
+      ],
+      "CreateMultiRegionAccessPointResult": [
+        "RequestTokenARN"
+      ],
+      "DeleteMultiRegionAccessPointRequest": [
+        "AccountId",
+        "ClientToken",
+        "Details"
+      ],
+      "DeleteMultiRegionAccessPointInput": [
+        "Name"
+      ],
+      "DeleteMultiRegionAccessPointResult": [
+        "RequestTokenARN"
+      ],
+      "DescribeMultiRegionAccessPointOperationRequest": [
+        "AccountId",
+        "RequestTokenARN"
+      ],
+      "DescribeMultiRegionAccessPointOperationResult": [
+        "AsyncOperation"
+      ],
+      "AsyncOperation": [
+        "CreationTime",
+        "Operation",
+        "RequestTokenARN",
+        "RequestParameters",
+        "RequestStatus",
+        "ResponseDetails"
+      ],
+      "AsyncRequestParameters": [
+        "CreateMultiRegionAccessPointRequest",
+        "DeleteMultiRegionAccessPointRequest",
+        "PutMultiRegionAccessPointPolicyRequest"
+      ],
+      "PutMultiRegionAccessPointPolicyInput": [
+        "Name",
+        "Policy"
+      ],
+      "AsyncResponseDetails": [
+        "MultiRegionAccessPointDetails",
+        "ErrorDetails"
+      ],
+      "MultiRegionAccessPointsAsyncResponse": [
+        "Regions"
+      ],
+      "MultiRegionAccessPointRegionalResponse": [
+        "Name",
+        "RequestStatus"
+      ],
+      "AsyncErrorDetails": [
+        "Code",
+        "Message",
+        "Resource",
+        "RequestId"
+      ],
+      "GetMultiRegionAccessPointRequest": [
+        "AccountId",
+        "Name"
+      ],
+      "GetMultiRegionAccessPointResult": [
+        "AccessPoint"
+      ],
+      "MultiRegionAccessPointReport": [
+        "Name",
+        "Alias",
+        "CreatedAt",
+        "PublicAccessBlock",
+        "Status",
+        "Regions"
+      ],
+      "RegionReport": [
+        "Bucket",
+        "Region",
+        "BucketAccountId"
+      ],
+      "ListMultiRegionAccessPointsRequest": [
+        "AccountId",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListMultiRegionAccessPointsResult": [
+        "AccessPoints",
+        "NextToken"
+      ],
+      "PutMultiRegionAccessPointPolicyRequest": [
+        "AccountId",
+        "ClientToken",
+        "Details"
+      ],
+      "PutMultiRegionAccessPointPolicyResult": [
+        "RequestTokenARN"
+      ],
+      "GetMultiRegionAccessPointPolicyRequest": [
+        "AccountId",
+        "Name"
+      ],
+      "GetMultiRegionAccessPointPolicyResult": [
+        "Policy"
+      ],
+      "MultiRegionAccessPointPolicyDocument": [
+        "Established",
+        "Proposed"
+      ],
+      "EstablishedMultiRegionAccessPointPolicy": [
+        "Policy"
+      ],
+      "ProposedMultiRegionAccessPointPolicy": [
+        "Policy"
+      ],
+      "GetMultiRegionAccessPointPolicyStatusRequest": [
+        "AccountId",
+        "Name"
+      ],
+      "GetMultiRegionAccessPointPolicyStatusResult": [
+        "Established"
+      ],
+      "GetMultiRegionAccessPointRoutesRequest": [
+        "AccountId",
+        "Mrap"
+      ],
+      "GetMultiRegionAccessPointRoutesResult": [
+        "Mrap",
+        "Routes"
+      ],
+      "MultiRegionAccessPointRoute": [
+        "Bucket",
+        "Region",
+        "TrafficDialPercentage"
+      ],
+      "SubmitMultiRegionAccessPointRoutesRequest": [
+        "AccountId",
+        "Mrap",
+        "RouteUpdates"
+      ],
+      "SubmitMultiRegionAccessPointRoutesResult": []
     },
     "validation": {
       "code": "InvalidRequest"

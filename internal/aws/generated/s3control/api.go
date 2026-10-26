@@ -189,11 +189,218 @@ type DeletePublicAccessBlockRequest struct {
 	AccountId *string `json:"-" xml:"-"`
 }
 
+type Region struct {
+	Bucket          *string `json:"Bucket,omitempty" xml:"Bucket,omitempty"`
+	BucketAccountId *string `json:"BucketAccountId,omitempty" xml:"BucketAccountId,omitempty"`
+}
+
+type CreateMultiRegionAccessPointInput struct {
+	Name              *string                         `json:"Name,omitempty" xml:"Name,omitempty"`
+	PublicAccessBlock *PublicAccessBlockConfiguration `json:"PublicAccessBlock,omitempty" xml:"PublicAccessBlock,omitempty"`
+	Regions           []Region                        `json:"Regions,omitempty" xml:"Regions>Region,omitempty"`
+}
+
+type CreateMultiRegionAccessPointRequest struct {
+	XMLName     xml.Name                           `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ CreateMultiRegionAccessPointRequest"`
+	AccountId   *string                            `json:"-" xml:"-"`
+	ClientToken *string                            `json:"ClientToken,omitempty" xml:"ClientToken,omitempty"`
+	Details     *CreateMultiRegionAccessPointInput `json:"Details,omitempty" xml:"Details,omitempty"`
+}
+
+type CreateMultiRegionAccessPointResult struct {
+	XMLName         xml.Name `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ CreateMultiRegionAccessPointResult"`
+	RequestTokenARN *string  `json:"RequestTokenARN,omitempty" xml:"RequestTokenARN,omitempty"`
+}
+
+type DeleteMultiRegionAccessPointInput struct {
+	Name *string `json:"Name,omitempty" xml:"Name,omitempty"`
+}
+
+type DeleteMultiRegionAccessPointRequest struct {
+	XMLName     xml.Name                           `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ DeleteMultiRegionAccessPointRequest"`
+	AccountId   *string                            `json:"-" xml:"-"`
+	ClientToken *string                            `json:"ClientToken,omitempty" xml:"ClientToken,omitempty"`
+	Details     *DeleteMultiRegionAccessPointInput `json:"Details,omitempty" xml:"Details,omitempty"`
+}
+
+type DeleteMultiRegionAccessPointResult struct {
+	XMLName         xml.Name `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ DeleteMultiRegionAccessPointResult"`
+	RequestTokenARN *string  `json:"RequestTokenARN,omitempty" xml:"RequestTokenARN,omitempty"`
+}
+
+type DescribeMultiRegionAccessPointOperationRequest struct {
+	AccountId       *string `json:"-" xml:"-"`
+	RequestTokenARN *string `json:"-" xml:"-"`
+}
+
+type PutMultiRegionAccessPointPolicyInput struct {
+	Name   *string `json:"Name,omitempty" xml:"Name,omitempty"`
+	Policy *string `json:"Policy,omitempty" xml:"Policy,omitempty"`
+}
+
+type AsyncRequestParameters struct {
+	CreateMultiRegionAccessPointRequest    *CreateMultiRegionAccessPointInput    `json:"CreateMultiRegionAccessPointRequest,omitempty" xml:"CreateMultiRegionAccessPointRequest,omitempty"`
+	DeleteMultiRegionAccessPointRequest    *DeleteMultiRegionAccessPointInput    `json:"DeleteMultiRegionAccessPointRequest,omitempty" xml:"DeleteMultiRegionAccessPointRequest,omitempty"`
+	PutMultiRegionAccessPointPolicyRequest *PutMultiRegionAccessPointPolicyInput `json:"PutMultiRegionAccessPointPolicyRequest,omitempty" xml:"PutMultiRegionAccessPointPolicyRequest,omitempty"`
+}
+
+type MultiRegionAccessPointRegionalResponse struct {
+	Name          *string `json:"Name,omitempty" xml:"Name,omitempty"`
+	RequestStatus *string `json:"RequestStatus,omitempty" xml:"RequestStatus,omitempty"`
+}
+
+type MultiRegionAccessPointsAsyncResponse struct {
+	Regions []MultiRegionAccessPointRegionalResponse `json:"Regions,omitempty" xml:"Regions>Region,omitempty"`
+}
+
+type AsyncErrorDetails struct {
+	Code      *string `json:"Code,omitempty" xml:"Code,omitempty"`
+	Message   *string `json:"Message,omitempty" xml:"Message,omitempty"`
+	Resource  *string `json:"Resource,omitempty" xml:"Resource,omitempty"`
+	RequestId *string `json:"RequestId,omitempty" xml:"RequestId,omitempty"`
+}
+
+type AsyncResponseDetails struct {
+	MultiRegionAccessPointDetails *MultiRegionAccessPointsAsyncResponse `json:"MultiRegionAccessPointDetails,omitempty" xml:"MultiRegionAccessPointDetails,omitempty"`
+	ErrorDetails                  *AsyncErrorDetails                    `json:"ErrorDetails,omitempty" xml:"ErrorDetails,omitempty"`
+}
+
+type AsyncOperation struct {
+	CreationTime      *time.Time              `json:"CreationTime,omitempty" xml:"CreationTime,omitempty"`
+	Operation         *string                 `json:"Operation,omitempty" xml:"Operation,omitempty"`
+	RequestTokenARN   *string                 `json:"RequestTokenARN,omitempty" xml:"RequestTokenARN,omitempty"`
+	RequestParameters *AsyncRequestParameters `json:"RequestParameters,omitempty" xml:"RequestParameters,omitempty"`
+	RequestStatus     *string                 `json:"RequestStatus,omitempty" xml:"RequestStatus,omitempty"`
+	ResponseDetails   *AsyncResponseDetails   `json:"ResponseDetails,omitempty" xml:"ResponseDetails,omitempty"`
+}
+
+type DescribeMultiRegionAccessPointOperationResult struct {
+	XMLName        xml.Name        `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ DescribeMultiRegionAccessPointOperationResult"`
+	AsyncOperation *AsyncOperation `json:"AsyncOperation,omitempty" xml:"AsyncOperation,omitempty"`
+}
+
+type GetMultiRegionAccessPointRequest struct {
+	AccountId *string `json:"-" xml:"-"`
+	Name      *string `json:"-" xml:"-"`
+}
+
+type RegionReport struct {
+	Bucket          *string `json:"Bucket,omitempty" xml:"Bucket,omitempty"`
+	Region          *string `json:"Region,omitempty" xml:"Region,omitempty"`
+	BucketAccountId *string `json:"BucketAccountId,omitempty" xml:"BucketAccountId,omitempty"`
+}
+
+type MultiRegionAccessPointReport struct {
+	Name              *string                         `json:"Name,omitempty" xml:"Name,omitempty"`
+	Alias             *string                         `json:"Alias,omitempty" xml:"Alias,omitempty"`
+	CreatedAt         *time.Time                      `json:"CreatedAt,omitempty" xml:"CreatedAt,omitempty"`
+	PublicAccessBlock *PublicAccessBlockConfiguration `json:"PublicAccessBlock,omitempty" xml:"PublicAccessBlock,omitempty"`
+	Status            *string                         `json:"Status,omitempty" xml:"Status,omitempty"`
+	Regions           []RegionReport                  `json:"Regions,omitempty" xml:"Regions>Region,omitempty"`
+}
+
+type GetMultiRegionAccessPointResult struct {
+	XMLName     xml.Name                      `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ GetMultiRegionAccessPointResult"`
+	AccessPoint *MultiRegionAccessPointReport `json:"AccessPoint,omitempty" xml:"AccessPoint,omitempty"`
+}
+
+type ListMultiRegionAccessPointsRequest struct {
+	AccountId  *string `json:"-" xml:"-"`
+	NextToken  *string `json:"-" xml:"-"`
+	MaxResults *int64  `json:"-" xml:"-"`
+}
+
+type ListMultiRegionAccessPointsResult struct {
+	XMLName      xml.Name                       `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ ListMultiRegionAccessPointsResult"`
+	AccessPoints []MultiRegionAccessPointReport `json:"AccessPoints,omitempty" xml:"AccessPoints>AccessPoint,omitempty"`
+	NextToken    *string                        `json:"NextToken,omitempty" xml:"NextToken,omitempty"`
+}
+
+type PutMultiRegionAccessPointPolicyRequest struct {
+	XMLName     xml.Name                              `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ PutMultiRegionAccessPointPolicyRequest"`
+	AccountId   *string                               `json:"-" xml:"-"`
+	ClientToken *string                               `json:"ClientToken,omitempty" xml:"ClientToken,omitempty"`
+	Details     *PutMultiRegionAccessPointPolicyInput `json:"Details,omitempty" xml:"Details,omitempty"`
+}
+
+type PutMultiRegionAccessPointPolicyResult struct {
+	XMLName         xml.Name `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ PutMultiRegionAccessPointPolicyResult"`
+	RequestTokenARN *string  `json:"RequestTokenARN,omitempty" xml:"RequestTokenARN,omitempty"`
+}
+
+type GetMultiRegionAccessPointPolicyRequest struct {
+	AccountId *string `json:"-" xml:"-"`
+	Name      *string `json:"-" xml:"-"`
+}
+
+type EstablishedMultiRegionAccessPointPolicy struct {
+	Policy *string `json:"Policy,omitempty" xml:"Policy,omitempty"`
+}
+
+type ProposedMultiRegionAccessPointPolicy struct {
+	Policy *string `json:"Policy,omitempty" xml:"Policy,omitempty"`
+}
+
+type MultiRegionAccessPointPolicyDocument struct {
+	Established *EstablishedMultiRegionAccessPointPolicy `json:"Established,omitempty" xml:"Established,omitempty"`
+	Proposed    *ProposedMultiRegionAccessPointPolicy    `json:"Proposed,omitempty" xml:"Proposed,omitempty"`
+}
+
+type GetMultiRegionAccessPointPolicyResult struct {
+	XMLName xml.Name                              `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ GetMultiRegionAccessPointPolicyResult"`
+	Policy  *MultiRegionAccessPointPolicyDocument `json:"Policy,omitempty" xml:"Policy,omitempty"`
+}
+
+type GetMultiRegionAccessPointPolicyStatusRequest struct {
+	AccountId *string `json:"-" xml:"-"`
+	Name      *string `json:"-" xml:"-"`
+}
+
+type GetMultiRegionAccessPointPolicyStatusResult struct {
+	XMLName     xml.Name      `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ GetMultiRegionAccessPointPolicyStatusResult"`
+	Established *PolicyStatus `json:"Established,omitempty" xml:"Established,omitempty"`
+}
+
+type GetMultiRegionAccessPointRoutesRequest struct {
+	AccountId *string `json:"-" xml:"-"`
+	Mrap      *string `json:"-" xml:"-"`
+}
+
+type MultiRegionAccessPointRoute struct {
+	Bucket                *string `json:"Bucket,omitempty" xml:"Bucket,omitempty"`
+	Region                *string `json:"Region,omitempty" xml:"Region,omitempty"`
+	TrafficDialPercentage *int64  `json:"TrafficDialPercentage,omitempty" xml:"TrafficDialPercentage,omitempty"`
+}
+
+type GetMultiRegionAccessPointRoutesResult struct {
+	XMLName xml.Name                      `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ GetMultiRegionAccessPointRoutesResult"`
+	Mrap    *string                       `json:"Mrap,omitempty" xml:"Mrap,omitempty"`
+	Routes  []MultiRegionAccessPointRoute `json:"Routes,omitempty" xml:"Routes>Route,omitempty"`
+}
+
+type SubmitMultiRegionAccessPointRoutesRequest struct {
+	XMLName      xml.Name                      `json:"-" xml:"http://awss3control.amazonaws.com/doc/2018-08-20/ SubmitMultiRegionAccessPointRoutesRequest"`
+	AccountId    *string                       `json:"-" xml:"-"`
+	Mrap         *string                       `json:"-" xml:"-"`
+	RouteUpdates []MultiRegionAccessPointRoute `json:"RouteUpdates,omitempty" xml:"RouteUpdates>Route,omitempty"`
+}
+
+type SubmitMultiRegionAccessPointRoutesResult struct {
+}
+
 var pattern0 = regexp.MustCompile("^\\d{12}$")
 
-var pattern1 = regexp.MustCompile("^arn:[^:]+:s3(express)?:[^:]|^arn:[^:]+:s3:::[^:/]")
+var pattern1 = regexp.MustCompile("^[a-z0-9][-a-z0-9]{1,48}[a-z0-9]$")
 
-var pattern2 = regexp.MustCompile("^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$")
+var pattern2 = regexp.MustCompile("^\\S+$")
+
+var pattern3 = regexp.MustCompile("^arn:.+$")
+
+var pattern4 = regexp.MustCompile("^[a-zA-Z0-9:/.-]{3,200}$")
+
+var pattern5 = regexp.MustCompile("^arn:[^:]+:s3(express)?:[^:]|^arn:[^:]+:s3:::[^:/]")
+
+var pattern6 = regexp.MustCompile("^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$")
 
 func (v *CreateAccessPointRequest) Validate(path string) error {
 	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
@@ -254,6 +461,70 @@ func (v *CreateAccessPointRequest) Validate(path string) error {
 	return nil
 }
 
+func (v *CreateMultiRegionAccessPointInput) Validate(path string) error {
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(0)), new(int64(50))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Name", (*v.Name), pattern1, nil, "^[a-z0-9][-a-z0-9]{1,48}[a-z0-9]$"); err != nil {
+			return err
+		}
+	}
+	if v.PublicAccessBlock != nil {
+		if err := (*v.PublicAccessBlock).Validate(path + "PublicAccessBlock" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Regions", v.Regions != nil); err != nil {
+		return err
+	}
+	if v.Regions != nil {
+		for i0, e0 := range v.Regions {
+			if err := e0.Validate(validation.Index(path+"Regions", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *CreateMultiRegionAccessPointRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"ClientToken", v.ClientToken != nil); err != nil {
+		return err
+	}
+	if v.ClientToken != nil {
+		if err := validation.Length(path+"ClientToken", utf8.RuneCountInString((*v.ClientToken)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ClientToken", (*v.ClientToken), pattern2, nil, "^\\S+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Details", v.Details != nil); err != nil {
+		return err
+	}
+	if v.Details != nil {
+		if err := (*v.Details).Validate(path + "Details" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (v *DeleteAccessPointPolicyRequest) Validate(path string) error {
 	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
 		return err
@@ -300,6 +571,55 @@ func (v *DeleteAccessPointRequest) Validate(path string) error {
 	return nil
 }
 
+func (v *DeleteMultiRegionAccessPointInput) Validate(path string) error {
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(0)), new(int64(50))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Name", (*v.Name), pattern1, nil, "^[a-z0-9][-a-z0-9]{1,48}[a-z0-9]$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteMultiRegionAccessPointRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"ClientToken", v.ClientToken != nil); err != nil {
+		return err
+	}
+	if v.ClientToken != nil {
+		if err := validation.Length(path+"ClientToken", utf8.RuneCountInString((*v.ClientToken)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ClientToken", (*v.ClientToken), pattern2, nil, "^\\S+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Details", v.Details != nil); err != nil {
+		return err
+	}
+	if v.Details != nil {
+		if err := (*v.Details).Validate(path + "Details" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (v *DeletePublicAccessBlockRequest) Validate(path string) error {
 	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
 		return err
@@ -309,6 +629,32 @@ func (v *DeletePublicAccessBlockRequest) Validate(path string) error {
 			return err
 		}
 		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DescribeMultiRegionAccessPointOperationRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"RequestTokenARN", v.RequestTokenARN != nil); err != nil {
+		return err
+	}
+	if v.RequestTokenARN != nil {
+		if err := validation.Length(path+"RequestTokenARN", utf8.RuneCountInString((*v.RequestTokenARN)), new(int64(1)), new(int64(1024))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"RequestTokenARN", (*v.RequestTokenARN), pattern3, nil, "^arn:.+$"); err != nil {
 			return err
 		}
 	}
@@ -384,6 +730,110 @@ func (v *GetAccessPointRequest) Validate(path string) error {
 	return nil
 }
 
+func (v *GetMultiRegionAccessPointPolicyRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(0)), new(int64(50))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Name", (*v.Name), pattern1, nil, "^[a-z0-9][-a-z0-9]{1,48}[a-z0-9]$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetMultiRegionAccessPointPolicyStatusRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(0)), new(int64(50))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Name", (*v.Name), pattern1, nil, "^[a-z0-9][-a-z0-9]{1,48}[a-z0-9]$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetMultiRegionAccessPointRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(0)), new(int64(50))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Name", (*v.Name), pattern1, nil, "^[a-z0-9][-a-z0-9]{1,48}[a-z0-9]$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetMultiRegionAccessPointRoutesRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Mrap", v.Mrap != nil); err != nil {
+		return err
+	}
+	if v.Mrap != nil {
+		if err := validation.Length(path+"Mrap", utf8.RuneCountInString((*v.Mrap)), new(int64(0)), new(int64(200))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Mrap", (*v.Mrap), pattern4, nil, "^[a-zA-Z0-9\\:.-]{3,200}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (v *GetPublicAccessBlockRequest) Validate(path string) error {
 	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
 		return err
@@ -429,6 +879,31 @@ func (v *ListAccessPointsRequest) Validate(path string) error {
 	return nil
 }
 
+func (v *ListMultiRegionAccessPointsRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(1024))); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"MaxResults", float64((*v.MaxResults)), new(float64(0)), new(float64(1000))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (v *ListTagsForResourceRequest) Validate(path string) error {
 	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
 		return err
@@ -448,7 +923,29 @@ func (v *ListTagsForResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(0)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern1, nil, "^arn:[^:]+:s3(express)?:[^:]"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern5, nil, "^arn:[^:]+:s3(express)?:[^:]"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *MultiRegionAccessPointRoute) Validate(path string) error {
+	if v.Bucket != nil {
+		if err := validation.Length(path+"Bucket", utf8.RuneCountInString((*v.Bucket)), new(int64(3)), new(int64(255))); err != nil {
+			return err
+		}
+	}
+	if v.Region != nil {
+		if err := validation.Length(path+"Region", utf8.RuneCountInString((*v.Region)), new(int64(1)), new(int64(64))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"TrafficDialPercentage", v.TrafficDialPercentage != nil); err != nil {
+		return err
+	}
+	if v.TrafficDialPercentage != nil {
+		if err := validation.Range(path+"TrafficDialPercentage", float64((*v.TrafficDialPercentage)), new(float64(0)), new(float64(100))); err != nil {
 			return err
 		}
 	}
@@ -485,6 +982,58 @@ func (v *PutAccessPointPolicyRequest) Validate(path string) error {
 	return nil
 }
 
+func (v *PutMultiRegionAccessPointPolicyInput) Validate(path string) error {
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(0)), new(int64(50))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Name", (*v.Name), pattern1, nil, "^[a-z0-9][-a-z0-9]{1,48}[a-z0-9]$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Policy", v.Policy != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *PutMultiRegionAccessPointPolicyRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"ClientToken", v.ClientToken != nil); err != nil {
+		return err
+	}
+	if v.ClientToken != nil {
+		if err := validation.Length(path+"ClientToken", utf8.RuneCountInString((*v.ClientToken)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"ClientToken", (*v.ClientToken), pattern2, nil, "^\\S+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Details", v.Details != nil); err != nil {
+		return err
+	}
+	if v.Details != nil {
+		if err := (*v.Details).Validate(path + "Details" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (v *PutPublicAccessBlockRequest) Validate(path string) error {
 	if err := validation.Required(path+"PublicAccessBlockConfiguration", v.PublicAccessBlockConfiguration != nil); err != nil {
 		return err
@@ -508,6 +1057,62 @@ func (v *PutPublicAccessBlockRequest) Validate(path string) error {
 	return nil
 }
 
+func (v *Region) Validate(path string) error {
+	if err := validation.Required(path+"Bucket", v.Bucket != nil); err != nil {
+		return err
+	}
+	if v.Bucket != nil {
+		if err := validation.Length(path+"Bucket", utf8.RuneCountInString((*v.Bucket)), new(int64(3)), new(int64(255))); err != nil {
+			return err
+		}
+	}
+	if v.BucketAccountId != nil {
+		if err := validation.Length(path+"BucketAccountId", utf8.RuneCountInString((*v.BucketAccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"BucketAccountId", (*v.BucketAccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *SubmitMultiRegionAccessPointRoutesRequest) Validate(path string) error {
+	if err := validation.Required(path+"AccountId", v.AccountId != nil); err != nil {
+		return err
+	}
+	if v.AccountId != nil {
+		if err := validation.Length(path+"AccountId", utf8.RuneCountInString((*v.AccountId)), new(int64(0)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"AccountId", (*v.AccountId), pattern0, nil, "^\\d{12}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Mrap", v.Mrap != nil); err != nil {
+		return err
+	}
+	if v.Mrap != nil {
+		if err := validation.Length(path+"Mrap", utf8.RuneCountInString((*v.Mrap)), new(int64(0)), new(int64(200))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Mrap", (*v.Mrap), pattern4, nil, "^[a-zA-Z0-9\\:.-]{3,200}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"RouteUpdates", v.RouteUpdates != nil); err != nil {
+		return err
+	}
+	if v.RouteUpdates != nil {
+		for i0, e0 := range v.RouteUpdates {
+			if err := e0.Validate(validation.Index(path+"RouteUpdates", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (v *Tag) Validate(path string) error {
 	if err := validation.Required(path+"Key", v.Key != nil); err != nil {
 		return err
@@ -516,7 +1121,7 @@ func (v *Tag) Validate(path string) error {
 		if err := validation.Length(path+"Key", utf8.RuneCountInString((*v.Key)), new(int64(1)), new(int64(128))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Key", (*v.Key), pattern2, nil, "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
+		if err := validation.Pattern(path+"Key", (*v.Key), pattern6, nil, "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
 			return err
 		}
 	}
@@ -527,7 +1132,7 @@ func (v *Tag) Validate(path string) error {
 		if err := validation.Length(path+"Value", utf8.RuneCountInString((*v.Value)), new(int64(0)), new(int64(256))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Value", (*v.Value), pattern2, nil, "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
+		if err := validation.Pattern(path+"Value", (*v.Value), pattern6, nil, "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
 			return err
 		}
 	}
@@ -553,7 +1158,7 @@ func (v *TagResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(0)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern1, nil, "^arn:[^:]+:s3(express)?:[^:]"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern5, nil, "^arn:[^:]+:s3(express)?:[^:]"); err != nil {
 			return err
 		}
 	}
@@ -592,7 +1197,7 @@ func (v *UntagResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(0)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern1, nil, "^arn:[^:]+:s3(express)?:[^:]"); err != nil {
+		if err := validation.Pattern(path+"ResourceArn", (*v.ResourceArn), pattern5, nil, "^arn:[^:]+:s3(express)?:[^:]"); err != nil {
 			return err
 		}
 	}
@@ -607,7 +1212,7 @@ func (v *UntagResourceRequest) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"TagKeys", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(128))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"TagKeys", i0), e0, pattern2, nil, "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"TagKeys", i0), e0, pattern6, nil, "^([\\p{L}\\p{Z}\\p{N}_.:/=+\\-@]*)$"); err != nil {
 				return err
 			}
 		}
@@ -642,6 +1247,16 @@ type API interface {
 	GetPublicAccessBlock(context.Context, *GetPublicAccessBlockRequest) (*GetPublicAccessBlockOutput, error)
 	PutPublicAccessBlock(context.Context, *PutPublicAccessBlockRequest) (*PutPublicAccessBlockOutput, error)
 	DeletePublicAccessBlock(context.Context, *DeletePublicAccessBlockRequest) (*DeletePublicAccessBlockOutput, error)
+	CreateMultiRegionAccessPoint(context.Context, *CreateMultiRegionAccessPointRequest) (*CreateMultiRegionAccessPointResult, error)
+	DeleteMultiRegionAccessPoint(context.Context, *DeleteMultiRegionAccessPointRequest) (*DeleteMultiRegionAccessPointResult, error)
+	DescribeMultiRegionAccessPointOperation(context.Context, *DescribeMultiRegionAccessPointOperationRequest) (*DescribeMultiRegionAccessPointOperationResult, error)
+	GetMultiRegionAccessPoint(context.Context, *GetMultiRegionAccessPointRequest) (*GetMultiRegionAccessPointResult, error)
+	ListMultiRegionAccessPoints(context.Context, *ListMultiRegionAccessPointsRequest) (*ListMultiRegionAccessPointsResult, error)
+	PutMultiRegionAccessPointPolicy(context.Context, *PutMultiRegionAccessPointPolicyRequest) (*PutMultiRegionAccessPointPolicyResult, error)
+	GetMultiRegionAccessPointPolicy(context.Context, *GetMultiRegionAccessPointPolicyRequest) (*GetMultiRegionAccessPointPolicyResult, error)
+	GetMultiRegionAccessPointPolicyStatus(context.Context, *GetMultiRegionAccessPointPolicyStatusRequest) (*GetMultiRegionAccessPointPolicyStatusResult, error)
+	GetMultiRegionAccessPointRoutes(context.Context, *GetMultiRegionAccessPointRoutesRequest) (*GetMultiRegionAccessPointRoutesResult, error)
+	SubmitMultiRegionAccessPointRoutes(context.Context, *SubmitMultiRegionAccessPointRoutesRequest) (*SubmitMultiRegionAccessPointRoutesResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -743,6 +1358,76 @@ func Descriptor(api API) catalog.Service {
 				return nil, awserror.New("InvalidRequest", err.Error())
 			}
 			return api.DeletePublicAccessBlock(ctx, in)
+		}},
+		"CreateMultiRegionAccessPoint": {Name: "CreateMultiRegionAccessPoint", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:CreateMultiRegionAccessPoint", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "ClientToken": catalog.MemberBinding{Location: "document", Name: "ClientToken", Format: ""}, "Details": catalog.MemberBinding{Location: "document", Name: "Details", Format: ""}}, Output: map[string]catalog.MemberBinding{"RequestTokenARN": catalog.MemberBinding{Location: "document", Name: "RequestTokenARN", Format: ""}}, Method: "POST", URI: "/v20180820/async-requests/mrap/create", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &CreateMultiRegionAccessPointRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*CreateMultiRegionAccessPointRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.CreateMultiRegionAccessPoint(ctx, in)
+		}},
+		"DeleteMultiRegionAccessPoint": {Name: "DeleteMultiRegionAccessPoint", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:DeleteMultiRegionAccessPoint", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "ClientToken": catalog.MemberBinding{Location: "document", Name: "ClientToken", Format: ""}, "Details": catalog.MemberBinding{Location: "document", Name: "Details", Format: ""}}, Output: map[string]catalog.MemberBinding{"RequestTokenARN": catalog.MemberBinding{Location: "document", Name: "RequestTokenARN", Format: ""}}, Method: "POST", URI: "/v20180820/async-requests/mrap/delete", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &DeleteMultiRegionAccessPointRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*DeleteMultiRegionAccessPointRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.DeleteMultiRegionAccessPoint(ctx, in)
+		}},
+		"DescribeMultiRegionAccessPointOperation": {Name: "DescribeMultiRegionAccessPointOperation", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:DescribeMultiRegionAccessPointOperation", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "RequestTokenARN": catalog.MemberBinding{Location: "label", Name: "RequestTokenARN", Format: ""}}, Output: map[string]catalog.MemberBinding{"AsyncOperation": catalog.MemberBinding{Location: "document", Name: "AsyncOperation", Format: ""}}, Method: "GET", URI: "/v20180820/async-requests/mrap/{RequestTokenARN+}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &DescribeMultiRegionAccessPointOperationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*DescribeMultiRegionAccessPointOperationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.DescribeMultiRegionAccessPointOperation(ctx, in)
+		}},
+		"GetMultiRegionAccessPoint": {Name: "GetMultiRegionAccessPoint", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetMultiRegionAccessPoint", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "Name": catalog.MemberBinding{Location: "label", Name: "Name", Format: ""}}, Output: map[string]catalog.MemberBinding{"AccessPoint": catalog.MemberBinding{Location: "document", Name: "AccessPoint", Format: ""}}, Method: "GET", URI: "/v20180820/mrap/instances/{Name+}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetMultiRegionAccessPointRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*GetMultiRegionAccessPointRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.GetMultiRegionAccessPoint(ctx, in)
+		}},
+		"ListMultiRegionAccessPoints": {Name: "ListMultiRegionAccessPoints", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:ListMultiRegionAccessPoints", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"AccessPoints": catalog.MemberBinding{Location: "document", Name: "AccessPoints", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}}, Method: "GET", URI: "/v20180820/mrap/instances", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &ListMultiRegionAccessPointsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListMultiRegionAccessPointsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.ListMultiRegionAccessPoints(ctx, in)
+		}},
+		"PutMultiRegionAccessPointPolicy": {Name: "PutMultiRegionAccessPointPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:PutMultiRegionAccessPointPolicy", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "ClientToken": catalog.MemberBinding{Location: "document", Name: "ClientToken", Format: ""}, "Details": catalog.MemberBinding{Location: "document", Name: "Details", Format: ""}}, Output: map[string]catalog.MemberBinding{"RequestTokenARN": catalog.MemberBinding{Location: "document", Name: "RequestTokenARN", Format: ""}}, Method: "POST", URI: "/v20180820/async-requests/mrap/put-policy", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutMultiRegionAccessPointPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*PutMultiRegionAccessPointPolicyRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.PutMultiRegionAccessPointPolicy(ctx, in)
+		}},
+		"GetMultiRegionAccessPointPolicy": {Name: "GetMultiRegionAccessPointPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetMultiRegionAccessPointPolicy", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "Name": catalog.MemberBinding{Location: "label", Name: "Name", Format: ""}}, Output: map[string]catalog.MemberBinding{"Policy": catalog.MemberBinding{Location: "document", Name: "Policy", Format: ""}}, Method: "GET", URI: "/v20180820/mrap/instances/{Name+}/policy", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetMultiRegionAccessPointPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*GetMultiRegionAccessPointPolicyRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.GetMultiRegionAccessPointPolicy(ctx, in)
+		}},
+		"GetMultiRegionAccessPointPolicyStatus": {Name: "GetMultiRegionAccessPointPolicyStatus", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetMultiRegionAccessPointPolicyStatus", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "Name": catalog.MemberBinding{Location: "label", Name: "Name", Format: ""}}, Output: map[string]catalog.MemberBinding{"Established": catalog.MemberBinding{Location: "document", Name: "Established", Format: ""}}, Method: "GET", URI: "/v20180820/mrap/instances/{Name+}/policystatus", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetMultiRegionAccessPointPolicyStatusRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*GetMultiRegionAccessPointPolicyStatusRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.GetMultiRegionAccessPointPolicyStatus(ctx, in)
+		}},
+		"GetMultiRegionAccessPointRoutes": {Name: "GetMultiRegionAccessPointRoutes", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetMultiRegionAccessPointRoutes", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "Mrap": catalog.MemberBinding{Location: "label", Name: "Mrap", Format: ""}}, Output: map[string]catalog.MemberBinding{"Mrap": catalog.MemberBinding{Location: "document", Name: "Mrap", Format: ""}, "Routes": catalog.MemberBinding{Location: "document", Name: "Routes", Format: ""}}, Method: "GET", URI: "/v20180820/mrap/instances/{Mrap+}/routes", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetMultiRegionAccessPointRoutesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*GetMultiRegionAccessPointRoutesRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.GetMultiRegionAccessPointRoutes(ctx, in)
+		}},
+		"SubmitMultiRegionAccessPointRoutes": {Name: "SubmitMultiRegionAccessPointRoutes", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:SubmitMultiRegionAccessPointRoutes", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountId": catalog.MemberBinding{Location: "header", Name: "x-amz-account-id", Format: ""}, "Mrap": catalog.MemberBinding{Location: "label", Name: "Mrap", Format: ""}, "RouteUpdates": catalog.MemberBinding{Location: "document", Name: "RouteUpdates", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "PATCH", URI: "/v20180820/mrap/instances/{Mrap+}/routes", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &SubmitMultiRegionAccessPointRoutesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*SubmitMultiRegionAccessPointRoutesRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidRequest", err.Error())
+			}
+			return api.SubmitMultiRegionAccessPointRoutes(ctx, in)
 		}},
 	}}
 }
