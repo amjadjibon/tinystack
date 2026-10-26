@@ -1,6 +1,11 @@
 {
   "platform_features": [
     {
+      "title": ".NET Testcontainers module",
+      "summary": "A net8.0 TinyStack.Testcontainers library with immutable builders, ephemeral AWS endpoint, dummy credentials, config and init-script copies, health and ready-stage waits, asynchronous reset, and xUnit coverage using the official AWS SDK for S3, SQS and STS. Local image build or TINYSTACK_IMAGE; the package and registry image are not published.",
+      "reference": "guides/testcontainers.md"
+    },
+    {
       "title": "HTTPS and local CA",
       "summary": "Optional HTTPS gateway with a persisted ECDSA P-256 local CA, a leaf per requested AWS, LocalStack or localhost name, extra DNS/IP names, supplied certificate/key support, and CA PEM export. Trust, DNS and port forwarding remain manual.",
       "reference": "guides/tls.md"

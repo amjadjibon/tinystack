@@ -1,6 +1,6 @@
 # Testcontainers
 
-TinyStack provides dedicated Testcontainers modules for Go, Python, Java, and Node.js to run TinyStack in Docker for
+TinyStack provides dedicated Testcontainers modules for Go, Python, Java, Node.js, and .NET to run TinyStack in Docker for
 integration testing while keeping Docker dependencies out of the core application.
 
 ## Build an image first
@@ -292,3 +292,64 @@ task test:testcontainers:node
 ```
 
 Tests run against Docker, building or reusing the headless image. Tests skip cleanly when Docker is unavailable.
+
+## .NET module
+
+The `TinyStack.Testcontainers` class library targets `net8.0` and uses the official `Testcontainers` NuGet
+package (4.16.0). The package is not published yet; reference the project under `tests/testcontainers-dotnet`
+or build a local package with `dotnet pack tests/testcontainers-dotnet/TinyStack.Testcontainers`.
+Requires .NET SDK 8+ and Docker.
+
+```csharp
+using Amazon.Runtime;
+using Amazon.S3;
+using Amazon.S3.Model;
+using TinyStack.Testcontainers;
+
+await using var container = new TinyStackBuilder("tinystack:test").Build();
+await container.StartAsync();
+using var s3 = new AmazonS3Client(
+    new BasicAWSCredentials(container.GetAccessKey(), container.GetSecretKey()),
+    new AmazonS3Config
+    {
+        ServiceURL = container.GetEndpoint(),
+        AuthenticationRegion = container.GetRegion(),
+        ForcePathStyle = true
+    });
+await s3.PutBucketAsync(new PutBucketRequest { BucketName = "uploads" });
+await container.ResetAsync();
+```
+
+`TinyStackBuilder` follows immutable Testcontainers builder conventions: retain each returned builder.
+An explicit image overrides `TINYSTACK_IMAGE`; the parameterless builder uses the environment variable,
+then the unpublished registry tag. Build a local image first as described above.
+Port 4566 maps to a random host port, and startup waits up to 120 seconds for HTTP 200 from
+`/_tinystack/health`. The startup command binds the AWS listener to `0.0.0.0:4566`; the console is not exposed.
+
+- `GetEndpoint()`, `GetEndpointUrl()` and `GetConnectionString()` return the HTTP AWS endpoint.
+  `GetRegion()` returns `us-east-1`; `GetAccessKey()` / `GetAccessKeyId()` and
+  `GetSecretKey()` / `GetSecretAccessKey()` return `test`. Set the SDK region explicitly for another region.
+- `WithConfig(path)` copies YAML with mode 0644 to `/etc/tinystack/config.yaml` and appends config flags.
+  Use once; CLI host and port override YAML.
+- `WithInitScripts(stage, files...)` copies regular files to `/etc/tinystack/init/<stage>.d`, preserving
+  basenames and Unix permissions (0644 on Windows). Unknown stages, missing files and duplicate destinations
+  are rejected. Retain the default init directory; non-executable `.sh` files run with `sh`.
+- `WithReadyScriptsComplete()` waits for health and ready-stage `completed: true`, `state: SUCCESSFUL`,
+  each with a 120-second timeout. Apply after options replacing the wait strategy.
+- `ResetAsync(init: true)` re-runs ready scripts; the default clears state without re-running scripts.
+  Reset has a 60-second timeout, accepts a cancellation token, and throws on HTTP failures. Await outstanding
+  AWS requests first and poll ready status after re-running scripts.
+
+```csharp
+await using var container = new TinyStackBuilder("tinystack:test")
+    .WithConfig("tinystack.yaml")
+    .WithInitScripts("ready", "10-seed.sh")
+    .WithReadyScriptsComplete()
+    .Build();
+await container.StartAsync();
+```
+
+Run `task test:testcontainers:dotnet`. The xUnit suite drives S3, SQS and STS using the official AWS SDK,
+checks config/init hooks and reset, and builds a uniquely tagged headless image unless `TINYSTACK_IMAGE`
+is set. It removes its own resources; unavailable Docker fails the suite. Tests target net8.0 and allow
+runtime roll-forward to .NET 10.

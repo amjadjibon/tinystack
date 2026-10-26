@@ -97,6 +97,12 @@ tasks:
     cmds:
       - npm test
 
+  test:testcontainers:dotnet:
+    desc: "Test the separate .NET Testcontainers module (requires Docker; builds the image unless TINYSTACK_IMAGE is set)"
+    dir: tests/testcontainers-dotnet
+    cmds:
+      - dotnet test
+
   lint:testcontainers:
     desc: "Vet and lint the separate Go Testcontainers module"
     dir: tests/testcontainers

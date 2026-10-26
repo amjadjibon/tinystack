@@ -11,6 +11,7 @@ feature manages records or needs a Docker runtime.
 
 | Feature | Implemented behavior | Reference |
 | --- | --- | --- |
+| .NET Testcontainers module | A net8.0 TinyStack.Testcontainers library with immutable builders, ephemeral AWS endpoint, dummy credentials, config and init-script copies, health and ready-stage waits, asynchronous reset, and xUnit coverage using the official AWS SDK for S3, SQS and STS. Local image build or TINYSTACK_IMAGE; the package and registry image are not published. | [Details](../guides/testcontainers.md) |
 | HTTPS and local CA | Optional HTTPS gateway with a persisted ECDSA P-256 local CA, a leaf per requested AWS, LocalStack or localhost name, extra DNS/IP names, supplied certificate/key support, and CA PEM export. Trust, DNS and port forwarding remain manual. | [Details](../guides/tls.md) |
 | Fault injection | Ordered gateway rules inject protocol-correct AWS errors and cancellable latency by service, operation, Region and account, with probability, startup configuration, reset restoration, diagnostics and LocalStack Chaos API aliases. | [Details](../guides/fault-injection.md) |
 | AWS wire protocols | AWS JSON 1.0/1.1, AWS Query, EC2 Query, REST XML/JSON, and Smithy RPC v2 CBOR through generated bindings. | [Details](../architecture/request-flow.md) |

@@ -47,3 +47,7 @@ node_modules/
 
 # Internal plans and notes
 /.spec/
+
+# .NET build output
+/tests/testcontainers-dotnet/**/bin/
+/tests/testcontainers-dotnet/**/obj/
