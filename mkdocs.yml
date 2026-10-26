@@ -168,6 +168,7 @@ nav:
       - "Database":
           - "Amazon Aurora DSQL": services/dsql.md
           - "Amazon MemoryDB": services/memorydb.md
+          - "Amazon Timestream Query": services/timestreamquery.md
           - "Amazon Timestream Write": services/timestreamwrite.md
           - "DynamoDB": services/dynamodb.md
           - "DynamoDB Streams": services/dynamodbstreams.md

@@ -3404,6 +3404,32 @@
         "WithEvent=true and RoleLevel selection are explicitly unsupported; no EventBridge query events or per-IAM-role statement ownership",
         "CSV conversion uses fixture fields and metadata, not database-specific type formatting"
       ]
+    },
+    "timestreamquery": {
+      "title": "Amazon Timestream Query",
+      "category": "Database",
+      "scope": "Account and Region",
+      "summary": "Store Timestream scheduled queries and account query settings as records without executing queries or reading data.",
+      "features": [
+        "Eleven of 15 pinned AWS JSON 1.0 operations for scheduled queries, account query settings, endpoint discovery and resource tags, with generated ValidationException constraints and AWS SDK v2 coverage",
+        "Gateway routes unique Timestream_20181101 operations to their owning service, TagResource/UntagResource/ListTagsForResource by the :scheduled-query/ ARN prefix, and DescribeEndpoints to Timestream Write",
+        "CreateScheduledQuery, DescribeScheduledQuery, ListScheduledQueries, UpdateScheduledQuery (ENABLED and DISABLED) and DeleteScheduledQuery, with ClientToken idempotency and ConflictException on mismatched replay or duplicate name",
+        "Cross-service reference checks on CreateScheduledQuery for existing TinyStack SNS topic, IAM execution role, S3 error-report bucket, Timestream Write database and table, and optional KMS key",
+        "NextInvocationTime computed at read time from ScheduleExpression (shared cron and rate parser), counted from when the query was last enabled, so it advances as time passes; DISABLED queries report none",
+        "DescribeAccountSettings and UpdateAccountSettings for MaxQueryTCU (4..1000, step 4), QueryPricingModel and QueryCompute (ON_DEMAND or PROVISIONED with notification SNS topic and IAM role validation)",
+        "TagResource, UntagResource and ListTagsForResource on scheduled query ARNs, storage-key-order pagination, inventory, Resource Groups and Resource Groups Tagging API integration",
+        "CloudFormation AWS::Timestream::ScheduledQuery with generated name fallback, Ref and Arn/SQ* attributes, tag-only in-place updates and replacement on immutable property changes",
+        "Terraform aws_timestreamquery_scheduled_query and timestreamquery endpoint override; the case keeps fixed tags because provider 6.70 leaves state, creation_time and invocation times unknown after a tag-only update (a provider defect that affects AWS as well)"
+      ],
+      "gaps": [
+        "Records only: scheduled queries never run and no query engine or stored time-series data exists",
+        "Query, PrepareQuery, CancelQuery and ExecuteScheduledQuery are not whitelisted and fail with NotImplemented",
+        "Scheduled query run summaries (LastRunSummary, RecentlyFailedRuns) and PreviousInvocationTime are never populated because queries do not execute",
+        "Real endpoint discovery returns service host names; DescribeEndpoints returns the client address with its scheme",
+        "IAM role trust and permission policies are not evaluated when creating scheduled queries or updating account settings"
+      ],
+      "execution": "Records only",
+      "package": "timestreamquery"
     }
   },
   "future": {
