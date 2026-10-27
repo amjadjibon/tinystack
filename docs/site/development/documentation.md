@@ -54,8 +54,7 @@ The generator compares operation selection with the generated API interface and 
 `docs:check` compares expected content without rewriting it, so a new operation or stale page fails validation.
 
 The [Documentation workflow](https://github.com/amjadjibon/tinystack/blob/main/.github/workflows/docs.yml)
-runs the same freshness and strict-build checks on pushes to `main` and pull requests.
-It validates the site without publishing it.
+runs the same freshness and strict-build checks when a `v*` tag is pushed, then publishes the site to GitHub Pages.
 
 After a code/profile change:
 

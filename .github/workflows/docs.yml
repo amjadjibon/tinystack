@@ -2,8 +2,7 @@ name: Documentation
 
 on:
   push:
-    branches: [main]
-  pull_request:
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:
@@ -34,14 +33,14 @@ jobs:
       - name: Validate and build the site
         run: python -m mkdocs build --strict
       - name: Upload the site for GitHub Pages
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@v5
         with:
           path: site
 
   deploy:
     name: Publish to GitHub Pages
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push'
     needs: check
     runs-on: ubuntu-latest
     timeout-minutes: 10

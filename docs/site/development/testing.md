@@ -27,17 +27,17 @@ local containers, including privileged k3s containers for EKS.
 
 ## Continuous integration and releases
 
-GitHub Actions runs these on every pull request and push to `main`:
+GitHub Actions runs these when a `v*` tag is pushed, or on demand from the Actions tab:
 
 | Workflow | Runs |
 | --- | --- |
 | `lint.yml` | Generated-code freshness, `go vet`, golangci-lint (also the Go Testcontainers module), console Biome and TypeScript |
 | `unit.yml` | Every Go package except `tests/integration`, with the race detector; console tests |
 | `integration.yml` | The AWS SDK suite in `tests/integration`; the console build's CloudShell and MCP tests |
-| `docker.yml` | Console and headless images for `linux/amd64` and `linux/arm64`; `main` pushes the `edge` and `edge-headless` tags |
-| `docs.yml` | Catalogue freshness and the strict MkDocs build; `main` publishes the site |
+| `docker.yml` | Builds the console and headless images for `linux/amd64` and `linux/arm64` without pushing them |
+| `docs.yml` | Catalogue freshness and the strict MkDocs build; a tag push publishes the site |
 
-Pushing a `v*` tag runs `release.yml`. It builds console binaries for Linux, macOS, and Windows on amd64 and arm64,
+The same tag also runs `release.yml`. It builds console binaries for Linux, macOS, and Windows on amd64 and arm64,
 attaches them with `checksums.txt` to a GitHub release with generated notes, and pushes multi-platform images to
 `ghcr.io/amjadjibon/tinystack` tagged with the version, `major.minor`, and `latest` (`-headless` and `headless` for the
 image without the console). A tag with a prerelease suffix, such as `v0.2.0-rc.1`, is marked as a prerelease and
