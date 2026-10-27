@@ -3,6 +3,7 @@ site_url: https://amjadjibon.github.io/tinystack/
 site_description: Local AWS APIs, service coverage, architecture, and contributor guides.
 repo_url: https://github.com/amjadjibon/tinystack
 repo_name: amjadjibon/tinystack
+copyright: Copyright 2026 Amjad Hossain. Licensed under the Apache License 2.0.
 edit_uri: edit/main/docs/site/
 docs_dir: docs/site
 site_dir: site

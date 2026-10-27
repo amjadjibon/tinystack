@@ -2,6 +2,7 @@
   "name": "testcontainers-tinystack",
   "version": "0.1.0",
   "description": "TinyStack container for Testcontainers Node",
+  "license": "Apache-2.0",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

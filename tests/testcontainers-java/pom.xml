@@ -13,6 +13,13 @@
     <description>TinyStack container for Testcontainers Java</description>
     <url>https://github.com/amjadjibon/tinystack</url>
 
+    <licenses>
+        <license>
+            <name>Apache-2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>

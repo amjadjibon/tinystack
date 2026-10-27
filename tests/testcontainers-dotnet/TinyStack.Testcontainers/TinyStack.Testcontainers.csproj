@@ -6,6 +6,7 @@
     <PackageId>TinyStack.Testcontainers</PackageId>
     <Version>0.1.0</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/amjadjibon/tinystack</RepositoryUrl>
     <Description>TinyStack module for Testcontainers for .NET.</Description>
   </PropertyGroup>

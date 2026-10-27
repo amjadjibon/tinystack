@@ -1365,3 +1365,8 @@ also requires Python 3 and the AWS CLI, and invokes a function when Docker is av
 The Terraform test requires Python 3, Terraform, and network access to download the
 `hashicorp/aws` provider. The SAM test requires Python 3, the SAM CLI, and the AWS CLI,
 and calls the deployed APIs when Docker is available.
+
+## License
+
+TinyStack is licensed under the [Apache License 2.0](LICENSE). The vendored Smithy models in `generator/model` keep
+their upstream license.
