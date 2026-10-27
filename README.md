@@ -20,7 +20,11 @@ task build:headless           # bin/tinystack-headless; `task build` adds the co
 ./bin/tinystack-headless start
 ```
 
-Or run it in a container with the console: `docker compose up --build`.
+Or run a released image or binary from [Releases](https://github.com/amjadjibon/tinystack/releases):
+
+```sh
+docker run --rm -p 4566:4566 -p 4567:4567 ghcr.io/amjadjibon/tinystack
+```
 
 Then use any AWS client with local credentials:
 

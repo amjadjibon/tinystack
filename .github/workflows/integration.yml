@@ -1,0 +1,55 @@
+name: Integration tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sdk:
+    name: AWS SDK suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - run: go test -race -count=1 -timeout 40m ./tests/integration
+
+  console:
+    name: Console build (CloudShell and MCP)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 12
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: ui/pnpm-lock.yaml
+      - name: Build the console
+        working-directory: ui
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+      - run: go test -race -count=1 -tags console ./internal/console ./internal/gateway ./internal/services/sts
+      - run: go test -race -count=1 -tags console ./tests/integration -run 'TestShell|TestMCP'

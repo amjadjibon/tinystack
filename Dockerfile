@@ -4,7 +4,8 @@
 # docker build --target headless . TinyStack without the console (no Node.js stage)
 # docker build --target console-cli . the console image plus the AWS CLI for CloudShell (about 350 MB in total)
 
-FROM node:24-alpine AS console
+# The console and Go stages run on the build machine and cross-compile, so multi-platform builds need no emulation.
+FROM --platform=$BUILDPLATFORM node:24-alpine AS console
 
 WORKDIR /ui
 RUN npm install -g pnpm@12
@@ -13,7 +14,7 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --froze
 COPY ui/ ./
 RUN pnpm build
 
-FROM golang:1.27-alpine AS source
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS source
 
 WORKDIR /src
 COPY go.mod go.sum ./
@@ -23,14 +24,18 @@ COPY . .
 
 FROM source AS build-headless
 
+ARG TARGETOS TARGETARCH VERSION=0.1.0-dev
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/tinystack ./cmd/tinystack
+    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /out/tinystack \
+    -ldflags="-s -w -X github.com/amjadjibon/tinystack/internal/cmd.version=${VERSION}" ./cmd/tinystack
 
 FROM source AS build
 
+ARG TARGETOS TARGETARCH VERSION=0.1.0-dev
 COPY --from=console /ui/dist/console ui/dist/console
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 go build -tags console -trimpath -ldflags="-s -w" -o /out/tinystack ./cmd/tinystack
+    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -tags console -trimpath -o /out/tinystack \
+    -ldflags="-s -w -X github.com/amjadjibon/tinystack/internal/cmd.version=${VERSION}" ./cmd/tinystack
 
 FROM alpine:3.22 AS runtime
 

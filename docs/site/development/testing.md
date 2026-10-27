@@ -25,6 +25,29 @@ contact AWS; integration tests use the official AWS SDK v2 and in-process runtim
 Docker tests are opt-in through `TINYSTACK_DOCKER_TESTS=1`, set by the task. They pull images and create
 local containers, including privileged k3s containers for EKS.
 
+## Continuous integration and releases
+
+GitHub Actions runs these on every pull request and push to `main`:
+
+| Workflow | Runs |
+| --- | --- |
+| `lint.yml` | Generated-code freshness, `go vet`, golangci-lint (also the Go Testcontainers module), console Biome and TypeScript |
+| `unit.yml` | Every Go package except `tests/integration`, with the race detector; console tests |
+| `integration.yml` | The AWS SDK suite in `tests/integration`; the console build's CloudShell and MCP tests |
+| `docker.yml` | Console and headless images for `linux/amd64` and `linux/arm64`; `main` pushes the `edge` and `edge-headless` tags |
+| `docs.yml` | Catalogue freshness and the strict MkDocs build; `main` publishes the site |
+
+Pushing a `v*` tag runs `release.yml`. It builds console binaries for Linux, macOS, and Windows on amd64 and arm64,
+attaches them with `checksums.txt` to a GitHub release with generated notes, and pushes multi-platform images to
+`ghcr.io/amjadjibon/tinystack` tagged with the version, `major.minor`, and `latest` (`-headless` and `headless` for the
+image without the console). A tag with a prerelease suffix, such as `v0.2.0-rc.1`, is marked as a prerelease and
+moves neither `latest` nor `headless`. The release version is set with
+`-X github.com/amjadjibon/tinystack/internal/cmd.version` and shown by `tinystack --version`.
+
+```sh
+git tag v0.1.0 && git push origin v0.1.0
+```
+
 ## Where to put coverage
 
 - Service behavior: `tests/integration/<service>_test.go` using the official SDK client.
