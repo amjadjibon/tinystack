@@ -2378,7 +2378,7 @@
       ],
       "gaps": [
         "WriteRecords discards every accepted record: nothing is stored, deduplicated or versioned, and Version is validated but has no effect",
-        "The query API (timestream-query: Query, scheduled queries, prepared queries) is not served, so written data can never be read back",
+        "Timestream Query stores scheduled queries but runs none, and Query and prepared queries are not served, so written data can never be read back",
         "Batch load tasks are not implemented",
         "A WriteRecords request with any out-of-window record is rejected whole, where AWS ingests the valid records and rejects the rest",
         "Real endpoint discovery returns host names; this endpoint returns the client address with its scheme",
@@ -3443,13 +3443,7 @@
       "title": "Amazon Redshift runtime and snapshots",
       "state": "Proposed",
       "slice": "Extend the records-only control plane with explicit runtime and snapshot support.",
-      "features": "- [ ] SQL warehouse runtime and JDBC/ODBC execution\n- [ ] Snapshot create/list/delete/restore and final snapshots\n- [ ] Pause/resume/reboot/resize lifecycle\n- [ ] Parameter values and application\n- [ ] Redshift Data API and Serverless"
-    },
-    "bedrock-agentcore": {
-      "title": "Bedrock AgentCore",
-      "state": "Proposed",
-      "slice": "Implement `CreateAgentRuntime`, `GetAgentRuntime`, `ListAgentRuntimes`.",
-      "features": "- [ ] `CreateAgentRuntime`\n- [ ] `GetAgentRuntime`\n- [ ] `ListAgentRuntimes`\n- [ ] `UpdateAgentRuntime`\n- [ ] `DeleteAgentRuntime`\n- [ ] `ListAgentRuntimeVersions`\n- [ ] `CreateAgentRuntimeEndpoint`\n- [ ] `GetAgentRuntimeEndpoint`\n- [ ] `ListAgentRuntimeEndpoints`\n- [ ] `UpdateAgentRuntimeEndpoint`\n- [ ] `DeleteAgentRuntimeEndpoint`\n- [ ] `InvokeAgentRuntime`"
+      "features": "- [ ] SQL warehouse runtime and JDBC/ODBC execution\n- [ ] Snapshot create/list/delete/restore and final snapshots\n- [ ] Pause/resume/reboot/resize lifecycle\n- [ ] Parameter values and application"
     },
     "codebuild-runtime": {
       "title": "CodeBuild advanced build execution",
@@ -3613,7 +3607,7 @@
       "title": "Amazon Timestream records and queries",
       "state": "Proposed",
       "slice": "Store written records and serve the Timestream query API over them.",
-      "features": "- [ ] Store accepted records with versioned upserts and retention expiry\n- [ ] `Query` over a documented SQL subset\n- [ ] Scheduled and prepared queries\n- [ ] Batch load tasks\n- [ ] Partial ingestion with `RejectedRecords`\n- [ ] `AWS::Timestream::Database` and `AWS::Timestream::Table`"
+      "features": "- [ ] Store accepted records with versioned upserts and retention expiry\n- [ ] `Query` over a documented SQL subset\n- [ ] Prepared queries and running scheduled queries\n- [ ] Batch load tasks\n- [ ] Partial ingestion with `RejectedRecords`\n- [ ] `AWS::Timestream::Database` and `AWS::Timestream::Table`"
     },
     "codeartifact-packages": {
       "title": "AWS CodeArtifact packages",

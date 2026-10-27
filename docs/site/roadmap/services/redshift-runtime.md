@@ -14,7 +14,6 @@ Extend the records-only control plane with explicit runtime and snapshot support
 - [ ] Snapshot create/list/delete/restore and final snapshots
 - [ ] Pause/resume/reboot/resize lifecycle
 - [ ] Parameter values and application
-- [ ] Redshift Data API and Serverless
 
 
 ## Decisions before implementation

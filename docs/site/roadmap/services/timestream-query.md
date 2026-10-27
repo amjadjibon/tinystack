@@ -12,7 +12,7 @@ Store written records and serve the Timestream query API over them.
 
 - [ ] Store accepted records with versioned upserts and retention expiry
 - [ ] `Query` over a documented SQL subset
-- [ ] Scheduled and prepared queries
+- [ ] Prepared queries and running scheduled queries
 - [ ] Batch load tasks
 - [ ] Partial ingestion with `RejectedRecords`
 - [ ] `AWS::Timestream::Database` and `AWS::Timestream::Table`

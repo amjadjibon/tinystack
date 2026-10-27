@@ -22,7 +22,7 @@ See the [implemented feature catalogue](catalogue.md#amazon-timestream-write) fo
 ## Limitations and future work
 
 - WriteRecords discards every accepted record: nothing is stored, deduplicated or versioned, and Version is validated but has no effect.
-- The query API (timestream-query: Query, scheduled queries, prepared queries) is not served, so written data can never be read back.
+- Timestream Query stores scheduled queries but runs none, and Query and prepared queries are not served, so written data can never be read back.
 - Batch load tasks are not implemented.
 - A WriteRecords request with any out-of-window record is rejected whole, where AWS ingests the valid records and rejects the rest.
 - Real endpoint discovery returns host names; this endpoint returns the client address with its scheme.

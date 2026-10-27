@@ -292,7 +292,6 @@ nav:
           - "Amazon S3 Glacier archives and jobs": roadmap/services/glacier-runtime.md
           - "Amazon Timestream records and queries": roadmap/services/timestream-query.md
           - "Application Auto Scaling execution and advanced policies": roadmap/services/applicationautoscaling-runtime.md
-          - "Bedrock AgentCore": roadmap/services/bedrock-agentcore.md
           - "CodeBuild advanced build execution": roadmap/services/codebuild-runtime.md
           - "CodeDeploy deployment execution and agents": roadmap/services/codedeploy-runtime.md
           - "CodePipeline execution and release automation": roadmap/services/codepipeline-execution.md
