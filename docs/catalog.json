@@ -2243,22 +2243,33 @@
     "codecommit": {
       "title": "AWS CodeCommit",
       "category": "Developer Tools",
-      "summary": "Persist regional repository records, tags, and CloudFormation resources without hosting git repositories.",
+      "summary": "Manage CodeCommit repositories, tags and CloudFormation resources, and host their content as real git repositories over smart HTTP.",
+      "guide": "Repository content is real git: see [CodeCommit git hosting](../guides/codecommit-git.md) for the local clone URL, how the account and Region are chosen, credentials, the `git` requirement and the default branch.",
       "features": [
-        "Nine AWS JSON 1.1 operations: CreateRepository, GetRepository, ListRepositories, UpdateRepositoryName, UpdateRepositoryDescription, DeleteRepository, TagResource, UntagResource, ListTagsForResource",
-        "Records-only repository control plane: metadata (repository ID, ARN, HTTP and SSH clone URLs, creation and last modified timestamps, description, KMS key ID) and tags",
-        "Sortable repository listing by repositoryName or lastModifiedDate in ascending or descending order with continuation token pagination",
+        "Twenty AWS JSON 1.1 operations: the nine repository and tag operations plus GetBranch, ListBranches, CreateBranch, DeleteBranch, UpdateDefaultBranch, GetCommit, GetFile, GetFolder, PutFile, CreateCommit and GetDifferences",
+        "Repository metadata (repository ID, ARN, AWS-format HTTP and SSH clone URLs, creation and last modified timestamps, description, KMS key ID, default branch) and tags; renames keep the repository ID and its content",
+        "Git smart HTTP on the main port under /v1/repos/<name> and on git-codecommit.<region>.amazonaws.com hosts: a stock git client clones, fetches (protocol v0, v1 and v2, shallow clones) and pushes (thin packs, force pushes, branch and tag creation and deletion); unknown repositories answer 404 and are never created",
+        "Bare repositories live outside the store, keyed by repository ID: under the data directory with persistent storage so a restart keeps them, in a temporary directory removed on shutdown otherwise; DeleteRepository and POST /_tinystack/reset remove them",
+        "The first branch pushed (or created by PutFile or CreateCommit in an empty repository) becomes the default branch; UpdateDefaultBranch changes it and the default branch cannot be deleted through the API or git",
+        "PutFile and CreateCommit build commits from a parent commit ID with optimistic concurrency (ParentCommitIdOutdatedException), file modes, deletions, mode changes, folder and file conflict detection, SameFileContentException and NoChangeException; GetDifferences pages ADDED, MODIFIED and DELETED files in path order",
+        "identity.mode verify checks the password the AWS CLI credential helper derives from a key's secret; otherwise any Basic credentials, or none, are accepted",
+        "With identity.authorization soft or enforce, clone and fetch need codecommit:GitPull and push needs codecommit:GitPush on the repository ARN, evaluated with the gateway's policy engine for the caller named by the Basic access key (configured keys act as root, issued keys as their IAM user or role, anything else is anonymous); decisions appear in the request inspector",
+        "CodeCommit Repository State Change events (referenceCreated, referenceUpdated, referenceDeleted for branches and tags) are published to EventBridge for pushes and branch, PutFile and CreateCommit changes",
+        "In-process read API for other services: a branch's commit, a file at a commit and a zip of a commit's tree",
         "CloudFormation AWS::CodeCommit::Repository with Ref returning repository ID, GetAtt for Arn, CloneUrlHttp, CloneUrlSsh, and Name, in-place renames, description updates, and retagging",
         "CloudFormation unsupported properties Code and Triggers fail explicitly, initiating update rollback to UPDATE_ROLLBACK_COMPLETE",
         "Full Resource Groups Tagging API support, Resource Groups inventory classification, official Developer Tools icon, and Terraform codecommit endpoint"
       ],
       "gaps": [
-        "No Git hosting, Git HTTP Smart Transfer protocol, or SSH transport",
-        "No branch creation, commit history, pull requests, approval rules, or merge conflicts",
-        "No code triggers, CloudWatch Events notification triggers, or repository webhooks",
-        "Code and Triggers properties in CloudFormation fail explicitly, and so does a KmsKeyId change (UpdateRepositoryEncryptionKey is not implemented)"
+        "Git content needs the git executable on PATH (the Docker image includes it); without it repository records still work and every content operation fails with ServiceUnavailableException. SSH transport and public key management are not provided",
+        "No pull requests, comments, approval rules, merges, merge conflict APIs, BatchGetCommits, GetBlob, DeleteFile, ListFileCommitHistory or other operations outside the selected set",
+        "No repository triggers or webhooks; EventBridge repository state events are published but no notification triggers run",
+        "PutFile and CreateCommit do not accept sourceFile or keepEmptyFolders; GetDifferences does not compare different beforePath and afterPath; GetFile and GetFolder specifiers are a branch, tag, HEAD, fully qualified reference or commit ID, not git revision expressions",
+        "TinyStack bounds are not AWS quotas: CodeCommit JSON requests are limited to 64 MiB and ListBranches pages at 1,000 branches; git pushes have no size limit. KMS keys do not encrypt repository content and UpdateRepositoryEncryptionKey is not implemented",
+        "In parse mode git sends credentials only after a challenge, which TinyStack does not issue, so choose an account or an IAM user with http.extraHeader (or http.proactiveAuth); without credentials the default account is used and, under identity.authorization enforce, the anonymous caller is denied",
+        "CloudFormation Code (repository seeding from S3) and Triggers properties fail explicitly, and so does a KmsKeyId change"
       ],
-      "execution": "Records only",
+      "execution": "Records, with real git repositories served over smart HTTP (requires git)",
       "package": "codecommit"
     },
     "codedeploy": {
@@ -3583,9 +3594,9 @@
     },
     "codecommit-git-hosting": {
       "title": "AWS CodeCommit git hosting",
-      "state": "Proposed",
-      "slice": "Extend the records-only CodeCommit control plane with git HTTP/SSH transport and repository storage.",
-      "features": "- [ ] Git HTTP Smart Transfer protocol (/v1/repos/<name>/info/refs, git-upload-pack, git-receive-pack)\n- [ ] SSH transport and public key management\n- [ ] Branch management, default branch configuration, and commit APIs\n- [ ] Trigger execution and CloudWatch Events integration\n- [ ] Code package seeding for CloudFormation AWS::CodeCommit::Repository"
+      "state": "Future extensions",
+      "slice": "Git smart HTTP hosting, branch and commit APIs and EventBridge state events are implemented. SSH transport, triggers and repository seeding remain.",
+      "features": "- [x] Git HTTP Smart Transfer protocol (/v1/repos/<name>/info/refs, git-upload-pack, git-receive-pack)\n- [ ] SSH transport and public key management\n- [x] Branch management, default branch configuration, and commit APIs\n- [x] CloudWatch Events (EventBridge) repository state change events\n- [ ] Trigger execution\n- [ ] Code package seeding for CloudFormation AWS::CodeCommit::Repository\n- [ ] Pull requests, approval rules and merges"
     },
     "codedeploy-runtime": {
       "title": "CodeDeploy deployment execution and agents",

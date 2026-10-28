@@ -100,6 +100,7 @@ nav:
       - EFS records: guides/efs-records.md
       - Batch records: guides/batch-records.md
       - CodeBuild records: guides/codebuild-records.md
+      - CodeCommit git hosting: guides/codecommit-git.md
       - Amazon Bedrock AgentCore: guides/bedrock-agentcore.md
       - Amazon MQ records: guides/mq-records.md
       - Amazon MSK records: guides/msk-records.md

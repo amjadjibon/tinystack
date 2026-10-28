@@ -9,7 +9,7 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | --- | --- | --- |
 | [AWS Batch job execution](services/batch-runtime.md) | Proposed | Extend the implemented metadata subset with an explicitly configured execution engine. |
 | [AWS CodeArtifact packages](services/codeartifact-packages.md) | Proposed | Store and serve packages through repository endpoints for one package format. |
-| [AWS CodeCommit git hosting](services/codecommit-git-hosting.md) | Proposed | Extend the records-only CodeCommit control plane with git HTTP/SSH transport and repository storage. |
+| [AWS CodeCommit git hosting](services/codecommit-git-hosting.md) | Future extensions | Git smart HTTP hosting, branch and commit APIs and EventBridge state events are implemented. SSH transport, triggers and repository seeding remain. |
 | [AWS CodeConnections repository links and sync](services/codeconnections-sync.md) | Proposed | Extend connection and host records with repository links and sync configurations. |
 | [AWS Private CA certificate issuance](services/acmpca-issuance.md) | Proposed | Extend records-only certificate authorities with certificate signing so an authority can become ACTIVE and issue and revoke certificates. |
 | [AWS Resource Access Manager cross-account access and invitations runtime](services/ram-runtime.md) | Proposed | Extend records-only resource shares to cross-account invitations, managed permissions, and real cross-account resource access. |
