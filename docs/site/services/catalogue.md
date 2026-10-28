@@ -653,13 +653,14 @@ Manage Kubernetes cluster metadata and optionally start local k3s API servers.
 
 #### Amazon Aurora DSQL
 
-Manage Aurora DSQL cluster records, reciprocal multi-Region peering and versioned cluster policies.
+Manage Aurora DSQL clusters, reciprocal multi-Region peering and policies, with opt-in PostgreSQL execution.
 
-**Execution:** Records only; deterministic background control-plane transitions. **Selected operations:** 12.
+**Execution:** Records by default; dsql.clusters: docker enables PostgreSQL 16 through a TLS and IAM-token proxy. **Selected operations:** 12.
 
 - Twelve of sixteen pinned REST JSON operations: cluster create/get/list/update/delete, VPC endpoint discovery, policy get/put/delete and three tagging operations; generated ValidationException constraints.
 - Durable transaction-claimed CREATING, ACTIVE, UPDATING, PENDING_SETUP, PENDING_DELETE and DELETING transitions; 100 ms polling with 150 ms minimum transition delay, resumed after SQLite restart.
 - Deletion protection defaults to enabled; successful client-token responses persist independently of resource lifetime, including delete and policy replay.
+- Opt-in dsql.clusters: docker runs PostgreSQL 16 with a named data volume, TLS proxy on loopback, SDK database-token authentication and shared gateway IAM decisions recorded in the request inspector; backend certificate authentication isolates database roles.
 - Reciprocal two-cluster peering requires existing clusters in different Regions of the same account, a shared third witness Region and a common documented continent Region set.
 - Public endpoint <identifier>.dsql.<region>.on.aws, cluster ARN, AWS-owned encryption metadata and deterministic cluster-specific PrivateLink service/DNS metadata.
 - Tags in cluster records, storage-key-order pagination, inventory and Resource Groups Tagging API integration.
