@@ -501,6 +501,18 @@ func build(
 	buildProjects := codebuild.New(store)
 	codePipelines := codepipeline.New(store)
 	codecommitRecords := codecommit.New(store)
+	// Repository content lives beside the database, or in a temporary directory that Stop removes.
+	if cfg.Storage.Mode == config.StoragePersistent {
+		dataDir, dirErr := cfg.DataDir()
+		if dirErr != nil {
+			return nil, dirErr
+		}
+
+		codecommitRecords.UseDataDir(filepath.Join(dataDir, "codecommit"))
+	}
+
+	a.onStop(codecommitRecords.Stop)
+	a.onReset(codecommitRecords.Reset)
 	artifactRecords := codeartifact.New(store)
 	timestreamRecords := timestreamwrite.New(store)
 	timestreamQueryRecords := timestreamquery.New(store, timestreamRecords, topics, roles, buckets, keys)
@@ -793,6 +805,8 @@ func build(
 	// services in-process.
 	caller := catalog.NewCaller(services...)
 	agents.UseCaller(caller)
+	// Pushes and branch changes are published to EventBridge.
+	codecommitRecords.UseCaller(caller)
 	agentRuntime.UseCaller(caller)
 	mediaConvertRecords.UseCaller(caller)
 	shieldRecords.UseCaller(caller)
@@ -928,6 +942,7 @@ func build(
 	handler.UseTokens(identities.Token)
 	handler.UseHosted(identities)
 	handler.UseRegistry(registry)
+	handler.UseGit(codecommitRecords)
 	handler.UseCORS(buckets.CORS)
 	handler.UseAPIs(connectionAPI, httpAPIs, restAPIs)
 	handler.UseDomains(restAPIs.Domains())

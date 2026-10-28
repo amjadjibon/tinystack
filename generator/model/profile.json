@@ -25383,17 +25383,68 @@
   },
   "codecommit": {
     "operations": [
+      "CreateBranch",
+      "CreateCommit",
       "CreateRepository",
+      "DeleteBranch",
       "DeleteRepository",
+      "GetBranch",
+      "GetCommit",
+      "GetDifferences",
+      "GetFile",
+      "GetFolder",
       "GetRepository",
+      "ListBranches",
       "ListRepositories",
       "ListTagsForResource",
+      "PutFile",
       "TagResource",
       "UntagResource",
+      "UpdateDefaultBranch",
       "UpdateRepositoryDescription",
       "UpdateRepositoryName"
     ],
     "shapes": {
+      "BlobMetadata": [
+        "blobId",
+        "mode",
+        "path"
+      ],
+      "BranchInfo": [
+        "branchName",
+        "commitId"
+      ],
+      "Commit": [
+        "author",
+        "commitId",
+        "committer",
+        "message",
+        "parents",
+        "treeId"
+      ],
+      "CreateBranchInput": [
+        "branchName",
+        "commitId",
+        "repositoryName"
+      ],
+      "CreateCommitInput": [
+        "authorName",
+        "branchName",
+        "commitMessage",
+        "deleteFiles",
+        "email",
+        "parentCommitId",
+        "putFiles",
+        "repositoryName",
+        "setFileModes"
+      ],
+      "CreateCommitOutput": [
+        "commitId",
+        "filesAdded",
+        "filesDeleted",
+        "filesUpdated",
+        "treeId"
+      ],
       "CreateRepositoryInput": [
         "kmsKeyId",
         "repositoryDescription",
@@ -25403,17 +25454,110 @@
       "CreateRepositoryOutput": [
         "repositoryMetadata"
       ],
+      "DeleteBranchInput": [
+        "branchName",
+        "repositoryName"
+      ],
+      "DeleteBranchOutput": [
+        "deletedBranch"
+      ],
+      "DeleteFileEntry": [
+        "filePath"
+      ],
       "DeleteRepositoryInput": [
         "repositoryName"
       ],
       "DeleteRepositoryOutput": [
         "repositoryId"
       ],
+      "Difference": [
+        "afterBlob",
+        "beforeBlob",
+        "changeType"
+      ],
+      "File": [
+        "absolutePath",
+        "blobId",
+        "fileMode",
+        "relativePath"
+      ],
+      "FileMetadata": [
+        "absolutePath",
+        "blobId",
+        "fileMode"
+      ],
+      "Folder": [
+        "absolutePath",
+        "relativePath",
+        "treeId"
+      ],
+      "GetBranchInput": [
+        "branchName",
+        "repositoryName"
+      ],
+      "GetBranchOutput": [
+        "branch"
+      ],
+      "GetCommitInput": [
+        "commitId",
+        "repositoryName"
+      ],
+      "GetCommitOutput": [
+        "commit"
+      ],
+      "GetDifferencesInput": [
+        "MaxResults",
+        "NextToken",
+        "afterCommitSpecifier",
+        "afterPath",
+        "beforeCommitSpecifier",
+        "beforePath",
+        "repositoryName"
+      ],
+      "GetDifferencesOutput": [
+        "NextToken",
+        "differences"
+      ],
+      "GetFileInput": [
+        "commitSpecifier",
+        "filePath",
+        "repositoryName"
+      ],
+      "GetFileOutput": [
+        "blobId",
+        "commitId",
+        "fileContent",
+        "fileMode",
+        "filePath",
+        "fileSize"
+      ],
+      "GetFolderInput": [
+        "commitSpecifier",
+        "folderPath",
+        "repositoryName"
+      ],
+      "GetFolderOutput": [
+        "commitId",
+        "files",
+        "folderPath",
+        "subFolders",
+        "subModules",
+        "symbolicLinks",
+        "treeId"
+      ],
       "GetRepositoryInput": [
         "repositoryName"
       ],
       "GetRepositoryOutput": [
         "repositoryMetadata"
+      ],
+      "ListBranchesInput": [
+        "nextToken",
+        "repositoryName"
+      ],
+      "ListBranchesOutput": [
+        "branches",
+        "nextToken"
       ],
       "ListRepositoriesInput": [
         "nextToken",
@@ -25432,6 +25576,27 @@
         "nextToken",
         "tags"
       ],
+      "PutFileEntry": [
+        "fileContent",
+        "fileMode",
+        "filePath"
+      ],
+      "PutFileInput": [
+        "branchName",
+        "commitMessage",
+        "email",
+        "fileContent",
+        "fileMode",
+        "filePath",
+        "name",
+        "parentCommitId",
+        "repositoryName"
+      ],
+      "PutFileOutput": [
+        "blobId",
+        "commitId",
+        "treeId"
+      ],
       "RepositoryDescription": [
         "accountId",
         "repositoryId",
@@ -25443,6 +25608,7 @@
         "cloneUrlHttp",
         "cloneUrlSsh",
         "creationDate",
+        "defaultBranch",
         "kmsKeyId",
         "lastModifiedDate",
         "repositoryDescription",
@@ -25453,6 +25619,21 @@
         "repositoryId",
         "repositoryName"
       ],
+      "SetFileModeEntry": [
+        "fileMode",
+        "filePath"
+      ],
+      "SubModule": [
+        "absolutePath",
+        "commitId",
+        "relativePath"
+      ],
+      "SymbolicLink": [
+        "absolutePath",
+        "blobId",
+        "fileMode",
+        "relativePath"
+      ],
       "TagResourceInput": [
         "resourceArn",
         "tags"
@@ -25461,6 +25642,10 @@
         "resourceArn",
         "tagKeys"
       ],
+      "UpdateDefaultBranchInput": [
+        "defaultBranchName",
+        "repositoryName"
+      ],
       "UpdateRepositoryDescriptionInput": [
         "repositoryDescription",
         "repositoryName"
@@ -25468,6 +25653,11 @@
       "UpdateRepositoryNameInput": [
         "newName",
         "oldName"
+      ],
+      "UserInfo": [
+        "date",
+        "email",
+        "name"
       ]
     }
   },

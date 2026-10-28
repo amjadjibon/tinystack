@@ -40,7 +40,9 @@ import (
 const (
 	validationException = "ValidationException"
 	maxBody             = 2 << 20
-	formContentType     = "application/x-www-form-urlencoded"
+	// maxCodeCommitBody bounds a CodeCommit request, which carries files of up to 6 MB, base64-encoded, in JSON.
+	maxCodeCommitBody = 64 << 20
+	formContentType   = "application/x-www-form-urlencoded"
 )
 
 type Server struct {
@@ -65,6 +67,7 @@ type Server struct {
 	documents        Documents
 	tokens           Tokens
 	registry         Registry
+	git              Git
 	cors             CORS
 	apis             []execute.Handler
 	balancers        execute.Handler
@@ -629,7 +632,7 @@ func (s *Server) classifyQuery(w http.ResponseWriter, r *http.Request, c *call, 
 	}
 
 	c.body = body
-	form, err := inflate(r, bytes.NewReader(body))
+	form, err := inflate(r, bytes.NewReader(body), maxBody)
 	if err != nil {
 		return err
 	}
@@ -834,7 +837,12 @@ func (s *Server) decode(
 		return op, input, query.Decode(c.form, input)
 	}
 
-	body, err := inflate(r, http.MaxBytesReader(w, r.Body, maxBody))
+	limit := int64(maxBody)
+	if c.service.SigningName == codecommitService {
+		limit = maxCodeCommitBody
+	}
+
+	body, err := inflate(r, http.MaxBytesReader(w, r.Body, limit), limit)
 	if err != nil {
 		return op, nil, err
 	}
@@ -849,23 +857,23 @@ func (s *Server) decode(
 // inflate reads a request body, undoing the gzip Content-Encoding that
 // clients apply to operations with Smithy's requestCompression trait (such as
 // CloudWatch's PutMetricData) after signing, so signatures cover the
-// compressed bytes. The decompressed body is limited to maxBody.
-func inflate(r *http.Request, body io.Reader) ([]byte, error) {
+// compressed bytes. The decompressed body is limited to limit.
+func inflate(r *http.Request, body io.Reader, limit int64) ([]byte, error) {
 	var err error
 	if strings.EqualFold(r.Header.Get("Content-Encoding"), "gzip") {
 		if body, err = gzip.NewReader(body); err != nil {
 			return nil, awserror.Validation("The gzip request body cannot be read: %v", err)
 		}
 
-		body = io.LimitReader(body, maxBody+1)
+		body = io.LimitReader(body, limit+1)
 	}
 
 	data, err := io.ReadAll(body)
 	switch {
 	case err != nil:
 		return nil, awserror.Validation("Cannot read request body: %v", err)
-	case len(data) > maxBody:
-		return nil, awserror.Validation("The decompressed request body is larger than %d bytes", maxBody)
+	case int64(len(data)) > limit:
+		return nil, awserror.Validation("The decompressed request body is larger than %d bytes", limit)
 	}
 
 	return data, nil
@@ -973,6 +981,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if s.serveHosted(w, r) || s.serveDocument(w, r) || s.serveToken(w, r) || s.serveRegistry(w, r) ||
+		s.serveGit(w, r) ||
 		s.serveMQTT(w, r) ||
 		s.serveAPI(w, r) ||
 		s.servePreflight(w, r) {

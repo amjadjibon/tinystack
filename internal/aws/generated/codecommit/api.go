@@ -6,6 +6,55 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 )
 
+type CreateBranchOutput struct{}
+
+type CreateBranchInput struct {
+	BranchName     *string `json:"branchName,omitempty"`
+	CommitId       *string `json:"commitId,omitempty"`
+	RepositoryName *string `json:"repositoryName,omitempty"`
+}
+
+type DeleteFileEntry struct {
+	FilePath *string `json:"filePath,omitempty"`
+}
+
+type PutFileEntry struct {
+	FileContent []byte  `json:"fileContent,omitempty"`
+	FileMode    *string `json:"fileMode,omitempty"`
+	FilePath    *string `json:"filePath,omitempty"`
+}
+
+type SetFileModeEntry struct {
+	FileMode *string `json:"fileMode,omitempty"`
+	FilePath *string `json:"filePath,omitempty"`
+}
+
+type CreateCommitInput struct {
+	AuthorName     *string            `json:"authorName,omitempty"`
+	BranchName     *string            `json:"branchName,omitempty"`
+	CommitMessage  *string            `json:"commitMessage,omitempty"`
+	DeleteFiles    []DeleteFileEntry  `json:"deleteFiles,omitempty"`
+	Email          *string            `json:"email,omitempty"`
+	ParentCommitId *string            `json:"parentCommitId,omitempty"`
+	PutFiles       []PutFileEntry     `json:"putFiles,omitempty"`
+	RepositoryName *string            `json:"repositoryName,omitempty"`
+	SetFileModes   []SetFileModeEntry `json:"setFileModes,omitempty"`
+}
+
+type FileMetadata struct {
+	AbsolutePath *string `json:"absolutePath,omitempty"`
+	BlobId       *string `json:"blobId,omitempty"`
+	FileMode     *string `json:"fileMode,omitempty"`
+}
+
+type CreateCommitOutput struct {
+	CommitId     *string        `json:"commitId,omitempty"`
+	FilesAdded   []FileMetadata `json:"filesAdded,omitempty"`
+	FilesDeleted []FileMetadata `json:"filesDeleted,omitempty"`
+	FilesUpdated []FileMetadata `json:"filesUpdated,omitempty"`
+	TreeId       *string        `json:"treeId,omitempty"`
+}
+
 type CreateRepositoryInput struct {
 	KmsKeyId              *string           `json:"kmsKeyId,omitempty"`
 	RepositoryDescription *string           `json:"repositoryDescription,omitempty"`
@@ -19,6 +68,7 @@ type RepositoryMetadata struct {
 	CloneUrlHttp          *string  `json:"cloneUrlHttp,omitempty"`
 	CloneUrlSsh           *string  `json:"cloneUrlSsh,omitempty"`
 	CreationDate          *float64 `json:"creationDate,omitempty"`
+	DefaultBranch         *string  `json:"defaultBranch,omitempty"`
 	KmsKeyId              *string  `json:"kmsKeyId,omitempty"`
 	LastModifiedDate      *float64 `json:"lastModifiedDate,omitempty"`
 	RepositoryDescription *string  `json:"repositoryDescription,omitempty"`
@@ -30,6 +80,20 @@ type CreateRepositoryOutput struct {
 	RepositoryMetadata *RepositoryMetadata `json:"repositoryMetadata,omitempty"`
 }
 
+type DeleteBranchInput struct {
+	BranchName     *string `json:"branchName,omitempty"`
+	RepositoryName *string `json:"repositoryName,omitempty"`
+}
+
+type BranchInfo struct {
+	BranchName *string `json:"branchName,omitempty"`
+	CommitId   *string `json:"commitId,omitempty"`
+}
+
+type DeleteBranchOutput struct {
+	DeletedBranch *BranchInfo `json:"deletedBranch,omitempty"`
+}
+
 type DeleteRepositoryInput struct {
 	RepositoryName *string `json:"repositoryName,omitempty"`
 }
@@ -38,12 +102,139 @@ type DeleteRepositoryOutput struct {
 	RepositoryId *string `json:"repositoryId,omitempty"`
 }
 
+type GetBranchInput struct {
+	BranchName     *string `json:"branchName,omitempty"`
+	RepositoryName *string `json:"repositoryName,omitempty"`
+}
+
+type GetBranchOutput struct {
+	Branch *BranchInfo `json:"branch,omitempty"`
+}
+
+type GetCommitInput struct {
+	CommitId       *string `json:"commitId,omitempty"`
+	RepositoryName *string `json:"repositoryName,omitempty"`
+}
+
+type UserInfo struct {
+	Date  *string `json:"date,omitempty"`
+	Email *string `json:"email,omitempty"`
+	Name  *string `json:"name,omitempty"`
+}
+
+type Commit struct {
+	Author    *UserInfo `json:"author,omitempty"`
+	CommitId  *string   `json:"commitId,omitempty"`
+	Committer *UserInfo `json:"committer,omitempty"`
+	Message   *string   `json:"message,omitempty"`
+	Parents   []string  `json:"parents,omitempty"`
+	TreeId    *string   `json:"treeId,omitempty"`
+}
+
+type GetCommitOutput struct {
+	Commit *Commit `json:"commit,omitempty"`
+}
+
+type GetDifferencesInput struct {
+	MaxResults            *int64  `json:"MaxResults,omitempty"`
+	NextToken             *string `json:"NextToken,omitempty"`
+	AfterCommitSpecifier  *string `json:"afterCommitSpecifier,omitempty"`
+	AfterPath             *string `json:"afterPath,omitempty"`
+	BeforeCommitSpecifier *string `json:"beforeCommitSpecifier,omitempty"`
+	BeforePath            *string `json:"beforePath,omitempty"`
+	RepositoryName        *string `json:"repositoryName,omitempty"`
+}
+
+type BlobMetadata struct {
+	BlobId *string `json:"blobId,omitempty"`
+	Mode   *string `json:"mode,omitempty"`
+	Path   *string `json:"path,omitempty"`
+}
+
+type Difference struct {
+	AfterBlob  *BlobMetadata `json:"afterBlob,omitempty"`
+	BeforeBlob *BlobMetadata `json:"beforeBlob,omitempty"`
+	ChangeType *string       `json:"changeType,omitempty"`
+}
+
+type GetDifferencesOutput struct {
+	NextToken   *string      `json:"NextToken,omitempty"`
+	Differences []Difference `json:"differences,omitempty"`
+}
+
+type GetFileInput struct {
+	CommitSpecifier *string `json:"commitSpecifier,omitempty"`
+	FilePath        *string `json:"filePath,omitempty"`
+	RepositoryName  *string `json:"repositoryName,omitempty"`
+}
+
+type GetFileOutput struct {
+	BlobId      *string `json:"blobId,omitempty"`
+	CommitId    *string `json:"commitId,omitempty"`
+	FileContent []byte  `json:"fileContent,omitempty"`
+	FileMode    *string `json:"fileMode,omitempty"`
+	FilePath    *string `json:"filePath,omitempty"`
+	FileSize    *int64  `json:"fileSize,omitempty"`
+}
+
+type GetFolderInput struct {
+	CommitSpecifier *string `json:"commitSpecifier,omitempty"`
+	FolderPath      *string `json:"folderPath,omitempty"`
+	RepositoryName  *string `json:"repositoryName,omitempty"`
+}
+
+type File struct {
+	AbsolutePath *string `json:"absolutePath,omitempty"`
+	BlobId       *string `json:"blobId,omitempty"`
+	FileMode     *string `json:"fileMode,omitempty"`
+	RelativePath *string `json:"relativePath,omitempty"`
+}
+
+type Folder struct {
+	AbsolutePath *string `json:"absolutePath,omitempty"`
+	RelativePath *string `json:"relativePath,omitempty"`
+	TreeId       *string `json:"treeId,omitempty"`
+}
+
+type SubModule struct {
+	AbsolutePath *string `json:"absolutePath,omitempty"`
+	CommitId     *string `json:"commitId,omitempty"`
+	RelativePath *string `json:"relativePath,omitempty"`
+}
+
+type SymbolicLink struct {
+	AbsolutePath *string `json:"absolutePath,omitempty"`
+	BlobId       *string `json:"blobId,omitempty"`
+	FileMode     *string `json:"fileMode,omitempty"`
+	RelativePath *string `json:"relativePath,omitempty"`
+}
+
+type GetFolderOutput struct {
+	CommitId      *string        `json:"commitId,omitempty"`
+	Files         []File         `json:"files,omitempty"`
+	FolderPath    *string        `json:"folderPath,omitempty"`
+	SubFolders    []Folder       `json:"subFolders,omitempty"`
+	SubModules    []SubModule    `json:"subModules,omitempty"`
+	SymbolicLinks []SymbolicLink `json:"symbolicLinks,omitempty"`
+	TreeId        *string        `json:"treeId,omitempty"`
+}
+
 type GetRepositoryInput struct {
 	RepositoryName *string `json:"repositoryName,omitempty"`
 }
 
 type GetRepositoryOutput struct {
 	RepositoryMetadata *RepositoryMetadata `json:"repositoryMetadata,omitempty"`
+}
+
+type ListBranchesInput struct {
+	NextToken      *string `json:"nextToken,omitempty"`
+	RepositoryName *string `json:"repositoryName,omitempty"`
+}
+
+type ListBranchesOutput struct {
+	Branches  []string `json:"branches,omitempty"`
+	NextToken *string  `json:"nextToken,omitempty"`
 }
 
 type ListRepositoriesInput struct {
@@ -72,6 +263,24 @@ type ListTagsForResourceOutput struct {
 	Tags      map[string]string `json:"tags,omitempty"`
 }
 
+type PutFileInput struct {
+	BranchName     *string `json:"branchName,omitempty"`
+	CommitMessage  *string `json:"commitMessage,omitempty"`
+	Email          *string `json:"email,omitempty"`
+	FileContent    []byte  `json:"fileContent,omitempty"`
+	FileMode       *string `json:"fileMode,omitempty"`
+	FilePath       *string `json:"filePath,omitempty"`
+	Name           *string `json:"name,omitempty"`
+	ParentCommitId *string `json:"parentCommitId,omitempty"`
+	RepositoryName *string `json:"repositoryName,omitempty"`
+}
+
+type PutFileOutput struct {
+	BlobId   *string `json:"blobId,omitempty"`
+	CommitId *string `json:"commitId,omitempty"`
+	TreeId   *string `json:"treeId,omitempty"`
+}
+
 type TagResourceOutput struct{}
 
 type TagResourceInput struct {
@@ -84,6 +293,13 @@ type UntagResourceOutput struct{}
 type UntagResourceInput struct {
 	ResourceArn *string  `json:"resourceArn,omitempty"`
 	TagKeys     []string `json:"tagKeys,omitempty"`
+}
+
+type UpdateDefaultBranchOutput struct{}
+
+type UpdateDefaultBranchInput struct {
+	DefaultBranchName *string `json:"defaultBranchName,omitempty"`
+	RepositoryName    *string `json:"repositoryName,omitempty"`
 }
 
 type UpdateRepositoryDescriptionOutput struct{}
@@ -101,27 +317,57 @@ type UpdateRepositoryNameInput struct {
 }
 
 type API interface {
+	CreateBranch(context.Context, *CreateBranchInput) (*CreateBranchOutput, error)
+	CreateCommit(context.Context, *CreateCommitInput) (*CreateCommitOutput, error)
 	CreateRepository(context.Context, *CreateRepositoryInput) (*CreateRepositoryOutput, error)
+	DeleteBranch(context.Context, *DeleteBranchInput) (*DeleteBranchOutput, error)
 	DeleteRepository(context.Context, *DeleteRepositoryInput) (*DeleteRepositoryOutput, error)
+	GetBranch(context.Context, *GetBranchInput) (*GetBranchOutput, error)
+	GetCommit(context.Context, *GetCommitInput) (*GetCommitOutput, error)
+	GetDifferences(context.Context, *GetDifferencesInput) (*GetDifferencesOutput, error)
+	GetFile(context.Context, *GetFileInput) (*GetFileOutput, error)
+	GetFolder(context.Context, *GetFolderInput) (*GetFolderOutput, error)
 	GetRepository(context.Context, *GetRepositoryInput) (*GetRepositoryOutput, error)
+	ListBranches(context.Context, *ListBranchesInput) (*ListBranchesOutput, error)
 	ListRepositories(context.Context, *ListRepositoriesInput) (*ListRepositoriesOutput, error)
 	ListTagsForResource(context.Context, *ListTagsForResourceInput) (*ListTagsForResourceOutput, error)
+	PutFile(context.Context, *PutFileInput) (*PutFileOutput, error)
 	TagResource(context.Context, *TagResourceInput) (*TagResourceOutput, error)
 	UntagResource(context.Context, *UntagResourceInput) (*UntagResourceOutput, error)
+	UpdateDefaultBranch(context.Context, *UpdateDefaultBranchInput) (*UpdateDefaultBranchOutput, error)
 	UpdateRepositoryDescription(context.Context, *UpdateRepositoryDescriptionInput) (*UpdateRepositoryDescriptionOutput, error)
 	UpdateRepositoryName(context.Context, *UpdateRepositoryNameInput) (*UpdateRepositoryNameOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "codecommit", SigningName: "codecommit", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "codecommit", TargetPrefix: "CodeCommit_20150413", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"EncryptionIntegrityChecksFailedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "EncryptionKeyAccessDeniedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "EncryptionKeyDisabledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "EncryptionKeyInvalidIdException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "EncryptionKeyInvalidUsageException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "EncryptionKeyNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "EncryptionKeyUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidContinuationTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidOrderException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidRepositoryDescriptionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidRepositoryNameException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidResourceArnException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSortByException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSystemTagUsageException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidTagKeysListException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidTagsMapException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "OperationNotAllowedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RepositoryDoesNotExistException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RepositoryLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RepositoryNameExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RepositoryNameRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceArnRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TagKeysListRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TagPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TagsMapRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TooManyTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "codecommit", SigningName: "codecommit", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "codecommit", TargetPrefix: "CodeCommit_20150413", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"BranchDoesNotExistException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "BranchNameExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "BranchNameIsTagNameException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "BranchNameRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "CommitDoesNotExistException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "CommitIdDoesNotExistException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "CommitIdRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "CommitMessageLengthExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "CommitRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "DefaultBranchCannotBeDeletedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "DirectoryNameConflictsWithFileNameException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "EncryptionIntegrityChecksFailedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "EncryptionKeyAccessDeniedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "EncryptionKeyDisabledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "EncryptionKeyInvalidIdException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "EncryptionKeyInvalidUsageException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "EncryptionKeyNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "EncryptionKeyUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "FileContentAndSourceFileSpecifiedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "FileContentRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "FileContentSizeLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "FileDoesNotExistException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "FileEntryRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "FileModeRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "FileNameConflictsWithDirectoryNameException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "FilePathConflictsWithSubmodulePathException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "FileTooLargeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "FolderContentSizeLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "FolderDoesNotExistException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidBranchNameException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidCommitException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidCommitIdException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidContinuationTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidDeletionParameterException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidEmailException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidFileModeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidMaxResultsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidOrderException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidParentCommitIdException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidPathException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidRepositoryDescriptionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidRepositoryNameException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidResourceArnException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSortByException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSystemTagUsageException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidTagKeysListException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidTagsMapException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "MaximumFileEntriesExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NameLengthExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NoChangeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "OperationNotAllowedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ParentCommitDoesNotExistException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ParentCommitIdOutdatedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ParentCommitIdRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PathDoesNotExistException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PathRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PutFileEntryConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RepositoryDoesNotExistException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RepositoryLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RepositoryNameExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RepositoryNameRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceArnRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RestrictedSourceFileException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SameFileContentException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SamePathRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SourceFileOrContentRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TagKeysListRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TagPolicyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TagsMapRequiredException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TooManyTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+		"CreateBranch": {Name: "CreateBranch", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codecommit:CreateBranch", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeCommit_20150413.CreateBranch", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateBranchInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateBranch(ctx, input.(*CreateBranchInput))
+		}},
+		"CreateCommit": {Name: "CreateCommit", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codecommit:CreateCommit", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeCommit_20150413.CreateCommit", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateCommitInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateCommit(ctx, input.(*CreateCommitInput))
+		}},
 		"CreateRepository": {Name: "CreateRepository", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codecommit:CreateRepository", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeCommit_20150413.CreateRepository", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateRepositoryInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateRepository(ctx, input.(*CreateRepositoryInput))
+		}},
+		"DeleteBranch": {Name: "DeleteBranch", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codecommit:DeleteBranch", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeCommit_20150413.DeleteBranch", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteBranchInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteBranch(ctx, input.(*DeleteBranchInput))
 		}},
 		"DeleteRepository": {Name: "DeleteRepository", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codecommit:DeleteRepository", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeCommit_20150413.DeleteRepository", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteRepositoryInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteRepository(ctx, input.(*DeleteRepositoryInput))
 		}},
+		"GetBranch": {Name: "GetBranch", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codecommit:GetBranch", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeCommit_20150413.GetBranch", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetBranchInput{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.GetBranch(ctx, input.(*GetBranchInput)) }},
+		"GetCommit": {Name: "GetCommit", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codecommit:GetCommit", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeCommit_20150413.GetCommit", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetCommitInput{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.GetCommit(ctx, input.(*GetCommitInput)) }},
+		"GetDifferences": {Name: "GetDifferences", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codecommit:GetDifferences", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeCommit_20150413.GetDifferences", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetDifferencesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetDifferences(ctx, input.(*GetDifferencesInput))
+		}},
+		"GetFile":   {Name: "GetFile", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codecommit:GetFile", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeCommit_20150413.GetFile", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetFileInput{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.GetFile(ctx, input.(*GetFileInput)) }},
+		"GetFolder": {Name: "GetFolder", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codecommit:GetFolder", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeCommit_20150413.GetFolder", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetFolderInput{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.GetFolder(ctx, input.(*GetFolderInput)) }},
 		"GetRepository": {Name: "GetRepository", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codecommit:GetRepository", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeCommit_20150413.GetRepository", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetRepositoryInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetRepository(ctx, input.(*GetRepositoryInput))
+		}},
+		"ListBranches": {Name: "ListBranches", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codecommit:ListBranches", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeCommit_20150413.ListBranches", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListBranchesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListBranches(ctx, input.(*ListBranchesInput))
 		}},
 		"ListRepositories": {Name: "ListRepositories", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codecommit:ListRepositories", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeCommit_20150413.ListRepositories", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListRepositoriesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListRepositories(ctx, input.(*ListRepositoriesInput))
@@ -129,11 +375,15 @@ func Descriptor(api API) catalog.Service {
 		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codecommit:ListTagsForResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeCommit_20150413.ListTagsForResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceInput))
 		}},
+		"PutFile": {Name: "PutFile", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codecommit:PutFile", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeCommit_20150413.PutFile", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutFileInput{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.PutFile(ctx, input.(*PutFileInput)) }},
 		"TagResource": {Name: "TagResource", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codecommit:TagResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeCommit_20150413.TagResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &TagResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.TagResource(ctx, input.(*TagResourceInput))
 		}},
 		"UntagResource": {Name: "UntagResource", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codecommit:UntagResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeCommit_20150413.UntagResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UntagResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.UntagResource(ctx, input.(*UntagResourceInput))
+		}},
+		"UpdateDefaultBranch": {Name: "UpdateDefaultBranch", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codecommit:UpdateDefaultBranch", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeCommit_20150413.UpdateDefaultBranch", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateDefaultBranchInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateDefaultBranch(ctx, input.(*UpdateDefaultBranchInput))
 		}},
 		"UpdateRepositoryDescription": {Name: "UpdateRepositoryDescription", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codecommit:UpdateRepositoryDescription", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeCommit_20150413.UpdateRepositoryDescription", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateRepositoryDescriptionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.UpdateRepositoryDescription(ctx, input.(*UpdateRepositoryDescriptionInput))

@@ -135,3 +135,142 @@ func validateTagKeys(keys []string) error {
 
 	return nil
 }
+
+const (
+	modeNormal     = "NORMAL"
+	modeExecutable = "EXECUTABLE"
+	modeSymlink    = "SYMLINK"
+
+	// maxBranchName is the model's length limit for branch names.
+	maxBranchName = 256
+	// maxFileSize is the model's limit for the content of one file (6 MB).
+	maxFileSize = 6 << 20
+	// maxCommitMessage is CodeCommit's documented message limit (256 KB).
+	maxCommitMessage = 256 << 10
+	// maxFileEntries is CodeCommit's documented limit of changed files in one commit.
+	maxFileEntries = 100
+)
+
+var (
+	commitIDPattern = regexp.MustCompile(`^[0-9a-fA-F]{40}$`)
+	// revisionPattern admits the commit specifiers CodeCommit documents: a branch, a tag, HEAD, a fully
+	// qualified reference or a commit ID.
+	revisionPattern = regexp.MustCompile(`^[A-Za-z0-9._/@+-]+$`)
+	emailPattern    = regexp.MustCompile(`^[^\s<>]+$`)
+)
+
+// validRefName applies git's reference name rules (git check-ref-format) to a branch name.
+func validRefName(name string) bool {
+	if name == "" || len(name) > maxBranchName || name == "@" || strings.HasPrefix(name, "/") ||
+		strings.HasSuffix(name, "/") || strings.HasSuffix(name, ".") || strings.Contains(name, "..") ||
+		strings.Contains(name, "//") || strings.Contains(name, "@{") || strings.HasPrefix(name, "-") {
+		return false
+	}
+
+	for _, r := range name {
+		if r < ' ' || r == 0x7f || strings.ContainsRune(" ~^:?*[\\", r) {
+			return false
+		}
+	}
+
+	for part := range strings.SplitSeq(name, "/") {
+		if strings.HasPrefix(part, ".") || strings.HasSuffix(part, ".lock") {
+			return false
+		}
+	}
+
+	return true
+}
+
+func validateBranchName(name *string) (string, error) {
+	if name == nil || *name == "" {
+		return "", awserror.New("BranchNameRequiredException", "A branch name is required, but was not specified.")
+	}
+
+	if !validRefName(*name) {
+		return "", awserror.New("InvalidBranchNameException",
+			"The specified reference name is not valid. Reference names can be 1 to 256 characters long and "+
+				"cannot contain spaces, control characters, or the characters ~ ^ : ? * [ \\.")
+	}
+
+	return *name, nil
+}
+
+// validateCommitID checks a commit ID given to CreateBranch, GetCommit or as a parent. The three operations
+// name different exceptions for a missing and an invalid ID.
+func validateCommitID(id *string, required, invalid string) (string, error) {
+	if id == nil || *id == "" {
+		return "", awserror.New(required, "A commit ID is required, but was not specified.")
+	}
+
+	if !commitIDPattern.MatchString(*id) {
+		return "", awserror.New(
+			invalid,
+			"The specified commit ID is not valid. Specify the full 40-character commit ID.",
+		)
+	}
+
+	return strings.ToLower(*id), nil
+}
+
+// validatePath checks a file or folder path inside a repository and returns it without a leading slash.
+// "/" and "." name the root and are the caller's to accept.
+func validatePath(path *string) (string, error) {
+	if path == nil || *path == "" {
+		return "", awserror.New("PathRequiredException", "The folderPath or filePath for a file or folder is required.")
+	}
+
+	clean := strings.TrimPrefix(*path, "/")
+	if clean == "" || strings.HasSuffix(clean, "/") || !utf8.ValidString(clean) {
+		return "", awserror.New("InvalidPathException", "The specified path is not valid.")
+	}
+
+	for part := range strings.SplitSeq(clean, "/") {
+		if part == "" || part == "." || part == ".." || strings.EqualFold(part, ".git") ||
+			strings.ContainsFunc(part, func(r rune) bool { return r < ' ' || r == 0x7f }) {
+			return "", awserror.New("InvalidPathException", "The specified path is not valid.")
+		}
+	}
+
+	return clean, nil
+}
+
+func validateFileMode(mode *string) (string, error) {
+	switch {
+	case mode == nil || *mode == "":
+		return "", nil
+	case *mode == modeNormal, *mode == modeExecutable, *mode == modeSymlink:
+		return *mode, nil
+	default:
+		return "", awserror.New("InvalidFileModeException",
+			"The specified file mode permission is not valid. Valid file modes are NORMAL, EXECUTABLE and SYMLINK.")
+	}
+}
+
+func validateCommitMessage(message *string) error {
+	if message != nil && len(*message) > maxCommitMessage {
+		return awserror.New("CommitMessageLengthExceededException",
+			"The commit message is too long. Provide a shorter string.")
+	}
+
+	return nil
+}
+
+func validateEmail(email *string) error {
+	if email != nil && *email != "" && !emailPattern.MatchString(*email) {
+		return awserror.New("InvalidEmailException", "The specified email address is either invalid or unspecified.")
+	}
+
+	return nil
+}
+
+// validateRevision checks a commit specifier: a branch, tag, HEAD, fully qualified reference or commit ID.
+func validateRevision(spec string) error {
+	if !revisionPattern.MatchString(spec) || strings.HasPrefix(spec, "-") || strings.Contains(spec, "..") ||
+		strings.Contains(spec, "@{") || strings.HasSuffix(spec, "/") || strings.HasSuffix(spec, ".lock") {
+		return awserror.New("InvalidCommitException",
+			"The specified commit is not valid. Specify a branch, tag, HEAD or full commit ID.")
+	}
+
+	return nil
+}

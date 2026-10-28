@@ -41,7 +41,7 @@ FROM alpine:3.22 AS runtime
 
 LABEL org.opencontainers.image.licenses="Apache-2.0" \
     org.opencontainers.image.source="https://github.com/amjadjibon/tinystack"
-RUN apk add --no-cache ca-certificates \
+RUN apk add --no-cache ca-certificates git \
     && adduser -D -H -u 10001 tinystack \
     && mkdir /data && chown tinystack /data
 

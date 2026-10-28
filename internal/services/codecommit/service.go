@@ -9,11 +9,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"os"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/codecommit"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
@@ -29,8 +32,16 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store storage.Store
+	store  storage.Store
+	caller *catalog.Caller
+	// root holds the repositories' git objects, outside the store; temp is whether Stop removes it.
+	root string
+	mu   sync.Mutex
+	temp bool
 }
+
+// UseCaller lets the service publish repository state changes to EventBridge.
+func (s *Service) UseCaller(c *catalog.Caller) { s.caller = c }
 
 func New(store storage.Store) *Service {
 	return &Service{store: store}
@@ -174,8 +185,27 @@ func (s *Service) GetRepository(ctx context.Context, in *api.GetRepositoryInput)
 		return nil, err
 	}
 
+	meta := common.Clone(record.Metadata)
+	dir, err := s.repositoryDir(scope, *meta.RepositoryId)
+	if err != nil {
+		return nil, err
+	}
+
+	// The default branch is the repository's HEAD; there is none until a branch is pushed.
+	r := &repository{scope: scope, meta: meta, name: name, id: *meta.RepositoryId, dir: dir}
+	if r.exists() {
+		current, _, branchErr := r.defaultBranch(ctx)
+		if branchErr != nil {
+			return nil, branchErr
+		}
+
+		if current != "" {
+			meta.DefaultBranch = &current
+		}
+	}
+
 	return &api.GetRepositoryOutput{
-		RepositoryMetadata: record.Metadata,
+		RepositoryMetadata: meta,
 	}, nil
 }
 
@@ -449,6 +479,18 @@ func (s *Service) DeleteRepository(
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// The record is gone, so nothing can reach the content; removing it needs no transaction.
+	if deletedID != nil {
+		dir, dirErr := s.repositoryDir(scope, *deletedID)
+		if dirErr != nil {
+			return nil, dirErr
+		}
+
+		if removeErr := os.RemoveAll(dir); removeErr != nil {
+			return nil, removeErr
+		}
 	}
 
 	return &api.DeleteRepositoryOutput{
