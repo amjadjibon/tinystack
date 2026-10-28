@@ -6,12 +6,12 @@ The scope below is a design candidate, without an assigned version or delivery d
 
 ## First useful slice
 
-Provisioned Standard cluster records, enhanced monitoring and tags are implemented. Configuration, security, further mutations and broker runtime require separate slices.
+Provisioned records, bootstrap brokers, node listings and a single-node Redpanda Docker runtime are implemented. Advanced security, configurations and cluster mutations remain future extensions.
 
 ## Proposed scope
 
-- [ ] `GetBootstrapBrokers`
-- [ ] `ListNodes`
+- [x] `GetBootstrapBrokers`
+- [x] `ListNodes`
 - [ ] `CreateConfiguration`
 - [ ] `ListConfigurations`
 - [ ] `DescribeConfiguration`
@@ -22,9 +22,11 @@ Provisioned Standard cluster records, enhanced monitoring and tags are implement
 - [ ] `ListScramSecrets`
 - [ ] `UpdateClusterKafkaVersion`, `UpdateBrokerCount`, `UpdateBrokerType`, `UpdateBrokerStorage`
 - [ ] Serverless and V2 cluster APIs
-- [ ] Real Kafka brokers, endpoints, DNS, readiness, node/operation state and cleanup
-- [ ] Topics and producer/consumer data plane
-- [ ] Client authentication/encryption enforcement, logging and open monitoring
+- [x] Single-node Redpanda broker, loopback endpoints, readiness and lifecycle cleanup
+- [ ] DNS, multi-node brokers and cluster-operation state
+- [x] Topics and producer/consumer data plane in Docker mode
+- [x] Unauthenticated plaintext/TLS/dual Docker listeners
+- [ ] SCRAM, IAM, mTLS, logging and open monitoring
 
 
 ## Decisions before implementation

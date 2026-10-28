@@ -42,6 +42,7 @@ Use `./bin/tinystack start --help` for the current command help.
 | `ecs.containers` | `records` | `records` or `docker` |
 | `eks.clusters` | `records` | `records` or `k3s` |
 | `elasticache.caches` | `records` | `records` or `docker` |
+| `kafka.clusters` | `records` | `records` or `docker`; one Kafka-compatible Redpanda broker, with plaintext/TLS loopback listeners (see [MSK](../guides/msk-records.md#redpanda-docker-runtime)) |
 | `opensearch.domains` | `records` | `records` or `docker`; docker runs each domain as a single-node OpenSearch container (see [OpenSearch Service](../services/opensearch.md)) |
 | `bedrockagentcore.runtimes` | `records` | `records` or `docker`; records rejects InvokeAgentRuntime, docker runs one container per runtime session (see [AgentCore runtime execution](#agentcore-runtime-execution)) |
 | `lambda.executor` | `auto` | `docker`, `local` or `auto`; auto uses Docker when the CLI reaches a daemon, otherwise host Python/Node |

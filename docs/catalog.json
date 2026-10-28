@@ -1789,25 +1789,29 @@
       "title": "Amazon MSK",
       "category": "Analytics",
       "scope": "Account and Region",
-      "summary": "Store provisioned Standard cluster configuration, monitoring settings and tags without a Kafka runtime.",
+      "summary": "Manage provisioned MSK configuration, bootstrap brokers and nodes, with an optional Kafka-compatible Redpanda runtime.",
       "gaps": [
-        "No brokers, listeners, containers, endpoints, DNS, nodes, bootstrap strings, topics, producer/consumer traffic, runtime state or asynchronous cluster-operation ARN",
-        "No serverless/V2, configurations/revisions, SCRAM/credentials, auth/encryption/KMS/IAM enforcement, logging/open monitoring, tiered storage, networking allocation or metrics delivery; excluded fields reject even false/null/empty",
+        "Records bootstrap DNS names are synthetic and do not resolve; Docker always runs and lists one broker regardless of requested count. KafkaVersion is metadata and does not select the Redpanda image (Kafka API compatible, not Apache Kafka); no ZooKeeper, DNS, cluster-operation ARNs or multi-node replication",
+        "No serverless/V2, configurations/revisions, SCRAM secret associations, IAM or mTLS authentication, KMS at-rest encryption, logging/open monitoring, tiered storage, networking allocation or metrics delivery. Docker creation explicitly rejects IAM, SCRAM and mTLS; records mode retains authentication flags without enforcing credentials",
         "Finite versions/instances/Regions and explicit groups/storage are local boundaries; no changing latest version or default VPC/group/storage inference. NumberOfBrokerNodes follows the pinned 1-15 model, not larger current AWS quotas",
         "CloudFormation version/count/instance/storage mutations and explicit immutable-choice removals fail before writing; mutable optional monitoring removal restores DEFAULT. No Terraform runtime waiter or dedicated mutation console",
-        "The [records guide](../guides/msk-records.md) lists every selected member, nested constraint, default, tag/revision/network/CF boundary and executable lifecycle; remaining APIs and runtime are [future scope](../roadmap/services/msk-runtime.md)"
+        "See the [MSK guide](../guides/msk-records.md) for selected members and runtime lifecycle. Docker data volumes are external to state archives; ports may change on recreation; a competing host bind can fail startup. Memory-store volumes retained at shutdown require explicit cleanup because a new store has a new ownership identity"
       ],
-      "execution": "Configuration records only",
+      "execution": "Records by default; opt-in single-node Redpanda Docker runtime",
       "package": "kafka",
       "features": [
-        "Eight pinned Kafka REST JSON operations: CreateCluster, DescribeCluster, ListClusters, DeleteCluster, UpdateMonitoring, ListTagsForResource, TagResource and UntagResource",
+        "Ten pinned Kafka REST JSON operations, including GetBootstrapBrokers and ListNodes alongside cluster, monitoring and tag APIs",
         "Commercial account/Region/name/UUID cluster ARNs, scoped name uniqueness, creation timestamp, deeply retained broker/network/EBS/version/monitoring metadata and opaque optimistic configuration revisions",
         "Finite creation matrix: explicit Kafka 3.8.x/3.9.x and kafka.m5.large/xlarge, us-east-1/us-west-1/us-west-2, 2-3 scoped EC2 subnets in distinct AZs (exactly 2 in us-west-1), nodes evenly distributed, explicit security groups and EBS volume size",
         "Atomic monitoring CAS, optional delete CAS, tag merges/removals with MSK limits, scope/API/filter-bound deterministic list cursors that survive cursor deletion",
         "CloudFormation AWS::MSK::Cluster Ref/GetAtt Arn and CurrentVersion, owned/external tags plus monitoring in one write, actual live-state compensation with fresh revisions, safe create-first immutable replacement and collision rollback",
-        "SQLite restart, offline archive export/import and reset use the existing storage lifecycle; inventory reports RecordsOnly=true and ExecutionReady=false; real RGTA tag operations, official icon and Terraform kafka endpoint key"
+        "SQLite restart, archive export/import, reset, RGTA tagging, official icon and Terraform kafka endpoint key; Docker inventory marks ExecutionReady once the broker answers",
+        "Records-mode deterministic AWS-format bootstrap strings for enabled plaintext (9092), TLS (9094), SCRAM (9096) and IAM (9098) listeners; synthetic broker nodes and cluster-bound node pagination",
+        "Set kafka.clusters: docker for one redpandadata/redpanda:v24.3.18 container per cluster, 512 MiB engine memory, preselected loopback advertised ports, plaintext/TLS/dual listeners using the local CA, and real Kafka producer/consumer traffic",
+        "Readiness drives CREATING to ACTIVE; named data volumes survive SQLite restart, delete/reset remove containers and volumes, shutdown removes containers and retains volumes; orphan cleanup is restricted to this store ownership label"
       ]
     },
+
     "mwaa": {
       "title": "Amazon MWAA",
       "category": "Application Integration",
@@ -3518,9 +3522,10 @@
     "msk-runtime": {
       "title": "Amazon MSK configuration, security and runtime",
       "state": "Future extensions",
-      "slice": "Provisioned Standard cluster records, enhanced monitoring and tags are implemented. Configuration, security, further mutations and broker runtime require separate slices.",
-      "features": "- [ ] `GetBootstrapBrokers`\n- [ ] `ListNodes`\n- [ ] `CreateConfiguration`\n- [ ] `ListConfigurations`\n- [ ] `DescribeConfiguration`\n- [ ] `ListConfigurationRevisions`\n- [ ] `DescribeConfigurationRevision`\n- [ ] `BatchAssociateScramSecret`\n- [ ] `BatchDisassociateScramSecret`\n- [ ] `ListScramSecrets`\n- [ ] `UpdateClusterKafkaVersion`, `UpdateBrokerCount`, `UpdateBrokerType`, `UpdateBrokerStorage`\n- [ ] Serverless and V2 cluster APIs\n- [ ] Real Kafka brokers, endpoints, DNS, readiness, node/operation state and cleanup\n- [ ] Topics and producer/consumer data plane\n- [ ] Client authentication/encryption enforcement, logging and open monitoring"
+      "slice": "Provisioned records, bootstrap brokers, node listings and a single-node Redpanda Docker runtime are implemented. Advanced security, configurations and cluster mutations remain future extensions.",
+      "features": "- [x] `GetBootstrapBrokers`\n- [x] `ListNodes`\n- [ ] `CreateConfiguration`\n- [ ] `ListConfigurations`\n- [ ] `DescribeConfiguration`\n- [ ] `ListConfigurationRevisions`\n- [ ] `DescribeConfigurationRevision`\n- [ ] `BatchAssociateScramSecret`\n- [ ] `BatchDisassociateScramSecret`\n- [ ] `ListScramSecrets`\n- [ ] `UpdateClusterKafkaVersion`, `UpdateBrokerCount`, `UpdateBrokerType`, `UpdateBrokerStorage`\n- [ ] Serverless and V2 cluster APIs\n- [x] Single-node Redpanda broker, loopback endpoints, readiness and lifecycle cleanup\n- [ ] DNS, multi-node brokers and cluster-operation state\n- [x] Topics and producer/consumer data plane in Docker mode\n- [x] Unauthenticated plaintext/TLS/dual Docker listeners\n- [ ] SCRAM, IAM, mTLS, logging and open monitoring"
     },
+
     "applicationautoscaling-runtime": {
       "title": "Application Auto Scaling execution and advanced policies",
       "state": "Proposed",

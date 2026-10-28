@@ -1,11 +1,11 @@
 # Amazon MSK configuration records
 
-TinyStack stores provisioned Standard cluster configuration and tags. It creates no Kafka brokers,
-processes, containers, network interfaces, listeners, endpoints, DNS records, topics or data plane.
-Inventory marks `RecordsOnly: true` and `ExecutionReady: false`. Descriptions omit cluster state,
-operation ARNs, node IDs, bootstrap/ZooKeeper addresses and readiness fields. Kafka version is retained
-configuration metadata, including under the modeled `CurrentBrokerSoftwareInfo` name; it does not
-claim installed software. Monitoring changes affect metadata immediately and deliver no metrics.
+TinyStack stores provisioned Standard cluster configuration and tags. The default `kafka.clusters: records`
+creates no Kafka processes, listeners or data plane. Inventory marks `RecordsOnly: true` and
+`ExecutionReady: false`. Descriptions omit cluster state and operation ARNs in records mode.
+GetBootstrapBrokers returns deterministic AWS-format metadata addresses that **do not resolve**;
+ListNodes returns synthetic broker metadata. Monitoring changes affect metadata immediately and deliver no metrics.
+Opt-in Docker mode runs one Kafka-compatible Redpanda broker as described below.
 
 ## Selected operations and members
 
@@ -18,7 +18,9 @@ ARN labels are URL encoded, including their name/identifier slashes.
 
 | Operation | Selected request | Result |
 | --- | --- | --- |
-| CreateCluster | POST `/v1/clusters`: `clusterName`, `kafkaVersion`, `numberOfBrokerNodes`, `brokerNodeGroupInfo`, optional `enhancedMonitoring`, `tags` | `clusterArn`, `clusterName` |
+| CreateCluster | POST `/v1/clusters`: `clusterName`, `kafkaVersion`, `numberOfBrokerNodes`, `brokerNodeGroupInfo`, optional `enhancedMonitoring`, `tags`, `clientAuthentication`, `encryptionInfo` | `clusterArn`, `clusterName` |
+| GetBootstrapBrokers | GET `/v1/clusters/{ClusterArn}/bootstrap-brokers` | Enabled plaintext, TLS, SCRAM and IAM bootstrap strings |
+| ListNodes | GET `/v1/clusters/{ClusterArn}/nodes`: optional `maxResults`, `nextToken` | Broker metadata and listener endpoints, optional continuation token |
 | DescribeCluster | GET `/v1/clusters/{ClusterArn}` | `clusterInfo` containing the selected configuration |
 | ListClusters | GET `/v1/clusters`: optional queries `clusterNameFilter`, `maxResults`, `nextToken` | `clusterInfoList`, optional `nextToken` |
 | DeleteCluster | DELETE `/v1/clusters/{ClusterArn}`: optional query `currentVersion` | Deleted `clusterArn` |
@@ -29,7 +31,7 @@ ARN labels are URL encoded, including their name/identifier slashes.
 
 Both Describe and List select `clusterArn`, `clusterName`, `creationTime`, `currentVersion`,
 `currentBrokerSoftwareInfo.kafkaVersion`, `numberOfBrokerNodes`, `brokerNodeGroupInfo`,
-`enhancedMonitoring` and `tags`. No other software/configuration revision or runtime member is selected.
+`enhancedMonitoring`, `tags`, `clientAuthentication` and `encryptionInfo`. Docker descriptions also return `state` and startup failure `stateInfo`.
 
 Names are required, locally restricted to 1–64 ASCII letters/digits/hyphens/underscores, and unique
 within caller account and Region. ARNs have the commercial AWS form
@@ -71,9 +73,9 @@ selected inside `brokerNodeGroupInfo`. `storageInfo` selects only `ebsStorageInf
 scope. Deleted, foreign-scope, wrong-VPC, same-AZ and unsupported-zone references reject creation.
 Lookups share the storage transaction, with no external I/O or resource allocation.
 
-`clientAuthentication`, `encryptionInfo`, `configurationInfo`, `loggingInfo`, `openMonitoring`,
+`configurationInfo`, `loggingInfo`, `openMonitoring`,
 `rebalancing`, `storageMode`, `connectivityInfo`, `zoneIds` and EBS `provisionedThroughput` are excluded,
-even when false/null/empty. No credential, KMS key, metrics endpoint or bootstrap address is synthesized.
+even when false/null/empty. No credential, KMS key or metrics endpoint is synthesized.
 
 ## Revisions, monitoring and tags
 
@@ -102,7 +104,7 @@ the REST query requires at least one `tagKeys` value, and absent query keys fail
 entire merge. Concurrent disjoint merges retain every committed key. RGTA invokes these real tag APIs.
 
 ListClusters filters by case-sensitive name prefix (empty/omitted means all). `maxResults` defaults to
-100 and accepts 1–100. Local ordering is name then ARN. Tokens bind account, Region, operation and prefix;
+100 and accepts 1–100. Records are keyed by cluster name; listing follows storage key order. Tokens bind account, Region, operation and prefix;
 malformed, empty, foreign-scope and changed-filter tokens fail. Cursors resume strictly after the last
 name/ARN tuple even when that cluster was deleted. Changing page size is allowed. Listing is not a
 frozen snapshot: concurrently created records after the cursor may appear.
@@ -133,9 +135,68 @@ immutable replacement collides safely; give it a new name. Name collisions prese
 unrelated cluster. A later failure restores the original physical incarnation and its metadata. Create
 rollback deletes newly created records. Existing EFS/Batch/CodeBuild/MQ hooks remain active.
 
-Configuration CRUD/revisions, SCRAM associations, other updates, V2/serverless, GetBootstrapBrokers,
-ListNodes, real brokers/topics/authentication and execution are [future extensions](../roadmap/services/msk-runtime.md).
+Configuration CRUD/revisions, SCRAM associations, other updates, V2/serverless and advanced authentication are [future extensions](../roadmap/services/msk-runtime.md).
 Terraform's `kafka` endpoint points to the API; this slice does not satisfy running-state waiters.
+
+## Bootstrap brokers and authentication metadata
+
+CreateCluster accepts `ClientAuthentication` with `Sasl.Scram.Enabled`, `Sasl.Iam.Enabled`,
+`Tls.Enabled`/`CertificateAuthorityArnList`, and `Unauthenticated.Enabled`; EncryptionInfo selects only
+`EncryptionInTransit.ClientBroker` and `InCluster`. Authentication defaults to unauthenticated when no
+mechanism is enabled; client encryption defaults to TLS, following the
+[AWS encryption guide](https://docs.aws.amazon.com/msk/latest/developerguide/msk-encryption.html).
+`PLAINTEXT`, `TLS` and `TLS_PLAINTEXT` choose client listeners. SASL mechanisms require TLS-only client encryption; authenticated mechanisms require in-cluster encryption;
+explicitly disabling every mechanism fails. Records retain the selected flags and CA identifiers as
+metadata (a supplied CA list enables mTLS when Enabled is omitted); they do not validate certificates, associate secrets, or perform IAM authorization.
+
+GetBootstrapBrokers uses `b-<n>.<name>.<uuid-prefix>.c<generation>.kafka.<region>.amazonaws.com`.
+Ports follow [AWS MSK](https://docs.aws.amazon.com/msk/latest/developerguide/port-info.html):
+9092 plaintext, 9094 TLS, 9096 SASL/SCRAM, 9098 IAM. Only enabled fields are returned; multiple enabled
+mechanisms return multiple fields. mTLS with TLS_PLAINTEXT also enables the unauthenticated plaintext
+listener, following AWS. These metadata hostnames are deterministic but do not resolve.
+ListNodes returns broker IDs, retained software/instance/subnet metadata, creation timestamps and the
+same enabled endpoints. Node pages default to 100 with model bounds 1–100 and cluster-bound cursors.
+Missing clusters return NotFoundException for both operations. GetBootstrapBrokers uses the standard
+SDK fields that Terraform's `aws_msk_cluster` read consumes; records mode still omits state and does
+not satisfy Terraform's running-state waiter. Current provider versions also use DescribeClusterV2,
+which remains outside this slice in both modes; only bootstrap-read compatibility is claimed.
+
+## Redpanda Docker runtime
+
+```yaml
+kafka:
+  clusters: docker
+storage:
+  mode: persistent
+  path: ./data
+```
+
+Each cluster starts one `redpandadata/redpanda:v24.3.18` container in dev-container mode with one CPU
+and 512 MiB engine memory. The inspected arm64 image is 184,017,385 bytes (about 175.5 MiB unpacked);
+the published manifest includes linux/arm64 and linux/amd64. Redpanda implements the Kafka API;
+it is not Apache Kafka, and the recorded KafkaVersion does not select its version. Broker count,
+instance type, storage GiB, VPC and subnet settings remain metadata. ListNodes honestly returns the
+one real broker even when more were requested; there is no multi-broker replication or ZooKeeper.
+
+Unauthenticated PLAINTEXT, TLS and TLS_PLAINTEXT are supported. Omitted encryption uses TLS.
+TLS leaves come from [TinyStack's local CA](tls.md); export and trust that CA for Kafka clients.
+The runtime does not use the gateway's custom certificate. IAM, SASL/SCRAM and mTLS requests fail
+CreateCluster explicitly with BadRequestException before a record or container is created: this slice
+has no IAM plugin, SCRAM secret association or client-CA trust integration. InCluster encryption is
+retained metadata because only one broker runs. KMS at-rest settings remain unsupported.
+
+GetBootstrapBrokers returns `127.0.0.1:<host-port>` in the matching plaintext/TLS field. Dual mode has
+separate ports. Ports are selected before start and advertised by Kafka; recreation may select new
+ports. A competing bind between selection and Docker startup fails explicitly and is retried by the
+runtime. CREATING lasts until `rpk cluster health` succeeds, then becomes ACTIVE. Container-start
+errors are exposed as FAILED with StateInfo; the background worker retries. During recovery or before
+ACTIVE, bootstrap/node reads fail with BadRequestException rather than publishing stale endpoints.
+
+Containers and named data volumes carry resource and store ownership labels. Shutdown removes
+containers and keeps volumes; a SQLite restart recreates containers against those volumes, preserving
+topics and messages. Delete and reset remove both. Startup removes orphan containers and volumes
+owned by this store only, leaving other stores untouched. Retained volumes from discarded memory
+stores require explicit cleanup. State export/import does not copy external Docker volumes.
 
 ## Executable AWS CLI lifecycle
 
