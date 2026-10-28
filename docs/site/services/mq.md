@@ -27,7 +27,7 @@ See the [implemented feature catalogue](catalogue.md#amazon-mq) for this service
 - User CRUD, configurations, advanced authentication/LDAP/OAuth/replication/storage/resource-sharing fields and discovery APIs are excluded, including false/null/empty inputs.
 - Records mode discards initial passwords; Docker mode retains credentials privately for recovery and supports ActiveMQ console/group creation metadata. User CRUD and replication flags remain excluded. RabbitMQ UserSummary is omitted.
 - CloudFormation in-place user mutations and removal of explicit encryption options are rejected; original CF templates/properties retain literal inputs for replacement/rollback, while MQ descriptions, inventory, events, snapshots, diagnostics and literal MQ GetTemplate password properties are redacted.
-- Tokens stay reserved indefinitely locally, with conflicting reuse after deletion; no AWS token-expiry parity. No Terraform running-state waiter or dedicated mutation console. The [records guide](../guides/mq-records.md) lists every selected field/default/error/boundary and executable lifecycle.
+- Tokens stay reserved indefinitely locally, with conflicting reuse after deletion; no AWS token-expiry parity. No Terraform running-state waiter or dedicated mutation console. The [MQ guide](../guides/mq.md) lists every selected field/default/error/boundary and executable lifecycle.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

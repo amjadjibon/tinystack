@@ -1,4 +1,4 @@
-# Batch records workflow
+# AWS Batch jobs
 
 AWS Batch stores compute environments, queues, definitions and jobs in the caller's account and Region.
 The default `batch.jobs: records` mode leaves jobs RUNNABLE without compute capacity. Set

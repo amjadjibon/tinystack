@@ -98,14 +98,14 @@ nav:
       - Persistence and restart: guides/persistence.md
       - State fixtures: guides/state-fixtures.md
       - EFS records: guides/efs-records.md
-      - Batch records: guides/batch-records.md
-      - CodeBuild records: guides/codebuild-records.md
+      - AWS Batch: guides/batch.md
+      - CodeBuild: guides/codebuild.md
       - CodeCommit git hosting: guides/codecommit-git.md
       - Amazon Bedrock AgentCore: guides/bedrock-agentcore.md
-      - Amazon MQ records: guides/mq-records.md
-      - Amazon MSK records: guides/msk-records.md
+      - Amazon MQ: guides/mq.md
+      - Amazon MSK: guides/msk.md
       - Amazon MWAA records: guides/mwaa-records.md
-      - Transfer Family records: guides/transfer-records.md
+      - Transfer Family: guides/transfer.md
       - Amazon Location tracker records: guides/location-records.md
       - S3 Tables metadata records: guides/s3tables-records.md
       - Troubleshooting: guides/troubleshooting.md

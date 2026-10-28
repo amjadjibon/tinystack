@@ -1,4 +1,4 @@
-# Amazon MSK configuration records
+# Amazon MSK clusters
 
 TinyStack stores provisioned Standard cluster configuration and tags. The default `kafka.clusters: records`
 creates no Kafka processes, listeners or data plane. Inventory marks `RecordsOnly: true` and

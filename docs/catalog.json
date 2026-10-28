@@ -1726,7 +1726,7 @@
         "Scheduling policies, fair-share capacity, service environments, consumable resources and advanced queue actions are future scope",
         "CloudFormation supports name/type/state/serviceRole/computeResources/tags for environments, name/state/priority/order/tags for queues and name/type/parameters/container/platform/tags for definitions. Compute config/role/type/name changes replace the environment; definition metadata changes create another revision and retire the previous revision after success",
         "Explicitly named environment/queue replacements need distinct names to coexist; reusing the same name fails safely. CloudFormation environments must be created ENABLED. ReplaceComputeEnvironment=false and infrastructure-update policies are excluded",
-        "No dedicated mutation console; the [records workflow](../guides/batch-records.md) lists exact members, defaults, finite limits, reference/version rules and executable CLI examples",
+        "No dedicated mutation console; the [Batch guide](../guides/batch.md) lists exact members, defaults, finite limits, reference/version rules and executable CLI examples",
         "Job lists use storage key order rather than AWS creation-time grouping/order. Filters support JOB_NAME, JOB_DEFINITION, BEFORE_CREATED_AT and AFTER_CREATED_AT; fair-share filters remain unsupported",
         "Local scheduling accounts for vCPUs only, not EC2 instance types, memory placement, min/desired capacity, placement strategies or distributed workers. Host image architecture and Docker availability constrain execution",
         "Background transitions and events are best effort; no durable EventBridge outbox. Logs ship once per polling step and can be lost if the process or container disappears before shipping. Logs do not provide an exactly-once delivery guarantee"
@@ -1763,7 +1763,7 @@
         "No S3 logs, KMS artifact encryption, service-role IAM evaluation or real AWS credentials. Container credentials are local account credentials for parse-mode identity; verify-mode container API calls require configured matching credentials",
         "Artifact shell expressions, symlink artifacts and colliding flattened names fail explicitly. Artifacts and source archives are processed in memory; no extra CodeBuild-specific size limit. Existing project metadata bounds remain local constraints",
         "Secret environment references support local names and optional JSON key/version selectors, not secret ARNs or binary secrets; missing values fail DOWNLOAD_SOURCE. Secrets are not automatically masked from user command output",
-        "UpdateProject nested configuration replaces objects with defaults; only projects appear in inventory. See the [CodeBuild guide](../guides/codebuild-records.md) for selected members and execution details"
+        "UpdateProject nested configuration replaces objects with defaults; only projects appear in inventory. See the [CodeBuild guide](../guides/codebuild.md) for selected members and execution details"
       ],
       "execution": "Records by default; opt-in Docker builds",
       "package": "codebuild"
@@ -1790,7 +1790,7 @@
         "User CRUD, configurations, advanced authentication/LDAP/OAuth/replication/storage/resource-sharing fields and discovery APIs are excluded, including false/null/empty inputs",
         "Records mode discards initial passwords; Docker mode retains credentials privately for recovery and supports ActiveMQ console/group creation metadata. User CRUD and replication flags remain excluded. RabbitMQ UserSummary is omitted",
         "CloudFormation in-place user mutations and removal of explicit encryption options are rejected; original CF templates/properties retain literal inputs for replacement/rollback, while MQ descriptions, inventory, events, snapshots, diagnostics and literal MQ GetTemplate password properties are redacted",
-        "Tokens stay reserved indefinitely locally, with conflicting reuse after deletion; no AWS token-expiry parity. No Terraform running-state waiter or dedicated mutation console. The [records guide](../guides/mq-records.md) lists every selected field/default/error/boundary and executable lifecycle"
+        "Tokens stay reserved indefinitely locally, with conflicting reuse after deletion; no AWS token-expiry parity. No Terraform running-state waiter or dedicated mutation console. The [MQ guide](../guides/mq.md) lists every selected field/default/error/boundary and executable lifecycle"
       ],
       "execution": "Records by default; opt-in Docker RabbitMQ and ActiveMQ messaging",
       "package": "mq"
@@ -1805,7 +1805,7 @@
         "No serverless/V2, configurations/revisions, SCRAM secret associations, IAM or mTLS authentication, KMS at-rest encryption, logging/open monitoring, tiered storage, networking allocation or metrics delivery. Docker creation explicitly rejects IAM, SCRAM and mTLS; records mode retains authentication flags without enforcing credentials",
         "Finite versions/instances/Regions and explicit groups/storage are local boundaries; no changing latest version or default VPC/group/storage inference. NumberOfBrokerNodes follows the pinned 1-15 model, not larger current AWS quotas",
         "CloudFormation version/count/instance/storage mutations and explicit immutable-choice removals fail before writing; mutable optional monitoring removal restores DEFAULT. No Terraform runtime waiter or dedicated mutation console",
-        "See the [MSK guide](../guides/msk-records.md) for selected members and runtime lifecycle. Docker data volumes are external to state archives; ports may change on recreation; a competing host bind can fail startup. Memory-store volumes retained at shutdown require explicit cleanup because a new store has a new ownership identity"
+        "See the [MSK guide](../guides/msk.md) for selected members and runtime lifecycle. Docker data volumes are external to state archives; ports may change on recreation; a competing host bind can fail startup. Memory-store volumes retained at shutdown require explicit cleanup because a new store has a new ownership identity"
       ],
       "execution": "Records by default; opt-in single-node Redpanda Docker runtime",
       "package": "kafka",
@@ -1850,7 +1850,7 @@
       "category": "Migration & Modernization",
       "scope": "Account and Region",
       "summary": "Store Transfer Family configuration or run loopback SFTP servers backed by S3.",
-      "execution": "Default transfer.servers=records persists configuration without listening. In listen mode ONLINE servers expose loopback SFTP addresses in resource inventory; stop, delete, reset and shutdown close sessions. See the [Transfer guide](../guides/transfer-records.md).",
+      "execution": "Default transfer.servers=records persists configuration without listening. In listen mode ONLINE servers expose loopback SFTP addresses in resource inventory; stop, delete, reset and shutdown close sessions. See the [Transfer guide](../guides/transfer.md).",
       "package": "transfer",
       "features": [
         "Seventeen pinned AWS JSON 1.1 server/user/tag/key/lifecycle operations with scoped server IDs and server/user ARNs",
@@ -3504,7 +3504,7 @@
       "state": "Future extensions",
       "slice": "Docker workers, build history, CloudWatch logs, S3 source/artifacts and buildspec 0.2 are implemented. Extend the remaining runtime features separately.",
       "features": "- [ ] RetryBuild and automatic retry policies\n- [ ] Batch builds\n- [ ] Git source checkout and authentication\n- [ ] Webhooks, report groups and report generation\n- [ ] Cache, managed runtime installation and secondary sources/artifacts\n- [ ] Service-role credentials, KMS encryption and S3 logs",
-      "integration": "Use the implemented worker lifecycle and transactional build records. See the [CodeBuild guide](../../guides/codebuild-records.md) for the delivered subset and explicit execution boundaries."
+      "integration": "Use the implemented worker lifecycle and transactional build records. See the [CodeBuild guide](../../guides/codebuild.md) for the delivered subset and explicit execution boundaries."
     },
     "lambda-core": {
       "title": "Lambda Core",
@@ -3553,10 +3553,10 @@
     },
     "transfer-runtime": {
       "title": "Transfer Family runtime and advanced configuration",
-      "state": "Proposed",
-      "slice": "Extend the implemented server/user/public-key records with explicitly configured runtime and advanced records.",
+      "state": "Future extensions",
+      "slice": "Server, user and public-key records and a loopback SFTP runtime backed by S3 are implemented. Other protocols, identity providers, workflows and advanced configuration remain.",
       "features": "- [x] StartServer and StopServer with real lifecycle/readiness\n- [x] SFTP listeners, public-key authentication and S3 file transfers\n- [ ] FTP/FTPS/AS2 listeners\n- [x] Loopback endpoints, stable host keys, runtime restart and cleanup\n- [ ] Public endpoint DNS/IP allocation and imported host keys\n- [ ] VPC/EFS/certificates/custom identity providers\n- [x] Logical DIRECTORY mappings\n- [ ] Session policies, POSIX and advanced user options\n- [ ] CloudFormation ownership/reconciliation of SshPublicKeys\n- [ ] Workflows, connectors, execution and transfer results\n- [ ] Security-policy discovery and wider eligible configuration matrix\n- [ ] Logging, metrics and other advanced server metadata",
-      "integration": "Optional transfer.servers=listen runs real loopback SFTP backed by the local S3 service. The default remains records. See the [Transfer guide](../../guides/transfer-records.md)."
+      "integration": "Optional transfer.servers=listen runs real loopback SFTP backed by the local S3 service. The default remains records. See the [Transfer guide](../../guides/transfer.md)."
     },
     "batch-runtime": {
       "title": "AWS Batch job execution",
@@ -3648,8 +3648,8 @@
     },
     "memorydb-runtime": {
       "title": "Amazon MemoryDB engine runtime and snapshots",
-      "state": "Proposed",
-      "slice": "Extend the single-node engine runtime with snapshots and multi-node lifecycle.",
+      "state": "Future extensions",
+      "slice": "Valkey and Redis OSS engine containers with ACL enforcement are implemented. Snapshots, parameter groups and multi-node lifecycle remain.",
       "features": "- [x] Valkey and Redis OSS engine containers behind cluster and node endpoints\n- [x] ACL and user enforcement from access strings\n- [ ] Snapshots, restore and final snapshots\n- [ ] Parameter group CRUD and values\n- [ ] Failover, scaling and engine upgrades with node lifecycle\n- [ ] Multi-Region clusters, reserved nodes and service updates"
     },
     "codeconnections-sync": {

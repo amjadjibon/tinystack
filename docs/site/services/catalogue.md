@@ -1675,7 +1675,7 @@ Store replication subnet groups, instances, endpoints and tasks as records only,
 
 Store Transfer Family configuration or run loopback SFTP servers backed by S3.
 
-**Execution:** Default transfer.servers=records persists configuration without listening. In listen mode ONLINE servers expose loopback SFTP addresses in resource inventory; stop, delete, reset and shutdown close sessions. See the [Transfer guide](../guides/transfer-records.md).. **Selected operations:** 17.
+**Execution:** Default transfer.servers=records persists configuration without listening. In listen mode ONLINE servers expose loopback SFTP addresses in resource inventory; stop, delete, reset and shutdown close sessions. See the [Transfer guide](../guides/transfer.md).. **Selected operations:** 17.
 
 - Seventeen pinned AWS JSON 1.1 server/user/tag/key/lifecycle operations with scoped server IDs and server/user ARNs.
 - Finite SFTP + SERVICE_MANAGED + S3 + PUBLIC server metadata; fixed explicitly selected API security policies, banner updates and actual local user counts.

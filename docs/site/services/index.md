@@ -166,7 +166,7 @@ Future services and unimplemented extensions live in the [roadmap](../roadmap/in
 | --- | --- | --- |
 | [AWS DataSync](datasync.md) | 20 | Background local S3-to-S3 copies; EFS locations and schedules are records only |
 | [AWS Database Migration Service](databasemigrationservice.md) | 22 | Records only |
-| [AWS Transfer Family](transfer.md) | 17 | Default transfer.servers=records persists configuration without listening. In listen mode ONLINE servers expose loopback SFTP addresses in resource inventory; stop, delete, reset and shutdown close sessions. See the [Transfer guide](../guides/transfer-records.md). |
+| [AWS Transfer Family](transfer.md) | 17 | Default transfer.servers=records persists configuration without listening. In listen mode ONLINE servers expose loopback SFTP addresses in resource inventory; stop, delete, reset and shutdown close sessions. See the [Transfer guide](../guides/transfer.md). |
 
 ## Networking & Content Delivery
 

@@ -25,7 +25,7 @@ See the [implemented feature catalogue](catalogue.md#amazon-msk) for this servic
 - No serverless/V2, configurations/revisions, SCRAM secret associations, IAM or mTLS authentication, KMS at-rest encryption, logging/open monitoring, tiered storage, networking allocation or metrics delivery. Docker creation explicitly rejects IAM, SCRAM and mTLS; records mode retains authentication flags without enforcing credentials.
 - Finite versions/instances/Regions and explicit groups/storage are local boundaries; no changing latest version or default VPC/group/storage inference. NumberOfBrokerNodes follows the pinned 1-15 model, not larger current AWS quotas.
 - CloudFormation version/count/instance/storage mutations and explicit immutable-choice removals fail before writing; mutable optional monitoring removal restores DEFAULT. No Terraform runtime waiter or dedicated mutation console.
-- See the [MSK guide](../guides/msk-records.md) for selected members and runtime lifecycle. Docker data volumes are external to state archives; ports may change on recreation; a competing host bind can fail startup. Memory-store volumes retained at shutdown require explicit cleanup because a new store has a new ownership identity.
+- See the [MSK guide](../guides/msk.md) for selected members and runtime lifecycle. Docker data volumes are external to state archives; ports may change on recreation; a competing host bind can fail startup. Memory-store volumes retained at shutdown require explicit cleanup because a new store has a new ownership identity.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

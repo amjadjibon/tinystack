@@ -19,7 +19,7 @@ Docker workers, build history, CloudWatch logs, S3 source/artifacts and buildspe
 
 ## Integration decisions
 
-Use the implemented worker lifecycle and transactional build records. See the [CodeBuild guide](../../guides/codebuild-records.md) for the delivered subset and explicit execution boundaries.
+Use the implemented worker lifecycle and transactional build records. See the [CodeBuild guide](../../guides/codebuild.md) for the delivered subset and explicit execution boundaries.
 
 
 ## Decisions before implementation

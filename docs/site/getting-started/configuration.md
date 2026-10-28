@@ -42,7 +42,7 @@ Use `./bin/tinystack start --help` for the current command help.
 | `ecs.containers` | `records` | `records` or `docker` |
 | `eks.clusters` | `records` | `records` or `k3s` |
 | `elasticache.caches` | `records` | `records` or `docker` |
-| `kafka.clusters` | `records` | `records` or `docker`; one Kafka-compatible Redpanda broker, with plaintext/TLS loopback listeners (see [MSK](../guides/msk-records.md#redpanda-docker-runtime)) |
+| `kafka.clusters` | `records` | `records` or `docker`; one Kafka-compatible Redpanda broker, with plaintext/TLS loopback listeners (see [MSK](../guides/msk.md#redpanda-docker-runtime)) |
 | `opensearch.domains` | `records` | `records` or `docker`; docker runs each domain as a single-node OpenSearch container (see [OpenSearch Service](../services/opensearch.md)) |
 | `bedrockagentcore.runtimes` | `records` | `records` or `docker`; records rejects InvokeAgentRuntime, docker runs one container per runtime session (see [AgentCore runtime execution](#agentcore-runtime-execution)) |
 | `lambda.executor` | `auto` | `docker`, `local` or `auto`; auto uses Docker when the CLI reaches a daemon, otherwise host Python/Node |
@@ -235,7 +235,7 @@ Shutdown removes containers and retains job records. On persistent restart, inte
 attempts fail with `TinyStack restarted during job attempt`; normal retry rules decide whether to queue
 another attempt. Startup removes orphan containers labeled for this store only. Reset removes Batch
 containers and records. Batch has no supported job data volumes. Job/execution roles remain metadata;
-Batch containers do not receive task-role credentials. See [Batch jobs](../guides/batch-records.md).
+Batch containers do not receive task-role credentials. See [Batch jobs](../guides/batch.md).
 
 ## CodeBuild execution
 
@@ -244,7 +244,7 @@ to TinyStack; source and output directories are transferred with docker cp. `rec
 StartBuild explicitly: project configuration alone cannot produce a successful build.
 
 Build containers reach this endpoint through `host.docker.internal`, as ECS containers do. Sources and
-artifacts stay in TinyStack S3. See [CodeBuild projects and builds](../guides/codebuild-records.md) for
+artifacts stay in TinyStack S3. See [CodeBuild projects and builds](../guides/codebuild.md) for
 buildspec support, local credentials and execution limits.
 
 ## AgentCore runtime execution

@@ -1,8 +1,10 @@
-# Amazon MQ broker records
+# Amazon MQ brokers
 
-TinyStack stores broker creation/configuration metadata, initial usernames and tags. It does not provision
-brokers, containers, interfaces, endpoints or a messaging engine. Inventory reports `RecordsOnly: true`
-and `ExecutionReady: false`. No AMQP, MQTT, STOMP, OpenWire, RabbitMQ management API or web console runs.
+TinyStack stores broker creation/configuration metadata, initial usernames and tags. In the default
+`mq.brokers: records` mode it does not provision brokers, containers, interfaces, endpoints or a messaging
+engine. Inventory reports `RecordsOnly: true` and `ExecutionReady: false`. No AMQP, MQTT, STOMP, OpenWire,
+RabbitMQ management API or web console runs. The [optional Docker runtime](#optional-docker-runtime) runs a
+real RabbitMQ or ActiveMQ broker.
 No broker state, broker instance, console URL, hostname, IP address, readiness or pending-runtime fields
 are synthesized. Logging/encryption/maintenance flags describe configuration; they do not deliver logs,
 encrypt broker data, evaluate KMS/IAM or schedule upgrades. Update and deletion affect records immediately.

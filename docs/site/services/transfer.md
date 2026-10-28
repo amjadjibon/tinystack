@@ -12,7 +12,7 @@ Store Transfer Family configuration or run loopback SFTP servers backed by S3.
 | Wire protocol | AWS JSON 1.1 |
 | API version | `2018-11-05` |
 | Scope | Account and region |
-| Execution | Default transfer.servers=records persists configuration without listening. In listen mode ONLINE servers expose loopback SFTP addresses in resource inventory; stop, delete, reset and shutdown close sessions. See the [Transfer guide](../guides/transfer-records.md). |
+| Execution | Default transfer.servers=records persists configuration without listening. In listen mode ONLINE servers expose loopback SFTP addresses in resource inventory; stop, delete, reset and shutdown close sessions. See the [Transfer guide](../guides/transfer.md). |
 | Selected operations | 17 of 71 in the pinned model |
 
 ## Implemented behavior

@@ -28,7 +28,7 @@ See the [implemented feature catalogue](catalogue.md#codebuild) for this service
 - No S3 logs, KMS artifact encryption, service-role IAM evaluation or real AWS credentials. Container credentials are local account credentials for parse-mode identity; verify-mode container API calls require configured matching credentials.
 - Artifact shell expressions, symlink artifacts and colliding flattened names fail explicitly. Artifacts and source archives are processed in memory; no extra CodeBuild-specific size limit. Existing project metadata bounds remain local constraints.
 - Secret environment references support local names and optional JSON key/version selectors, not secret ARNs or binary secrets; missing values fail DOWNLOAD_SOURCE. Secrets are not automatically masked from user command output.
-- UpdateProject nested configuration replaces objects with defaults; only projects appear in inventory. See the [CodeBuild guide](../guides/codebuild-records.md) for selected members and execution details.
+- UpdateProject nested configuration replaces objects with defaults; only projects appear in inventory. See the [CodeBuild guide](../guides/codebuild.md) for selected members and execution details.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
