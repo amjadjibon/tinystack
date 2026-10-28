@@ -1,13 +1,13 @@
 # Batch records workflow
 
-AWS Batch stores compute environment, queue and container-definition metadata in the caller's
-account and Region. It does not submit, schedule or execute jobs, provision instances, create an
-ECS cluster, pull an image or evaluate IAM permissions. `VALID` describes local metadata, not a
-worker or execution engine. Inventory includes `RecordsOnly=true` and `ExecutionReady=false`.
+AWS Batch stores compute environments, queues, definitions and jobs in the caller's account and Region.
+The default `batch.jobs: records` mode leaves jobs RUNNABLE without compute capacity. Set
+`batch.jobs: docker` to execute container jobs locally using the ECS Docker runtime implementation.
+`VALID` describes local metadata; Batch does not provision EC2 instances or create an ECS cluster.
 
 ## Selected operations and members
 
-The [Batch service page](../services/batch.md) lists the 14 operations. Requests use the pinned
+The [Batch service page](../services/batch.md) lists the 19 operations. Requests use the pinned
 REST JSON model and the `batch` signing name. The following lists are exhaustive; omitted members
 fail explicitly, including unsupported values set to `false`, `null`, `{}` or `[]`.
 
@@ -21,12 +21,17 @@ fail explicitly, including unsupported values set to `false`, `null`, `{}` or `[
 | DescribeJobQueues | jobQueues, maxResults, nextToken |
 | UpdateJobQueue | jobQueue, state, priority, computeEnvironmentOrder |
 | DeleteJobQueue | jobQueue |
-| RegisterJobDefinition | jobDefinitionName, type, parameters, containerProperties, platformCapabilities, tags |
+| RegisterJobDefinition | jobDefinitionName, type, parameters, containerProperties, platformCapabilities, retryStrategy, timeout, tags |
 | DescribeJobDefinitions | jobDefinitions, jobDefinitionName, status, maxResults, nextToken |
 | DeregisterJobDefinition | jobDefinition |
 | TagResource | resourceArn, tags |
 | UntagResource | resourceArn, tagKeys |
 | ListTagsForResource | resourceArn |
+
+| SubmitJob | jobName, jobQueue, jobDefinition, parameters, containerOverrides, retryStrategy, timeout, arrayProperties, dependsOn, tags |
+| DescribeJobs | jobs |
+| ListJobs | jobQueue or arrayJobId, jobStatus, maxResults, nextToken, filters |
+| CancelJob / TerminateJob | jobId, reason |
 
 Names use 1–128 ASCII letters, digits, hyphens or underscores. Names are unique per resource kind,
 account and Region; duplicate creates return `ClientException` (400) without changing the original.
@@ -80,7 +85,7 @@ Orders are returned sorted numerically and environment references are stored as 
 All supported environments are x86 EC2 metadata with `VALID` status; disabled valid environments
 can remain associated. Updates can replace the list, including an explicit empty list to remove
 all associations. Omitting the list preserves it. Queue deletion requires DISABLED state and removes
-its associations immediately; there are no pending or running jobs to drain.
+its associations immediately. Existing jobs remain queryable; disabling a queue stops new submissions and scheduling.
 
 Environment/queue mutations and references accept a short name or scoped resource ARN. Tag APIs
 require the full ARN. Foreign account/Region ARNs are rejected. Describe reference lists allow up
@@ -95,7 +100,7 @@ Revisions are serialized in one storage transaction and remain monotonic after d
 restart and fixture import; sequences are independent in each account and Region.
 
 Container properties are exactly `image`, `command`, `vcpus`, `memory`, `resourceRequirements`,
-`environment`, `jobRoleArn` and `executionRoleArn`. Image requires 1–255 non-whitespace bytes.
+`environment`, `jobRoleArn`, `executionRoleArn` and `logConfiguration`. Image requires 1–255 non-whitespace bytes.
 Use either positive integer `vcpus` and integer `memory >= 4` MiB, or one `VCPU` and one `MEMORY`
 resource requirement with canonical positive decimal integer string values. Mixing both forms,
 duplicate requirement types or GPU is rejected. Integers fit signed 32-bit values.
@@ -105,7 +110,7 @@ with `AWS_BATCH`; values are required strings of at most 4096 bytes. At most 100
 100 command entries are stored; command entries are at most 4096 bytes and contain no NUL.
 Role fields require caller-account IAM role ARNs. Parameters are a string map of at most 100 keys,
 keys of 1–256 bytes and values at most 4096 bytes. All selected nested data is retained and returned.
-These finite local limits do not assert AWS quotas. Retry, timeout, privileges, secrets, volumes,
+These finite local limits do not assert AWS quotas. Privileges, secrets, volumes,
 multinode, EKS and advanced ECS definitions are unsupported.
 
 Deregistration requires `name:revision` or a revisioned ARN and marks that exact record `INACTIVE`.
@@ -180,3 +185,59 @@ The pinned [Smithy model](https://github.com/aws/aws-sdk-go-v2/blob/2ba0e39015dd
 provides operation routes and shapes. AWS's [API reference](https://docs.aws.amazon.com/batch/latest/APIReference/Welcome.html)
 and [CloudFormation resource reference](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/AWS_Batch.html)
 provide the upstream lifecycle and identifier contracts; the explicit local subset and limits above remain the support boundary.
+
+## Job lifecycle and Docker execution
+
+SubmitJob resolves an unrevisioned name or scoped definition ARN to the latest ACTIVE revision.
+Definition parameters merge with submission parameters; whole command words `Ref::name` resolve from
+that map. Missing parameters fail submission. Overrides support command, environment and VCPU/MEMORY
+requirements (and legacy vcpus/memory for legacy definitions). Images belong to definitions and cannot
+be overridden at submission. Environment names beginning with AWS_BATCH are reserved.
+
+Jobs move from SUBMITTED to PENDING while dependencies remain, or to RUNNABLE. Records mode never
+fabricates STARTING, RUNNING or success. Docker mode schedules enabled valid queues by descending
+priority, oldest job first within a queue, and tries compute environments in their configured order.
+Only managed EC2 environments supply local capacity, limited by concurrent STARTING/RUNNING vCPUs.
+Unmanaged environments leave jobs RUNNABLE. Memory placement, min/desired capacity and instance type
+selection are not simulated.
+
+Each attempt starts one container and moves STARTING → RUNNING → SUCCEEDED/FAILED. The container gets
+AWS_BATCH_JOB_ID, AWS_BATCH_JQ_NAME, AWS_BATCH_CE_NAME and AWS_BATCH_JOB_ATTEMPT (starting at 1).
+Array children also receive AWS_BATCH_JOB_ARRAY_INDEX and AWS_BATCH_JOB_ARRAY_SIZE. JobRoleArn and
+executionRoleArn remain metadata; task credentials are not injected.
+
+Retry strategies allow 1–10 attempts, with ordered evaluateOnExit rules matching onExitCode,
+onReason and onStatusReason; all supplied conditions must match. RETRY/EXIT determines the action;
+no matching rule retries while attempts remain. Current AWS user documentation permits six rules,
+although the pinned model documentation says five; TinyStack accepts six. The attempts field is
+required with evaluateOnExit. Timeouts override definition timeouts, require at least 60 seconds,
+and fail with `Job attempt duration exceeded timeout` without retrying. Docker receives a stop request
+with a 30-second grace period before removal. Cancelled and terminated jobs never retry.
+
+Arrays have 2–10000 children named `<parent-id>:<index>`. SEQUENTIAL waits for the previous index;
+N_TO_N waits for the same index in an equally sized array. Ordinary dependencies (up to 20) wait for
+successful jobs; a failed dependency fails its dependents. Parent status remains PENDING until all
+children complete, then succeeds only if every child succeeds. Cancelling/terminating a parent
+applies to its children. Cancelling a PENDING job waits for its dependencies to finish, as
+[AWS documents](https://docs.aws.amazon.com/batch/latest/APIReference/API_CancelJob.html).
+CancelJob leaves STARTING/RUNNING jobs unchanged; TerminateJob ends their containers.
+
+DescribeJobs retains attempt timestamps, exit codes, reasons and logStreamName. Logs use
+`/aws/batch/job` and `<definition-name>/default/<task-id>`, through the ECS LogWriter. Definitions
+may select the awslogs driver with awslogs-group, same-region awslogs-region and awslogs-stream-prefix
+options. Background polling ships stdout/stderr while running and before final removal. Logs and
+EventBridge Batch Job State Change events are best effort; neither uses a durable delivery outbox.
+
+ListJobs defaults to RUNNING for queue queries. Array queries list children; explicit jobStatus
+filters them. Lists use storage key order and filter-bound opaque pagination. JOB_NAME matches
+case-insensitively with an optional trailing wildcard. JOB_DEFINITION accepts a name/name prefix
+or exact revisioned ARN; BEFORE_CREATED_AT/AFTER_CREATED_AT take epoch milliseconds. Only one filter
+with one value is supported for queue queries; filters ignore jobStatus and array queries ignore filters.
+Filtered pages allow at most 100 results; otherwise
+pages allow 1–1000 results. Creation-time grouping/order differs from AWS. Fair-share filters,
+policies, consumable resources, Fargate, multinode and EKS properties are unsupported explicitly.
+
+Shutdown removes containers and retains records. Persistent restart fails any interrupted attempt
+with `TinyStack restarted during job attempt` and applies its retry strategy. Startup cleans only
+orphan containers labeled for that store. Reset removes containers and job state. Job data volumes
+are not supported. Completed records and attempts remain until reset.

@@ -7,7 +7,7 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 
 | Service or extension | Status | First useful slice |
 | --- | --- | --- |
-| [AWS Batch job execution](services/batch-runtime.md) | Proposed | Extend the implemented metadata subset with an explicitly configured execution engine. |
+| [AWS Batch job execution](services/batch-runtime.md) | Future extensions | Job submission, managed local Docker scheduling, attempts, logs, arrays and dependencies are implemented. Advanced scheduling and platforms remain future scope. |
 | [AWS CodeArtifact packages](services/codeartifact-packages.md) | Proposed | Store and serve packages through repository endpoints for one package format. |
 | [AWS CodeCommit git hosting](services/codecommit-git-hosting.md) | Future extensions | Git smart HTTP hosting, branch and commit APIs and EventBridge state events are implemented. SSH transport, triggers and repository seeding remain. |
 | [AWS CodeConnections repository links and sync](services/codeconnections-sync.md) | Proposed | Extend connection and host records with repository links and sync configurations. |

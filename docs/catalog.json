@@ -1699,9 +1699,9 @@
     "batch": {
       "title": "AWS Batch",
       "category": "Compute",
-      "summary": "Persist regional compute-environment, queue and revisioned container-definition metadata without provisioning or running jobs.",
+      "summary": "Persist Batch compute environments and queues; submit dependency-aware jobs with optional execution through the ECS Docker container runtime.",
       "features": [
-        "14 REST JSON metadata operations: compute environment and queue CRUD, definition registration/description/deregistration and resource tags",
+        "19 REST JSON operations: compute environment and queue CRUD, definition revisions, tags, SubmitJob, DescribeJobs, ListJobs, CancelJob and TerminateJob",
         "UNMANAGED and finite x86 MANAGED EC2 records must be created ENABLED (omitted state defaults to ENABLED); explicit DISABLED creation returns ClientException/400 without storing a record. Updates accept ENABLED/DISABLED; VALID describes local metadata, with no fabricated ECS cluster or runtime identifiers",
         "Managed capacity/configuration retains vCPU bounds, desired capacity, instance choices, instance profile and actual scoped EC2 subnet/security-group references; all network lookups share the storage transaction",
         "Queues retain normalized ordered compute-environment ARNs, priority and state; create requires 1-3 associations, update can disassociate all. Referenced or enabled environments cannot be deleted; queues must also be disabled before deletion",
@@ -1709,20 +1709,29 @@
         "Atomic writes and failed mutations, account/Region isolation, deterministic filter-bound pagination and concurrent registration/name uniqueness",
         "Tags are scoped to each resource ARN and definition revision, with 50-key merge limits, inventory and Resource Groups Tagging API support",
         "SQLite restart, offline fixture export/import into a fresh store followed by normal restart, shared reset, verified SigV4, official console icon and Terraform batch endpoint",
-        "CloudFormation ComputeEnvironment, JobQueue and JobDefinition selected properties with correct ARN Ref/GetAtt, queue dependency updates, definition revision replacement and original-incarnation rollback. Removed template tags free capacity before additions; failed additions compensate live removed values"
+        "CloudFormation ComputeEnvironment, JobQueue and JobDefinition selected properties with correct ARN Ref/GetAtt, queue dependency updates, definition revision replacement and original-incarnation rollback. Removed template tags free capacity before additions; failed additions compensate live removed values",
+        "Records mode moves submitted jobs to PENDING for dependencies or RUNNABLE without fabricating execution success; cancellation and termination retain reasons",
+        "Opt-in batch.jobs: docker uses the ECS Runtime interface and Docker implementation independently of ecs.containers; enabled valid managed environments admit jobs in queue-priority and compute-environment order, respecting concurrent maxvCpus",
+        "Definition parameters merged with submission parameters, Ref::name command substitution, command/environment/resource overrides, Batch job/queue/environment/attempt and array-index variables",
+        "One container per attempt, retry attempts and evaluateOnExit glob rules, minimum-60-second attempt timeouts without retries, attempt exit codes/reasons/timestamps/task ARNs and CloudWatch Logs streams",
+        "Arrays of 2-10000 children, status summaries, SEQUENTIAL and N_TO_N dependencies and up to 20 ordinary dependencies; failed dependencies fail dependent jobs",
+        "Batch Job State Change events through EventBridge; store-labeled orphan cleanup, reset/shutdown container removal and SQLite restart recovery that fails interrupted attempts and applies retry rules"
       ],
       "gaps": [
-        "Records only: no SubmitJob/DescribeJobs/ListJobs/CancelJob/TerminateJob, scheduler, Docker/ECS/EKS jobs, provisioning/autoscaling, image pulls, IAM role existence/trust/permissions or execution readiness. VALID means valid local metadata",
+        "No EC2 provisioning/autoscaling or actual ECS cluster records. UNMANAGED environments provide no local execution capacity and jobs stay RUNNABLE. Roles remain metadata: Batch containers do not receive ECS task credentials; IAM existence/trust/permissions are not evaluated",
         "Only MANAGED EC2 or UNMANAGED are supported. Managed x86 choices are finite c5/m5/r5 families/sizes, optimal and default_x86_64; Fargate, Spot, ARM, EKS, ECS managed instances, launch templates, custom AMIs, instance tags, scaling policies and infrastructure updates are excluded",
         "Create environment supports name/type/state/serviceRole/tags and selected computeResources. Both types require ENABLED at creation (also the omitted-state default); DISABLED returns ClientException/400 without storing a record. Update accepts ENABLED/DISABLED and supports state/serviceRole and minvCpus/maxvCpus/desiredvCpus only. Desired capacity cannot decrease or leave the retained bounds; bounds alone do not invoke a scheduler",
-        "Definitions support container/EC2 only; retry/timeout, GPU, multinode, volumes, secrets, privileges, EKS/ECS advanced properties and tag propagation are absent. Unsupported inputs fail explicitly including false/null/empty",
-        "Descriptions default to all definition statuses and return all matching revisions, rather than latest active name resolution. Explicit definition lists require revisioned identifiers and cannot combine with other parameters. Inactive history is retained indefinitely locally",
+        "Container/EC2 definitions only: GPU, multinode, volumes, secrets, privileges, EKS/Fargate/ECS advanced properties, consumable resources and tag propagation remain unsupported. Unsupported members fail explicitly",
+        "Definition descriptions retain all matching revisions and inactive history; SubmitJob resolves the latest ACTIVE revision for an unrevisioned name or scoped ARN. Jobs and attempts are retained until reset",
         "Scheduling policies, fair-share capacity, service environments, consumable resources and advanced queue actions are future scope",
         "CloudFormation supports name/type/state/serviceRole/computeResources/tags for environments, name/state/priority/order/tags for queues and name/type/parameters/container/platform/tags for definitions. Compute config/role/type/name changes replace the environment; definition metadata changes create another revision and retire the previous revision after success",
         "Explicitly named environment/queue replacements need distinct names to coexist; reusing the same name fails safely. CloudFormation environments must be created ENABLED. ReplaceComputeEnvironment=false and infrastructure-update policies are excluded",
-        "No dedicated mutation console; the [records workflow](../guides/batch-records.md) lists exact members, defaults, finite limits, reference/version rules and executable CLI examples"
+        "No dedicated mutation console; the [records workflow](../guides/batch-records.md) lists exact members, defaults, finite limits, reference/version rules and executable CLI examples",
+        "Job lists use storage key order rather than AWS creation-time grouping/order. Filters support JOB_NAME, JOB_DEFINITION, BEFORE_CREATED_AT and AFTER_CREATED_AT; fair-share filters remain unsupported",
+        "Local scheduling accounts for vCPUs only, not EC2 instance types, memory placement, min/desired capacity, placement strategies or distributed workers. Host image architecture and Docker availability constrain execution",
+        "Background transitions and events are best effort; no durable EventBridge outbox. Logs ship once per polling step and can be lost if the process or container disappears before shipping. Logs do not provide an exactly-once delivery guarantee"
       ],
-      "execution": "Records only",
+      "execution": "Records by default; optional local Docker jobs via the ECS container runtime",
       "package": "batch"
     },
     "codebuild": {
@@ -3525,10 +3534,10 @@
     },
     "batch-runtime": {
       "title": "AWS Batch job execution",
-      "state": "Proposed",
-      "slice": "Extend the implemented metadata subset with an explicitly configured execution engine.",
-      "features": "- [ ] SubmitJob\n- [ ] DescribeJobs and ListJobs\n- [ ] CancelJob and TerminateJob\n- [ ] Scheduler and worker readiness\n- [ ] Scheduling policies and fair-share queues\n- [ ] Consumable resources\n- [ ] Fargate, Spot, EKS and advanced job definitions",
-      "integration": "The current Batch API persists records only. Runtime adapters need readiness, lifecycle, restart and cleanup contracts before any job execution success is exposed."
+      "state": "Future extensions",
+      "slice": "Job submission, managed local Docker scheduling, attempts, logs, arrays and dependencies are implemented. Advanced scheduling and platforms remain future scope.",
+      "features": "- [x] SubmitJob\n- [x] DescribeJobs and ListJobs\n- [x] CancelJob and TerminateJob\n- [x] Local Docker scheduler, retries, timeouts, arrays and dependencies\n- [ ] Scheduling policies and fair-share queues\n- [ ] Consumable resources\n- [ ] Fargate, Spot, EKS and advanced job definitions\n- [ ] Job-role credentials and distributed capacity",
+      "integration": "batch.jobs: docker reuses the ECS container runtime. Records mode leaves dependency-free jobs RUNNABLE. Interrupted attempts fail on restart and apply retry rules; only containers with this store ownership label are cleaned."
     },
     "msk-runtime": {
       "title": "Amazon MSK configuration, security and runtime",

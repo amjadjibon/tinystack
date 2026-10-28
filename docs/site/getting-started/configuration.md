@@ -218,6 +218,25 @@ last MiB per invocation; process output files are removed with their environment
 Function credentials reuse the same creator-account logic as Docker. `AWS_ENDPOINT_URL` points back to TinyStack;
 functions can override it explicitly through their configured environment. See [hot reload](../guides/lambda-hot-reload.md).
 
+## Batch execution
+
+```yaml
+batch:
+  jobs: records # default; docker runs local containers
+```
+
+`batch.jobs` accepts `records` or `docker`. Docker mode reuses the ECS container runtime implementation
+with independent Batch ownership and lifecycle; `ecs.containers: docker` is not required. Docker must
+be available to TinyStack. Only ENABLED, VALID queues and managed compute environments schedule jobs;
+`maxvCpus` bounds the combined vCPUs of STARTING/RUNNING attempts. UNMANAGED environments do not provide
+local capacity. Records mode keeps jobs RUNNABLE until cancelled, or PENDING while dependencies remain.
+
+Shutdown removes containers and retains job records. On persistent restart, interrupted STARTING/RUNNING
+attempts fail with `TinyStack restarted during job attempt`; normal retry rules decide whether to queue
+another attempt. Startup removes orphan containers labeled for this store only. Reset removes Batch
+containers and records. Batch has no supported job data volumes. Job/execution roles remain metadata;
+Batch containers do not receive task-role credentials. See [Batch jobs](../guides/batch-records.md).
+
 ## CodeBuild execution
 
 Set `codebuild.builds: docker` to run builds using the project's Docker image. Docker must be available
