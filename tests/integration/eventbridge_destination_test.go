@@ -765,6 +765,12 @@ func newRemote(t *testing.T) *remote {
 			return
 		}
 
+		// Local tools probe new listeners with GET /; count only the hooks the tests deliver to.
+		if !strings.HasPrefix(req.URL.Path, "/hook/") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		r.requests = append(r.requests, got)
 		w.WriteHeader(int(r.status.Load()))
 	}))
