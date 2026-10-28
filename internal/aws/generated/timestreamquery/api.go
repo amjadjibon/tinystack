@@ -10,6 +10,61 @@ import (
 	"unicode/utf8"
 )
 
+type QueryRequest struct {
+	QueryString *string `json:"QueryString,omitempty"`
+	ClientToken *string `json:"ClientToken,omitempty"`
+	NextToken   *string `json:"NextToken,omitempty"`
+	MaxRows     *int64  `json:"MaxRows,omitempty"`
+}
+
+type Datum struct {
+	ScalarValue *string `json:"ScalarValue,omitempty"`
+	NullValue   *bool   `json:"NullValue,omitempty"`
+}
+
+type Row struct {
+	Data []Datum `json:"Data,omitempty"`
+}
+
+type Type struct {
+	ScalarType *string `json:"ScalarType,omitempty"`
+}
+
+type ColumnInfo struct {
+	Name *string `json:"Name,omitempty"`
+	Type *Type   `json:"Type,omitempty"`
+}
+
+type QueryStatus struct {
+	ProgressPercentage     *float64 `json:"ProgressPercentage,omitempty"`
+	CumulativeBytesScanned *int64   `json:"CumulativeBytesScanned,omitempty"`
+	CumulativeBytesMetered *int64   `json:"CumulativeBytesMetered,omitempty"`
+}
+
+type QueryResponse struct {
+	QueryId     *string      `json:"QueryId,omitempty"`
+	NextToken   *string      `json:"NextToken,omitempty"`
+	Rows        []Row        `json:"Rows,omitempty"`
+	ColumnInfo  []ColumnInfo `json:"ColumnInfo,omitempty"`
+	QueryStatus *QueryStatus `json:"QueryStatus,omitempty"`
+}
+
+type CancelQueryRequest struct {
+	QueryId *string `json:"QueryId,omitempty"`
+}
+
+type CancelQueryResponse struct {
+	CancellationMessage *string `json:"CancellationMessage,omitempty"`
+}
+
+type ExecuteScheduledQueryOutput struct{}
+
+type ExecuteScheduledQueryRequest struct {
+	ScheduledQueryArn *string  `json:"ScheduledQueryArn,omitempty"`
+	InvocationTime    *float64 `json:"InvocationTime,omitempty"`
+	ClientToken       *string  `json:"ClientToken,omitempty"`
+}
+
 type ScheduleConfiguration struct {
 	ScheduleExpression *string `json:"ScheduleExpression,omitempty"`
 }
@@ -309,7 +364,9 @@ type UpdateScheduledQueryRequest struct {
 	State             *string `json:"State,omitempty"`
 }
 
-var pattern0 = regexp.MustCompile("^[a-zA-Z0-9|!\\-_*'\\(\\)]([a-zA-Z0-9]|[!\\-_*'\\(\\)\\/.])+$")
+var pattern0 = regexp.MustCompile("^[a-zA-Z0-9]+$")
+
+var pattern1 = regexp.MustCompile("^[a-zA-Z0-9|!\\-_*'\\(\\)]([a-zA-Z0-9]|[!\\-_*'\\(\\)\\/.])+$")
 
 var enum0 = []string{"VARCHAR"}
 
@@ -319,7 +376,7 @@ var enum2 = []string{"BIGINT", "BOOLEAN", "DOUBLE", "TIMESTAMP", "VARCHAR"}
 
 var enum3 = []string{"ON_DEMAND", "PROVISIONED"}
 
-var pattern1 = regexp.MustCompile("^[a-z0-9][\\.\\-a-z0-9]{1,61}[a-z0-9]$")
+var pattern2 = regexp.MustCompile("^[a-z0-9][\\.\\-a-z0-9]{1,61}[a-z0-9]$")
 
 var enum4 = []string{"SSE_KMS", "SSE_S3"}
 
@@ -344,6 +401,21 @@ func (v *AccountSettingsNotificationConfiguration) Validate(path string) error {
 	return nil
 }
 
+func (v *CancelQueryRequest) Validate(path string) error {
+	if err := validation.Required(path+"QueryId", v.QueryId != nil); err != nil {
+		return err
+	}
+	if v.QueryId != nil {
+		if err := validation.Length(path+"QueryId", utf8.RuneCountInString((*v.QueryId)), new(int64(1)), new(int64(64))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"QueryId", (*v.QueryId), pattern0, nil, "^[a-zA-Z0-9]+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (v *CreateScheduledQueryRequest) Validate(path string) error {
 	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
 		return err
@@ -352,7 +424,7 @@ func (v *CreateScheduledQueryRequest) Validate(path string) error {
 		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(64))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"Name", (*v.Name), pattern0, nil, "^[a-zA-Z0-9|!\\-_*'\\(\\)]([a-zA-Z0-9]|[!\\-_*'\\(\\)\\/.])+$"); err != nil {
+		if err := validation.Pattern(path+"Name", (*v.Name), pattern1, nil, "^[a-zA-Z0-9|!\\-_*'\\(\\)]([a-zA-Z0-9]|[!\\-_*'\\(\\)\\/.])+$"); err != nil {
 			return err
 		}
 	}
@@ -483,6 +555,26 @@ func (v *ErrorReportConfiguration) Validate(path string) error {
 	return nil
 }
 
+func (v *ExecuteScheduledQueryRequest) Validate(path string) error {
+	if err := validation.Required(path+"ScheduledQueryArn", v.ScheduledQueryArn != nil); err != nil {
+		return err
+	}
+	if v.ScheduledQueryArn != nil {
+		if err := validation.Length(path+"ScheduledQueryArn", utf8.RuneCountInString((*v.ScheduledQueryArn)), new(int64(1)), new(int64(2048))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"InvocationTime", v.InvocationTime != nil); err != nil {
+		return err
+	}
+	if v.ClientToken != nil {
+		if err := validation.Length(path+"ClientToken", utf8.RuneCountInString((*v.ClientToken)), new(int64(32)), new(int64(128))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (v *ListScheduledQueriesRequest) Validate(path string) error {
 	if v.MaxResults != nil {
 		if err := validation.Range(path+"MaxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(1000))); err != nil {
@@ -601,6 +693,33 @@ func (v *QueryComputeRequest) Validate(path string) error {
 	return nil
 }
 
+func (v *QueryRequest) Validate(path string) error {
+	if err := validation.Required(path+"QueryString", v.QueryString != nil); err != nil {
+		return err
+	}
+	if v.QueryString != nil {
+		if err := validation.Length(path+"QueryString", utf8.RuneCountInString((*v.QueryString)), new(int64(1)), new(int64(262144))); err != nil {
+			return err
+		}
+	}
+	if v.ClientToken != nil {
+		if err := validation.Length(path+"ClientToken", utf8.RuneCountInString((*v.ClientToken)), new(int64(32)), new(int64(128))); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"NextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(2048))); err != nil {
+			return err
+		}
+	}
+	if v.MaxRows != nil {
+		if err := validation.Range(path+"MaxRows", float64((*v.MaxRows)), new(float64(1)), new(float64(1000))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (v *S3Configuration) Validate(path string) error {
 	if err := validation.Required(path+"BucketName", v.BucketName != nil); err != nil {
 		return err
@@ -609,7 +728,7 @@ func (v *S3Configuration) Validate(path string) error {
 		if err := validation.Length(path+"BucketName", utf8.RuneCountInString((*v.BucketName)), new(int64(3)), new(int64(63))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"BucketName", (*v.BucketName), pattern1, nil, "^[a-z0-9][\\.\\-a-z0-9]{1,61}[a-z0-9]$"); err != nil {
+		if err := validation.Pattern(path+"BucketName", (*v.BucketName), pattern2, nil, "^[a-z0-9][\\.\\-a-z0-9]{1,61}[a-z0-9]$"); err != nil {
 			return err
 		}
 	}
@@ -617,7 +736,7 @@ func (v *S3Configuration) Validate(path string) error {
 		if err := validation.Length(path+"ObjectKeyPrefix", utf8.RuneCountInString((*v.ObjectKeyPrefix)), new(int64(1)), new(int64(896))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"ObjectKeyPrefix", (*v.ObjectKeyPrefix), pattern0, nil, "^[a-zA-Z0-9|!\\-_*'\\(\\)]([a-zA-Z0-9]|[!\\-_*'\\(\\)\\/.])+$"); err != nil {
+		if err := validation.Pattern(path+"ObjectKeyPrefix", (*v.ObjectKeyPrefix), pattern1, nil, "^[a-zA-Z0-9|!\\-_*'\\(\\)]([a-zA-Z0-9]|[!\\-_*'\\(\\)\\/.])+$"); err != nil {
 			return err
 		}
 	}
@@ -808,6 +927,9 @@ func (v *UpdateScheduledQueryRequest) Validate(path string) error {
 }
 
 type API interface {
+	Query(context.Context, *QueryRequest) (*QueryResponse, error)
+	CancelQuery(context.Context, *CancelQueryRequest) (*CancelQueryResponse, error)
+	ExecuteScheduledQuery(context.Context, *ExecuteScheduledQueryRequest) (*ExecuteScheduledQueryOutput, error)
 	CreateScheduledQuery(context.Context, *CreateScheduledQueryRequest) (*CreateScheduledQueryResponse, error)
 	DeleteScheduledQuery(context.Context, *DeleteScheduledQueryRequest) (*DeleteScheduledQueryOutput, error)
 	DescribeAccountSettings(context.Context, *DescribeAccountSettingsRequest) (*DescribeAccountSettingsResponse, error)
@@ -822,7 +944,28 @@ type API interface {
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "timestreamquery", SigningName: "timestream", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "timestream", TargetPrefix: "Timestream_20181101", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_0"}, Errors: map[string]catalog.ErrorBinding{"AccessDeniedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 403}, "ConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 409}, "InternalServerException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 500}, "InvalidEndpointException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 421}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 404}, "ServiceQuotaExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 402}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 429}, "ValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "timestreamquery", SigningName: "timestream", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "timestream", TargetPrefix: "Timestream_20181101", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_0"}, Errors: map[string]catalog.ErrorBinding{"AccessDeniedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 403}, "ConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 409}, "InternalServerException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 500}, "InvalidEndpointException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 421}, "QueryExecutionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 404}, "ServiceQuotaExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 402}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 429}, "ValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+		"Query": {Name: "Query", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "timestream:Query", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Timestream_20181101.Query", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &QueryRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*QueryRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.Query(ctx, in)
+		}},
+		"CancelQuery": {Name: "CancelQuery", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "timestream:CancelQuery", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Timestream_20181101.CancelQuery", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &CancelQueryRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*CancelQueryRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.CancelQuery(ctx, in)
+		}},
+		"ExecuteScheduledQuery": {Name: "ExecuteScheduledQuery", UnitOutput: true, Sensitive: true, Anonymous: false, IAMAction: "timestream:ExecuteScheduledQuery", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Timestream_20181101.ExecuteScheduledQuery", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ExecuteScheduledQueryRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ExecuteScheduledQueryRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.ExecuteScheduledQuery(ctx, in)
+		}},
 		"CreateScheduledQuery": {Name: "CreateScheduledQuery", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "timestream:CreateScheduledQuery", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Timestream_20181101.CreateScheduledQuery", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &CreateScheduledQueryRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*CreateScheduledQueryRequest)
 			if err := in.Validate(""); err != nil {

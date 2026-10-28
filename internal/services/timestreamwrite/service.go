@@ -1,7 +1,5 @@
-// Package timestreamwrite stores Amazon Timestream databases and tables as metadata. WriteRecords validates every
-// record against the documented rules and the table's retention windows and counts what it accepts, but it
-// discards the data: nothing is stored or queryable, and timestreamquery serves scheduled query and account setting
-// records without executing queries.
+// Package timestreamwrite stores databases, tables and durable versioned time-series points.
+// Accepted memory points migrate logically to magnetic storage and expire at query/read time.
 package timestreamwrite
 
 import (

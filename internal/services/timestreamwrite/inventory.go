@@ -26,7 +26,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				name, arn     string
 				configuration any
 				tags          map[string]string
-				details       = map[string]any{"RecordsOnly": true, "ExecutionReady": false}
+				details       = map[string]any{"RecordsOnly": false, "ExecutionReady": true}
 			)
 
 			switch kind {
@@ -46,7 +46,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 				name, arn, tags = r.Database+"/"+r.Name, tableARN(scope, r.Database, r.Name), r.Tags
 				configuration = r.output(scope)
-				details["RecordsDiscarded"] = r.Ingested
+				details["RecordsIngested"] = r.Ingested
 			default:
 				continue
 			}

@@ -523,6 +523,7 @@ func build(
 	artifactRecords := codeartifact.New(store)
 	timestreamRecords := timestreamwrite.New(store)
 	timestreamQueryRecords := timestreamquery.New(store, timestreamRecords, topics, roles, buckets, keys)
+	a.onStop(timestreamQueryRecords.Stop)
 	costExplorerRecords := costexplorer.New(store)
 	curRecords := costandusagereportservice.New(store)
 	budgetRecords := budgets.New(store, deliveries, logger)

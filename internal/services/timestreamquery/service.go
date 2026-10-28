@@ -1,13 +1,11 @@
-// Package timestreamquery stores Amazon Timestream scheduled queries and account settings as metadata. Scheduled
-// queries validate their schedule expression and cross-service references (SNS topic, IAM execution role, target
-// Timestream database and table, S3 error-report bucket, and KMS key) and compute NextInvocationTime, but queries are
-// never executed: Query, PrepareQuery, CancelQuery, and ExecuteScheduledQuery are not served.
+// Package timestreamquery runs scalar SQL over Timestream points and executes scheduled rollups.
 package timestreamquery
 
 import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
@@ -15,6 +13,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/timestreamquery"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/iam"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
@@ -45,6 +44,7 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
+	group      *background.Group
 	store      storage.Store
 	timestream *timestreamwrite.Service
 	topics     *sns.Service
@@ -61,7 +61,7 @@ func New(
 	buckets *s3.Service,
 	keys *kms.Service,
 ) *Service {
-	return &Service{
+	svc := &Service{
 		store:      store,
 		timestream: timestream,
 		topics:     topics,
@@ -69,7 +69,15 @@ func New(
 		buckets:    buckets,
 		keys:       keys,
 	}
+
+	_ = svc.recoverInterrupted(context.Background())
+	svc.group = background.New()
+	svc.group.Every(time.Second, svc.tick)
+	return svc
 }
+
+// Stop stops scheduled execution.
+func (s *Service) Stop() { s.group.Stop() }
 
 func fault(code, format string, args ...any) error {
 	return awserror.New(code, fmt.Sprintf(format, args...))

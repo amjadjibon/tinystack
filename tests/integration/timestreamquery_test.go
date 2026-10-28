@@ -428,7 +428,7 @@ func TestTimestreamQuerySDKLifecycle(t *testing.T) {
 		t.Fatalf("ResourceGroups SearchResources: %+v %v", searched, err)
 	}
 
-	// Inventory reports RecordsOnly=true and ExecutionReady=false.
+	// Inventory reports RecordsOnly=false and ExecutionReady=true.
 	var inv struct {
 		Resources []struct {
 			Details map[string]any `json:"details"`
@@ -446,7 +446,7 @@ func TestTimestreamQuerySDKLifecycle(t *testing.T) {
 	for _, r := range inv.Resources {
 		if r.Service == "timestreamquery" && r.Type == "scheduled-query" && r.Name == "hourly-cpu" {
 			foundInventory = true
-			if r.Details["RecordsOnly"] != true || r.Details["ExecutionReady"] != false {
+			if r.Details["RecordsOnly"] != false || r.Details["ExecutionReady"] != true {
 				t.Fatalf("unexpected inventory item: %+v", r)
 			}
 		}

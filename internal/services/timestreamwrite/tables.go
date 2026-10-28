@@ -43,7 +43,7 @@ type tableRecord struct {
 	// MemoryHours and MagneticDays are the retention periods.
 	MemoryHours  int64
 	MagneticDays int64
-	// Ingested counts the records WriteRecords accepted and discarded.
+	// Ingested counts accepted inserts and versioned updates.
 	Ingested int64
 }
 
@@ -378,6 +378,10 @@ func (s *Service) DeleteTable(ctx context.Context, in *api.DeleteTableRequest) (
 
 		if _, found := tx.Get(tableKey(scope, db, table)); !found {
 			return tableNotFound(db, table)
+		}
+
+		for _, k := range tx.Keys(recordPrefix(scope, db, table)) {
+			tx.Delete(k)
 		}
 
 		tx.Delete(tableKey(scope, db, table))

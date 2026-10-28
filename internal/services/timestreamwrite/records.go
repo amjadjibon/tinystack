@@ -41,6 +41,10 @@ const (
 func merge(shared, in *api.Record) api.Record {
 	r := *in
 	if shared == nil {
+		if r.MeasureValueType == nil {
+			r.MeasureValueType = new("DOUBLE")
+		}
+
 		return r
 	}
 
@@ -53,6 +57,10 @@ func merge(shared, in *api.Record) api.Record {
 	r.MeasureName = common.OrElse(r.MeasureName, shared.MeasureName)
 	r.MeasureValue = common.OrElse(r.MeasureValue, shared.MeasureValue)
 	r.MeasureValueType = common.OrElse(r.MeasureValueType, shared.MeasureValueType)
+	if r.MeasureValueType == nil {
+		r.MeasureValueType = new("DOUBLE")
+	}
+
 	r.Time = common.OrElse(r.Time, shared.Time)
 	r.TimeUnit = common.OrElse(r.TimeUnit, shared.TimeUnit)
 
@@ -100,7 +108,15 @@ func validate(r *api.Record) error {
 		return invalid("A record can have at most %d dimensions.", maxDimensions)
 	}
 
+	names := map[string]bool{"time": true, "measure_name": true}
+
 	for _, d := range r.Dimensions {
+		dimension := common.Value(d.Name)
+		if names[dimension] {
+			return invalid("Duplicate or reserved dimension name: %s", dimension)
+		}
+
+		names[dimension] = true
 		if n := len(common.Value(d.Name)); n < 1 || n > maxDimensionName {
 			return invalid("A dimension name must be 1 to %d bytes long.", maxDimensionName)
 		}
@@ -125,6 +141,12 @@ func validate(r *api.Record) error {
 		}
 
 		for _, m := range r.MeasureValues {
+			measure := common.Value(m.Name)
+			if names[measure] {
+				return invalid("Duplicate or reserved measure column: %s", measure)
+			}
+
+			names[measure] = true
 			if common.Value(m.Name) == "" || common.Value(m.Type) == measureMulti {
 				return invalid("Every measure value needs a Name and a Type other than MULTI.")
 			}
@@ -143,8 +165,8 @@ func validate(r *api.Record) error {
 		}
 	}
 
-	if r.Version != nil && *r.Version < 0 {
-		return invalid("Version must not be negative.")
+	if r.Version != nil && *r.Version < 1 {
+		return invalid("Version must be positive.")
 	}
 
 	return nil
@@ -200,7 +222,7 @@ func atRecord(i int, err error) error {
 	return err
 }
 
-// WriteRecords validates records and counts them, then discards them.
+// WriteRecords validates and persists records, committing accepted records even when others are rejected.
 func (s *Service) WriteRecords(ctx context.Context, in *api.WriteRecordsRequest) (*api.WriteRecordsResponse, error) {
 	scope, err := request.RegionalScope(ctx)
 	if err != nil {
@@ -248,18 +270,40 @@ func (s *Service) WriteRecords(ctx context.Context, in *api.WriteRecordsRequest)
 		now := time.Now()
 		for i, at := range times {
 			where, reason := route(t, at, now)
-			switch where {
-			case toMemory:
-				memory++
-			case toMagnetic:
-				magnetic++
-			default:
+			if where == rejected {
 				reasons = append(reasons, map[string]any{"RecordIndex": i, "Reason": reason})
+				continue
 			}
-		}
 
-		if len(reasons) > 0 {
-			return nil
+			r := canonical(&merged[i], at)
+			k := recordKey(scope, db, table, r)
+			old, exists, readErr := storage.Read[StoredRecord](tx, k)
+			if readErr != nil {
+				return readErr
+			}
+
+			if exists && r.Version <= old.Version {
+				if equalRecord(r, old) {
+					continue
+				}
+
+				reasons = append(reasons, map[string]any{
+					"RecordIndex":     i,
+					"Reason":          "The record version must be greater than the existing record version.",
+					"ExistingVersion": old.Version,
+				})
+				continue
+			}
+
+			if writeErr := storage.Write(tx, k, r); writeErr != nil {
+				return writeErr
+			}
+
+			if where == toMemory {
+				memory++
+			} else {
+				magnetic++
+			}
 		}
 
 		t.Ingested += memory + magnetic
@@ -273,7 +317,7 @@ func (s *Service) WriteRecords(ctx context.Context, in *api.WriteRecordsRequest)
 	if len(reasons) > 0 {
 		out := awserror.New("RejectedRecordsException",
 			"One or more records have been rejected. See RejectedRecords in the response for details.")
-		out.StatusCode = 419
+		out.StatusCode = 400
 		out.Fields = map[string]any{"RejectedRecords": reasons}
 
 		return nil, out

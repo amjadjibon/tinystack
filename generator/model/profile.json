@@ -24001,6 +24001,9 @@
   },
   "timestreamquery": {
     "operations": [
+      "Query",
+      "CancelQuery",
+      "ExecuteScheduledQuery",
       "CreateScheduledQuery",
       "DeleteScheduledQuery",
       "DescribeAccountSettings",
@@ -24014,6 +24017,49 @@
       "UpdateScheduledQuery"
     ],
     "shapes": {
+      "ExecuteScheduledQueryRequest": [
+        "ScheduledQueryArn",
+        "InvocationTime",
+        "ClientToken"
+      ],
+      "QueryRequest": [
+        "QueryString",
+        "ClientToken",
+        "NextToken",
+        "MaxRows"
+      ],
+      "QueryResponse": [
+        "QueryId",
+        "NextToken",
+        "Rows",
+        "ColumnInfo",
+        "QueryStatus"
+      ],
+      "CancelQueryRequest": [
+        "QueryId"
+      ],
+      "CancelQueryResponse": [
+        "CancellationMessage"
+      ],
+      "QueryStatus": [
+        "ProgressPercentage",
+        "CumulativeBytesScanned",
+        "CumulativeBytesMetered"
+      ],
+      "Row": [
+        "Data"
+      ],
+      "Datum": [
+        "ScalarValue",
+        "NullValue"
+      ],
+      "ColumnInfo": [
+        "Name",
+        "Type"
+      ],
+      "Type": [
+        "ScalarType"
+      ],
       "AccountSettingsNotificationConfiguration": [
         "SnsConfiguration",
         "RoleArn"

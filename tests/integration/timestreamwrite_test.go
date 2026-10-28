@@ -109,7 +109,7 @@ func TestTimestreamWriteSDKLifecycle(t *testing.T) {
 	})
 	wantTimestreamError(t, err, "ValidationException")
 
-	// Writes go through endpoint discovery and are validated, counted and discarded.
+	// Writes go through endpoint discovery and are validated, counted and stored.
 	now := time.Now()
 	written, err := c.WriteRecords(ctx, &sdk.WriteRecordsInput{
 		DatabaseName: aws.String("metrics"), TableName: aws.String("cpu"),

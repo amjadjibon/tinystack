@@ -16,24 +16,29 @@ const clientTokenTTL = 8 * time.Hour
 
 type scheduledQueryRecord struct {
 	tagSet
-	Created                   time.Time
-	ScheduleConfiguration     *api.ScheduleConfiguration
-	NotificationConfiguration *api.NotificationConfiguration
-	TargetConfiguration       *api.TargetConfiguration
-	KmsKeyId                  *string
-	ErrorReportConfiguration  *api.ErrorReportConfiguration
-	// Enabled is when the query last became ENABLED; its schedule counts from there.
+	ScheduleConfiguration          *api.ScheduleConfiguration
+	NotificationConfiguration      *api.NotificationConfiguration
+	TargetConfiguration            *api.TargetConfiguration
+	KmsKeyId                       *string
+	ErrorReportConfiguration       *api.ErrorReportConfiguration
+	LastRun                        *api.ScheduledQueryRunSummary
+	Previous                       *float64
+	Created                        time.Time
 	Enabled                        time.Time
+	Claimed                        time.Time
+	NextDue                        time.Time
 	Name                           string
 	QueryString                    string
 	State                          string
 	ScheduledQueryExecutionRoleArn string
 	ClientToken                    string
 	Fingerprint                    string
+	FailedRuns                     []api.ScheduledQueryRunSummary
+	Running                        bool
 }
 
 // nextInvocation is the first fire time after now of an ENABLED query's schedule, counted from when it was
-// enabled. Queries never run, so the time keeps advancing as AWS's would; a DISABLED query has none.
+// enabled; a DISABLED query has none.
 func (r *scheduledQueryRecord) nextInvocation(now time.Time) *float64 {
 	if r.State != stateEnabled {
 		return nil
@@ -59,6 +64,9 @@ func (r *scheduledQueryRecord) nextInvocation(now time.Time) *float64 {
 func (r *scheduledQueryRecord) description(scope request.Scope, now time.Time) *api.ScheduledQueryDescription {
 	return &api.ScheduledQueryDescription{
 		Arn:                            new(scheduledQueryARN(scope, r.Name)),
+		LastRunSummary:                 common.Clone(r.LastRun),
+		RecentlyFailedRuns:             *common.Clone(new(r.FailedRuns)),
+		PreviousInvocationTime:         common.Clone(r.Previous),
 		Name:                           new(r.Name),
 		QueryString:                    new(r.QueryString),
 		CreationTime:                   common.Seconds(r.Created),
@@ -110,6 +118,11 @@ func (s *Service) validateCreateReferences(
 	scope request.Scope,
 	in *api.CreateScheduledQueryRequest,
 ) error {
+	if in.ErrorReportConfiguration != nil && in.ErrorReportConfiguration.S3Configuration != nil &&
+		common.Value(in.ErrorReportConfiguration.S3Configuration.EncryptionOption) == "SSE_KMS" {
+		return invalid("Unsupported error-report encryption: SSE_KMS; only SSE_S3 is implemented")
+	}
+
 	if err := s.checkTopic(ctx, *in.NotificationConfiguration.SnsConfiguration.TopicArn); err != nil {
 		return err
 	}
@@ -221,8 +234,13 @@ func (s *Service) CreateScheduledQuery(
 			Created:                        now,
 			Enabled:                        now,
 		}
+
 		arn = scheduledQueryARN(scope, name)
-		return storage.Write(tx, k, record)
+		if writeErr := storage.Write(tx, k, record); writeErr != nil {
+			return writeErr
+		}
+
+		return storage.Write(tx, scheduledIndex(scope, name), scheduledIndexRecord{Scope: scope, Name: name})
 	})
 	if err != nil {
 		return nil, err
@@ -345,6 +363,7 @@ func (s *Service) UpdateScheduledQuery(
 
 		if *in.State == stateEnabled && r.State != stateEnabled {
 			r.Enabled = time.Now().UTC()
+			r.NextDue = time.Time{}
 		}
 
 		r.State = *in.State
@@ -384,6 +403,7 @@ func (s *Service) DeleteScheduledQuery(
 		}
 
 		tx.Delete(k)
+		tx.Delete(scheduledIndex(scope, name))
 		return nil
 	})
 	if err != nil {

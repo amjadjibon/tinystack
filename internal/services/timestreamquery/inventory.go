@@ -40,8 +40,8 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				ARN:     scheduledQueryARN(scope, r.Name),
 				Tags:    maps.Clone(r.Tags),
 				Details: map[string]any{
-					"RecordsOnly":    true,
-					"ExecutionReady": false,
+					"RecordsOnly":    false,
+					"ExecutionReady": true,
 					"Configuration":  r.description(scope, time.Now().UTC()),
 				},
 			})

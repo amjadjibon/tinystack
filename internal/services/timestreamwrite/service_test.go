@@ -72,7 +72,7 @@ func TestWriteRecordsRules(t *testing.T) {
 	}
 
 	// Common attributes complete a record.
-	if err := write(api.Record{MeasureName: new("m")}, &api.Record{
+	if err := write(api.Record{MeasureName: new("boolean")}, &api.Record{
 		MeasureValue: new("true"), MeasureValueType: new("BOOLEAN"), Time: &now, TimeUnit: new("MILLISECONDS"),
 	}); err != nil {
 		t.Fatal(err)
@@ -80,7 +80,7 @@ func TestWriteRecordsRules(t *testing.T) {
 
 	// A MULTI record takes MeasureValues.
 	multi := api.Record{
-		MeasureName: new("m"), MeasureValueType: new("MULTI"), Time: &now,
+		MeasureName: new("multi"), MeasureValueType: new("MULTI"), Time: &now,
 		MeasureValues: []api.MeasureValue{{Name: new("a"), Value: new("1"), Type: new("BIGINT")}},
 	}
 	if err := write(multi, nil); err != nil {

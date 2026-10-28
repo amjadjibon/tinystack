@@ -3,97 +3,20 @@ package athena
 import (
 	"context"
 	"database/sql"
-	"database/sql/driver"
 	"fmt"
 	"math"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	"modernc.org/sqlite"
-
 	glueapi "github.com/amjadjibon/tinystack/internal/aws/generated/glue"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/sqlengine"
 )
 
 // driverName is the SQLite driver queries run on, which has the Trino
 // functions SQLite lacks.
-const driverName = "athena-sqlite"
-
-func init() {
-	d := &sqlite.Driver{}
-	text := func(v driver.Value) string {
-		switch t := v.(type) {
-		case string:
-			return t
-		case []byte:
-			return string(t)
-		case nil:
-			return ""
-		}
-
-		return fmt.Sprint(v)
-	}
-	pattern := func(v driver.Value) (*regexp.Regexp, error) { return regexp.Compile(text(v)) }
-	d.MustRegisterDeterministicScalarFunction("regexp_like", 2, func(_ *sqlite.FunctionContext, args []driver.Value) (
-		driver.Value, error,
-	) {
-		re, err := pattern(args[1])
-		if err != nil || args[0] == nil {
-			return nil, err
-		}
-
-		return re.MatchString(text(args[0])), nil
-	})
-	d.MustRegisterDeterministicScalarFunction("regexp_extract", -1, func(_ *sqlite.FunctionContext,
-		args []driver.Value,
-	) (driver.Value, error) {
-		if len(args) < 2 || len(args) > 3 {
-			return nil, fmt.Errorf("regexp_extract takes 2 or 3 arguments")
-		}
-
-		re, err := pattern(args[1])
-		if err != nil || args[0] == nil {
-			return nil, err
-		}
-
-		group := 0
-		if len(args) == 3 {
-			n, _ := args[2].(int64)
-			group = int(n)
-		}
-
-		m := re.FindStringSubmatch(text(args[0]))
-		if m == nil || group >= len(m) {
-			return nil, nil //nolint:nilnil // no match is SQL NULL.
-		}
-
-		return m[group], nil
-	})
-	d.MustRegisterDeterministicScalarFunction("strpos", 2, func(_ *sqlite.FunctionContext, args []driver.Value) (
-		driver.Value, error,
-	) {
-		return int64(strings.Index(text(args[0]), text(args[1])) + 1), nil
-	})
-	d.MustRegisterDeterministicScalarFunction("starts_with", 2, func(_ *sqlite.FunctionContext,
-		args []driver.Value,
-	) (driver.Value, error) {
-		return strings.HasPrefix(text(args[0]), text(args[1])), nil
-	})
-	d.MustRegisterDeterministicScalarFunction("split_part", 3, func(_ *sqlite.FunctionContext,
-		args []driver.Value,
-	) (driver.Value, error) {
-		n, _ := args[2].(int64)
-		parts := strings.Split(text(args[0]), text(args[1]))
-		if n < 1 || int(n) > len(parts) {
-			return nil, nil //nolint:nilnil // a part past the end is SQL NULL.
-		}
-
-		return parts[n-1], nil
-	})
-	sql.Register(driverName, d)
-}
+const driverName = sqlengine.DriverName
 
 // column is a table column: its name and Hive type.
 type column struct{ name, kind string }
