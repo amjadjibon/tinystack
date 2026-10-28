@@ -498,6 +498,13 @@ func build(
 	backupRecords := backup.New(store)
 	fileSystems := efs.New(store, network)
 	batchRecords := batch.New(store, network)
+	a.onStop(batchRecords.Stop)
+	a.onReset(batchRecords.Reset)
+	if cfg.Batch.Jobs == config.ContainersDocker {
+		if err = batchRecords.UseRuntime(ctx, ecsdocker.New(), logGroups.Append); err != nil {
+			return nil, err
+		}
+	}
 	buildProjects := codebuild.New(store)
 	codePipelines := codepipeline.New(store)
 	codecommitRecords := codecommit.New(store)
@@ -816,6 +823,8 @@ func build(
 	wafClassicRecords.UseCaller(caller)
 	budgetRecords.Start(caller)
 	containers.UseCaller(caller)
+	batchRecords.UseCaller(caller)
+	batchRecords.Start()
 	buildProjects.UseCaller(caller)
 	if cfg.CodeBuild.Builds == config.BuildsDocker {
 		if err = buildProjects.UseRuntime(

@@ -288,6 +288,9 @@ type Config struct {
 	CodeBuild struct {
 		Builds string `yaml:"builds"`
 	} `yaml:"codebuild"`
+	Batch struct {
+		Jobs string `yaml:"jobs"`
+	} `yaml:"batch"`
 	ECS struct {
 		Containers string `yaml:"containers"`
 	} `yaml:"ecs"`
@@ -373,6 +376,7 @@ func Default() Config {
 	c.Lambda.Local.Python = "python3"
 	c.Lambda.Local.Node = "node"
 	c.CodeBuild.Builds = BuildsRecords
+	c.Batch.Jobs = ContainersRecords
 	c.ECS.Containers = ContainersRecords
 	c.EKS.Clusters = ClustersRecords
 	c.MemoryDB.Clusters = CachesRecords
@@ -551,6 +555,10 @@ func (c *Config) Validate() error {
 
 	if c.CodeBuild.Builds != BuildsRecords && c.CodeBuild.Builds != BuildsDocker {
 		return fmt.Errorf("codebuild.builds must be records or docker")
+	}
+
+	if c.Batch.Jobs != ContainersRecords && c.Batch.Jobs != ContainersDocker {
+		return fmt.Errorf("batch.jobs must be records or docker")
 	}
 
 	if c.ECS.Containers != ContainersRecords && c.ECS.Containers != ContainersDocker {

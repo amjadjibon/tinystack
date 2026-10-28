@@ -48,3 +48,31 @@ func page[T any](
 	}
 	return selected, next, err
 }
+
+func jobPage(rows []*record, token *string, limit int, scope request.Scope, filter string) ([]*record, *string, error) {
+	sum := sha256.Sum256([]byte(scope.AccountID + "/" + scope.Region + "/" + filter))
+	prefix := hex.EncodeToString(sum[:]) + ":"
+	var inner *string
+	if token != nil {
+		decoded, err := base64.RawURLEncoding.DecodeString(*token)
+		if err != nil || !strings.HasPrefix(string(decoded), prefix) {
+			return nil, nil, invalid("Invalid NextToken")
+		}
+
+		inner = new(base64.RawURLEncoding.EncodeToString([]byte(strings.TrimPrefix(string(decoded), prefix))))
+	}
+
+	selected, next, err := common.Page(
+		rows,
+		func(r *record) string { return r.ID },
+		inner,
+		limit,
+		invalid("Invalid NextToken"),
+	)
+	if next != nil {
+		last, _ := base64.RawURLEncoding.DecodeString(*next)
+		next = new(base64.RawURLEncoding.EncodeToString([]byte(prefix + string(last))))
+	}
+
+	return selected, next, err
+}

@@ -101,6 +101,7 @@ func (r *Runtime) Start(ctx context.Context, spec *ecs.ContainerSpec) (ecs.Start
 		if networkID != "" {
 			break
 		}
+
 		host := ""
 		if p.Host != 0 {
 			host = strconv.FormatInt(p.Host, 10)
@@ -163,6 +164,7 @@ func (r *Runtime) Start(ctx context.Context, spec *ecs.ContainerSpec) (ecs.Start
 	if networkID != "" {
 		portID = networkID
 	}
+
 	for _, p := range spec.Ports {
 		host, portErr := hostPort(ctx, portID, p)
 		if portErr != nil {
@@ -286,4 +288,35 @@ func (r *Runtime) Reset() {
 	for _, owner := range owners {
 		r.RemoveTask(context.Background(), owner)
 	}
+}
+
+// CleanOwned removes orphan containers with both labels matching one caller's store.
+// It does not affect resources started by another service or store.
+func (r *Runtime) CleanOwned(ctx context.Context, label, ownerLabel, owner string) error {
+	containers, _, err := dockercli.ListOwned(ctx, label, ownerLabel, owner)
+	if err != nil {
+		return err
+	}
+
+	for id := range containers {
+		if err := dockercli.RemoveContainerVolume(ctx, id, ""); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// StopContainer gives an owned container the same 30-second grace period Batch uses on AWS.
+// Remove still performs final cleanup after logs have been read.
+func (r *Runtime) StopContainer(ctx context.Context, id string) error {
+	r.mu.Lock()
+	owned := r.started[id]
+	r.mu.Unlock()
+	if !owned {
+		return nil
+	}
+
+	_, err := dockercli.Run(ctx, nil, "stop", "--time", "30", id)
+	return err
 }

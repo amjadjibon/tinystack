@@ -24966,7 +24966,12 @@
       "DeregisterJobDefinition",
       "TagResource",
       "UntagResource",
-      "ListTagsForResource"
+      "ListTagsForResource",
+      "SubmitJob",
+      "DescribeJobs",
+      "ListJobs",
+      "CancelJob",
+      "TerminateJob"
     ],
     "shapes": {
       "CreateComputeEnvironmentRequest": [
@@ -25085,7 +25090,9 @@
         "parameters",
         "containerProperties",
         "tags",
-        "platformCapabilities"
+        "platformCapabilities",
+        "retryStrategy",
+        "timeout"
       ],
       "ContainerProperties": [
         "image",
@@ -25095,7 +25102,8 @@
         "jobRoleArn",
         "executionRoleArn",
         "environment",
-        "resourceRequirements"
+        "resourceRequirements",
+        "logConfiguration"
       ],
       "KeyValuePair": [
         "name",
@@ -25130,7 +25138,9 @@
         "parameters",
         "containerProperties",
         "tags",
-        "platformCapabilities"
+        "platformCapabilities",
+        "retryStrategy",
+        "timeout"
       ],
       "DeregisterJobDefinitionRequest": [
         "jobDefinition"
@@ -25151,7 +25161,167 @@
       ],
       "ListTagsForResourceResponse": [
         "tags"
+      ],
+      "SubmitJobRequest": [
+        "jobName",
+        "jobQueue",
+        "arrayProperties",
+        "dependsOn",
+        "jobDefinition",
+        "parameters",
+        "containerOverrides",
+        "retryStrategy",
+        "timeout",
+        "tags"
+      ],
+      "JobDetail": [
+        "jobArn",
+        "jobName",
+        "jobId",
+        "jobQueue",
+        "status",
+        "attempts",
+        "statusReason",
+        "createdAt",
+        "retryStrategy",
+        "startedAt",
+        "stoppedAt",
+        "dependsOn",
+        "jobDefinition",
+        "parameters",
+        "container",
+        "arrayProperties",
+        "timeout",
+        "tags",
+        "platformCapabilities"
+      ],
+      "ContainerDetail": [
+        "image",
+        "vcpus",
+        "memory",
+        "command",
+        "jobRoleArn",
+        "executionRoleArn",
+        "environment",
+        "exitCode",
+        "reason",
+        "taskArn",
+        "logStreamName",
+        "resourceRequirements",
+        "logConfiguration"
+      ],
+      "JobSummary": [
+        "jobArn",
+        "jobId",
+        "jobName",
+        "createdAt",
+        "status",
+        "statusReason",
+        "startedAt",
+        "stoppedAt",
+        "container",
+        "arrayProperties",
+        "jobDefinition"
+      ],
+      "ContainerOverrides": [
+        "vcpus",
+        "memory",
+        "command",
+        "environment",
+        "resourceRequirements"
+      ],
+      "ListJobsRequest": [
+        "jobQueue",
+        "arrayJobId",
+        "jobStatus",
+        "maxResults",
+        "nextToken",
+        "filters"
+      ],
+      "SubmitJobResponse": [
+        "jobArn",
+        "jobName",
+        "jobId"
+      ],
+      "DescribeJobsRequest": [
+        "jobs"
+      ],
+      "DescribeJobsResponse": [
+        "jobs"
+      ],
+      "ListJobsResponse": [
+        "jobSummaryList",
+        "nextToken"
+      ],
+      "CancelJobRequest": [
+        "jobId",
+        "reason"
+      ],
+      "CancelJobResponse": [],
+      "TerminateJobRequest": [
+        "jobId",
+        "reason"
+      ],
+      "TerminateJobResponse": [],
+      "RetryStrategy": [
+        "attempts",
+        "evaluateOnExit"
+      ],
+      "EvaluateOnExit": [
+        "onStatusReason",
+        "onReason",
+        "onExitCode",
+        "action"
+      ],
+      "JobTimeout": [
+        "attemptDurationSeconds"
+      ],
+      "ArrayProperties": [
+        "size"
+      ],
+      "ArrayPropertiesDetail": [
+        "statusSummary",
+        "statusSummaryLastUpdatedAt",
+        "size",
+        "index"
+      ],
+      "ArrayPropertiesSummary": [
+        "size",
+        "index",
+        "statusSummary",
+        "statusSummaryLastUpdatedAt"
+      ],
+      "JobDependency": [
+        "jobId",
+        "type"
+      ],
+      "AttemptDetail": [
+        "container",
+        "startedAt",
+        "stoppedAt",
+        "statusReason"
+      ],
+      "AttemptContainerDetail": [
+        "taskArn",
+        "exitCode",
+        "reason",
+        "logStreamName"
+      ],
+      "ContainerSummary": [
+        "exitCode",
+        "reason"
+      ],
+      "KeyValuesPair": [
+        "name",
+        "values"
+      ],
+      "LogConfiguration": [
+        "logDriver",
+        "options"
       ]
+    },
+    "validation": {
+      "code": "ClientException"
     }
   },
   "codebuild": {

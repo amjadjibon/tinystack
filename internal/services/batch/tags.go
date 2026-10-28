@@ -15,7 +15,7 @@ func taggable(tx storage.ReadTx, scope request.Scope, value *string) (*record, e
 	if value == nil || !strings.HasPrefix(*value, "arn:") {
 		return nil, invalid("A full Batch resource ARN is required")
 	}
-	for _, kind := range []string{kindCE, kindQueue, kindDefinition} {
+	for _, kind := range []string{kindCE, kindQueue, kindDefinition, kindJob} {
 		if strings.Contains(*value, ":"+kind+"/") {
 			return read(tx, scope, kind, value)
 		}

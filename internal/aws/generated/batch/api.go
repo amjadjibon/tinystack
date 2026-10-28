@@ -3,7 +3,10 @@ package batch
 
 import (
 	"context"
+	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/validation"
+	"unicode/utf8"
 )
 
 type ComputeResource struct {
@@ -149,6 +152,11 @@ type ResourceRequirement struct {
 	Type  *string `json:"type,omitempty"`
 }
 
+type LogConfiguration struct {
+	LogDriver *string           `json:"logDriver,omitempty"`
+	Options   map[string]string `json:"options,omitempty"`
+}
+
 type ContainerProperties struct {
 	Image                *string               `json:"image,omitempty"`
 	Vcpus                *int64                `json:"vcpus,omitempty"`
@@ -158,6 +166,23 @@ type ContainerProperties struct {
 	ExecutionRoleArn     *string               `json:"executionRoleArn,omitempty"`
 	Environment          []KeyValuePair        `json:"environment,omitempty"`
 	ResourceRequirements []ResourceRequirement `json:"resourceRequirements,omitempty"`
+	LogConfiguration     *LogConfiguration     `json:"logConfiguration,omitempty"`
+}
+
+type EvaluateOnExit struct {
+	OnStatusReason *string `json:"onStatusReason,omitempty"`
+	OnReason       *string `json:"onReason,omitempty"`
+	OnExitCode     *string `json:"onExitCode,omitempty"`
+	Action         *string `json:"action,omitempty"`
+}
+
+type RetryStrategy struct {
+	Attempts       *int64           `json:"attempts,omitempty"`
+	EvaluateOnExit []EvaluateOnExit `json:"evaluateOnExit,omitempty"`
+}
+
+type JobTimeout struct {
+	AttemptDurationSeconds *int64 `json:"attemptDurationSeconds,omitempty"`
 }
 
 type RegisterJobDefinitionRequest struct {
@@ -167,6 +192,8 @@ type RegisterJobDefinitionRequest struct {
 	ContainerProperties  *ContainerProperties `json:"containerProperties,omitempty"`
 	Tags                 map[string]string    `json:"tags,omitempty"`
 	PlatformCapabilities []string             `json:"platformCapabilities,omitempty"`
+	RetryStrategy        *RetryStrategy       `json:"retryStrategy,omitempty"`
+	Timeout              *JobTimeout          `json:"timeout,omitempty"`
 }
 
 type RegisterJobDefinitionResponse struct {
@@ -193,6 +220,8 @@ type JobDefinition struct {
 	ContainerProperties  *ContainerProperties `json:"containerProperties,omitempty"`
 	Tags                 map[string]string    `json:"tags,omitempty"`
 	PlatformCapabilities []string             `json:"platformCapabilities,omitempty"`
+	RetryStrategy        *RetryStrategy       `json:"retryStrategy,omitempty"`
+	Timeout              *JobTimeout          `json:"timeout,omitempty"`
 }
 
 type DescribeJobDefinitionsResponse struct {
@@ -231,6 +260,680 @@ type ListTagsForResourceResponse struct {
 	Tags map[string]string `json:"tags,omitempty"`
 }
 
+type ArrayProperties struct {
+	Size *int64 `json:"size,omitempty"`
+}
+
+type JobDependency struct {
+	JobId *string `json:"jobId,omitempty"`
+	Type  *string `json:"type,omitempty"`
+}
+
+type ContainerOverrides struct {
+	Vcpus                *int64                `json:"vcpus,omitempty"`
+	Memory               *int64                `json:"memory,omitempty"`
+	Command              []string              `json:"command,omitempty"`
+	Environment          []KeyValuePair        `json:"environment,omitempty"`
+	ResourceRequirements []ResourceRequirement `json:"resourceRequirements,omitempty"`
+}
+
+type SubmitJobRequest struct {
+	JobName            *string             `json:"jobName,omitempty"`
+	JobQueue           *string             `json:"jobQueue,omitempty"`
+	ArrayProperties    *ArrayProperties    `json:"arrayProperties,omitempty"`
+	DependsOn          []JobDependency     `json:"dependsOn,omitempty"`
+	JobDefinition      *string             `json:"jobDefinition,omitempty"`
+	Parameters         map[string]string   `json:"parameters,omitempty"`
+	ContainerOverrides *ContainerOverrides `json:"containerOverrides,omitempty"`
+	RetryStrategy      *RetryStrategy      `json:"retryStrategy,omitempty"`
+	Timeout            *JobTimeout         `json:"timeout,omitempty"`
+	Tags               map[string]string   `json:"tags,omitempty"`
+}
+
+type SubmitJobResponse struct {
+	JobArn  *string `json:"jobArn,omitempty"`
+	JobName *string `json:"jobName,omitempty"`
+	JobId   *string `json:"jobId,omitempty"`
+}
+
+type DescribeJobsRequest struct {
+	Jobs []string `json:"jobs,omitempty"`
+}
+
+type AttemptContainerDetail struct {
+	TaskArn       *string `json:"taskArn,omitempty"`
+	ExitCode      *int64  `json:"exitCode,omitempty"`
+	Reason        *string `json:"reason,omitempty"`
+	LogStreamName *string `json:"logStreamName,omitempty"`
+}
+
+type AttemptDetail struct {
+	Container    *AttemptContainerDetail `json:"container,omitempty"`
+	StartedAt    *int64                  `json:"startedAt,omitempty"`
+	StoppedAt    *int64                  `json:"stoppedAt,omitempty"`
+	StatusReason *string                 `json:"statusReason,omitempty"`
+}
+
+type ContainerDetail struct {
+	Image                *string               `json:"image,omitempty"`
+	Vcpus                *int64                `json:"vcpus,omitempty"`
+	Memory               *int64                `json:"memory,omitempty"`
+	Command              []string              `json:"command,omitempty"`
+	JobRoleArn           *string               `json:"jobRoleArn,omitempty"`
+	ExecutionRoleArn     *string               `json:"executionRoleArn,omitempty"`
+	Environment          []KeyValuePair        `json:"environment,omitempty"`
+	ExitCode             *int64                `json:"exitCode,omitempty"`
+	Reason               *string               `json:"reason,omitempty"`
+	TaskArn              *string               `json:"taskArn,omitempty"`
+	LogStreamName        *string               `json:"logStreamName,omitempty"`
+	ResourceRequirements []ResourceRequirement `json:"resourceRequirements,omitempty"`
+	LogConfiguration     *LogConfiguration     `json:"logConfiguration,omitempty"`
+}
+
+type ArrayPropertiesDetail struct {
+	StatusSummary              map[string]int64 `json:"statusSummary,omitempty"`
+	StatusSummaryLastUpdatedAt *int64           `json:"statusSummaryLastUpdatedAt,omitempty"`
+	Size                       *int64           `json:"size,omitempty"`
+	Index                      *int64           `json:"index,omitempty"`
+}
+
+type JobDetail struct {
+	JobArn               *string                `json:"jobArn,omitempty"`
+	JobName              *string                `json:"jobName,omitempty"`
+	JobId                *string                `json:"jobId,omitempty"`
+	JobQueue             *string                `json:"jobQueue,omitempty"`
+	Status               *string                `json:"status,omitempty"`
+	Attempts             []AttemptDetail        `json:"attempts,omitempty"`
+	StatusReason         *string                `json:"statusReason,omitempty"`
+	CreatedAt            *int64                 `json:"createdAt,omitempty"`
+	RetryStrategy        *RetryStrategy         `json:"retryStrategy,omitempty"`
+	StartedAt            *int64                 `json:"startedAt,omitempty"`
+	StoppedAt            *int64                 `json:"stoppedAt,omitempty"`
+	DependsOn            []JobDependency        `json:"dependsOn,omitempty"`
+	JobDefinition        *string                `json:"jobDefinition,omitempty"`
+	Parameters           map[string]string      `json:"parameters,omitempty"`
+	Container            *ContainerDetail       `json:"container,omitempty"`
+	ArrayProperties      *ArrayPropertiesDetail `json:"arrayProperties,omitempty"`
+	Timeout              *JobTimeout            `json:"timeout,omitempty"`
+	Tags                 map[string]string      `json:"tags,omitempty"`
+	PlatformCapabilities []string               `json:"platformCapabilities,omitempty"`
+}
+
+type DescribeJobsResponse struct {
+	Jobs []JobDetail `json:"jobs,omitempty"`
+}
+
+type KeyValuesPair struct {
+	Name   *string  `json:"name,omitempty"`
+	Values []string `json:"values,omitempty"`
+}
+
+type ListJobsRequest struct {
+	JobQueue   *string         `json:"jobQueue,omitempty"`
+	ArrayJobId *string         `json:"arrayJobId,omitempty"`
+	JobStatus  *string         `json:"jobStatus,omitempty"`
+	MaxResults *int64          `json:"maxResults,omitempty"`
+	NextToken  *string         `json:"nextToken,omitempty"`
+	Filters    []KeyValuesPair `json:"filters,omitempty"`
+}
+
+type ContainerSummary struct {
+	ExitCode *int64  `json:"exitCode,omitempty"`
+	Reason   *string `json:"reason,omitempty"`
+}
+
+type ArrayPropertiesSummary struct {
+	Size                       *int64           `json:"size,omitempty"`
+	Index                      *int64           `json:"index,omitempty"`
+	StatusSummary              map[string]int64 `json:"statusSummary,omitempty"`
+	StatusSummaryLastUpdatedAt *int64           `json:"statusSummaryLastUpdatedAt,omitempty"`
+}
+
+type JobSummary struct {
+	JobArn          *string                 `json:"jobArn,omitempty"`
+	JobId           *string                 `json:"jobId,omitempty"`
+	JobName         *string                 `json:"jobName,omitempty"`
+	CreatedAt       *int64                  `json:"createdAt,omitempty"`
+	Status          *string                 `json:"status,omitempty"`
+	StatusReason    *string                 `json:"statusReason,omitempty"`
+	StartedAt       *int64                  `json:"startedAt,omitempty"`
+	StoppedAt       *int64                  `json:"stoppedAt,omitempty"`
+	Container       *ContainerSummary       `json:"container,omitempty"`
+	ArrayProperties *ArrayPropertiesSummary `json:"arrayProperties,omitempty"`
+	JobDefinition   *string                 `json:"jobDefinition,omitempty"`
+}
+
+type ListJobsResponse struct {
+	JobSummaryList []JobSummary `json:"jobSummaryList,omitempty"`
+	NextToken      *string      `json:"nextToken,omitempty"`
+}
+
+type CancelJobRequest struct {
+	JobId  *string `json:"jobId,omitempty"`
+	Reason *string `json:"reason,omitempty"`
+}
+
+type CancelJobResponse struct {
+}
+
+type TerminateJobRequest struct {
+	JobId  *string `json:"jobId,omitempty"`
+	Reason *string `json:"reason,omitempty"`
+}
+
+type TerminateJobResponse struct {
+}
+
+var enum0 = []string{"EC2", "ECS_MANAGED_INSTANCES", "FARGATE", "FARGATE_SPOT", "SPOT"}
+
+var enum1 = []string{"BEST_FIT", "BEST_FIT_PROGRESSIVE", "BEST_FIT_PROGRESSIVE_ORDERED", "SPOT_CAPACITY_OPTIMIZED", "SPOT_CAPACITY_OPTIMIZED_PRIORITIZED", "SPOT_PRICE_CAPACITY_OPTIMIZED"}
+
+var enum2 = []string{"MANAGED", "UNMANAGED"}
+
+var enum3 = []string{"DISABLED", "ENABLED"}
+
+var enum4 = []string{"EXIT", "RETRY"}
+
+var enum5 = []string{"N_TO_N", "SEQUENTIAL"}
+
+var enum6 = []string{"FAILED", "PENDING", "RUNNABLE", "RUNNING", "STARTING", "SUBMITTED", "SUCCEEDED"}
+
+var enum7 = []string{"awsfirelens", "awslogs", "fluentd", "gelf", "journald", "json-file", "splunk", "syslog"}
+
+var enum8 = []string{"container", "multinode"}
+
+var enum9 = []string{"EC2", "FARGATE", "MANAGED_INSTANCES"}
+
+var enum10 = []string{"GPU", "MEMORY", "VCPU"}
+
+func (v *ArrayProperties) Validate(path string) error {
+	return nil
+}
+
+func (v *CancelJobRequest) Validate(path string) error {
+	if err := validation.Required(path+"jobId", v.JobId != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"reason", v.Reason != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *ComputeEnvironmentOrder) Validate(path string) error {
+	if err := validation.Required(path+"order", v.Order != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"computeEnvironment", v.ComputeEnvironment != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *ComputeResource) Validate(path string) error {
+	if err := validation.Required(path+"type", v.Type != nil); err != nil {
+		return err
+	}
+	if v.Type != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum0); err != nil {
+			return err
+		}
+	}
+	if v.AllocationStrategy != nil {
+		if err := validation.Enum(path+"allocationStrategy", (*v.AllocationStrategy), enum1); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"maxvCpus", v.MaxvCpus != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *ComputeResourceUpdate) Validate(path string) error {
+	return nil
+}
+
+func (v *ContainerOverrides) Validate(path string) error {
+	if v.Environment != nil {
+		for i0, e0 := range v.Environment {
+			if err := e0.Validate(validation.Index(path+"environment", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.ResourceRequirements != nil {
+		for i0, e0 := range v.ResourceRequirements {
+			if err := e0.Validate(validation.Index(path+"resourceRequirements", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *ContainerProperties) Validate(path string) error {
+	if v.Environment != nil {
+		for i0, e0 := range v.Environment {
+			if err := e0.Validate(validation.Index(path+"environment", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.ResourceRequirements != nil {
+		for i0, e0 := range v.ResourceRequirements {
+			if err := e0.Validate(validation.Index(path+"resourceRequirements", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.LogConfiguration != nil {
+		if err := (*v.LogConfiguration).Validate(path + "logConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreateComputeEnvironmentRequest) Validate(path string) error {
+	if err := validation.Required(path+"computeEnvironmentName", v.ComputeEnvironmentName != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"type", v.Type != nil); err != nil {
+		return err
+	}
+	if v.Type != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum2); err != nil {
+			return err
+		}
+	}
+	if v.State != nil {
+		if err := validation.Enum(path+"state", (*v.State), enum3); err != nil {
+			return err
+		}
+	}
+	if v.ComputeResources != nil {
+		if err := (*v.ComputeResources).Validate(path + "computeResources" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		if err := validation.Length(path+"tags", len(v.Tags), new(int64(1)), new(int64(50))); err != nil {
+			return err
+		}
+		for k0, e0 := range v.Tags {
+			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(128))); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(256))); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *CreateJobQueueRequest) Validate(path string) error {
+	if err := validation.Required(path+"jobQueueName", v.JobQueueName != nil); err != nil {
+		return err
+	}
+	if v.State != nil {
+		if err := validation.Enum(path+"state", (*v.State), enum3); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"priority", v.Priority != nil); err != nil {
+		return err
+	}
+	if v.ComputeEnvironmentOrder != nil {
+		for i0, e0 := range v.ComputeEnvironmentOrder {
+			if err := e0.Validate(validation.Index(path+"computeEnvironmentOrder", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.Tags != nil {
+		if err := validation.Length(path+"tags", len(v.Tags), new(int64(1)), new(int64(50))); err != nil {
+			return err
+		}
+		for k0, e0 := range v.Tags {
+			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(128))); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(256))); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *DeleteComputeEnvironmentRequest) Validate(path string) error {
+	if err := validation.Required(path+"computeEnvironment", v.ComputeEnvironment != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *DeleteJobQueueRequest) Validate(path string) error {
+	if err := validation.Required(path+"jobQueue", v.JobQueue != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *DeregisterJobDefinitionRequest) Validate(path string) error {
+	if err := validation.Required(path+"jobDefinition", v.JobDefinition != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *DescribeComputeEnvironmentsRequest) Validate(path string) error {
+	return nil
+}
+
+func (v *DescribeJobDefinitionsRequest) Validate(path string) error {
+	return nil
+}
+
+func (v *DescribeJobQueuesRequest) Validate(path string) error {
+	return nil
+}
+
+func (v *DescribeJobsRequest) Validate(path string) error {
+	if err := validation.Required(path+"jobs", v.Jobs != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *EvaluateOnExit) Validate(path string) error {
+	if err := validation.Required(path+"action", v.Action != nil); err != nil {
+		return err
+	}
+	if v.Action != nil {
+		if err := validation.Enum(path+"action", (*v.Action), enum4); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *JobDependency) Validate(path string) error {
+	if v.Type != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum5); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *JobTimeout) Validate(path string) error {
+	return nil
+}
+
+func (v *KeyValuePair) Validate(path string) error {
+	return nil
+}
+
+func (v *KeyValuesPair) Validate(path string) error {
+	return nil
+}
+
+func (v *ListJobsRequest) Validate(path string) error {
+	if v.JobStatus != nil {
+		if err := validation.Enum(path+"jobStatus", (*v.JobStatus), enum6); err != nil {
+			return err
+		}
+	}
+	if v.Filters != nil {
+		for i0, e0 := range v.Filters {
+			if err := e0.Validate(validation.Index(path+"filters", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *ListTagsForResourceRequest) Validate(path string) error {
+	if err := validation.Required(path+"resourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *LogConfiguration) Validate(path string) error {
+	if err := validation.Required(path+"logDriver", v.LogDriver != nil); err != nil {
+		return err
+	}
+	if v.LogDriver != nil {
+		if err := validation.Enum(path+"logDriver", (*v.LogDriver), enum7); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *RegisterJobDefinitionRequest) Validate(path string) error {
+	if err := validation.Required(path+"jobDefinitionName", v.JobDefinitionName != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"type", v.Type != nil); err != nil {
+		return err
+	}
+	if v.Type != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum8); err != nil {
+			return err
+		}
+	}
+	if v.ContainerProperties != nil {
+		if err := (*v.ContainerProperties).Validate(path + "containerProperties" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		if err := validation.Length(path+"tags", len(v.Tags), new(int64(1)), new(int64(50))); err != nil {
+			return err
+		}
+		for k0, e0 := range v.Tags {
+			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(128))); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(256))); err != nil {
+				return err
+			}
+		}
+	}
+	if v.PlatformCapabilities != nil {
+		for i0, e0 := range v.PlatformCapabilities {
+			if err := validation.Enum(validation.Index(path+"platformCapabilities", i0), e0, enum9); err != nil {
+				return err
+			}
+		}
+	}
+	if v.RetryStrategy != nil {
+		if err := (*v.RetryStrategy).Validate(path + "retryStrategy" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Timeout != nil {
+		if err := (*v.Timeout).Validate(path + "timeout" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ResourceRequirement) Validate(path string) error {
+	if err := validation.Required(path+"value", v.Value != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"type", v.Type != nil); err != nil {
+		return err
+	}
+	if v.Type != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum10); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *RetryStrategy) Validate(path string) error {
+	if v.EvaluateOnExit != nil {
+		for i0, e0 := range v.EvaluateOnExit {
+			if err := e0.Validate(validation.Index(path+"evaluateOnExit", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *SubmitJobRequest) Validate(path string) error {
+	if err := validation.Required(path+"jobName", v.JobName != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"jobQueue", v.JobQueue != nil); err != nil {
+		return err
+	}
+	if v.ArrayProperties != nil {
+		if err := (*v.ArrayProperties).Validate(path + "arrayProperties" + "."); err != nil {
+			return err
+		}
+	}
+	if v.DependsOn != nil {
+		for i0, e0 := range v.DependsOn {
+			if err := e0.Validate(validation.Index(path+"dependsOn", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if err := validation.Required(path+"jobDefinition", v.JobDefinition != nil); err != nil {
+		return err
+	}
+	if v.ContainerOverrides != nil {
+		if err := (*v.ContainerOverrides).Validate(path + "containerOverrides" + "."); err != nil {
+			return err
+		}
+	}
+	if v.RetryStrategy != nil {
+		if err := (*v.RetryStrategy).Validate(path + "retryStrategy" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Timeout != nil {
+		if err := (*v.Timeout).Validate(path + "timeout" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		if err := validation.Length(path+"tags", len(v.Tags), new(int64(1)), new(int64(50))); err != nil {
+			return err
+		}
+		for k0, e0 := range v.Tags {
+			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(128))); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(256))); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *TagResourceRequest) Validate(path string) error {
+	if err := validation.Required(path+"resourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"tags", v.Tags != nil); err != nil {
+		return err
+	}
+	if v.Tags != nil {
+		if err := validation.Length(path+"tags", len(v.Tags), new(int64(1)), new(int64(50))); err != nil {
+			return err
+		}
+		for k0, e0 := range v.Tags {
+			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(128))); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(256))); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *TerminateJobRequest) Validate(path string) error {
+	if err := validation.Required(path+"jobId", v.JobId != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"reason", v.Reason != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *UntagResourceRequest) Validate(path string) error {
+	if err := validation.Required(path+"resourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"tagKeys", v.TagKeys != nil); err != nil {
+		return err
+	}
+	if v.TagKeys != nil {
+		if err := validation.Length(path+"tagKeys", len(v.TagKeys), new(int64(1)), new(int64(50))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.TagKeys {
+			if err := validation.Length(validation.Index(path+"tagKeys", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(128))); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *UpdateComputeEnvironmentRequest) Validate(path string) error {
+	if err := validation.Required(path+"computeEnvironment", v.ComputeEnvironment != nil); err != nil {
+		return err
+	}
+	if v.State != nil {
+		if err := validation.Enum(path+"state", (*v.State), enum3); err != nil {
+			return err
+		}
+	}
+	if v.ComputeResources != nil {
+		if err := (*v.ComputeResources).Validate(path + "computeResources" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *UpdateJobQueueRequest) Validate(path string) error {
+	if err := validation.Required(path+"jobQueue", v.JobQueue != nil); err != nil {
+		return err
+	}
+	if v.State != nil {
+		if err := validation.Enum(path+"state", (*v.State), enum3); err != nil {
+			return err
+		}
+	}
+	if v.ComputeEnvironmentOrder != nil {
+		for i0, e0 := range v.ComputeEnvironmentOrder {
+			if err := e0.Validate(validation.Index(path+"computeEnvironmentOrder", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 type API interface {
 	CreateComputeEnvironment(context.Context, *CreateComputeEnvironmentRequest) (*CreateComputeEnvironmentResponse, error)
 	DescribeComputeEnvironments(context.Context, *DescribeComputeEnvironmentsRequest) (*DescribeComputeEnvironmentsResponse, error)
@@ -246,51 +949,147 @@ type API interface {
 	TagResource(context.Context, *TagResourceRequest) (*TagResourceResponse, error)
 	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceResponse, error)
 	ListTagsForResource(context.Context, *ListTagsForResourceRequest) (*ListTagsForResourceResponse, error)
+	SubmitJob(context.Context, *SubmitJobRequest) (*SubmitJobResponse, error)
+	DescribeJobs(context.Context, *DescribeJobsRequest) (*DescribeJobsResponse, error)
+	ListJobs(context.Context, *ListJobsRequest) (*ListJobsResponse, error)
+	CancelJob(context.Context, *CancelJobRequest) (*CancelJobResponse, error)
+	TerminateJob(context.Context, *TerminateJobRequest) (*TerminateJobResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
 	return catalog.Service{Name: "batch", SigningName: "batch", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "batch", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"ClientException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ServerException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}}, Operations: map[string]catalog.Operation{
 		"CreateComputeEnvironment": {Name: "CreateComputeEnvironment", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:CreateComputeEnvironment", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ComputeEnvironmentName": catalog.MemberBinding{Location: "document", Name: "computeEnvironmentName", Format: ""}, "ComputeResources": catalog.MemberBinding{Location: "document", Name: "computeResources", Format: ""}, "ServiceRole": catalog.MemberBinding{Location: "document", Name: "serviceRole", Format: ""}, "State": catalog.MemberBinding{Location: "document", Name: "state", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}, "Type": catalog.MemberBinding{Location: "document", Name: "type", Format: ""}}, Output: map[string]catalog.MemberBinding{"ComputeEnvironmentArn": catalog.MemberBinding{Location: "document", Name: "computeEnvironmentArn", Format: ""}, "ComputeEnvironmentName": catalog.MemberBinding{Location: "document", Name: "computeEnvironmentName", Format: ""}}, Method: "POST", URI: "/v1/createcomputeenvironment", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateComputeEnvironmentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateComputeEnvironment(ctx, input.(*CreateComputeEnvironmentRequest))
+			in := input.(*CreateComputeEnvironmentRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.CreateComputeEnvironment(ctx, in)
 		}},
 		"DescribeComputeEnvironments": {Name: "DescribeComputeEnvironments", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:DescribeComputeEnvironments", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ComputeEnvironments": catalog.MemberBinding{Location: "document", Name: "computeEnvironments", Format: ""}, "MaxResults": catalog.MemberBinding{Location: "document", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"ComputeEnvironments": catalog.MemberBinding{Location: "document", Name: "computeEnvironments", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}}, Method: "POST", URI: "/v1/describecomputeenvironments", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeComputeEnvironmentsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DescribeComputeEnvironments(ctx, input.(*DescribeComputeEnvironmentsRequest))
+			in := input.(*DescribeComputeEnvironmentsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.DescribeComputeEnvironments(ctx, in)
 		}},
 		"UpdateComputeEnvironment": {Name: "UpdateComputeEnvironment", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:UpdateComputeEnvironment", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ComputeEnvironment": catalog.MemberBinding{Location: "document", Name: "computeEnvironment", Format: ""}, "ComputeResources": catalog.MemberBinding{Location: "document", Name: "computeResources", Format: ""}, "ServiceRole": catalog.MemberBinding{Location: "document", Name: "serviceRole", Format: ""}, "State": catalog.MemberBinding{Location: "document", Name: "state", Format: ""}}, Output: map[string]catalog.MemberBinding{"ComputeEnvironmentArn": catalog.MemberBinding{Location: "document", Name: "computeEnvironmentArn", Format: ""}, "ComputeEnvironmentName": catalog.MemberBinding{Location: "document", Name: "computeEnvironmentName", Format: ""}}, Method: "POST", URI: "/v1/updatecomputeenvironment", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateComputeEnvironmentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UpdateComputeEnvironment(ctx, input.(*UpdateComputeEnvironmentRequest))
+			in := input.(*UpdateComputeEnvironmentRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.UpdateComputeEnvironment(ctx, in)
 		}},
 		"DeleteComputeEnvironment": {Name: "DeleteComputeEnvironment", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:DeleteComputeEnvironment", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ComputeEnvironment": catalog.MemberBinding{Location: "document", Name: "computeEnvironment", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/v1/deletecomputeenvironment", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteComputeEnvironmentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteComputeEnvironment(ctx, input.(*DeleteComputeEnvironmentRequest))
+			in := input.(*DeleteComputeEnvironmentRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.DeleteComputeEnvironment(ctx, in)
 		}},
 		"CreateJobQueue": {Name: "CreateJobQueue", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:CreateJobQueue", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ComputeEnvironmentOrder": catalog.MemberBinding{Location: "document", Name: "computeEnvironmentOrder", Format: ""}, "JobQueueName": catalog.MemberBinding{Location: "document", Name: "jobQueueName", Format: ""}, "Priority": catalog.MemberBinding{Location: "document", Name: "priority", Format: ""}, "State": catalog.MemberBinding{Location: "document", Name: "state", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobQueueArn": catalog.MemberBinding{Location: "document", Name: "jobQueueArn", Format: ""}, "JobQueueName": catalog.MemberBinding{Location: "document", Name: "jobQueueName", Format: ""}}, Method: "POST", URI: "/v1/createjobqueue", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateJobQueueRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateJobQueue(ctx, input.(*CreateJobQueueRequest))
+			in := input.(*CreateJobQueueRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.CreateJobQueue(ctx, in)
 		}},
 		"DescribeJobQueues": {Name: "DescribeJobQueues", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:DescribeJobQueues", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"JobQueues": catalog.MemberBinding{Location: "document", Name: "jobQueues", Format: ""}, "MaxResults": catalog.MemberBinding{Location: "document", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobQueues": catalog.MemberBinding{Location: "document", Name: "jobQueues", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}}, Method: "POST", URI: "/v1/describejobqueues", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeJobQueuesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DescribeJobQueues(ctx, input.(*DescribeJobQueuesRequest))
+			in := input.(*DescribeJobQueuesRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.DescribeJobQueues(ctx, in)
 		}},
 		"UpdateJobQueue": {Name: "UpdateJobQueue", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:UpdateJobQueue", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ComputeEnvironmentOrder": catalog.MemberBinding{Location: "document", Name: "computeEnvironmentOrder", Format: ""}, "JobQueue": catalog.MemberBinding{Location: "document", Name: "jobQueue", Format: ""}, "Priority": catalog.MemberBinding{Location: "document", Name: "priority", Format: ""}, "State": catalog.MemberBinding{Location: "document", Name: "state", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobQueueArn": catalog.MemberBinding{Location: "document", Name: "jobQueueArn", Format: ""}, "JobQueueName": catalog.MemberBinding{Location: "document", Name: "jobQueueName", Format: ""}}, Method: "POST", URI: "/v1/updatejobqueue", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateJobQueueRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UpdateJobQueue(ctx, input.(*UpdateJobQueueRequest))
+			in := input.(*UpdateJobQueueRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.UpdateJobQueue(ctx, in)
 		}},
 		"DeleteJobQueue": {Name: "DeleteJobQueue", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:DeleteJobQueue", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"JobQueue": catalog.MemberBinding{Location: "document", Name: "jobQueue", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/v1/deletejobqueue", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteJobQueueRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteJobQueue(ctx, input.(*DeleteJobQueueRequest))
+			in := input.(*DeleteJobQueueRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.DeleteJobQueue(ctx, in)
 		}},
-		"RegisterJobDefinition": {Name: "RegisterJobDefinition", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:RegisterJobDefinition", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ContainerProperties": catalog.MemberBinding{Location: "document", Name: "containerProperties", Format: ""}, "JobDefinitionName": catalog.MemberBinding{Location: "document", Name: "jobDefinitionName", Format: ""}, "Parameters": catalog.MemberBinding{Location: "document", Name: "parameters", Format: ""}, "PlatformCapabilities": catalog.MemberBinding{Location: "document", Name: "platformCapabilities", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}, "Type": catalog.MemberBinding{Location: "document", Name: "type", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobDefinitionArn": catalog.MemberBinding{Location: "document", Name: "jobDefinitionArn", Format: ""}, "JobDefinitionName": catalog.MemberBinding{Location: "document", Name: "jobDefinitionName", Format: ""}, "Revision": catalog.MemberBinding{Location: "document", Name: "revision", Format: ""}}, Method: "POST", URI: "/v1/registerjobdefinition", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &RegisterJobDefinitionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.RegisterJobDefinition(ctx, input.(*RegisterJobDefinitionRequest))
+		"RegisterJobDefinition": {Name: "RegisterJobDefinition", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:RegisterJobDefinition", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ContainerProperties": catalog.MemberBinding{Location: "document", Name: "containerProperties", Format: ""}, "JobDefinitionName": catalog.MemberBinding{Location: "document", Name: "jobDefinitionName", Format: ""}, "Parameters": catalog.MemberBinding{Location: "document", Name: "parameters", Format: ""}, "PlatformCapabilities": catalog.MemberBinding{Location: "document", Name: "platformCapabilities", Format: ""}, "RetryStrategy": catalog.MemberBinding{Location: "document", Name: "retryStrategy", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}, "Timeout": catalog.MemberBinding{Location: "document", Name: "timeout", Format: ""}, "Type": catalog.MemberBinding{Location: "document", Name: "type", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobDefinitionArn": catalog.MemberBinding{Location: "document", Name: "jobDefinitionArn", Format: ""}, "JobDefinitionName": catalog.MemberBinding{Location: "document", Name: "jobDefinitionName", Format: ""}, "Revision": catalog.MemberBinding{Location: "document", Name: "revision", Format: ""}}, Method: "POST", URI: "/v1/registerjobdefinition", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &RegisterJobDefinitionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*RegisterJobDefinitionRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.RegisterJobDefinition(ctx, in)
 		}},
 		"DescribeJobDefinitions": {Name: "DescribeJobDefinitions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:DescribeJobDefinitions", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"JobDefinitionName": catalog.MemberBinding{Location: "document", Name: "jobDefinitionName", Format: ""}, "JobDefinitions": catalog.MemberBinding{Location: "document", Name: "jobDefinitions", Format: ""}, "MaxResults": catalog.MemberBinding{Location: "document", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}, "Status": catalog.MemberBinding{Location: "document", Name: "status", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobDefinitions": catalog.MemberBinding{Location: "document", Name: "jobDefinitions", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}}, Method: "POST", URI: "/v1/describejobdefinitions", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeJobDefinitionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DescribeJobDefinitions(ctx, input.(*DescribeJobDefinitionsRequest))
+			in := input.(*DescribeJobDefinitionsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.DescribeJobDefinitions(ctx, in)
 		}},
 		"DeregisterJobDefinition": {Name: "DeregisterJobDefinition", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:DeregisterJobDefinition", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"JobDefinition": catalog.MemberBinding{Location: "document", Name: "jobDefinition", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/v1/deregisterjobdefinition", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeregisterJobDefinitionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeregisterJobDefinition(ctx, input.(*DeregisterJobDefinitionRequest))
+			in := input.(*DeregisterJobDefinitionRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.DeregisterJobDefinition(ctx, in)
 		}},
 		"TagResource": {Name: "TagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:TagResource", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceArn": catalog.MemberBinding{Location: "label", Name: "resourceArn", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/v1/tags/{resourceArn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &TagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.TagResource(ctx, input.(*TagResourceRequest))
+			in := input.(*TagResourceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.TagResource(ctx, in)
 		}},
 		"UntagResource": {Name: "UntagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:UntagResource", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceArn": catalog.MemberBinding{Location: "label", Name: "resourceArn", Format: ""}, "TagKeys": catalog.MemberBinding{Location: "query", Name: "tagKeys", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/v1/tags/{resourceArn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UntagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UntagResource(ctx, input.(*UntagResourceRequest))
+			in := input.(*UntagResourceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.UntagResource(ctx, in)
 		}},
 		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:ListTagsForResource", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceArn": catalog.MemberBinding{Location: "label", Name: "resourceArn", Format: ""}}, Output: map[string]catalog.MemberBinding{"Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}}, Method: "GET", URI: "/v1/tags/{resourceArn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceRequest))
+			in := input.(*ListTagsForResourceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.ListTagsForResource(ctx, in)
+		}},
+		"SubmitJob": {Name: "SubmitJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:SubmitJob", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ArrayProperties": catalog.MemberBinding{Location: "document", Name: "arrayProperties", Format: ""}, "ContainerOverrides": catalog.MemberBinding{Location: "document", Name: "containerOverrides", Format: ""}, "DependsOn": catalog.MemberBinding{Location: "document", Name: "dependsOn", Format: ""}, "JobDefinition": catalog.MemberBinding{Location: "document", Name: "jobDefinition", Format: ""}, "JobName": catalog.MemberBinding{Location: "document", Name: "jobName", Format: ""}, "JobQueue": catalog.MemberBinding{Location: "document", Name: "jobQueue", Format: ""}, "Parameters": catalog.MemberBinding{Location: "document", Name: "parameters", Format: ""}, "RetryStrategy": catalog.MemberBinding{Location: "document", Name: "retryStrategy", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}, "Timeout": catalog.MemberBinding{Location: "document", Name: "timeout", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobArn": catalog.MemberBinding{Location: "document", Name: "jobArn", Format: ""}, "JobId": catalog.MemberBinding{Location: "document", Name: "jobId", Format: ""}, "JobName": catalog.MemberBinding{Location: "document", Name: "jobName", Format: ""}}, Method: "POST", URI: "/v1/submitjob", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &SubmitJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*SubmitJobRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.SubmitJob(ctx, in)
+		}},
+		"DescribeJobs": {Name: "DescribeJobs", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:DescribeJobs", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Jobs": catalog.MemberBinding{Location: "document", Name: "jobs", Format: ""}}, Output: map[string]catalog.MemberBinding{"Jobs": catalog.MemberBinding{Location: "document", Name: "jobs", Format: ""}}, Method: "POST", URI: "/v1/describejobs", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeJobsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*DescribeJobsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.DescribeJobs(ctx, in)
+		}},
+		"ListJobs": {Name: "ListJobs", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:ListJobs", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ArrayJobId": catalog.MemberBinding{Location: "document", Name: "arrayJobId", Format: ""}, "Filters": catalog.MemberBinding{Location: "document", Name: "filters", Format: ""}, "JobQueue": catalog.MemberBinding{Location: "document", Name: "jobQueue", Format: ""}, "JobStatus": catalog.MemberBinding{Location: "document", Name: "jobStatus", Format: ""}, "MaxResults": catalog.MemberBinding{Location: "document", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobSummaryList": catalog.MemberBinding{Location: "document", Name: "jobSummaryList", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}}, Method: "POST", URI: "/v1/listjobs", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListJobsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListJobsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.ListJobs(ctx, in)
+		}},
+		"CancelJob": {Name: "CancelJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:CancelJob", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"JobId": catalog.MemberBinding{Location: "document", Name: "jobId", Format: ""}, "Reason": catalog.MemberBinding{Location: "document", Name: "reason", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/v1/canceljob", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CancelJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*CancelJobRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.CancelJob(ctx, in)
+		}},
+		"TerminateJob": {Name: "TerminateJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:TerminateJob", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"JobId": catalog.MemberBinding{Location: "document", Name: "jobId", Format: ""}, "Reason": catalog.MemberBinding{Location: "document", Name: "reason", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/v1/terminatejob", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &TerminateJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*TerminateJobRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.TerminateJob(ctx, in)
 		}},
 	}}
 }

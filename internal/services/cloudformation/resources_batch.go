@@ -49,9 +49,11 @@ func init() {
 		replace:    []string{propertyBatchCEName, memberType, propertyBatchRole, propertyBatchResources},
 		attributes: []string{memberBatchCEArn},
 		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
-			if _, e := backupTags(p, memberTags); e != nil {
+			p, e := batchCreationProps(p)
+			if e != nil {
 				return "", nil, e
 			}
+
 			if p.has(propertyBatchState) && p.str(propertyBatchState) != batchEnabled {
 				return "", nil, validation("CloudFormation compute environments must be created ENABLED")
 			}
@@ -139,9 +141,11 @@ func init() {
 			if !p.has(propertyBatchPriority) || !p.has(propertyBatchOrder) {
 				return "", nil, validation("JobQueue Priority and ComputeEnvironmentOrder are required")
 			}
-			if _, e := backupTags(p, memberTags); e != nil {
+			p, e := batchCreationProps(p)
+			if e != nil {
 				return "", nil, e
 			}
+
 			out, e := c.call(
 				ctx,
 				serviceBatch,
@@ -237,9 +241,11 @@ func init() {
 		attributes: []string{memberBatchDefinitionArn},
 		// Even an unchanged explicit name can create a new revision beside the old.
 		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
-			if _, e := backupTags(p, memberTags); e != nil {
+			p, e := batchCreationProps(p)
+			if e != nil {
 				return "", nil, e
 			}
+
 			out, e := c.call(
 				ctx,
 				serviceBatch,
@@ -393,4 +399,20 @@ func batchOrderRetired(st *stack) {
 			i--
 		}
 	}
+}
+
+// Batch's optional tag maps have a model minimum of one entry. An empty
+// CloudFormation Tags property means an untagged resource, so omit the API member.
+func batchCreationProps(p props) (props, error) {
+	tags, err := backupTags(p, memberTags)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(tags) == 0 {
+		p = maps.Clone(p)
+		delete(p, memberTags)
+	}
+
+	return p, nil
 }

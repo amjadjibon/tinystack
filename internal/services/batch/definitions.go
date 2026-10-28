@@ -16,6 +16,9 @@ func (s *Service) RegisterJobDefinition(
 	ctx context.Context,
 	in *api.RegisterJobDefinitionRequest,
 ) (*api.RegisterJobDefinitionResponse, error) {
+	if err := executionOptionsOK(in.RetryStrategy, in.Timeout); err != nil {
+		return nil, err
+	}
 	if guardErr := nameOK(in.JobDefinitionName); guardErr != nil {
 		return nil, guardErr
 	}
@@ -73,6 +76,8 @@ func (s *Service) RegisterJobDefinition(
 			Parameters:           maps.Clone(in.Parameters),
 			ContainerProperties:  common.Clone(in.ContainerProperties),
 			PlatformCapabilities: platform,
+			RetryStrategy:        common.Clone(in.RetryStrategy),
+			Timeout:              common.Clone(in.Timeout),
 		}
 		out = &api.RegisterJobDefinitionResponse{
 			JobDefinitionName: common.Clone(in.JobDefinitionName),

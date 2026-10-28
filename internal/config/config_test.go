@@ -28,6 +28,8 @@ func TestLoad(t *testing.T) {
 		{"bad storage mode", "storage:\n  mode: disk", false},
 		{"docker builds", "codebuild:\n  builds: docker", true},
 		{"bad builds", "codebuild:\n  builds: podman", false},
+		{"docker batch", "batch:\n  jobs: docker", true},
+		{"bad batch", "batch:\n  jobs: podman", false},
 		{"docker containers", "ecs:\n  containers: docker", true},
 		{"docker databases", "rds:\n  instances: docker", true},
 		{"bad databases", "rds:\n  instances: podman", false},
