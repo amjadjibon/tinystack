@@ -1,4 +1,4 @@
-// Package dsql implements Aurora DSQL control-plane records without SQL execution.
+// Package dsql implements Aurora DSQL control-plane records and optional PostgreSQL execution.
 package dsql
 
 import (
@@ -8,12 +8,14 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dsql"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/localtls"
 	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -31,15 +33,23 @@ const (
 )
 
 type Service struct {
-	store   storage.Store
-	workers *background.Group
+	store       storage.Store
+	workers     *background.Group
+	runtime     *dockerRuntime
+	ca          *localtls.Authority
+	authorize   TokenAuthorizer
+	proxies     map[string]*proxy
+	proxyMu     sync.Mutex
+	reconcileMu sync.Mutex
 }
 
 type record struct {
-	Due time.Time
 	api.GetClusterOutput
+	Due           time.Time
 	Policy        *string
+	Backend       *backend
 	PolicyVersion string
+	ProxyPort     int64
 	Activated     bool
 }
 
@@ -54,12 +64,18 @@ type replay struct {
 }
 
 func New(store storage.Store) *Service {
-	s := &Service{store: store, workers: background.New()}
+	s := &Service{store: store, workers: background.New(), proxies: map[string]*proxy{}}
 	s.workers.Every(100*time.Millisecond, s.advance)
 	return s
 }
 
-func (s *Service) Stop() { s.workers.Stop() }
+func (s *Service) Stop() {
+	s.workers.Stop()
+	s.closeProxies()
+	if s.runtime != nil {
+		s.runtime.close(context.Background())
+	}
+}
 
 func invalid(message string) error { return awserror.New("ValidationException", message) }
 

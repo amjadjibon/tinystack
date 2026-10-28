@@ -130,6 +130,31 @@ func (s *Service) UpdateCluster(ctx context.Context, in *api.UpdateClusterInput)
 				return nil, conflict("Cluster is not ACTIVE or PENDING_SETUP")
 			}
 
+			if s.runtime != nil && r.Activated && in.MultiRegionProperties != nil {
+				if r.MultiRegionProperties == nil {
+					return nil, invalid("Converting an active standalone Docker cluster to multi-Region is unsupported")
+				}
+
+				witness := in.MultiRegionProperties.WitnessRegion
+				if witness != nil && *witness != common.Value(r.MultiRegionProperties.WitnessRegion) {
+					return nil, invalid("Changing an active Docker cluster witness is unsupported")
+				}
+
+				if in.MultiRegionProperties.Clusters != nil {
+					for _, arn := range in.MultiRegionProperties.Clusters {
+						if !slices.Contains(r.MultiRegionProperties.Clusters, arn) {
+							return nil, invalid("Changing active Docker cluster peers is unsupported")
+						}
+					}
+
+					for _, arn := range r.MultiRegionProperties.Clusters {
+						if arn != common.Value(r.Arn) && !slices.Contains(in.MultiRegionProperties.Clusters, arn) {
+							return nil, invalid("Removing an active Docker cluster peer is unsupported")
+						}
+					}
+				}
+			}
+
 			if err := configurePeers(tx, scope, r, in.MultiRegionProperties); err != nil {
 				return nil, err
 			}

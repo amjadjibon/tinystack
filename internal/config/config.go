@@ -306,6 +306,9 @@ type Config struct {
 	RDS struct {
 		Instances string `yaml:"instances"`
 	} `yaml:"rds"`
+	DSQL struct {
+		Clusters string `yaml:"clusters"`
+	} `yaml:"dsql"`
 	MemoryDB struct {
 		Clusters string `yaml:"clusters"`
 	} `yaml:"memorydb"`
@@ -382,6 +385,7 @@ func Default() Config {
 	c.Batch.Jobs = ContainersRecords
 	c.ECS.Containers = ContainersRecords
 	c.EKS.Clusters = ClustersRecords
+	c.DSQL.Clusters = ContainersRecords
 	c.MemoryDB.Clusters = CachesRecords
 	c.ElastiCache.Caches = CachesRecords
 	c.OpenSearch.Domains = DomainsRecords
@@ -583,6 +587,10 @@ func (c *Config) Validate() error {
 
 	if c.RDS.Instances != InstancesRecords && c.RDS.Instances != InstancesDocker {
 		return fmt.Errorf("rds.instances must be records or docker")
+	}
+
+	if c.DSQL.Clusters != ContainersRecords && c.DSQL.Clusters != ContainersDocker {
+		return fmt.Errorf("dsql.clusters must be records or docker")
 	}
 
 	if c.MemoryDB.Clusters != CachesRecords && c.MemoryDB.Clusters != CachesDocker {

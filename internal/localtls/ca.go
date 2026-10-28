@@ -230,3 +230,29 @@ func (a *Authority) issue(name string, ips []net.IP) (*tls.Certificate, error) {
 
 	return &tls.Certificate{Certificate: [][]byte{der, a.cert.Raw}, PrivateKey: key, Leaf: leaf}, nil
 }
+
+// ClientCertificate issues a short-lived client certificate with a database role as its identity.
+func (a *Authority) ClientCertificate(role string) (tls.Certificate, error) {
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	number, err := serial()
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	now := time.Now()
+	template := &x509.Certificate{
+		SerialNumber: number, Subject: pkix.Name{CommonName: role},
+		NotBefore: now.Add(-time.Minute), NotAfter: now.Add(time.Hour),
+		KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, a.cert, &key.PublicKey, a.key)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+
+	return tls.Certificate{Certificate: [][]byte{der, a.cert.Raw}, PrivateKey: key}, nil
+}

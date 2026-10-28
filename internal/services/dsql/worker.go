@@ -57,6 +57,8 @@ func peersReady(tx storage.ReadTx, scope request.Scope, r *record, deletion bool
 }
 
 func (s *Service) advance(ctx context.Context) {
+	s.reconcileMu.Lock()
+	defer s.reconcileMu.Unlock()
 	var jobs []*work
 	if err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		var err error
@@ -69,6 +71,10 @@ func (s *Service) advance(ctx context.Context) {
 	for _, job := range jobs {
 		if ctx.Err() != nil {
 			return
+		}
+
+		if s.runtime != nil && !s.prepareBackend(ctx, job) {
+			continue
 		}
 
 		// Reread and claim each transition in the same transaction as its resulting state.

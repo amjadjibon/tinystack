@@ -538,7 +538,13 @@ func build(
 	redshiftServerlessRecords := redshiftserverless.New(store, network, secrets)
 	a.onStop(redshiftServerlessRecords.Stop)
 	dsqlRecords := dsql.New(store)
+	if cfg.DSQL.Clusters == config.ContainersDocker {
+		if err = dsqlRecords.UseDocker(ctx); err != nil {
+			return nil, err
+		}
+	}
 	a.onStop(dsqlRecords.Stop)
+	a.onReset(dsqlRecords.Reset)
 	fisRecords := fis.New(store)
 	a.onStop(fisRecords.Stop)
 	mediaConvertRecords := mediaconvert.New(store, roles)
@@ -966,6 +972,19 @@ func build(
 	handler.UseHosted(identities)
 	handler.UseRegistry(registry)
 	handler.UseGit(codecommitRecords)
+	if cfg.DSQL.Clusters == config.ContainersDocker {
+		dir, dirErr := cfg.DataDir()
+		if dirErr != nil {
+			return nil, dirErr
+		}
+
+		ca, caErr := localtls.Load(dir)
+		if caErr != nil {
+			return nil, caErr
+		}
+
+		dsqlRecords.UseProxy(ca, handler.AuthorizeDSQL)
+	}
 	handler.UseCORS(buckets.CORS)
 	handler.UseAPIs(connectionAPI, httpAPIs, restAPIs)
 	handler.UseDomains(restAPIs.Domains())
