@@ -1,11 +1,13 @@
-// Package kafka stores provisioned MSK configuration records without running brokers.
+// Package kafka manages provisioned MSK configuration and optional Kafka-compatible broker containers.
 package kafka
 
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"maps"
 	"strings"
+	"sync"
 	"time"
 	"uuid"
 
@@ -15,12 +17,17 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/kafka"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
 const (
-	serviceName = "kafka"
-	clusterKind = "cluster"
+	serviceName          = "kafka"
+	clusterKind          = "cluster"
+	clientTLS            = "TLS"
+	statusCreating       = "CREATING"
+	statusActive         = "ACTIVE"
+	staleRevisionMessage = "CurrentVersion does not match the stored configuration revision"
 )
 
 var _ api.API = (*Service)(nil)
@@ -30,14 +37,22 @@ type Network interface {
 	MountSubnet(storage.ReadTx, request.Scope, string) (*ec2api.Subnet, error)
 	MountGroups(storage.ReadTx, request.Scope, string, []string) ([]string, error)
 }
+
 type Service struct {
-	store   storage.Store
-	network Network
+	store       storage.Store
+	network     Network
+	runtime     Runtime
+	logger      *slog.Logger
+	bg          *background.Group
+	owner       string
+	mu          sync.Mutex // serializes the reconciler with Reset; API calls rely on transactions
+	orphansDone bool
 }
 
 func New(store storage.Store, network Network) *Service {
 	return &Service{store: store, network: network}
 }
+
 func invalid(message string) error { return awserror.New("BadRequestException", message) }
 func missing() error {
 	e := awserror.New("NotFoundException", "Cluster does not exist in this account and Region")
@@ -50,6 +65,7 @@ func conflict(message string) error {
 	e.StatusCode = 409
 	return e
 }
+
 func revision() *string { return new("K" + strings.ReplaceAll(uuid.NewV4().String(), "-", "")) }
 
 func read(tx storage.ReadTx, scope request.Scope, arn string) (*api.ClusterInfo, error) {
@@ -57,22 +73,25 @@ func read(tx storage.ReadTx, scope request.Scope, arn string) (*api.ClusterInfo,
 	if p == nil {
 		return nil, invalid("ClusterArn must be a commercial MSK cluster ARN, not an ID or name")
 	}
+
 	if p[1] != scope.Region || p[2] != scope.AccountID {
 		return nil, missing()
 	}
-	r, ok, e := storage.Read[api.ClusterInfo](tx, scope.Key(serviceName, clusterKind, p[4]))
+
+	r, ok, e := storage.Read[api.ClusterInfo](tx, scope.Key(serviceName, clusterKind, p[3]))
 	if e != nil {
 		return nil, e
 	}
+
 	if !ok || common.Value(r.ClusterArn) != arn {
 		return nil, missing()
 	}
+
 	return r, nil
 }
 
 func save(tx storage.WriteTx, scope request.Scope, r *api.ClusterInfo) error {
-	parts := strings.Split(*r.ClusterArn, "/")
-	return storage.Write(tx, scope.Key(serviceName, clusterKind, parts[2]), r)
+	return storage.Write(tx, scope.Key(serviceName, clusterKind, *r.ClusterName), r)
 }
 
 func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterRequest) (*api.CreateClusterResponse, error) {
@@ -80,10 +99,12 @@ func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterReques
 	if e != nil {
 		return nil, e
 	}
+
 	in = common.Clone(in)
 	if validationErr := validateCreate(in, scope); validationErr != nil {
 		return nil, validationErr
 	}
+
 	arn := fmt.Sprintf(
 		"arn:aws:kafka:%s:%s:cluster/%s/%s-1",
 		scope.Region,
@@ -101,26 +122,57 @@ func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterReques
 		NumberOfBrokerNodes:       in.NumberOfBrokerNodes,
 		EnhancedMonitoring:        in.EnhancedMonitoring,
 		Tags:                      in.Tags,
+		ClientAuthentication:      in.ClientAuthentication,
+		EncryptionInfo:            in.EncryptionInfo,
 	}
+
+	if authErr := validateAuthentication(r); authErr != nil {
+		return nil, authErr
+	}
+
+	if s.runtime != nil {
+		if authErr := dockerAuthentication(r); authErr != nil {
+			return nil, authErr
+		}
+
+		r.State = new(statusCreating)
+	}
+
 	e = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		rows, err := storage.Records[api.ClusterInfo](tx, scope.Prefix(serviceName, clusterKind))
 		if err != nil {
 			return err
 		}
+
 		for _, other := range rows {
 			if *other.ClusterName == *r.ClusterName {
 				return conflict("ClusterName already exists")
 			}
 		}
+
 		if err := s.validateNetwork(tx, scope, r.BrokerNodeGroupInfo); err != nil {
 			return err
 		}
+
+		if s.runtime != nil {
+			if err := storage.Write(tx, ownerKey, s.owner); err != nil {
+				return err
+			}
+
+			if err := storage.Write(tx, runtimeKey(arn), runtimeRecord{ARN: arn}); err != nil {
+				return err
+			}
+		}
+
 		return save(tx, scope, r)
 	})
 	if e != nil {
 		return nil, e
 	}
-	return common.Clone(&api.CreateClusterResponse{ClusterArn: r.ClusterArn, ClusterName: r.ClusterName}), nil
+
+	return common.Clone(
+		&api.CreateClusterResponse{ClusterArn: r.ClusterArn, ClusterName: r.ClusterName, State: r.State},
+	), nil
 }
 
 func (s *Service) DescribeCluster(
@@ -131,6 +183,7 @@ func (s *Service) DescribeCluster(
 	if e != nil {
 		return nil, e
 	}
+
 	var r *api.ClusterInfo
 	e = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var err error
@@ -140,6 +193,7 @@ func (s *Service) DescribeCluster(
 	if e != nil {
 		return nil, e
 	}
+
 	return &api.DescribeClusterResponse{ClusterInfo: common.Clone(r)}, nil
 }
 
@@ -148,21 +202,47 @@ func (s *Service) DeleteCluster(ctx context.Context, in *api.DeleteClusterReques
 	if e != nil {
 		return nil, e
 	}
+
+	if s.runtime != nil {
+		e = s.store.View(ctx, func(tx storage.ReadTx) error {
+			r, err := read(tx, scope, common.Value(in.ClusterArn))
+			if err != nil {
+				return err
+			}
+
+			if in.CurrentVersion != nil && *in.CurrentVersion != *r.CurrentVersion {
+				return invalid(staleRevisionMessage)
+			}
+
+			return nil
+		})
+		if e != nil {
+			return nil, e
+		}
+
+		if removeErr := s.runtime.Remove(ctx, resourceSpec(*in.ClusterArn, s.owner), true); removeErr != nil {
+			return nil, removeErr
+		}
+	}
+
 	e = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		r, err := read(tx, scope, common.Value(in.ClusterArn))
 		if err != nil {
 			return err
 		}
+
 		if in.CurrentVersion != nil && *in.CurrentVersion != *r.CurrentVersion {
-			return invalid("CurrentVersion does not match the stored configuration revision")
+			return invalid(staleRevisionMessage)
 		}
-		parts := strings.Split(*r.ClusterArn, "/")
-		tx.Delete(scope.Key(serviceName, clusterKind, parts[2]))
+
+		tx.Delete(scope.Key(serviceName, clusterKind, *r.ClusterName))
+		tx.Delete(runtimeKey(*r.ClusterArn))
 		return nil
 	})
 	if e != nil {
 		return nil, e
 	}
+
 	return &api.DeleteClusterResponse{ClusterArn: common.Clone(in.ClusterArn)}, nil
 }
 
@@ -174,10 +254,12 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			if !ok || !strings.HasPrefix(rest, clusterKind+"/") {
 				continue
 			}
+
 			r, _, err := storage.Read[api.ClusterInfo](tx, key)
 			if err != nil {
 				return err
 			}
+
 			out = append(
 				out,
 				catalog.Resource{
@@ -187,10 +269,15 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 					Account: account,
 					Region:  region,
 					Tags:    maps.Clone(r.Tags),
-					Details: map[string]any{"RecordsOnly": true, "ExecutionReady": false, "Cluster": common.Clone(r)},
+					Details: map[string]any{
+						"RecordsOnly":    s.runtime == nil,
+						"ExecutionReady": s.runtime != nil && common.Value(r.State) == statusActive,
+						"Cluster":        common.Clone(r),
+					},
 				},
 			)
 		}
+
 		return nil
 	})
 	return out, e

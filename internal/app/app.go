@@ -232,6 +232,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/iot"
 	"github.com/amjadjibon/tinystack/internal/services/iotwireless"
 	"github.com/amjadjibon/tinystack/internal/services/kafka"
+	kafkadocker "github.com/amjadjibon/tinystack/internal/services/kafka/docker"
 	"github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/services/kinesisanalyticsv2"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
@@ -565,6 +566,8 @@ func build(
 	a.onStop(brokers.Stop)
 	a.onReset(brokers.Reset)
 	kafkaClusters := kafka.New(store, network)
+	a.onStop(kafkaClusters.Stop)
+	a.onReset(kafkaClusters.Reset)
 	airflowEnvironments := mwaa.New(store, network, buckets)
 	transferRecords := transfer.New(store)
 	codeDeployRecords := codedeploy.New(store)
@@ -971,6 +974,17 @@ func build(
 
 	if cfg.MQ.Brokers == config.BrokersDocker {
 		if err = brokers.UseDocker(logger); err != nil {
+			return nil, err
+		}
+	}
+
+	if cfg.Kafka.Clusters == config.ContainersDocker {
+		dataDir, dirErr := cfg.DataDir()
+		if dirErr != nil {
+			return nil, dirErr
+		}
+
+		if err = kafkaClusters.UseRuntime(kafkadocker.New(dataDir), logger); err != nil {
 			return nil, err
 		}
 	}

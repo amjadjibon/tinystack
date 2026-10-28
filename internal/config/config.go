@@ -294,6 +294,9 @@ type Config struct {
 	EKS struct {
 		Clusters string `yaml:"clusters"`
 	} `yaml:"eks"`
+	Kafka struct {
+		Clusters string `yaml:"clusters"`
+	} `yaml:"kafka"`
 	RDS struct {
 		Instances string `yaml:"instances"`
 	} `yaml:"rds"`
@@ -377,6 +380,7 @@ func Default() Config {
 	c.OpenSearch.Domains = DomainsRecords
 	c.MQ.Brokers = BrokersRecords
 	c.BedrockAgentCore.Runtimes = RuntimesRecords
+	c.Kafka.Clusters = ContainersRecords
 	c.RDS.Instances = InstancesRecords
 	c.Init.Dir = DefaultInitDir
 	c.Init.LocalStackDir = DefaultLocalStackInitDir
@@ -555,6 +559,10 @@ func (c *Config) Validate() error {
 
 	if c.EKS.Clusters != ClustersRecords && c.EKS.Clusters != ClustersK3s {
 		return fmt.Errorf("eks.clusters must be records or k3s")
+	}
+
+	if c.Kafka.Clusters != ContainersRecords && c.Kafka.Clusters != ContainersDocker {
+		return fmt.Errorf("kafka.clusters must be records or docker")
 	}
 
 	if c.RDS.Instances != InstancesRecords && c.RDS.Instances != InstancesDocker {

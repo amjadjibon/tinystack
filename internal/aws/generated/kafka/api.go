@@ -3,8 +3,11 @@ package kafka
 
 import (
 	"context"
+	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/validation"
 	"time"
+	"unicode/utf8"
 )
 
 type EBSStorageInfo struct {
@@ -23,18 +26,58 @@ type BrokerNodeGroupInfo struct {
 	StorageInfo          *StorageInfo `json:"storageInfo,omitempty"`
 }
 
+type Scram struct {
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+type Iam struct {
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+type Sasl struct {
+	Scram *Scram `json:"scram,omitempty"`
+	Iam   *Iam   `json:"iam,omitempty"`
+}
+
+type Tls struct {
+	Enabled                     *bool    `json:"enabled,omitempty"`
+	CertificateAuthorityArnList []string `json:"certificateAuthorityArnList,omitempty"`
+}
+
+type Unauthenticated struct {
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+type ClientAuthentication struct {
+	Sasl            *Sasl            `json:"sasl,omitempty"`
+	Tls             *Tls             `json:"tls,omitempty"`
+	Unauthenticated *Unauthenticated `json:"unauthenticated,omitempty"`
+}
+
+type EncryptionInTransit struct {
+	ClientBroker *string `json:"clientBroker,omitempty"`
+	InCluster    *bool   `json:"inCluster,omitempty"`
+}
+
+type EncryptionInfo struct {
+	EncryptionInTransit *EncryptionInTransit `json:"encryptionInTransit,omitempty"`
+}
+
 type CreateClusterRequest struct {
-	BrokerNodeGroupInfo *BrokerNodeGroupInfo `json:"brokerNodeGroupInfo,omitempty"`
-	ClusterName         *string              `json:"clusterName,omitempty"`
-	KafkaVersion        *string              `json:"kafkaVersion,omitempty"`
-	NumberOfBrokerNodes *int64               `json:"numberOfBrokerNodes,omitempty"`
-	EnhancedMonitoring  *string              `json:"enhancedMonitoring,omitempty"`
-	Tags                map[string]string    `json:"tags,omitempty"`
+	BrokerNodeGroupInfo  *BrokerNodeGroupInfo  `json:"brokerNodeGroupInfo,omitempty"`
+	ClusterName          *string               `json:"clusterName,omitempty"`
+	KafkaVersion         *string               `json:"kafkaVersion,omitempty"`
+	NumberOfBrokerNodes  *int64                `json:"numberOfBrokerNodes,omitempty"`
+	EnhancedMonitoring   *string               `json:"enhancedMonitoring,omitempty"`
+	Tags                 map[string]string     `json:"tags,omitempty"`
+	ClientAuthentication *ClientAuthentication `json:"clientAuthentication,omitempty"`
+	EncryptionInfo       *EncryptionInfo       `json:"encryptionInfo,omitempty"`
 }
 
 type CreateClusterResponse struct {
 	ClusterArn  *string `json:"clusterArn,omitempty"`
 	ClusterName *string `json:"clusterName,omitempty"`
+	State       *string `json:"state,omitempty"`
 }
 
 type DescribeClusterRequest struct {
@@ -45,16 +88,25 @@ type BrokerSoftwareInfo struct {
 	KafkaVersion *string `json:"kafkaVersion,omitempty"`
 }
 
+type StateInfo struct {
+	Code    *string `json:"code,omitempty"`
+	Message *string `json:"message,omitempty"`
+}
+
 type ClusterInfo struct {
-	BrokerNodeGroupInfo       *BrokerNodeGroupInfo `json:"brokerNodeGroupInfo,omitempty"`
-	ClusterArn                *string              `json:"clusterArn,omitempty"`
-	ClusterName               *string              `json:"clusterName,omitempty"`
-	CreationTime              *time.Time           `json:"creationTime,omitempty"`
-	CurrentBrokerSoftwareInfo *BrokerSoftwareInfo  `json:"currentBrokerSoftwareInfo,omitempty"`
-	CurrentVersion            *string              `json:"currentVersion,omitempty"`
-	EnhancedMonitoring        *string              `json:"enhancedMonitoring,omitempty"`
-	NumberOfBrokerNodes       *int64               `json:"numberOfBrokerNodes,omitempty"`
-	Tags                      map[string]string    `json:"tags,omitempty"`
+	BrokerNodeGroupInfo       *BrokerNodeGroupInfo  `json:"brokerNodeGroupInfo,omitempty"`
+	ClusterArn                *string               `json:"clusterArn,omitempty"`
+	ClusterName               *string               `json:"clusterName,omitempty"`
+	CreationTime              *time.Time            `json:"creationTime,omitempty"`
+	CurrentBrokerSoftwareInfo *BrokerSoftwareInfo   `json:"currentBrokerSoftwareInfo,omitempty"`
+	CurrentVersion            *string               `json:"currentVersion,omitempty"`
+	EnhancedMonitoring        *string               `json:"enhancedMonitoring,omitempty"`
+	NumberOfBrokerNodes       *int64                `json:"numberOfBrokerNodes,omitempty"`
+	Tags                      map[string]string     `json:"tags,omitempty"`
+	ClientAuthentication      *ClientAuthentication `json:"clientAuthentication,omitempty"`
+	EncryptionInfo            *EncryptionInfo       `json:"encryptionInfo,omitempty"`
+	State                     *string               `json:"state,omitempty"`
+	StateInfo                 *StateInfo            `json:"stateInfo,omitempty"`
 }
 
 type DescribeClusterResponse struct {
@@ -113,6 +165,293 @@ type UntagResourceRequest struct {
 	TagKeys     []string `json:"-"`
 }
 
+type GetBootstrapBrokersRequest struct {
+	ClusterArn *string `json:"-"`
+}
+
+type GetBootstrapBrokersResponse struct {
+	BootstrapBrokerString          *string `json:"bootstrapBrokerString,omitempty"`
+	BootstrapBrokerStringTls       *string `json:"bootstrapBrokerStringTls,omitempty"`
+	BootstrapBrokerStringSaslScram *string `json:"bootstrapBrokerStringSaslScram,omitempty"`
+	BootstrapBrokerStringSaslIam   *string `json:"bootstrapBrokerStringSaslIam,omitempty"`
+}
+
+type ListNodesRequest struct {
+	ClusterArn *string `json:"-"`
+	MaxResults *int64  `json:"-"`
+	NextToken  *string `json:"-"`
+}
+
+type BrokerNodeInfo struct {
+	BrokerId                  *float64            `json:"brokerId,omitempty"`
+	ClientSubnet              *string             `json:"clientSubnet,omitempty"`
+	CurrentBrokerSoftwareInfo *BrokerSoftwareInfo `json:"currentBrokerSoftwareInfo,omitempty"`
+	Endpoints                 []string            `json:"endpoints,omitempty"`
+}
+
+type NodeInfo struct {
+	AddedToClusterTime *string         `json:"addedToClusterTime,omitempty"`
+	BrokerNodeInfo     *BrokerNodeInfo `json:"brokerNodeInfo,omitempty"`
+	InstanceType       *string         `json:"instanceType,omitempty"`
+	NodeType           *string         `json:"nodeType,omitempty"`
+}
+
+type ListNodesResponse struct {
+	NodeInfoList []NodeInfo `json:"nodeInfoList,omitempty"`
+	NextToken    *string    `json:"nextToken,omitempty"`
+}
+
+var enum0 = []string{"DEFAULT"}
+
+var enum1 = []string{"DEFAULT", "PER_BROKER", "PER_TOPIC_PER_BROKER", "PER_TOPIC_PER_PARTITION"}
+
+var enum2 = []string{"PLAINTEXT", "TLS", "TLS_PLAINTEXT"}
+
+func (v *BrokerNodeGroupInfo) Validate(path string) error {
+	if v.BrokerAZDistribution != nil {
+		if err := validation.Enum(path+"BrokerAZDistribution", (*v.BrokerAZDistribution), enum0); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"ClientSubnets", v.ClientSubnets != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"InstanceType", v.InstanceType != nil); err != nil {
+		return err
+	}
+	if v.InstanceType != nil {
+		if err := validation.Length(path+"InstanceType", utf8.RuneCountInString((*v.InstanceType)), new(int64(5)), new(int64(32))); err != nil {
+			return err
+		}
+	}
+	if v.StorageInfo != nil {
+		if err := (*v.StorageInfo).Validate(path + "StorageInfo" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ClientAuthentication) Validate(path string) error {
+	if v.Sasl != nil {
+		if err := (*v.Sasl).Validate(path + "Sasl" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Tls != nil {
+		if err := (*v.Tls).Validate(path + "Tls" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Unauthenticated != nil {
+		if err := (*v.Unauthenticated).Validate(path + "Unauthenticated" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreateClusterRequest) Validate(path string) error {
+	if err := validation.Required(path+"BrokerNodeGroupInfo", v.BrokerNodeGroupInfo != nil); err != nil {
+		return err
+	}
+	if v.BrokerNodeGroupInfo != nil {
+		if err := (*v.BrokerNodeGroupInfo).Validate(path + "BrokerNodeGroupInfo" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"ClusterName", v.ClusterName != nil); err != nil {
+		return err
+	}
+	if v.ClusterName != nil {
+		if err := validation.Length(path+"ClusterName", utf8.RuneCountInString((*v.ClusterName)), new(int64(1)), new(int64(64))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"KafkaVersion", v.KafkaVersion != nil); err != nil {
+		return err
+	}
+	if v.KafkaVersion != nil {
+		if err := validation.Length(path+"KafkaVersion", utf8.RuneCountInString((*v.KafkaVersion)), new(int64(1)), new(int64(128))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"NumberOfBrokerNodes", v.NumberOfBrokerNodes != nil); err != nil {
+		return err
+	}
+	if v.NumberOfBrokerNodes != nil {
+		if err := validation.Range(path+"NumberOfBrokerNodes", float64((*v.NumberOfBrokerNodes)), new(float64(1)), new(float64(15))); err != nil {
+			return err
+		}
+	}
+	if v.EnhancedMonitoring != nil {
+		if err := validation.Enum(path+"EnhancedMonitoring", (*v.EnhancedMonitoring), enum1); err != nil {
+			return err
+		}
+	}
+	if v.ClientAuthentication != nil {
+		if err := (*v.ClientAuthentication).Validate(path + "ClientAuthentication" + "."); err != nil {
+			return err
+		}
+	}
+	if v.EncryptionInfo != nil {
+		if err := (*v.EncryptionInfo).Validate(path + "EncryptionInfo" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteClusterRequest) Validate(path string) error {
+	if err := validation.Required(path+"ClusterArn", v.ClusterArn != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *DescribeClusterRequest) Validate(path string) error {
+	if err := validation.Required(path+"ClusterArn", v.ClusterArn != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *EBSStorageInfo) Validate(path string) error {
+	if v.VolumeSize != nil {
+		if err := validation.Range(path+"VolumeSize", float64((*v.VolumeSize)), new(float64(1)), new(float64(16384))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *EncryptionInTransit) Validate(path string) error {
+	if v.ClientBroker != nil {
+		if err := validation.Enum(path+"ClientBroker", (*v.ClientBroker), enum2); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *EncryptionInfo) Validate(path string) error {
+	if v.EncryptionInTransit != nil {
+		if err := (*v.EncryptionInTransit).Validate(path + "EncryptionInTransit" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetBootstrapBrokersRequest) Validate(path string) error {
+	if err := validation.Required(path+"ClusterArn", v.ClusterArn != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *Iam) Validate(path string) error {
+	return nil
+}
+
+func (v *ListClustersRequest) Validate(path string) error {
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"MaxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListNodesRequest) Validate(path string) error {
+	if err := validation.Required(path+"ClusterArn", v.ClusterArn != nil); err != nil {
+		return err
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"MaxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListTagsForResourceRequest) Validate(path string) error {
+	if err := validation.Required(path+"ResourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *Sasl) Validate(path string) error {
+	if v.Scram != nil {
+		if err := (*v.Scram).Validate(path + "Scram" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Iam != nil {
+		if err := (*v.Iam).Validate(path + "Iam" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *Scram) Validate(path string) error {
+	return nil
+}
+
+func (v *StorageInfo) Validate(path string) error {
+	if v.EbsStorageInfo != nil {
+		if err := (*v.EbsStorageInfo).Validate(path + "EbsStorageInfo" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *TagResourceRequest) Validate(path string) error {
+	if err := validation.Required(path+"ResourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"Tags", v.Tags != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *Tls) Validate(path string) error {
+	return nil
+}
+
+func (v *Unauthenticated) Validate(path string) error {
+	return nil
+}
+
+func (v *UntagResourceRequest) Validate(path string) error {
+	if err := validation.Required(path+"ResourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"TagKeys", v.TagKeys != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *UpdateMonitoringRequest) Validate(path string) error {
+	if err := validation.Required(path+"ClusterArn", v.ClusterArn != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"CurrentVersion", v.CurrentVersion != nil); err != nil {
+		return err
+	}
+	if v.EnhancedMonitoring != nil {
+		if err := validation.Enum(path+"EnhancedMonitoring", (*v.EnhancedMonitoring), enum1); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type API interface {
 	CreateCluster(context.Context, *CreateClusterRequest) (*CreateClusterResponse, error)
 	DescribeCluster(context.Context, *DescribeClusterRequest) (*DescribeClusterResponse, error)
@@ -122,33 +461,81 @@ type API interface {
 	ListTagsForResource(context.Context, *ListTagsForResourceRequest) (*ListTagsForResourceResponse, error)
 	TagResource(context.Context, *TagResourceRequest) (*TagResourceOutput, error)
 	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceOutput, error)
+	GetBootstrapBrokers(context.Context, *GetBootstrapBrokersRequest) (*GetBootstrapBrokersResponse, error)
+	ListNodes(context.Context, *ListNodesRequest) (*ListNodesResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
 	return catalog.Service{Name: "kafka", SigningName: "kafka", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "kafka", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"BadRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "ForbiddenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "InternalServerErrorException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "NotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServiceUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 503}, "TooManyRequestsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}}, Operations: map[string]catalog.Operation{
-		"CreateCluster": {Name: "CreateCluster", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:CreateCluster", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"BrokerNodeGroupInfo": catalog.MemberBinding{Location: "document", Name: "BrokerNodeGroupInfo", Format: ""}, "ClusterName": catalog.MemberBinding{Location: "document", Name: "ClusterName", Format: ""}, "EnhancedMonitoring": catalog.MemberBinding{Location: "document", Name: "EnhancedMonitoring", Format: ""}, "KafkaVersion": catalog.MemberBinding{Location: "document", Name: "KafkaVersion", Format: ""}, "NumberOfBrokerNodes": catalog.MemberBinding{Location: "document", Name: "NumberOfBrokerNodes", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Output: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "document", Name: "ClusterArn", Format: ""}, "ClusterName": catalog.MemberBinding{Location: "document", Name: "ClusterName", Format: ""}}, Method: "POST", URI: "/v1/clusters", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateClusterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateCluster(ctx, input.(*CreateClusterRequest))
+		"CreateCluster": {Name: "CreateCluster", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:CreateCluster", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"BrokerNodeGroupInfo": catalog.MemberBinding{Location: "document", Name: "BrokerNodeGroupInfo", Format: ""}, "ClientAuthentication": catalog.MemberBinding{Location: "document", Name: "ClientAuthentication", Format: ""}, "ClusterName": catalog.MemberBinding{Location: "document", Name: "ClusterName", Format: ""}, "EncryptionInfo": catalog.MemberBinding{Location: "document", Name: "EncryptionInfo", Format: ""}, "EnhancedMonitoring": catalog.MemberBinding{Location: "document", Name: "EnhancedMonitoring", Format: ""}, "KafkaVersion": catalog.MemberBinding{Location: "document", Name: "KafkaVersion", Format: ""}, "NumberOfBrokerNodes": catalog.MemberBinding{Location: "document", Name: "NumberOfBrokerNodes", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Output: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "document", Name: "ClusterArn", Format: ""}, "ClusterName": catalog.MemberBinding{Location: "document", Name: "ClusterName", Format: ""}, "State": catalog.MemberBinding{Location: "document", Name: "State", Format: ""}}, Method: "POST", URI: "/v1/clusters", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateClusterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*CreateClusterRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.CreateCluster(ctx, in)
 		}},
 		"DescribeCluster": {Name: "DescribeCluster", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:DescribeCluster", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "label", Name: "ClusterArn", Format: ""}}, Output: map[string]catalog.MemberBinding{"ClusterInfo": catalog.MemberBinding{Location: "document", Name: "ClusterInfo", Format: ""}}, Method: "GET", URI: "/v1/clusters/{ClusterArn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeClusterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DescribeCluster(ctx, input.(*DescribeClusterRequest))
+			in := input.(*DescribeClusterRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.DescribeCluster(ctx, in)
 		}},
 		"ListClusters": {Name: "ListClusters", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:ListClusters", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ClusterNameFilter": catalog.MemberBinding{Location: "query", Name: "clusterNameFilter", Format: ""}, "MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"ClusterInfoList": catalog.MemberBinding{Location: "document", Name: "ClusterInfoList", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}}, Method: "GET", URI: "/v1/clusters", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListClustersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListClusters(ctx, input.(*ListClustersRequest))
+			in := input.(*ListClustersRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.ListClusters(ctx, in)
 		}},
 		"DeleteCluster": {Name: "DeleteCluster", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:DeleteCluster", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "label", Name: "ClusterArn", Format: ""}, "CurrentVersion": catalog.MemberBinding{Location: "query", Name: "currentVersion", Format: ""}}, Output: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "document", Name: "ClusterArn", Format: ""}}, Method: "DELETE", URI: "/v1/clusters/{ClusterArn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteClusterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteCluster(ctx, input.(*DeleteClusterRequest))
+			in := input.(*DeleteClusterRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.DeleteCluster(ctx, in)
 		}},
 		"UpdateMonitoring": {Name: "UpdateMonitoring", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:UpdateMonitoring", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "label", Name: "ClusterArn", Format: ""}, "CurrentVersion": catalog.MemberBinding{Location: "document", Name: "CurrentVersion", Format: ""}, "EnhancedMonitoring": catalog.MemberBinding{Location: "document", Name: "EnhancedMonitoring", Format: ""}}, Output: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "document", Name: "ClusterArn", Format: ""}}, Method: "PUT", URI: "/v1/clusters/{ClusterArn}/monitoring", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateMonitoringRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UpdateMonitoring(ctx, input.(*UpdateMonitoringRequest))
+			in := input.(*UpdateMonitoringRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.UpdateMonitoring(ctx, in)
 		}},
 		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:ListTagsForResource", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceArn": catalog.MemberBinding{Location: "label", Name: "ResourceArn", Format: ""}}, Output: map[string]catalog.MemberBinding{"Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Method: "GET", URI: "/v1/tags/{ResourceArn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceRequest))
+			in := input.(*ListTagsForResourceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.ListTagsForResource(ctx, in)
 		}},
 		"TagResource": {Name: "TagResource", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "kafka:TagResource", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceArn": catalog.MemberBinding{Location: "label", Name: "ResourceArn", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/v1/tags/{ResourceArn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 204}}, NewInput: func() any { return &TagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.TagResource(ctx, input.(*TagResourceRequest))
+			in := input.(*TagResourceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.TagResource(ctx, in)
 		}},
 		"UntagResource": {Name: "UntagResource", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "kafka:UntagResource", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceArn": catalog.MemberBinding{Location: "label", Name: "ResourceArn", Format: ""}, "TagKeys": catalog.MemberBinding{Location: "query", Name: "tagKeys", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/v1/tags/{ResourceArn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 204}}, NewInput: func() any { return &UntagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UntagResource(ctx, input.(*UntagResourceRequest))
+			in := input.(*UntagResourceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.UntagResource(ctx, in)
+		}},
+		"GetBootstrapBrokers": {Name: "GetBootstrapBrokers", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:GetBootstrapBrokers", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "label", Name: "ClusterArn", Format: ""}}, Output: map[string]catalog.MemberBinding{"BootstrapBrokerString": catalog.MemberBinding{Location: "document", Name: "BootstrapBrokerString", Format: ""}, "BootstrapBrokerStringSaslIam": catalog.MemberBinding{Location: "document", Name: "BootstrapBrokerStringSaslIam", Format: ""}, "BootstrapBrokerStringSaslScram": catalog.MemberBinding{Location: "document", Name: "BootstrapBrokerStringSaslScram", Format: ""}, "BootstrapBrokerStringTls": catalog.MemberBinding{Location: "document", Name: "BootstrapBrokerStringTls", Format: ""}}, Method: "GET", URI: "/v1/clusters/{ClusterArn}/bootstrap-brokers", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetBootstrapBrokersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*GetBootstrapBrokersRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.GetBootstrapBrokers(ctx, in)
+		}},
+		"ListNodes": {Name: "ListNodes", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:ListNodes", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "label", Name: "ClusterArn", Format: ""}, "MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}, "NodeInfoList": catalog.MemberBinding{Location: "document", Name: "NodeInfoList", Format: ""}}, Method: "GET", URI: "/v1/clusters/{ClusterArn}/nodes", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListNodesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListNodesRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.ListNodes(ctx, in)
 		}},
 	}}
 }

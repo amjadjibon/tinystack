@@ -25916,6 +25916,9 @@
     }
   },
   "kafka": {
+    "validation": {
+      "code": "BadRequestException"
+    },
     "operations": [
       "CreateCluster",
       "DescribeCluster",
@@ -25924,7 +25927,9 @@
       "UpdateMonitoring",
       "ListTagsForResource",
       "TagResource",
-      "UntagResource"
+      "UntagResource",
+      "GetBootstrapBrokers",
+      "ListNodes"
     ],
     "shapes": {
       "CreateClusterRequest": [
@@ -25933,11 +25938,14 @@
         "KafkaVersion",
         "NumberOfBrokerNodes",
         "EnhancedMonitoring",
-        "Tags"
+        "Tags",
+        "ClientAuthentication",
+        "EncryptionInfo"
       ],
       "CreateClusterResponse": [
         "ClusterArn",
-        "ClusterName"
+        "ClusterName",
+        "State"
       ],
       "DescribeClusterRequest": [
         "ClusterArn"
@@ -25954,7 +25962,11 @@
         "CurrentVersion",
         "EnhancedMonitoring",
         "NumberOfBrokerNodes",
-        "Tags"
+        "Tags",
+        "ClientAuthentication",
+        "EncryptionInfo",
+        "State",
+        "StateInfo"
       ],
       "BrokerNodeGroupInfo": [
         "BrokerAZDistribution",
@@ -26009,6 +26021,69 @@
       "UntagResourceRequest": [
         "ResourceArn",
         "TagKeys"
+      ],
+      "GetBootstrapBrokersRequest": [
+        "ClusterArn"
+      ],
+      "GetBootstrapBrokersResponse": [
+        "BootstrapBrokerString",
+        "BootstrapBrokerStringTls",
+        "BootstrapBrokerStringSaslScram",
+        "BootstrapBrokerStringSaslIam"
+      ],
+      "ListNodesRequest": [
+        "ClusterArn",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListNodesResponse": [
+        "NodeInfoList",
+        "NextToken"
+      ],
+      "NodeInfo": [
+        "AddedToClusterTime",
+        "BrokerNodeInfo",
+        "InstanceType",
+        "NodeType"
+      ],
+      "BrokerNodeInfo": [
+        "BrokerId",
+        "ClientSubnet",
+        "CurrentBrokerSoftwareInfo",
+        "Endpoints"
+      ],
+      "ClientAuthentication": [
+        "Sasl",
+        "Tls",
+        "Unauthenticated"
+      ],
+      "Sasl": [
+        "Scram",
+        "Iam"
+      ],
+      "Scram": [
+        "Enabled"
+      ],
+      "Iam": [
+        "Enabled"
+      ],
+      "Tls": [
+        "Enabled",
+        "CertificateAuthorityArnList"
+      ],
+      "Unauthenticated": [
+        "Enabled"
+      ],
+      "EncryptionInfo": [
+        "EncryptionInTransit"
+      ],
+      "EncryptionInTransit": [
+        "ClientBroker",
+        "InCluster"
+      ],
+      "StateInfo": [
+        "Code",
+        "Message"
       ]
     }
   },

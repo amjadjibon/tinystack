@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/url"
 	"os/exec"
 	"strconv"
@@ -157,4 +158,34 @@ func RemoveContainerVolume(ctx context.Context, name, volume string) error {
 	}
 
 	return nil
+}
+
+// ListOwned discovers containers and volumes with a resource label, restricted to one store's ownership label.
+func ListOwned(
+	ctx context.Context,
+	label, ownerLabel, owner string,
+) (containers, volumes map[string]string, err error) {
+	filter := "label=" + ownerLabel + "=" + owner
+	containers, err = listLabeled(ctx, label, "ps", "-a", "--filter", filter,
+		"--format", "{{.ID}} {{.Label \""+label+"\"}}")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	volumes, err = listLabeled(ctx, label, "volume", "ls", "--filter", filter,
+		"--format", "{{.Name}} {{.Label \""+label+"\"}}")
+	return containers, volumes, err
+}
+
+// FreeLoopbackPort chooses a host port before a container starts, for protocols that advertise their listener.
+// Docker must still claim the port; a competing bind between selection and start fails explicitly.
+func FreeLoopbackPort(ctx context.Context) (int64, error) {
+	listener, err := new(net.ListenConfig).Listen(ctx, "tcp", "127.0.0.1:0")
+	if err != nil {
+		return 0, err
+	}
+
+	port := int64(listener.Addr().(*net.TCPAddr).Port)
+	err = listener.Close()
+	return port, err
 }

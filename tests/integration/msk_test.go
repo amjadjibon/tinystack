@@ -314,8 +314,6 @@ func TestMSKRawPinnedRESTProtocolAndUnsupportedFlags(t *testing.T) {
 	// Each excluded nested option fails even when its value looks inactive.
 	for _, value := range []any{false, nil, map[string]any{}} {
 		for _, member := range []string{
-			"clientAuthentication",
-			"encryptionInfo",
 			"configurationInfo",
 			"loggingInfo",
 			"openMonitoring",
@@ -412,8 +410,6 @@ func TestMSKRawPinnedRESTProtocolAndUnsupportedFlags(t *testing.T) {
 		t.Fatal("tag keys binding")
 	}
 	for _, route := range []struct{ verb, path string }{
-		{"GET", path + "/bootstrap-brokers"},
-		{"GET", path + "/nodes"},
 		{"GET", "/v2/clusters"},
 		{"POST", "/v2/clusters"},
 		{"POST", "/v1/configurations"},

@@ -24,6 +24,7 @@ func (s *Service) update(
 	if e != nil {
 		return nil, nil, e
 	}
+
 	arn, expected := common.Value(in.ClusterArn), common.Value(in.CurrentVersion)
 	monitor := common.Clone(in.EnhancedMonitoring)
 	owned = maps.Clone(owned)
@@ -32,27 +33,33 @@ func (s *Service) update(
 	if expected == "" {
 		return nil, nil, invalid("CurrentVersion is required")
 	}
+
 	if restore == nil {
 		if monitorErr := checkMonitoring(monitor); monitorErr != nil {
 			return nil, nil, monitorErr
 		}
+
 		if tagErr := checkTags(desired); tagErr != nil {
 			return nil, nil, tagErr
 		}
 	}
+
 	e = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		r, readErr := read(tx, scope, arn)
 		if readErr != nil {
 			return readErr
 		}
+
 		if *r.CurrentVersion != expected {
-			return invalid("CurrentVersion does not match the stored configuration revision")
+			return invalid(staleRevisionMessage)
 		}
+
 		before = common.Clone(r)
 		if restore != nil {
 			if common.Value(restore.ClusterArn) != arn || !reflect.DeepEqual(r.CreationTime, restore.CreationTime) {
 				return invalid("Rollback snapshot belongs to another cluster incarnation")
 			}
+
 			r.EnhancedMonitoring = restore.EnhancedMonitoring
 			r.Tags = restore.Tags
 		} else {
@@ -64,16 +71,20 @@ func (s *Service) update(
 						delete(tags, k)
 					}
 				}
+
 				maps.Copy(tags, desired)
 				r.Tags = tags
 			}
 		}
+
 		if checkErr := checkTags(r.Tags); checkErr != nil {
 			return checkErr
 		}
+
 		if checkErr := checkMonitoring(r.EnhancedMonitoring); checkErr != nil {
 			return checkErr
 		}
+
 		if !reflect.DeepEqual(before.EnhancedMonitoring, r.EnhancedMonitoring) ||
 			!maps.Equal(before.Tags, r.Tags) {
 			r.CurrentVersion = revision()
@@ -81,12 +92,14 @@ func (s *Service) update(
 				return saveErr
 			}
 		}
+
 		after = common.Clone(r)
 		return nil
 	})
 	if e != nil {
 		return nil, nil, e
 	}
+
 	return before, after, nil
 }
 
@@ -98,6 +111,7 @@ func (s *Service) UpdateMonitoring(
 	if e != nil {
 		return nil, e
 	}
+
 	return &api.UpdateMonitoringResponse{ClusterArn: r.ClusterArn}, nil
 }
 
