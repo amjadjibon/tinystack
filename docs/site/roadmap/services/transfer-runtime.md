@@ -10,11 +10,14 @@ Extend the implemented server/user/public-key records with explicitly configured
 
 ## Proposed scope
 
-- [ ] StartServer and StopServer with real lifecycle/readiness
-- [ ] SFTP/FTP/FTPS/AS2 listeners, authentication and file transfers
-- [ ] Endpoint DNS/IP allocation, host-key ownership, runtime restart and cleanup
+- [x] StartServer and StopServer with real lifecycle/readiness
+- [x] SFTP listeners, public-key authentication and S3 file transfers
+- [ ] FTP/FTPS/AS2 listeners
+- [x] Loopback endpoints, stable host keys, runtime restart and cleanup
+- [ ] Public endpoint DNS/IP allocation and imported host keys
 - [ ] VPC/EFS/certificates/custom identity providers
-- [ ] Logical directories, session policies, POSIX and advanced user options
+- [x] Logical DIRECTORY mappings
+- [ ] Session policies, POSIX and advanced user options
 - [ ] CloudFormation ownership/reconciliation of SshPublicKeys
 - [ ] Workflows, connectors, execution and transfer results
 - [ ] Security-policy discovery and wider eligible configuration matrix
@@ -22,7 +25,7 @@ Extend the implemented server/user/public-key records with explicitly configured
 
 ## Integration decisions
 
-The implemented slice stores records only; no State, endpoint, fingerprint or execution readiness is fabricated. See the [records guide](../../guides/transfer-records.md). Runtime success requires an explicit adapter and lifecycle contract.
+Optional transfer.servers=listen runs real loopback SFTP backed by the local S3 service. The default remains records. See the [Transfer guide](../../guides/transfer-records.md).
 
 
 ## Decisions before implementation

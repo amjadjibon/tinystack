@@ -1,13 +1,60 @@
-# Transfer Family records
+# Transfer Family records and SFTP
 
-TinyStack stores AWS Transfer Family server, service-managed user, tag and SSH **public-key
-metadata**. Inventory marks both record types `RecordsOnly=true` and `ExecutionReady=false`.
-No SFTP connection or authentication is available. Use the shared endpoint and sign requests with
-`transfer` in the desired account and Region.
+The default `transfer.servers: records` stores server, user and SSH public-key configuration without opening sockets.
+Set the following configuration to run real S3-backed SFTP:
+
+```yaml
+transfer:
+  servers: listen
+```
+
+Each server created in listen mode starts ONLINE with a loopback listener. Find its address in
+`GET /_tinystack/resources`: the server's `details.LocalAddress` is `127.0.0.1:<port>`.
+`details.ExecutionReady` reflects ONLINE readiness; `DescribeServer` returns modeled State and
+HostKeyFingerprint, never invented endpoint fields. Each server owns a generated ed25519 private host
+key persisted in its record. The `SHA256:` fingerprint and key survive SQLite restart. ONLINE servers
+reopen their previous port if available, otherwise choose another ephemeral port. OFFLINE servers stay offline.
+Existing records created in records mode do not contain host keys and cannot be started; create a server
+in listen mode. Private host keys never appear in inventory or DescribeServer; treat persistence archives as secrets.
+
+StartServer commits STARTING then ONLINE after binding; a bind/key failure commits START_FAILED.
+StopServer commits STOPPING, closes the listener and all sessions, then OFFLINE. Delete, reset and
+shutdown also close sessions; shutdown retains ONLINE intent for restart. Start/stop in records mode
+returns InvalidRequestException. Startup resume failures prevent startup rather than claiming readiness.
+
+Create an S3 bucket in the same account and Region, then a user with HomeDirectory `/bucket/prefix`,
+Role and an imported SSH public key. Connect using a private key matching that public key:
+
+```sh
+sftp -i key -P <port> user@127.0.0.1
+```
+
+Verify the host fingerprint against DescribeServer and pin the key in your client's known_hosts.
+SSH public keys identify users independently of `identity.mode`. Password authentication is disabled;
+unknown users and wrong keys fail SSH authentication. Imported/deleted keys affect new sessions immediately.
+The shared `identity.authorization` evaluator checks S3 operations under the user's Role, including
+role trust for `transfer.amazonaws.com` with the Transfer user ARN as `aws:SourceArn`; off/soft/enforce behave as for other service deliveries.
+Session policies remain unsupported. Open sessions retain the directory configuration captured at login.
+
+PATH users start at their absolute HomeDirectory and cannot access paths outside it. LOGICAL users
+start at `/`; HomeDirectoryMappings Entry/Target DIRECTORY pairs map virtual paths to `/bucket/prefix`.
+A single Entry `/` chroots the user. Unmapped paths are denied. Multiple non-overlapping mappings are
+supported, including virtual parent listings. LOGICAL HomeDirectory must be omitted or `/`. FILE mappings, overlapping entries and `${transfer:UserName}`
+substitutions reject explicitly. Symlinks and hard links are unsupported.
+
+SFTP supports listing, stat, ranged reads, writes, file removal, file rename, mkdir and empty rmdir.
+S3 prefixes and zero-byte `dir/` objects appear as directories. Files are visible through normal S3 APIs.
+Writes spool into private temporary files; the local maximum is **32 MiB per file**, because the shared
+S3 PutObject API takes an in-memory byte slice at commit. Failed/disconnected uploads are discarded.
+Append/resume reject; read/write handles are supported when creating truncated files. File rename copies then deletes; directory rename and
+renaming over an existing destination reject, as [AWS documents](https://docs.aws.amazon.com/transfer/latest/userguide/transfer-file.html).
+SETSTAT returns unsupported, matching AWS's default for S3. The AWS `ENABLE_NO_OP` option is not selected.
+No arbitrary file ownership, permission or timestamp metadata is persisted. Security-policy names remain
+configuration references; the listener uses the Go SSH library's cryptographic negotiation defaults.
 
 ## Selected operations and members
 
-All 15 operations use the pinned AWS JSON 1.1 protocol: `POST /`, content type
+The original 15 record operations use the pinned AWS JSON 1.1 protocol: `POST /`, content type
 `application/x-amz-json-1.1`, and `X-Amz-Target: TransferService.OperationName`. JSON outputs use
 exact modeled casing. The shared JSON decoder also accepts casing aliases for selected input members.
 There are no REST labels or query parameters in these operations; list controls belong in the JSON body.
@@ -15,14 +62,15 @@ There are no REST labels or query parameters in these operations; list controls 
 | Operation | Selected input | Selected output |
 | --- | --- | --- |
 | CreateServer | Domain, EndpointType, IdentityProviderType, Protocols, SecurityPolicyName, PreAuthenticationLoginBanner, Tags | ServerId |
-| DescribeServer | ServerId | Server: Arn, ServerId, Domain, EndpointType, IdentityProviderType, Protocols, SecurityPolicyName, PreAuthenticationLoginBanner, Tags, UserCount |
+| StartServer / StopServer | ServerId | Empty response; listen mode only |
+| DescribeServer | ServerId | Server: State, HostKeyFingerprint, Arn, ServerId, Domain, EndpointType, IdentityProviderType, Protocols, SecurityPolicyName, PreAuthenticationLoginBanner, Tags, UserCount |
 | ListServers | MaxResults, NextToken | NextToken, Servers: Arn, ServerId, Domain, EndpointType, IdentityProviderType, UserCount |
 | UpdateServer | ServerId, EndpointType, IdentityProviderType, Protocols, SecurityPolicyName, PreAuthenticationLoginBanner | ServerId |
 | DeleteServer | ServerId | Empty response |
-| CreateUser | ServerId, UserName, Role, HomeDirectory, HomeDirectoryType, SshPublicKeyBody, Tags | ServerId, UserName |
-| DescribeUser | ServerId, UserName | ServerId, User: Arn, UserName, Role, HomeDirectory, HomeDirectoryType, Tags, SshPublicKeys |
+| CreateUser | ServerId, UserName, Role, HomeDirectory, HomeDirectoryType, HomeDirectoryMappings, SshPublicKeyBody, Tags | ServerId, UserName |
+| DescribeUser | ServerId, UserName | ServerId, User: Arn, UserName, Role, HomeDirectory, HomeDirectoryType, HomeDirectoryMappings, Tags, SshPublicKeys |
 | ListUsers | ServerId, MaxResults, NextToken | ServerId, NextToken, Users: Arn, UserName, Role, HomeDirectory, HomeDirectoryType, SshPublicKeyCount |
-| UpdateUser | ServerId, UserName, Role, HomeDirectory, HomeDirectoryType | ServerId, UserName |
+| UpdateUser | ServerId, UserName, Role, HomeDirectory, HomeDirectoryType, HomeDirectoryMappings | ServerId, UserName |
 | DeleteUser | ServerId, UserName | Empty response |
 | ImportSshPublicKey | ServerId, UserName, SshPublicKeyBody | ServerId, UserName, SshPublicKeyId |
 | DeleteSshPublicKey | ServerId, UserName, SshPublicKeyId | Empty response |
@@ -33,7 +81,7 @@ There are no REST labels or query parameters in these operations; list controls 
 Each `Tag` has required string `Key` and `Value`. Each described `SshPublicKey` contains the actual
 `DateImported`, normalized `SshPublicKeyBody` and generated `SshPublicKeyId`. Empty collections may
 be omitted on the wire, as in other generated TinyStack APIs. `UserCount` and `SshPublicKeyCount`
-count committed local records, without an execution or authentication claim.
+count committed local records, from committed local records.
 
 ## Finite server configuration
 
@@ -48,11 +96,11 @@ The finite policy set is `TransferSecurityPolicy-2018-11` and `TransferSecurityP
 listed in [AWS security policies](https://docs.aws.amazon.com/transfer/latest/userguide/security-policies.html).
 TinyStack requires an explicit API policy instead of selecting a changing latest policy. CF alone
 uses its documented fixed default `TransferSecurityPolicy-2018-11`. Policies are stored references;
-no cryptographic negotiation runs locally.
+the listener uses Go SSH defaults rather than reproducing those policy suites.
 
 An optional pre-authentication banner accepts at most 4096 ASCII bytes, printable characters and
 controls U+0009 through U+000D. Omission retains the existing banner on update; an explicit empty
-string clears its stored text. It is never displayed to a real session. UpdateServer merges supplied
+string clears its stored text. It is displayed during SSH authentication in listen mode. UpdateServer merges supplied
 selected members into the entire live candidate atomically; omitted members retain their values.
 Domain is not selected on UpdateServer because AWS makes it immutable. Changing the protocol,
 endpoint or identity away from the finite combination rejects the entire update.
@@ -71,10 +119,9 @@ UserName is case-sensitive, unique per server, 3–100 ASCII characters: letters
 A duplicate CreateUser returns ResourceExistsException; there is no creation-token replay mechanism.
 
 Role is required and must be a commercial, same-account IAM role ARN with a valid role name and
-path syntax (role name 1–64 characters in the IAM name alphabet, path at most 512 printable ASCII characters). No IAM role existence, trust, policy or permission lookup runs. HomeDirectory is required
-**locally** as an explicit absolute UTF-8 path, 1–1024 characters, without NUL/CR/LF. It is stored as
-supplied, not resolved, normalized or checked against buckets, files or prefixes. HomeDirectoryType
-supports only PATH, the fixed local default on create; explicit LOGICAL or empty values reject.
+path syntax (role name 1–64 characters in the IAM name alphabet, path at most 512 printable ASCII characters). In records mode no IAM lookup runs; listen mode uses the shared service authorizer when authorization is enabled. For PATH, HomeDirectory is required
+**locally** as an explicit absolute UTF-8 path, 1–1024 characters, without NUL/CR/LF. It must be a clean absolute path; the target bucket is checked when accessed. HomeDirectoryType
+defaults to PATH; LOGICAL requires the DIRECTORY mappings described above.
 UpdateUser retains omitted members and validates the full candidate before writing. Empty Role or
 HomeDirectory does not clear a required local reference. UserName and ServerId are identity, not
 mutable UpdateUser configuration.
@@ -85,7 +132,7 @@ line of 1–2048 bytes, with optional comment. Supported encoded types are `ssh-
 `ecdsa-sha2-nistp256`, `ecdsa-sha2-nistp384`, `ecdsa-sha2-nistp521`. Parsing verifies the encoded
 algorithm/structure and text/blob type agreement. Private keys, certificates, DSA, authorized_keys
 options, malformed base64, invalid curve points and multiple lines reject. Stored content is canonical
-OpenSSH text without comment or trailing newline. No fingerprint is fabricated or authentication attempted.
+OpenSSH text without comment or trailing newline. Public-key authentication is enabled only in listen mode.
 
 Locally, a duplicate normalized key within a user returns ResourceExistsException without changing metadata.
 The local cap is 50 keys per user, matching the current
@@ -194,14 +241,9 @@ aws transfer list-servers
 
 ## Remaining boundaries
 
-No real SFTP/FTP/FTPS/AS2 listeners, processes/containers, file transfers, authentication/authorization,
-credential storage, implicit host private keys, fingerprints, endpoint DNS/IPs, workflows/connectors,
-StartServer/StopServer readiness, structured logs or metrics are implemented. Excluded fields include
-Certificate, HostKey, EndpointDetails, IdentityProviderDetails, LoggingRole, PostAuthenticationLoginBanner,
-ProtocolDetails (all nested options), WorkflowDetails, StructuredLogDestinations, S3StorageOptions,
-IpAddressType, HomeDirectoryMappings, Policy, PosixProfile and credentials/session options.
+FTP/FTPS/AS2, EFS, VPC endpoints, custom identity providers, host-key import/rotation, workflows,
+connectors, session policies, POSIX, logging and transfer events remain unsupported. Generated input
+selection rejects unimplemented configuration explicitly. No Docker runtime is needed.
 
 See [Transfer runtime and advanced configuration](../roadmap/services/transfer-runtime.md),
-[service catalogue](../services/transfer.md), [persistence](persistence.md) and
-[CloudFormation support](cloudformation-resources.md). Terraform's provider endpoint key is `transfer`;
-its runtime waiters are outside this records slice.
+[service catalogue](../services/transfer.md) and [persistence](persistence.md).

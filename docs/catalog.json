@@ -1849,23 +1849,26 @@
       "title": "AWS Transfer Family",
       "category": "Migration & Modernization",
       "scope": "Account and Region",
-      "summary": "Store SFTP server, service-managed user, public-key and tag configuration without a file-transfer runtime.",
-      "execution": "Configuration records only",
+      "summary": "Store Transfer Family configuration or run loopback SFTP servers backed by S3.",
+      "execution": "Default transfer.servers=records persists configuration without listening. In listen mode ONLINE servers expose loopback SFTP addresses in resource inventory; stop, delete, reset and shutdown close sessions. See the [Transfer guide](../guides/transfer-records.md).",
       "package": "transfer",
       "features": [
-        "Fifteen pinned AWS JSON 1.1 server/user/tag/key operations with transfer signing, real scoped server IDs and server/user ARNs",
+        "Seventeen pinned AWS JSON 1.1 server/user/tag/key/lifecycle operations with scoped server IDs and server/user ARNs",
         "Finite SFTP + SERVICE_MANAGED + S3 + PUBLIC server metadata; fixed explicitly selected API security policies, banner updates and actual local user counts",
         "Atomic service-managed user uniqueness, same-account role ARN syntax, explicit PATH directory references and RSA/ECDSA/ED25519 public-key records with generated key IDs and import timestamps",
         "Final candidate updates and tags, 50-key local quota, normalized-key duplicate detection, cascading server deletion and deterministic scope/API/resource-bound pagination",
         "AWS::Transfer::Server Ref ARN/GetAtt Arn and ServerId; AWS::Transfer::User Ref username/GetAtt Arn, ServerId and UserName; atomic config/owned/external tags, actual live-state snapshots and guarded compensation",
-        "SQLite restart, offline archive export/import, reset, RecordsOnly=true/ExecutionReady=false inventory, real RGTA dispatch, official icon and Terraform transfer endpoint key"
+        "SQLite restart, offline archive export/import, reset, records/listener readiness and LocalAddress inventory, real RGTA dispatch, official icon and Terraform transfer endpoint key",
+        "Optional transfer.servers=listen: per-server loopback SSH/SFTP, stable ed25519 host keys and SHA256 fingerprints, public-key authentication, real StartServer/StopServer and persistent ONLINE restart",
+        "S3-backed PATH and LOGICAL directories: ranged reads, temporary-file uploads, listing/stat, file rename/remove, mkdir and empty rmdir; shared IAM role authorization for S3 calls"
       ],
       "gaps": [
-        "No SFTP/FTP/FTPS/AS2 listener, authentication, authorization, file transfers, runtime State/readiness, endpoint DNS/IP allocation, host private keys/fingerprints, metrics or successful start/stop stub",
         "Only explicit SFTP/PUBLIC and a finite fixed policy set; VPC/EFS/certificates/custom identity, logging, workflow/connector, IP/storage/protocol advanced options are excluded, even false/null/empty",
-        "HomeDirectory is an explicit stored absolute path, not verified files; no IAM trust/existence enforcement, logical mappings, policies, POSIX or sessions. PATH is the fixed local directory-type default",
+        "PATH is the default; directory targets are checked against S3 at access time. Session policies, POSIX and advanced logical mapping options remain excluded",
         "CF SshPublicKeys is excluded; independently imported public-key IDs survive updates and live-state compensation. CF banner removal is rejected; explicit empty clears it",
-        "The [records guide](../guides/transfer-records.md) lists every member/default/error/tag/key/CF boundary and executable CLI lifecycle. StartServer/StopServer and additional runtime/records scope remain [future work](../roadmap/services/transfer-runtime.md)"
+        "No FTP/FTPS/AS2, EFS, VPC endpoints, custom identity providers, host-key import/rotation, workflows, connectors, CloudWatch session logs or transfer EventBridge events",
+        "Uploads have a TinyStack 32 MiB per-file limit; no append/resume, session policies, logical FILE mappings, overlapping mappings or username substitutions; security-policy names do not constrain SSH negotiation",
+        "S3 directory rename, overwriting rename, links and default SETSTAT are unsupported, matching AWS; ENABLE_NO_OP is not selected"
       ]
     },
     "location": {
@@ -3548,8 +3551,8 @@
       "title": "Transfer Family runtime and advanced configuration",
       "state": "Proposed",
       "slice": "Extend the implemented server/user/public-key records with explicitly configured runtime and advanced records.",
-      "features": "- [ ] StartServer and StopServer with real lifecycle/readiness\n- [ ] SFTP/FTP/FTPS/AS2 listeners, authentication and file transfers\n- [ ] Endpoint DNS/IP allocation, host-key ownership, runtime restart and cleanup\n- [ ] VPC/EFS/certificates/custom identity providers\n- [ ] Logical directories, session policies, POSIX and advanced user options\n- [ ] CloudFormation ownership/reconciliation of SshPublicKeys\n- [ ] Workflows, connectors, execution and transfer results\n- [ ] Security-policy discovery and wider eligible configuration matrix\n- [ ] Logging, metrics and other advanced server metadata",
-      "integration": "The implemented slice stores records only; no State, endpoint, fingerprint or execution readiness is fabricated. See the [records guide](../../guides/transfer-records.md). Runtime success requires an explicit adapter and lifecycle contract."
+      "features": "- [x] StartServer and StopServer with real lifecycle/readiness\n- [x] SFTP listeners, public-key authentication and S3 file transfers\n- [ ] FTP/FTPS/AS2 listeners\n- [x] Loopback endpoints, stable host keys, runtime restart and cleanup\n- [ ] Public endpoint DNS/IP allocation and imported host keys\n- [ ] VPC/EFS/certificates/custom identity providers\n- [x] Logical DIRECTORY mappings\n- [ ] Session policies, POSIX and advanced user options\n- [ ] CloudFormation ownership/reconciliation of SshPublicKeys\n- [ ] Workflows, connectors, execution and transfer results\n- [ ] Security-policy discovery and wider eligible configuration matrix\n- [ ] Logging, metrics and other advanced server metadata",
+      "integration": "Optional transfer.servers=listen runs real loopback SFTP backed by the local S3 service. The default remains records. See the [Transfer guide](../../guides/transfer-records.md)."
     },
     "batch-runtime": {
       "title": "AWS Batch job execution",
