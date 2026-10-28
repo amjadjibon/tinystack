@@ -1,8 +1,8 @@
 name: Integration tests
 
+# release.yml runs this before publishing a tag.
 on:
-  push:
-    tags: ['v*']
+  workflow_call:
   workflow_dispatch:
 
 permissions:

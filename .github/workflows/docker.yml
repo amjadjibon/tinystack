@@ -1,8 +1,7 @@
 name: Docker
 
+# Manual build check; release.yml builds and pushes the images for tags.
 on:
-  push:
-    tags: ['v*']
   workflow_dispatch:
 
 permissions:

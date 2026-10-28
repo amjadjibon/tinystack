@@ -12,8 +12,27 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  lint:
+    uses: ./.github/workflows/lint.yml
+
+  unit:
+    uses: ./.github/workflows/unit.yml
+
+  integration:
+    uses: ./.github/workflows/integration.yml
+
+  # Docs publish to GitHub Pages, so they wait for the checks like the artifacts do.
+  docs:
+    needs: [lint, unit, integration]
+    uses: ./.github/workflows/docs.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
   binaries:
     name: Binaries and GitHub release
+    needs: [lint, unit, integration, docs]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -69,6 +88,7 @@ jobs:
 
   image:
     name: ${{ matrix.target }} image
+    needs: [lint, unit, integration, docs]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
