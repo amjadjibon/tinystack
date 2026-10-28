@@ -6,7 +6,7 @@ The scope below is a design candidate, without an assigned version or delivery d
 
 ## First useful slice
 
-Broker records and tags are implemented. Configuration/user APIs and a real messaging runtime require separate slices.
+Broker records and tags are implemented. Docker messaging, endpoints, readiness, reboot and cleanup are implemented; configuration/user APIs remain future work.
 
 ## Proposed scope
 
@@ -14,8 +14,8 @@ Broker records and tags are implemented. Configuration/user APIs and a real mess
 - [ ] ActiveMQ user CRUD and readable console/group metadata
 - [ ] Engine/version/instance discovery extensions
 - [ ] Authentication, LDAP/OAuth, replication and resource sharing
-- [ ] Real broker runtime, endpoints, readiness, reboot and cleanup
-- [ ] Messaging protocols and RabbitMQ management API
+- [x] Real broker runtime, endpoints, readiness, reboot and cleanup
+- [x] Messaging protocols and RabbitMQ management API
 
 
 ## Decisions before implementation

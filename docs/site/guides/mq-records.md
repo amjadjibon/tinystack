@@ -229,3 +229,11 @@ Sources: [pinned Smithy model](https://github.com/aws/aws-sdk-go-v2/blob/2ba0e39
 [quotas](https://docs.aws.amazon.com/amazon-mq/latest/developer-guide/amazon-mq-limits.html),
 [CloudFormation Broker](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-amazonmq-broker.html),
 [Terraform endpoint key](https://registry.terraform.io/providers/hashicorp/aws/6.0.0/docs/guides/custom-service-endpoints.html).
+
+## Optional Docker runtime
+
+This page describes the default `mq.brokers: records` mode. The opt-in
+[Docker broker configuration](../getting-started/configuration.md#amazon-mq-brokers)
+runs RabbitMQ or ActiveMQ, retains private recovery credentials, publishes plain
+loopback protocol URLs, and implements readiness, reboot and durable-volume
+lifecycle. It returns one real instance even for multi-AZ deployment metadata.

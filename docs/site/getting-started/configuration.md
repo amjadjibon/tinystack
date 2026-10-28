@@ -271,3 +271,34 @@ Status starts at `creating` and becomes `available` after PING and healthy clust
 changes reconcile every second. Containers and named volumes have store-specific ownership labels; delete and reset
 remove both, shutdown removes containers while retaining data, and persistent restarts recreate containers against
 the same volumes. Startup cleans only this store's orphaned containers and volumes.
+
+## Amazon MQ brokers
+
+`mq.brokers: records` is the default. Set `mq.brokers: docker` to run one local
+RabbitMQ or ActiveMQ container per broker. Docker must be available. Ports are
+allocated on loopback; DescribeBroker returns the real protocol and console URLs.
+Existing records-only brokers must be deleted and recreated before enabling Docker
+mode, since their original passwords were discarded. The runtime retains
+passwords privately in the store for recovery; protect the
+SQLite database and exported fixtures. Descriptions and inventory omit passwords.
+
+RabbitMQ 3.13, 4.0 and 4.1 map to `rabbitmq:3.13.7-management`,
+`4.0.9-management` and `4.1.4-management`. ActiveMQ 5.17 maps to
+`apache/activemq-classic:5.17.6`; 5.18 and 5.19 map to
+`apache/activemq-classic:5.18.7` and `5.19.0`. Unknown versions fail explicitly.
+ActiveMQ users support ConsoleAccess and Groups at creation; user CRUD is not
+implemented. Only ConsoleAccess users enter the console. RabbitMQ accepts one
+administrator. RebootBroker recreates the container against its existing volume.
+Compatible forward ActiveMQ 5.x upgrades and aliases of the same image are pending
+until reboot; RabbitMQ minor/major transitions require broker recreation.
+Records mode retains its immediate metadata updates.
+
+Broker creation stays CREATION_IN_PROGRESS until engine health succeeds, then
+RUNNING. Reboot passes through REBOOT_IN_PROGRESS. Delete and reset remove both
+containers and volumes. Shutdown removes containers but retains volumes; a SQLite
+restart recreates them. Ownership labels isolate cleanup to the current store.
+
+These are plain AMQP/OpenWire/STOMP/MQTT/WebSocket and HTTP URLs, unlike AWS's TLS
+URLs. The gateway local CA does not configure engine TLS. Multi-AZ modes run one
+real instance and return one BrokerInstances entry; there is no replication,
+failover, VPC enforcement, maintenance scheduling or automatic engine upgrade.
