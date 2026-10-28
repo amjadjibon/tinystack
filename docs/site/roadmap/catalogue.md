@@ -25,7 +25,7 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Application Auto Scaling execution and advanced policies](services/applicationautoscaling-runtime.md) | Proposed | Extend records-only configuration to a truthful capacity and metric evaluation contract. |
 | [CodeBuild advanced build execution](services/codebuild-runtime.md) | Future extensions | Docker workers, build history, CloudWatch logs, S3 source/artifacts and buildspec 0.2 are implemented. Extend the remaining runtime features separately. |
 | [CodeDeploy deployment execution and agents](services/codedeploy-runtime.md) | Proposed | Extend application, deployment configuration and group records to real deployment execution. |
-| [CodePipeline execution and release automation](services/codepipeline-execution.md) | Proposed | Extend records-only pipeline declarations to executions, stage transitions, approvals and triggers. |
+| [CodePipeline execution and release automation](services/codepipeline-execution.md) | Future extensions | Durable executions, supported AWS actions, approvals, retry and stage transitions are implemented; release automation extensions remain. |
 | [Elastic Load Balancing (Classic) policies and traffic](services/elb-policies.md) | Proposed | Extend the records-only Classic Load Balancer control plane with policies, placement changes and a data plane. |
 | [IAM Identity Center additional control plane and sign-in](services/identitysso-extension.md) | Proposed | Extend the user/group, membership, permission set and assignment records with separately designed provisioning and identity execution. |
 | [Lambda Core](services/lambda-core.md) | Proposed | Implement `CreateNetworkConnector`, `GetNetworkConnector`, `ListNetworkConnectors`. |

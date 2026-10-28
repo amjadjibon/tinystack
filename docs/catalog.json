@@ -1752,7 +1752,8 @@
         "NO_SOURCE inline YAML and S3 zip sources; buildspec overrides and source-relative buildspec.yml; persistent shell for install/pre_build/build/post_build commands and finally blocks with ABORT/CONTINUE",
         "Project and override images, privileged containers, CodeBuild metadata and endpoint environment variables; PLAINTEXT, in-process SSM Parameter Store and Secrets Manager variables",
         "CloudWatch Logs streaming with configurable status/group/stream prefix and build log location; NO_ARTIFACTS or S3 ZIP/NONE output with file patterns, base directory, discard-paths and artifact names",
-        "Build state and completed-phase events sent to the default EventBridge bus; store-owned orphan cleanup, shutdown/reset container removal and failed interrupted build records"
+        "Build state and completed-phase events sent to the default EventBridge bus; store-owned orphan cleanup, shutdown/reset container removal and failed interrupted build records",
+        "CODEPIPELINE project source and artifact declarations can be executed by CodePipeline through an in-process S3 artifact bridge; direct StartBuild still requires an executable NO_SOURCE or S3 source"
       ],
       "gaps": [
         "No RetryBuild, batch builds, webhook execution, reports, report groups, automatic retries, cached builds, VPC networking, fleets, secondary sources/artifacts, registry credentials or managed runtime installation. Unsupported API members and buildspec sections fail explicitly",
@@ -2227,26 +2228,40 @@
       "title": "CodePipeline",
       "category": "Developer Tools",
       "scope": "Account and Region",
-      "summary": "Store pipeline declarations and tags without running pipelines, approvals or stage transitions.",
-      "execution": "Configuration records only",
+      "summary": "Run durable pipeline executions with CodeCommit and S3 sources, approvals, builds and in-process deploy actions.",
+      "execution": "Background execution engine with S3 zip artifacts; CodeBuild requires Docker",
       "package": "codepipeline",
       "features": [
-        "Nine pinned AWS JSON 1.1 operations: CreatePipeline, GetPipeline, GetPipelineState, ListPipelines, UpdatePipeline, DeletePipeline, TagResource, UntagResource and ListTagsForResource with AWS SDK v2 integration",
+        "Twenty pinned AWS JSON 1.1 operations: declaration and tagging APIs plus StartPipelineExecution, GetPipelineExecution, ListPipelineExecutions, StopPipelineExecution, ListActionExecutions, PutApprovalResult, RetryStageExecution, EnableStageTransition, DisableStageTransition, PutJobSuccessResult and PutJobFailureResult",
         "Pipeline declarations stored per account and Region with unique names, scoped ARNs, creation and update timestamps and a version that starts at 1 and grows by one on every successful UpdatePipeline",
         "Whole-candidate validation on create and update, so a rejected update leaves the stored pipeline unchanged: exactly one of artifactStore and artifactStores (with a store for the pipeline Region and for every action Region), at least two stages with unique names, Source actions only in the first stage and nothing else there, unique action names per stage, action category, owner, provider, version and runOrder checks, unique output artifact names and every input artifact produced by an earlier stage or an earlier run order",
         "V1 and V2 pipeline types with SUPERSEDED, QUEUED and PARALLEL execution modes and pipeline variables; variables and the QUEUED and PARALLEL modes require V2, and a declaration that uses one without naming a type becomes V2",
-        "ListPipelines with maxResults up to 1000 and deletion-resilient cursors; GetPipelineState lists the stages and actions of a pipeline with no executions; DeletePipeline succeeds for unknown names because the operation models no not-found error",
+        "ListPipelines, ListPipelineExecutions and ListActionExecutions paginate in storage key order; GetPipelineState reports latest stage/action executions, approval tokens and inbound transition state and inbound/outbound transition controls",
         "Pipeline tagging with TagResource, UntagResource, ListTagsForResource and the Resource Groups Tagging API, with the shared 50-tag limit",
         "AWS::CodePipeline::Pipeline CloudFormation resource with Ref returning the pipeline name and Fn::GetAtt Version, in-place updates that add a version, tag changes that keep the version and name replacement",
-        "RecordsOnly=true / ExecutionReady=false inventory, official AWS CodePipeline icon and Terraform codepipeline endpoint key"
+        "RecordsOnly=false / ExecutionReady=true inventory, official AWS CodePipeline icon and Terraform codepipeline endpoint key",
+        "CreatePipeline starts an execution; UpdatePipeline stops old-structure executions and does not start another. Explicit starts accept idempotency tokens, V2 pipeline variables, CodeCommit commit IDs and S3 object-version overrides",
+        "Durable one-second background scheduler claims actions transactionally, runs stages in order and actions of equal runOrder concurrently; SUPERSEDED replaces executions at waiting stage boundaries, QUEUED serializes executions and PARALLEL permits independent runs",
+        "CodeCommit CODE_ZIP sources with commit output variables and branch-change starts (PutFile, CreateCommit and git pushes), honoring PollForSourceChanges=false; S3 object/version sources copy zip artifacts to pipeline-name/artifact-name/random-id keys",
+        "Manual approvals with persisted tokens, SNS notifications, rejection and seven-day expiration; STOP_AND_WAIT finishes active external actions before stopping, abandon stops immediately; failed stages retry FAILED_ACTIONS or ALL_ACTIONS and retain action-attempt history",
+        "CloudFormation CREATE_UPDATE, DELETE_ONLY and REPLACE_ON_FAILURE with template artifacts, parameter overrides, capabilities, role ARN, output variables and optional output-file artifacts; waits for the stack operation to complete",
+        "ECS standard deployments read imagedefinitions.json, register a new task-definition revision and update the service; Lambda invoke sends CodePipeline job events and waits for PutJobSuccessResult or PutJobFailureResult (20-minute no-response timeout)",
+        "CodeBuild actions run one input artifact and at most one output through the existing S3 Docker build engine, including environment overrides and namespace-variable resolution; records mode fails with an explicit codebuild.builds: docker summary",
+        "Pipeline, stage and action state events are published to EventBridge; persisted approvals and Lambda jobs survive SQLite restart, while interrupted external steps fail with a retryable explanation rather than replaying side effects; reset clears execution records"
       ],
       "gaps": [
-        "Declarations only; no pipeline execution, source change detection, stage transitions, approvals, jobs, webhooks or custom action types (StartPipelineExecution, GetPipelineExecution, ListPipelineExecutions and the other execution APIs are not selected)",
+        "No S3 source change detection, V2 connection triggers, webhooks, custom action workers, stage conditions or rollback; unsupported providers and action configuration fail explicitly",
         "Only the current pipeline version is retained; GetPipeline for another version fails with PipelineVersionNotFoundException, and the version in a submitted declaration is ignored because the service sets it",
-        "Triggers, stage blockers and conditions (onFailure, onSuccess, beforeEntry), action commands, environment variables, output variables and timeouts, and output artifact files are not selected and fail with NotImplemented",
+        "Stage blockers and conditions, action commands, declaration-level environment/output variables, configurable approval timeouts, and output artifact file declarations remain unselected and fail with NotImplemented",
         "Provider-specific action rules (valid providers per category, artifact counts and configuration keys) and account quotas for pipelines, stages and actions are not enforced",
         "ListTagsForResource returns every tag in one response, as the operation documents, and does not accept nextToken or maxResults",
-        "CloudFormation Triggers, DisableInboundStageTransitions, stage conditions and RestartExecutionOnUpdate set to true fail the stack operation instead of being ignored"
+        "CloudFormation Triggers, DisableInboundStageTransitions, stage conditions and RestartExecutionOnUpdate set to true fail the stack operation instead of being ignored",
+        "Cross-Region actions, action role overrides, CODEBUILD_CLONE_REF, multiple CodeBuild inputs/outputs, Lambda output artifacts and continuation tokens, GetJobDetails and CloudFormation change-set modes are unsupported",
+        "Artifact paths preserve the documented three-component AWS layout; AWS-specific name truncation and credential generation are not reproduced. Artifact-store encryption keys fail execution explicitly",
+        "S3 source revisions without explicit version overrides are read when the source action starts; SNS/event delivery is not retried. ECS deployment completion uses the local service update and does not wait for real container steady state",
+        "Lambda jobs accept final success/failure only; the AWS continuation/heartbeat flow that can extend processing up to 24 hours is unsupported. Pending jobs time out after 20 minutes without a final response",
+        "Pipeline-level SUPERSEDED behavior is implemented at stage boundaries; execution concurrency quotas and retained declaration history are not implemented",
+        "CodeBuild exported environment variables are not produced by the current build runner; action input environment overrides and upstream namespace references are supported"
       ]
     },
     "codecommit": {
@@ -3600,10 +3615,10 @@
     },
     "codepipeline-execution": {
       "title": "CodePipeline execution and release automation",
-      "state": "Proposed",
-      "slice": "Extend records-only pipeline declarations to executions, stage transitions, approvals and triggers.",
-      "features": "- [ ] StartPipelineExecution, GetPipelineExecution, ListPipelineExecutions and StopPipelineExecution\n- [ ] Stage transitions, retry and rollback of stage executions\n- [ ] Manual approval results and action executions\n- [ ] Triggers, stage conditions and source change detection\n- [ ] Webhooks, jobs and custom action types\n- [ ] Retained pipeline versions",
-      "integration": "The current CodePipeline API stores pipeline declarations and tags only; nothing runs, so pipeline state lists stages and actions without executions."
+      "state": "Future extensions",
+      "slice": "Durable executions, supported AWS actions, approvals, retry and stage transitions are implemented; release automation extensions remain.",
+      "features": "- [x] Start/Get/List/Stop pipeline executions\n- [x] Stage transitions and failed-stage retry\n- [x] Manual approval results and action execution history\n- [x] CodeCommit source changes and AWS action providers\n- [ ] S3 change detection, V2 connection triggers and stage conditions\n- [ ] Rollback, webhooks, custom jobs and retained pipeline versions",
+      "integration": "Executions persist in the shared store and invoke local services outside transactions. CodeBuild execution requires codebuild.builds: docker."
     },
     "codecommit-git-hosting": {
       "title": "AWS CodeCommit git hosting",
