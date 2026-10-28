@@ -264,7 +264,7 @@ func (s *Service) Authorize(
 
 				if a.Provider == "" {
 					result = authorizationFailure(a, invalidRequest, "Unknown identity provider.")
-					return nil //nolint:nilerr // OAuth redirect.
+					return nil
 				}
 			}
 

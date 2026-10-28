@@ -36,7 +36,6 @@ func choose(s *state, input any, e *env) (rule map[string]json.RawMessage, next 
 	return nil, "", &stateError{Name: "States.NoChoiceMatched", Cause: "No Matches!"}
 }
 
-//nolint:gocyclo,cyclop // One case per comparison operator.
 func evalRule(rule map[string]json.RawMessage, input any, e *env) (bool, error) {
 	if raw, ok := rule["And"]; ok {
 		var rules []map[string]json.RawMessage

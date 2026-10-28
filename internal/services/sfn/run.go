@@ -341,7 +341,6 @@ func (s *state) next() string {
 	return s.Next
 }
 
-//nolint:gocyclo,cyclop // One case per state type.
 func (r *run) execState(
 	ctx context.Context,
 	s *state,

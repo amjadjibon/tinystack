@@ -148,8 +148,6 @@ func (s *Service) resolve(ctx context.Context, scope request.Scope, in *settings
 
 // apply changes a group's settings to those a request sets and checks the
 // result.
-//
-//nolint:gocyclo,cyclop // One member at a time.
 func (g *group) apply(tx storage.ReadTx, scope request.Scope, in *settings, where placement) error {
 	out := &g.Group
 	if in.LaunchConfigurationName != nil && in.LaunchTemplate != nil {

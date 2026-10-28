@@ -39,8 +39,6 @@ func policyKey(scope request.Scope, group, name string) string {
 }
 
 // checkPolicy checks a policy's settings for its type.
-//
-//nolint:gocyclo,cyclop // One rule per member and type.
 func checkPolicy(in *api.PutScalingPolicyType) error {
 	kind, adjust := common.Value(in.PolicyType), common.Value(in.AdjustmentType)
 	target := kind == policyTarget

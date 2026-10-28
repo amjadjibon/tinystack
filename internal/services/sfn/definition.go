@@ -247,7 +247,6 @@ func or(s, fallback string) string {
 	return s
 }
 
-//nolint:gocyclo,cyclop // One check per rule of the States Language.
 func (s *state) validate(m *machine, at, lang string, add func(string, ...any)) {
 	if !slices.Contains(stateTypes, s.Type) {
 		add("SCHEMA_VALIDATION_FAILED: The value for the field 'Type' must be one of %s at %s/Type",

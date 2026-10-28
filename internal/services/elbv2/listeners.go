@@ -80,8 +80,6 @@ func invalidAction(message string) error {
 // checkActions checks the actions of a listener or rule on a load balancer
 // and returns them as ELB reports them, ordered, with forward actions given
 // both as a target group ARN (when there is one) and a forward config.
-//
-//nolint:gocyclo,cyclop // One rule per action type.
 func checkActions(tx storage.ReadTx, scope request.Scope, b *balancer, protocol string, actions []api.Action) (
 	[]api.Action, error,
 ) {

@@ -31,6 +31,7 @@ linters:
     - intrange
     - exptostd
     - lll
+    - nolintlint
 
   settings:
     lll:
@@ -45,6 +46,10 @@ linters:
         - diagnostic
         - performance
         - style
+
+    nolintlint:
+      require-explanation: true
+      require-specific: true
 
     gosec:
       excludes:

@@ -101,8 +101,6 @@ func listenerRules(tx storage.ReadTx, scope request.Scope, l *listener) ([]api.R
 
 // checkConditions checks a rule's conditions and returns them as ELB reports
 // them: host and path conditions both as values and as a config.
-//
-//nolint:gocyclo,cyclop // One case per condition field.
 func checkConditions(conditions []api.RuleCondition) ([]api.RuleCondition, error) {
 	if len(conditions) == 0 {
 		return nil, validation("A rule must have at least one condition")

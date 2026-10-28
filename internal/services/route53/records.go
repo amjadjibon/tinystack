@@ -71,8 +71,6 @@ func identifier(rs *api.ResourceRecordSet) string {
 }
 
 // checkRecordSet normalizes a record set's names and checks its shape.
-//
-//nolint:gocyclo,cyclop // One check per member.
 func checkRecordSet(rs *api.ResourceRecordSet) error {
 	name, err := normalize(common.Value(rs.Name))
 	if err != nil {
@@ -160,7 +158,6 @@ func checkValues(rs *api.ResourceRecordSet) error {
 	return nil
 }
 
-//nolint:gocyclo,cyclop // One case per action and conflict.
 func (s *Service) ChangeResourceRecordSets(
 	ctx context.Context, in *api.ChangeResourceRecordSetsRequest,
 ) (*api.ChangeResourceRecordSetsResponse, error) {
@@ -241,8 +238,6 @@ func (s *Service) ChangeResourceRecordSets(
 
 // checkChange returns why a change cannot apply to a zone's current record
 // sets, or "" when it can.
-//
-//nolint:gocyclo,cyclop // One case per action and conflict.
 func (s *Service) checkChange(tx storage.ReadTx, account, zoneID, apex, action string, rs *api.ResourceRecordSet,
 ) (string, error) {
 	name, t := common.Value(rs.Name), common.Value(rs.Type)

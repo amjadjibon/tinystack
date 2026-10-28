@@ -328,7 +328,7 @@ type App struct {
 // Configuration is passed by value like config.Load returns it. Step Functions and
 // Cloud Control set up their own contexts for work that outlives ctx.
 //
-//nolint:gocritic,contextcheck // See above.
+//nolint:gocritic // See above.
 func New(
 	ctx context.Context, cfg config.Config, store storage.Store, runtime lambda.Runtime, logger *slog.Logger,
 ) (*App, error) {

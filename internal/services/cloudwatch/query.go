@@ -378,7 +378,6 @@ func (e *expression) unary() (operand, error) {
 	return e.primary()
 }
 
-//nolint:gocyclo,cyclop // One case per token kind.
 func (e *expression) primary() (operand, error) {
 	e.skip()
 	if e.pos == len(e.src) {

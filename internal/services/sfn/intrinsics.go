@@ -268,7 +268,6 @@ func formatArg(v any) string {
 	return jsonText(v)
 }
 
-//nolint:gocyclo,cyclop // One case per intrinsic function.
 func intrinsic(name string, args []any) (any, error) {
 	switch name {
 	case "States.Format":

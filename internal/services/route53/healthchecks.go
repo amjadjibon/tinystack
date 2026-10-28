@@ -44,8 +44,6 @@ func loadHealthCheck(tx storage.ReadTx, account, id string) (*healthCheck, error
 }
 
 // checkHealthConfig fills in a health check's defaults and checks it.
-//
-//nolint:gocyclo,cyclop // One check per member.
 func checkHealthConfig(tx storage.ReadTx, account string, c *api.HealthCheckConfig) error {
 	t := common.Value(c.Type)
 	endpoint := t == checkHTTP || t == checkHTTPS || t == checkHTTPMatch || t == checkHTTPSMatch || t == checkTCP
@@ -242,7 +240,6 @@ func (s *Service) ListHealthChecks(
 	return out, err
 }
 
-//nolint:gocyclo,cyclop // One member at a time.
 func (s *Service) UpdateHealthCheck(
 	ctx context.Context, in *api.UpdateHealthCheckRequest,
 ) (*api.UpdateHealthCheckResponse, error) {

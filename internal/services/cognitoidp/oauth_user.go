@@ -124,7 +124,7 @@ func (s *Service) userToken(
 		}
 
 		status, body := oauthError(status, failure)
-		return status, body, nil //nolint:nilerr // Expected errors are returned in the OAuth response.
+		return status, body, nil
 	}
 
 	var result *api.AuthenticationResultType
@@ -175,7 +175,7 @@ func (s *Service) UserInfo(
 	token, ok := strings.CutPrefix(authorization, "Bearer ")
 	if !ok {
 		status, body := oauthError(http.StatusBadRequest, invalidRequest)
-		return status, body, nil //nolint:nilerr // Expected errors are returned in the OAuth response.
+		return status, body, nil
 	}
 
 	out := map[string]any{}
@@ -237,7 +237,7 @@ func (s *Service) Revoke(
 
 	if form.Get(responseToken) == "" {
 		status, body := oauthError(http.StatusBadRequest, invalidRequest)
-		return status, body, nil //nolint:nilerr // Expected errors are returned in the OAuth response.
+		return status, body, nil
 	}
 
 	_, err = s.RevokeToken(

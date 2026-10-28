@@ -109,7 +109,6 @@ type settings struct {
 	FlexibleTimeWindow                                                           *api.FlexibleTimeWindow
 }
 
-//nolint:gocyclo,cyclop // One check per member.
 func check(in *settings, now time.Time) (plan, error) {
 	state, after := common.Value(in.State), common.Value(in.ActionAfterCompletion)
 	switch {
@@ -157,7 +156,6 @@ func checkWindow(w *api.FlexibleTimeWindow) error {
 	return validation("A FLEXIBLE FlexibleTimeWindow needs a MaximumWindowInMinutes of 1 to 1440.")
 }
 
-//nolint:gocyclo,cyclop // One check per member.
 func checkTarget(t *api.Target) error {
 	if t == nil || common.Value(t.Arn) == "" || common.Value(t.RoleArn) == "" {
 		return validation("A Target needs an Arn and a RoleArn.")

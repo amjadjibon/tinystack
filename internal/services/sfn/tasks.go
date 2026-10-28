@@ -139,8 +139,6 @@ func timeouts(s *state, input any, e *env) (timeout, heartbeat time.Duration, er
 }
 
 // task runs a Task state once: its resource with its parameters.
-//
-//nolint:gocyclo,cyclop // One branch per kind of resource.
 func (r *run) task(ctx context.Context, s *state, input any, e *env) (any, error) {
 	timeout, heartbeat, err := timeouts(s, input, e)
 	if err != nil {

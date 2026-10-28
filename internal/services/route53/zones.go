@@ -83,7 +83,6 @@ func (s *Service) checkVPC(ctx context.Context, account string, vpc *api.VPC) er
 	return nil
 }
 
-//nolint:gocyclo,cyclop // One check per member.
 func (s *Service) CreateHostedZone(
 	ctx context.Context, in *api.CreateHostedZoneRequest,
 ) (*api.CreateHostedZoneResponse, error) {

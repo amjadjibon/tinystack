@@ -84,7 +84,7 @@ func (s *Service) connectEvent(
 	for {
 		b, err := socket.Receive(ctx)
 		if err != nil {
-			return true, nil //nolint:nilerr // A closed connection has no service error.
+			return true, nil
 		}
 
 		var m struct {

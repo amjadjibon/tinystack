@@ -118,8 +118,6 @@ func forwardedGroups(actions []api.Action) []string {
 }
 
 // healthCheck fills in a target group's health check defaults.
-//
-//nolint:gocyclo,cyclop // One default per member.
 func healthCheck(tg *api.TargetGroup) error {
 	protocol := common.Value(tg.Protocol)
 	if tg.HealthCheckProtocol == nil {
@@ -182,7 +180,6 @@ func healthCheck(tg *api.TargetGroup) error {
 	return nil
 }
 
-//nolint:gocyclo,cyclop // One check per member.
 func (s *Service) CreateTargetGroup(
 	ctx context.Context, in *api.CreateTargetGroupInput,
 ) (*api.CreateTargetGroupOutput, error) {

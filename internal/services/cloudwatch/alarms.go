@@ -212,7 +212,6 @@ func checkActions(lists ...[]string) error {
 	return nil
 }
 
-//nolint:gocyclo,cyclop // One check per member.
 func checkMetricAlarm(in *api.PutMetricAlarmInput) error {
 	if err := checkName(common.Value(in.AlarmName)); err != nil {
 		return err
@@ -489,7 +488,6 @@ func alarms(tx storage.ReadTx, scope request.Scope) ([]*alarm, error) {
 	return out, nil
 }
 
-//nolint:gocyclo,cyclop // One filter per member.
 func (s *Service) DescribeAlarms(ctx context.Context, in *api.DescribeAlarmsInput) (*api.DescribeAlarmsOutput, error) {
 	m, err := request.Regional(ctx)
 	if err != nil {
@@ -792,7 +790,6 @@ func (s *Service) setActions(ctx context.Context, names []string, on bool) error
 	})
 }
 
-//nolint:gocyclo,cyclop // One filter per member.
 func (s *Service) DescribeAlarmHistory(
 	ctx context.Context, in *api.DescribeAlarmHistoryInput,
 ) (*api.DescribeAlarmHistoryOutput, error) {

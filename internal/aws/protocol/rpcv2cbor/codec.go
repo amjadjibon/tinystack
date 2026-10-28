@@ -125,7 +125,6 @@ func (d *decoder) argument(info byte) (n uint64, indefinite bool, err error) {
 
 const breakByte = 0xff
 
-//nolint:gocyclo,cyclop // One case per CBOR major type.
 func (d *decoder) value(depth int) (any, error) {
 	if depth > maxDepth {
 		return nil, errors.New("CBOR nested too deeply")
@@ -349,8 +348,6 @@ func encodeString(b *bytes.Buffer, s string) {
 }
 
 // encode writes v; timestamp marks a value tagged `cbor:"timestamp"`.
-//
-//nolint:gocyclo,cyclop // One case per kind.
 func encode(b *bytes.Buffer, v reflect.Value, timestamp bool) {
 	if !v.IsValid() {
 		b.WriteByte(7<<5 | 22)

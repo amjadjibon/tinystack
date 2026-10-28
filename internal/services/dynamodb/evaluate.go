@@ -25,8 +25,6 @@ var attributeTypes = map[string]bool{
 }
 
 // attributeType names v's type, or returns "" for a missing value.
-//
-//nolint:gocyclo // One case per type.
 func attributeType(v *api.AttributeValue) string {
 	switch {
 	case v == nil:
@@ -208,8 +206,6 @@ func (o *operand) resolve(it item) *api.AttributeValue {
 }
 
 // match evaluates the condition against it; a nil item has no attributes.
-//
-//nolint:gocyclo // One case per operator and function.
 func (c *condition) match(it item) bool {
 	switch c.op {
 	case condTrue:

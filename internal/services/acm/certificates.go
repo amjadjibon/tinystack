@@ -179,7 +179,6 @@ func tagError(err error) error {
 	return awserror.New("InvalidTagException", err.Error())
 }
 
-//nolint:gocyclo,cyclop // One check per member.
 func (s *Service) RequestCertificate(
 	ctx context.Context, in *api.RequestCertificateRequest,
 ) (*api.RequestCertificateResponse, error) {
@@ -366,7 +365,6 @@ func (s *Service) view(ctx context.Context, arn *string) (*certificate, error) {
 	return c, nil
 }
 
-//nolint:gocyclo,cyclop // One filter per member.
 func (s *Service) ListCertificates(
 	ctx context.Context, in *api.ListCertificatesRequest,
 ) (*api.ListCertificatesResponse, error) {
@@ -558,7 +556,6 @@ func (s *Service) GetCertificate(
 	return out, nil
 }
 
-//nolint:gocyclo,cyclop // One check per member.
 func (s *Service) ImportCertificate(
 	ctx context.Context, in *api.ImportCertificateRequest,
 ) (*api.ImportCertificateResponse, error) {

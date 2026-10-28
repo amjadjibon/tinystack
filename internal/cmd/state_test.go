@@ -86,7 +86,6 @@ func TestStateExportCommand(t *testing.T) {
 	})
 }
 
-//nolint:contextcheck // test helper invokes root command and closes stores without context propagation.
 func TestStateImportCommand(t *testing.T) {
 	// 1. Create a populated store and export it to an archive.
 	srcDir := t.TempDir()

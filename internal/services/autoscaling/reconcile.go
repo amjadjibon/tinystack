@@ -76,8 +76,6 @@ type departure struct {
 // launches instances into the zones with the fewest members. cause, when not
 // empty, starts the cause of each activity. It does nothing before app.New
 // wires in the caller.
-//
-//nolint:gocyclo,cyclop // The steps of one pass.
 func (s *Service) reconcile(ctx context.Context, scope request.Scope, name, cause string) {
 	if s.caller == nil {
 		return

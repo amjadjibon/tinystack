@@ -303,7 +303,6 @@ func TestImport_Preservation_EmptyState(t *testing.T) {
 	})
 }
 
-//nolint:contextcheck // store.Close does not accept a context parameter.
 func TestImport_Preservation_DestinationRefusalAndIntegrity(t *testing.T) {
 	ctx := context.Background()
 	srcDir, closeSrc := createTestStorage(t)
