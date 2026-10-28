@@ -15,6 +15,16 @@ tasks:
       - task ui:check
       - task ui:test
 
+  check:
+    desc: "Gate a merge: lint, Go tests (generated code freshness included), docs, headless build, console, Terraform"
+    cmds:
+      - task lint
+      - go test -race -count=1 -timeout 30m ./...
+      - task docs:check
+      - task build:headless
+      - task ui:check
+      - task test:terraform
+
   build:
     desc: "Build bin/tinystack with the web console built in (needs Node.js and pnpm)"
     deps: [ui:build]

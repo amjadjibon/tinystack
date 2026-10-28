@@ -19,6 +19,7 @@ task docs:check     # catalogue freshness + strict MkDocs build
 task ui:check       # Biome + tsc for the console
 task ui:test        # console session signing and credential boundaries
 task all            # generate, lint, Go tests, console build/check/tests
+task check          # merge gate: lint, Go tests, docs:check, headless build, ui:check, Terraform
 ```
 
 Single test: `go test -race ./tests/integration -run TestName`.
