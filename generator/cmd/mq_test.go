@@ -30,6 +30,7 @@ func TestMQPinnedIdentityRESTBindingsAndSelection(t *testing.T) {
 		method, uri string
 		status      int
 	}{
+		"RebootBroker":   {"POST", "/v1/brokers/{BrokerId}/reboot", 200},
 		"CreateBroker":   {"POST", "/v1/brokers", 200},
 		"DescribeBroker": {"GET", "/v1/brokers/{BrokerId}", 200},
 		"ListBrokers":    {"GET", "/v1/brokers", 200},
@@ -43,7 +44,7 @@ func TestMQPinnedIdentityRESTBindingsAndSelection(t *testing.T) {
 		"ListTags":   {"GET", "/v1/tags/{ResourceArn}", 200},
 		"DeleteTags": {"DELETE", "/v1/tags/{ResourceArn}", 204},
 	}
-	if len(p["mq"].Operations) != 8 {
+	if len(p["mq"].Operations) != 9 {
 		t.Fatal("unexpected surface")
 	}
 	for _, op := range p["mq"].Operations {
@@ -65,8 +66,8 @@ func TestMQPinnedIdentityRESTBindingsAndSelection(t *testing.T) {
 			t.Fatal("tag query identity")
 		}
 	}
-	if len(p["mq"].Shapes["User"]) != 2 || len(p["mq"].Shapes["EncryptionOptions"]) != 1 ||
-		len(p["mq"].Shapes["LogsSummary"]) != 2 || len(p["mq"].Shapes["BrokerSummary"]) != 7 {
-		t.Fatal("advanced or runtime fields selected")
+	if len(p["mq"].Shapes["User"]) != 4 || len(p["mq"].Shapes["EncryptionOptions"]) != 1 ||
+		len(p["mq"].Shapes["LogsSummary"]) != 2 || len(p["mq"].Shapes["BrokerSummary"]) != 8 {
+		t.Fatal("unexpected broker profile members")
 	}
 }

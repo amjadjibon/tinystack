@@ -1,4 +1,4 @@
-// Package mq stores broker metadata without provisioning a messaging engine.
+// Package mq stores broker metadata and optionally runs local Docker messaging engines.
 package mq
 
 import (
@@ -47,6 +47,7 @@ type Network interface {
 type Service struct {
 	store   storage.Store
 	network Network
+	runtime *brokerRuntime
 }
 
 func New(store storage.Store, network Network) *Service {
@@ -55,13 +56,34 @@ func New(store storage.Store, network Network) *Service {
 
 // ProtectCredentials applies local credential redaction: the pinned MQ model does not
 // mark its Password member sensitive, although CreateBroker accepts credentials.
+// Runtime-only user members stay excluded in records mode before generated validation.
 //
 //nolint:gocritic // Startup decoration preserves the generated value descriptor contract.
-func ProtectCredentials(d catalog.Service) catalog.Service {
+func ProtectCredentials(d catalog.Service, s *Service) catalog.Service {
 	op := d.Operations["CreateBroker"]
 	op.Sensitive = true
+	invoke := op.Invoke
+	op.Invoke = func(ctx context.Context, input any) (any, error) {
+		in := input.(*api.CreateBrokerRequest)
+		if s.runtime == nil {
+			for _, user := range in.Users {
+				if user.ConsoleAccess != nil || user.Groups != nil {
+					return nil, unsupportedUserFields()
+				}
+			}
+		}
+
+		return invoke(ctx, input)
+	}
+
 	d.Operations["CreateBroker"] = op
 	return d
+}
+
+func unsupportedUserFields() error {
+	err := awserror.New("NotImplemented", "ConsoleAccess and Groups require Docker mode")
+	err.StatusCode = 501
+	return err
 }
 
 func invalid(message string) error { return awserror.New("BadRequestException", message) }
@@ -78,10 +100,12 @@ func conflict(message string) error {
 }
 
 type record struct {
-	Broker *api.DescribeBrokerResponse
+	Broker      *api.DescribeBrokerResponse
+	Credentials []api.User `json:",omitempty"`
 	// InitialUsernames also retains RabbitMQ's initial user metadata, which its
 	// DescribeBroker UserSummary contract does not expose.
 	InitialUsernames []string
+	Restarted        bool `json:",omitempty"`
 }
 type replay struct {
 	ID, ARN, Digest string
@@ -103,6 +127,13 @@ func read(tx storage.ReadTx, scope request.Scope, id string) (*record, error) {
 }
 
 func save(tx storage.WriteTx, scope request.Scope, r *record) error {
+	if len(r.Credentials) > 0 {
+		key := scope.Key(serviceName, brokerKind, *r.Broker.BrokerId)
+		if err := storage.Write(tx, "aws/mq/index/"+key, key); err != nil {
+			return err
+		}
+	}
+
 	return storage.Write(tx, scope.Key(serviceName, brokerKind, *r.Broker.BrokerId), r)
 }
 
@@ -124,7 +155,7 @@ func (s *Service) CreateBroker(ctx context.Context, in *api.CreateBrokerRequest)
 	subnets, groups := slices.Clone(in.SubnetIds), slices.Clone(in.SecurityGroups)
 	in = common.Clone(in)
 	in.SubnetIds, in.SecurityGroups = subnets, groups
-	if validationErr := validateCreate(in); validationErr != nil {
+	if validationErr := validateCreate(in, s.runtime != nil); validationErr != nil {
 		return nil, validationErr
 	}
 	b := &api.DescribeBrokerResponse{
@@ -149,6 +180,18 @@ func (s *Service) CreateBroker(ctx context.Context, in *api.CreateBrokerRequest)
 			b.Users = append(b.Users, api.UserSummary{Username: u.Username})
 		}
 	}
+
+	if s.runtime != nil {
+		r.Credentials = *common.Clone(new(in.Users))
+		b.BrokerState = new(brokerCreating)
+	} else {
+		for _, u := range in.Users {
+			if u.ConsoleAccess != nil || u.Groups != nil {
+				return nil, unsupportedUserFields()
+			}
+		}
+	}
+
 	id := "b-" + uuid.NewV4().String()
 	b.BrokerId = new(id)
 	b.BrokerArn = new(fmt.Sprintf("arn:aws:mq:%s:%s:broker:%s:%s", scope.Region, scope.AccountID, *b.BrokerName, id))
@@ -194,6 +237,12 @@ func (s *Service) CreateBroker(ctx context.Context, in *api.CreateBrokerRequest)
 		if networkErr := s.validateNetwork(tx, scope, b); networkErr != nil {
 			return networkErr
 		}
+		if s.runtime != nil {
+			if err := storage.Write(tx, "aws/mq/runtime-owner", s.runtime.owner); err != nil {
+				return err
+			}
+		}
+
 		if saveErr := save(tx, scope, r); saveErr != nil {
 			return saveErr
 		}
@@ -245,6 +294,11 @@ func (s *Service) DeleteBroker(ctx context.Context, in *api.DeleteBrokerRequest)
 		if err != nil {
 			return err
 		}
+		if s.runtime != nil {
+			r.Broker.BrokerState = new(brokerDeleting)
+			r.Broker.BrokerInstances = nil
+			return save(tx, scope, r)
+		}
 		tx.Delete(scope.Key(serviceName, brokerKind, *r.Broker.BrokerId))
 		return nil
 	})
@@ -270,7 +324,9 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			out = append(out, catalog.Resource{
 				Type: brokerKind, Name: *b.BrokerName, ARN: *b.BrokerArn,
 				Account: account, Region: region, Tags: maps.Clone(b.Tags), Details: map[string]any{
-					"RecordsOnly": true, "ExecutionReady": false, "Broker": common.Clone(b),
+					"RecordsOnly":      s.runtime == nil,
+					"ExecutionReady":   common.Value(b.BrokerState) == brokerRunning,
+					"Broker":           common.Clone(b),
 					"InitialUsernames": slices.Clone(r.InitialUsernames),
 				},
 			})

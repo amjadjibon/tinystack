@@ -63,6 +63,12 @@ const (
 	CachesDocker  = "docker"
 )
 
+// MQ broker modes enable optional local messaging containers.
+const (
+	BrokersRecords = "records"
+	BrokersDocker  = "docker"
+)
+
 // OpenSearch domain modes: records keeps domains as records only; docker also runs
 // each domain's engine in a container with the docker CLI.
 const (
@@ -297,6 +303,9 @@ type Config struct {
 	ElastiCache struct {
 		Caches string `yaml:"caches"`
 	} `yaml:"elasticache"`
+	MQ struct {
+		Brokers string `yaml:"brokers"`
+	} `yaml:"mq"`
 	OpenSearch struct {
 		Domains string `yaml:"domains"`
 	} `yaml:"opensearch"`
@@ -366,6 +375,7 @@ func Default() Config {
 	c.MemoryDB.Clusters = CachesRecords
 	c.ElastiCache.Caches = CachesRecords
 	c.OpenSearch.Domains = DomainsRecords
+	c.MQ.Brokers = BrokersRecords
 	c.BedrockAgentCore.Runtimes = RuntimesRecords
 	c.RDS.Instances = InstancesRecords
 	c.Init.Dir = DefaultInitDir
@@ -557,6 +567,10 @@ func (c *Config) Validate() error {
 
 	if c.ElastiCache.Caches != CachesRecords && c.ElastiCache.Caches != CachesDocker {
 		return fmt.Errorf("elasticache.caches must be records or docker")
+	}
+
+	if c.MQ.Brokers != BrokersRecords && c.MQ.Brokers != BrokersDocker {
+		return fmt.Errorf("mq.brokers must be records or docker")
 	}
 
 	if c.OpenSearch.Domains != DomainsRecords && c.OpenSearch.Domains != DomainsDocker {

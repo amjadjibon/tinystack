@@ -40,7 +40,7 @@ func validateWindow(w *api.WeeklyStartTime) error {
 	return nil
 }
 
-func validateConfig(b *api.DescribeBrokerResponse) error {
+func validateConfig(b *api.DescribeBrokerResponse, runtime bool) error {
 	engine, version, host, mode := common.Value(b.EngineType), common.Value(b.EngineVersion),
 		common.Value(b.HostInstanceType), common.Value(b.DeploymentMode)
 	if host != micro && host != large {
@@ -48,14 +48,14 @@ func validateConfig(b *api.DescribeBrokerResponse) error {
 	}
 	switch engine {
 	case activeMQ:
-		if version != "5.18" && version != "5.19" {
+		if !runtime && version != "5.18" && version != "5.19" {
 			return invalid("ActiveMQ engineVersion must be explicitly 5.18 or 5.19")
 		}
 		if mode != single && mode != standby {
 			return invalid("ActiveMQ supports SINGLE_INSTANCE or ACTIVE_STANDBY_MULTI_AZ")
 		}
 	case rabbitMQ:
-		if version != "3.13" {
+		if !runtime && version != "3.13" {
 			return invalid("RabbitMQ engineVersion must be explicitly 3.13")
 		}
 		if mode != single && mode != cluster {
@@ -64,6 +64,12 @@ func validateConfig(b *api.DescribeBrokerResponse) error {
 	default:
 		return invalid("EngineType must be ACTIVEMQ or RABBITMQ")
 	}
+	if runtime {
+		if _, err := brokerImage(engine, version); err != nil {
+			return invalid(err.Error())
+		}
+	}
+
 	if host == micro && mode != single {
 		return invalid("mq.t3.micro requires SINGLE_INSTANCE")
 	}
@@ -109,7 +115,7 @@ func validateConfig(b *api.DescribeBrokerResponse) error {
 	return nil
 }
 
-func validateCreate(in *api.CreateBrokerRequest) error {
+func validateCreate(in *api.CreateBrokerRequest, runtime bool) error {
 	if !namePattern.MatchString(common.Value(in.BrokerName)) {
 		return invalid("BrokerName requires 1-50 letters, digits, hyphens or underscores")
 	}
@@ -121,6 +127,10 @@ func validateCreate(in *api.CreateBrokerRequest) error {
 	}
 	seen := map[string]bool{}
 	for _, u := range in.Users {
+		if common.Value(in.EngineType) == rabbitMQ && (u.ConsoleAccess != nil || u.Groups != nil) {
+			return invalid("RabbitMQ administrator does not support ConsoleAccess or Groups inputs")
+		}
+
 		name := common.Value(u.Username)
 		if !usernamePattern.MatchString(name) || seen[name] ||
 			common.Value(in.EngineType) == rabbitMQ && (name == "guest" || strings.Contains(name, "~")) {
@@ -155,7 +165,7 @@ func validateCreate(in *api.CreateBrokerRequest) error {
 	if in.Logs != nil {
 		b.Logs = &api.LogsSummary{General: in.Logs.General, Audit: in.Logs.Audit}
 	}
-	if e := validateConfig(b); e != nil {
+	if e := validateConfig(b, runtime); e != nil {
 		return e
 	}
 	// Compatibility validation also accepts retained legacy records. New RabbitMQ

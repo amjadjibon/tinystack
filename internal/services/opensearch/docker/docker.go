@@ -134,16 +134,13 @@ func (r *Runtime) Probe(ctx context.Context, port int64) error {
 func (r *Runtime) Remove(ctx context.Context, spec *opensearch.Spec, volume bool) error {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), removeTimeout)
 	defer cancel()
-	if spec.Name != "" {
-		if _, err := dockercli.Run(ctx, nil, "rm", "-f", spec.Name); err != nil && !dockercli.Gone(err) {
-			return err
-		}
+	data := ""
+	if volume {
+		data = spec.Volume
 	}
 
-	if volume && spec.Volume != "" {
-		if _, err := dockercli.Run(ctx, nil, "volume", "rm", spec.Volume); err != nil && !dockercli.Gone(err) {
-			return err
-		}
+	if err := dockercli.RemoveContainerVolume(ctx, spec.Name, data); err != nil {
+		return err
 	}
 
 	r.mu.Lock()

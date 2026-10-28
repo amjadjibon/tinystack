@@ -640,7 +640,7 @@ func TestBrokerConcurrentNestedUpdatesAndReplayCredentialDiscard(t *testing.T) {
 		}
 		return nil
 	})
-	d := ProtectCredentials(api.Descriptor(s))
+	d := ProtectCredentials(api.Descriptor(s), s)
 	if !d.Operations["CreateBroker"].Sensitive {
 		t.Fatal("credential diagnostics are not redacted")
 	}

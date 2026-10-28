@@ -140,3 +140,21 @@ func Stream(ctx context.Context, stdin io.Reader, emit func(string) error, args 
 
 	return err
 }
+
+// RemoveContainerVolume removes an owned container and optionally its named data volume.
+// Callers establish ownership before passing names; absent resources make cleanup idempotent.
+func RemoveContainerVolume(ctx context.Context, name, volume string) error {
+	if name != "" {
+		if _, err := Run(ctx, nil, "rm", "-f", name); err != nil && !Gone(err) {
+			return err
+		}
+	}
+
+	if volume != "" {
+		if _, err := Run(ctx, nil, "volume", "rm", volume); err != nil && !Gone(err) {
+			return err
+		}
+	}
+
+	return nil
+}

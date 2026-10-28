@@ -562,6 +562,8 @@ func build(
 	flinkRecords := kinesisanalyticsv2.New(store, network, buckets, logGroups)
 	lakeRecords := lakeformation.New(store)
 	brokers := mq.New(store, network)
+	a.onStop(brokers.Stop)
+	a.onReset(brokers.Reset)
 	kafkaClusters := kafka.New(store, network)
 	airflowEnvironments := mwaa.New(store, network, buckets)
 	transferRecords := transfer.New(store)
@@ -727,7 +729,7 @@ func build(
 		bedrockagentapi.Descriptor(agents),
 		bedrockagentruntimeapi.Descriptor(agentRuntime),
 		bedrockruntimeapi.Descriptor(inference),
-		mq.ProtectCredentials(mqapi.Descriptor(brokers)),
+		mq.ProtectCredentials(mqapi.Descriptor(brokers), brokers),
 		kafkaapi.Descriptor(kafkaClusters),
 		mwaaapi.Descriptor(airflowEnvironments),
 		codedeployapi.Descriptor(codeDeployRecords),
@@ -965,6 +967,12 @@ func build(
 
 	if cfg.ElastiCache.Caches == config.CachesDocker {
 		caches.UseRuntime(cachedocker.New(), logger)
+	}
+
+	if cfg.MQ.Brokers == config.BrokersDocker {
+		if err = brokers.UseDocker(logger); err != nil {
+			return nil, err
+		}
 	}
 
 	if cfg.OpenSearch.Domains == config.DomainsDocker {

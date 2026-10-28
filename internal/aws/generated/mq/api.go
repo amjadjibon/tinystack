@@ -3,7 +3,9 @@ package mq
 
 import (
 	"context"
+	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/validation"
 	"time"
 )
 
@@ -23,8 +25,10 @@ type WeeklyStartTime struct {
 }
 
 type User struct {
-	Username *string `json:"username,omitempty"`
-	Password *string `json:"password,omitempty"`
+	Username      *string  `json:"username,omitempty"`
+	Password      *string  `json:"password,omitempty"`
+	ConsoleAccess *bool    `json:"consoleAccess,omitempty"`
+	Groups        []string `json:"groups,omitempty"`
 }
 
 type CreateBrokerRequest struct {
@@ -63,6 +67,11 @@ type UserSummary struct {
 	Username *string `json:"username,omitempty"`
 }
 
+type BrokerInstance struct {
+	ConsoleURL *string  `json:"consoleURL,omitempty"`
+	Endpoints  []string `json:"endpoints,omitempty"`
+}
+
 type DescribeBrokerResponse struct {
 	AutoMinorVersionUpgrade    *bool              `json:"autoMinorVersionUpgrade,omitempty"`
 	BrokerName                 *string            `json:"brokerName,omitempty"`
@@ -81,6 +90,9 @@ type DescribeBrokerResponse struct {
 	BrokerArn                  *string            `json:"brokerArn,omitempty"`
 	BrokerId                   *string            `json:"brokerId,omitempty"`
 	Created                    *time.Time         `json:"created,omitempty"`
+	BrokerState                *string            `json:"brokerState,omitempty"`
+	BrokerInstances            []BrokerInstance   `json:"brokerInstances,omitempty"`
+	PendingEngineVersion       *string            `json:"pendingEngineVersion,omitempty"`
 }
 
 type ListBrokersRequest struct {
@@ -96,6 +108,7 @@ type BrokerSummary struct {
 	DeploymentMode   *string    `json:"deploymentMode,omitempty"`
 	EngineType       *string    `json:"engineType,omitempty"`
 	HostInstanceType *string    `json:"hostInstanceType,omitempty"`
+	BrokerState      *string    `json:"brokerState,omitempty"`
 }
 
 type ListBrokersResponse struct {
@@ -153,6 +166,177 @@ type DeleteTagsRequest struct {
 	TagKeys     []string `json:"-"`
 }
 
+type RebootBrokerRequest struct {
+	BrokerId *string `json:"-"`
+}
+
+type RebootBrokerResponse struct {
+}
+
+var enum0 = []string{"ACTIVE_STANDBY_MULTI_AZ", "CLUSTER_MULTI_AZ", "SINGLE_INSTANCE"}
+
+var enum1 = []string{"ACTIVEMQ", "RABBITMQ"}
+
+var enum2 = []string{"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"}
+
+func (v *CreateBrokerRequest) Validate(path string) error {
+	if err := validation.Required(path+"BrokerName", v.BrokerName != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"DeploymentMode", v.DeploymentMode != nil); err != nil {
+		return err
+	}
+	if v.DeploymentMode != nil {
+		if err := validation.Enum(path+"DeploymentMode", (*v.DeploymentMode), enum0); err != nil {
+			return err
+		}
+	}
+	if v.EncryptionOptions != nil {
+		if err := (*v.EncryptionOptions).Validate(path + "EncryptionOptions" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"EngineType", v.EngineType != nil); err != nil {
+		return err
+	}
+	if v.EngineType != nil {
+		if err := validation.Enum(path+"EngineType", (*v.EngineType), enum1); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"HostInstanceType", v.HostInstanceType != nil); err != nil {
+		return err
+	}
+	if v.Logs != nil {
+		if err := (*v.Logs).Validate(path + "Logs" + "."); err != nil {
+			return err
+		}
+	}
+	if v.MaintenanceWindowStartTime != nil {
+		if err := (*v.MaintenanceWindowStartTime).Validate(path + "MaintenanceWindowStartTime" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"PubliclyAccessible", v.PubliclyAccessible != nil); err != nil {
+		return err
+	}
+	if v.Users != nil {
+		for i0, e0 := range v.Users {
+			if err := e0.Validate(validation.Index(path+"Users", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *CreateTagsRequest) Validate(path string) error {
+	if err := validation.Required(path+"ResourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *DeleteBrokerRequest) Validate(path string) error {
+	if err := validation.Required(path+"BrokerId", v.BrokerId != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *DeleteTagsRequest) Validate(path string) error {
+	if err := validation.Required(path+"ResourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"TagKeys", v.TagKeys != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *DescribeBrokerRequest) Validate(path string) error {
+	if err := validation.Required(path+"BrokerId", v.BrokerId != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *EncryptionOptions) Validate(path string) error {
+	if err := validation.Required(path+"UseAwsOwnedKey", v.UseAwsOwnedKey != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *ListBrokersRequest) Validate(path string) error {
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"MaxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListTagsRequest) Validate(path string) error {
+	if err := validation.Required(path+"ResourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *Logs) Validate(path string) error {
+	return nil
+}
+
+func (v *RebootBrokerRequest) Validate(path string) error {
+	if err := validation.Required(path+"BrokerId", v.BrokerId != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *UpdateBrokerRequest) Validate(path string) error {
+	if err := validation.Required(path+"BrokerId", v.BrokerId != nil); err != nil {
+		return err
+	}
+	if v.Logs != nil {
+		if err := (*v.Logs).Validate(path + "Logs" + "."); err != nil {
+			return err
+		}
+	}
+	if v.MaintenanceWindowStartTime != nil {
+		if err := (*v.MaintenanceWindowStartTime).Validate(path + "MaintenanceWindowStartTime" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *User) Validate(path string) error {
+	if err := validation.Required(path+"Username", v.Username != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"Password", v.Password != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *WeeklyStartTime) Validate(path string) error {
+	if err := validation.Required(path+"DayOfWeek", v.DayOfWeek != nil); err != nil {
+		return err
+	}
+	if v.DayOfWeek != nil {
+		if err := validation.Enum(path+"DayOfWeek", (*v.DayOfWeek), enum2); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"TimeOfDay", v.TimeOfDay != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 type API interface {
 	CreateBroker(context.Context, *CreateBrokerRequest) (*CreateBrokerResponse, error)
 	DescribeBroker(context.Context, *DescribeBrokerRequest) (*DescribeBrokerResponse, error)
@@ -162,31 +346,73 @@ type API interface {
 	CreateTags(context.Context, *CreateTagsRequest) (*CreateTagsOutput, error)
 	ListTags(context.Context, *ListTagsRequest) (*ListTagsResponse, error)
 	DeleteTags(context.Context, *DeleteTagsRequest) (*DeleteTagsOutput, error)
+	RebootBroker(context.Context, *RebootBrokerRequest) (*RebootBrokerResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
 	return catalog.Service{Name: "mq", SigningName: "mq", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "mq", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"BadRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "ForbiddenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "InternalServerErrorException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "NotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}}, Operations: map[string]catalog.Operation{
 		"CreateBroker": {Name: "CreateBroker", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "mq:CreateBroker", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AutoMinorVersionUpgrade": catalog.MemberBinding{Location: "document", Name: "AutoMinorVersionUpgrade", Format: ""}, "BrokerName": catalog.MemberBinding{Location: "document", Name: "BrokerName", Format: ""}, "CreatorRequestId": catalog.MemberBinding{Location: "document", Name: "CreatorRequestId", Format: ""}, "DeploymentMode": catalog.MemberBinding{Location: "document", Name: "DeploymentMode", Format: ""}, "EncryptionOptions": catalog.MemberBinding{Location: "document", Name: "EncryptionOptions", Format: ""}, "EngineType": catalog.MemberBinding{Location: "document", Name: "EngineType", Format: ""}, "EngineVersion": catalog.MemberBinding{Location: "document", Name: "EngineVersion", Format: ""}, "HostInstanceType": catalog.MemberBinding{Location: "document", Name: "HostInstanceType", Format: ""}, "Logs": catalog.MemberBinding{Location: "document", Name: "Logs", Format: ""}, "MaintenanceWindowStartTime": catalog.MemberBinding{Location: "document", Name: "MaintenanceWindowStartTime", Format: ""}, "PubliclyAccessible": catalog.MemberBinding{Location: "document", Name: "PubliclyAccessible", Format: ""}, "SecurityGroups": catalog.MemberBinding{Location: "document", Name: "SecurityGroups", Format: ""}, "SubnetIds": catalog.MemberBinding{Location: "document", Name: "SubnetIds", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}, "Users": catalog.MemberBinding{Location: "document", Name: "Users", Format: ""}}, Output: map[string]catalog.MemberBinding{"BrokerArn": catalog.MemberBinding{Location: "document", Name: "BrokerArn", Format: ""}, "BrokerId": catalog.MemberBinding{Location: "document", Name: "BrokerId", Format: ""}}, Method: "POST", URI: "/v1/brokers", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateBrokerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateBroker(ctx, input.(*CreateBrokerRequest))
+			in := input.(*CreateBrokerRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.CreateBroker(ctx, in)
 		}},
-		"DescribeBroker": {Name: "DescribeBroker", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "mq:DescribeBroker", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"BrokerId": catalog.MemberBinding{Location: "label", Name: "BrokerId", Format: ""}}, Output: map[string]catalog.MemberBinding{"AutoMinorVersionUpgrade": catalog.MemberBinding{Location: "document", Name: "AutoMinorVersionUpgrade", Format: ""}, "BrokerArn": catalog.MemberBinding{Location: "document", Name: "BrokerArn", Format: ""}, "BrokerId": catalog.MemberBinding{Location: "document", Name: "BrokerId", Format: ""}, "BrokerName": catalog.MemberBinding{Location: "document", Name: "BrokerName", Format: ""}, "Created": catalog.MemberBinding{Location: "document", Name: "Created", Format: ""}, "DeploymentMode": catalog.MemberBinding{Location: "document", Name: "DeploymentMode", Format: ""}, "EncryptionOptions": catalog.MemberBinding{Location: "document", Name: "EncryptionOptions", Format: ""}, "EngineType": catalog.MemberBinding{Location: "document", Name: "EngineType", Format: ""}, "EngineVersion": catalog.MemberBinding{Location: "document", Name: "EngineVersion", Format: ""}, "HostInstanceType": catalog.MemberBinding{Location: "document", Name: "HostInstanceType", Format: ""}, "Logs": catalog.MemberBinding{Location: "document", Name: "Logs", Format: ""}, "MaintenanceWindowStartTime": catalog.MemberBinding{Location: "document", Name: "MaintenanceWindowStartTime", Format: ""}, "PubliclyAccessible": catalog.MemberBinding{Location: "document", Name: "PubliclyAccessible", Format: ""}, "SecurityGroups": catalog.MemberBinding{Location: "document", Name: "SecurityGroups", Format: ""}, "SubnetIds": catalog.MemberBinding{Location: "document", Name: "SubnetIds", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}, "Users": catalog.MemberBinding{Location: "document", Name: "Users", Format: ""}}, Method: "GET", URI: "/v1/brokers/{BrokerId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeBrokerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DescribeBroker(ctx, input.(*DescribeBrokerRequest))
+		"DescribeBroker": {Name: "DescribeBroker", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "mq:DescribeBroker", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"BrokerId": catalog.MemberBinding{Location: "label", Name: "BrokerId", Format: ""}}, Output: map[string]catalog.MemberBinding{"AutoMinorVersionUpgrade": catalog.MemberBinding{Location: "document", Name: "AutoMinorVersionUpgrade", Format: ""}, "BrokerArn": catalog.MemberBinding{Location: "document", Name: "BrokerArn", Format: ""}, "BrokerId": catalog.MemberBinding{Location: "document", Name: "BrokerId", Format: ""}, "BrokerInstances": catalog.MemberBinding{Location: "document", Name: "BrokerInstances", Format: ""}, "BrokerName": catalog.MemberBinding{Location: "document", Name: "BrokerName", Format: ""}, "BrokerState": catalog.MemberBinding{Location: "document", Name: "BrokerState", Format: ""}, "Created": catalog.MemberBinding{Location: "document", Name: "Created", Format: ""}, "DeploymentMode": catalog.MemberBinding{Location: "document", Name: "DeploymentMode", Format: ""}, "EncryptionOptions": catalog.MemberBinding{Location: "document", Name: "EncryptionOptions", Format: ""}, "EngineType": catalog.MemberBinding{Location: "document", Name: "EngineType", Format: ""}, "EngineVersion": catalog.MemberBinding{Location: "document", Name: "EngineVersion", Format: ""}, "HostInstanceType": catalog.MemberBinding{Location: "document", Name: "HostInstanceType", Format: ""}, "Logs": catalog.MemberBinding{Location: "document", Name: "Logs", Format: ""}, "MaintenanceWindowStartTime": catalog.MemberBinding{Location: "document", Name: "MaintenanceWindowStartTime", Format: ""}, "PendingEngineVersion": catalog.MemberBinding{Location: "document", Name: "PendingEngineVersion", Format: ""}, "PubliclyAccessible": catalog.MemberBinding{Location: "document", Name: "PubliclyAccessible", Format: ""}, "SecurityGroups": catalog.MemberBinding{Location: "document", Name: "SecurityGroups", Format: ""}, "SubnetIds": catalog.MemberBinding{Location: "document", Name: "SubnetIds", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}, "Users": catalog.MemberBinding{Location: "document", Name: "Users", Format: ""}}, Method: "GET", URI: "/v1/brokers/{BrokerId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeBrokerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*DescribeBrokerRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.DescribeBroker(ctx, in)
 		}},
 		"ListBrokers": {Name: "ListBrokers", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "mq:ListBrokers", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"BrokerSummaries": catalog.MemberBinding{Location: "document", Name: "BrokerSummaries", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}}, Method: "GET", URI: "/v1/brokers", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListBrokersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListBrokers(ctx, input.(*ListBrokersRequest))
+			in := input.(*ListBrokersRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.ListBrokers(ctx, in)
 		}},
 		"UpdateBroker": {Name: "UpdateBroker", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "mq:UpdateBroker", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AutoMinorVersionUpgrade": catalog.MemberBinding{Location: "document", Name: "AutoMinorVersionUpgrade", Format: ""}, "BrokerId": catalog.MemberBinding{Location: "label", Name: "BrokerId", Format: ""}, "EngineVersion": catalog.MemberBinding{Location: "document", Name: "EngineVersion", Format: ""}, "HostInstanceType": catalog.MemberBinding{Location: "document", Name: "HostInstanceType", Format: ""}, "Logs": catalog.MemberBinding{Location: "document", Name: "Logs", Format: ""}, "MaintenanceWindowStartTime": catalog.MemberBinding{Location: "document", Name: "MaintenanceWindowStartTime", Format: ""}, "SecurityGroups": catalog.MemberBinding{Location: "document", Name: "SecurityGroups", Format: ""}}, Output: map[string]catalog.MemberBinding{"AutoMinorVersionUpgrade": catalog.MemberBinding{Location: "document", Name: "AutoMinorVersionUpgrade", Format: ""}, "BrokerId": catalog.MemberBinding{Location: "document", Name: "BrokerId", Format: ""}, "EngineVersion": catalog.MemberBinding{Location: "document", Name: "EngineVersion", Format: ""}, "HostInstanceType": catalog.MemberBinding{Location: "document", Name: "HostInstanceType", Format: ""}, "Logs": catalog.MemberBinding{Location: "document", Name: "Logs", Format: ""}, "MaintenanceWindowStartTime": catalog.MemberBinding{Location: "document", Name: "MaintenanceWindowStartTime", Format: ""}, "SecurityGroups": catalog.MemberBinding{Location: "document", Name: "SecurityGroups", Format: ""}}, Method: "PUT", URI: "/v1/brokers/{BrokerId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateBrokerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UpdateBroker(ctx, input.(*UpdateBrokerRequest))
+			in := input.(*UpdateBrokerRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.UpdateBroker(ctx, in)
 		}},
 		"DeleteBroker": {Name: "DeleteBroker", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "mq:DeleteBroker", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"BrokerId": catalog.MemberBinding{Location: "label", Name: "BrokerId", Format: ""}}, Output: map[string]catalog.MemberBinding{"BrokerId": catalog.MemberBinding{Location: "document", Name: "BrokerId", Format: ""}}, Method: "DELETE", URI: "/v1/brokers/{BrokerId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteBrokerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteBroker(ctx, input.(*DeleteBrokerRequest))
+			in := input.(*DeleteBrokerRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.DeleteBroker(ctx, in)
 		}},
 		"CreateTags": {Name: "CreateTags", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "mq:CreateTags", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceArn": catalog.MemberBinding{Location: "label", Name: "ResourceArn", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/v1/tags/{ResourceArn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 204}}, NewInput: func() any { return &CreateTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateTags(ctx, input.(*CreateTagsRequest))
+			in := input.(*CreateTagsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.CreateTags(ctx, in)
 		}},
-		"ListTags": {Name: "ListTags", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "mq:ListTags", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceArn": catalog.MemberBinding{Location: "label", Name: "ResourceArn", Format: ""}}, Output: map[string]catalog.MemberBinding{"Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Method: "GET", URI: "/v1/tags/{ResourceArn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.ListTags(ctx, input.(*ListTagsRequest)) }},
+		"ListTags": {Name: "ListTags", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "mq:ListTags", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceArn": catalog.MemberBinding{Location: "label", Name: "ResourceArn", Format: ""}}, Output: map[string]catalog.MemberBinding{"Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Method: "GET", URI: "/v1/tags/{ResourceArn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListTagsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.ListTags(ctx, in)
+		}},
 		"DeleteTags": {Name: "DeleteTags", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "mq:DeleteTags", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceArn": catalog.MemberBinding{Location: "label", Name: "ResourceArn", Format: ""}, "TagKeys": catalog.MemberBinding{Location: "query", Name: "tagKeys", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/v1/tags/{ResourceArn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 204}}, NewInput: func() any { return &DeleteTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteTags(ctx, input.(*DeleteTagsRequest))
+			in := input.(*DeleteTagsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.DeleteTags(ctx, in)
+		}},
+		"RebootBroker": {Name: "RebootBroker", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "mq:RebootBroker", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"BrokerId": catalog.MemberBinding{Location: "label", Name: "BrokerId", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/v1/brokers/{BrokerId}/reboot", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &RebootBrokerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*RebootBrokerRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.RebootBroker(ctx, in)
 		}},
 	}}
 }

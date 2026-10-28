@@ -63,6 +63,16 @@ func (s *Service) update(ctx context.Context, in *api.UpdateBrokerRequest, owned
 		if readErr != nil {
 			return readErr
 		}
+		if s.runtime != nil && in.EngineVersion != nil && *in.EngineVersion != *r.Broker.EngineVersion {
+			if common.Value(r.Broker.BrokerState) != brokerRunning {
+				return invalid("Engine updates require a RUNNING Docker broker")
+			}
+
+			if !compatibleUpgrade(*r.Broker.EngineType, *r.Broker.EngineVersion, *in.EngineVersion) {
+				return invalid("Docker volume upgrade is unsupported for these engine versions; recreate the broker")
+			}
+		}
+
 		before = common.Clone(r.Broker)
 		b := r.Broker
 		if restore != nil {
@@ -71,8 +81,13 @@ func (s *Service) update(ctx context.Context, in *api.UpdateBrokerRequest, owned
 			if !reflect.DeepEqual(b.BrokerId, restore.BrokerId) || !reflect.DeepEqual(b.BrokerArn, restore.BrokerArn) {
 				return invalid("Rollback snapshot belongs to a different broker")
 			}
+			if s.runtime != nil && !reflect.DeepEqual(b.EngineVersion, restore.EngineVersion) {
+				return invalid("A completed Docker engine upgrade cannot be rolled back")
+			}
+
 			b.AutoMinorVersionUpgrade = restore.AutoMinorVersionUpgrade
 			b.EngineVersion = restore.EngineVersion
+			b.PendingEngineVersion = restore.PendingEngineVersion
 			b.HostInstanceType = restore.HostInstanceType
 			b.Logs = restore.Logs
 			b.MaintenanceWindowStartTime = restore.MaintenanceWindowStartTime
@@ -98,12 +113,17 @@ func (s *Service) update(ctx context.Context, in *api.UpdateBrokerRequest, owned
 			}
 		}
 		r.Broker = b
-		if configErr := validateConfig(b); configErr != nil {
+		if configErr := validateConfig(b, s.runtime != nil); configErr != nil {
 			return configErr
 		}
 		if networkErr := s.validateNetwork(tx, scope, b); networkErr != nil {
 			return networkErr
 		}
+		if s.runtime != nil && in.EngineVersion != nil && *in.EngineVersion != *before.EngineVersion {
+			b.PendingEngineVersion = b.EngineVersion
+			b.EngineVersion = before.EngineVersion
+		}
+
 		if saveErr := save(tx, scope, r); saveErr != nil {
 			return saveErr
 		}
@@ -121,7 +141,13 @@ func (s *Service) UpdateBroker(ctx context.Context, in *api.UpdateBrokerRequest)
 	if e != nil {
 		return nil, e
 	}
-	return updateOutput(b), nil
+
+	out := updateOutput(b)
+	if b.PendingEngineVersion != nil {
+		out.EngineVersion = common.Clone(b.PendingEngineVersion)
+	}
+
+	return out, nil
 }
 
 // CloudFormationUpdate atomically applies configuration and the final tag set.

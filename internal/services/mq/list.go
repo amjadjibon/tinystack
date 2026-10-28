@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"slices"
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/mq"
@@ -48,7 +47,6 @@ func (s *Service) ListBrokers(ctx context.Context, in *api.ListBrokersRequest) (
 	if e != nil {
 		return nil, e
 	}
-	slices.SortFunc(rows, func(a, b *record) int { return strings.Compare(*a.Broker.BrokerId, *b.Broker.BrokerId) })
 	out := &api.ListBrokersResponse{BrokerSummaries: []api.BrokerSummary{}}
 	for _, r := range rows {
 		b := r.Broker
@@ -61,7 +59,7 @@ func (s *Service) ListBrokers(ctx context.Context, in *api.ListBrokersRequest) (
 			break
 		}
 		out.BrokerSummaries = append(out.BrokerSummaries, api.BrokerSummary{
-			BrokerId: b.BrokerId, BrokerArn: b.BrokerArn,
+			BrokerId: b.BrokerId, BrokerArn: b.BrokerArn, BrokerState: b.BrokerState,
 			BrokerName: b.BrokerName, Created: b.Created, EngineType: b.EngineType, DeploymentMode: b.DeploymentMode,
 			HostInstanceType: b.HostInstanceType,
 		})

@@ -25771,6 +25771,7 @@
     }
   },
   "mq": {
+    "validation": {"code": "BadRequestException"},
     "operations": [
       "CreateBroker",
       "DescribeBroker",
@@ -25779,9 +25780,12 @@
       "DeleteBroker",
       "CreateTags",
       "ListTags",
-      "DeleteTags"
+      "DeleteTags",
+      "RebootBroker"
     ],
     "shapes": {
+      "RebootBrokerRequest": ["BrokerId"],
+      "BrokerInstance": ["ConsoleURL", "Endpoints"],
       "CreateBrokerRequest": [
         "AutoMinorVersionUpgrade",
         "BrokerName",
@@ -25823,7 +25827,10 @@
         "Users",
         "BrokerArn",
         "BrokerId",
-        "Created"
+        "Created",
+        "BrokerState",
+        "BrokerInstances",
+        "PendingEngineVersion"
       ],
       "UpdateBrokerRequest": [
         "BrokerId",
@@ -25864,7 +25871,8 @@
         "Created",
         "DeploymentMode",
         "EngineType",
-        "HostInstanceType"
+        "HostInstanceType",
+        "BrokerState"
       ],
       "CreateTagsRequest": [
         "ResourceArn",
@@ -25882,7 +25890,9 @@
       ],
       "User": [
         "Username",
-        "Password"
+        "Password",
+        "ConsoleAccess",
+        "Groups"
       ],
       "UserSummary": [
         "Username"
