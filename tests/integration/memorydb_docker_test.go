@@ -202,7 +202,13 @@ func TestMemoryDBDockerLifecycle(t *testing.T) {
 		}
 	}
 
-	slots, err := client.ClusterSlots(ctx).Result()
+	// Exercise CLUSTER SLOTS explicitly; the convenience method is deprecated in favor of CLUSTER SHARDS.
+	slotsCmd := redis.NewClusterSlotsCmd(ctx, "cluster", "slots")
+	if err = client.Process(ctx, slotsCmd); err != nil {
+		t.Fatal(err)
+	}
+
+	slots, err := slotsCmd.Result()
 	if err != nil || len(slots) != 1 || slots[0].Start != 0 || slots[0].End != 16383 ||
 		slots[0].Nodes[0].Addr != address {
 		t.Fatal(slots, err)

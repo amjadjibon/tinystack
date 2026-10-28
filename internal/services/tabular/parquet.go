@@ -18,6 +18,7 @@ import (
 	"github.com/parquet-go/parquet-go/compress/snappy"
 	"github.com/parquet-go/parquet-go/compress/uncompressed"
 	"github.com/parquet-go/parquet-go/compress/zstd"
+	"github.com/parquet-go/parquet-go/format"
 )
 
 const (
@@ -52,14 +53,22 @@ func Infer(body []byte) ([]Column, error) {
 	return out, nil
 }
 
+func logicalType[T format.LogicalTypeValue](n parquet.Node) T {
+	var value T
+	if logical := n.Type().LogicalType(); logical != nil {
+		value, _ = logical.Value.(T)
+	}
+
+	return value
+}
+
 func hiveType(n parquet.Node) string {
 	if !n.Leaf() {
-		l := n.Type().LogicalType()
-		if l != nil && l.List != nil {
+		if logicalType[*format.ListType](n) != nil {
 			return "array<" + hiveType(n.Fields()[0].Fields()[0]) + ">"
 		}
 
-		if l != nil && l.Map != nil {
+		if logicalType[*format.MapType](n) != nil {
 			f := n.Fields()[0].Fields()
 			return "map<" + hiveType(f[0]) + "," + hiveType(f[1]) + ">"
 		}
@@ -72,11 +81,10 @@ func hiveType(n parquet.Node) string {
 		return "struct<" + strings.Join(fields, ",") + ">"
 	}
 
-	l := n.Type().LogicalType()
-	if l != nil {
-		switch {
-		case l.Integer != nil:
-			switch l.Integer.BitWidth {
+	if l := n.Type().LogicalType(); l != nil {
+		switch value := l.Value.(type) {
+		case *format.IntType:
+			switch value.BitWidth {
 			case 8:
 				return hiveTinyint
 			case 16:
@@ -86,14 +94,14 @@ func hiveType(n parquet.Node) string {
 			default:
 				return hiveBigint
 			}
-		case l.UTF8 != nil:
+		case *format.StringType:
 			return hiveString
-		case l.Date != nil:
+		case *format.DateType:
 			return hiveDate
-		case l.Timestamp != nil:
+		case *format.TimestampType:
 			return hiveTimestamp
-		case l.Decimal != nil:
-			return fmt.Sprintf("decimal(%d,%d)", l.Decimal.Precision, l.Decimal.Scale)
+		case *format.DecimalType:
+			return fmt.Sprintf("decimal(%d,%d)", value.Precision, value.Scale)
 		}
 	}
 
@@ -210,19 +218,19 @@ func parquetText(v any, n parquet.Node) (string, error) {
 	case kind == hiveDate:
 		return time.Unix(int64Number(v)*86400, 0).UTC().Format(time.DateOnly), nil
 	case kind == hiveTimestamp:
-		l := n.Type().LogicalType().Timestamp
+		l := logicalType[*format.TimestampType](n)
 		factor := int64(1000000)
-		if l.Unit.Micros != nil {
+		if _, ok := l.Unit.Value.(*format.MicroSeconds); ok {
 			factor = 1000
 		}
 
-		if l.Unit.Nanos != nil {
+		if _, ok := l.Unit.Value.(*format.NanoSeconds); ok {
 			factor = 1
 		}
 
 		return time.Unix(0, int64Number(v)*factor).UTC().Format("2006-01-02 15:04:05.999999999"), nil
 	case strings.HasPrefix(kind, "decimal"):
-		scale := n.Type().LogicalType().Decimal.Scale
+		scale := logicalType[*format.DecimalType](n).Scale
 		return decimalText(v, int(scale)), nil
 	}
 
@@ -392,8 +400,8 @@ func parquetValue(s string, n parquet.Node) (any, error) {
 		return strconv.ParseBool(s)
 	case k == hiveTinyint || k == hiveSmallint || k == hiveInt:
 		bits := 32
-		if logical := n.Type().LogicalType(); logical != nil && logical.Integer != nil {
-			bits = int(logical.Integer.BitWidth)
+		if logical := logicalType[*format.IntType](n); logical != nil {
+			bits = int(logical.BitWidth)
 		}
 
 		v, err := strconv.ParseInt(s, 10, bits)
@@ -414,7 +422,7 @@ func parquetValue(s string, n parquet.Node) (any, error) {
 		v, err := time.Parse("2006-01-02 15:04:05.999999999", s)
 		return v.UnixMicro(), err
 	case strings.HasPrefix(k, "decimal"):
-		dec := n.Type().LogicalType().Decimal
+		dec := logicalType[*format.DecimalType](n)
 		value, err := parseDecimal(s, int(dec.Precision), int(dec.Scale))
 		if err != nil {
 			return nil, err
@@ -448,8 +456,7 @@ func nestedValue(v any, n parquet.Node) (any, error) {
 		return parquetValue(fmt.Sprint(v), n)
 	}
 
-	l := n.Type().LogicalType()
-	if l != nil && l.List != nil {
+	if logicalType[*format.ListType](n) != nil {
 		a, ok := v.([]any)
 		if !ok {
 			return nil, fmt.Errorf("expected array")
@@ -472,7 +479,7 @@ func nestedValue(v any, n parquet.Node) (any, error) {
 		return nil, fmt.Errorf("expected object")
 	}
 
-	if l != nil && l.Map != nil {
+	if logicalType[*format.MapType](n) != nil {
 		fields := n.Fields()[0].Fields()
 		out := map[any]any{}
 		for k, x := range m {
@@ -603,8 +610,7 @@ func encodeRow(n parquet.Node, v any, rep, def, depth int, index *int, row *parq
 		return
 	}
 
-	l := n.Type().LogicalType()
-	if l != nil && l.List != nil {
+	if logicalType[*format.ListType](n) != nil {
 		a, _ := v.([]any)
 		items := make([]any, len(a))
 		for i, x := range a {
@@ -614,7 +620,7 @@ func encodeRow(n parquet.Node, v any, rep, def, depth int, index *int, row *parq
 		v = map[string]any{"list": items}
 	}
 
-	if l != nil && l.Map != nil {
+	if logicalType[*format.MapType](n) != nil {
 		m, _ := v.(map[any]any)
 		items := make([]any, 0, len(m))
 		for k, x := range m {
@@ -737,8 +743,7 @@ func decodeNode(n parquet.Node, cols [][]parquet.Value, def, depth int) any {
 		offset += count
 	}
 
-	l := n.Type().LogicalType()
-	if l != nil && l.List != nil {
+	if logicalType[*format.ListType](n) != nil {
 		items, _ := obj["list"].([]any)
 		out := make([]any, len(items))
 		for i, x := range items {
@@ -750,7 +755,7 @@ func decodeNode(n parquet.Node, cols [][]parquet.Value, def, depth int) any {
 		return out
 	}
 
-	if l != nil && l.Map != nil {
+	if logicalType[*format.MapType](n) != nil {
 		items, _ := obj["key_value"].([]any)
 		out := map[string]any{}
 		for _, x := range items {
@@ -834,8 +839,7 @@ func normalizeNested(v any, n parquet.Node) any {
 		return v
 	}
 
-	l := n.Type().LogicalType()
-	if l != nil && l.List != nil {
+	if logicalType[*format.ListType](n) != nil {
 		a, _ := v.([]any)
 		out := make([]any, len(a))
 		for i, x := range a {
@@ -847,7 +851,7 @@ func normalizeNested(v any, n parquet.Node) any {
 
 	m, _ := v.(map[string]any)
 	out := map[string]any{}
-	if l != nil && l.Map != nil {
+	if logicalType[*format.MapType](n) != nil {
 		for k, x := range m {
 			out[k] = normalizeNested(x, n.Fields()[0].Fields()[1])
 		}
