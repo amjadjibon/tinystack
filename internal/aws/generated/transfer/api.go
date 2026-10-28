@@ -40,6 +40,8 @@ type DescribedServer struct {
 	PreAuthenticationLoginBanner *string  `json:"PreAuthenticationLoginBanner,omitempty"`
 	Tags                         []Tag    `json:"Tags,omitempty"`
 	UserCount                    *int64   `json:"UserCount,omitempty"`
+	State                        *string  `json:"State,omitempty"`
+	HostKeyFingerprint           *string  `json:"HostKeyFingerprint,omitempty"`
 }
 
 type DescribeServerResponse struct {
@@ -58,6 +60,7 @@ type ListedServer struct {
 	EndpointType         *string `json:"EndpointType,omitempty"`
 	IdentityProviderType *string `json:"IdentityProviderType,omitempty"`
 	UserCount            *int64  `json:"UserCount,omitempty"`
+	State                *string `json:"State,omitempty"`
 }
 
 type ListServersResponse struct {
@@ -84,14 +87,21 @@ type DeleteServerRequest struct {
 	ServerId *string `json:"ServerId,omitempty"`
 }
 
+type HomeDirectoryMapEntry struct {
+	Entry  *string `json:"Entry,omitempty"`
+	Target *string `json:"Target,omitempty"`
+	Type   *string `json:"Type,omitempty"`
+}
+
 type CreateUserRequest struct {
-	ServerId          *string `json:"ServerId,omitempty"`
-	UserName          *string `json:"UserName,omitempty"`
-	Role              *string `json:"Role,omitempty"`
-	HomeDirectory     *string `json:"HomeDirectory,omitempty"`
-	HomeDirectoryType *string `json:"HomeDirectoryType,omitempty"`
-	SshPublicKeyBody  *string `json:"SshPublicKeyBody,omitempty"`
-	Tags              []Tag   `json:"Tags,omitempty"`
+	ServerId              *string                 `json:"ServerId,omitempty"`
+	UserName              *string                 `json:"UserName,omitempty"`
+	Role                  *string                 `json:"Role,omitempty"`
+	HomeDirectory         *string                 `json:"HomeDirectory,omitempty"`
+	HomeDirectoryType     *string                 `json:"HomeDirectoryType,omitempty"`
+	SshPublicKeyBody      *string                 `json:"SshPublicKeyBody,omitempty"`
+	Tags                  []Tag                   `json:"Tags,omitempty"`
+	HomeDirectoryMappings []HomeDirectoryMapEntry `json:"HomeDirectoryMappings,omitempty"`
 }
 
 type CreateUserResponse struct {
@@ -111,13 +121,14 @@ type SshPublicKey struct {
 }
 
 type DescribedUser struct {
-	Arn               *string        `json:"Arn,omitempty"`
-	UserName          *string        `json:"UserName,omitempty"`
-	Role              *string        `json:"Role,omitempty"`
-	HomeDirectory     *string        `json:"HomeDirectory,omitempty"`
-	HomeDirectoryType *string        `json:"HomeDirectoryType,omitempty"`
-	Tags              []Tag          `json:"Tags,omitempty"`
-	SshPublicKeys     []SshPublicKey `json:"SshPublicKeys,omitempty"`
+	Arn                   *string                 `json:"Arn,omitempty"`
+	UserName              *string                 `json:"UserName,omitempty"`
+	Role                  *string                 `json:"Role,omitempty"`
+	HomeDirectory         *string                 `json:"HomeDirectory,omitempty"`
+	HomeDirectoryType     *string                 `json:"HomeDirectoryType,omitempty"`
+	Tags                  []Tag                   `json:"Tags,omitempty"`
+	SshPublicKeys         []SshPublicKey          `json:"SshPublicKeys,omitempty"`
+	HomeDirectoryMappings []HomeDirectoryMapEntry `json:"HomeDirectoryMappings,omitempty"`
 }
 
 type DescribeUserResponse struct {
@@ -147,11 +158,12 @@ type ListUsersResponse struct {
 }
 
 type UpdateUserRequest struct {
-	ServerId          *string `json:"ServerId,omitempty"`
-	UserName          *string `json:"UserName,omitempty"`
-	Role              *string `json:"Role,omitempty"`
-	HomeDirectory     *string `json:"HomeDirectory,omitempty"`
-	HomeDirectoryType *string `json:"HomeDirectoryType,omitempty"`
+	ServerId              *string                 `json:"ServerId,omitempty"`
+	UserName              *string                 `json:"UserName,omitempty"`
+	Role                  *string                 `json:"Role,omitempty"`
+	HomeDirectory         *string                 `json:"HomeDirectory,omitempty"`
+	HomeDirectoryType     *string                 `json:"HomeDirectoryType,omitempty"`
+	HomeDirectoryMappings []HomeDirectoryMapEntry `json:"HomeDirectoryMappings,omitempty"`
 }
 
 type UpdateUserResponse struct {
@@ -212,6 +224,18 @@ type DeleteSshPublicKeyRequest struct {
 	UserName       *string `json:"UserName,omitempty"`
 }
 
+type StartServerOutput struct{}
+
+type StartServerRequest struct {
+	ServerId *string `json:"ServerId,omitempty"`
+}
+
+type StopServerOutput struct{}
+
+type StopServerRequest struct {
+	ServerId *string `json:"ServerId,omitempty"`
+}
+
 type API interface {
 	CreateServer(context.Context, *CreateServerRequest) (*CreateServerResponse, error)
 	DescribeServer(context.Context, *DescribeServerRequest) (*DescribeServerResponse, error)
@@ -228,6 +252,8 @@ type API interface {
 	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceOutput, error)
 	ImportSshPublicKey(context.Context, *ImportSshPublicKeyRequest) (*ImportSshPublicKeyResponse, error)
 	DeleteSshPublicKey(context.Context, *DeleteSshPublicKeyRequest) (*DeleteSshPublicKeyOutput, error)
+	StartServer(context.Context, *StartServerRequest) (*StartServerOutput, error)
+	StopServer(context.Context, *StopServerRequest) (*StopServerOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -276,6 +302,12 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteSshPublicKey": {Name: "DeleteSshPublicKey", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "transfer:DeleteSshPublicKey", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TransferService.DeleteSshPublicKey", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteSshPublicKeyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteSshPublicKey(ctx, input.(*DeleteSshPublicKeyRequest))
+		}},
+		"StartServer": {Name: "StartServer", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "transfer:StartServer", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TransferService.StartServer", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StartServerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.StartServer(ctx, input.(*StartServerRequest))
+		}},
+		"StopServer": {Name: "StopServer", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "transfer:StopServer", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TransferService.StopServer", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StopServerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.StopServer(ctx, input.(*StopServerRequest))
 		}},
 	}}
 }

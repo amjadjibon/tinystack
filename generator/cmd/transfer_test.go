@@ -31,7 +31,7 @@ func TestTransferPinnedIdentityProtocolBindingsAndProvenance(t *testing.T) {
 		t.Fatal(e)
 	}
 	g := generator{model: m, profile: profiles["transfer"]}
-	if len(g.profile.Operations) != 15 {
+	if len(g.profile.Operations) != 17 {
 		t.Fatal("surface")
 	}
 	for _, op := range g.profile.Operations {

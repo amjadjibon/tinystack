@@ -26602,7 +26602,9 @@
       "TagResource",
       "UntagResource",
       "ImportSshPublicKey",
-      "DeleteSshPublicKey"
+      "DeleteSshPublicKey",
+      "StartServer",
+      "StopServer"
     ],
     "shapes": {
       "CreateServerRequest": [
@@ -26652,7 +26654,8 @@
         "HomeDirectory",
         "HomeDirectoryType",
         "SshPublicKeyBody",
-        "Tags"
+        "Tags",
+        "HomeDirectoryMappings"
       ],
       "CreateUserResponse": [
         "ServerId",
@@ -26681,7 +26684,8 @@
         "UserName",
         "Role",
         "HomeDirectory",
-        "HomeDirectoryType"
+        "HomeDirectoryType",
+        "HomeDirectoryMappings"
       ],
       "UpdateUserResponse": [
         "ServerId",
@@ -26734,7 +26738,9 @@
         "SecurityPolicyName",
         "PreAuthenticationLoginBanner",
         "Tags",
-        "UserCount"
+        "UserCount",
+        "State",
+        "HostKeyFingerprint"
       ],
       "ListedServer": [
         "Arn",
@@ -26742,7 +26748,8 @@
         "Domain",
         "EndpointType",
         "IdentityProviderType",
-        "UserCount"
+        "UserCount",
+        "State"
       ],
       "DescribedUser": [
         "Arn",
@@ -26751,7 +26758,8 @@
         "HomeDirectory",
         "HomeDirectoryType",
         "Tags",
-        "SshPublicKeys"
+        "SshPublicKeys",
+        "HomeDirectoryMappings"
       ],
       "ListedUser": [
         "Arn",
@@ -26769,6 +26777,17 @@
         "DateImported",
         "SshPublicKeyBody",
         "SshPublicKeyId"
+      ],
+      "StartServerRequest": [
+        "ServerId"
+      ],
+      "StopServerRequest": [
+        "ServerId"
+      ],
+      "HomeDirectoryMapEntry": [
+        "Entry",
+        "Target",
+        "Type"
       ]
     }
   },

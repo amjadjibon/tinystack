@@ -590,6 +590,8 @@ func build(
 	a.onReset(kafkaClusters.Reset)
 	airflowEnvironments := mwaa.New(store, network, buckets)
 	transferRecords := transfer.New(store)
+	a.onStop(transferRecords.Stop)
+	a.onReset(transferRecords.Reset)
 	codeDeployRecords := codedeploy.New(store)
 	applicationScaling := applicationautoscaling.New(store)
 	locationTrackers := location.New(store)
@@ -910,6 +912,13 @@ func build(
 	// Deliveries a service makes under a role need the role's trust policy to allow the service, and the role to
 	// be permitted the call.
 	handler.UseServiceRoles(tokens.ServiceSession)
+	transferRecords.UseServiceAuthorizer(handler.AuthorizeService)
+	if cfg.Transfer.Servers == "listen" {
+		if err = transferRecords.Listen(ctx, buckets); err != nil {
+			return nil, err
+		}
+	}
+
 	functions.UseServiceAuthorizer(handler.AuthorizeService)
 	// Pollers read event sources as the function's execution role, so they start once the authorizer is set.
 	if err = functions.Resume(ctx); err != nil {

@@ -297,6 +297,9 @@ type Config struct {
 	EKS struct {
 		Clusters string `yaml:"clusters"`
 	} `yaml:"eks"`
+	Transfer struct {
+		Servers string `yaml:"servers"`
+	} `yaml:"transfer"`
 	Kafka struct {
 		Clusters string `yaml:"clusters"`
 	} `yaml:"kafka"`
@@ -384,6 +387,7 @@ func Default() Config {
 	c.OpenSearch.Domains = DomainsRecords
 	c.MQ.Brokers = BrokersRecords
 	c.BedrockAgentCore.Runtimes = RuntimesRecords
+	c.Transfer.Servers = "records"
 	c.Kafka.Clusters = ContainersRecords
 	c.RDS.Instances = InstancesRecords
 	c.Init.Dir = DefaultInitDir
@@ -567,6 +571,10 @@ func (c *Config) Validate() error {
 
 	if c.EKS.Clusters != ClustersRecords && c.EKS.Clusters != ClustersK3s {
 		return fmt.Errorf("eks.clusters must be records or k3s")
+	}
+
+	if c.Transfer.Servers != "records" && c.Transfer.Servers != "listen" {
+		return fmt.Errorf("transfer.servers must be records or listen")
 	}
 
 	if c.Kafka.Clusters != ContainersRecords && c.Kafka.Clusters != ContainersDocker {

@@ -473,7 +473,7 @@ func TestTransferPinnedAWSJSONWireMembersExclusionsRuntimeAndPrivacy(t *testing.
 		t.Fatal(status, out)
 	}
 	for _, value := range []any{false, nil, "", []any{}, map[string]any{}} {
-		for _, member := range []string{"HomeDirectoryMappings", "Policy", "PosixProfile", "Password", "SessionPolicy"} {
+		for _, member := range []string{"Policy", "PosixProfile", "Password", "SessionPolicy"} {
 			candidate := map[string]any{}
 			for k, v := range user {
 				candidate[k] = v
