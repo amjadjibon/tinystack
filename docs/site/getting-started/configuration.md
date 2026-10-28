@@ -238,3 +238,36 @@ ValidationException that names this setting.
 Containers run `--platform linux/arm64`, as AgentCore requires, so an x86_64 host emulates them. They reach this endpoint
 through `host.docker.internal` with the credentials Lambda containers get. See
 [Amazon Bedrock AgentCore](../guides/bedrock-agentcore.md) for the runtime service contract, session lifecycle and limits.
+
+## MemoryDB engine containers
+
+```yaml
+memorydb:
+  clusters: docker # records (default) or docker
+```
+
+Docker mode runs one engine per cluster with the cluster protocol, all 16384 slots and loopback host ports.
+Shard and replica counts stay metadata. TLS defaults to true; the engine serves a leaf signed by TinyStack's
+[local CA](../guides/tls.md), selected from `storage.path` in persistent mode or the user config directory in memory
+mode. Export that CA with `tinystack ca export` and supply it to the cluster client's trust pool. Non-TLS clusters
+must use `open-access`. Password ACLs and access strings are enforced; IAM users fail explicitly in Docker mode.
+Password hashes are persisted, never returned by the API. Existing records-mode password users need UpdateUser
+with their passwords before attaching them to a Docker cluster. Before switching a populated store to Docker,
+move existing clusters using these users to `open-access`; startup explicitly rejects attached IAM users or users
+whose password hashes are unavailable.
+
+| Engine / requested version | Image tag | Platforms |
+| --- | --- | --- |
+| redis / 6.2 | `redis:6.2-alpine` | amd64, arm64 |
+| redis / 7.0 | `redis:7.0-alpine` | amd64, arm64 |
+| redis / 7.1 | `redis:7.2-alpine` | amd64, arm64 |
+| valkey / 7.2 | `valkey/valkey:7.2-alpine` | amd64, arm64 |
+
+Upstream Redis has no 7.1 release; the AWS 7.1 record maps to the upstream 7.2 engine. Unknown versions fail
+explicitly. Engine/version updates and node type changes update records only; the initial engine image stays in
+use on later restarts. Snapshots and multi-node scaling remain unsupported.
+
+Status starts at `creating` and becomes `available` after PING and healthy cluster state. ACL, user and cluster ACL
+changes reconcile every second. Containers and named volumes have store-specific ownership labels; delete and reset
+remove both, shutdown removes containers while retaining data, and persistent restarts recreate containers against
+the same volumes. Startup cleans only this store's orphaned containers and volumes.

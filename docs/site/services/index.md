@@ -75,7 +75,7 @@ Future services and unimplemented extensions live in the [roadmap](../roadmap/in
 | Service API | Operations | Execution |
 | --- | --- | --- |
 | [Amazon Aurora DSQL](dsql.md) | 12 | Records only; deterministic background control-plane transitions |
-| [Amazon MemoryDB](memorydb.md) | 19 | Records only |
+| [Amazon MemoryDB](memorydb.md) | 19 | Records by default; optional Docker Valkey/Redis cluster protocol with TLS and ACLs |
 | [Amazon Timestream Query](timestreamquery.md) | 11 | Records only |
 | [Amazon Timestream Write](timestreamwrite.md) | 15 | Records only |
 | [DynamoDB](dynamodb.md) | 38 | Local behavior |

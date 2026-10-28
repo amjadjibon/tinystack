@@ -6,12 +6,12 @@ The scope below is a design candidate, without an assigned version or delivery d
 
 ## First useful slice
 
-Extend the records-only control plane with a real Valkey or Redis OSS engine container per cluster.
+Extend the single-node engine runtime with snapshots and multi-node lifecycle.
 
 ## Proposed scope
 
-- [ ] Valkey and Redis OSS engine containers behind cluster and node endpoints
-- [ ] ACL and user enforcement from access strings
+- [x] Valkey and Redis OSS engine containers behind cluster and node endpoints
+- [x] ACL and user enforcement from access strings
 - [ ] Snapshots, restore and final snapshots
 - [ ] Parameter group CRUD and values
 - [ ] Failover, scaling and engine upgrades with node lifecycle

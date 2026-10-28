@@ -659,20 +659,21 @@ Manage Aurora DSQL cluster records, reciprocal multi-Region peering and versione
 
 #### Amazon MemoryDB
 
-Store MemoryDB subnet groups, users, ACLs and clusters as metadata without running a Valkey or Redis OSS engine.
+Store MemoryDB subnet groups, users, ACLs and clusters, optionally serving a cluster-protocol Valkey or Redis OSS engine in Docker.
 
-**Execution:** Records only. **Selected operations:** 19.
+**Execution:** Records by default; optional Docker Valkey/Redis cluster protocol with TLS and ACLs. **Selected operations:** 19.
 
 - Nineteen pinned AWS JSON 1.1 operations for subnet groups, users, ACLs, clusters and native tags, with AWS SDK v2 coverage.
 - Clusters follow the documented naming, shard (1-500), replica (0-5), port, maintenance and snapshot window rules, with whole-candidate validation on update and no change when an update is rejected.
 - Engine redis 6.2/7.0/7.1 or valkey 7.2 by major.minor version with the matching default parameter group; engines can be upgraded (Redis OSS to Valkey too) but never downgraded.
-- Clusters report available with a clustercfg endpoint and synthesized shards, slots, nodes and Availability Zones for ShowShardDetails; DeleteCluster reports deleting.
+- Records mode reports available with synthesized shards and nodes; opt-in memorydb.clusters: docker runs one cluster-mode engine with all 16384 slots, loopback cluster and node endpoints, and readiness-driven creating/available status; engine ACL errors report create-failed.
 - Built-in default user and open-access ACL that are identical on every read and cannot be changed, deleted or tagged; clusters without TLS must use open-access.
-- Users hold up to two checked passwords that are never stored or returned (PasswordCount only) or IAM authentication; deleting a user removes it from its ACLs; ACLs in use by a cluster cannot be deleted.
+- Users accept up to two checked passwords or IAM authentication in records mode; Docker mode rejects IAM and stores SHA-256 password hashes for engine ACL enforcement; deleting a user removes it from its ACLs.
 - Subnet groups read existing EC2 subnets in the same transaction, derive the VPC, and protect in-use groups from deletion.
 - TagResource, UntagResource and ListTags on cluster, user, acl and subnetgroup ARNs; Resource Groups Tagging API and Resource Groups integration.
 - AWS::MemoryDB::Cluster, SubnetGroup, User and ACL CloudFormation lifecycle with in-place updates, replacement for immutable properties, Ref returning the name and GetAtt ARN/Arn, ClusterEndpoint.Address/Port and Status.
-- RecordsOnly=true and ExecutionReady=false inventory, official AWS icon and Terraform memorydb endpoint key.
+- Inventory reports RecordsOnly and ExecutionReady for the selected runtime; official AWS icon and Terraform memorydb endpoint key.
+- Docker runtime shares container execution with ElastiCache; TLS defaults on using TinyStack local CA, ACL changes reconcile every second, named volumes survive shutdown and sqlite restarts, and delete/reset remove owned resources.
 
 [Supported operations](memorydb.md#supported-operations) · [Limitations](memorydb.md#limitations-and-future-work)
 
