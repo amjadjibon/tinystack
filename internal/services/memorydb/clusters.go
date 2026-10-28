@@ -61,22 +61,28 @@ const (
 type clusterRecord struct {
 	CreatedAt time.Time
 	tagSet
+	EngineVersion      string
+	Engine             string
+	Admin              string
+	RuntimeEngine      string
+	RuntimeVersion     string
+	Container          string
 	Name               string
 	Description        string
 	NodeType           string
-	Engine             string
-	EngineVersion      string
+	EndpointToken      string
+	RuntimeStatus      string
 	ParameterGroupName string
-	SubnetGroupName    string
 	MaintenanceWindow  string
 	SnapshotWindow     string
+	SubnetGroupName    string
 	KmsKeyID           string
 	ACLName            string
-	EndpointToken      string
 	SecurityGroupIDs   []string
+	Port               int
 	NumShards          int
 	NumReplicas        int
-	Port               int
+	HostPort           int64
 	SnapshotRetention  int
 	TLS                bool
 	AutoMinorUpgrade   bool
@@ -311,6 +317,10 @@ func zones(tx storage.ReadTx, scope request.Scope, r *clusterRecord) ([]string, 
 }
 
 func (r *clusterRecord) output(scope request.Scope, zones []string, shards bool, status string) *api.Cluster {
+	if r.RuntimeStatus != "" && status != statusDeleting {
+		status = r.RuntimeStatus
+	}
+
 	patch := ""
 	if i := slices.IndexFunc(engineVersions, func(e engineVersion) bool {
 		return e.engine == r.Engine && e.version == r.EngineVersion
@@ -352,14 +362,28 @@ func (r *clusterRecord) output(scope request.Scope, zones []string, shards bool,
 		AutoMinorVersionUpgrade: new(r.AutoMinorUpgrade),
 		SecurityGroups:          []api.SecurityGroupMembership{},
 	}
+
 	for _, id := range r.SecurityGroupIDs {
 		out.SecurityGroups = append(out.SecurityGroups, api.SecurityGroupMembership{
 			SecurityGroupId: new(id), Status: new(statusActive),
 		})
 	}
 
+	if r.RuntimeStatus != "" {
+		out.ClusterEndpoint = &api.Endpoint{Address: new("127.0.0.1"), Port: new(r.HostPort)}
+	}
+
 	if shards {
 		out.Shards = r.shards(zones)
+		if r.RuntimeStatus != "" {
+			for i := range out.Shards {
+				out.Shards[i].Status = new(status)
+				for j := range out.Shards[i].Nodes {
+					out.Shards[i].Nodes[j].Status = new(status)
+					out.Shards[i].Nodes[j].Endpoint = out.ClusterEndpoint
+				}
+			}
+		}
 	}
 
 	return out
@@ -382,6 +406,7 @@ func (r *clusterRecord) shards(zones []string) []api.Shard {
 			Slots:         new(fmt.Sprintf("%d-%d", slot, slot+size-1)),
 			NumberOfNodes: new(int64(r.NumReplicas + 1)),
 		}
+
 		slot += size
 		for j := range r.NumReplicas + 1 {
 			shard.Nodes = append(shard.Nodes, api.Node{
@@ -432,6 +457,7 @@ func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterReques
 		MaintenanceWindow: defaultMaintenanceWindow,
 		SnapshotWindow:    defaultSnapshotWindow,
 	}
+
 	err = r.merge(&clusterPatch{
 		Description: in.Description, NodeType: in.NodeType, ParameterGroupName: in.ParameterGroupName,
 		SubnetGroupName: in.SubnetGroupName, MaintenanceWindow: in.MaintenanceWindow, SnapshotWindow: in.SnapshotWindow,
@@ -449,13 +475,27 @@ func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterReques
 		return nil, err
 	}
 
+	if s.runtime != nil {
+		if _, err = engineImage(r.Engine, r.EngineVersion); err != nil {
+			return nil, err
+		}
+
+		r.RuntimeStatus, r.Admin = statusCreating, common.RandomID(40)
+		r.RuntimeEngine, r.RuntimeVersion = r.Engine, r.EngineVersion
+	}
+
 	var out *api.Cluster
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, exists := tx.Get(key(scope, kindCluster, name)); exists {
 			return fault("ClusterAlreadyExistsFault", "Cluster %s already exists.", name)
 		}
 
-		e := checkReferences(tx, scope, r)
+		e := checkRuntimeACL(tx, scope, r, s.runtime != nil)
+		if e != nil {
+			return e
+		}
+
+		e = checkReferences(tx, scope, r)
 		if e != nil {
 			return e
 		}
@@ -466,6 +506,16 @@ func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterReques
 		}
 
 		out = r.output(scope, az, false, statusAvailable)
+		if s.runtime != nil {
+			if e := storage.Write(tx, ownerKey, s.owner); e != nil {
+				return e
+			}
+
+			if e := storage.Write(tx, indexKey(scope, name), true); e != nil {
+				return e
+			}
+		}
+
 		return storage.Write(tx, key(scope, kindCluster, name), r)
 	})
 	if err != nil {
@@ -494,6 +544,7 @@ func (s *Service) UpdateCluster(ctx context.Context, in *api.UpdateClusterReques
 		EngineVersion:      in.EngineVersion,
 		SecurityGroupIDs:   in.SecurityGroupIds,
 	}
+
 	if in.ReplicaConfiguration != nil {
 		if in.ReplicaConfiguration.ReplicaCount == nil {
 			return nil, invalidValue("ReplicaConfiguration requires ReplicaCount.")
@@ -534,6 +585,10 @@ func (s *Service) UpdateCluster(ctx context.Context, in *api.UpdateClusterReques
 		e = r.validate()
 		if e != nil {
 			return e
+		}
+
+		if aclErr := checkRuntimeACL(tx, scope, r, s.runtime != nil); aclErr != nil {
+			return aclErr
 		}
 
 		e = checkReferences(tx, scope, r)
@@ -587,6 +642,11 @@ func (s *Service) DeleteCluster(ctx context.Context, in *api.DeleteClusterReques
 		}
 
 		out = r.output(scope, az, false, statusDeleting)
+		if s.runtime != nil {
+			r.RuntimeStatus = statusDeleting
+			return storage.Write(tx, key(scope, kindCluster, name), r)
+		}
+
 		tx.Delete(key(scope, kindCluster, name))
 		return nil
 	})

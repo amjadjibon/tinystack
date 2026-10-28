@@ -291,6 +291,9 @@ type Config struct {
 	RDS struct {
 		Instances string `yaml:"instances"`
 	} `yaml:"rds"`
+	MemoryDB struct {
+		Clusters string `yaml:"clusters"`
+	} `yaml:"memorydb"`
 	ElastiCache struct {
 		Caches string `yaml:"caches"`
 	} `yaml:"elasticache"`
@@ -360,6 +363,7 @@ func Default() Config {
 	c.CodeBuild.Builds = BuildsRecords
 	c.ECS.Containers = ContainersRecords
 	c.EKS.Clusters = ClustersRecords
+	c.MemoryDB.Clusters = CachesRecords
 	c.ElastiCache.Caches = CachesRecords
 	c.OpenSearch.Domains = DomainsRecords
 	c.BedrockAgentCore.Runtimes = RuntimesRecords
@@ -545,6 +549,10 @@ func (c *Config) Validate() error {
 
 	if c.RDS.Instances != InstancesRecords && c.RDS.Instances != InstancesDocker {
 		return fmt.Errorf("rds.instances must be records or docker")
+	}
+
+	if c.MemoryDB.Clusters != CachesRecords && c.MemoryDB.Clusters != CachesDocker {
+		return fmt.Errorf("memorydb.clusters must be records or docker")
 	}
 
 	if c.ElastiCache.Caches != CachesRecords && c.ElastiCache.Caches != CachesDocker {

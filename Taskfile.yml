@@ -69,7 +69,7 @@ tasks:
   test:docker:
     cmds:
       - TINYSTACK_DOCKER_TESTS=1 go test -race -count=1 ./internal/services/lambda/docker ./internal/services/ecs/docker ./internal/services/eks/k3s ./internal/services/elasticache/docker
-      - TINYSTACK_DOCKER_TESTS=1 go test -race -count=1 ./tests/integration -run 'Test(RDS(Docker|DataDocker)|OpenSearchDocker|CodeBuildDocker|BedrockAgentCoreDocker)'
+      - TINYSTACK_DOCKER_TESTS=1 go test -race -count=1 ./tests/integration -run 'Test(RDS(Docker|DataDocker)|MemoryDBDocker|ElastiCacheDocker|OpenSearchDocker|CodeBuildDocker|BedrockAgentCoreDocker)'
 
   test:testcontainers:
     desc: "Test the separate Go Testcontainers module (requires Docker; builds the image unless TINYSTACK_IMAGE is set)"

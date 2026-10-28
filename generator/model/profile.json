@@ -25668,7 +25668,8 @@
         "Name",
         "Status",
         "AvailabilityZone",
-        "CreateTime"
+        "CreateTime",
+        "Endpoint"
       ],
       "ReplicaConfigurationRequest": [
         "ReplicaCount"

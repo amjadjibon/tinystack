@@ -2,6 +2,8 @@ package memorydb
 
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
 	"slices"
 	"strings"
 
@@ -24,10 +26,11 @@ const (
 
 type userRecord struct {
 	tagSet
-	Name          string
-	AccessString  string
-	AuthType      string
-	PasswordCount int
+	Name           string
+	AccessString   string
+	AuthType       string
+	PasswordHashes []string
+	PasswordCount  int
 }
 
 // defaultUser is the built-in user every account has. It is not stored, so it is identical on every read.
@@ -144,9 +147,17 @@ func (s *Service) CreateUser(ctx context.Context, in *api.CreateUserRequest) (*a
 		return nil, err
 	}
 
+	if accessErr := s.checkRuntimeAccess(ctx, scope, access); accessErr != nil {
+		return nil, accessErr
+	}
+
 	tags, err := tagMap(in.Tags)
 	if err != nil {
 		return nil, err
+	}
+
+	if s.runtime != nil && authType == authIAM {
+		return nil, invalidValue("IAM authentication is not supported in Docker mode.")
 	}
 
 	r := &userRecord{
@@ -156,6 +167,11 @@ func (s *Service) CreateUser(ctx context.Context, in *api.CreateUserRequest) (*a
 		PasswordCount: passwords,
 		tagSet:        tagSet{Tags: tags},
 	}
+
+	if s.runtime != nil {
+		r.PasswordHashes = passwordHashes(in.AuthenticationMode.Passwords)
+	}
+
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, exists := tx.Get(key(scope, kindUser, name)); exists || name == defaultUserName {
 			return fault("UserAlreadyExistsFault", "User %s already exists.", name)
@@ -181,6 +197,12 @@ func (s *Service) UpdateUser(ctx context.Context, in *api.UpdateUserRequest) (*a
 		return nil, invalidCombination("AuthenticationMode or AccessString is required.")
 	}
 
+	if in.AccessString != nil {
+		if accessErr := s.checkRuntimeAccess(ctx, scope, *in.AccessString); accessErr != nil {
+			return nil, accessErr
+		}
+	}
+
 	var out *api.User
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if name == defaultUserName {
@@ -200,6 +222,14 @@ func (s *Service) UpdateUser(ctx context.Context, in *api.UpdateUserRequest) (*a
 			if r.AuthType, r.PasswordCount, e = authentication(in.AuthenticationMode); e != nil {
 				return e
 			}
+		}
+
+		if s.runtime != nil && r.AuthType == authIAM {
+			return invalidValue("IAM authentication is not supported in Docker mode.")
+		}
+
+		if s.runtime != nil && in.AuthenticationMode != nil {
+			r.PasswordHashes = passwordHashes(in.AuthenticationMode.Passwords)
 		}
 
 		if in.AccessString != nil {
@@ -362,4 +392,13 @@ func (s *Service) DescribeUsers(ctx context.Context, in *api.DescribeUsersReques
 	}
 
 	return out, nil
+}
+
+func passwordHashes(passwords []string) []string {
+	hashes := make([]string, len(passwords))
+	for i, password := range passwords {
+		hashes[i] = fmt.Sprintf("%x", sha256.Sum256([]byte(password)))
+	}
+
+	return hashes
 }

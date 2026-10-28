@@ -91,7 +91,7 @@ func (r *aclRecord) output(scope request.Scope, clusters []string) *api.ACL {
 }
 
 // checkMembers verifies that names are unique, existing users. The default user can only join the open-access ACL.
-func checkMembers(tx storage.ReadTx, scope request.Scope, names []string) error {
+func (s *Service) checkMembers(tx storage.ReadTx, scope request.Scope, names []string) error {
 	for i, name := range names {
 		if slices.Contains(names[:i], name) {
 			return fault("DuplicateUserNameFault", "User %s is listed more than once.", name)
@@ -101,8 +101,17 @@ func checkMembers(tx storage.ReadTx, scope request.Scope, names []string) error 
 			return invalidValue("The default user can only belong to the %s ACL.", openAccessACL)
 		}
 
-		if _, exists := tx.Get(key(scope, kindUser, name)); !exists {
+		user, exists, err := storage.Read[userRecord](tx, key(scope, kindUser, name))
+		if err != nil {
+			return err
+		}
+
+		if !exists {
 			return userNotFound(name)
+		}
+
+		if s.runtime != nil && (user.AuthType == authIAM || len(user.PasswordHashes) == 0) {
+			return invalidValue("Docker ACL members require password authentication configured in Docker mode.")
 		}
 	}
 
@@ -141,7 +150,7 @@ func (s *Service) CreateACL(ctx context.Context, in *api.CreateACLRequest) (*api
 			return fault("ACLAlreadyExistsFault", "ACL %s already exists.", name)
 		}
 
-		e := checkMembers(tx, scope, r.UserNames)
+		e := s.checkMembers(tx, scope, r.UserNames)
 		if e != nil {
 			return e
 		}
@@ -188,7 +197,7 @@ func (s *Service) UpdateACL(ctx context.Context, in *api.UpdateACLRequest) (*api
 			}
 		}
 
-		e = checkMembers(tx, scope, add)
+		e = s.checkMembers(tx, scope, add)
 		if e != nil {
 			return e
 		}

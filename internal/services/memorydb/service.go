@@ -1,16 +1,18 @@
-// Package memorydb stores MemoryDB subnet groups, users, access control lists and clusters as metadata. A cluster
-// reports "available" with synthesized shards, nodes and endpoints, but no Valkey or Redis OSS engine runs.
+// Package memorydb stores MemoryDB resources and optionally runs cluster-protocol Valkey or Redis OSS engines.
 package memorydb
 
 import (
 	"fmt"
+	"log/slog"
 	"math"
 	"strings"
+	"sync"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	ec2api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/memorydb"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -22,6 +24,7 @@ const (
 	kindSubnetGroup = "subnetgroup"
 
 	statusAvailable = "available"
+	statusCreating  = "creating"
 	statusActive    = "active"
 	statusDeleting  = "deleting"
 
@@ -44,8 +47,14 @@ type Network interface {
 }
 
 type Service struct {
-	store   storage.Store
-	network Network
+	store       storage.Store
+	network     Network
+	runtime     Runtime
+	bg          *background.Group
+	logger      *slog.Logger
+	owner       string
+	mu          sync.Mutex // serializes the reconciler with Reset; API calls rely on transactions
+	orphansDone bool
 }
 
 func New(store storage.Store, network Network) *Service {

@@ -154,6 +154,7 @@ import (
 	dnsserver "github.com/amjadjibon/tinystack/internal/dns"
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	"github.com/amjadjibon/tinystack/internal/inithooks"
+	"github.com/amjadjibon/tinystack/internal/localtls"
 	"github.com/amjadjibon/tinystack/internal/metadata"
 	"github.com/amjadjibon/tinystack/internal/services/accessanalyzer"
 	"github.com/amjadjibon/tinystack/internal/services/account"
@@ -586,6 +587,8 @@ func build(
 	redshiftDataRecords := redshiftdata.New(store, redshiftRecords, redshiftServerlessRecords)
 	a.onStop(redshiftDataRecords.Stop)
 	memoryDBRecords := memorydb.New(store, network)
+	a.onStop(memoryDBRecords.Stop)
+	a.onReset(memoryDBRecords.Reset)
 	classicBalancers := elb.New(store, network)
 	a.onReset(trails.Reset)
 	databases := rds.New(store)
@@ -940,6 +943,22 @@ func build(
 
 	if cfg.RDS.Instances == config.InstancesDocker {
 		if err = databases.UseRuntime(rdsdocker.New()); err != nil {
+			return nil, err
+		}
+	}
+
+	if cfg.MemoryDB.Clusters == config.CachesDocker {
+		dir, dirErr := cfg.DataDir()
+		if dirErr != nil {
+			return nil, dirErr
+		}
+
+		ca, caErr := localtls.Load(dir)
+		if caErr != nil {
+			return nil, caErr
+		}
+
+		if err = memoryDBRecords.UseDocker(ca, logger); err != nil {
 			return nil, err
 		}
 	}

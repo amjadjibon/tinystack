@@ -10,6 +10,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/services/background"
+	"github.com/amjadjibon/tinystack/internal/services/valkeydocker"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -19,32 +20,22 @@ const (
 )
 
 // ErrGone is returned when a container no longer exists.
-var ErrGone = errors.New("container is gone")
+var ErrGone = valkeydocker.ErrGone
 
 // Runtime runs cache node containers.
 type Runtime interface {
-	Start(ctx context.Context, spec *NodeSpec) (Started, error)
-	Running(ctx context.Context, id string) (bool, error)
-	Remove(ctx context.Context, id string)
-	ListLabeled(ctx context.Context, label string) (map[string]string, error)
+	Start(context.Context, *NodeSpec) (Started, error)
+	Running(context.Context, string) (bool, error)
+	Remove(context.Context, string)
+	ListLabeled(context.Context, string) (map[string]string, error)
 	Close()
 }
 
 // NodeSpec defines a container to run for a cache node.
-type NodeSpec struct {
-	Labels  map[string]string
-	Image   string
-	Alias   string
-	Network string
-	Args    []string
-	Port    int64
-}
+type NodeSpec = valkeydocker.NodeSpec
 
-// Started holds the ID and published host port of a started container.
-type Started struct {
-	ID   string
-	Port int64
-}
+// Started holds a container ID and published port.
+type Started = valkeydocker.Started
 
 // UseRuntime enables container execution for cache clusters.
 func (s *Service) UseRuntime(rt Runtime, logger *slog.Logger) {
@@ -53,6 +44,7 @@ func (s *Service) UseRuntime(rt Runtime, logger *slog.Logger) {
 	if s.bg == nil {
 		s.bg = background.New()
 	}
+
 	s.bg.Every(tick, s.visit)
 }
 
@@ -147,6 +139,7 @@ func (s *Service) cleanOrphans(ctx context.Context) {
 			default:
 				exists = false
 			}
+
 			return nil
 		})
 
@@ -215,8 +208,10 @@ func (s *Service) advanceCluster(ctx context.Context, scope request.Scope, clust
 				s.runtime.Remove(ctx, n.ContainerID)
 				n.ContainerID = ""
 			}
+
 			n.Status = statusCreating
 		}
+
 		record.Status = statusModifying
 		return s.store.Update(ctx, func(tx storage.WriteTx) error {
 			return storage.Write(tx, clusterKey(scope, clusterID), *record)
@@ -272,6 +267,7 @@ func (s *Service) advanceCreatingCluster(
 			if found {
 				repGroup = rg
 			}
+
 			return nil
 		})
 
@@ -279,6 +275,7 @@ func (s *Service) advanceCreatingCluster(
 			if repGroup.AuthToken != "" {
 				extraArgs = append(extraArgs, "--requirepass", repGroup.AuthToken)
 			}
+
 			if record.ClusterID != repGroup.PrimaryClusterID {
 				extraArgs = append(extraArgs, "--replicaof", repGroup.PrimaryClusterID, "6379")
 				if repGroup.AuthToken != "" {
@@ -359,6 +356,7 @@ func (s *Service) advanceCreatingCluster(
 		if record.ParameterApplyStatus == "applying" || record.ParameterApplyStatus == "pending-reboot" {
 			record.ParameterApplyStatus = applyStatusInSync
 		}
+
 		s.recordEvent(
 			ctx,
 			scope,
@@ -380,17 +378,20 @@ func (s *Service) advanceCreatingCluster(
 						if mID == clusterID {
 							continue
 						}
+
 						cl, clFound, _ := storage.Read[clusterRecord](tx, clusterKey(scope, mID))
 						if !clFound || cl.Status != statusAvailable {
 							allMembersAvail = false
 							break
 						}
 					}
+
 					if allMembersAvail {
 						rg.Status = statusAvailable
 						_ = storage.Write(tx, replicationGroupKey(scope, record.ReplicationGroupID), *rg)
 					}
 				}
+
 				return nil
 			})
 		}
@@ -451,6 +452,7 @@ func (s *Service) buildParamArgs(
 		if err == nil && found {
 			params = pg.UserValues
 		}
+
 		return nil
 	})
 
@@ -480,6 +482,7 @@ func memcachedParamFlags(name, val string) ([]string, error) {
 		if val == "1" || strings.EqualFold(val, "true") {
 			return []string{"-C"}, nil
 		}
+
 		return nil, nil
 	case "chunk_size":
 		return []string{"-s", val}, nil
@@ -581,6 +584,7 @@ func (s *Service) advanceCreatingServerless(
 			})
 			s.recordEvent(ctx, scope, name, "serverless-cache", "Serverless cache failed health check after 2 minutes")
 		}
+
 		return nil
 	}
 
@@ -610,5 +614,6 @@ func (s *Service) advanceAvailableServerless(
 			})
 		}
 	}
+
 	return nil
 }

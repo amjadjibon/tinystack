@@ -52,11 +52,17 @@ type CreateClusterRequest struct {
 	AutoMinorVersionUpgrade *bool    `json:"AutoMinorVersionUpgrade,omitempty"`
 }
 
+type Endpoint struct {
+	Address *string `json:"Address,omitempty"`
+	Port    *int64  `json:"Port,omitempty"`
+}
+
 type Node struct {
-	Name             *string  `json:"Name,omitempty"`
-	Status           *string  `json:"Status,omitempty"`
-	AvailabilityZone *string  `json:"AvailabilityZone,omitempty"`
-	CreateTime       *float64 `json:"CreateTime,omitempty"`
+	Name             *string   `json:"Name,omitempty"`
+	Status           *string   `json:"Status,omitempty"`
+	AvailabilityZone *string   `json:"AvailabilityZone,omitempty"`
+	CreateTime       *float64  `json:"CreateTime,omitempty"`
+	Endpoint         *Endpoint `json:"Endpoint,omitempty"`
 }
 
 type Shard struct {
@@ -65,11 +71,6 @@ type Shard struct {
 	Slots         *string `json:"Slots,omitempty"`
 	Nodes         []Node  `json:"Nodes,omitempty"`
 	NumberOfNodes *int64  `json:"NumberOfNodes,omitempty"`
-}
-
-type Endpoint struct {
-	Address *string `json:"Address,omitempty"`
-	Port    *int64  `json:"Port,omitempty"`
 }
 
 type SecurityGroupMembership struct {

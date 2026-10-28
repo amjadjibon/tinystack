@@ -372,7 +372,7 @@ func TestElastiCacheRuntime_ClusterLifecycle(t *testing.T) {
 	})
 }
 
-func TestElastiCacheLiveDocker(t *testing.T) {
+func TestElastiCacheDockerLive(t *testing.T) {
 	if os.Getenv("TINYSTACK_DOCKER_TESTS") != "1" {
 		t.Skip("set TINYSTACK_DOCKER_TESTS=1 to run cache containers in live Docker")
 	}

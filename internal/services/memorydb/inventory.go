@@ -23,9 +23,10 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			kind, _, _ := strings.Cut(rest, "/")
 			scope := request.Scope{AccountID: account, Region: region}
 			var (
-				name          string
-				configuration any
-				tags          map[string]string
+				name           string
+				configuration  any
+				tags           map[string]string
+				executionReady bool
 			)
 
 			switch kind {
@@ -41,6 +42,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				}
 
 				name, tags, configuration = r.Name, r.Tags, r.output(scope, az, true, statusAvailable)
+				executionReady = s.runtime != nil && r.RuntimeStatus == statusAvailable
 			case kindUser:
 				r, _, e := storage.Read[userRecord](tx, k)
 				if e != nil {
@@ -81,7 +83,9 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				ARN:  arn(scope, kind, name),
 				Tags: maps.Clone(tags),
 				Details: map[string]any{
-					"RecordsOnly": true, "ExecutionReady": false, "Configuration": configuration,
+					"RecordsOnly":    s.runtime == nil || kind != kindCluster,
+					"ExecutionReady": executionReady,
+					"Configuration":  configuration,
 				},
 			})
 		}
