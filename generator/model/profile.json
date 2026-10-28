@@ -28783,7 +28783,18 @@
       "DeletePipeline",
       "TagResource",
       "UntagResource",
-      "ListTagsForResource"
+      "ListTagsForResource",
+      "StartPipelineExecution",
+      "GetPipelineExecution",
+      "ListPipelineExecutions",
+      "StopPipelineExecution",
+      "ListActionExecutions",
+      "PutApprovalResult",
+      "RetryStageExecution",
+      "EnableStageTransition",
+      "DisableStageTransition",
+      "PutJobSuccessResult",
+      "PutJobFailureResult"
     ],
     "shapes": {
       "CreatePipelineInput": [
@@ -28814,10 +28825,18 @@
       ],
       "StageState": [
         "stageName",
-        "actionStates"
+        "inboundExecution",
+        "inboundExecutions",
+        "inboundTransitionState",
+        "actionStates",
+        "latestExecution"
       ],
       "ActionState": [
-        "actionName"
+        "actionName",
+        "currentRevision",
+        "latestExecution",
+        "entityUrl",
+        "revisionUrl"
       ],
       "ListPipelinesInput": [
         "nextToken",
@@ -28918,7 +28937,309 @@
       "Tag": [
         "key",
         "value"
+      ],
+      "StartPipelineExecutionInput": [
+        "name",
+        "variables",
+        "clientRequestToken",
+        "sourceRevisions"
+      ],
+      "PipelineVariable": [
+        "name",
+        "value"
+      ],
+      "SourceRevisionOverride": [
+        "actionName",
+        "revisionType",
+        "revisionValue"
+      ],
+      "StartPipelineExecutionOutput": [
+        "pipelineExecutionId"
+      ],
+      "GetPipelineExecutionInput": [
+        "pipelineName",
+        "pipelineExecutionId"
+      ],
+      "GetPipelineExecutionOutput": [
+        "pipelineExecution"
+      ],
+      "PipelineExecution": [
+        "pipelineName",
+        "pipelineVersion",
+        "pipelineExecutionId",
+        "status",
+        "statusSummary",
+        "artifactRevisions",
+        "variables",
+        "trigger",
+        "executionMode",
+        "executionType",
+        "rollbackMetadata"
+      ],
+      "ArtifactRevision": [
+        "name",
+        "revisionId",
+        "revisionChangeIdentifier",
+        "revisionSummary",
+        "created",
+        "revisionUrl"
+      ],
+      "ResolvedPipelineVariable": [
+        "name",
+        "resolvedValue"
+      ],
+      "ExecutionTrigger": [
+        "triggerType",
+        "triggerDetail"
+      ],
+      "PipelineRollbackMetadata": [
+        "rollbackTargetPipelineExecutionId"
+      ],
+      "ListPipelineExecutionsInput": [
+        "pipelineName",
+        "maxResults",
+        "nextToken"
+      ],
+      "PipelineExecutionFilter": [
+        "succeededInStage"
+      ],
+      "SucceededInStageFilter": [
+        "stageName"
+      ],
+      "ListPipelineExecutionsOutput": [
+        "pipelineExecutionSummaries",
+        "nextToken"
+      ],
+      "PipelineExecutionSummary": [
+        "pipelineExecutionId",
+        "status",
+        "statusSummary",
+        "startTime",
+        "lastUpdateTime",
+        "sourceRevisions",
+        "trigger",
+        "stopTrigger",
+        "executionMode",
+        "executionType",
+        "rollbackMetadata"
+      ],
+      "SourceRevision": [
+        "actionName",
+        "revisionId",
+        "revisionSummary",
+        "revisionUrl"
+      ],
+      "StopExecutionTrigger": [
+        "reason"
+      ],
+      "StopPipelineExecutionInput": [
+        "pipelineName",
+        "pipelineExecutionId",
+        "abandon",
+        "reason"
+      ],
+      "StopPipelineExecutionOutput": [
+        "pipelineExecutionId"
+      ],
+      "ListActionExecutionsInput": [
+        "pipelineName",
+        "filter",
+        "maxResults",
+        "nextToken"
+      ],
+      "ActionExecutionFilter": [
+        "pipelineExecutionId"
+      ],
+      "LatestInPipelineExecutionFilter": [
+        "pipelineExecutionId",
+        "startTimeRange"
+      ],
+      "ListActionExecutionsOutput": [
+        "actionExecutionDetails",
+        "nextToken"
+      ],
+      "ActionExecutionDetail": [
+        "pipelineExecutionId",
+        "actionExecutionId",
+        "pipelineVersion",
+        "stageName",
+        "actionName",
+        "startTime",
+        "lastUpdateTime",
+        "updatedBy",
+        "status",
+        "input",
+        "output"
+      ],
+      "ActionExecutionInput": [
+        "actionTypeId",
+        "configuration",
+        "resolvedConfiguration",
+        "roleArn",
+        "region",
+        "inputArtifacts",
+        "namespace"
+      ],
+      "ArtifactDetail": [
+        "name",
+        "s3location"
+      ],
+      "S3Location": [
+        "bucket",
+        "key"
+      ],
+      "ActionExecutionOutput": [
+        "outputArtifacts",
+        "executionResult",
+        "outputVariables"
+      ],
+      "ActionExecutionResult": [
+        "externalExecutionId",
+        "externalExecutionSummary",
+        "externalExecutionUrl",
+        "errorDetails",
+        "logStreamARN"
+      ],
+      "ErrorDetails": [
+        "code",
+        "message"
+      ],
+      "PutApprovalResultInput": [
+        "pipelineName",
+        "stageName",
+        "actionName",
+        "result",
+        "token"
+      ],
+      "ApprovalResult": [
+        "summary",
+        "status"
+      ],
+      "PutApprovalResultOutput": [
+        "approvedAt"
+      ],
+      "RetryStageExecutionInput": [
+        "pipelineName",
+        "stageName",
+        "pipelineExecutionId",
+        "retryMode"
+      ],
+      "RetryStageExecutionOutput": [
+        "pipelineExecutionId"
+      ],
+      "EnableStageTransitionInput": [
+        "pipelineName",
+        "stageName",
+        "transitionType"
+      ],
+      "DisableStageTransitionInput": [
+        "pipelineName",
+        "stageName",
+        "transitionType",
+        "reason"
+      ],
+      "PutJobSuccessResultInput": [
+        "jobId",
+        "executionDetails",
+        "outputVariables"
+      ],
+      "CurrentRevision": [
+        "revision",
+        "changeIdentifier",
+        "created",
+        "revisionSummary"
+      ],
+      "ExecutionDetails": [
+        "summary",
+        "externalExecutionId",
+        "percentComplete"
+      ],
+      "PutJobFailureResultInput": [
+        "jobId",
+        "failureDetails"
+      ],
+      "FailureDetails": [
+        "type",
+        "message",
+        "externalExecutionId"
+      ],
+      "StageExecution": [
+        "pipelineExecutionId",
+        "status",
+        "type"
+      ],
+      "TransitionState": [
+        "enabled",
+        "lastChangedBy",
+        "lastChangedAt",
+        "disabledReason"
+      ],
+      "StageConditionState": [
+        "latestExecution",
+        "conditionStates"
+      ],
+      "StageConditionsExecution": [
+        "status",
+        "summary"
+      ],
+      "ConditionState": [
+        "latestExecution",
+        "ruleStates"
+      ],
+      "ConditionExecution": [
+        "status",
+        "summary",
+        "lastStatusChange"
+      ],
+      "RuleState": [
+        "ruleName",
+        "currentRevision",
+        "latestExecution",
+        "entityUrl",
+        "revisionUrl"
+      ],
+      "RuleRevision": [
+        "revisionId",
+        "revisionChangeId",
+        "created"
+      ],
+      "RuleExecution": [
+        "ruleExecutionId",
+        "status",
+        "summary",
+        "lastStatusChange",
+        "token",
+        "lastUpdatedBy",
+        "externalExecutionId",
+        "externalExecutionUrl",
+        "errorDetails"
+      ],
+      "RetryStageMetadata": [
+        "autoStageRetryAttempt",
+        "manualStageRetryAttempt",
+        "latestRetryTrigger"
+      ],
+      "ActionRevision": [
+        "revisionId",
+        "revisionChangeId",
+        "created"
+      ],
+      "ActionExecution": [
+        "actionExecutionId",
+        "status",
+        "summary",
+        "lastStatusChange",
+        "token",
+        "lastUpdatedBy",
+        "externalExecutionId",
+        "externalExecutionUrl",
+        "percentComplete",
+        "errorDetails",
+        "logStreamARN"
       ]
+    },
+    "validation": {
+      "code": "ValidationException"
     }
   },
   "codedeploy": {

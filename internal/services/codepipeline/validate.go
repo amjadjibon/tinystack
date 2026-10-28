@@ -21,10 +21,10 @@ const (
 
 // The enums, patterns and lengths come from the pinned CodePipeline model. The generated decoder checks none of them.
 var (
-	executionModes = []string{"QUEUED", modeSuperseded, "PARALLEL"}
+	executionModes = []string{"QUEUED", modeSuperseded, modeParallel}
 	pipelineTypes  = []string{typeV1, typeV2}
-	categories     = []string{categorySource, "Build", "Deploy", "Test", "Invoke", "Approval", "Compute"}
-	owners         = []string{"AWS", "ThirdParty", "Custom"}
+	categories     = []string{categorySource, "Build", "Deploy", "Test", categoryInvoke, categoryApproval, "Compute"}
+	owners         = []string{ownerAWS, "ThirdParty", "Custom"}
 
 	namePattern     = regexp.MustCompile(`^[A-Za-z0-9.@\-_]+$`)
 	rolePattern     = regexp.MustCompile(`^arn:aws(-\w+)*:iam::\d{12}:role/`)
@@ -216,6 +216,7 @@ func checkStages(p *api.PipelineDeclaration, region string) error {
 
 		return r == region
 	}
+
 	names := map[string]bool{}
 	for i := range p.Stages {
 		stage := &p.Stages[i]

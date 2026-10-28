@@ -3,6 +3,7 @@ package codepipeline
 import (
 	"context"
 	"maps"
+	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -14,7 +15,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, key := range tx.Keys("") {
 			account, region, _, ok := storage.Scoped(key, serviceName)
-			if !ok {
+			if !ok || !strings.Contains(key, "/codepipeline/pipeline/") {
 				continue
 			}
 
@@ -31,8 +32,8 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				ARN:     pipelineARN(request.Scope{AccountID: account, Region: region}, *r.Pipeline.Name),
 				Tags:    maps.Clone(r.Tags),
 				Details: map[string]any{
-					"RecordsOnly":    true,
-					"ExecutionReady": false,
+					"RecordsOnly":    false,
+					"ExecutionReady": true,
 					"Configuration":  r.Pipeline,
 				},
 			})
@@ -40,5 +41,6 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 		return nil
 	})
+
 	return out, err
 }

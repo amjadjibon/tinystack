@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	pipelineType   = "CODEPIPELINE"
 	noSource       = "NO_SOURCE"
 	noArtifacts    = "NO_ARTIFACTS"
 	s3Type         = "S3"
@@ -201,6 +202,20 @@ func sourceOK(scope request.Scope, s *api.ProjectSource) error {
 	}
 
 	typ := common.Value(s.Type)
+	if typ == pipelineType {
+		if s.Location != nil || s.GitCloneDepth != nil {
+			return invalid("CODEPIPELINE source does not accept Location or GitCloneDepth")
+		}
+
+		if s.Buildspec != nil {
+			if e := checkString(s.Buildspec, 0, 65536, "Buildspec"); e != nil {
+				return e
+			}
+		}
+
+		return nil
+	}
+
 	switch typ {
 	case noSource, s3Type, githubSource, commitSource:
 	default:
@@ -280,6 +295,19 @@ func sourceOK(scope request.Scope, s *api.ProjectSource) error {
 func artifactsOK(a *api.ProjectArtifacts) error {
 	if a == nil {
 		return invalid("Artifacts is required")
+	}
+
+	if common.Value(a.Type) == pipelineType {
+		if a.Location != nil || a.Name != nil || a.Path != nil {
+			return invalid("CODEPIPELINE artifacts do not accept Location, Name or Path")
+		}
+
+		if a.NamespaceType != nil || a.Packaging != nil || a.OverrideArtifactName != nil ||
+			a.EncryptionDisabled != nil {
+			return invalid("CODEPIPELINE artifact overrides are not implemented")
+		}
+
+		return nil
 	}
 
 	if common.Value(a.Type) == noArtifacts {

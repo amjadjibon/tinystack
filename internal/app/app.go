@@ -840,6 +840,10 @@ func build(
 
 	a.onStop(buildProjects.Stop)
 	a.onReset(buildProjects.Reset)
+	codePipelines.Start(caller, codecommitRecords, buildProjects)
+	codecommitRecords.ObserveReferences(codePipelines.SourceChanged)
+	a.onStop(codePipelines.Stop)
+	a.onReset(codePipelines.Reset)
 	workflows.UseCaller(caller)
 	firehoses.UseCaller(caller)
 	// Pipes enrich and deliver to Lambda, SQS, SNS, EventBridge, Step Functions, and Kinesis.

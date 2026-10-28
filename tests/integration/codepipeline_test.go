@@ -100,7 +100,7 @@ func TestCodePipelineSDKLifecycle(t *testing.T) {
 
 	state, err := c.GetPipelineState(ctx, &sdk.GetPipelineStateInput{Name: new("app")})
 	if err != nil || len(state.StageStates) != 2 || aws.ToString(state.StageStates[0].StageName) != "Source" ||
-		state.StageStates[0].LatestExecution != nil {
+		aws.ToString(state.StageStates[0].ActionStates[0].ActionName) != "Fetch" {
 		t.Fatal(state, err)
 	}
 

@@ -69,6 +69,10 @@ func (s *Service) CreatePipeline(ctx context.Context, in *api.CreatePipelineInpu
 		return nil, err
 	}
 
+	if _, err = s.start(ctx, &api.StartPipelineExecutionInput{Name: p.Name}, "CreatePipeline"); err != nil {
+		return nil, err
+	}
+
 	return &api.CreatePipelineOutput{Pipeline: p, Tags: tagList(tags)}, nil
 }
 
@@ -96,6 +100,33 @@ func (s *Service) UpdatePipeline(ctx context.Context, in *api.UpdatePipelineInpu
 
 		if !found {
 			return pipelineNotFound(*p.Name)
+		}
+
+		// AWS stops runs of the old structure when UpdatePipeline changes it.
+		rows, e := storage.Records[executionRecord](tx, scope.Prefix(serviceName, executionKind)+*p.Name+"/")
+		if e != nil {
+			return e
+		}
+
+		for _, execution := range rows {
+			if !running(execution) {
+				continue
+			}
+
+			for i := range execution.Actions {
+				if common.Value(execution.Actions[i].Detail.Status) == statusInProgress {
+					actionDone(&execution.Actions[i], "Abandoned", "Pipeline structure updated")
+				}
+			}
+
+			finishExecution(execution, statusStopped, "Pipeline structure updated")
+			if e := storage.Write(
+				tx,
+				executionKey(scope, *p.Name, *execution.Execution.PipelineExecutionId),
+				execution,
+			); e != nil {
+				return e
+			}
 		}
 
 		// The version in the declaration is ignored: every update adds one to the stored version.
@@ -171,38 +202,127 @@ func (s *Service) GetPipeline(ctx context.Context, in *api.GetPipelineInput) (*a
 	}, nil
 }
 
-// GetPipelineState lists the stages and actions of a pipeline. Nothing runs, so no stage or action has an execution.
 func (s *Service) GetPipelineState(
 	ctx context.Context,
 	in *api.GetPipelineStateInput,
 ) (*api.GetPipelineStateOutput, error) {
-	if in == nil {
-		return nil, awserror.Validation("Input is required")
-	}
-
 	r, _, err := s.load(ctx, in.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	stages := make([]api.StageState, 0, len(r.Pipeline.Stages))
-	for i := range r.Pipeline.Stages {
-		stage := &r.Pipeline.Stages[i]
-		actions := make([]api.ActionState, 0, len(stage.Actions))
-		for j := range stage.Actions {
-			actions = append(actions, api.ActionState{ActionName: stage.Actions[j].Name})
-		}
-
-		stages = append(stages, api.StageState{StageName: stage.Name, ActionStates: actions})
+	rows, err := s.executionRows(ctx, in.Name)
+	if err != nil {
+		return nil, err
 	}
 
-	return &api.GetPipelineStateOutput{
+	out := &api.GetPipelineStateOutput{
 		PipelineName:    r.Pipeline.Name,
 		PipelineVersion: r.Pipeline.Version,
-		StageStates:     stages,
 		Created:         new(r.Created),
 		Updated:         new(r.Updated),
-	}, nil
+	}
+
+	for stageIndex, stage := range r.Pipeline.Stages {
+		transition := api.TransitionState{Enabled: new(true)}
+		if v, ok := r.Transitions[*stage.Name+"/Inbound"]; ok {
+			transition = v
+		}
+
+		state := api.StageState{StageName: stage.Name, InboundTransitionState: new(transition)}
+		latest := map[string]actionRecord{}
+		var latestTime float64
+		for _, row := range rows {
+			if running(row) && row.Stage == stageIndex {
+				entered := false
+				for index := range row.Actions {
+					a := &row.Actions[index]
+					if a.Stage == stageIndex && !a.Retired {
+						entered = true
+					}
+				}
+
+				if !entered {
+					incoming := api.StageExecution{
+						PipelineExecutionId: row.Execution.PipelineExecutionId,
+						Status:              new(statusInProgress),
+						Type:                new("STANDARD"),
+					}
+
+					state.InboundExecutions = append(state.InboundExecutions, incoming)
+					state.InboundExecution = new(incoming)
+				}
+			}
+
+			for idx := range row.Actions {
+				a := &row.Actions[idx]
+				if *a.Detail.StageName != *stage.Name {
+					continue
+				}
+
+				old, ok := latest[*a.Detail.ActionName]
+				if !ok || *a.Detail.StartTime > *old.Detail.StartTime {
+					latest[*a.Detail.ActionName] = *a
+				}
+
+				if row.Started >= latestTime {
+					latestTime = row.Started
+					status := statusSucceeded
+					if a.Stage == row.Stage {
+						status = common.Value(row.Execution.Status)
+					}
+
+					state.LatestExecution = &api.StageExecution{
+						PipelineExecutionId: row.Execution.PipelineExecutionId,
+						Status:              new(status),
+					}
+				}
+			}
+		}
+
+		for idx := range stage.Actions {
+			a := &stage.Actions[idx]
+			action := api.ActionState{ActionName: a.Name}
+			if v, ok := latest[*a.Name]; ok {
+				action.LatestExecution = &api.ActionExecution{
+					ActionExecutionId: v.Detail.ActionExecutionId,
+					Status:            v.Detail.Status,
+					LastStatusChange:  v.Detail.LastUpdateTime,
+				}
+
+				if v.Token != "" && common.Value(v.Detail.Status) == statusInProgress {
+					action.LatestExecution.Token = new(v.Token)
+				}
+
+				if v.Detail.Output != nil && v.Detail.Output.ExecutionResult != nil {
+					if v.Detail.Input.ActionTypeId.Category != nil &&
+						*v.Detail.Input.ActionTypeId.Category == categorySource {
+						revision := v.Detail.Output.OutputVariables["CommitId"]
+						if revision == "" {
+							revision = v.Detail.Output.OutputVariables["VersionId"]
+						}
+
+						if revision != "" {
+							action.CurrentRevision = &api.ActionRevision{
+								RevisionId:       new(revision),
+								RevisionChangeId: new(revision),
+								Created:          v.Detail.StartTime,
+							}
+						}
+					}
+
+					action.LatestExecution.Summary = v.Detail.Output.ExecutionResult.ExternalExecutionSummary
+					action.LatestExecution.ErrorDetails = v.Detail.Output.ExecutionResult.ErrorDetails
+				}
+			}
+
+			state.ActionStates = append(state.ActionStates, action)
+		}
+
+		out.StageStates = append(out.StageStates, state)
+	}
+
+	return out, nil
 }
 
 func (s *Service) ListPipelines(ctx context.Context, in *api.ListPipelinesInput) (*api.ListPipelinesOutput, error) {

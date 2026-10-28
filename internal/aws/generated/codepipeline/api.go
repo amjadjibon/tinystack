@@ -3,7 +3,11 @@ package codepipeline
 
 import (
 	"context"
+	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/validation"
+	"regexp"
+	"unicode/utf8"
 )
 
 type EncryptionKey struct {
@@ -102,13 +106,59 @@ type GetPipelineStateInput struct {
 	Name *string `json:"name,omitempty"`
 }
 
+type StageExecution struct {
+	PipelineExecutionId *string `json:"pipelineExecutionId,omitempty"`
+	Status              *string `json:"status,omitempty"`
+	Type                *string `json:"type,omitempty"`
+}
+
+type TransitionState struct {
+	Enabled        *bool    `json:"enabled,omitempty"`
+	LastChangedBy  *string  `json:"lastChangedBy,omitempty"`
+	LastChangedAt  *float64 `json:"lastChangedAt,omitempty"`
+	DisabledReason *string  `json:"disabledReason,omitempty"`
+}
+
+type ActionRevision struct {
+	RevisionId       *string  `json:"revisionId,omitempty"`
+	RevisionChangeId *string  `json:"revisionChangeId,omitempty"`
+	Created          *float64 `json:"created,omitempty"`
+}
+
+type ErrorDetails struct {
+	Code    *string `json:"code,omitempty"`
+	Message *string `json:"message,omitempty"`
+}
+
+type ActionExecution struct {
+	ActionExecutionId    *string       `json:"actionExecutionId,omitempty"`
+	Status               *string       `json:"status,omitempty"`
+	Summary              *string       `json:"summary,omitempty"`
+	LastStatusChange     *float64      `json:"lastStatusChange,omitempty"`
+	Token                *string       `json:"token,omitempty"`
+	LastUpdatedBy        *string       `json:"lastUpdatedBy,omitempty"`
+	ExternalExecutionId  *string       `json:"externalExecutionId,omitempty"`
+	ExternalExecutionUrl *string       `json:"externalExecutionUrl,omitempty"`
+	PercentComplete      *int64        `json:"percentComplete,omitempty"`
+	ErrorDetails         *ErrorDetails `json:"errorDetails,omitempty"`
+	LogStreamARN         *string       `json:"logStreamARN,omitempty"`
+}
+
 type ActionState struct {
-	ActionName *string `json:"actionName,omitempty"`
+	ActionName      *string          `json:"actionName,omitempty"`
+	CurrentRevision *ActionRevision  `json:"currentRevision,omitempty"`
+	LatestExecution *ActionExecution `json:"latestExecution,omitempty"`
+	EntityUrl       *string          `json:"entityUrl,omitempty"`
+	RevisionUrl     *string          `json:"revisionUrl,omitempty"`
 }
 
 type StageState struct {
-	StageName    *string       `json:"stageName,omitempty"`
-	ActionStates []ActionState `json:"actionStates,omitempty"`
+	StageName              *string          `json:"stageName,omitempty"`
+	InboundExecution       *StageExecution  `json:"inboundExecution,omitempty"`
+	InboundExecutions      []StageExecution `json:"inboundExecutions,omitempty"`
+	InboundTransitionState *TransitionState `json:"inboundTransitionState,omitempty"`
+	ActionStates           []ActionState    `json:"actionStates,omitempty"`
+	LatestExecution        *StageExecution  `json:"latestExecution,omitempty"`
 }
 
 type GetPipelineStateOutput struct {
@@ -176,6 +226,1294 @@ type ListTagsForResourceOutput struct {
 	Tags []Tag `json:"tags,omitempty"`
 }
 
+type PipelineVariable struct {
+	Name  *string `json:"name,omitempty"`
+	Value *string `json:"value,omitempty"`
+}
+
+type SourceRevisionOverride struct {
+	ActionName    *string `json:"actionName,omitempty"`
+	RevisionType  *string `json:"revisionType,omitempty"`
+	RevisionValue *string `json:"revisionValue,omitempty"`
+}
+
+type StartPipelineExecutionInput struct {
+	Name               *string                  `json:"name,omitempty"`
+	Variables          []PipelineVariable       `json:"variables,omitempty"`
+	ClientRequestToken *string                  `json:"clientRequestToken,omitempty"`
+	SourceRevisions    []SourceRevisionOverride `json:"sourceRevisions,omitempty"`
+}
+
+type StartPipelineExecutionOutput struct {
+	PipelineExecutionId *string `json:"pipelineExecutionId,omitempty"`
+}
+
+type GetPipelineExecutionInput struct {
+	PipelineName        *string `json:"pipelineName,omitempty"`
+	PipelineExecutionId *string `json:"pipelineExecutionId,omitempty"`
+}
+
+type ArtifactRevision struct {
+	Name                     *string  `json:"name,omitempty"`
+	RevisionId               *string  `json:"revisionId,omitempty"`
+	RevisionChangeIdentifier *string  `json:"revisionChangeIdentifier,omitempty"`
+	RevisionSummary          *string  `json:"revisionSummary,omitempty"`
+	Created                  *float64 `json:"created,omitempty"`
+	RevisionUrl              *string  `json:"revisionUrl,omitempty"`
+}
+
+type ResolvedPipelineVariable struct {
+	Name          *string `json:"name,omitempty"`
+	ResolvedValue *string `json:"resolvedValue,omitempty"`
+}
+
+type ExecutionTrigger struct {
+	TriggerType   *string `json:"triggerType,omitempty"`
+	TriggerDetail *string `json:"triggerDetail,omitempty"`
+}
+
+type PipelineRollbackMetadata struct {
+	RollbackTargetPipelineExecutionId *string `json:"rollbackTargetPipelineExecutionId,omitempty"`
+}
+
+type PipelineExecution struct {
+	PipelineName        *string                    `json:"pipelineName,omitempty"`
+	PipelineVersion     *int64                     `json:"pipelineVersion,omitempty"`
+	PipelineExecutionId *string                    `json:"pipelineExecutionId,omitempty"`
+	Status              *string                    `json:"status,omitempty"`
+	StatusSummary       *string                    `json:"statusSummary,omitempty"`
+	ArtifactRevisions   []ArtifactRevision         `json:"artifactRevisions,omitempty"`
+	Variables           []ResolvedPipelineVariable `json:"variables,omitempty"`
+	Trigger             *ExecutionTrigger          `json:"trigger,omitempty"`
+	ExecutionMode       *string                    `json:"executionMode,omitempty"`
+	ExecutionType       *string                    `json:"executionType,omitempty"`
+	RollbackMetadata    *PipelineRollbackMetadata  `json:"rollbackMetadata,omitempty"`
+}
+
+type GetPipelineExecutionOutput struct {
+	PipelineExecution *PipelineExecution `json:"pipelineExecution,omitempty"`
+}
+
+type ListPipelineExecutionsInput struct {
+	PipelineName *string `json:"pipelineName,omitempty"`
+	MaxResults   *int64  `json:"maxResults,omitempty"`
+	NextToken    *string `json:"nextToken,omitempty"`
+}
+
+type SourceRevision struct {
+	ActionName      *string `json:"actionName,omitempty"`
+	RevisionId      *string `json:"revisionId,omitempty"`
+	RevisionSummary *string `json:"revisionSummary,omitempty"`
+	RevisionUrl     *string `json:"revisionUrl,omitempty"`
+}
+
+type StopExecutionTrigger struct {
+	Reason *string `json:"reason,omitempty"`
+}
+
+type PipelineExecutionSummary struct {
+	PipelineExecutionId *string                   `json:"pipelineExecutionId,omitempty"`
+	Status              *string                   `json:"status,omitempty"`
+	StatusSummary       *string                   `json:"statusSummary,omitempty"`
+	StartTime           *float64                  `json:"startTime,omitempty"`
+	LastUpdateTime      *float64                  `json:"lastUpdateTime,omitempty"`
+	SourceRevisions     []SourceRevision          `json:"sourceRevisions,omitempty"`
+	Trigger             *ExecutionTrigger         `json:"trigger,omitempty"`
+	StopTrigger         *StopExecutionTrigger     `json:"stopTrigger,omitempty"`
+	ExecutionMode       *string                   `json:"executionMode,omitempty"`
+	ExecutionType       *string                   `json:"executionType,omitempty"`
+	RollbackMetadata    *PipelineRollbackMetadata `json:"rollbackMetadata,omitempty"`
+}
+
+type ListPipelineExecutionsOutput struct {
+	PipelineExecutionSummaries []PipelineExecutionSummary `json:"pipelineExecutionSummaries,omitempty"`
+	NextToken                  *string                    `json:"nextToken,omitempty"`
+}
+
+type StopPipelineExecutionInput struct {
+	PipelineName        *string `json:"pipelineName,omitempty"`
+	PipelineExecutionId *string `json:"pipelineExecutionId,omitempty"`
+	Abandon             *bool   `json:"abandon,omitempty"`
+	Reason              *string `json:"reason,omitempty"`
+}
+
+type StopPipelineExecutionOutput struct {
+	PipelineExecutionId *string `json:"pipelineExecutionId,omitempty"`
+}
+
+type ActionExecutionFilter struct {
+	PipelineExecutionId *string `json:"pipelineExecutionId,omitempty"`
+}
+
+type ListActionExecutionsInput struct {
+	PipelineName *string                `json:"pipelineName,omitempty"`
+	Filter       *ActionExecutionFilter `json:"filter,omitempty"`
+	MaxResults   *int64                 `json:"maxResults,omitempty"`
+	NextToken    *string                `json:"nextToken,omitempty"`
+}
+
+type S3Location struct {
+	Bucket *string `json:"bucket,omitempty"`
+	Key    *string `json:"key,omitempty"`
+}
+
+type ArtifactDetail struct {
+	Name       *string     `json:"name,omitempty"`
+	S3location *S3Location `json:"s3location,omitempty"`
+}
+
+type ActionExecutionInput struct {
+	ActionTypeId          *ActionTypeId     `json:"actionTypeId,omitempty"`
+	Configuration         map[string]string `json:"configuration,omitempty"`
+	ResolvedConfiguration map[string]string `json:"resolvedConfiguration,omitempty"`
+	RoleArn               *string           `json:"roleArn,omitempty"`
+	Region                *string           `json:"region,omitempty"`
+	InputArtifacts        []ArtifactDetail  `json:"inputArtifacts,omitempty"`
+	Namespace             *string           `json:"namespace,omitempty"`
+}
+
+type ActionExecutionResult struct {
+	ExternalExecutionId      *string       `json:"externalExecutionId,omitempty"`
+	ExternalExecutionSummary *string       `json:"externalExecutionSummary,omitempty"`
+	ExternalExecutionUrl     *string       `json:"externalExecutionUrl,omitempty"`
+	ErrorDetails             *ErrorDetails `json:"errorDetails,omitempty"`
+	LogStreamARN             *string       `json:"logStreamARN,omitempty"`
+}
+
+type ActionExecutionOutput struct {
+	OutputArtifacts []ArtifactDetail       `json:"outputArtifacts,omitempty"`
+	ExecutionResult *ActionExecutionResult `json:"executionResult,omitempty"`
+	OutputVariables map[string]string      `json:"outputVariables,omitempty"`
+}
+
+type ActionExecutionDetail struct {
+	PipelineExecutionId *string                `json:"pipelineExecutionId,omitempty"`
+	ActionExecutionId   *string                `json:"actionExecutionId,omitempty"`
+	PipelineVersion     *int64                 `json:"pipelineVersion,omitempty"`
+	StageName           *string                `json:"stageName,omitempty"`
+	ActionName          *string                `json:"actionName,omitempty"`
+	StartTime           *float64               `json:"startTime,omitempty"`
+	LastUpdateTime      *float64               `json:"lastUpdateTime,omitempty"`
+	UpdatedBy           *string                `json:"updatedBy,omitempty"`
+	Status              *string                `json:"status,omitempty"`
+	Input               *ActionExecutionInput  `json:"input,omitempty"`
+	Output              *ActionExecutionOutput `json:"output,omitempty"`
+}
+
+type ListActionExecutionsOutput struct {
+	ActionExecutionDetails []ActionExecutionDetail `json:"actionExecutionDetails,omitempty"`
+	NextToken              *string                 `json:"nextToken,omitempty"`
+}
+
+type ApprovalResult struct {
+	Summary *string `json:"summary,omitempty"`
+	Status  *string `json:"status,omitempty"`
+}
+
+type PutApprovalResultInput struct {
+	PipelineName *string         `json:"pipelineName,omitempty"`
+	StageName    *string         `json:"stageName,omitempty"`
+	ActionName   *string         `json:"actionName,omitempty"`
+	Result       *ApprovalResult `json:"result,omitempty"`
+	Token        *string         `json:"token,omitempty"`
+}
+
+type PutApprovalResultOutput struct {
+	ApprovedAt *float64 `json:"approvedAt,omitempty"`
+}
+
+type RetryStageExecutionInput struct {
+	PipelineName        *string `json:"pipelineName,omitempty"`
+	StageName           *string `json:"stageName,omitempty"`
+	PipelineExecutionId *string `json:"pipelineExecutionId,omitempty"`
+	RetryMode           *string `json:"retryMode,omitempty"`
+}
+
+type RetryStageExecutionOutput struct {
+	PipelineExecutionId *string `json:"pipelineExecutionId,omitempty"`
+}
+
+type EnableStageTransitionOutput struct{}
+
+type EnableStageTransitionInput struct {
+	PipelineName   *string `json:"pipelineName,omitempty"`
+	StageName      *string `json:"stageName,omitempty"`
+	TransitionType *string `json:"transitionType,omitempty"`
+}
+
+type DisableStageTransitionOutput struct{}
+
+type DisableStageTransitionInput struct {
+	PipelineName   *string `json:"pipelineName,omitempty"`
+	StageName      *string `json:"stageName,omitempty"`
+	TransitionType *string `json:"transitionType,omitempty"`
+	Reason         *string `json:"reason,omitempty"`
+}
+
+type PutJobSuccessResultOutput struct{}
+
+type ExecutionDetails struct {
+	Summary             *string `json:"summary,omitempty"`
+	ExternalExecutionId *string `json:"externalExecutionId,omitempty"`
+	PercentComplete     *int64  `json:"percentComplete,omitempty"`
+}
+
+type PutJobSuccessResultInput struct {
+	JobId            *string           `json:"jobId,omitempty"`
+	ExecutionDetails *ExecutionDetails `json:"executionDetails,omitempty"`
+	OutputVariables  map[string]string `json:"outputVariables,omitempty"`
+}
+
+type PutJobFailureResultOutput struct{}
+
+type FailureDetails struct {
+	Type                *string `json:"type,omitempty"`
+	Message             *string `json:"message,omitempty"`
+	ExternalExecutionId *string `json:"externalExecutionId,omitempty"`
+}
+
+type PutJobFailureResultInput struct {
+	JobId          *string         `json:"jobId,omitempty"`
+	FailureDetails *FailureDetails `json:"failureDetails,omitempty"`
+}
+
+var pattern0 = regexp.MustCompile("^[A-Za-z0-9.@\\-_]+$")
+
+var pattern1 = regexp.MustCompile("^arn:aws(-[\\w]+)*:iam::[0-9]{12}:role/")
+
+var pattern2 = regexp.MustCompile("^[A-Za-z0-9@\\-_]+$")
+
+var pattern3 = regexp.MustCompile("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+
+var enum0 = []string{"Approval", "Build", "Compute", "Deploy", "Invoke", "Source", "Test"}
+
+var enum1 = []string{"AWS", "Custom", "ThirdParty"}
+
+var pattern4 = regexp.MustCompile("^[0-9A-Za-z_-]+$")
+
+var enum2 = []string{"Approved", "Rejected"}
+
+var enum3 = []string{"S3"}
+
+var pattern5 = regexp.MustCompile("^[a-zA-Z0-9\\-\\.]+$")
+
+var enum4 = []string{"Inbound", "Outbound"}
+
+var pattern6 = regexp.MustCompile("^[a-zA-Z0-9!@ \\(\\)\\.\\*\\?\\-]+$")
+
+var enum5 = []string{"KMS"}
+
+var enum6 = []string{"ConfigurationError", "JobFailed", "PermissionError", "RevisionOutOfSync", "RevisionUnavailable", "SystemUnavailable"}
+
+var pattern7 = regexp.MustCompile("^[a-zA-Z0-9_\\-]+$")
+
+var pattern8 = regexp.MustCompile("^arn:aws(-[\\w]+)*:codepipeline:.+:[0-9]{12}:.+$")
+
+var enum7 = []string{"PARALLEL", "QUEUED", "SUPERSEDED"}
+
+var enum8 = []string{"V1", "V2"}
+
+var pattern9 = regexp.MustCompile(".*")
+
+var enum9 = []string{"ALL_ACTIONS", "FAILED_ACTIONS"}
+
+var enum10 = []string{"COMMIT_ID", "IMAGE_DIGEST", "S3_OBJECT_KEY", "S3_OBJECT_VERSION_ID"}
+
+var pattern10 = regexp.MustCompile("^[a-zA-Z0-9-]+$")
+
+func (v *ActionDeclaration) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"name", (*v.Name), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"actionTypeId", v.ActionTypeId != nil); err != nil {
+		return err
+	}
+	if v.ActionTypeId != nil {
+		if err := (*v.ActionTypeId).Validate(path + "actionTypeId" + "."); err != nil {
+			return err
+		}
+	}
+	if v.RunOrder != nil {
+		if err := validation.Range(path+"runOrder", float64((*v.RunOrder)), new(float64(1)), new(float64(999))); err != nil {
+			return err
+		}
+	}
+	if v.Configuration != nil {
+		for k0, e0 := range v.Configuration {
+			if err := validation.Length(validation.Key(path+"configuration", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(50))); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"configuration", k0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(1000))); err != nil {
+				return err
+			}
+		}
+	}
+	if v.OutputArtifacts != nil {
+		for i0, e0 := range v.OutputArtifacts {
+			if err := e0.Validate(validation.Index(path+"outputArtifacts", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.InputArtifacts != nil {
+		for i0, e0 := range v.InputArtifacts {
+			if err := e0.Validate(validation.Index(path+"inputArtifacts", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.RoleArn != nil {
+		if err := validation.Length(path+"roleArn", utf8.RuneCountInString((*v.RoleArn)), new(int64(0)), new(int64(1024))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"roleArn", (*v.RoleArn), pattern1, nil, "^arn:aws(-[\\w]+)*:iam::[0-9]{12}:role/"); err != nil {
+			return err
+		}
+	}
+	if v.Region != nil {
+		if err := validation.Length(path+"region", utf8.RuneCountInString((*v.Region)), new(int64(4)), new(int64(30))); err != nil {
+			return err
+		}
+	}
+	if v.Namespace != nil {
+		if err := validation.Length(path+"namespace", utf8.RuneCountInString((*v.Namespace)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"namespace", (*v.Namespace), pattern2, nil, "^[A-Za-z0-9@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ActionExecutionFilter) Validate(path string) error {
+	if v.PipelineExecutionId != nil {
+		if err := validation.Pattern(path+"pipelineExecutionId", (*v.PipelineExecutionId), pattern3, nil, "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ActionTypeId) Validate(path string) error {
+	if err := validation.Required(path+"category", v.Category != nil); err != nil {
+		return err
+	}
+	if v.Category != nil {
+		if err := validation.Enum(path+"category", (*v.Category), enum0); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"owner", v.Owner != nil); err != nil {
+		return err
+	}
+	if v.Owner != nil {
+		if err := validation.Enum(path+"owner", (*v.Owner), enum1); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"provider", v.Provider != nil); err != nil {
+		return err
+	}
+	if v.Provider != nil {
+		if err := validation.Length(path+"provider", utf8.RuneCountInString((*v.Provider)), new(int64(1)), new(int64(35))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"provider", (*v.Provider), pattern4, nil, "^[0-9A-Za-z_-]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"version", v.Version != nil); err != nil {
+		return err
+	}
+	if v.Version != nil {
+		if err := validation.Length(path+"version", utf8.RuneCountInString((*v.Version)), new(int64(1)), new(int64(9))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"version", (*v.Version), pattern4, nil, "^[0-9A-Za-z_-]+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ApprovalResult) Validate(path string) error {
+	if err := validation.Required(path+"summary", v.Summary != nil); err != nil {
+		return err
+	}
+	if v.Summary != nil {
+		if err := validation.Length(path+"summary", utf8.RuneCountInString((*v.Summary)), new(int64(0)), new(int64(512))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"status", v.Status != nil); err != nil {
+		return err
+	}
+	if v.Status != nil {
+		if err := validation.Enum(path+"status", (*v.Status), enum2); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ArtifactStore) Validate(path string) error {
+	if err := validation.Required(path+"type", v.Type != nil); err != nil {
+		return err
+	}
+	if v.Type != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum3); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"location", v.Location != nil); err != nil {
+		return err
+	}
+	if v.Location != nil {
+		if err := validation.Length(path+"location", utf8.RuneCountInString((*v.Location)), new(int64(3)), new(int64(63))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"location", (*v.Location), pattern5, nil, "^[a-zA-Z0-9\\-\\.]+$"); err != nil {
+			return err
+		}
+	}
+	if v.EncryptionKey != nil {
+		if err := (*v.EncryptionKey).Validate(path + "encryptionKey" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreatePipelineInput) Validate(path string) error {
+	if err := validation.Required(path+"pipeline", v.Pipeline != nil); err != nil {
+		return err
+	}
+	if v.Pipeline != nil {
+		if err := (*v.Pipeline).Validate(path + "pipeline" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *DeletePipelineInput) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"name", (*v.Name), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DisableStageTransitionInput) Validate(path string) error {
+	if err := validation.Required(path+"pipelineName", v.PipelineName != nil); err != nil {
+		return err
+	}
+	if v.PipelineName != nil {
+		if err := validation.Length(path+"pipelineName", utf8.RuneCountInString((*v.PipelineName)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"pipelineName", (*v.PipelineName), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"stageName", v.StageName != nil); err != nil {
+		return err
+	}
+	if v.StageName != nil {
+		if err := validation.Length(path+"stageName", utf8.RuneCountInString((*v.StageName)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"stageName", (*v.StageName), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"transitionType", v.TransitionType != nil); err != nil {
+		return err
+	}
+	if v.TransitionType != nil {
+		if err := validation.Enum(path+"transitionType", (*v.TransitionType), enum4); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"reason", v.Reason != nil); err != nil {
+		return err
+	}
+	if v.Reason != nil {
+		if err := validation.Length(path+"reason", utf8.RuneCountInString((*v.Reason)), new(int64(1)), new(int64(300))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"reason", (*v.Reason), pattern6, nil, "^[a-zA-Z0-9!@ \\(\\)\\.\\*\\?\\-]+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *EnableStageTransitionInput) Validate(path string) error {
+	if err := validation.Required(path+"pipelineName", v.PipelineName != nil); err != nil {
+		return err
+	}
+	if v.PipelineName != nil {
+		if err := validation.Length(path+"pipelineName", utf8.RuneCountInString((*v.PipelineName)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"pipelineName", (*v.PipelineName), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"stageName", v.StageName != nil); err != nil {
+		return err
+	}
+	if v.StageName != nil {
+		if err := validation.Length(path+"stageName", utf8.RuneCountInString((*v.StageName)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"stageName", (*v.StageName), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"transitionType", v.TransitionType != nil); err != nil {
+		return err
+	}
+	if v.TransitionType != nil {
+		if err := validation.Enum(path+"transitionType", (*v.TransitionType), enum4); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *EncryptionKey) Validate(path string) error {
+	if err := validation.Required(path+"id", v.Id != nil); err != nil {
+		return err
+	}
+	if v.Id != nil {
+		if err := validation.Length(path+"id", utf8.RuneCountInString((*v.Id)), new(int64(1)), new(int64(400))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"type", v.Type != nil); err != nil {
+		return err
+	}
+	if v.Type != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum5); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ExecutionDetails) Validate(path string) error {
+	if v.Summary != nil {
+		if err := validation.Length(path+"summary", utf8.RuneCountInString((*v.Summary)), new(int64(1)), new(int64(2048))); err != nil {
+			return err
+		}
+	}
+	if v.ExternalExecutionId != nil {
+		if err := validation.Length(path+"externalExecutionId", utf8.RuneCountInString((*v.ExternalExecutionId)), new(int64(1)), new(int64(1500))); err != nil {
+			return err
+		}
+	}
+	if v.PercentComplete != nil {
+		if err := validation.Range(path+"percentComplete", float64((*v.PercentComplete)), new(float64(0)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *FailureDetails) Validate(path string) error {
+	if err := validation.Required(path+"type", v.Type != nil); err != nil {
+		return err
+	}
+	if v.Type != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum6); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"message", v.Message != nil); err != nil {
+		return err
+	}
+	if v.Message != nil {
+		if err := validation.Length(path+"message", utf8.RuneCountInString((*v.Message)), new(int64(1)), new(int64(5000))); err != nil {
+			return err
+		}
+	}
+	if v.ExternalExecutionId != nil {
+		if err := validation.Length(path+"externalExecutionId", utf8.RuneCountInString((*v.ExternalExecutionId)), new(int64(1)), new(int64(1500))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetPipelineExecutionInput) Validate(path string) error {
+	if err := validation.Required(path+"pipelineName", v.PipelineName != nil); err != nil {
+		return err
+	}
+	if v.PipelineName != nil {
+		if err := validation.Length(path+"pipelineName", utf8.RuneCountInString((*v.PipelineName)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"pipelineName", (*v.PipelineName), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"pipelineExecutionId", v.PipelineExecutionId != nil); err != nil {
+		return err
+	}
+	if v.PipelineExecutionId != nil {
+		if err := validation.Pattern(path+"pipelineExecutionId", (*v.PipelineExecutionId), pattern3, nil, "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetPipelineInput) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"name", (*v.Name), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if v.Version != nil {
+		if err := validation.Range(path+"version", float64((*v.Version)), new(float64(1)), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetPipelineStateInput) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"name", (*v.Name), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *InputArtifact) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"name", (*v.Name), pattern7, nil, "^[a-zA-Z0-9_\\-]+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListActionExecutionsInput) Validate(path string) error {
+	if err := validation.Required(path+"pipelineName", v.PipelineName != nil); err != nil {
+		return err
+	}
+	if v.PipelineName != nil {
+		if err := validation.Length(path+"pipelineName", utf8.RuneCountInString((*v.PipelineName)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"pipelineName", (*v.PipelineName), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if v.Filter != nil {
+		if err := (*v.Filter).Validate(path + "filter" + "."); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(2048))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListPipelineExecutionsInput) Validate(path string) error {
+	if err := validation.Required(path+"pipelineName", v.PipelineName != nil); err != nil {
+		return err
+	}
+	if v.PipelineName != nil {
+		if err := validation.Length(path+"pipelineName", utf8.RuneCountInString((*v.PipelineName)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"pipelineName", (*v.PipelineName), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	if v.NextToken != nil {
+		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(2048))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListPipelinesInput) Validate(path string) error {
+	if v.NextToken != nil {
+		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), new(int64(2048))); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(1000))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListTagsForResourceInput) Validate(path string) error {
+	if err := validation.Required(path+"resourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if v.ResourceArn != nil {
+		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern8, nil, "^arn:aws(-[\\w]+)*:codepipeline:.+:[0-9]{12}:.+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *OutputArtifact) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"name", (*v.Name), pattern7, nil, "^[a-zA-Z0-9_\\-]+$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *PipelineDeclaration) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"name", (*v.Name), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"roleArn", v.RoleArn != nil); err != nil {
+		return err
+	}
+	if v.RoleArn != nil {
+		if err := validation.Length(path+"roleArn", utf8.RuneCountInString((*v.RoleArn)), new(int64(0)), new(int64(1024))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"roleArn", (*v.RoleArn), pattern1, nil, "^arn:aws(-[\\w]+)*:iam::[0-9]{12}:role/"); err != nil {
+			return err
+		}
+	}
+	if v.ArtifactStore != nil {
+		if err := (*v.ArtifactStore).Validate(path + "artifactStore" + "."); err != nil {
+			return err
+		}
+	}
+	if v.ArtifactStores != nil {
+		for k0, e0 := range v.ArtifactStores {
+			if err := validation.Length(validation.Key(path+"artifactStores", k0), utf8.RuneCountInString(k0), new(int64(4)), new(int64(30))); err != nil {
+				return err
+			}
+			if err := e0.Validate(validation.Key(path+"artifactStores", k0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if err := validation.Required(path+"stages", v.Stages != nil); err != nil {
+		return err
+	}
+	if v.Stages != nil {
+		for i0, e0 := range v.Stages {
+			if err := e0.Validate(validation.Index(path+"stages", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.Version != nil {
+		if err := validation.Range(path+"version", float64((*v.Version)), new(float64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if v.ExecutionMode != nil {
+		if err := validation.Enum(path+"executionMode", (*v.ExecutionMode), enum7); err != nil {
+			return err
+		}
+	}
+	if v.PipelineType != nil {
+		if err := validation.Enum(path+"pipelineType", (*v.PipelineType), enum8); err != nil {
+			return err
+		}
+	}
+	if v.Variables != nil {
+		if err := validation.Length(path+"variables", len(v.Variables), new(int64(0)), new(int64(50))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.Variables {
+			if err := e0.Validate(validation.Index(path+"variables", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *PipelineVariable) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(128))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"name", (*v.Name), pattern2, nil, "^[A-Za-z0-9@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"value", v.Value != nil); err != nil {
+		return err
+	}
+	if v.Value != nil {
+		if err := validation.Length(path+"value", utf8.RuneCountInString((*v.Value)), new(int64(1)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"value", (*v.Value), pattern9, nil, ".*"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *PipelineVariableDeclaration) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(128))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"name", (*v.Name), pattern2, nil, "^[A-Za-z0-9@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if v.DefaultValue != nil {
+		if err := validation.Length(path+"defaultValue", utf8.RuneCountInString((*v.DefaultValue)), new(int64(1)), new(int64(1000))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"defaultValue", (*v.DefaultValue), pattern9, nil, ".*"); err != nil {
+			return err
+		}
+	}
+	if v.Description != nil {
+		if err := validation.Length(path+"description", utf8.RuneCountInString((*v.Description)), new(int64(0)), new(int64(200))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"description", (*v.Description), pattern9, nil, ".*"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *PutApprovalResultInput) Validate(path string) error {
+	if err := validation.Required(path+"pipelineName", v.PipelineName != nil); err != nil {
+		return err
+	}
+	if v.PipelineName != nil {
+		if err := validation.Length(path+"pipelineName", utf8.RuneCountInString((*v.PipelineName)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"pipelineName", (*v.PipelineName), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"stageName", v.StageName != nil); err != nil {
+		return err
+	}
+	if v.StageName != nil {
+		if err := validation.Length(path+"stageName", utf8.RuneCountInString((*v.StageName)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"stageName", (*v.StageName), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"actionName", v.ActionName != nil); err != nil {
+		return err
+	}
+	if v.ActionName != nil {
+		if err := validation.Length(path+"actionName", utf8.RuneCountInString((*v.ActionName)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"actionName", (*v.ActionName), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"result", v.Result != nil); err != nil {
+		return err
+	}
+	if v.Result != nil {
+		if err := (*v.Result).Validate(path + "result" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"token", v.Token != nil); err != nil {
+		return err
+	}
+	if v.Token != nil {
+		if err := validation.Pattern(path+"token", (*v.Token), pattern3, nil, "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *PutJobFailureResultInput) Validate(path string) error {
+	if err := validation.Required(path+"jobId", v.JobId != nil); err != nil {
+		return err
+	}
+	if v.JobId != nil {
+		if err := validation.Pattern(path+"jobId", (*v.JobId), pattern3, nil, "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"failureDetails", v.FailureDetails != nil); err != nil {
+		return err
+	}
+	if v.FailureDetails != nil {
+		if err := (*v.FailureDetails).Validate(path + "failureDetails" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *PutJobSuccessResultInput) Validate(path string) error {
+	if err := validation.Required(path+"jobId", v.JobId != nil); err != nil {
+		return err
+	}
+	if v.JobId != nil {
+		if err := validation.Pattern(path+"jobId", (*v.JobId), pattern3, nil, "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"); err != nil {
+			return err
+		}
+	}
+	if v.ExecutionDetails != nil {
+		if err := (*v.ExecutionDetails).Validate(path + "executionDetails" + "."); err != nil {
+			return err
+		}
+	}
+	if v.OutputVariables != nil {
+		for k0 := range v.OutputVariables {
+			if err := validation.Pattern(validation.Key(path+"outputVariables", k0), k0, pattern2, nil, "^[A-Za-z0-9@\\-_]+$"); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *RetryStageExecutionInput) Validate(path string) error {
+	if err := validation.Required(path+"pipelineName", v.PipelineName != nil); err != nil {
+		return err
+	}
+	if v.PipelineName != nil {
+		if err := validation.Length(path+"pipelineName", utf8.RuneCountInString((*v.PipelineName)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"pipelineName", (*v.PipelineName), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"stageName", v.StageName != nil); err != nil {
+		return err
+	}
+	if v.StageName != nil {
+		if err := validation.Length(path+"stageName", utf8.RuneCountInString((*v.StageName)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"stageName", (*v.StageName), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"pipelineExecutionId", v.PipelineExecutionId != nil); err != nil {
+		return err
+	}
+	if v.PipelineExecutionId != nil {
+		if err := validation.Pattern(path+"pipelineExecutionId", (*v.PipelineExecutionId), pattern3, nil, "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"retryMode", v.RetryMode != nil); err != nil {
+		return err
+	}
+	if v.RetryMode != nil {
+		if err := validation.Enum(path+"retryMode", (*v.RetryMode), enum9); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *SourceRevisionOverride) Validate(path string) error {
+	if err := validation.Required(path+"actionName", v.ActionName != nil); err != nil {
+		return err
+	}
+	if v.ActionName != nil {
+		if err := validation.Length(path+"actionName", utf8.RuneCountInString((*v.ActionName)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"actionName", (*v.ActionName), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"revisionType", v.RevisionType != nil); err != nil {
+		return err
+	}
+	if v.RevisionType != nil {
+		if err := validation.Enum(path+"revisionType", (*v.RevisionType), enum10); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"revisionValue", v.RevisionValue != nil); err != nil {
+		return err
+	}
+	if v.RevisionValue != nil {
+		if err := validation.Length(path+"revisionValue", utf8.RuneCountInString((*v.RevisionValue)), new(int64(1)), new(int64(1500))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *StageDeclaration) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"name", (*v.Name), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"actions", v.Actions != nil); err != nil {
+		return err
+	}
+	if v.Actions != nil {
+		for i0, e0 := range v.Actions {
+			if err := e0.Validate(validation.Index(path+"actions", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *StartPipelineExecutionInput) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"name", (*v.Name), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if v.Variables != nil {
+		if err := validation.Length(path+"variables", len(v.Variables), new(int64(1)), new(int64(50))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.Variables {
+			if err := e0.Validate(validation.Index(path+"variables", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.ClientRequestToken != nil {
+		if err := validation.Length(path+"clientRequestToken", utf8.RuneCountInString((*v.ClientRequestToken)), new(int64(1)), new(int64(128))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"clientRequestToken", (*v.ClientRequestToken), pattern10, nil, "^[a-zA-Z0-9-]+$"); err != nil {
+			return err
+		}
+	}
+	if v.SourceRevisions != nil {
+		if err := validation.Length(path+"sourceRevisions", len(v.SourceRevisions), new(int64(0)), new(int64(50))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.SourceRevisions {
+			if err := e0.Validate(validation.Index(path+"sourceRevisions", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *StopPipelineExecutionInput) Validate(path string) error {
+	if err := validation.Required(path+"pipelineName", v.PipelineName != nil); err != nil {
+		return err
+	}
+	if v.PipelineName != nil {
+		if err := validation.Length(path+"pipelineName", utf8.RuneCountInString((*v.PipelineName)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"pipelineName", (*v.PipelineName), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"pipelineExecutionId", v.PipelineExecutionId != nil); err != nil {
+		return err
+	}
+	if v.PipelineExecutionId != nil {
+		if err := validation.Pattern(path+"pipelineExecutionId", (*v.PipelineExecutionId), pattern3, nil, "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"); err != nil {
+			return err
+		}
+	}
+	if v.Reason != nil {
+		if err := validation.Length(path+"reason", utf8.RuneCountInString((*v.Reason)), new(int64(0)), new(int64(200))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *Tag) Validate(path string) error {
+	if err := validation.Required(path+"key", v.Key != nil); err != nil {
+		return err
+	}
+	if v.Key != nil {
+		if err := validation.Length(path+"key", utf8.RuneCountInString((*v.Key)), new(int64(1)), new(int64(128))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"value", v.Value != nil); err != nil {
+		return err
+	}
+	if v.Value != nil {
+		if err := validation.Length(path+"value", utf8.RuneCountInString((*v.Value)), new(int64(0)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *TagResourceInput) Validate(path string) error {
+	if err := validation.Required(path+"resourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if v.ResourceArn != nil {
+		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern8, nil, "^arn:aws(-[\\w]+)*:codepipeline:.+:[0-9]{12}:.+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"tags", v.Tags != nil); err != nil {
+		return err
+	}
+	if v.Tags != nil {
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *UntagResourceInput) Validate(path string) error {
+	if err := validation.Required(path+"resourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if v.ResourceArn != nil {
+		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern8, nil, "^arn:aws(-[\\w]+)*:codepipeline:.+:[0-9]{12}:.+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"tagKeys", v.TagKeys != nil); err != nil {
+		return err
+	}
+	if v.TagKeys != nil {
+		for i0, e0 := range v.TagKeys {
+			if err := validation.Length(validation.Index(path+"tagKeys", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(128))); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *UpdatePipelineInput) Validate(path string) error {
+	if err := validation.Required(path+"pipeline", v.Pipeline != nil); err != nil {
+		return err
+	}
+	if v.Pipeline != nil {
+		if err := (*v.Pipeline).Validate(path + "pipeline" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type API interface {
 	CreatePipeline(context.Context, *CreatePipelineInput) (*CreatePipelineOutput, error)
 	GetPipeline(context.Context, *GetPipelineInput) (*GetPipelineOutput, error)
@@ -186,36 +1524,160 @@ type API interface {
 	TagResource(context.Context, *TagResourceInput) (*TagResourceOutput, error)
 	UntagResource(context.Context, *UntagResourceInput) (*UntagResourceOutput, error)
 	ListTagsForResource(context.Context, *ListTagsForResourceInput) (*ListTagsForResourceOutput, error)
+	StartPipelineExecution(context.Context, *StartPipelineExecutionInput) (*StartPipelineExecutionOutput, error)
+	GetPipelineExecution(context.Context, *GetPipelineExecutionInput) (*GetPipelineExecutionOutput, error)
+	ListPipelineExecutions(context.Context, *ListPipelineExecutionsInput) (*ListPipelineExecutionsOutput, error)
+	StopPipelineExecution(context.Context, *StopPipelineExecutionInput) (*StopPipelineExecutionOutput, error)
+	ListActionExecutions(context.Context, *ListActionExecutionsInput) (*ListActionExecutionsOutput, error)
+	PutApprovalResult(context.Context, *PutApprovalResultInput) (*PutApprovalResultOutput, error)
+	RetryStageExecution(context.Context, *RetryStageExecutionInput) (*RetryStageExecutionOutput, error)
+	EnableStageTransition(context.Context, *EnableStageTransitionInput) (*EnableStageTransitionOutput, error)
+	DisableStageTransition(context.Context, *DisableStageTransitionInput) (*DisableStageTransitionOutput, error)
+	PutJobSuccessResult(context.Context, *PutJobSuccessResultInput) (*PutJobSuccessResultOutput, error)
+	PutJobFailureResult(context.Context, *PutJobFailureResultInput) (*PutJobFailureResultOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "codepipeline", SigningName: "codepipeline", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "codepipeline", TargetPrefix: "CodePipeline_20150709", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidActionDeclarationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidArnException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidBlockerDeclarationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidNextTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStageDeclarationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStructureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineNameInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineVersionNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TooManyTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "codepipeline", SigningName: "codepipeline", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "codepipeline", TargetPrefix: "CodePipeline_20150709", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"ActionNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ApprovalAlreadyCompletedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConcurrentPipelineExecutionsLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "DuplicatedStopRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidActionDeclarationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidApprovalTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidArnException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidBlockerDeclarationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidJobStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidNextTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStageDeclarationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStructureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "JobNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NotLatestPipelineExecutionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "OutputVariablesSizeExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineExecutionNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineExecutionNotStoppableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineNameInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineVersionNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "StageNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "StageNotRetryableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TooManyTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreatePipeline": {Name: "CreatePipeline", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:CreatePipeline", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.CreatePipeline", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreatePipelineInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreatePipeline(ctx, input.(*CreatePipelineInput))
+			in := input.(*CreatePipelineInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.CreatePipeline(ctx, in)
 		}},
 		"GetPipeline": {Name: "GetPipeline", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:GetPipeline", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.GetPipeline", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetPipelineInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.GetPipeline(ctx, input.(*GetPipelineInput))
+			in := input.(*GetPipelineInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.GetPipeline(ctx, in)
 		}},
 		"GetPipelineState": {Name: "GetPipelineState", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:GetPipelineState", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.GetPipelineState", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetPipelineStateInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.GetPipelineState(ctx, input.(*GetPipelineStateInput))
+			in := input.(*GetPipelineStateInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.GetPipelineState(ctx, in)
 		}},
 		"ListPipelines": {Name: "ListPipelines", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:ListPipelines", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.ListPipelines", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListPipelinesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListPipelines(ctx, input.(*ListPipelinesInput))
+			in := input.(*ListPipelinesInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.ListPipelines(ctx, in)
 		}},
 		"UpdatePipeline": {Name: "UpdatePipeline", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:UpdatePipeline", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.UpdatePipeline", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdatePipelineInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UpdatePipeline(ctx, input.(*UpdatePipelineInput))
+			in := input.(*UpdatePipelineInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.UpdatePipeline(ctx, in)
 		}},
 		"DeletePipeline": {Name: "DeletePipeline", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:DeletePipeline", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.DeletePipeline", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeletePipelineInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeletePipeline(ctx, input.(*DeletePipelineInput))
+			in := input.(*DeletePipelineInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.DeletePipeline(ctx, in)
 		}},
 		"TagResource": {Name: "TagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:TagResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.TagResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &TagResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.TagResource(ctx, input.(*TagResourceInput))
+			in := input.(*TagResourceInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.TagResource(ctx, in)
 		}},
 		"UntagResource": {Name: "UntagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:UntagResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.UntagResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UntagResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UntagResource(ctx, input.(*UntagResourceInput))
+			in := input.(*UntagResourceInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.UntagResource(ctx, in)
 		}},
 		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:ListTagsForResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.ListTagsForResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceInput))
+			in := input.(*ListTagsForResourceInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.ListTagsForResource(ctx, in)
+		}},
+		"StartPipelineExecution": {Name: "StartPipelineExecution", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:StartPipelineExecution", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.StartPipelineExecution", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StartPipelineExecutionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*StartPipelineExecutionInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.StartPipelineExecution(ctx, in)
+		}},
+		"GetPipelineExecution": {Name: "GetPipelineExecution", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:GetPipelineExecution", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.GetPipelineExecution", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetPipelineExecutionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*GetPipelineExecutionInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.GetPipelineExecution(ctx, in)
+		}},
+		"ListPipelineExecutions": {Name: "ListPipelineExecutions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:ListPipelineExecutions", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.ListPipelineExecutions", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListPipelineExecutionsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListPipelineExecutionsInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.ListPipelineExecutions(ctx, in)
+		}},
+		"StopPipelineExecution": {Name: "StopPipelineExecution", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:StopPipelineExecution", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.StopPipelineExecution", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StopPipelineExecutionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*StopPipelineExecutionInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.StopPipelineExecution(ctx, in)
+		}},
+		"ListActionExecutions": {Name: "ListActionExecutions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:ListActionExecutions", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.ListActionExecutions", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListActionExecutionsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListActionExecutionsInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.ListActionExecutions(ctx, in)
+		}},
+		"PutApprovalResult": {Name: "PutApprovalResult", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:PutApprovalResult", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.PutApprovalResult", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutApprovalResultInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*PutApprovalResultInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.PutApprovalResult(ctx, in)
+		}},
+		"RetryStageExecution": {Name: "RetryStageExecution", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:RetryStageExecution", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.RetryStageExecution", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &RetryStageExecutionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*RetryStageExecutionInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.RetryStageExecution(ctx, in)
+		}},
+		"EnableStageTransition": {Name: "EnableStageTransition", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:EnableStageTransition", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.EnableStageTransition", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &EnableStageTransitionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*EnableStageTransitionInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.EnableStageTransition(ctx, in)
+		}},
+		"DisableStageTransition": {Name: "DisableStageTransition", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:DisableStageTransition", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.DisableStageTransition", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DisableStageTransitionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*DisableStageTransitionInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.DisableStageTransition(ctx, in)
+		}},
+		"PutJobSuccessResult": {Name: "PutJobSuccessResult", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:PutJobSuccessResult", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.PutJobSuccessResult", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutJobSuccessResultInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*PutJobSuccessResultInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.PutJobSuccessResult(ctx, in)
+		}},
+		"PutJobFailureResult": {Name: "PutJobFailureResult", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:PutJobFailureResult", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.PutJobFailureResult", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutJobFailureResultInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*PutJobFailureResultInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.PutJobFailureResult(ctx, in)
 		}},
 	}}
 }

@@ -22,6 +22,10 @@ func (s *Service) emit(ctx context.Context, r *repository, event, name, commit, 
 }
 
 func (s *Service) emitRef(ctx context.Context, r *repository, event, kind, full, commit, old string) {
+	if s.referenceObserver != nil && kind == "branch" && event != refDeleted {
+		s.referenceObserver(ctx, r.scope, r.name, strings.TrimPrefix(full, headsPrefix), commit)
+	}
+
 	if s.caller == nil {
 		return
 	}
@@ -39,6 +43,7 @@ func (s *Service) emitRef(ctx context.Context, r *repository, event, kind, full,
 		"referenceFullName": full,
 		"callerUserArn":     request.CallerARN(ctx),
 	}
+
 	if commit != "" {
 		detail["commitId"] = commit
 	}

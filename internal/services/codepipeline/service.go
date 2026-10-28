@@ -1,14 +1,18 @@
-// Package codepipeline stores pipeline declarations and their tags. Nothing runs: there are no executions, stage
-// transitions, approvals, jobs, webhooks or triggers, so a pipeline's state only lists its stages and actions.
+// Package codepipeline stores declarations and runs durable pipeline executions.
 package codepipeline
 
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
+	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/codepipeline"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/background"
+	"github.com/amjadjibon/tinystack/internal/services/codebuild"
+	"github.com/amjadjibon/tinystack/internal/services/codecommit"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -21,14 +25,23 @@ const (
 var _ api.API = (*Service)(nil)
 
 type (
-	Service struct{ store storage.Store }
+	Service struct {
+		store   storage.Store
+		caller  *catalog.Caller
+		bg      *background.Group
+		commits *codecommit.Service
+		builds  *codebuild.Service
+		owner   string
+		mu      sync.Mutex
+	}
 
 	// record is a pipeline as stored. Only the current version of the declaration is kept.
 	record struct {
-		Tags     map[string]string
-		Pipeline api.PipelineDeclaration
-		Created  float64
-		Updated  float64
+		Transitions map[string]api.TransitionState
+		Tags        map[string]string
+		Pipeline    api.PipelineDeclaration
+		Created     float64
+		Updated     float64
 	}
 )
 
@@ -92,3 +105,35 @@ func tagList(tags map[string]string) []api.Tag {
 		return api.Tag{Key: new(k), Value: new(v)}
 	})
 }
+
+const (
+	statusInProgress = "InProgress"
+	statusSucceeded  = "Succeeded"
+	statusFailed     = "Failed"
+	statusStopping   = "Stopping"
+	statusStopped    = "Stopped"
+	statusSuperseded = "Superseded"
+	ownerAWS         = "AWS"
+	eventSucceeded   = "SUCCEEDED"
+	eventStage       = "stage"
+)
+
+const configStackName = "StackName"
+
+const (
+	actionCodeCommit     = "Source/CodeCommit"
+	actionS3             = "Source/S3"
+	actionCloudFormation = "Deploy/CloudFormation"
+	actionECS            = "Deploy/ECS"
+	actionLambda         = "Invoke/Lambda"
+	actionCodeBuild      = "Build/CodeBuild"
+	configFunction       = "FunctionName"
+	configRepository     = "RepositoryName"
+	providerCodeCommit   = "CodeCommit"
+	categoryInvoke       = "Invoke"
+	categoryApproval     = "Approval"
+)
+
+const eventAction = "action"
+
+const modeParallel = "PARALLEL"

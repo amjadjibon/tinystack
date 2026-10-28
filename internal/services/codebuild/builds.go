@@ -58,6 +58,16 @@ func (s *Service) StartBuild(ctx context.Context, in *api.StartBuildInput) (*api
 		}
 
 		p = common.Clone(p)
+		if source, ok := ctx.Value(pipelineSourceKey{}).(string); ok {
+			if common.Value(p.Source.Type) != pipelineType {
+				return invalid("CodePipeline builds require a CODEPIPELINE project source")
+			}
+
+			p.Source.Type = new(s3Type)
+			p.Source.Location = new(source)
+			p.SourceVersion = nil
+		}
+
 		if in.SourceVersion != nil {
 			p.SourceVersion = in.SourceVersion
 		}
@@ -425,4 +435,16 @@ func (s *Service) BatchDeleteBuilds(
 		return nil
 	})
 	return out, err
+}
+
+// pipelineSourceKey is private so only StartPipelineBuild can supply a pipeline artifact.
+type pipelineSourceKey struct{}
+
+// StartPipelineBuild runs a CodePipeline artifact through the existing S3 build runner.
+func (s *Service) StartPipelineBuild(
+	ctx context.Context,
+	in *api.StartBuildInput,
+	source string,
+) (*api.StartBuildOutput, error) {
+	return s.StartBuild(context.WithValue(ctx, pipelineSourceKey{}, source), in)
 }

@@ -32,8 +32,9 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store  storage.Store
-	caller *catalog.Caller
+	referenceObserver func(context.Context, request.Scope, string, string, string)
+	store             storage.Store
+	caller            *catalog.Caller
 	// root holds the repositories' git objects, outside the store; temp is whether Stop removes it.
 	root string
 	mu   sync.Mutex
@@ -624,4 +625,9 @@ func (s *Service) ListTagsForResource(
 	return &api.ListTagsForResourceOutput{
 		Tags: tags,
 	}, nil
+}
+
+// ObserveReferences installs an in-process consumer called after a reference change commits.
+func (s *Service) ObserveReferences(fn func(context.Context, request.Scope, string, string, string)) {
+	s.referenceObserver = fn
 }
