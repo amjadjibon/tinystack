@@ -21,7 +21,7 @@ A proposal is not a release commitment. See the [roadmap](index.md) for prioriti
 | [Amazon MemoryDB engine runtime and snapshots](services/memorydb-runtime.md) | Proposed | Extend the single-node engine runtime with snapshots and multi-node lifecycle. |
 | [Amazon Redshift runtime and snapshots](services/redshift-runtime.md) | Proposed | Extend the records-only control plane with explicit runtime and snapshot support. |
 | [Amazon S3 Glacier archives and jobs](services/glacier-runtime.md) | Proposed | Extend the vault control plane with archive storage and retrieval job workflows. |
-| [Amazon Timestream records and queries](services/timestream-query.md) | Proposed | Store written records and serve the Timestream query API over them. |
+| [Amazon Timestream records and queries](services/timestream-query.md) | Future extensions | Durable points, scalar SQL and scheduled execution implemented; prepared queries, batch load and database/table CloudFormation remain. |
 | [Application Auto Scaling execution and advanced policies](services/applicationautoscaling-runtime.md) | Proposed | Extend records-only configuration to a truthful capacity and metric evaluation contract. |
 | [CodeBuild advanced build execution](services/codebuild-runtime.md) | Future extensions | Docker workers, build history, CloudWatch logs, S3 source/artifacts and buildspec 0.2 are implemented. Extend the remaining runtime features separately. |
 | [CodeDeploy deployment execution and agents](services/codedeploy-runtime.md) | Proposed | Extend application, deployment configuration and group records to real deployment execution. |
