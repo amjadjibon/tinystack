@@ -183,6 +183,11 @@ func TestConsoleSNSConfirmationAndInventory(t *testing.T) {
 	}
 	received := make(chan map[string]any, 2)
 	endpoint := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		var message map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&message); err != nil {
 			w.WriteHeader(http.StatusBadRequest)

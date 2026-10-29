@@ -32,6 +32,12 @@ func TestReset(t *testing.T) {
 	for _, status := range []int{http.StatusOK, http.StatusInternalServerError} {
 		t.Run(http.StatusText(status), func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Local tools probe new listeners with GET /; only the reset request is checked.
+				if r.Method == http.MethodGet && r.URL.Path == "/" {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+
 				require.Equal(t, http.MethodPost, r.Method)
 				require.Equal(t, "/_tinystack/reset", r.URL.RequestURI())
 				w.WriteHeader(status)

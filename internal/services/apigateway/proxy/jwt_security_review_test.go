@@ -13,14 +13,24 @@ import (
 func TestJWTDiscoveryRefusesRemoteHTTPKeysAndRedirects(t *testing.T) {
 	for _, redirect := range []bool{false, true} {
 		contacted := false
-		target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodGet || r.URL.Path != "/jwks" {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+
 			contacted = true
 			_ = json.NewEncoder(w).Encode(map[string]any{"keys": []any{}})
 		}))
 		t.Cleanup(target.Close)
 		issuer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodGet || r.URL.Path != "/.well-known/openid-configuration" {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+
 			if redirect {
-				http.Redirect(w, r, target.URL, http.StatusTemporaryRedirect)
+				http.Redirect(w, r, target.URL+"/jwks", http.StatusTemporaryRedirect)
 				return
 			}
 			_ = json.NewEncoder(w).Encode(map[string]string{"jwks_uri": "http://remote.example/jwks"})

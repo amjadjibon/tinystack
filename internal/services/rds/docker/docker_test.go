@@ -35,6 +35,12 @@ func TestGremlinReadiness(t *testing.T) {
 	for _, gremlinCode := range []int{200, 500} {
 		t.Run(strconv.Itoa(gremlinCode), func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Local tools probe new listeners with GET /; only the readiness query is checked.
+				if r.Method == http.MethodGet && r.URL.Path == "/" {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+
 				if r.Method != http.MethodPost || r.URL.Path != "/gremlin" ||
 					r.Header.Get("Content-Type") != "application/json" {
 					t.Error("invalid readiness request", r.Method, r.URL, r.Header)

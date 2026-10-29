@@ -39,6 +39,12 @@ func TestRunArgs(t *testing.T) {
 func TestProbe(t *testing.T) {
 	status := http.StatusOK
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Local tools probe new listeners with GET /; only the readiness probe is checked.
+		if r.Method == http.MethodGet && r.URL.Path == "/" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		if r.URL.Path != "/_cluster/health" || r.URL.Query().Get("wait_for_status") != "yellow" {
 			t.Errorf("unexpected probe request %s", r.URL)
 		}

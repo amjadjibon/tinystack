@@ -25,10 +25,17 @@ type posted struct {
 func subscriber(t *testing.T) (endpoint string, received chan posted) {
 	t.Helper()
 	received = make(chan posted, 8)
-	endpoint = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	listener := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		body, _ := io.ReadAll(r.Body)
 		received <- posted{header: r.Header.Clone(), body: string(body)}
-	})).URL
+	}))
+	t.Cleanup(listener.Close)
+	endpoint = listener.URL
 
 	return endpoint, received
 }

@@ -64,6 +64,11 @@ func sign(t *testing.T, s3 bool, at time.Time, secret string, tamper func(*http.
 	payloadHash := hex.EncodeToString(sum[:])
 	result := make(chan error, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut || !strings.HasPrefix(r.URL.Path, "/2015-03-31/functions/") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		a, err := Parse(r.Header.Get("Authorization"))
 		if err == nil {
 			err = Verify(r, a, secret, payloadHash, s3, time.Now())

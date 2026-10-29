@@ -744,6 +744,12 @@ func newRemote(t *testing.T) *remote {
 	r.status.Store(http.StatusOK)
 	r.ttl.Store(3600)
 	r.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.URL.Path != "/token" &&
+			!strings.HasPrefix(req.URL.Path, "/hook/") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		body, _ := io.ReadAll(req.Body)
 		got := received{
 			Method:   req.Method,

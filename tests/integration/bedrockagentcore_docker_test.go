@@ -76,6 +76,11 @@ func main() {
 		_, _ = io.WriteString(w, "{\"status\":\"Healthy\"}")
 	})
 	main.HandleFunc("/invocations", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		body, _ := io.ReadAll(r.Body)
 		if strings.Contains(string(body), "fail") {
 			http.Error(w, "agent failure", 500)
@@ -97,6 +102,11 @@ func main() {
 		json.NewEncoder(w).Encode(describe(r, body))
 	})
 	protocol := func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || (r.URL.Path != "/mcp" && r.URL.Path != "/") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		body, _ := io.ReadAll(r.Body)
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Mcp-Session-Id", "mcp-"+host)

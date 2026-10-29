@@ -241,6 +241,11 @@ func TestShellClientDisconnectCancelsProcess(t *testing.T) {
 	s := shellServer(t)
 	done := make(chan struct{})
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != shellPath {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		defer close(done)
 		s.serveShell(w, r)
 	}))

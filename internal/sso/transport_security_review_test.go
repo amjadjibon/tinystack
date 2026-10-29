@@ -12,7 +12,14 @@ import (
 
 func TestDeviceLoginRejectsInsecureEndpointBeforeDiscovery(t *testing.T) {
 	called := false
-	issuer := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
+	issuer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/.well-known/openid-configuration" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		called = true
+	}))
 	defer issuer.Close()
 	_, err := Login(context.Background(), &config.OIDC{Issuer: issuer.URL}, "http://remote.example", "", io.Discard)
 	if err == nil || called {
@@ -22,12 +29,22 @@ func TestDeviceLoginRejectsInsecureEndpointBeforeDiscovery(t *testing.T) {
 
 func TestSSOClientDoesNotForwardTokenOnRedirect(t *testing.T) {
 	leaked := false
-	receiver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	receiver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		leaked = true
 		w.WriteHeader(http.StatusUnauthorized)
 	}))
 	defer receiver.Close()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != DevicePath {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		http.Redirect(w, r, receiver.URL, http.StatusTemporaryRedirect)
 	}))
 	defer server.Close()
