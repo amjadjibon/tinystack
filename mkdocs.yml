@@ -123,6 +123,7 @@ nav:
       - Tests and compatibility: development/testing.md
       - Console development: development/console.md
       - Documentation workflow: development/documentation.md
+      - Startup and size: development/performance.md
   # GENERATED NAV START
   - Services:
       - Support matrix: services/index.md
