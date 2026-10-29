@@ -24,7 +24,7 @@ See the [implemented feature catalogue](catalogue.md#rds-data-api) for this serv
 - Requires rds.instances: docker for SQL execution; no SQL interpreter or canned results in records mode.
 - Array parameters/results, resultSetOptions, continueAfterTimeout, cancellation and asynchronous execution are unsupported; unimplemented input members fail explicitly.
 - Cluster credentials are validated locally; IAM database authentication, AWS connection management, network failover and distributed transactions are not emulated.
-- Column metadata reflects database/sql driver information; table/schema provenance and auto-increment metadata are unavailable; operations are serialized within the Data API service.
+- Column metadata reflects database/sql driver information, and precision/scale are omitted when the driver reports no fixed size (MySQL DOUBLE); table/schema provenance and auto-increment metadata are unavailable; operations are serialized within the Data API service.
 - Transactions and SQL connection state are not persisted across TinyStack restarts.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)

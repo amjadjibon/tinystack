@@ -3,6 +3,7 @@ package rdsdata
 import (
 	"database/sql"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -130,7 +131,9 @@ func metadata(c *sql.ColumnType) api.ColumnMetadata {
 		IsSigned: new(code == 4 || code == 5 || code == -5 || code == 3 || code == 7 || code == 8),
 	}
 
-	if precision, scale, ok := c.DecimalSize(); ok {
+	// The model's precision and scale are 32-bit; drivers report math.MaxInt64 for sizes that are not fixed
+	// (MySQL DOUBLE), and those are left out.
+	if precision, scale, ok := c.DecimalSize(); ok && precision <= math.MaxInt32 && scale <= math.MaxInt32 {
 		out.Precision, out.Scale = new(precision), new(scale)
 	}
 
