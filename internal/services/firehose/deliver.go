@@ -77,6 +77,10 @@ func (s *Service) pull(ctx context.Context, t target) error {
 		return err
 	}
 
+	if sourceErr := s.authorizeSource(ctx, t.scope, st); sourceErr != nil {
+		return sourceErr
+	}
+
 	arn := common.Value(st.Source.KinesisStreamARN)
 	shards, err := s.streams.Shards(ctx, arn)
 	if err != nil {

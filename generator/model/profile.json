@@ -16323,7 +16323,10 @@
       "UpdateStreamMode",
       "EnableEnhancedMonitoring",
       "DisableEnhancedMonitoring",
-      "DescribeLimits"
+      "DescribeLimits",
+      "PutResourcePolicy",
+      "GetResourcePolicy",
+      "DeleteResourcePolicy"
     ],
     "shapes": {
       "CreateStreamInput": [
@@ -16493,6 +16496,16 @@
         "Limit",
         "ExclusiveStartStreamName",
         "NextToken"
+      ],
+      "PutResourcePolicyInput": [
+        "ResourceARN",
+        "Policy"
+      ],
+      "GetResourcePolicyInput": [
+        "ResourceARN"
+      ],
+      "DeleteResourcePolicyInput": [
+        "ResourceARN"
       ]
     }
   },

@@ -74,6 +74,7 @@ type shard struct {
 }
 
 type consumer struct {
+	Policy  string `json:",omitempty"`
 	Name    string
 	ARN     string
 	Created float64
@@ -81,6 +82,7 @@ type consumer struct {
 
 // stream is a stream's record.
 type stream struct {
+	Policy     string `json:",omitempty"`
 	Tags       map[string]string
 	Name       string
 	Mode       string
@@ -127,12 +129,13 @@ func StreamARN(scope request.Scope, name string) string {
 // ParseStreamARN returns the scope and name of a stream's ARN.
 func ParseStreamARN(arn string) (request.Scope, string, bool) {
 	parts := strings.SplitN(arn, ":", 6)
-	if len(parts) != 6 || parts[0] != "arn" || parts[2] != service {
+	if len(parts) != 6 || parts[0] != "arn" || parts[1] != "aws" || parts[2] != service ||
+		parts[3] == "" || len(parts[4]) != 12 {
 		return request.Scope{}, "", false
 	}
 
 	name, ok := strings.CutPrefix(parts[5], "stream/")
-	if !ok || name == "" || strings.Contains(name, "/") {
+	if !ok || !streamName.MatchString(name) {
 		return request.Scope{}, "", false
 	}
 
@@ -142,9 +145,10 @@ func ParseStreamARN(arn string) (request.Scope, string, bool) {
 var streamName = regexp.MustCompile(`^[a-zA-Z0-9_.-]{1,128}$`)
 
 // streamTarget resolves the stream a request names by StreamName or
-// StreamARN, which must agree and be in the caller's account and region.
+// StreamARN, which must agree and be in the request region.
 func streamTarget(m *request.Metadata, name, arn *string) (string, error) {
 	if arn != nil {
+		request.ReferenceScope(m, service, *arn)
 		scope, fromARN, ok := ParseStreamARN(*arn)
 		if !ok || scope != m.Scope {
 			return "", invalidArgument("Invalid StreamARN: %s", *arn)

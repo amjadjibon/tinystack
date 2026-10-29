@@ -443,6 +443,27 @@ type DescribeLimitsOutput struct {
 	ShardLimit               *int64 `json:"ShardLimit,omitempty"`
 }
 
+type PutResourcePolicyOutput struct{}
+
+type PutResourcePolicyInput struct {
+	ResourceARN *string `json:"ResourceARN,omitempty"`
+	Policy      *string `json:"Policy,omitempty"`
+}
+
+type GetResourcePolicyInput struct {
+	ResourceARN *string `json:"ResourceARN,omitempty"`
+}
+
+type GetResourcePolicyOutput struct {
+	Policy *string `json:"Policy,omitempty"`
+}
+
+type DeleteResourcePolicyOutput struct{}
+
+type DeleteResourcePolicyInput struct {
+	ResourceARN *string `json:"ResourceARN,omitempty"`
+}
+
 type API interface {
 	CreateStream(context.Context, *CreateStreamInput) (*CreateStreamOutput, error)
 	DeleteStream(context.Context, *DeleteStreamInput) (*DeleteStreamOutput, error)
@@ -475,6 +496,9 @@ type API interface {
 	EnableEnhancedMonitoring(context.Context, *EnableEnhancedMonitoringInput) (*EnhancedMonitoringOutput, error)
 	DisableEnhancedMonitoring(context.Context, *DisableEnhancedMonitoringInput) (*EnhancedMonitoringOutput, error)
 	DescribeLimits(context.Context, *DescribeLimitsInput) (*DescribeLimitsOutput, error)
+	PutResourcePolicy(context.Context, *PutResourcePolicyInput) (*PutResourcePolicyOutput, error)
+	GetResourcePolicy(context.Context, *GetResourcePolicyInput) (*GetResourcePolicyOutput, error)
+	DeleteResourcePolicy(context.Context, *DeleteResourcePolicyInput) (*DeleteResourcePolicyOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -569,6 +593,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DescribeLimits": {Name: "DescribeLimits", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kinesis:DescribeLimits", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Kinesis_20131202.DescribeLimits", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeLimitsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DescribeLimits(ctx, input.(*DescribeLimitsInput))
+		}},
+		"PutResourcePolicy": {Name: "PutResourcePolicy", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "kinesis:PutResourcePolicy", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Kinesis_20131202.PutResourcePolicy", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutResourcePolicyInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutResourcePolicy(ctx, input.(*PutResourcePolicyInput))
+		}},
+		"GetResourcePolicy": {Name: "GetResourcePolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kinesis:GetResourcePolicy", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Kinesis_20131202.GetResourcePolicy", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetResourcePolicyInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetResourcePolicy(ctx, input.(*GetResourcePolicyInput))
+		}},
+		"DeleteResourcePolicy": {Name: "DeleteResourcePolicy", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "kinesis:DeleteResourcePolicy", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Kinesis_20131202.DeleteResourcePolicy", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteResourcePolicyInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteResourcePolicy(ctx, input.(*DeleteResourcePolicyInput))
 		}},
 	}}
 }

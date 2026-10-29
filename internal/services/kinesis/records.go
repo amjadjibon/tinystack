@@ -315,13 +315,19 @@ func (s *Service) GetRecords(ctx context.Context, in *api.GetRecordsInput) (*api
 
 	it, ok := decodeIterator(common.Value(in.ShardIterator))
 	switch {
-	case !ok || it.Account != m.AccountID || it.Region != m.Region:
+	case !ok || it.Region != m.Region:
 		return nil, invalidArgument("Invalid ShardIterator")
 	case s.now().UnixMilli() > it.Expires:
 		return nil, awserror.New("ExpiredIteratorException", "Iterator expired. The iterator was created at time "+
 			time.UnixMilli(it.Expires-iteratorLife.Milliseconds()).UTC().Format(time.RFC3339)+
 			" while right now it is "+s.now().UTC().Format(time.RFC3339)+" which is further in the future than "+
 			"the tolerated delay of 300000 milliseconds.")
+	}
+
+	iteratorARN := StreamARN(request.Scope{AccountID: it.Account, Region: it.Region}, it.Stream)
+	request.ReferenceScope(&m, service, iteratorARN)
+	if it.Account != m.AccountID || (in.StreamARN != nil && *in.StreamARN != iteratorARN) {
+		return nil, invalidArgument("Invalid ShardIterator or StreamARN")
 	}
 
 	out := &api.GetRecordsOutput{Records: []api.Record{}, MillisBehindLatest: new(int64(0))}

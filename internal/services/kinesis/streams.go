@@ -303,11 +303,11 @@ func (s *Service) ListShards(ctx context.Context, in *api.ListShardsInput) (*api
 			return nil, invalidArgument("Invalid NextToken")
 		}
 
-		name, arn, after = &streamPart, nil, shardPart
+		name, arn, after = nil, &streamPart, shardPart
 	}
 
 	out := &api.ListShardsOutput{Shards: []api.Shard{}}
-	err := s.view(ctx, name, arn, func(_ storage.ReadTx, _ request.Scope, st *stream) error {
+	err := s.view(ctx, name, arn, func(_ storage.ReadTx, scope request.Scope, st *stream) error {
 		for i := range st.Shards {
 			sh := &st.Shards[i]
 			if sh.ID <= after || (openOnly && sh.Closed) {
@@ -315,7 +315,7 @@ func (s *Service) ListShards(ctx context.Context, in *api.ListShardsInput) (*api
 			}
 
 			if len(out.Shards) == limit {
-				out.NextToken = new(st.Name + "|" + *out.Shards[limit-1].ShardId)
+				out.NextToken = new(StreamARN(scope, st.Name) + "|" + *out.Shards[limit-1].ShardId)
 				break
 			}
 

@@ -106,6 +106,10 @@ func (s *Service) DescribeStreamConsumer(
 	out := &api.DescribeStreamConsumerOutput{}
 	err = s.view(ctx, nil, arn, func(_ storage.ReadTx, _ request.Scope, st *stream) error {
 		i, findErr := findConsumer(st, name)
+		if findErr == nil && in.ConsumerARN != nil && st.Consumers[i].ARN != *in.ConsumerARN {
+			return awserror.New("ResourceNotFoundException", "Consumer does not exist")
+		}
+
 		if findErr == nil {
 			out.ConsumerDescription = st.Consumers[i].describe(*arn)
 		}
@@ -152,6 +156,10 @@ func (s *Service) DeregisterStreamConsumer(
 
 	err = s.change(ctx, nil, arn, func(_ storage.WriteTx, _ request.Scope, st *stream) error {
 		i, findErr := findConsumer(st, name)
+		if findErr == nil && in.ConsumerARN != nil && st.Consumers[i].ARN != *in.ConsumerARN {
+			return awserror.New("ResourceNotFoundException", "Consumer does not exist")
+		}
+
 		if findErr == nil {
 			st.Consumers = append(st.Consumers[:i], st.Consumers[i+1:]...)
 		}

@@ -28,7 +28,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				Type: kindStream, Account: account, Region: region, Name: st.Name,
 				ARN: StreamARN(request.Scope{AccountID: account, Region: region}, st.Name), Tags: st.Tags,
 				Details: map[string]any{
-					"Mode": st.Mode, "OpenShards": len(st.open()), "RetentionHours": st.Retention,
+					"Policy": st.Policy, "Mode": st.Mode, "OpenShards": len(st.open()), "RetentionHours": st.Retention,
 				},
 			})
 		}

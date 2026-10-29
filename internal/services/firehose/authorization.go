@@ -2,6 +2,7 @@ package firehose
 
 import (
 	"context"
+	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -41,4 +42,28 @@ func (s *Service) AuthorizationResources(
 		return nil
 	})
 	return []catalog.AuthorizationResource{target}, err
+}
+
+// authorizeSource checks a cross-account read as the configured Kinesis source role.
+func (s *Service) authorizeSource(ctx context.Context, scope request.Scope, st *deliveryStream) error {
+	arn := common.Value(st.Source.KinesisStreamARN)
+	parts := strings.SplitN(arn, ":", 6)
+	if len(parts) != 6 || parts[4] == scope.AccountID {
+		return nil
+	}
+
+	for _, operation := range []string{"DescribeStream", "ListShards", "GetShardIterator", "GetRecords"} {
+		err := s.authorizer.Authorize(ctx, catalog.ServiceDelivery{
+			Principal: "firehose.amazonaws.com", SourceARN: streamARN(scope, st.Name), SourceAccount: scope.AccountID,
+			Role: &catalog.DeliveryRole{
+				ARN: common.Value(st.Source.RoleARN), Session: st.Name,
+				Service: "kinesis", Operation: operation, Params: map[string]any{"StreamARN": arn},
+			},
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

@@ -324,6 +324,10 @@ func (s *Service) CreateDeliveryStream(
 		}
 
 		st.Source, st.SourceTime = in.KinesisStreamSourceConfiguration, now
+		if sourceErr := s.authorizeSource(ctx, m.Scope, st); sourceErr != nil {
+			return nil, sourceErr
+		}
+
 		shards, shardErr := s.streams.Shards(ctx, common.Value(st.Source.KinesisStreamARN))
 		if shardErr != nil {
 			return nil, invalidArgument("Kinesis stream %s not found", common.Value(st.Source.KinesisStreamARN))
