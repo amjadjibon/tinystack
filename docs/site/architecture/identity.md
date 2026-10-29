@@ -40,7 +40,7 @@ Cognito sign-in operations, retain their anonymous contract.
 
 ## Evaluated policy subsets
 
-Identity-based IAM policies and S3/SQS/SNS/KMS/Lambda/Secrets Manager/EventBridge/API Gateway REST API resource policies are evaluated
+Identity-based IAM policies and S3/SQS/SNS/KMS/Lambda/Secrets Manager/EventBridge/Kinesis/API Gateway REST API resource policies are evaluated
 when authorization is enabled.
 Other resource policies remain stored without general enforcement. Separate features evaluate narrower policies:
 
@@ -394,6 +394,17 @@ Unknown elements, condition keys/operators, NotPrincipal and organization condit
 policy for rule management or other actions. Bus policies do not apply to target deliveries, which
 the targets' own policies decide as [service deliveries](#service-principal-deliveries), and no
 organization membership, partner buses or AWS owner-only API exceptions are modeled.
+
+### Kinesis resource policies
+
+Stream and registered consumer policies accept concrete AWS account, root, user and role principals.
+Stream sharing covers DescribeStream, DescribeStreamSummary, ListShards, GetShardIterator, GetRecords, PutRecord
+and PutRecords; consumer policies cover DescribeStreamConsumer and SubscribeToShard (delivery is not implemented).
+Cross-account access requires identity and resource grants; same-account access accepts either. Explicit denies win.
+Only the resource owner may put, get or delete policies. Wildcard actions and principals, service principals,
+federated principals and canonical user IDs are rejected. Policies are limited to 20 KB and deleted with the resource.
+GetResourcePolicy returns `{"Policy":"{}"}` when no policy is attached; AWS leaves this case undocumented.
+Cross-account Firehose source reads check the configured source role against the stream policy.
 
 ### KMS key policies
 

@@ -13,7 +13,7 @@ Write and read ordered shard records and feed local Lambda or Firehose consumers
 | API version | `2013-12-02` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 31 of 45 in the pinned model |
+| Selected operations | 34 of 45 in the pinned model |
 
 ## Implemented behavior
 
@@ -22,9 +22,10 @@ See the [implemented feature catalogue](catalogue.md#kinesis-data-streams) for t
 ## Limitations and future work
 
 - No SubscribeToShard enhanced fan-out delivery or throughput enforcement.
-- Resource policies, production record-size settings and warm throughput are outside the subset.
+- Production record-size settings and warm throughput are outside the subset.
 - KMS encryption settings are stored without encrypting stream records.
 - Kinesis metrics omit shard-level, latency, throughput-exceeded and iterator-age metrics, and GetRecords.Bytes.
+- GetResourcePolicy returns Policy "{}" when no policy is attached (AWS does not document this case); cross-account Lambda mappings and Pipes sources remain unsupported.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -41,6 +42,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `AddTagsToStream` | `POST /` |
 | `CreateStream` | `POST /` |
 | `DecreaseStreamRetentionPeriod` | `POST /` |
+| `DeleteResourcePolicy` | `POST /` |
 | `DeleteStream` | `POST /` |
 | `DeregisterStreamConsumer` | `POST /` |
 | `DescribeLimits` | `POST /` |
@@ -50,6 +52,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `DisableEnhancedMonitoring` | `POST /` |
 | `EnableEnhancedMonitoring` | `POST /` |
 | `GetRecords` | `POST /` |
+| `GetResourcePolicy` | `POST /` |
 | `GetShardIterator` | `POST /` |
 | `IncreaseStreamRetentionPeriod` | `POST /` |
 | `ListShards` | `POST /` |
@@ -60,6 +63,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `MergeShards` | `POST /` |
 | `PutRecord` | `POST /` |
 | `PutRecords` | `POST /` |
+| `PutResourcePolicy` | `POST /` |
 | `RegisterStreamConsumer` | `POST /` |
 | `RemoveTagsFromStream` | `POST /` |
 | `SplitShard` | `POST /` |
@@ -72,18 +76,15 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "14 modeled operations outside the implementation"
+??? info "11 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
     - `CreateChannel`
     - `DeleteChannel`
-    - `DeleteResourcePolicy`
     - `DescribeAccountSettings`
     - `DescribeChannel`
-    - `GetResourcePolicy`
     - `ListChannels`
-    - `PutResourcePolicy`
     - `SubscribeToShard`
     - `UpdateAccountSettings`
     - `UpdateChannel`
@@ -96,5 +97,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/kinesis)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/kinesis/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/kinesis.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [kinesis_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/kinesis_test.go).
+- SDK integration examples: [kinesis_authorization_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/kinesis_authorization_test.go), [kinesis_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/kinesis_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

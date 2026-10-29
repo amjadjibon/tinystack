@@ -475,13 +475,15 @@
         "Streams, shards, consumers, shard iterators and record CRUD APIs",
         "Split and merge shard metadata with stable record sequence ordering",
         "Lambda mappings and Firehose sources read records in-process",
-        "AWS/Kinesis metrics with dimension StreamName: IncomingRecords and IncomingBytes (PutRecord, PutRecords and DynamoDB streaming destinations) and GetRecords.Records"
+        "AWS/Kinesis metrics with dimension StreamName: IncomingRecords and IncomingBytes (PutRecord, PutRecords and DynamoDB streaming destinations) and GetRecords.Records",
+        "Stream and consumer resource policies with owner-only management, cross-account IAM and resource grants, and explicit-deny enforcement"
       ],
       "gaps": [
         "No SubscribeToShard enhanced fan-out delivery or throughput enforcement",
-        "Resource policies, production record-size settings and warm throughput are outside the subset",
+        "Production record-size settings and warm throughput are outside the subset",
         "KMS encryption settings are stored without encrypting stream records",
-        "Kinesis metrics omit shard-level, latency, throughput-exceeded and iterator-age metrics, and GetRecords.Bytes"
+        "Kinesis metrics omit shard-level, latency, throughput-exceeded and iterator-age metrics, and GetRecords.Bytes",
+        "GetResourcePolicy returns Policy \"{}\" when no policy is attached (AWS does not document this case); cross-account Lambda mappings and Pipes sources remain unsupported"
       ],
       "execution": "Local behavior",
       "package": "kinesis"
