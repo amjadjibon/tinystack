@@ -192,7 +192,15 @@ func TestSecretsRotation(t *testing.T) {
 	}
 
 	waitFor(t, "the failed step", func() bool { return slices.Contains(runtime.ran(), "testSecret") })
-	time.Sleep(50 * time.Millisecond)
+	waitFor(t, "the failed step's delivery record", func() bool {
+		for _, record := range deliveries(t, s, 0) {
+			if record.Via == "secretsmanager" && record.Error != "" {
+				return true
+			}
+		}
+
+		return false
+	})
 	if got := secretValue(t, c, "db", ""); got != "one-rotated" {
 		t.Fatalf("current value %q", got)
 	}

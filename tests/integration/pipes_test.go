@@ -395,14 +395,19 @@ func TestPipesFailedDeliveryKeepsMessages(t *testing.T) {
 	}
 
 	// The message was received but not deleted: it is in flight.
-	time.Sleep(200 * time.Millisecond)
-	attrs, err := q.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
-		QueueUrl:       &sourceURL,
-		AttributeNames: []sqstypes.QueueAttributeName{sqstypes.QueueAttributeNameApproximateNumberOfMessagesNotVisible},
+	waitFor(t, "the failed message to remain in flight", func() bool {
+		attrs, err := q.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+			QueueUrl: &sourceURL,
+			AttributeNames: []sqstypes.QueueAttributeName{
+				sqstypes.QueueAttributeNameApproximateNumberOfMessagesNotVisible,
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		return attrs.Attributes["ApproximateNumberOfMessagesNotVisible"] == "1"
 	})
-	if err != nil || attrs.Attributes["ApproximateNumberOfMessagesNotVisible"] != "1" {
-		t.Fatalf("%+v %v", attrs, err)
-	}
 }
 
 func TestPipesKinesisAndDynamoDBStreams(t *testing.T) {

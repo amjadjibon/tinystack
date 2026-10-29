@@ -18,7 +18,12 @@ func TestGroup(t *testing.T) {
 	}
 
 	<-started
+	deadline := time.Now().Add(5 * time.Second)
 	for ticks.Load() == 0 {
+		if time.Now().After(deadline) {
+			t.Fatal("background worker did not tick")
+		}
+
 		time.Sleep(time.Millisecond)
 	}
 

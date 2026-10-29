@@ -281,7 +281,8 @@ func TestColdStartDoesNotBlock(t *testing.T) {
 
 	// The version probe is part of the first cold start; this interpreter answers it slowly.
 	slow := filepath.Join(t.TempDir(), "python3")
-	script := "#!/bin/sh\nif [ \"$1\" = --version ]; then sleep 2; fi\nexec python3 \"$@\"\n"
+	marker := filepath.Join(t.TempDir(), "probing")
+	script := "#!/bin/sh\nif [ \"$1\" = --version ]; then touch \"" + marker + "\"; sleep 2; fi\nexec python3 \"$@\"\n"
 	if err := os.WriteFile(slow, []byte(script), 0o700); err != nil {
 		t.Fatal(err)
 	}
@@ -301,7 +302,19 @@ func TestColdStartDoesNotBlock(t *testing.T) {
 	}()
 
 	<-started
-	time.Sleep(200 * time.Millisecond)
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		if _, err := os.Stat(marker); err == nil {
+			break
+		}
+
+		if time.Now().After(deadline) {
+			t.Fatal("cold start did not reach the interpreter probe")
+		}
+
+		time.Sleep(5 * time.Millisecond)
+	}
+
 	begin := time.Now()
 	if result := invoke(t, r, fast); result.Error {
 		t.Fatalf("fast function: %s", result.Payload)

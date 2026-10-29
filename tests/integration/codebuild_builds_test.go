@@ -478,7 +478,24 @@ phases:
 		t.Fatal(err)
 	}
 
-	time.Sleep(2 * time.Second)
+	deadline = time.Now().Add(time.Minute)
+	for {
+		got, getErr := c.BatchGetBuilds(ctx, &sdk.BatchGetBuildsInput{Ids: []string{*running.Build.Id}})
+		if getErr != nil {
+			t.Fatal(getErr)
+		}
+
+		if *got.Builds[0].CurrentPhase == "BUILD" {
+			break
+		}
+
+		if time.Now().After(deadline) {
+			t.Fatal("container did not start", got)
+		}
+
+		time.Sleep(100 * time.Millisecond)
+	}
+
 	stop()
 	s, stop = serverStore(t, cfg, &fakeRuntime{}, store)
 	c = codebuildClient(s, "test", "us-east-1")
