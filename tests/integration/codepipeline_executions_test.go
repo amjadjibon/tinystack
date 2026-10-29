@@ -397,7 +397,8 @@ func TestCodePipelineExecutionTransitionsModesStop(t *testing.T) {
 			if mode == types.ExecutionModeSuperseded {
 				pipelineWait(t, c, "modes", *first, "Superseded")
 			} else {
-				time.Sleep(5 * time.Second)
+				// Observe two worker ticks while the inbound transition remains disabled.
+				time.Sleep(2200 * time.Millisecond)
 			}
 
 			state, err := c.GetPipelineState(ctx, &sdk.GetPipelineStateInput{Name: p.Name})
