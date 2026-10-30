@@ -227,3 +227,29 @@ while the page is hidden. Rich message content is correlated with existing deliv
 message ID or Cognito destination. Missing/truncated previews fall back to the flattened body. HTML is rendered
 only inside an iframe with `sandbox=""`, with a source toggle; never render it into the console document.
 Cognito pool IDs are resolved to resource names using the shared inventory for generic resource links.
+
+## Generic inventory actions
+
+The generic service table supports a single selected row with Copy ARN, Edit tags,
+and Delete actions; the same actions appear in the generic resource detail header.
+`GET /_tinystack/actions` advertises `taggable_services` from the Resource Groups
+Tagging API's actual tagger registry and `resource_deletes` keyed by service/type.
+Each delete capability explicitly names the operation, input field, and identifier
+source (`name`, `arn`, or `arn-suffix`). The gateway allows only those delete
+operations and `TagResources`/`UntagResources` for generic writes. All writes use
+`consoleActionFetch` with an explicit account and Region and normal IAM checks.
+
+`GenericResourceActions` reuses `ConsoleTags` and `ActionDialog`. Tag edits validate
+shared limits for convenience, remove keys before adding changed values, and turn
+`FailedResourcesMap` entries into visible ARN/code/message errors. Failed steps can
+be retried without repeating successful steps. The services remain authoritative.
+Deletion requires typing the resource name and shows its ARN. Inventory reloads on
+success. Generic pages show inventory errors, including administrator access required
+for forbidden administrative endpoints.
+
+The initial delete map covers Kinesis streams, SSM parameters, ECR repositories,
+Route 53 hosted zones, Cognito user pools, CloudFormation stacks, ElastiCache cache
+clusters, and MemoryDB clusters. ECR deletion does not force removal of images;
+Route 53 retains its own record-set checks. Zone and pool IDs come from ARN suffixes,
+not their display names. KMS aliases are omitted because inventory only exposes keys
+with aliases inside their details. Unmapped types have no Delete action.

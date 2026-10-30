@@ -310,3 +310,23 @@ CloudWatch API. Request logs, delivery logs and gateway metrics reset on restart
 `tinystack_injected_requests_total` counts attempts affected by injected errors or latency, using the same labels.
 
 See [Predictable Bedrock inference](bedrock.md) for stored text/tool fixtures and the Bedrock fixture endpoint.
+
+### Generic resource actions
+
+Open a service without a dedicated console page, such as Systems Manager or Kinesis,
+and select one inventory row. Copy ARN copies its full ARN. Edit tags is available
+when that service has a Resource Groups Tagging API tagger: enter a JSON object of
+string values, add or remove keys, and save. Per-resource errors include the ARN,
+service error code and message. Tag keys are 1–128 characters, values at most 256,
+and sets at most 50 tags; the reserved `aws:` prefix is rejected.
+
+Open the resource name to use the same actions in its detail header. Delete is
+available for Kinesis streams, SSM parameters, ECR repositories, Route 53 hosted
+zones, Cognito user pools, CloudFormation stacks, ElastiCache cache clusters and
+MemoryDB clusters. The confirmation shows the name and ARN and requires typing the
+name. Service restrictions still apply, including non-empty ECR repositories and
+Route 53 zones with remaining records. Errors remain visible in the dialog; successful
+changes refresh inventory. Other types, including KMS aliases (which are not separate
+inventory rows), have no generic Delete action. Single-resource deletion only is
+supported. With console sign-in configured, administrative inventory endpoints may
+require an administrator session; the page reports that requirement explicitly.
