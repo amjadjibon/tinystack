@@ -61,6 +61,8 @@ func TestHandler(t *testing.T) {
 		{http.MethodGet, "/aws-icons/sqs.svg", "*", "<svg/>", "", "gzip", "image/svg+xml", http.StatusOK},
 		{http.MethodGet, "/_tinystack/health", "", "api /_tinystack/health", "", "", "", http.StatusOK},
 		{http.MethodDelete, "/_tinystack/requests", "", "api /_tinystack/requests", "", "", "", http.StatusOK},
+		{http.MethodGet, "/_localstack/chaos/effects", "", "api /_localstack/chaos/effects", "", "", "", http.StatusOK},
+		{http.MethodPost, "/_localstack/chaos/effects", "", "api /_localstack/chaos/effects", "", "", "", http.StatusOK},
 		{http.MethodPost, "/", "", "", "", "", "", http.StatusMethodNotAllowed},
 	} {
 		req := httptest.NewRequest(tc.method, tc.path, http.NoBody)

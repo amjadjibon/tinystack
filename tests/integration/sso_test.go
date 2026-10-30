@@ -351,6 +351,21 @@ func TestSSOAdministrativeEndpoints(t *testing.T) {
 		})
 	}
 
+	// Console developer tools and mailbox writes require an active administrator.
+	for _, tc := range []struct{ method, path, body string }{
+		{http.MethodPost, "/_tinystack/reset", ""},
+		{http.MethodPost, "/_tinystack/reset?init=1", ""},
+		{http.MethodPatch, "/_tinystack/faults", `[{"latencyMs":1}]`},
+		{http.MethodDelete, "/_tinystack/faults", `[]`},
+		{http.MethodPost, "/_localstack/chaos/effects", `{"latency":1}`},
+		{http.MethodDelete, "/_tinystack/messages", ""},
+	} {
+		if status, _ := e.signed(t, dev.credentials(), "tinystack", tc.method, tc.path,
+			[]byte(tc.body)); status != http.StatusForbidden {
+			t.Fatalf("non-admin %s %s = %d", tc.method, tc.path, status)
+		}
+	}
+
 	// Fixture item paths share the same administrator boundary on both listeners.
 	for _, tc := range []struct {
 		credentials *aws.Credentials

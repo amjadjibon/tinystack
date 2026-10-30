@@ -397,6 +397,8 @@ function navigation(services: string[]): SideNavigationProps.Item[] {
 				{ type: "link", text: "Request inspector", href: "/requests" },
 				{ type: "link", text: "Deliveries", href: "/deliveries" },
 				{ type: "link", text: "Metrics", href: "/metrics" },
+				{ type: "link", text: "Developer tools", href: "/developer" },
+				{ type: "link", text: "Mailbox", href: "/mailbox" },
 			],
 		},
 		{ type: "divider" },

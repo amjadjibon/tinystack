@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CloudshellRouteImport } from './routes/cloudshell'
 import { Route as DeliveriesRouteImport } from './routes/deliveries'
+import { Route as DeveloperRouteImport } from './routes/developer'
+import { Route as MailboxRouteImport } from './routes/mailbox'
 import { Route as MetricsRouteImport } from './routes/metrics'
 import { Route as RequestsRouteImport } from './routes/requests'
 import { Route as ResourcesRouteImport } from './routes/resources'
@@ -51,6 +53,16 @@ const CloudshellRoute = CloudshellRouteImport.update({
 const DeliveriesRoute = DeliveriesRouteImport.update({
   id: '/deliveries',
   path: '/deliveries',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeveloperRoute = DeveloperRouteImport.update({
+  id: '/developer',
+  path: '/developer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MailboxRoute = MailboxRouteImport.update({
+  id: '/mailbox',
+  path: '/mailbox',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MetricsRoute = MetricsRouteImport.update({
@@ -184,6 +196,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/cloudshell': typeof CloudshellRoute
   '/deliveries': typeof DeliveriesRoute
+  '/developer': typeof DeveloperRoute
+  '/mailbox': typeof MailboxRoute
   '/metrics': typeof MetricsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
@@ -214,6 +228,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cloudshell': typeof CloudshellRoute
   '/deliveries': typeof DeliveriesRoute
+  '/developer': typeof DeveloperRoute
+  '/mailbox': typeof MailboxRoute
   '/metrics': typeof MetricsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
@@ -245,6 +261,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/cloudshell': typeof CloudshellRoute
   '/deliveries': typeof DeliveriesRoute
+  '/developer': typeof DeveloperRoute
+  '/mailbox': typeof MailboxRoute
   '/metrics': typeof MetricsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
@@ -277,6 +295,8 @@ export interface FileRouteTypes {
     | '/'
     | '/cloudshell'
     | '/deliveries'
+    | '/developer'
+    | '/mailbox'
     | '/metrics'
     | '/requests'
     | '/resources'
@@ -307,6 +327,8 @@ export interface FileRouteTypes {
     | '/'
     | '/cloudshell'
     | '/deliveries'
+    | '/developer'
+    | '/mailbox'
     | '/metrics'
     | '/requests'
     | '/resources'
@@ -337,6 +359,8 @@ export interface FileRouteTypes {
     | '/'
     | '/cloudshell'
     | '/deliveries'
+    | '/developer'
+    | '/mailbox'
     | '/metrics'
     | '/requests'
     | '/resources'
@@ -368,6 +392,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CloudshellRoute: typeof CloudshellRoute
   DeliveriesRoute: typeof DeliveriesRoute
+  DeveloperRoute: typeof DeveloperRoute
+  MailboxRoute: typeof MailboxRoute
   MetricsRoute: typeof MetricsRoute
   RequestsRoute: typeof RequestsRoute
   ResourcesRoute: typeof ResourcesRoute
@@ -416,6 +442,20 @@ declare module '@tanstack/react-router' {
       path: '/deliveries'
       fullPath: '/deliveries'
       preLoaderRoute: typeof DeliveriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/developer': {
+      id: '/developer'
+      path: '/developer'
+      fullPath: '/developer'
+      preLoaderRoute: typeof DeveloperRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mailbox': {
+      id: '/mailbox'
+      path: '/mailbox'
+      fullPath: '/mailbox'
+      preLoaderRoute: typeof MailboxRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/metrics': {
@@ -600,6 +640,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CloudshellRoute: CloudshellRoute,
   DeliveriesRoute: DeliveriesRoute,
+  DeveloperRoute: DeveloperRoute,
+  MailboxRoute: MailboxRoute,
   MetricsRoute: MetricsRoute,
   RequestsRoute: RequestsRoute,
   ResourcesRoute: ResourcesRoute,

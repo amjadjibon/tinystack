@@ -27,7 +27,7 @@ func Handler(files fs.FS, api http.Handler, address string) (http.Handler, error
 	mcp := mcpHandler(api, address)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/_tinystack/") {
+		if strings.HasPrefix(r.URL.Path, "/_tinystack/") || r.URL.Path == "/_localstack/chaos/effects" {
 			api.ServeHTTP(w, r)
 			return
 		}
