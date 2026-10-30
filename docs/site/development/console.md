@@ -208,3 +208,22 @@ originating request, and **Deliveries caused** opens any of that request's retai
 filters hide the linked row. The shared log retains only 256 entries: expired origins are identified,
 and background checks may have no originating request. Checks are recorded only when authorization
 is enabled. The separate **Deliveries** page shows service delivery outcomes, rather than IAM checks.
+
+## Developer tools and mailbox
+
+Monitoring includes `/developer` and `/mailbox`. Typed wrappers in `developer.ts` and `mailbox.ts` call existing
+internal endpoints through `adminRequest`/`adminFetch`. The console listener and Vite proxy also forward the exact
+`/_localstack/chaos/effects` path for global latency. They retain the gateway's administrator and Origin checks.
+No new AWS operations or gateway endpoints are added.
+
+Pure form/request helpers live in `developerTools.ts` and `mailboxHelpers.ts` with Node tests. Fault form validation
+mirrors server selectors, numeric limits, explicit zero probability, optional error fields and the 1024-rule limit.
+Deletion sends the original rule unchanged; the server removes all exact duplicates. Reset refreshes `useScope`
+inventory and all developer sections. Init polling stops when no scripts are pending/running; unused UNKNOWN
+stages alone do not keep it running.
+
+Mailbox filters are applied to the messages endpoint query. Follow uses `usePoll` every two seconds and pauses
+while the page is hidden. Rich message content is correlated with existing delivery records by time, service and
+message ID or Cognito destination. Missing/truncated previews fall back to the flattened body. HTML is rendered
+only inside an iframe with `sandbox=""`, with a source toggle; never render it into the console document.
+Cognito pool IDs are resolved to resource names using the shared inventory for generic resource links.

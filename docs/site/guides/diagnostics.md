@@ -204,6 +204,28 @@ Verify mode exposes alarm/dashboard inventory; signed CLI/SDK requests are requi
 configuration inspection and management. Signed CloudWatch requests use the AWS signing name `monitoring`.
 Local metric retention is 15 days; alarm history is retained for 30 days.
 
+### Developer tools and mailbox
+
+Under **Monitoring**, open **Developer tools** (`/developer`) to reset every account and Region, optionally re-run
+ready scripts, append or remove fault rules, clear all rules, and set global latency. Reset restores configured
+fault rules and clears global latency; clearing fault rules alone keeps global latency. Every removal and reset
+requires confirmation. Reset refreshes the console inventory and init status. Init scripts show stage, path, state,
+exit code and errors, polling every two seconds while scripts are pending or running. The current server does not
+record script timestamps or output excerpts; those columns remain empty unless supplied by the endpoint.
+
+Open **Mailbox** (`/mailbox`) to inspect captured email and SMS across accounts and Regions, newest first. Filter by
+channel, recipient, service or an RFC 3339 timestamp and choose **Apply filters**. **Follow** refreshes every two
+seconds; turn it off for manual refresh. Select a message to see its body and, when its matching delivery payload
+is available, email recipients, text/HTML, raw source, attachment names/sizes and Cognito pool/user metadata.
+HTML uses a sandboxed iframe without script or same-origin permissions; **View HTML source** shows the markup.
+Cognito pool links resolve against the inventory. Delivery previews are bounded, so truncated payloads may provide
+only the flattened body; the server does not currently include attachment metadata. **Clear mailbox** confirms
+removal of every captured message while preserving other delivery records.
+
+These controls use existing internal endpoints with the connected session. With console sign-in configured,
+non-administrators see **administrator access required**. AWS service permissions do not grant access to these
+administrative tools.
+
 ## Endpoints
 
 | Method and path | Result |
