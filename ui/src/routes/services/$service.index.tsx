@@ -1,5 +1,7 @@
+import { Alert, SpaceBetween } from "@cloudscape-design/components";
 import { createFileRoute } from "@tanstack/react-router";
 import { ConsoleLayout } from "#/components/Console";
+import { GenericResourceActions } from "#/components/GenericResourceActions";
 import { ResourceTable } from "#/components/ResourceTable";
 import { useScope } from "#/lib/scope";
 import { service } from "#/lib/services";
@@ -13,7 +15,7 @@ function ServicePage() {
 	const {
 		account,
 		region,
-		inventory: { data, loading, reload },
+		inventory: { data, loading, reload, error },
 	} = useScope();
 	const { title } = service(name);
 
@@ -21,18 +23,35 @@ function ServicePage() {
 		<ConsoleLayout
 			breadcrumbs={[{ text: title, href: `/services/${name}` }]}
 			content={
-				<ResourceTable
-					key={`${name}/${account}/${region}`}
-					title={title}
-					resources={(data ?? []).filter(
-						(r) =>
-							r.service === name &&
-							r.account === account &&
-							(!r.region || r.region === "global" || r.region === region),
+				<SpaceBetween size="l">
+					{error && (
+						<Alert
+							type="error"
+							header={
+								error.includes("403")
+									? "Administrator access required"
+									: "Cannot load resources"
+							}
+						>
+							{error}
+						</Alert>
 					)}
-					loading={loading}
-					onRefresh={reload}
-				/>
+					<ResourceTable
+						key={`${name}/${account}/${region}`}
+						title={title}
+						resources={(data ?? []).filter(
+							(r) =>
+								r.service === name &&
+								r.account === account &&
+								(!r.region || r.region === "global" || r.region === region),
+						)}
+						loading={loading}
+						onRefresh={reload}
+						renderActions={(resource) => (
+							<GenericResourceActions resource={resource} onChanged={reload} />
+						)}
+					/>
+				</SpaceBetween>
 			}
 		/>
 	);

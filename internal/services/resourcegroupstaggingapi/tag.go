@@ -4,6 +4,7 @@ import (
 	"context"
 	"maps"
 	"net/http"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -594,4 +595,9 @@ func serviceCatalogTags(ctx context.Context, c *catalog.Caller, r *catalog.Owned
 	_, id, _ := strings.Cut(r.ARN, "/")
 	_, err := c.Call(ctx, "servicecatalog", op, map[string]any{"Id": id, member: value})
 	return err
+}
+
+// TaggableServices reports the service taggers used by this API, in stable order.
+func TaggableServices() []string {
+	return slices.Sorted(maps.Keys(taggers))
 }

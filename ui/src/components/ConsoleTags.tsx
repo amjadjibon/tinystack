@@ -15,7 +15,9 @@ export function ConsoleTags({
 	enabled,
 	plan,
 	onChanged,
+	compact = false,
 }: {
+	compact?: boolean;
 	tags: Record<string, string>;
 	enabled: boolean;
 	plan: (next: Record<string, string>, removed: string[]) => ActionStep[];
@@ -23,33 +25,41 @@ export function ConsoleTags({
 }) {
 	const [editing, setEditing] = useState(false),
 		[text, setText] = useState("{}");
+	const editButton = (
+		<Button
+			disabled={!enabled}
+			onClick={() => {
+				setText(JSON.stringify(tags, null, 2));
+				setEditing(true);
+			}}
+		>
+			Edit tags
+		</Button>
+	);
 	return (
-		<Container
-			header={
-				<Header
-					variant="h2"
-					counter={`(${Object.keys(tags).length})`}
-					actions={
-						<Button
-							disabled={!enabled}
-							onClick={() => {
-								setText(JSON.stringify(tags, null, 2));
-								setEditing(true);
-							}}
+		<>
+			{compact ? (
+				editButton
+			) : (
+				<Container
+					header={
+						<Header
+							variant="h2"
+							counter={`(${Object.keys(tags).length})`}
+							actions={editButton}
 						>
-							Edit tags
-						</Button>
+							Tags
+						</Header>
 					}
 				>
-					Tags
-				</Header>
-			}
-		>
-			{Object.keys(tags).length ? (
-				<CodeBlock text={JSON.stringify(tags, null, 2)} />
-			) : (
-				<Box>No tags</Box>
+					{Object.keys(tags).length ? (
+						<CodeBlock text={JSON.stringify(tags, null, 2)} />
+					) : (
+						<Box>No tags</Box>
+					)}
+				</Container>
 			)}
+
 			{editing && (
 				<ActionDialog
 					title="Edit tags"
@@ -79,6 +89,6 @@ export function ConsoleTags({
 					</FormField>
 				</ActionDialog>
 			)}
-		</Container>
+		</>
 	);
 }

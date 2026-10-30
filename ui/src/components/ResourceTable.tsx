@@ -9,10 +9,11 @@ import {
 	Pagination,
 	PropertyFilter,
 	type PropertyFilterProps,
+	SpaceBetween,
 	Table,
 	type TableProps,
 } from "@cloudscape-design/components";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import type { Resource } from "#/lib/api";
 import { gatewayHref } from "#/lib/apigateway";
 import { cloudwatchHref } from "#/lib/cloudwatch";
@@ -190,14 +191,23 @@ export function ResourceTable({
 	loading,
 	onRefresh,
 	showService,
+	renderActions,
 }: {
 	title: string;
 	resources: Resource[];
 	loading: boolean;
 	onRefresh: () => void;
 	showService?: boolean;
+	renderActions?: (resource: Resource) => ReactNode;
 }) {
 	const follow = useFollow();
+	const [selected, setSelected] = useState<Resource[]>([]);
+	const current = resources.find(
+		(r) =>
+			r.arn === selected[0]?.arn &&
+			r.name === selected[0]?.name &&
+			r.type === selected[0]?.type,
+	);
 	const columns: TableProps.ColumnDefinition<Resource>[] = [
 		{
 			id: "name",
@@ -301,6 +311,13 @@ export function ResourceTable({
 	return (
 		<Table
 			{...collectionProps}
+			selectionType={renderActions ? "single" : undefined}
+			selectedItems={current ? [current] : []}
+			onSelectionChange={({ detail }) => setSelected(detail.selectedItems)}
+			ariaLabels={{
+				selectionGroupLabel: "Select a resource",
+				itemSelectionLabel: (_data, item) => `Select ${item.name}`,
+			}}
 			variant="full-page"
 			stickyHeader
 			resizableColumns
@@ -317,11 +334,14 @@ export function ResourceTable({
 					variant="awsui-h1-sticky"
 					counter={`(${resources.length})`}
 					actions={
-						<Button
-							iconName="refresh"
-							ariaLabel="Refresh"
-							onClick={onRefresh}
-						/>
+						<SpaceBetween direction="horizontal" size="xs">
+							{current && renderActions?.(current)}
+							<Button
+								iconName="refresh"
+								ariaLabel="Refresh"
+								onClick={onRefresh}
+							/>
+						</SpaceBetween>
 					}
 				>
 					{title}

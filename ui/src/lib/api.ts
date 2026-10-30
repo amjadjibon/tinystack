@@ -1,5 +1,6 @@
 // The console uses TinyStack's own /_tinystack/ endpoints.
 // In development Vite proxies them to the running server.
+import type { ResourceDelete } from "./genericResources";
 import { adminFetch, consoleActionFetch } from "./session";
 
 export type Health = {
@@ -137,6 +138,8 @@ export function parseMetrics(text: string): MetricSeries[] {
 
 export const api = {
 	actionCapabilities: async (): Promise<{
+		taggable_services: string[];
+		resource_deletes: Record<string, ResourceDelete>;
 		account: string;
 		accounts?: string[];
 		signing_names?: Record<string, string>;

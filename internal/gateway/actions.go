@@ -19,6 +19,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/config"
+	"github.com/amjadjibon/tinystack/internal/services/resourcegroupstaggingapi"
 )
 
 const consoleIAM = "iam"
@@ -259,6 +260,47 @@ var consoleRDSOperations = strings.Fields(`
  AddTagsToResource RemoveTagsFromResource ListTagsForResource
 `)
 
+// Only the tagging writes are exposed; discovery remains on the inventory endpoint.
+var consoleResourceGroupsTaggingOperations = strings.Fields(`TagResources UntagResources`)
+
+// consoleResourceDelete describes a single-identifier delete from an inventory record.
+// Service and inventory type form the key; types are not globally unique.
+type consoleResourceDelete struct {
+	Service    string `json:"service"`
+	Operation  string `json:"operation"`
+	Field      string `json:"field"`
+	Identifier string `json:"identifier"`
+}
+
+// Identifier sources for consoleResourceDelete: the inventory name, the full ARN, or the ARN's last path segment.
+const (
+	consoleIdentifierName      = "name"
+	consoleIdentifierARN       = "arn"
+	consoleIdentifierARNSuffix = "arn-suffix"
+)
+
+var consoleResourceDeletes = map[string]consoleResourceDelete{
+	"kinesis/stream":            {"kinesis", "DeleteStream", "StreamARN", consoleIdentifierARN},
+	"ssm/parameter":             {"ssm", "DeleteParameter", "Name", consoleIdentifierName},
+	"ecr/repository":            {"ecr", "DeleteRepository", "RepositoryName", consoleIdentifierName},
+	"route53/hosted-zone":       {"route53", "DeleteHostedZone", "Id", consoleIdentifierARNSuffix},
+	"cognitoidp/user-pool":      {"cognitoidp", "DeleteUserPool", "UserPoolId", consoleIdentifierARNSuffix},
+	"cloudformation/stack":      {"cloudformation", "DeleteStack", "StackName", consoleIdentifierARN},
+	"elasticache/cache-cluster": {"elasticache", "DeleteCacheCluster", "CacheClusterId", consoleIdentifierName},
+	"memorydb/cluster":          {"memorydb", "DeleteCluster", "ClusterName", consoleIdentifierName},
+}
+
+func (s *Server) consoleDeleteCapabilities() map[string]consoleResourceDelete {
+	out := make(map[string]consoleResourceDelete)
+	for key, action := range consoleResourceDeletes {
+		if _, ok := s.services[action.Service]; ok {
+			out[key] = action
+		}
+	}
+
+	return out
+}
+
 var consoleAccount = regexp.MustCompile(`^\d{12}$`)
 
 var consoleRegion = regexp.MustCompile(`^[a-z]{2}(?:-[a-z]+)+-\d+$`)
@@ -328,7 +370,10 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleCUR:            cur,
 			consoleRDS:            rds,
 			"requires_signature":  s.cfg.Identity.Mode == config.IdentityVerify,
+			"taggable_services":   resourcegroupstaggingapi.TaggableServices(),
+			"resource_deletes":    s.consoleDeleteCapabilities(),
 		}
+
 		if s.cfg.Console.Auth.OIDC != nil {
 			capabilities["sso"] = map[string]string{"login_url": "/_tinystack/auth/login"}
 		}
@@ -392,6 +437,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 
 	var operations []string
 	switch in.Service {
+	case "resourcegroupstaggingapi":
+		operations = consoleResourceGroupsTaggingOperations
 	case consoleSTS:
 		operations = []string{opGetCallerIdentity}
 	case consoleIAM:
@@ -430,6 +477,12 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleCUROperations
 	case consoleRDS:
 		operations = consoleRDSOperations
+	}
+
+	for _, action := range consoleResourceDeletes {
+		if in.Service == action.Service && in.Operation == action.Operation {
+			operations = append(operations, action.Operation)
+		}
 	}
 
 	c.service = s.services[in.Service]
@@ -521,6 +574,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 	} else {
 		output, err = s.consoleCall(r, c, caller, &in)
 	}
+
 	if err != nil {
 		s.consoleFail(w, c, err)
 		return

@@ -1,4 +1,5 @@
 import {
+	Alert,
 	Box,
 	Button,
 	Container,
@@ -16,6 +17,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CodeBlock } from "#/components/CodeBlock";
 import { ConsoleLayout } from "#/components/Console";
 import { EmptyState } from "#/components/EmptyState";
+import { GenericResourceActions } from "#/components/GenericResourceActions";
 import { ServiceIcon } from "#/components/ServiceIcon";
 import { api, type Resource } from "#/lib/api";
 import { service } from "#/lib/services";
@@ -36,7 +38,7 @@ export const Route = createFileRoute("/services/$service/resource")({
 function ResourcePage() {
 	const { service: name } = Route.useParams();
 	const search = Route.useSearch();
-	const { data, loading, reload } = usePoll(api.resources);
+	const { data, loading, reload, error } = usePoll(api.resources);
 	const { title } = service(name);
 	const resource = data?.find(
 		(r) =>
@@ -61,11 +63,19 @@ function ResourcePage() {
 							variant="h1"
 							description={`${title} ${search.type}`}
 							actions={
-								<Button
-									iconName="refresh"
-									ariaLabel="Refresh"
-									onClick={reload}
-								/>
+								<SpaceBetween direction="horizontal" size="xs">
+									{resource && (
+										<GenericResourceActions
+											resource={resource}
+											onChanged={reload}
+										/>
+									)}
+									<Button
+										iconName="refresh"
+										ariaLabel="Refresh"
+										onClick={reload}
+									/>
+								</SpaceBetween>
 							}
 						>
 							<span
@@ -81,6 +91,18 @@ function ResourcePage() {
 						</Header>
 					}
 				>
+					{error && (
+						<Alert
+							type="error"
+							header={
+								error.includes("403")
+									? "Administrator access required"
+									: "Cannot load resources"
+							}
+						>
+							{error}
+						</Alert>
+					)}
 					{resource ? (
 						<ResourceDetail resource={resource} />
 					) : (
