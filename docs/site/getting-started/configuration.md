@@ -322,3 +322,20 @@ These are plain AMQP/OpenWire/STOMP/MQTT/WebSocket and HTTP URLs, unlike AWS's T
 URLs. The gateway local CA does not configure engine TLS. Multi-AZ modes run one
 real instance and return one BrokerInstances entry; there is no replication,
 failover, VPC enforcement, maintenance scheduling or automatic engine upgrade.
+
+## Bedrock inference
+
+| Key | Default | Behavior |
+| --- | --- | --- |
+| `bedrock.inference` | `local` | `local` deterministic echo/fixtures or `ollama` real inference |
+| `bedrock.ollama.url` | `""` | Existing HTTP(S) Ollama server; empty starts Docker lazily |
+| `bedrock.ollama.image` | `ollama/ollama:0.40.13` | Pinned image, used only with an empty URL |
+| `bedrock.ollama.timeout` | `120s` | Positive deadline for startup, downloads and each inference request |
+| `bedrock.ollama.pull` | `true` | Pull a missing mapped model once on first use |
+| `bedrock.ollama.models` | See below | Bedrock ID prefix to Ollama model; longest prefix wins; empty uses defaults |
+
+Default mappings: `anthropic.claude-`, `amazon.titan-text-`, `meta.llama` and
+`mistral.` map to `llama3.2`; `amazon.titan-embed-` maps to `nomic-embed-text`.
+Map entries require nonempty prefixes and model names. See
+[Real inference with Ollama](../guides/bedrock.md#real-inference-with-ollama)
+for first-run downloads, supported inputs and retained-volume cleanup.

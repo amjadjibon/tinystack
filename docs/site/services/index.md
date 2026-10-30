@@ -121,7 +121,7 @@ Future services and unimplemented extensions live in the [roadmap](../roadmap/in
 | [Amazon Bedrock AgentCore control plane](bedrockagentcorecontrol.md) | 19 | Records |
 | [Amazon Bedrock AgentCore data plane](bedrockagentcore.md) | 8 | Records events / optional Docker runtimes |
 | [Amazon Bedrock Agents](bedrockagent.md) | 37 | Records only |
-| [Amazon Bedrock Runtime](bedrockruntime.md) | 6 | Local behavior |
+| [Amazon Bedrock Runtime](bedrockruntime.md) | 6 | Local behavior; optional Docker or external Ollama inference |
 | [Amazon Transcribe](transcribe.md) | 17 | Fixture-backed local S3 transcript writes; no speech inference |
 | [Amazon Translate](translate.md) | 19 | Fixture-backed local translation; no inference |
 

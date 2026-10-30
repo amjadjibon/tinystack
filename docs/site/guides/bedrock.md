@@ -162,3 +162,63 @@ CloudFormation resource specification marks KnowledgeBaseConfiguration mutable.
 TinyStack rejects API configuration changes explicitly; CloudFormation sends
 mutable-property updates in place and surfaces that validation error rather than
 replacing a resource contrary to its specification.
+
+## Real inference with Ollama
+
+The default `bedrock.inference: local` keeps deterministic echo responses, fixtures
+and hash-derived embeddings. To generate real local completions, configure:
+
+```yaml
+bedrock:
+  inference: ollama
+  ollama:
+    url: ""  # or http://127.0.0.1:11434 for an existing server
+    image: ollama/ollama:0.40.13
+    timeout: 120s
+    pull: true
+    models:
+      anthropic.claude-: llama3.2
+      amazon.titan-text-: llama3.2
+      amazon.titan-embed-: nomic-embed-text
+      meta.llama: llama3.2
+      mistral.: llama3.2
+```
+
+With an empty URL, the first inference request starts the Docker image on an
+available loopback port and waits for `/api/version`. Docker must be installed
+and running. An explicit URL uses your existing server without Docker. Startup,
+network and timeout failures return `ServiceUnavailableException`; there is no
+fallback to deterministic text.
+
+Models map by longest Bedrock model-ID prefix; missing mappings return
+`ResourceNotFoundException`. An empty map uses the defaults above. Add mappings
+for Nova or Cohere when using these formats. Existing inference profiles resolve
+to their foundation model before mapping. `pull: true` pulls a missing model once
+on first use, serializing concurrent downloads. `pull: false` returns
+`ResourceNotFoundException` naming the missing Ollama model. Other Ollama errors
+return `ModelErrorException` with the server's message.
+
+First use can download several gigabytes for llama3.2 (roughly 2 GB) and hundreds
+of megabytes for embedding models. Starting the container (including the image pull) and model downloads are
+not limited by `timeout`, only by the client's own timeout, so give the first request time; `timeout` bounds each
+chat or embedding call, and CPU inference can take minutes, so increase it when needed. Models persist in the labeled Docker volume
+`tinystack-ollama`. Shutdown removes TinyStack's container but retains the volume;
+`POST /_tinystack/reset` also keeps it. After stopping all Ollama containers, remove
+the downloaded models manually with `docker volume rm tinystack-ollama`.
+
+`Converse`, `ConverseStream`, `InvokeModel` and `InvokeModelWithResponseStream`
+use Ollama chat; native embedding requests use `/api/embed`. Matching fixtures
+win. Text messages, system prompts, token limits, temperature, top-p and stop
+sequences map to Ollama. Token usage comes from Ollama and latency is measured. The stop reason is
+`max_tokens` when Ollama stops on length and `end_turn` otherwise; Ollama does not say whether a stop sequence
+matched, so `stop_sequence` is never reported.
+Streams translate Ollama NDJSON text chunks into the existing AWS event frames;
+the full event stream is buffered before delivery. `CountTokens` remains an
+estimate. Native request parsing stays strict.
+
+Images, documents, tool use/configuration, guardrails during inference, prompt
+caching and reasoning configuration are unsupported and rejected. The gateway
+rejects fields outside the supported API profile; fixture toolConfig is supported
+through the existing fixture path. Bedrock Agents still execute fixture plans and
+Lambda actions. AgentCore invokes its application endpoints; neither service
+automatically sends requests to the model backend.

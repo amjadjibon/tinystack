@@ -1157,15 +1157,18 @@ Manage local agents, immutable versions, aliases, action groups and vector knowl
 
 #### Amazon Bedrock Runtime
 
-Return predictable text, tool-use fixtures and hash-derived embeddings without network calls.
+Deterministic fixtures and embeddings by default, with opt-in local inference through Ollama.
 
-**Execution:** Local behavior. **Selected operations:** 6.
+**Execution:** Local behavior; optional Docker or external Ollama inference. **Selected operations:** 6.
 
 - Six REST JSON operations: InvokeModel, InvokeModelWithResponseStream, Converse, ConverseStream, CountTokens and ApplyGuardrail.
 - Provider-native Anthropic messages, Titan text/embeddings, Nova messages, Llama prompts and Cohere embeddings; normalized deterministic vectors, usage estimates and maximum-token truncation.
 - AWS event-stream response frames flushed individually: provider-native Anthropic, Titan, Nova and Llama text deltas with invocation metrics; ConverseStream message/block lifecycle, tool-use fixtures, usage and latency metadata.
 - Default reply is TinyStack: followed by the last user message. Stored substring/regex fixtures select text, stop reason and optional Converse tool use; reset clears fixtures.
 - Control-plane model IDs, system profile IDs/ARNs and application profile IDs/ARNs resolve locally; unknown identifiers and unsupported request fields fail explicitly.
+- Opt-in bedrock.inference: ollama uses a lazy loopback Docker server or an existing Ollama URL; retained model volume, longest-prefix mapping, serialized model pull and explicit backend errors.
+- Ollama chat and embeddings preserve Bedrock response shapes; native NDJSON text chunks become AWS event-stream frames with real token usage and measured latency; matching text/tool fixtures take precedence.
+- Converse system text, maxTokens, temperature, topP and stopSequences map to Ollama chat options; native Anthropic, Titan, Nova and Llama sampling controls are supported.
 
 [Supported operations](bedrockruntime.md#supported-operations) · [Limitations](bedrockruntime.md#limitations-and-future-work)
 

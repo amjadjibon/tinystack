@@ -1823,7 +1823,6 @@
         "Readiness drives CREATING to ACTIVE; named data volumes survive SQLite restart, delete/reset remove containers and volumes, shutdown removes containers and retains volumes; orphan cleanup is restricted to this store ownership label"
       ]
     },
-
     "mwaa": {
       "title": "Amazon MWAA",
       "category": "Application Integration",
@@ -2823,21 +2822,24 @@
       "title": "Amazon Bedrock Runtime",
       "category": "Machine Learning",
       "scope": "Account and Region; fixtures are default-account-wide",
-      "summary": "Return predictable text, tool-use fixtures and hash-derived embeddings without network calls.",
+      "summary": "Deterministic fixtures and embeddings by default, with opt-in local inference through Ollama.",
       "features": [
         "Six REST JSON operations: InvokeModel, InvokeModelWithResponseStream, Converse, ConverseStream, CountTokens and ApplyGuardrail",
         "Provider-native Anthropic messages, Titan text/embeddings, Nova messages, Llama prompts and Cohere embeddings; normalized deterministic vectors, usage estimates and maximum-token truncation",
         "AWS event-stream response frames flushed individually: provider-native Anthropic, Titan, Nova and Llama text deltas with invocation metrics; ConverseStream message/block lifecycle, tool-use fixtures, usage and latency metadata",
         "Default reply is TinyStack: followed by the last user message. Stored substring/regex fixtures select text, stop reason and optional Converse tool use; reset clears fixtures",
-        "Control-plane model IDs, system profile IDs/ARNs and application profile IDs/ARNs resolve locally; unknown identifiers and unsupported request fields fail explicitly"
+        "Control-plane model IDs, system profile IDs/ARNs and application profile IDs/ARNs resolve locally; unknown identifiers and unsupported request fields fail explicitly",
+        "Opt-in bedrock.inference: ollama uses a lazy loopback Docker server or an existing Ollama URL; retained model volume, longest-prefix mapping, serialized model pull and explicit backend errors",
+        "Ollama chat and embeddings preserve Bedrock response shapes; native NDJSON text chunks become AWS event-stream frames with real token usage and measured latency; matching text/tool fixtures take precedence",
+        "Converse system text, maxTokens, temperature, topP and stopSequences map to Ollama chat options; native Anthropic, Titan, Nova and Llama sampling controls are supported"
       ],
       "gaps": [
-        "No bidirectional streaming or asynchronous inference. Response streaming is deterministic and finite; embedding models reject native response streaming. No simulated mid-stream model failures.",
-        "Only text inputs and declared token limits are supported. Sampling controls, multimodal inputs, prompt management, reasoning and tool-result conversations are unsupported. Tool-use fixtures require a matching Converse toolConfig.",
-        "Token counts are whitespace-word estimates; latencyMs is zero. Embeddings are SHA-256-derived test vectors, not semantic embeddings. No real model inference or network access.",
+        "No bidirectional streaming or asynchronous inference. Response streams are buffered before AWS frame encoding; embedding models reject response streaming. No simulated mid-stream model failures.",
+        "Text inputs only; multimodal inputs, prompt management, caching, guardrails during inference, reasoning and tool-result conversations are unsupported. Ollama rejects toolConfig unless a fixture matches.",
+        "Local inference retains whitespace token estimates, zero latency and SHA-256 test vectors. Ollama requires local model resources and network access to its server; CountTokens remains a whitespace estimate.",
         "ApplyGuardrail performs case-insensitive literal substring matching of custom words only; it is explicitly invoked and does not run automatically during inference."
       ],
-      "execution": "Local behavior",
+      "execution": "Local behavior; optional Docker or external Ollama inference",
       "package": "bedrockruntime"
     },
     "elasticbeanstalk": {
@@ -3118,7 +3120,6 @@
       "package": "dsql",
       "guide": "## Connect to a Docker cluster\n\nEnable the runtime in your config. Persistent storage retains cluster records and PostgreSQL data across restarts:\n\n```yaml\nstorage:\n  mode: persistent\n  path: ./state\ndsql:\n  clusters: docker\n```\n\nCreate a cluster through the DSQL SDK and wait for `ACTIVE`. Image download and database initialization keep it\n`CREATING`; reciprocal multi-Region peering must be configured before either peer activates. Peers share one backend.\nFind the cluster ARN in `/_tinystack/resources` and read `details.Address` for its `127.0.0.1:<port>` proxy address.\nThe API endpoint remains `<identifier>.dsql.<region>.on.aws`; TinyStack does not change DNS.\n\nGenerate the password using `feature/dsql/auth.GenerateDBConnectAdminAuthToken` with that API endpoint, the cluster\nRegion and your TinyStack credentials. Supply it as `PGPASSWORD`, then connect with the endpoint hostname for\ncertificate verification and the loopback IP for transport:\n\n```sh\npsql \"host=<cluster-endpoint> hostaddr=127.0.0.1 port=<proxy-port> dbname=postgres user=admin sslmode=verify-full sslrootcert=./state/tls/ca.pem\"\n```\n\nTokens must have the correct host, action, Region and unexpired signing time in every identity mode.\n`identity.mode: verify` also verifies the signature and issued-session credentials. With\n`identity.authorization: soft|enforce`, the shared IAM evaluator checks `dsql:DbConnectAdmin` or `dsql:DbConnect`\non the cluster ARN and records its decision in `/_tinystack/requests`; enforce rejects denied connections.\nNever use the loopback address as the token endpoint.\n\nAs admin, use `CREATE ROLE reader WITH LOGIN` and normal PostgreSQL grants. Generate a non-admin password with\n`GenerateDbConnectAuthToken`, then connect as that database role. The backend authenticates each role with a private\nclient certificate; it does not forward tokens to PostgreSQL or connect every session as a superuser. A separate\nbootstrap superuser cannot log in through the proxy. Passwords alone cannot authenticate directly to the backend.\n`AWS IAM GRANT` and `AWS IAM REVOKE` fail explicitly as unsupported SQL; IAM-to-role mappings are not emulated.\n\nShutdown closes sessions and removes owned containers while retaining named data volumes. Restart recovers owned\ncontainers and data, and rebinds the persisted proxy port. Delete (after disabling deletion protection) and reset\nremove owned containers and volumes. Unrelated Docker resources are excluded by per-store ownership labels.\n"
     },
-
     "fis": {
       "title": "AWS Fault Injection Service",
       "category": "Management & Governance",
@@ -3573,7 +3574,6 @@
       "slice": "Provisioned records, bootstrap brokers, node listings and a single-node Redpanda Docker runtime are implemented. Advanced security, configurations and cluster mutations remain future extensions.",
       "features": "- [x] `GetBootstrapBrokers`\n- [x] `ListNodes`\n- [ ] `CreateConfiguration`\n- [ ] `ListConfigurations`\n- [ ] `DescribeConfiguration`\n- [ ] `ListConfigurationRevisions`\n- [ ] `DescribeConfigurationRevision`\n- [ ] `BatchAssociateScramSecret`\n- [ ] `BatchDisassociateScramSecret`\n- [ ] `ListScramSecrets`\n- [ ] `UpdateClusterKafkaVersion`, `UpdateBrokerCount`, `UpdateBrokerType`, `UpdateBrokerStorage`\n- [ ] Serverless and V2 cluster APIs\n- [x] Single-node Redpanda broker, loopback endpoints, readiness and lifecycle cleanup\n- [ ] DNS, multi-node brokers and cluster-operation state\n- [x] Topics and producer/consumer data plane in Docker mode\n- [x] Unauthenticated plaintext/TLS/dual Docker listeners\n- [ ] SCRAM, IAM, mTLS, logging and open monitoring"
     },
-
     "applicationautoscaling-runtime": {
       "title": "Application Auto Scaling execution and advanced policies",
       "state": "Proposed",
