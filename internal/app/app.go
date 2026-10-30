@@ -149,6 +149,7 @@ import (
 	wafv2api "github.com/amjadjibon/tinystack/internal/aws/generated/wafv2"
 	xrayapi "github.com/amjadjibon/tinystack/internal/aws/generated/xray"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/config"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	dnsserver "github.com/amjadjibon/tinystack/internal/dns"
@@ -680,6 +681,10 @@ func build(
 	signing := signer.New(store, buckets, certificates)
 	foundationModels := bedrock.New(store)
 	inference := bedrockruntime.New(store, foundationModels)
+	if cfg.Bedrock.Inference == config.InferenceOllama {
+		inference.UseOllama(cfg.Bedrock.Ollama, common.RandomID(16))
+		a.onStop(inference.Stop)
+	}
 	agents := bedrockagent.New(store, foundationModels)
 	agentRuntime := bedrockagentruntime.New(store, agents)
 	tags := resourcegroupstaggingapi.New()

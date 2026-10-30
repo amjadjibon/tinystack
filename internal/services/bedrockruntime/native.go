@@ -28,14 +28,21 @@ type nativeBlock struct {
 }
 
 type anthropicInput struct {
-	MaxTokens *int64          `json:"max_tokens"`
-	Version   string          `json:"anthropic_version"`
-	Messages  []nativeMessage `json:"messages"`
+	MaxTokens   *int64          `json:"max_tokens"`
+	System      string          `json:"system,omitempty"`
+	Temperature *float64        `json:"temperature,omitempty"`
+	TopP        *float64        `json:"top_p,omitempty"`
+	Stop        []string        `json:"stop_sequences,omitempty"`
+	Version     string          `json:"anthropic_version"`
+	Messages    []nativeMessage `json:"messages"`
 }
 
 type titanInput struct {
 	Config *struct {
-		MaxTokens *int64 `json:"maxTokenCount"`
+		MaxTokens   *int64   `json:"maxTokenCount"`
+		Temperature *float64 `json:"temperature,omitempty"`
+		TopP        *float64 `json:"topP,omitempty"`
+		Stop        []string `json:"stopSequences,omitempty"`
 	} `json:"textGenerationConfig,omitempty"`
 	InputText string `json:"inputText"`
 }
@@ -52,13 +59,19 @@ type cohereInput struct {
 }
 
 type llamaInput struct {
-	MaxTokens *int64 `json:"max_gen_len"`
-	Prompt    string `json:"prompt"`
+	MaxTokens   *int64   `json:"max_gen_len"`
+	Temperature *float64 `json:"temperature,omitempty"`
+	TopP        *float64 `json:"top_p,omitempty"`
+	Prompt      string   `json:"prompt"`
 }
 
 type novaInput struct {
+	System []nativeBlock `json:"system,omitempty"`
 	Config *struct {
-		MaxTokens *int64 `json:"maxTokens"`
+		MaxTokens   *int64   `json:"maxTokens"`
+		Temperature *float64 `json:"temperature,omitempty"`
+		TopP        *float64 `json:"topP,omitempty"`
+		Stop        []string `json:"stopSequences,omitempty"`
 	} `json:"inferenceConfig,omitempty"`
 	Messages []nativeMessage `json:"messages"`
 }
@@ -114,6 +127,7 @@ func strictJSONBlocks(body []byte, out *[]nativeBlock) error {
 }
 
 type nativeRequest struct {
+	Chat      *ollamaRequest
 	MaxTokens *int64
 	Last      string
 	All       string
@@ -122,7 +136,7 @@ type nativeRequest struct {
 }
 
 func parseNative(model *bedrock.Model, body []byte) (*nativeRequest, error) {
-	out := &nativeRequest{Dimension: model.Dimension}
+	out := &nativeRequest{Dimension: model.Dimension, Chat: &ollamaRequest{Options: map[string]any{}}}
 	var messages []api.Message
 	switch model.Family {
 	case familyAnthropic:
@@ -142,6 +156,13 @@ func parseNative(model *bedrock.Model, body []byte) (*nativeRequest, error) {
 		}
 
 		out.MaxTokens = in.MaxTokens
+		out.Chat.Options["temperature"] = in.Temperature
+		out.Chat.Options["top_p"] = in.TopP
+		if in.System != "" {
+			out.Chat.Messages = append(out.Chat.Messages, chatMessage{Role: roleSystem, Content: in.System})
+		}
+
+		out.Chat.Options[ollamaStop] = in.Stop
 	case familyNova:
 		var in novaInput
 		if err := strictJSON(body, &in); err != nil {
@@ -149,6 +170,14 @@ func parseNative(model *bedrock.Model, body []byte) (*nativeRequest, error) {
 		}
 
 		var err error
+		for _, block := range in.System {
+			if block.Type != "" || block.Text == "" {
+				return nil, invalid("system supports only nonempty text")
+			}
+
+			out.Chat.Messages = append(out.Chat.Messages, chatMessage{Role: roleSystem, Content: block.Text})
+		}
+
 		messages, err = nativeMessages(in.Messages, false)
 		if err != nil {
 			return nil, err
@@ -156,6 +185,9 @@ func parseNative(model *bedrock.Model, body []byte) (*nativeRequest, error) {
 
 		if in.Config != nil {
 			out.MaxTokens = in.Config.MaxTokens
+			out.Chat.Options["temperature"] = in.Config.Temperature
+			out.Chat.Options["top_p"] = in.Config.TopP
+			out.Chat.Options[ollamaStop] = in.Config.Stop
 		}
 	case familyTitan:
 		var in titanInput
@@ -166,6 +198,9 @@ func parseNative(model *bedrock.Model, body []byte) (*nativeRequest, error) {
 		out.Last = in.InputText
 		if in.Config != nil {
 			out.MaxTokens = in.Config.MaxTokens
+			out.Chat.Options["temperature"] = in.Config.Temperature
+			out.Chat.Options["top_p"] = in.Config.TopP
+			out.Chat.Options[ollamaStop] = in.Config.Stop
 		}
 	case familyLlama:
 		var in llamaInput
@@ -175,6 +210,8 @@ func parseNative(model *bedrock.Model, body []byte) (*nativeRequest, error) {
 
 		out.Last = in.Prompt
 		out.MaxTokens = in.MaxTokens
+		out.Chat.Options["temperature"] = in.Temperature
+		out.Chat.Options["top_p"] = in.TopP
 	case "titan-embed":
 		var in titanEmbeddingInput
 		if err := strictJSON(body, &in); err != nil {
@@ -221,6 +258,23 @@ func parseNative(model *bedrock.Model, body []byte) (*nativeRequest, error) {
 		return nil, invalid("Unsupported model body family.")
 	}
 
+	if messages != nil {
+		out.Chat.Messages = append(out.Chat.Messages, chatRequest(messages, nil, nil).Messages...)
+	} else {
+		out.Chat.Messages = append(out.Chat.Messages, chatMessage{Role: roleUser, Content: out.Last})
+	}
+
+	if out.MaxTokens != nil {
+		out.Chat.Options["num_predict"] = *out.MaxTokens
+	}
+
+	// Nil sampling values must be absent rather than JSON null in Ollama options.
+	for _, key := range []string{"temperature", "top_p"} {
+		if v, ok := out.Chat.Options[key].(*float64); ok && v == nil {
+			delete(out.Chat.Options, key)
+		}
+	}
+
 	out.All = out.Last
 	if messages != nil {
 		var err error
@@ -259,7 +313,7 @@ func embedding(text string, dimension int) []float64 {
 	return vector
 }
 
-// InvokeModel validates a provider-native request and returns deterministic JSON.
+// InvokeModel validates a provider-native request and returns Bedrock JSON.
 func (s *Service) InvokeModel(ctx context.Context, in *api.InvokeModelRequest) (*api.InvokeModelResponse, error) {
 	if err := validateNativeHeaders(in.ContentType, in.Accept); err != nil {
 		return nil, err
@@ -270,22 +324,43 @@ func (s *Service) InvokeModel(ctx context.Context, in *api.InvokeModelRequest) (
 		return nil, err
 	}
 
-	parsed, err := parseNative(model, in.Body)
+	parsed, err := s.parseNative(model, in.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	var body any
+	var vectors [][]float64
+	inputTokens := tokenCount(parsed.Last)
+	if model.Dimension > 0 && s.ollama != nil {
+		result, _, callErr := s.ollama.call(ctx, model.ID, &ollamaRequest{Input: parsed.Texts})
+		if callErr != nil {
+			return nil, callErr
+		}
+
+		vectors, inputTokens = result.Embeddings, result.Input
+		if len(vectors) != len(parsed.Texts) {
+			return nil, invalid("Ollama embeddings count does not match input")
+		}
+	}
+
 	if model.Dimension > 0 {
 		if model.Family == "titan-embed" {
+			vector := embedding(parsed.Last, parsed.Dimension)
+			if vectors != nil {
+				vector = vectors[0]
+			}
+
 			body = map[string]any{
-				"embedding":          embedding(parsed.Last, parsed.Dimension),
-				fieldInputTextTokens: tokenCount(parsed.Last),
+				"embedding":          vector,
+				fieldInputTextTokens: inputTokens,
 			}
 		} else {
-			vectors := make([][]float64, len(parsed.Texts))
-			for i, text := range parsed.Texts {
-				vectors[i] = embedding(text, parsed.Dimension)
+			if vectors == nil {
+				vectors = make([][]float64, len(parsed.Texts))
+				for i, text := range parsed.Texts {
+					vectors[i] = embedding(text, parsed.Dimension)
+				}
 			}
 
 			body = map[string]any{
@@ -301,18 +376,22 @@ func (s *Service) InvokeModel(ctx context.Context, in *api.InvokeModelRequest) (
 			return nil, e
 		}
 
+		if inferenceErr := s.infer(ctx, model.ID, out, parsed.Chat); inferenceErr != nil {
+			return nil, inferenceErr
+		}
+
 		if out.Tool != nil {
 			return nil, invalid("Tool fixtures are supported only by Converse.")
 		}
 
-		input, output := tokenCount(parsed.All), tokenCount(out.Text)
+		input, output := replyUsage(out, parsed.All)
 		switch model.Family {
 		case familyAnthropic:
 			body = map[string]any{
 				"id":            "msg_tinystack",
 				fieldType:       fieldMessage,
 				fieldRole:       roleAssistant,
-				"model":         model.ID,
+				fieldModel:      model.ID,
 				fieldContent:    []any{map[string]any{fieldType: fieldText, fieldText: out.Text}},
 				fieldStopReason: out.Stop,
 				stopSequence:    nil,
@@ -346,9 +425,9 @@ func (s *Service) InvokeModel(ctx context.Context, in *api.InvokeModelRequest) (
 				},
 			}
 		case familyLlama:
-			reason := "stop"
+			reason := ollamaStop
 			if out.Stop == stopMaxTokens {
-				reason = "length"
+				reason = ollamaLength
 			}
 
 			body = map[string]any{
@@ -381,7 +460,7 @@ func (s *Service) CountTokens(ctx context.Context, in *api.CountTokensRequest) (
 
 	all := ""
 	if in.Input.InvokeModel != nil {
-		parsed, e := parseNative(model, in.Input.InvokeModel.Body)
+		parsed, e := s.parseNative(model, in.Input.InvokeModel.Body)
 		if e != nil {
 			return nil, e
 		}
@@ -410,4 +489,34 @@ func validateNativeHeaders(contentType, accept *string) error {
 	}
 
 	return nil
+}
+
+func (s *Service) parseNative(model *bedrock.Model, body []byte) (*nativeRequest, error) {
+	parsed, err := parseNative(model, body)
+	if err != nil {
+		return nil, err
+	}
+
+	if s.ollama != nil {
+		return parsed, nil
+	}
+
+	for _, key := range []string{"temperature", "top_p"} {
+		if parsed.Chat.Options[key] != nil {
+			return nil, invalid(key + " requires bedrock.inference: ollama")
+		}
+	}
+
+	stops, _ := parsed.Chat.Options[ollamaStop].([]string)
+	if len(stops) > 0 {
+		return nil, invalid("stop sequences require bedrock.inference: ollama")
+	}
+
+	for _, message := range parsed.Chat.Messages {
+		if message.Role == roleSystem {
+			return nil, invalid("system requires bedrock.inference: ollama")
+		}
+	}
+
+	return parsed, nil
 }

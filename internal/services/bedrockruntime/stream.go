@@ -50,9 +50,13 @@ func (s *Service) ConverseStream(
 	ctx context.Context,
 	in *api.ConverseStreamRequest,
 ) (*api.ConverseStreamResponse, error) {
-	out, err := s.Converse(ctx, &api.ConverseRequest{
-		ModelId: in.ModelId, Messages: in.Messages, InferenceConfig: in.InferenceConfig, ToolConfig: in.ToolConfig,
-	})
+	out, reply, err := s.converse(ctx, &api.ConverseRequest{
+		System:          in.System,
+		ModelId:         in.ModelId,
+		Messages:        in.Messages,
+		InferenceConfig: in.InferenceConfig,
+		ToolConfig:      in.ToolConfig,
+	}, true)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +82,7 @@ func (s *Service) ConverseStream(
 			fieldDelta:      map[string]any{"toolUse": map[string]any{"input": string(input)}},
 		})
 	} else {
-		for _, text := range deltas(common.Value(block.Text)) {
+		for _, text := range replyParts(reply) {
 			stream.add(
 				"contentBlockDelta",
 				map[string]any{fieldBlockIndex: 0, fieldDelta: map[string]any{fieldText: text}},
@@ -113,7 +117,7 @@ func (s *Service) InvokeModelWithResponseStream(
 		return nil, invalid("Embedding models do not support response streaming.")
 	}
 
-	parsed, err := parseNative(model, in.Body)
+	parsed, err := s.parseNative(model, in.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -123,11 +127,16 @@ func (s *Service) InvokeModelWithResponseStream(
 		return nil, err
 	}
 
+	parsed.Chat.Stream = true
+	if err := s.infer(ctx, model.ID, reply, parsed.Chat); err != nil {
+		return nil, err
+	}
+
 	if reply.Tool != nil {
 		return nil, invalid("Tool fixtures are supported only by Converse.")
 	}
 
-	input, output := tokenCount(parsed.All), tokenCount(reply.Text)
+	input, output := replyUsage(reply, parsed.All)
 	stream := &streamBuilder{}
 	chunk := func(value any) {
 		encoded, err := json.Marshal(value)
@@ -138,14 +147,16 @@ func (s *Service) InvokeModelWithResponseStream(
 
 		stream.add("chunk", map[string]any{"bytes": encoded})
 	}
+
 	metrics := map[string]any{
 		"inputTokenCount": input, "outputTokenCount": output,
-		"invocationLatency": 0, "firstByteLatency": 0,
+		"invocationLatency": reply.Latency, "firstByteLatency": reply.Latency,
 	}
+
 	switch model.Family {
 	case familyAnthropic:
 		chunk(map[string]any{fieldType: "message_start", "message": map[string]any{
-			"id": "msg_tinystack", fieldType: "message", fieldRole: roleAssistant, "model": model.ID,
+			"id": "msg_tinystack", fieldType: "message", fieldRole: roleAssistant, fieldModel: model.ID,
 			fieldContent: []any{}, fieldStopReason: nil, stopSequence: nil,
 			fieldUsage: map[string]any{"input_tokens": input, fieldOutputTokens: 0},
 		}})
@@ -153,7 +164,7 @@ func (s *Service) InvokeModelWithResponseStream(
 			fieldType: "content_block_start", fieldIndex: 0,
 			"content_block": map[string]any{fieldType: fieldText, fieldText: ""},
 		})
-		for _, text := range deltas(reply.Text) {
+		for _, text := range replyParts(reply) {
 			chunk(map[string]any{
 				fieldType: "content_block_delta", fieldIndex: 0,
 				fieldDelta: map[string]any{fieldType: "text_delta", fieldText: text},
@@ -168,7 +179,7 @@ func (s *Service) InvokeModelWithResponseStream(
 	case familyNova:
 		// Nova uses the Converse event vocabulary inside the native chunk envelope.
 		chunk(map[string]any{"messageStart": map[string]any{fieldRole: roleAssistant}})
-		for _, text := range deltas(reply.Text) {
+		for _, text := range replyParts(reply) {
 			chunk(map[string]any{"contentBlockDelta": map[string]any{
 				fieldBlockIndex: 0, fieldDelta: map[string]any{fieldText: text},
 			}})
@@ -180,10 +191,10 @@ func (s *Service) InvokeModelWithResponseStream(
 			fieldUsage: map[string]any{
 				"inputTokens": input, "outputTokens": output, "totalTokens": input + output,
 			},
-			"metrics": map[string]any{"latencyMs": 0},
+			"metrics": map[string]any{"latencyMs": reply.Latency},
 		}, "amazon-bedrock-invocationMetrics": metrics})
 	case familyTitan, familyLlama:
-		parts := deltas(reply.Text)
+		parts := replyParts(reply)
 		for i, text := range parts {
 			last := i == len(parts)-1
 			var value map[string]any
@@ -192,6 +203,7 @@ func (s *Service) InvokeModelWithResponseStream(
 					"outputText": text, fieldIndex: 0, fieldInputTextTokens: input,
 					"totalOutputTextTokenCount": output, "completionReason": nil,
 				}
+
 				if last {
 					reason := "FINISH"
 					if reply.Stop == stopMaxTokens {
@@ -205,10 +217,11 @@ func (s *Service) InvokeModelWithResponseStream(
 					"generation": text, "prompt_token_count": input,
 					"generation_token_count": output, fieldStopReason: nil,
 				}
+
 				if last {
-					reason := "stop"
+					reason := ollamaStop
 					if reply.Stop == stopMaxTokens {
-						reason = "length"
+						reason = ollamaLength
 					}
 
 					value[fieldStopReason] = reason

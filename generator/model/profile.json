@@ -34521,7 +34521,8 @@
         "modelId",
         "messages",
         "inferenceConfig",
-        "toolConfig"
+        "toolConfig",
+        "system"
       ],
       "Message": [
         "role",
@@ -34538,7 +34539,10 @@
         "type"
       ],
       "InferenceConfiguration": [
-        "maxTokens"
+        "maxTokens",
+        "temperature",
+        "topP",
+        "stopSequences"
       ],
       "ToolConfiguration": [
         "tools"
@@ -34830,10 +34834,14 @@
         "modelId",
         "messages",
         "inferenceConfig",
-        "toolConfig"
+        "toolConfig",
+        "system"
       ],
       "ConverseStreamResponse": [
         "stream"
+      ],
+      "SystemContentBlock": [
+        "text"
       ]
     }
   },

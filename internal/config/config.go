@@ -321,6 +321,7 @@ type Config struct {
 	OpenSearch struct {
 		Domains string `yaml:"domains"`
 	} `yaml:"opensearch"`
+	Bedrock          BedrockConfig `yaml:"bedrock"`
 	BedrockAgentCore struct {
 		Runtimes string `yaml:"runtimes"`
 	} `yaml:"bedrockagentcore"`
@@ -390,6 +391,7 @@ func Default() Config {
 	c.ElastiCache.Caches = CachesRecords
 	c.OpenSearch.Domains = DomainsRecords
 	c.MQ.Brokers = BrokersRecords
+	c.Bedrock = DefaultBedrock()
 	c.BedrockAgentCore.Runtimes = RuntimesRecords
 	c.Transfer.Servers = "records"
 	c.Kafka.Clusters = ContainersRecords
@@ -408,6 +410,8 @@ func Load(file string) (Config, error) {
 		if err != nil {
 			return c, err
 		}
+
+		c.Bedrock.Ollama.Models = nil
 
 		d := yaml.NewDecoder(bytes.NewReader(data))
 		d.KnownFields(true)
@@ -433,6 +437,10 @@ func Load(file string) (Config, error) {
 
 	if c.Console.Auth.OIDC != nil {
 		c.Console.Auth.OIDC.applyDefaults()
+	}
+
+	if len(c.Bedrock.Ollama.Models) == 0 {
+		c.Bedrock.Ollama.Models = DefaultBedrock().Ollama.Models
 	}
 
 	validationErr := c.Validate()
@@ -607,6 +615,10 @@ func (c *Config) Validate() error {
 
 	if c.OpenSearch.Domains != DomainsRecords && c.OpenSearch.Domains != DomainsDocker {
 		return fmt.Errorf("opensearch.domains must be records or docker")
+	}
+
+	if err := c.Bedrock.Validate(); err != nil {
+		return err
 	}
 
 	if c.BedrockAgentCore.Runtimes != RuntimesRecords && c.BedrockAgentCore.Runtimes != RuntimesDocker {
