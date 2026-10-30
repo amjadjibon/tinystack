@@ -18,18 +18,22 @@ task docs:generate  # regenerate docs pages from docs/catalog.json and code
 task docs:check     # catalogue freshness + strict MkDocs build
 task ui:check       # Biome + tsc for the console
 task ui:test        # console session signing and credential boundaries
+task test:console   # console-only Go code (CloudShell, MCP); builds the console first
 task all            # generate, lint, Go tests, console build/check/tests
 task check          # merge gate: lint, Go tests, docs:check, headless build, ui:check, Terraform
 ```
 
 Single test: `go test -race ./tests/integration -run TestName`.
-Opt-in suites: `task test:docker` (real Lambda/ECS/EKS containers),
-`task test:testcontainers` (Go module, local image build or `TINYSTACK_IMAGE`),
-`task test:terraform`, `task test:sam`, `task smoke`.
+Opt-in suites: `task test:docker` (real containers: Lambda, ECS, EKS, ElastiCache, MemoryDB, RDS, DSQL, OpenSearch,
+MQ, MSK, Batch, CodeBuild, AgentCore; 30m timeout), `task test:testcontainers` (Go module, local image build or
+`TINYSTACK_IMAGE`; also `:python`, `:java`, `:node`, `:dotnet`), `task test:terraform`, `task test:sam`,
+`task test:cdk`, `task smoke`. CI runs only on `v*` tags: `release.yml` calls the check workflows, then publishes
+binaries and images. No tag exists yet, so nothing is published.
 Run: `./bin/tinystack start [--port 4566] [--console-port 4567] [--config examples/tinystack.yaml]`.
-Debug endpoints: `/_tinystack/health`, `requests`, `resources`, `deliveries`, `metrics`, `faults` (fault injection), `costs/fixtures` (user-supplied costs), `init` (script status), and
-`POST /_tinystack/reset` (clears all state; `?init=1` re-runs the ready scripts). LocalStack paths `/_localstack/health`
-and `/_localstack/init` are aliases. Init scripts: `init.dir` / `--init-dir`, stages in `internal/inithooks`.
+Debug endpoints: `/_tinystack/health`, `requests`, `resources`, `deliveries`, `messages` (captured email/SMS),
+`metrics`, `faults` (fault injection), `costs/fixtures` (user-supplied costs), `init` (script status), `actions`
+(console writes), and `POST /_tinystack/reset` (clears all state; `?init=1` re-runs the ready scripts). LocalStack
+paths `/_localstack/health` and `/_localstack/init` are aliases. Init scripts: `init.dir` / `--init-dir`, stages in `internal/inithooks`.
 
 ## Architecture
 
@@ -71,8 +75,14 @@ service, listeners, shutdown) → `internal/gateway.Server` → generated `catal
   `resourcegroups/types.go`. Cloud Control exposes S3 bucket and SQS queue handlers through
   `cloudformation.ResourceProvider`, reads live service state, and stores only request history. Its writes finish
   synchronously; interrupted requests become failed when the journal is reopened.
-- Container runtimes (Lambda, ECS, EKS k3s, ElastiCache) are optional and shell out to the docker CLI
-  (`services/dockercli`); without them, resources are records only.
+- Resource policies: a service that evaluates them implements `AuthorizationResources` (returning each resource's
+  ARN, `OwnerAccount` and `Policy`; see `eventbridge/authorization.go`, `kinesis/authorization.go`) and is listed in
+  `resourceAuthorization` in `internal/gateway/authorization.go`. Cross-account access needs both the resource and
+  the identity grant; explicit deny wins. In-process reads across accounts go through `catalog.ServiceDelivery`.
+- Container runtimes are optional, configured per service as `records` (default) or `docker`, and shell out to the
+  docker CLI (`services/dockercli`) behind a `Runtime` interface in the service package (e.g. `rds/runtime.go`):
+  Lambda, ECS, EKS (k3s), ElastiCache, MemoryDB (Valkey), RDS, DSQL, OpenSearch, MQ, MSK, Batch, CodeBuild and
+  AgentCore. Without them, resources are records only.
 
 ## Adding an operation or service
 
@@ -81,14 +91,17 @@ service, listeners, shutdown) → `internal/gateway.Server` → generated `catal
    `internal/services/<service>` (with `inventory.go`), and construct it and register `api.Descriptor(...)` in
    `internal/app/app.go`, which both `app.Run` and the integration tests build. Also add the
    `tag.go` tagger, the console entry in `ui/src/lib/services.ts`, and the SDK client as a direct `go.mod` dependency.
+   A dedicated console page may call only the operations on its allowlist in `internal/gateway/actions.go`.
 3. **Docs, for every behavior change:** edit `docs/catalog.json` (features, gaps, execution), `task docs:generate`,
-   `task docs:check`. Product docs live under `docs/site/`; internal plans in `.spec/`.
+   `task docs:check`. Product docs live under `docs/site/`; internal plans in `.spec/` (gitignored, never committed).
 
 ## Tests
 
 `tests/integration` drives the official AWS Go SDK v2 against an `httptest` server built by `internal/app`
 (`serverWith` takes a Lambda runtime; the default runs handlers in-process). Prefer adding behavior coverage there.
-Tests use ephemeral ports and never contact AWS.
+Tests use ephemeral ports and never contact AWS. Fake HTTP servers in tests check only the method and path they
+expect and answer anything else with 404 without recording it, since local tools probe new ports with `GET /`.
+Wait on a condition with a deadline instead of a fixed `time.Sleep`, unless the sleep is the behavior under test.
 
 ## Lint and style
 
