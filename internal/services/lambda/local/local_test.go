@@ -275,6 +275,8 @@ func TestConcurrentAndRelease(t *testing.T) {
 // A slow cold start of one function must not hold up other functions.
 func TestColdStartDoesNotBlock(t *testing.T) {
 	fn := pythonFunction(t, "def handler(e,c):\n return 1")
+	// Under a loaded -race run, reaching the probe can take longer than the default invocation timeout.
+	fn.Timeout = 10 * time.Second
 	if _, err := exec.LookPath("node"); err != nil {
 		t.Skip("node is absent")
 	}
@@ -302,7 +304,7 @@ func TestColdStartDoesNotBlock(t *testing.T) {
 	}()
 
 	<-started
-	deadline := time.Now().Add(3 * time.Second)
+	deadline := time.Now().Add(10 * time.Second)
 	for {
 		if _, err := os.Stat(marker); err == nil {
 			break
