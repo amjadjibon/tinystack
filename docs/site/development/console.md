@@ -253,3 +253,30 @@ clusters, and MemoryDB clusters. ECR deletion does not force removal of images;
 Route 53 retains its own record-set checks. Zone and pool IDs come from ARN suffixes,
 not their display names. KMS aliases are omitted because inventory only exposes keys
 with aliases inside their details. Unmapped types have no Delete action.
+
+## Adding a tutorial
+
+See the [tutorial guide](../guides/console-tutorials.md) for the browser and CLI workflows.
+Definitions live in `ui/src/tutorials/<id>.ts` and are exported by `index.ts`. Each definition declares registered
+services, duration, permissions, tasks, steps, routes, commands, and cleanup resources. Instructions and commands
+expand `{account}`, `{region}`, and generated names. Keep cleanup restricted to those generated resources.
+
+Add a typed constant in `hotspots.ts` and wrap the actual page control in
+`<Hotspot hotspotId={HOTSPOT.yourConstant}>`. The registry contains only shipped hotspots. Steps need a real
+control, a scoped Go there route, and instructions that work with console permissions.
+
+Add a pure check to `checks.ts` and declare its snapshot sources. This module must have no runtime React or DOM
+imports, so Node's type stripping can test it. `ui/src/lib/tutorials.ts` fetches only those existing administrator endpoints;
+`runtime.tsx` mounts the two-second `usePoll` observer only for an active, unfinished step. Include scope and exact
+resource names in all checks; delivery records carry scope in their ARNs. A 403 must retain manual Next.
+
+Cloudscape owns annotation position internally and resets when the tutorial object changes. The adapter presents
+the current saved step as its annotation task; the drawer retains absolute completed counts and Previous/Next.
+This prevents Cloudscape's automatic hotspot fallback from marking later steps complete during page navigation.
+The provider survives route changes. Progress is scoped by tutorial/account/Region and cleared after a successful
+Developer tools reset. Cleanup uses the existing action gateway and ActionDialog's named failures and retry.
+
+Extend `ui/tests/tutorials.test.ts` with definition validation, registry-versus-rendered-control scans, every check's
+positive/negative/wrong-scope/wrong-name cases, and progress isolation/restart/reset coverage. Run `task ui:check`,
+`task ui:test`, `task build`, and `task docs:check`; add Go allowlist tests only when a new cleanup operation is
+needed. Exercise both UI and CLI paths against a local server.

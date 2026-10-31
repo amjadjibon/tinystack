@@ -85,6 +85,7 @@ nav:
       - Lambda hot reload: guides/lambda-hot-reload.md
       - IoT devices: guides/iot.md
       - Console and diagnostics: guides/diagnostics.md
+      - Console tutorials: guides/console-tutorials.md
       - Console single sign-on: guides/sso.md
       - Console CloudShell: guides/cloudshell.md
       - Console MCP server: guides/mcp.md

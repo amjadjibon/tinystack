@@ -330,3 +330,7 @@ changes refresh inventory. Other types, including KMS aliases (which are not sep
 inventory rows), have no generic Delete action. Single-resource deletion only is
 supported. With console sign-in configured, administrative inventory endpoints may
 require an administrator session; the page reports that requirement explicitly.
+
+The console includes [interactive tutorials](console-tutorials.md) for S3 and SNS/SQS, with numbered controls,
+live completion checks, scoped saved progress, and confirmed cleanup. Open Tutorials in the top navigation or
+the Get started card on console home.
