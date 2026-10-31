@@ -41,16 +41,20 @@ func TestConsoleCloudFormationPage(t *testing.T) {
 		t.Fatalf("capabilities = %+v", capabilities)
 	}
 
-	created, err := c.CreateStack(ctx, &cfn.CreateStackInput{
-		StackName: aws.String("console-stack"), TemplateBody: aws.String(consoleStackTemplate),
-		Parameters: []cfntypes.Parameter{{ParameterKey: aws.String("Secret"), ParameterValue: aws.String("hunter2")}},
-	})
-	if err != nil {
-		t.Fatal(err)
+	call("ValidateTemplate", map[string]any{"TemplateBody": consoleStackTemplate})
+	summary := call("GetTemplateSummary", map[string]any{"TemplateBody": consoleStackTemplate})
+	if summary["Parameters"].([]any)[0].(map[string]any)["NoEcho"] != true {
+		t.Fatalf("summary = %+v", summary)
 	}
 
+	created := call("CreateStack", map[string]any{
+		"StackName": "console-stack", "TemplateBody": consoleStackTemplate,
+		"Parameters":                  []any{map[string]any{"ParameterKey": "Secret", "ParameterValue": "hunter2"}},
+		"EnableTerminationProtection": true,
+	})
+
 	wantStatus(ctx, t, c, "console-stack", cfntypes.StackStatusCreateComplete)
-	id := aws.ToString(created.StackId)
+	id := created["StackId"].(string)
 	summaries := call("ListStacks", map[string]any{})["StackSummaries"].([]any)
 	if len(summaries) != 1 || summaries[0].(map[string]any)["StackId"] != id ||
 		summaries[0].(map[string]any)["StackStatus"] != "CREATE_COMPLETE" {
@@ -87,13 +91,23 @@ func TestConsoleCloudFormationPage(t *testing.T) {
 
 	changed := strings.Replace(consoleStackTemplate, `"Resources": {`,
 		`"Resources": {"Queue": {"Type": "AWS::SQS::Queue"}, `, 1)
+	// Direct updates reuse the current template and keep the secret without exposing it.
+	call("UpdateStack", map[string]any{
+		"StackName": id, "UsePreviousTemplate": true,
+		"Parameters": []any{map[string]any{"ParameterKey": "Secret", "UsePreviousValue": true}},
+		"Tags":       []any{map[string]any{"Key": "updated", "Value": "direct"}},
+	})
+	wantStatus(ctx, t, c, id, cfntypes.StackStatusUpdateComplete)
+	updated := call("DescribeStacks", map[string]any{"StackName": id})["Stacks"].([]any)[0].(map[string]any)
+	if updated["Tags"].([]any)[0].(map[string]any)["Value"] != "direct" {
+		t.Fatalf("updated tags = %+v", updated["Tags"])
+	}
+
 	for _, name := range []string{"add-queue", "discard"} {
-		if _, err = c.CreateChangeSet(ctx, &cfn.CreateChangeSetInput{
-			StackName: aws.String("console-stack"), ChangeSetName: aws.String(name), TemplateBody: aws.String(changed),
-			Parameters: []cfntypes.Parameter{{ParameterKey: aws.String("Secret"), UsePreviousValue: aws.Bool(true)}},
-		}); err != nil {
-			t.Fatal(err)
-		}
+		call("CreateChangeSet", map[string]any{
+			"StackName": id, "ChangeSetName": name, "ChangeSetType": "UPDATE", "TemplateBody": changed,
+			"Parameters": []any{map[string]any{"ParameterKey": "Secret", "UsePreviousValue": true}},
+		})
 	}
 
 	sets := call("ListChangeSets", map[string]any{"StackName": id})["Summaries"].([]any)
@@ -114,9 +128,8 @@ func TestConsoleCloudFormationPage(t *testing.T) {
 	call("ExecuteChangeSet", map[string]any{"StackName": id, "ChangeSetName": "add-queue"})
 	wantStatus(ctx, t, c, "console-stack", cfntypes.StackStatusUpdateComplete)
 
-	// Only the page's operations run; creating and updating stacks stays with the SDK.
+	// Operations outside the implemented console surface remain rejected.
 	for _, operation := range []string{
-		"CreateStack", "UpdateStack", "CreateChangeSet", "UpdateTerminationProtection",
 		"DetectStackDrift", "ContinueUpdateRollback", "CancelUpdateStack",
 	} {
 		out := consoleResponse(t, s,
@@ -129,6 +142,41 @@ func TestConsoleCloudFormationPage(t *testing.T) {
 
 	if _, err = c.DescribeStacks(ctx, &cfn.DescribeStacksInput{StackName: aws.String("rejected")}); err == nil {
 		t.Fatal("a rejected operation created a stack")
+	}
+
+	consoleResponse(t, s,
+		consoleLambdaRequest(t, s, "cloudformation", "DeleteStack", account, region, map[string]any{"StackName": id}),
+		http.StatusBadRequest)
+	call("UpdateTerminationProtection", map[string]any{"StackName": id, "EnableTerminationProtection": false})
+	protected := call("DescribeStacks", map[string]any{"StackName": id})["Stacks"].([]any)[0].(map[string]any)
+	if protected["EnableTerminationProtection"] != false {
+		t.Fatal("protection still enabled")
+	}
+
+	call("DescribeStackResource", map[string]any{"StackName": id, "LogicalResourceId": "Topic"})
+	call("DescribeStackResources", map[string]any{"StackName": id})
+	exported := `{"Resources":{"Queue":{"Type":"AWS::SQS::Queue"}},
+  "Outputs":{"Name":{"Value":"exported-value","Export":{"Name":"console-export"}}}}`
+	call("CreateChangeSet", map[string]any{
+		"StackName": "export-stack", "ChangeSetName": "initial",
+		"ChangeSetType": "CREATE", "TemplateBody": exported,
+	})
+	call("ExecuteChangeSet", map[string]any{"StackName": "export-stack", "ChangeSetName": "initial"})
+	wantStatus(ctx, t, c, "export-stack", cfntypes.StackStatusCreateComplete)
+	exports := call("ListExports", map[string]any{})["Exports"].([]any)
+	if len(exports) != 1 || exports[0].(map[string]any)["Name"] != "console-export" {
+		t.Fatalf("exports = %+v", exports)
+	}
+
+	call("CreateStack", map[string]any{
+		"StackName": "import-stack",
+		"TemplateBody": `{"Resources":{"Parameter":{"Type":"AWS::SSM::Parameter",
+    "Properties":{"Type":"String","Value":{"Fn::ImportValue":"console-export"}}}}}`,
+	})
+	wantStatus(ctx, t, c, "import-stack", cfntypes.StackStatusCreateComplete)
+	imports := call("ListImports", map[string]any{"ExportName": "console-export"})["Imports"].([]any)
+	if len(imports) != 1 || imports[0] != "import-stack" {
+		t.Fatalf("imports = %+v", imports)
 	}
 
 	call("DeleteStack", map[string]any{"StackName": id})

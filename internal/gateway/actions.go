@@ -276,6 +276,8 @@ var consoleCognitoOperations = strings.Fields(`
 var consoleCloudFormationOperations = strings.Fields(`
  ListStacks DescribeStacks DescribeStackEvents ListStackResources GetTemplate
  ListChangeSets DescribeChangeSet ExecuteChangeSet DeleteChangeSet DeleteStack
+ CreateStack UpdateStack CreateChangeSet ValidateTemplate GetTemplateSummary UpdateTerminationProtection
+ DescribeStackResource DescribeStackResources ListExports ListImports
 `)
 
 // Only the tagging writes are exposed; discovery remains on the inventory endpoint.

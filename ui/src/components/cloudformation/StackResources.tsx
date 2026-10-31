@@ -7,9 +7,11 @@ import {
 	SpaceBetween,
 	Table,
 } from "@cloudscape-design/components";
+import { useState } from "react";
+import { CodeBlock } from "#/components/CodeBlock";
 import { resourceHref } from "#/components/ResourceTable";
 import type { Resource } from "#/lib/api";
-import { type CfnScope, cfnHref } from "#/lib/cloudformation";
+import { type CfnScope, cfnCall, cfnHref } from "#/lib/cloudformation";
 import {
 	cfnDate,
 	findInventory,
@@ -32,9 +34,33 @@ export function StackResources({
 	inventory: Resource[];
 }) {
 	const follow = useFollow();
+	const [detail, setDetail] = useState("");
+	const [error, setError] = useState("");
 	const resources = poll.data ?? [];
 	return (
 		<SpaceBetween size="s">
+			{error && <Alert type="error">{error}</Alert>}
+			<Button
+				onClick={async () => {
+					try {
+						setDetail(
+							JSON.stringify(
+								await cfnCall(scope, "DescribeStackResources", {
+									StackName: scope.stack,
+								}),
+								null,
+								2,
+							),
+						);
+						setError("");
+					} catch (err) {
+						setError(String(err));
+					}
+				}}
+			>
+				Describe all resources
+			</Button>
+			{detail && <CodeBlock text={detail} />}
 			{poll.error && (
 				<Alert type="error" header="Cannot load resources">
 					{poll.error}
@@ -66,6 +92,33 @@ export function StackResources({
 					</Box>
 				}
 				columnDefinitions={[
+					{
+						id: "describe",
+						header: "Details",
+						cell: (r) => (
+							<Button
+								onClick={async () => {
+									try {
+										setDetail(
+											JSON.stringify(
+												await cfnCall(scope, "DescribeStackResource", {
+													StackName: scope.stack,
+													LogicalResourceId: r.LogicalResourceId,
+												}),
+												null,
+												2,
+											),
+										);
+										setError("");
+									} catch (err) {
+										setError(String(err));
+									}
+								}}
+							>
+								Describe
+							</Button>
+						),
+					},
 					{
 						id: "logical",
 						header: "Logical ID",

@@ -16,6 +16,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ConsoleLayout } from "#/components/Console";
 import { StackDetails } from "#/components/cloudformation/StackDetails";
+import { StackEditor } from "#/components/cloudformation/StackEditor";
+import { StackExports } from "#/components/cloudformation/StackExports";
 import { StackStatus } from "#/components/cloudformation/StackStatus";
 import { type CfnScope, cfnHref, cfnPages } from "#/lib/cloudformation";
 import {
@@ -187,13 +189,24 @@ function StackList({
 					<Header
 						variant="awsui-h1-sticky"
 						counter={`(${visible.length})`}
-						description="Stacks in the selected account and Region. Create and update stacks with the AWS CLI, CDK or SDKs."
+						description="Create and manage stacks in the selected account and Region."
 						actions={
-							<Button
-								iconName="refresh"
-								ariaLabel="Refresh stacks"
-								onClick={poll.reload}
-							/>
+							<SpaceBetween direction="horizontal" size="xs">
+								<StackEditor
+									scope={scope}
+									disabled={!enabled}
+									onSaved={(id) => {
+										poll.reload();
+										if (id)
+											window.location.assign(cfnHref({ ...scope, stack: id }));
+									}}
+								/>
+								<Button
+									iconName="refresh"
+									ariaLabel="Refresh stacks"
+									onClick={poll.reload}
+								/>
+							</SpaceBetween>
 						}
 					>
 						Stacks
@@ -275,6 +288,7 @@ function StackList({
 					},
 				]}
 			/>
+			{enabled && <StackExports scope={scope} />}
 		</SpaceBetween>
 	);
 }

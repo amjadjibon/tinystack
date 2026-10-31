@@ -162,3 +162,77 @@ export function findInventory(
 	);
 	return found.find((r) => r.service === service) ?? found[0];
 }
+
+export type TemplateParameter = {
+	ParameterKey: string;
+	DefaultValue?: string;
+	NoEcho?: boolean;
+	Description?: string;
+	ParameterType?: string;
+	ParameterConstraints?: { AllowedValues?: string[] };
+};
+export type TemplateSummary = {
+	Parameters?: TemplateParameter[];
+	Capabilities?: string[];
+	CapabilitiesReason?: string;
+	DeclaredTransforms?: string[];
+};
+export function initialParameters(
+	declarations: TemplateParameter[],
+	stack?: Stack,
+) {
+	return Object.fromEntries(
+		declarations.map((p) => [
+			p.ParameterKey,
+			{
+				value: p.NoEcho
+					? ""
+					: (stack?.Parameters?.find((v) => v.ParameterKey === p.ParameterKey)
+							?.ParameterValue ??
+						p.DefaultValue ??
+						""),
+				previous: !!stack?.Parameters?.some(
+					(v) => v.ParameterKey === p.ParameterKey,
+				),
+			},
+		]),
+	);
+}
+export function parameterInput(
+	declarations: TemplateParameter[],
+	values: Record<
+		string,
+		{
+			value: string;
+			previous: boolean;
+		}
+	>,
+) {
+	return declarations.flatMap<{
+		ParameterKey: string;
+		ParameterValue?: string;
+		UsePreviousValue?: boolean;
+	}>((p) => {
+		const v = values[p.ParameterKey];
+		if (v?.previous)
+			return [{ ParameterKey: p.ParameterKey, UsePreviousValue: true }];
+		if (!v?.value && p.DefaultValue !== undefined) return [];
+		if (!v?.value)
+			throw new Error(`Enter a value for parameter ${p.ParameterKey}.`);
+		return [{ ParameterKey: p.ParameterKey, ParameterValue: v.value }];
+	});
+}
+export function templateInput(body: string, previous: boolean) {
+	if (previous) return { UsePreviousTemplate: true };
+	if (!body.trim()) throw new Error("Paste or upload a template first.");
+	return { TemplateBody: body };
+}
+
+export function requiredCapabilities(summary: TemplateSummary) {
+	return [
+		...new Set([
+			...(summary.Capabilities ?? []),
+			...(summary.DeclaredTransforms?.length ? ["CAPABILITY_AUTO_EXPAND"] : []),
+		]),
+	];
+}

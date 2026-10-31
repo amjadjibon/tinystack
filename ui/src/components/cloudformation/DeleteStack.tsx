@@ -65,20 +65,32 @@ export function DeleteStack({
 						setOpen(false);
 						onDeleted();
 					}}
-					plan={async () => [
-						{
-							label: "Delete stack",
-							run: () =>
-								cfnCall(scope, "DeleteStack", {
-									StackName: stack.StackId,
-									...(retaining && retain.length
-										? { RetainResources: retain }
-										: {}),
-								}),
-						},
-					]}
+					plan={async () => {
+						if (stack.EnableTerminationProtection)
+							throw new Error(
+								"Disable termination protection before deleting this stack.",
+							);
+						return [
+							{
+								label: "Delete stack",
+								run: () =>
+									cfnCall(scope, "DeleteStack", {
+										StackName: stack.StackId,
+										...(retaining && retain.length
+											? { RetainResources: retain }
+											: {}),
+									}),
+							},
+						];
+					}}
 				>
 					<SpaceBetween size="m">
+						{stack.EnableTerminationProtection && (
+							<Alert type="error">
+								Termination protection blocks deletion. Disable it using the
+								stack protection action first.
+							</Alert>
+						)}
 						<Alert type="warning">
 							Deleting stack {stack.StackName} deletes the resources it created,
 							except those with a Retain deletion policy.

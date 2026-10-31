@@ -23,7 +23,7 @@ import { StackStatus } from "./StackStatus";
 import { StackParameters } from "./StackValues";
 
 // StackChangeSets lists, describes, executes and deletes a stack's change sets.
-// Creating change sets stays with the AWS CLI and SDKs.
+// The stack editor creates change sets for review here.
 export function StackChangeSets({
 	scope,
 	deleted,

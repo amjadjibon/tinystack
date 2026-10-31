@@ -96,3 +96,61 @@ test("physical IDs resolve inside the stack scope and prefer the matching servic
 		undefined,
 	);
 });
+
+test("parameter forms never prefill NoEcho values and keep previous values explicitly", async () => {
+	const { initialParameters, parameterInput } = await import(
+		"../src/lib/cloudformationHelpers.ts"
+	);
+	const declarations = [
+		{ ParameterKey: "Secret", NoEcho: true, DefaultValue: "secret-default" },
+		{ ParameterKey: "Name", DefaultValue: "default" },
+	];
+	const fresh = initialParameters(declarations);
+	assert.equal(fresh.Secret.value, "");
+	assert.equal(fresh.Name.value, "default");
+	const existing = initialParameters(declarations, {
+		Parameters: [{ ParameterKey: "Secret", ParameterValue: "****" }],
+	} as never);
+	assert.deepEqual(existing.Secret, { value: "", previous: true });
+	assert.deepEqual(parameterInput(declarations, existing), [
+		{ ParameterKey: "Secret", UsePreviousValue: true },
+		{ ParameterKey: "Name", ParameterValue: "default" },
+	]);
+	assert.deepEqual(
+		parameterInput(declarations, {
+			...fresh,
+			Secret: { value: "", previous: false },
+		}),
+		[{ ParameterKey: "Name", ParameterValue: "default" }],
+	);
+	assert.throws(
+		() => parameterInput([{ ParameterKey: "Required" }], {}),
+		/Required/,
+	);
+});
+
+test("template input distinguishes reuse from replacement and requires a body", async () => {
+	const { templateInput } = await import("../src/lib/cloudformationHelpers.ts");
+	assert.deepEqual(templateInput("", true), { UsePreviousTemplate: true });
+	assert.deepEqual(templateInput("Resources: {}", false), {
+		TemplateBody: "Resources: {}",
+	});
+	assert.throws(() => templateInput(" ", false), /template/);
+});
+
+test("capability acknowledgments include IAM variants and transform expansion", async () => {
+	const { requiredCapabilities } = await import(
+		"../src/lib/cloudformationHelpers.ts"
+	);
+	assert.deepEqual(requiredCapabilities({}), []);
+	assert.deepEqual(requiredCapabilities({ Capabilities: ["CAPABILITY_IAM"] }), [
+		"CAPABILITY_IAM",
+	]);
+	assert.deepEqual(
+		requiredCapabilities({
+			Capabilities: ["CAPABILITY_NAMED_IAM"],
+			DeclaredTransforms: ["AWS::Serverless-2016-10-31"],
+		}),
+		["CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"],
+	);
+});

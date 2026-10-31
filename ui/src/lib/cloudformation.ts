@@ -1,5 +1,5 @@
 import { api } from "./api";
-import type { ChangeSetDetail } from "./cloudformationHelpers";
+import type { ChangeSetDetail, TemplateSummary } from "./cloudformationHelpers";
 
 export type CfnScope = { account: string; region: string; stack?: string };
 
@@ -64,4 +64,29 @@ export async function describeChangeSet(
 			)
 		: undefined;
 	return { ...first, Changes: rest ?? first.Changes };
+}
+
+// Validate the exact template before exposing its declarations to the editor.
+export async function inspectTemplate(
+	s: CfnScope,
+	body: string,
+	previous: boolean,
+) {
+	const template = previous
+		? String(
+				(await cfnCall(s, "GetTemplate", { StackName: s.stack }))
+					.TemplateBody ?? "",
+			)
+		: body;
+	await cfnCall(s, "ValidateTemplate", { TemplateBody: template });
+	return cfnCall<TemplateSummary>(s, "GetTemplateSummary", {
+		TemplateBody: template,
+	});
+}
+export function saveStack(
+	s: CfnScope,
+	operation: "CreateStack" | "UpdateStack" | "CreateChangeSet",
+	input: Record<string, unknown>,
+) {
+	return cfnCall<{ StackId?: string }>(s, operation, input);
 }

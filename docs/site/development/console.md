@@ -163,7 +163,9 @@ The RDS service icon is bundled locally from the official AWS Architecture Icons
 filter and an **Include deleted** toggle, and opens a stack by its ID in `?stack=`, so deleted stacks stay reachable.
 The page calls only the operations on `consoleCloudFormationOperations` in `internal/gateway/actions.go`:
 `ListStacks`, `DescribeStacks`, `DescribeStackEvents`, `ListStackResources`, `GetTemplate`, `ListChangeSets`,
-`DescribeChangeSet`, `ExecuteChangeSet`, `DeleteChangeSet` and `DeleteStack`. `ui/src/lib/cloudformation.ts` wraps them
+`DescribeChangeSet`, `ExecuteChangeSet`, `DeleteChangeSet`, `DeleteStack`, `CreateStack`, `UpdateStack`,
+`CreateChangeSet`, `ValidateTemplate`, `GetTemplateSummary`, `UpdateTerminationProtection`,
+`DescribeStackResource`, `DescribeStackResources`, `ListExports` and `ListImports`. `ui/src/lib/cloudformation.ts` wraps them
 (`cfnCall`, `cfnPages` for `NextToken` paging) and `ui/src/lib/cloudformationHelpers.ts` holds the pure status, filter,
 date and inventory-link helpers covered by `ui/tests/cloudformation.test.ts`.
 
@@ -176,8 +178,19 @@ and the inventory row of a stack links back to this page. Deleting needs the sta
 only for `DELETE_FAILED`.
 
 Detect drift, continue update rollback and cancel update are left out because the service implements none of them
-(`generator/model/profile.json`); add them to the allowlist and page when they exist. Stack creation, updates and
-change set creation stay with the AWS CLI, CDK and SDKs.
+(`generator/model/profile.json`).
+
+Create stacks by pasting a template or uploading a local JSON/YAML file, read entirely in the browser.
+**Validate and inspect template** runs ValidateTemplate and GetTemplateSummary to discover parameters and
+required capability acknowledgments (CAPABILITY_IAM, CAPABILITY_NAMED_IAM, CAPABILITY_AUTO_EXPAND).
+NoEcho inputs use password fields, never prefill saved secrets or secret defaults, and write errors do not echo
+submitted values. Tags use the shared ConsoleTags editor. New stacks can enable termination protection.
+Update stacks directly with the current or a replacement template and explicit UsePreviousValue parameters,
+or create an UPDATE change set. New stacks can instead create a CREATE change set. Review changes in the
+existing Change sets tab before executing; stack status polling follows creation and updates as well as deletion.
+Termination protection can be toggled on root stacks; deletion explains that protection must first be disabled.
+The resources tab offers DescribeStackResource and DescribeStackResources details. The stack list includes
+an Exports section with ListExports; select an export name to load ListImports.
 
 ## Cost management
 

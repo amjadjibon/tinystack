@@ -25,7 +25,9 @@ import { useFollow } from "#/lib/useFollow";
 import { usePoll } from "#/lib/usePoll";
 import { DeleteStack } from "./DeleteStack";
 import { StackChangeSets } from "./StackChangeSets";
+import { StackEditor } from "./StackEditor";
 import { StackEvents } from "./StackEvents";
+import { StackProtection } from "./StackProtection";
 import { NestedStacks, StackResources } from "./StackResources";
 import { StackStatus } from "./StackStatus";
 import { StackTemplate } from "./StackTemplate";
@@ -96,6 +98,13 @@ export function StackDetails({
 							ariaLabel="Refresh stack"
 							onClick={refresh}
 						/>
+						<StackEditor
+							scope={scope}
+							stack={stack}
+							disabled={deleted || running}
+							onSaved={refresh}
+						/>
+						<StackProtection scope={scope} stack={stack} onChanged={refresh} />
 						<DeleteStack
 							scope={scope}
 							stack={stack}
