@@ -74,8 +74,11 @@ func shellArgv(line string) ([]string, error) {
 		args = append(args, word.String())
 	}
 
-	if len(args) == 0 || args[0] != shellBinary {
-		return nil, errors.New("CloudShell commands must start with aws; use help, history or clear in the terminal")
+	// aws-local and awslocal are the host wrappers; CloudShell already supplies their endpoint and credentials.
+	if len(args) == 0 || (args[0] != shellBinary && args[0] != "aws-local" && args[0] != "awslocal") {
+		return nil, errors.New(
+			"CloudShell commands must start with aws or aws-local; use help, history or clear in the terminal",
+		)
 	}
 
 	for _, arg := range args[1:] {

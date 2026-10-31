@@ -176,6 +176,8 @@ test("commands stream output and return clear request failures", async () => {
 
 test("built-ins run in the terminal and other words are not found", () => {
 	assert.equal(builtin("aws s3 ls", []), undefined);
+	assert.equal(builtin("aws-local s3 ls", []), undefined);
+	assert.equal(builtin("awslocal s3 ls", []), undefined);
 	assert.deepEqual(builtin(" clear ", []), { type: "clear" });
 	assert.deepEqual(builtin("reset", []), { type: "clear" });
 	assert.deepEqual(builtin("history -c", ["a"]), { type: "clearHistory" });

@@ -99,7 +99,7 @@ export type Builtin =
 	| { type: "run"; command: string };
 
 const help = [
-	"Run aws commands with the host AWS CLI, as your console identity.",
+	"Run aws (or aws-local) commands with the host AWS CLI, as your console identity.",
 	"Tab completes; Ctrl-C cancels; Up/Down walk the history; Ctrl-L clears.",
 	"",
 	"Built-ins:",
@@ -118,6 +118,8 @@ export function builtin(line: string, history: string[]): Builtin | undefined {
 	const [name = "", ...args] = line.trim().split(/\s+/);
 	switch (name) {
 		case "aws":
+		case "aws-local":
+		case "awslocal":
 			return undefined;
 		case "clear":
 		case "reset":

@@ -323,8 +323,11 @@ func TestShellAllowlist(t *testing.T) {
 
 	s.cfg.Console.CloudShell.Allow = []string{"s3:*", "sts:get-caller-identity", "dynamodb:get-*"}
 	for line, allowed := range map[string]bool{
-		"aws s3 ls":              true,
-		"aws s3 cp ./a s3://b/a": true,
+		"aws s3 ls":                   true,
+		"aws-local s3 ls":             true,
+		"awslocal s3api list-buckets": false,
+		"ls -la":                      false,
+		"aws s3 cp ./a s3://b/a":      true,
 		"aws sts get-caller-identity --query Arn": true,
 		"aws dynamodb get-item --table-name t":    true,
 		"aws dynamodb put-item --table-name t":    false,

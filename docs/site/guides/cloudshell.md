@@ -44,8 +44,8 @@ still load them. Allow only commands you are willing to run on the host.
 Whatever the configuration, `--endpoint-url`, `--profile` and interactive auto-prompt are rejected, including abbreviations.
 
 The browser handles a few built-ins: `clear` (or `reset`, Ctrl-L), `history` (`history -c` forgets it), `echo`,
-`whoami` (runs `aws sts get-caller-identity --query Arn --output text`) and `help`. Any other first word is
-reported as not found. History stays in memory and is never saved to browser storage.
+`whoami` (runs `aws sts get-caller-identity --query Arn --output text`) and `help`. `aws-local` and `awslocal`
+run as `aws`, so commands copied for the host wrapper work unchanged. Any other first word is reported as not found. History stays in memory and is never saved to browser storage.
 Ctrl-C cancels the HTTP request and terminates the command's process group.
 
 Arguments support quotes and backslash escapes. No host shell is launched: pipes, redirects, command lists,
