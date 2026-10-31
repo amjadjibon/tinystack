@@ -22,6 +22,7 @@ import { Route as ServicesIndexRouteImport } from './routes/services/index'
 import { Route as ServicesApigatewayRouteImport } from './routes/services/apigateway'
 import { Route as ServicesApigatewayv2RouteImport } from './routes/services/apigatewayv2'
 import { Route as ServicesBudgetsRouteImport } from './routes/services/budgets'
+import { Route as ServicesCloudformationRouteImport } from './routes/services/cloudformation'
 import { Route as ServicesCloudwatchRouteImport } from './routes/services/cloudwatch'
 import { Route as ServicesCognitoidpRouteImport } from './routes/services/cognitoidp'
 import { Route as ServicesCostandusagereportserviceRouteImport } from './routes/services/costandusagereportservice'
@@ -105,6 +106,11 @@ const ServicesApigatewayv2Route = ServicesApigatewayv2RouteImport.update({
 const ServicesBudgetsRoute = ServicesBudgetsRouteImport.update({
   id: '/services/budgets',
   path: '/services/budgets',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesCloudformationRoute = ServicesCloudformationRouteImport.update({
+  id: '/services/cloudformation',
+  path: '/services/cloudformation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesCloudwatchRoute = ServicesCloudwatchRouteImport.update({
@@ -217,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/services/apigateway': typeof ServicesApigatewayRoute
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
   '/services/budgets': typeof ServicesBudgetsRoute
+  '/services/cloudformation': typeof ServicesCloudformationRoute
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
   '/services/cognitoidp': typeof ServicesCognitoidpRoute
   '/services/costandusagereportservice': typeof ServicesCostandusagereportserviceRoute
@@ -251,6 +258,7 @@ export interface FileRoutesByTo {
   '/services/apigateway': typeof ServicesApigatewayRoute
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
   '/services/budgets': typeof ServicesBudgetsRoute
+  '/services/cloudformation': typeof ServicesCloudformationRoute
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
   '/services/cognitoidp': typeof ServicesCognitoidpRoute
   '/services/costandusagereportservice': typeof ServicesCostandusagereportserviceRoute
@@ -286,6 +294,7 @@ export interface FileRoutesById {
   '/services/apigateway': typeof ServicesApigatewayRoute
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
   '/services/budgets': typeof ServicesBudgetsRoute
+  '/services/cloudformation': typeof ServicesCloudformationRoute
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
   '/services/cognitoidp': typeof ServicesCognitoidpRoute
   '/services/costandusagereportservice': typeof ServicesCostandusagereportserviceRoute
@@ -322,6 +331,7 @@ export interface FileRouteTypes {
     | '/services/apigateway'
     | '/services/apigatewayv2'
     | '/services/budgets'
+    | '/services/cloudformation'
     | '/services/cloudwatch'
     | '/services/cognitoidp'
     | '/services/costandusagereportservice'
@@ -356,6 +366,7 @@ export interface FileRouteTypes {
     | '/services/apigateway'
     | '/services/apigatewayv2'
     | '/services/budgets'
+    | '/services/cloudformation'
     | '/services/cloudwatch'
     | '/services/cognitoidp'
     | '/services/costandusagereportservice'
@@ -390,6 +401,7 @@ export interface FileRouteTypes {
     | '/services/apigateway'
     | '/services/apigatewayv2'
     | '/services/budgets'
+    | '/services/cloudformation'
     | '/services/cloudwatch'
     | '/services/cognitoidp'
     | '/services/costandusagereportservice'
@@ -425,6 +437,7 @@ export interface RootRouteChildren {
   ServicesApigatewayRoute: typeof ServicesApigatewayRoute
   ServicesApigatewayv2Route: typeof ServicesApigatewayv2Route
   ServicesBudgetsRoute: typeof ServicesBudgetsRoute
+  ServicesCloudformationRoute: typeof ServicesCloudformationRoute
   ServicesCloudwatchRoute: typeof ServicesCloudwatchRoute
   ServicesCognitoidpRoute: typeof ServicesCognitoidpRoute
   ServicesCostandusagereportserviceRoute: typeof ServicesCostandusagereportserviceRoute
@@ -538,6 +551,13 @@ declare module '@tanstack/react-router' {
       path: '/services/budgets'
       fullPath: '/services/budgets'
       preLoaderRoute: typeof ServicesBudgetsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/cloudformation': {
+      id: '/services/cloudformation'
+      path: '/services/cloudformation'
+      fullPath: '/services/cloudformation'
+      preLoaderRoute: typeof ServicesCloudformationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services/cloudwatch': {
@@ -689,6 +709,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesApigatewayRoute: ServicesApigatewayRoute,
   ServicesApigatewayv2Route: ServicesApigatewayv2Route,
   ServicesBudgetsRoute: ServicesBudgetsRoute,
+  ServicesCloudformationRoute: ServicesCloudformationRoute,
   ServicesCloudwatchRoute: ServicesCloudwatchRoute,
   ServicesCognitoidpRoute: ServicesCognitoidpRoute,
   ServicesCostandusagereportserviceRoute:

@@ -159,6 +159,7 @@ export const api = {
 		ec2: boolean;
 		secretsmanager: boolean;
 		rds: boolean;
+		cloudformation: boolean;
 		budgets: boolean;
 		costexplorer: boolean;
 		costandusagereportservice: boolean;

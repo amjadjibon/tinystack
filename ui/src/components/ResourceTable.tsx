@@ -16,6 +16,7 @@ import {
 import { type ReactNode, useState } from "react";
 import type { Resource } from "#/lib/api";
 import { gatewayHref } from "#/lib/apigateway";
+import { cfnHref } from "#/lib/cloudformation";
 import { cloudwatchHref } from "#/lib/cloudwatch";
 import { cognitoHref } from "#/lib/cognito";
 import { costHref } from "#/lib/cost";
@@ -61,6 +62,8 @@ export function resourceHref(r: Resource): string {
 				? { database: r.name }
 				: { section: r.type === "db-subnet-group" ? "subnets" : "parameters" }),
 		});
+	if (r.service === "cloudformation" && r.type === "stack")
+		return cfnHref({ account: r.account, region: r.region, stack: r.arn });
 	if (r.service === "secretsmanager" && r.type === "secret")
 		return secretHref({
 			account: r.account,

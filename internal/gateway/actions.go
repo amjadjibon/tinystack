@@ -58,6 +58,8 @@ const consoleSecretsManager = "secretsmanager"
 
 const consoleRDS = "rds"
 
+const consoleCloudFormation = "cloudformation"
+
 const consoleBudgets = "budgets"
 
 const consoleCostExplorer = "costexplorer"
@@ -271,6 +273,11 @@ var consoleCognitoOperations = strings.Fields(`
  DescribeUserPoolDomain
 `)
 
+var consoleCloudFormationOperations = strings.Fields(`
+ ListStacks DescribeStacks DescribeStackEvents ListStackResources GetTemplate
+ ListChangeSets DescribeChangeSet ExecuteChangeSet DeleteChangeSet DeleteStack
+`)
+
 // Only the tagging writes are exposed; discovery remains on the inventory endpoint.
 var consoleResourceGroupsTaggingOperations = strings.Fields(`TagResources UntagResources`)
 
@@ -296,7 +303,7 @@ var consoleResourceDeletes = map[string]consoleResourceDelete{
 	"ecr/repository":            {"ecr", "DeleteRepository", "RepositoryName", consoleIdentifierName},
 	"route53/hosted-zone":       {"route53", "DeleteHostedZone", "Id", consoleIdentifierARNSuffix},
 	"cognitoidp/user-pool":      {consoleCognito, "DeleteUserPool", "UserPoolId", consoleIdentifierARNSuffix},
-	"cloudformation/stack":      {"cloudformation", "DeleteStack", "StackName", consoleIdentifierARN},
+	"cloudformation/stack":      {consoleCloudFormation, "DeleteStack", "StackName", consoleIdentifierARN},
 	"elasticache/cache-cluster": {"elasticache", "DeleteCacheCluster", "CacheClusterId", consoleIdentifierName},
 	"memorydb/cluster":          {"memorydb", "DeleteCluster", "ClusterName", consoleIdentifierName},
 }
@@ -347,6 +354,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, costexplorer := s.services[consoleCostExplorer]
 		_, cur := s.services[consoleCUR]
 		_, rds := s.services[consoleRDS]
+		_, cloudformation := s.services[consoleCloudFormation]
 		accounts := []string{s.cfg.Defaults.Account}
 		for _, account := range s.cfg.Identity.Accounts {
 			accounts = append(accounts, account)
@@ -380,6 +388,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleCostExplorer:   costexplorer,
 			consoleCUR:            cur,
 			consoleRDS:            rds,
+			consoleCloudFormation: cloudformation,
 			"requires_signature":  s.cfg.Identity.Mode == config.IdentityVerify,
 			"taggable_services":   resourcegroupstaggingapi.TaggableServices(),
 			"resource_deletes":    s.consoleDeleteCapabilities(),
@@ -490,6 +499,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleCUROperations
 	case consoleRDS:
 		operations = consoleRDSOperations
+	case consoleCloudFormation:
+		operations = consoleCloudFormationOperations
 	}
 
 	for _, action := range consoleResourceDeletes {
