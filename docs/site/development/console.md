@@ -335,3 +335,23 @@ Recent user codes reuse the mailbox library, filtering `service=cognito-idp` by 
 and account/Region. Users sharing a destination may see the same captured messages. Pool status is absent
 from the implemented model; domain status is displayed when available. Domain links require the user's
 existing local routing/TLS setup and OAuth client query parameters. Browser visual review is manual.
+
+
+## DynamoDB recovery, exports and PartiQL
+
+Table details include Backups, Exports & streaming, and PartiQL tabs. All calls use the selected account and Region
+through `ui/src/lib/dynamodb.ts` and the console action endpoint. The allowlist adds backup create/list/describe/delete
+and restore, continuous-backup describe/update and latest-time restore, export create/list/describe, Kinesis destination
+describe/enable/disable/update, ExecuteStatement and BatchWriteItem. Batch reads and transactions remain outside it.
+Existing index, capacity, TTL, tag and DynamoDB Streams controls continue using their existing operations.
+
+Backup and export lists collect every page. Backup deletion requires confirmation; restore forms require a new target
+table name. PITR shows its recovery window and restores the latest state: TinyStack does not retain historical snapshots.
+Exports write the current table state to an existing S3 bucket with an optional prefix, using the supported DYNAMODB_JSON
+format. Kinesis destinations accept an existing stream ARN and millisecond or microsecond timestamp precision.
+
+The PartiQL editor accepts typed JSON parameters and executes statements explicitly through ActionDialog. Next-page
+requests retain the executed statement and parameters, even if the editor changes. Results use typed item columns.
+Selected query/scan items can be deleted in batches of at most 25, with confirmation. Unprocessed deletions remain
+retryable without repeating completed batches. These deletions are unconditional; item editing retains its existing
+optimistic conflict checks. No model or generated API changes are needed.

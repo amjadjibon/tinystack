@@ -20,6 +20,7 @@ import { errorText, integer, stringMap } from "#/lib/consoleActions";
 import {
 	type DynamoScope,
 	type DynamoTable,
+	dynamoCall,
 	editItemInput,
 	type Item,
 	itemKey,
@@ -28,6 +29,8 @@ import {
 	tableCall,
 	typedItem,
 } from "#/lib/dynamodb";
+
+import { batchChunks } from "#/lib/dynamodbHelpers";
 
 export function DynamoItems({
 	scope,
@@ -40,6 +43,8 @@ export function DynamoItems({
 	enabled: boolean;
 	onChanged: (message: string) => void;
 }) {
+	const [selected, setSelected] = useState<Item[]>([]);
+	const [batchDelete, setBatchDelete] = useState(false);
 	const [mode, setMode] = useState("Scan"),
 		[index, setIndex] = useState("");
 	const [condition, setCondition] = useState("#pk = :pk"),
@@ -124,6 +129,7 @@ export function DynamoItems({
 			});
 			if (id !== request.current) return;
 			setPage(result);
+			setSelected([]);
 			setPageIndex(position);
 			cursors.current[position] = cursor;
 		} catch (err) {
@@ -352,6 +358,15 @@ export function DynamoItems({
 			)}
 			<Table
 				items={rows}
+				selectionType="multi"
+				selectedItems={selected}
+				onSelectionChange={({ detail }) => setSelected(detail.selectedItems)}
+				isItemDisabled={(row) =>
+					!enabled ||
+					busy ||
+					opening ||
+					!schema.every((k) => row[k.AttributeName])
+				}
 				loading={busy || opening}
 				loadingText="Loading items"
 				resizableColumns
@@ -366,19 +381,27 @@ export function DynamoItems({
 								: "Run a query or scan to load items. Reads are explicit and never polled."
 						}
 						actions={
-							<Button
-								variant="primary"
-								disabled={!enabled || !schema.length || busy || opening}
-								onClick={() => {
-									if (locked.current || openingLock.current) return;
-									setOriginal(undefined);
-									setText(JSON.stringify(newItem(table), null, 2));
-									setEditingError("");
-									setDialog("create");
-								}}
-							>
-								Create item
-							</Button>
+							<SpaceBetween direction="horizontal" size="xs">
+								<Button
+									disabled={!enabled || busy || opening || !selected.length}
+									onClick={() => setBatchDelete(true)}
+								>
+									Delete selected
+								</Button>
+								<Button
+									variant="primary"
+									disabled={!enabled || !schema.length || busy || opening}
+									onClick={() => {
+										if (locked.current || openingLock.current) return;
+										setOriginal(undefined);
+										setText(JSON.stringify(newItem(table), null, 2));
+										setEditingError("");
+										setDialog("create");
+									}}
+								>
+									Create item
+								</Button>
+							</SpaceBetween>
 						}
 					>
 						Items
@@ -464,6 +487,48 @@ export function DynamoItems({
 					</SpaceBetween>
 				}
 			/>
+			{batchDelete && (
+				<ActionDialog
+					title="Delete selected items"
+					submit="Delete items"
+					confirmation="delete"
+					onClose={() => setBatchDelete(false)}
+					onSaved={() => {
+						setBatchDelete(false);
+						setSelected([]);
+						onChanged("Selected items deleted.");
+						if (executed.current) load(executed.current, undefined, 0);
+					}}
+					plan={async () =>
+						batchChunks(
+							selected.map((row) => ({
+								DeleteRequest: { Key: itemKey(row, schema) },
+							})),
+						).map((batch, i) => {
+							let pending = { [scope.table ?? ""]: batch };
+							return {
+								label: `Delete batch ${i + 1}`,
+								run: async () => {
+									const result = await dynamoCall<{
+										UnprocessedItems?: typeof pending;
+									}>(scope, "BatchWriteItem", { RequestItems: pending });
+									pending = result.UnprocessedItems ?? {};
+									if (Object.values(pending).some((items) => items.length))
+										throw new Error(
+											"Some deletes were unprocessed. Retry to delete only the remaining items.",
+										);
+								},
+							};
+						})
+					}
+				>
+					<Alert type="warning">
+						Delete {selected.length} selected items from {scope.table}. These
+						unconditional deletions cannot be undone.
+					</Alert>
+				</ActionDialog>
+			)}
+
 			{dialog && (
 				<ActionDialog
 					title={

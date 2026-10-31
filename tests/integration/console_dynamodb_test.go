@@ -322,3 +322,99 @@ func TestConsoleDynamoDBValidationAndSignatures(t *testing.T) {
 		consoleResponse(t, verified, r, tc.status)
 	}
 }
+
+func TestConsoleDynamoDBBackupsExportsAndPartiQL(t *testing.T) {
+	srv := server(t)
+	const account, region, name = "000000000000", "us-east-1", "console-recovery"
+	write := func(service, operation string, input map[string]any) map[string]any {
+		t.Helper()
+		return consoleResponse(t, srv, consoleLambdaRequest(t, srv, service, operation,
+			account, region, input), http.StatusOK)["output"].(map[string]any)
+	}
+	call := func(operation string, input map[string]any) map[string]any {
+		t.Helper()
+		return write("dynamodb", operation, input)
+	}
+	created := call("CreateTable", map[string]any{
+		"TableName": name, "BillingMode": "PAY_PER_REQUEST",
+		"KeySchema":            []any{map[string]any{"AttributeName": "pk", "KeyType": "HASH"}},
+		"AttributeDefinitions": []any{map[string]any{"AttributeName": "pk", "AttributeType": "S"}},
+	})["TableDescription"].(map[string]any)
+	for _, id := range []string{"one", "two"} {
+		call("ExecuteStatement", map[string]any{
+			"Statement":  "INSERT INTO \"console-recovery\" VALUE {'pk': ?}",
+			"Parameters": []any{map[string]any{"S": id}},
+		})
+	}
+	statement := "SELECT * FROM \"console-recovery\""
+	first := call("ExecuteStatement", map[string]any{"Statement": statement, "Limit": 1})
+	second := call("ExecuteStatement", map[string]any{
+		"Statement": statement, "Limit": 1, "NextToken": first["NextToken"],
+	})
+	if len(first["Items"].([]any)) != 1 || len(second["Items"].([]any)) != 1 {
+		t.Fatalf("statement pages = %+v, %+v", first, second)
+	}
+	backup := call("CreateBackup", map[string]any{"TableName": name, "BackupName": "console-backup"})
+	backupARN := backup["BackupDetails"].(map[string]any)["BackupArn"]
+	if len(call("ListBackups", map[string]any{"TableName": name})["BackupSummaries"].([]any)) != 1 {
+		t.Fatal("backup not listed")
+	}
+	call("DescribeBackup", map[string]any{"BackupArn": backupARN})
+	call("RestoreTableFromBackup", map[string]any{"BackupArn": backupARN, "TargetTableName": "backup-restored"})
+	call("UpdateContinuousBackups", map[string]any{
+		"TableName": name, "PointInTimeRecoverySpecification": map[string]any{"PointInTimeRecoveryEnabled": true},
+	})
+	pitr := call("DescribeContinuousBackups", map[string]any{"TableName": name})
+	recovery := pitr["ContinuousBackupsDescription"].(map[string]any)["PointInTimeRecoveryDescription"].(map[string]any)
+	if recovery["PointInTimeRecoveryStatus"] != "ENABLED" {
+		t.Fatal(pitr)
+	}
+	call("RestoreTableToPointInTime", map[string]any{
+		"SourceTableName": name, "TargetTableName": "pitr-restored", "UseLatestRestorableTime": true,
+	})
+	for _, restored := range []string{"backup-restored", "pitr-restored"} {
+		if len(call("Scan", map[string]any{"TableName": restored})["Items"].([]any)) != 2 {
+			t.Fatalf("restored items missing from %s", restored)
+		}
+	}
+	write("s3", "CreateBucket", map[string]any{"Bucket": "console-dynamo-export"})
+	exported := call("ExportTableToPointInTime", map[string]any{
+		"TableArn": created["TableArn"], "S3Bucket": "console-dynamo-export", "S3Prefix": "snapshots",
+		"ExportFormat": "DYNAMODB_JSON",
+	})["ExportDescription"].(map[string]any)
+	if exported["ExportStatus"] != "COMPLETED" || exported["ItemCount"] != float64(2) {
+		t.Fatal(exported)
+	}
+	call("DescribeExport", map[string]any{"ExportArn": exported["ExportArn"]})
+	if len(call("ListExports", map[string]any{"TableArn": created["TableArn"]})["ExportSummaries"].([]any)) != 1 {
+		t.Fatal("export not listed")
+	}
+	stream := feed(t, kinesisClient(srv), "console-dynamo-destination")
+	call("EnableKinesisStreamingDestination", map[string]any{
+		"TableName": name, "StreamArn": stream,
+		"EnableKinesisStreamingConfiguration": map[string]any{"ApproximateCreationDateTimePrecision": "MILLISECOND"},
+	})
+	call("UpdateKinesisStreamingDestination", map[string]any{
+		"TableName": name, "StreamArn": stream,
+		"UpdateKinesisStreamingConfiguration": map[string]any{"ApproximateCreationDateTimePrecision": "MICROSECOND"},
+	})
+	destinations := call("DescribeKinesisStreamingDestination", map[string]any{"TableName": name})
+	destination := destinations["KinesisDataStreamDestinations"].([]any)[0].(map[string]any)
+	if destination["DestinationStatus"] != "ACTIVE" ||
+		destination["ApproximateCreationDateTimePrecision"] != "MICROSECOND" {
+		t.Fatal(destinations)
+	}
+	call("DisableKinesisStreamingDestination", map[string]any{"TableName": name, "StreamArn": stream})
+	call("DeleteBackup", map[string]any{"BackupArn": backupARN})
+	call("UpdateContinuousBackups", map[string]any{
+		"TableName": name, "PointInTimeRecoverySpecification": map[string]any{"PointInTimeRecoveryEnabled": false},
+	})
+	call("BatchWriteItem", map[string]any{"RequestItems": map[string]any{name: []any{
+		map[string]any{"DeleteRequest": map[string]any{"Key": map[string]any{"pk": map[string]any{"S": "one"}}}},
+	}}})
+	rejected := consoleResponse(t, srv, consoleLambdaRequest(t, srv, "dynamodb", "ExecuteTransaction",
+		account, region, map[string]any{}), http.StatusBadRequest)
+	if rejected["code"] != "UnknownOperationException" {
+		t.Fatal(rejected)
+	}
+}

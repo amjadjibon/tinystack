@@ -317,3 +317,55 @@ export function editItemInput(before: Item, after: Item, schema: KeySchema) {
 			: {}),
 	};
 }
+
+export type BackupSummary = {
+	BackupArn: string;
+	BackupName: string;
+	BackupStatus: string;
+};
+export type ExportSummary = { ExportArn: string; ExportStatus: string };
+export type KinesisDestination = {
+	StreamArn: string;
+	DestinationStatus: string;
+	DestinationStatusDescription?: string;
+	ApproximateCreationDateTimePrecision: string;
+};
+export type ContinuousBackups = {
+	ContinuousBackupsDescription?: {
+		PointInTimeRecoveryDescription?: {
+			PointInTimeRecoveryStatus?: string;
+			EarliestRestorableDateTime?: number;
+			LatestRestorableDateTime?: number;
+		};
+	};
+};
+// Collect service pages so management lists never hide resources after page one.
+export async function listBackups(scope: DynamoScope) {
+	const rows: BackupSummary[] = [];
+	let cursor: string | undefined;
+	do {
+		const page = await tableCall<{
+			BackupSummaries?: BackupSummary[];
+			LastEvaluatedBackupArn?: string;
+		}>(scope, "ListBackups", cursor ? { ExclusiveStartBackupArn: cursor } : {});
+		rows.push(...(page.BackupSummaries ?? []));
+		cursor = page.LastEvaluatedBackupArn;
+	} while (cursor);
+	return rows;
+}
+export async function listExports(scope: DynamoScope) {
+	const rows: ExportSummary[] = [];
+	let cursor: string | undefined;
+	do {
+		const page = await dynamoCall<{
+			ExportSummaries?: ExportSummary[];
+			NextToken?: string;
+		}>(scope, "ListExports", {
+			TableArn: tableArn(scope),
+			...(cursor ? { NextToken: cursor } : {}),
+		});
+		rows.push(...(page.ExportSummaries ?? []));
+		cursor = page.NextToken;
+	} while (cursor);
+	return rows;
+}

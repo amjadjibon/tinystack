@@ -27,7 +27,7 @@ See the [implemented feature catalogue](catalogue.md#dynamodb) for this service'
 - Legacy expression parameters and replica management are outside the subset.
 - Kinesis destinations turn on at once (Enable reports ENABLING, Describe ACTIVE); records are put after the item write commits, so concurrent writes to one item can arrive out of order, and a destination whose stream was deleted becomes ENABLE_FAILED until it is enabled again; DescribeTable does not list destinations.
 - Verify mode shows table inventory; item reads and management require signed CLI/SDK requests.
-- Backups, restores, exports, PartiQL, batch and transaction operations use the AWS API rather than console forms.
+- Batch reads and transaction operations use the AWS API rather than console forms.
 - DynamoDB metrics leave out index dimensions (GlobalSecondaryIndexName), ReturnedItemCount, SystemErrors and ConditionalCheckFailedRequests; TinyStack never throttles, so ThrottledRequests stays 0.
 - Explicit warm throughput configuration, partition prewarming and traffic-driven warm capacity scaling are unsupported.
 

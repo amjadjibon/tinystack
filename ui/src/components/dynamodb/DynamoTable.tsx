@@ -20,8 +20,12 @@ import {
 	tableDetails,
 } from "#/lib/dynamodb";
 import { usePoll } from "#/lib/usePoll";
+import { DynamoBackups } from "./DynamoBackups";
+import { DynamoExports } from "./DynamoExports";
 import { DynamoIndexes } from "./DynamoIndexes";
 import { DynamoItems } from "./DynamoItems";
+import { DynamoKinesis } from "./DynamoKinesis";
+import { DynamoPartiQL } from "./DynamoPartiQL";
 import { DynamoSettings } from "./DynamoSettings";
 import { DynamoStreams } from "./DynamoStreams";
 
@@ -154,6 +158,47 @@ export function DynamoTable({
 					activeTabId={tab}
 					onChange={({ detail }) => setTab(detail.activeTabId)}
 					tabs={[
+						{
+							id: "backups",
+							label: "Backups",
+							content: (
+								<DynamoBackups
+									key={String(enabled && !!table.TableName)}
+									scope={scope}
+									enabled={enabled && !!table.TableName}
+									onChanged={refresh}
+								/>
+							),
+						},
+						{
+							id: "exports",
+							label: "Exports & streaming",
+							content: (
+								<SpaceBetween size="l">
+									<DynamoExports
+										key={String(enabled && !!table.TableName)}
+										scope={scope}
+										enabled={enabled && !!table.TableName}
+									/>
+									<DynamoKinesis
+										key={String(enabled && !!table.TableName)}
+										scope={scope}
+										enabled={enabled && !!table.TableName}
+									/>
+								</SpaceBetween>
+							),
+						},
+						{
+							id: "partiql",
+							label: "PartiQL",
+							content: (
+								<DynamoPartiQL
+									scope={scope}
+									enabled={enabled && !!table.TableName}
+									onChanged={refresh}
+								/>
+							),
+						},
 						{
 							id: "items",
 							label: "Explore items",

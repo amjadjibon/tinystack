@@ -184,7 +184,12 @@ var consoleLogsOperations = strings.Fields(`
 
 var consoleDynamoDBOperations = strings.Fields(`
 	CreateTable DeleteTable DescribeTable ListTables UpdateTable
-	GetItem PutItem UpdateItem DeleteItem Query Scan
+	GetItem PutItem UpdateItem DeleteItem Query Scan BatchWriteItem
+	CreateBackup ListBackups DescribeBackup DeleteBackup RestoreTableFromBackup
+	DescribeContinuousBackups UpdateContinuousBackups RestoreTableToPointInTime
+	ExportTableToPointInTime ListExports DescribeExport ExecuteStatement
+	DescribeKinesisStreamingDestination EnableKinesisStreamingDestination
+	DisableKinesisStreamingDestination UpdateKinesisStreamingDestination
 	DescribeTimeToLive UpdateTimeToLive ListTagsOfResource TagResource UntagResource
 `)
 
