@@ -14,12 +14,14 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ConsoleLayout } from "#/components/Console";
 import { DatabaseActions } from "#/components/rds/DatabaseActions";
+import { DatabaseClusters } from "#/components/rds/DatabaseClusters";
 import {
 	DatabaseDetails,
 	DatabaseStatus,
 } from "#/components/rds/DatabaseDetails";
 import { DatabaseForm } from "#/components/rds/DatabaseForm";
 import { DatabaseGroups } from "#/components/rds/DatabaseGroups";
+import { DatabaseSnapshots } from "#/components/rds/DatabaseSnapshots";
 import {
 	type DBInstance,
 	type RDSScope,
@@ -36,10 +38,11 @@ export const Route = createFileRoute("/services/rds")({
 		account: String(s.account ?? ""),
 		region: String(s.region ?? ""),
 		database: String(s.database ?? ""),
-		section:
-			s.section === "subnets" || s.section === "parameters"
-				? s.section
-				: "databases",
+		section: ["subnets", "parameters", "clusters", "snapshots"].includes(
+			String(s.section),
+		)
+			? String(s.section)
+			: "databases",
 	}),
 	component: RDSPage,
 });
@@ -59,7 +62,9 @@ function RDSPage() {
 		validRegion(region);
 	const list = rdsHref({ account, region });
 	const sections = [
-		{ id: "databases", text: "Databases" },
+		{ id: "databases", text: "Instances" },
+		{ id: "clusters", text: "Clusters" },
+		{ id: "snapshots", text: "Snapshots" },
 		{ id: "subnets", text: "Subnet groups" },
 		{ id: "parameters", text: "Parameter groups" },
 	];
@@ -186,6 +191,10 @@ function RDSWorkspace({
 			href: rdsHref({ account: scope.account, region: scope.region }),
 		});
 	};
+	if (scope.section === "clusters")
+		return <DatabaseClusters {...{ scope, enabled, onChanged }} />;
+	if (scope.section === "snapshots")
+		return <DatabaseSnapshots {...{ scope, enabled, onChanged }} />;
 	if (scope.section !== "databases")
 		return <DatabaseGroups {...{ scope, enabled, onChanged }} />;
 	return (

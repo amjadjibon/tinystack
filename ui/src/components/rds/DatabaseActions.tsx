@@ -10,6 +10,7 @@ import { useState } from "react";
 import { ActionDialog } from "#/components/ActionDialog";
 import {
 	type DBInstance,
+	finalSnapshotInput,
 	type RDSScope,
 	rdsCall,
 	validatePassword,
@@ -28,6 +29,8 @@ export function DatabaseActions({
 	onDeleted: () => void;
 }) {
 	const [action, setAction] = useState(""),
+		[skip, setSkip] = useState(true),
+		[final, setFinal] = useState(""),
 		[password, setPassword] = useState(""),
 		[confirm, setConfirm] = useState(""),
 		[show, setShow] = useState(false),
@@ -57,6 +60,8 @@ export function DatabaseActions({
 				]}
 				onItemClick={({ detail }) => {
 					setAction(detail.id);
+					setSkip(true);
+					setFinal("");
 					setPassword("");
 					setConfirm("");
 					setShow(false);
@@ -80,7 +85,8 @@ export function DatabaseActions({
 					}}
 					plan={async () => {
 						const input: Record<string, unknown> = { DBInstanceIdentifier: id };
-						if (action === "Delete") input.SkipFinalSnapshot = true;
+						if (action === "Delete")
+							Object.assign(input, finalSnapshotInput(skip, final));
 						if (action === "Modify") {
 							if (!dbClass.startsWith("db.") || dbClass.length < 4)
 								throw new Error("Instance class must start with db.");
@@ -103,11 +109,27 @@ export function DatabaseActions({
 				>
 					<SpaceBetween size="m">
 						{action === "Delete" ? (
-							<Alert type="warning">
-								This permanently deletes the database and its SQL data.
-								SkipFinalSnapshot=true is required because snapshots are
-								unsupported.
-							</Alert>
+							<>
+								<Alert type="warning">
+									This permanently deletes the database and its SQL data.
+								</Alert>
+								{!instance.DBClusterIdentifier && (
+									<Checkbox
+										checked={skip}
+										onChange={({ detail }) => setSkip(detail.checked)}
+									>
+										Skip final snapshot
+									</Checkbox>
+								)}
+								{!skip && (
+									<FormField label="Final snapshot identifier">
+										<Input
+											value={final}
+											onChange={({ detail }) => setFinal(detail.value)}
+										/>
+									</FormField>
+								)}
+							</>
 						) : action === "Modify" ? (
 							<>
 								<Alert type="info">

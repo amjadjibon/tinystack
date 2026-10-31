@@ -8,6 +8,7 @@ export type RDSScope = {
 export type Tag = { Key: string; Value: string };
 export type DBInstance = {
 	DBInstanceIdentifier: string;
+	DBClusterIdentifier?: string;
 	DBInstanceArn: string;
 	Engine: string;
 	EngineVersion: string;
@@ -76,27 +77,6 @@ export async function rdsPages<T>(
 	} while (marker);
 	return items;
 }
-export function validateName(name: string, max = 63) {
-	if (
-		!/^[a-zA-Z][a-zA-Z0-9-]*$/.test(name) ||
-		name.length > max ||
-		name.includes("--") ||
-		name.endsWith("-")
-	)
-		throw new Error(
-			`Identifier must start with a letter, contain only letters, numbers and hyphens, and have at most ${max} characters. Consecutive or trailing hyphens are forbidden.`,
-		);
-}
-export function validatePassword(password: string) {
-	if (
-		password.length < 8 ||
-		password.length > 41 ||
-		/[^!-~]|[/@"]/.test(password)
-	)
-		throw new Error(
-			"Password must contain 8–41 printable ASCII characters, excluding spaces, /, @ and double quotes.",
-		);
-}
 export const rdsTags = (tags: Record<string, string>) =>
 	Object.entries(tags).map(([Key, Value]) => ({ Key, Value }));
 export const runtimeNote =
@@ -107,3 +87,47 @@ export function rdsDate(value?: string | number) {
 	const date = new Date(typeof value === "number" ? value * 1000 : value);
 	return Number.isNaN(date.getTime()) ? "—" : date.toISOString();
 }
+
+export type DBCluster = {
+	DBClusterIdentifier: string;
+	DBClusterArn: string;
+	Engine: string;
+	EngineVersion: string;
+	Status: string;
+	Endpoint?: string;
+	ReaderEndpoint?: string;
+	Port?: number;
+	BackupRetentionPeriod?: number;
+	DeletionProtection?: boolean;
+	HttpEndpointEnabled?: boolean;
+	DBClusterMembers?: {
+		DBInstanceIdentifier: string;
+		IsClusterWriter: boolean;
+	}[];
+	TagList?: Tag[];
+};
+export type DBSnapshot = {
+	DBSnapshotIdentifier?: string;
+	DBClusterSnapshotIdentifier?: string;
+	DBSnapshotArn?: string;
+	DBClusterSnapshotArn?: string;
+	DBInstanceIdentifier?: string;
+	DBClusterIdentifier?: string;
+	Engine: string;
+	EngineVersion: string;
+	Status: string;
+	SnapshotCreateTime?: string | number;
+	TagList?: Tag[];
+};
+export const clusterEngines = [
+	"aurora-postgresql",
+	"aurora-mysql",
+	"docdb",
+	"neptune",
+];
+
+export {
+	finalSnapshotInput,
+	validateName,
+	validatePassword,
+} from "./rdsHelpers";

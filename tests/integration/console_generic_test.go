@@ -77,6 +77,42 @@ func TestConsoleGenericActions(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	rdsCall := func(op string, input map[string]any) map[string]any {
+		t.Helper()
+		response := consoleResponse(t, s,
+			consoleLambdaRequest(t, s, "rds", op, "000000000000", "us-east-1", input), http.StatusOK)
+		return response["output"].(map[string]any)
+	}
+
+	rdsCall("CreateDBInstance", map[string]any{
+		"DBInstanceIdentifier": "generic-db", "Engine": "postgres", "DBInstanceClass": "db.t3.micro",
+		"MasterUsername": "masteruser", "MasterUserPassword": "generic-password",
+	})
+	rdsCall("CreateDBSnapshot", map[string]any{
+		"DBInstanceIdentifier": "generic-db", "DBSnapshotIdentifier": "generic-snapshot",
+	})
+	rdsCall("CreateDBCluster", map[string]any{
+		"DBClusterIdentifier": "generic-cluster", "Engine": "aurora-postgresql",
+		"MasterUsername": "masteruser", "MasterUserPassword": "generic-password",
+	})
+	waitConsoleRDS(t, func() string {
+		out := rdsCall("DescribeDBClusters", map[string]any{"DBClusterIdentifier": "generic-cluster"})
+		return out["DBClusters"].([]any)[0].(map[string]any)["Status"].(string)
+	})
+	rdsCall("CreateDBClusterSnapshot", map[string]any{
+		"DBClusterIdentifier": "generic-cluster", "DBClusterSnapshotIdentifier": "generic-cluster-snapshot",
+	})
+	waitConsoleRDS(t, func() string {
+		out := rdsCall("DescribeDBSnapshots", map[string]any{"DBSnapshotIdentifier": "generic-snapshot"})
+		return out["DBSnapshots"].([]any)[0].(map[string]any)["Status"].(string)
+	})
+	waitConsoleRDS(t, func() string {
+		out := rdsCall("DescribeDBClusterSnapshots", map[string]any{
+			"DBClusterSnapshotIdentifier": "generic-cluster-snapshot",
+		})
+		return out["DBClusterSnapshots"].([]any)[0].(map[string]any)["Status"].(string)
+	})
+
 	var capabilities struct {
 		Deletes  map[string]struct{ Service, Operation, Field, Identifier string } `json:"resource_deletes"`
 		Taggable []string                                                          `json:"taggable_services"`
@@ -87,7 +123,7 @@ func TestConsoleGenericActions(t *testing.T) {
 	}
 
 	if !slices.Contains(capabilities.Taggable, "ssm") || slices.Contains(capabilities.Taggable, "sts") ||
-		len(capabilities.Deletes) != 8 {
+		len(capabilities.Deletes) != 10 {
 		t.Fatal(capabilities)
 	}
 

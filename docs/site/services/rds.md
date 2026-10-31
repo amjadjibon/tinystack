@@ -34,7 +34,7 @@ See the [implemented feature catalogue](catalogue.md#rds-documentdb-and-neptune)
 - Persistent records retain database credentials in the local store; memory-mode shutdown retains volumes without records, so delete or reset before shutdown to remove SQL data immediately; startup removes orphaned runtime resources.
 - Failed initial startup or readiness timeout marks the instance failed and removes its container and fresh volume; recovery failures retain an existing volume.
 - CloudFormation endpoint attributes do not refresh when a later container recreation changes the host port.
-- Verify mode exposes database metadata inventory; RDS management and full group metadata require signed AWS CLI or SDK requests.
+- Verify mode exposes database metadata inventory; RDS management and full group metadata require a signed root console session or signed AWS CLI/SDK requests.
 - DocumentDB uses community MongoDB, not the proprietary DocumentDB engine: TLS is not enabled despite AWS cluster parameter defaults; use tls=false. Replicas, failover and AWS backup execution are unsupported.
 - DocumentDB/Neptune engine version changes, cluster snapshots, global clusters, cluster parameter groups, DocumentDB Elastic and input members outside the profile fail explicitly.
 - Cluster subnet groups and security groups must exist in the request scope and share a VPC when supplied; omitted networking does not provision default networking or enforce AWS Availability Zone coverage.
@@ -44,7 +44,7 @@ See the [implemented feature catalogue](catalogue.md#rds-documentdb-and-neptune)
 - Automatic backups and scheduled automated snapshots are not produced; SnapshotType=automated returns an empty list. Cross-account/Region snapshots, shared/public/awsbackup selection, snapshot attributes/sharing, encrypted snapshot copies, cluster snapshot copy/restore and snapshot quotas are unsupported.
 - Snapshot data copy is synchronous and crash-consistent, rather than an AWS storage-level online snapshot: the source database has an I/O interruption while paused for the filesystem copy, and the restored engine performs crash recovery. Snapshot metadata transitions to available after a short simulated delay; progress is 0 or 100.
 - Snapshots created in records mode have no SQL data volume and cannot be copied/restored in Docker mode; restore supports only the whitelisted settings, does not reduce allocated storage, and uses default parameter groups unless explicitly overridden.
-- The console still deletes instances with SkipFinalSnapshot=true and has no snapshot management page; use the AWS SDK or CLI for snapshots.
+- ModifyDBSubnetGroup, ModifyDBParameterGroup, DescribeDBParameters and RestoreDBClusterFromSnapshot are not implemented or exposed by the console.
 - Aurora runs community PostgreSQL/MySQL, not the proprietary Aurora storage engine; readers and writers share one process, scaling is metadata only, versions map to floating community image tags, and failover, replicas, global clusters and Aurora Serverless v1 are unsupported.
 - Aurora port changes, deferred modifications and EngineVersion changes fail explicitly; managed secret rotation and KMS customization are unsupported.
 

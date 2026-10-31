@@ -264,6 +264,10 @@ var consoleSecretsManagerOperations = strings.Fields(`
 
 var consoleRDSOperations = strings.Fields(`
  CreateDBInstance DescribeDBInstances ModifyDBInstance DeleteDBInstance StopDBInstance StartDBInstance RebootDBInstance
+ DescribeDBClusters CreateDBCluster ModifyDBCluster DeleteDBCluster StartDBCluster StopDBCluster
+ EnableHttpEndpoint DisableHttpEndpoint
+ DescribeDBSnapshots CreateDBSnapshot CopyDBSnapshot DeleteDBSnapshot RestoreDBInstanceFromDBSnapshot
+ DescribeDBClusterSnapshots CreateDBClusterSnapshot DeleteDBClusterSnapshot
  CreateDBSubnetGroup DescribeDBSubnetGroups DeleteDBSubnetGroup
  CreateDBParameterGroup DescribeDBParameterGroups DeleteDBParameterGroup
  AddTagsToResource RemoveTagsFromResource ListTagsForResource
@@ -305,6 +309,13 @@ const (
 )
 
 var consoleResourceDeletes = map[string]consoleResourceDelete{
+	"rds/db-snapshot": {consoleRDS, "DeleteDBSnapshot", "DBSnapshotIdentifier", consoleIdentifierName},
+	"rds/db-cluster-snapshot": {
+		consoleRDS,
+		"DeleteDBClusterSnapshot",
+		"DBClusterSnapshotIdentifier",
+		consoleIdentifierName,
+	},
 	"kinesis/stream":            {"kinesis", "DeleteStream", "StreamARN", consoleIdentifierARN},
 	"ssm/parameter":             {"ssm", "DeleteParameter", "Name", consoleIdentifierName},
 	"ecr/repository":            {"ecr", "DeleteRepository", "RepositoryName", consoleIdentifierName},

@@ -135,15 +135,31 @@ or settings without signed requests; connect a root console session or use the C
 
 ## RDS workflows
 
-Open **RDS → Databases** in the selected account and Region. Create a database with PostgreSQL 14–17,
+Open **RDS → Instances** in the selected account and Region. Create a database with PostgreSQL 14–17,
 MySQL 8.0 or MariaDB 11, credentials, class, storage, optional matching groups and tags. Select a database
 for Stop, Start, Reboot, Modify or Delete; the action menu follows the current status. Status refreshes
 every five seconds, including during Docker startup. Modify applies password and class changes immediately.
 
 Open the identifier for its summary, endpoint copy button, Configuration and Tags tabs. Connectivity
 provides copyable `psql`/`mysql` commands that prompt for a password and a URL with a password placeholder.
-Use **Tags → Edit tags** to add or remove tags. Delete requires typing the identifier and always sends
-`SkipFinalSnapshot=true`, because snapshots are unsupported.
+Use **Tags → Edit tags** to add or remove tags. Delete requires typing the identifier. Choose whether to
+skip the final snapshot; when keeping one, enter its identifier. Final snapshots survive deletion.
+
+The **Clusters** section supports Aurora PostgreSQL, Aurora MySQL, DocumentDB and Neptune. Create a cluster
+with its engine, optional version (blank selects the service default), credentials (omit for Neptune),
+subnet group, retention and deletion protection. Select a cluster to modify retention, protection or its
+password, stop/start it, edit tags or toggle the Aurora Data API. Create member instances from the action
+menu; member links open instance details. Delete members and disable protection before deleting a cluster.
+DocumentDB and Neptune stop/start require Docker. Aurora deletion can keep a final snapshot; DocumentDB and Neptune require skipping it.
+
+The **Snapshots** section separates instance and cluster snapshots. Create snapshots from source identifiers,
+then select an available snapshot to delete, copy or restore it into a new instance. Copy and restore apply
+to instance snapshots only; restore accepts optional class, storage and group overrides. Both snapshot types
+support tag editing. Cluster snapshots support Aurora only. Snapshots and restored databases are metadata
+in the default records runtime; Docker mode copies database volumes.
+
+`ModifyDBSubnetGroup`, `ModifyDBParameterGroup`, `DescribeDBParameters` and
+`RestoreDBClusterFromSnapshot` are not implemented and are not exposed by the console.
 
 The **Subnet groups** and **Parameter groups** sections list, create and delete groups. Subnet groups
 require existing EC2 subnets in one VPC; parameter families match the supported engine versions. Groups
