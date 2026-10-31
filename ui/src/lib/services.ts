@@ -90,10 +90,12 @@ const catalog: Record<string, ServiceInfo> = {
 	bedrockagentcorecontrol: {
 		title: "Amazon Bedrock AgentCore",
 		category: machineLearning,
+		icon: "bedrockagentcore",
 	},
 	bedrockagentcore: {
 		title: "Amazon Bedrock AgentCore Data Plane",
 		category: machineLearning,
+		icon: "bedrockagentcore",
 	},
 	fis: {
 		title: "Fault Injection Service",
@@ -130,10 +132,15 @@ const catalog: Record<string, ServiceInfo> = {
 		category: machineLearning,
 		icon: "bedrockagentruntime",
 	},
-	bedrock: { title: "Amazon Bedrock", category: machineLearning },
+	bedrock: {
+		title: "Amazon Bedrock",
+		category: machineLearning,
+		icon: "bedrock",
+	},
 	bedrockruntime: {
 		title: "Amazon Bedrock Runtime",
 		category: machineLearning,
+		icon: "bedrock",
 	},
 	databasemigrationservice: {
 		title: "AWS Database Migration Service",
