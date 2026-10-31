@@ -336,16 +336,25 @@ needed. Exercise both UI and CLI paths against a local server.
 
 `/services/cognitoidp` replaces generic inventory for Cognito user pools. `ui/src/lib/cognito.ts`
 provides typed operations through `api.action` / `consoleActionFetch`, with explicit account and Region.
-`consoleCognitoOperations` permits only the 22 implemented operations used by this page; normal IAM
+`consoleCognitoOperations` permits only the implemented operations used by this page; normal IAM
 checks apply to reads and writes. Lists collect every page, including Cognito's `PaginationToken` for users.
 The pool table reuses `ResourceTable`; details use Cloudscape tables, `CodeBlock` and `usePoll`.
 
 Users support creation with temporary passwords, confirmation, enable/disable, reset-code delivery,
-temporary/permanent password setting, attribute updates and group membership. User and group deletions
-require a modal naming the target. The attribute editor updates changed keys; attribute deletion is outside
-this editor. Client metadata drops `ClientSecret` before entering polling state; explicit reveal requests
+temporary/permanent password setting, attribute updates/removal, global sign-out and group membership. User and
+group deletions require a modal naming the target. The attribute editor updates changed keys and removes omitted
+keys, protecting `sub`. Client metadata drops `ClientSecret` before entering polling state; explicit reveal requests
 hold the secret only in component memory. Password fields clear when their modal closes or a request fails.
 Sensitive Cognito operations already redact request-inspector bodies. No new service operations are added.
+
+Pools support creation, editing and confirmed deletion, password policy, creation-only username/alias attributes,
+auto-verification, MFA configuration, custom attribute creation and `ConsoleTags`. App clients support creation
+(including generated secrets), editing and confirmed deletion, auth/OAuth flows, scopes, providers, callback/logout
+URLs and token validity/units. Secrets appear only in an explicit reveal panel, never in tables. Domain actions
+create/update/delete prefix or custom domains, including certificate configuration and managed login version.
+Group edits load `GetGroup` and update description, precedence and role ARN. Changes use `ActionDialog`;
+settings editors preserve supported settings from describe responses because updates replace settings.
+Resource server and identity provider management remain outside this console page.
 
 Recent user codes reuse the mailbox library, filtering `service=cognito-idp` by email/phone destination
 and account/Region. Users sharing a destination may see the same captured messages. Pool status is absent

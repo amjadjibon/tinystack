@@ -12,9 +12,13 @@ import { ConsoleLayout } from "#/components/Console";
 import {
 	CognitoClients,
 	CognitoDomain,
-	CognitoGroups,
-	CognitoUsers,
-} from "#/components/cognito/CognitoDetails";
+} from "#/components/cognito/CognitoApplications";
+import { CognitoUsers } from "#/components/cognito/CognitoDetails";
+import { CognitoGroups } from "#/components/cognito/CognitoGroups";
+import {
+	PoolActions,
+	PoolSettings,
+} from "#/components/cognito/CognitoManagement";
 import { ResourceTable } from "#/components/ResourceTable";
 import {
 	type CognitoScope,
@@ -97,6 +101,12 @@ function Workspace({
 					Connect a console session for this account to manage user pools.
 				</Alert>
 			)}
+			<PoolActions
+				scope={scope}
+				pool={pool}
+				enabled={enabled}
+				onChanged={pools.reload}
+			/>
 			{pools.error && <Alert type="error">{pools.error}</Alert>}
 			{scope.id ? (
 				<>
@@ -113,6 +123,11 @@ function Workspace({
 						activeTabId={tab}
 						onChange={({ detail }) => setTab(detail.activeTabId)}
 						tabs={[
+							{
+								id: "settings",
+								label: "Settings and tags",
+								content: <PoolSettings scope={scope} enabled={enabled} />,
+							},
 							{
 								id: "users",
 								label: "Users",
@@ -142,7 +157,12 @@ function Workspace({
 								id: "domain",
 								label: "Domain",
 								content: pool ? (
-									<CognitoDomain scope={scope} pool={pool} enabled={enabled} />
+									<CognitoDomain
+										scope={scope}
+										pool={pool}
+										enabled={enabled}
+										onChanged={pools.reload}
+									/>
 								) : (
 									<Alert>Loading pool details.</Alert>
 								),

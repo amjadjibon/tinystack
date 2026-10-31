@@ -279,7 +279,11 @@ var consoleCognitoOperations = strings.Fields(`
  AdminEnableUser AdminDisableUser AdminResetUserPassword AdminSetUserPassword AdminDeleteUser
  AdminUpdateUserAttributes AdminListGroupsForUser AdminAddUserToGroup AdminRemoveUserFromGroup
  ListGroups CreateGroup DeleteGroup ListUsersInGroup ListUserPoolClients DescribeUserPoolClient
- DescribeUserPoolDomain
+ DescribeUserPoolDomain CreateUserPool UpdateUserPool DeleteUserPool
+ GetUserPoolMfaConfig SetUserPoolMfaConfig AddCustomAttributes TagResource UntagResource ListTagsForResource
+ CreateUserPoolClient UpdateUserPoolClient DeleteUserPoolClient
+ CreateUserPoolDomain UpdateUserPoolDomain DeleteUserPoolDomain GetGroup UpdateGroup
+ AdminDeleteUserAttributes AdminUserGlobalSignOut
 `)
 
 var consoleCloudFormationOperations = strings.Fields(`

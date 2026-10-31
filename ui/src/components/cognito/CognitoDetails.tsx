@@ -6,70 +6,31 @@ import {
 	FormField,
 	Header,
 	Input,
-	Link,
 	Modal,
 	SpaceBetween,
-	Table,
-	type TableProps,
 	Textarea,
 	TextFilter,
 } from "@cloudscape-design/components";
 import { useState } from "react";
 import { CodeBlock } from "#/components/CodeBlock";
 import {
-	type Client,
 	type CognitoScope,
 	cognitoCall,
 	cognitoPages,
 	type Group,
-	type Pool,
 } from "#/lib/cognito";
 import {
 	type CognitoUser,
 	changedAttributes,
 	matchesUser,
+	removedAttributes,
 } from "#/lib/cognitoHelpers";
 import { errorText, stringMap } from "#/lib/consoleActions";
 import { mailbox } from "#/lib/mailbox";
-import { type Poll, usePoll } from "#/lib/usePoll";
+import { usePoll } from "#/lib/usePoll";
+import { DataTable } from "./CognitoTable";
 
-function DataTable<T>({
-	title,
-	poll,
-	columns,
-	actions,
-}: {
-	title: string;
-	poll: Poll<T[]>;
-	columns: TableProps.ColumnDefinition<T>[];
-	actions?: React.ReactNode;
-}) {
-	return (
-		<SpaceBetween size="s">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
-			<Table
-				items={poll.data ?? []}
-				loading={poll.loading}
-				loadingText={`Loading ${title}`}
-				empty={`No ${title.toLowerCase()}.`}
-				columnDefinitions={columns}
-				header={
-					<Header
-						actions={
-							<SpaceBetween direction="horizontal" size="xs">
-								{actions}
-								<Button onClick={poll.reload}>Refresh</Button>
-							</SpaceBetween>
-						}
-					>
-						{title}
-					</Header>
-				}
-			/>
-		</SpaceBetween>
-	);
-}
-function Field({
+export function Field({
 	label,
 	value,
 	onChange,
@@ -373,6 +334,14 @@ function UserDetail({
 					>
 						Add to group
 					</Button>
+					<Button
+						disabled={!enabled || busy || !user.data}
+						onClick={() =>
+							run(() => cognitoCall(scope, "AdminUserGlobalSignOut", input))
+						}
+					>
+						Sign out everywhere
+					</Button>
 					<Button disabled={!enabled || busy} onClick={() => setMode("delete")}>
 						Delete user
 					</Button>
@@ -448,14 +417,12 @@ function UserDetail({
 										}
 										const values = stringMap(text, "Attributes");
 										const before = user.data?.UserAttributes ?? [];
-										if (
-											before.some(
-												(a) => a.Name !== "sub" && !(a.Name in values),
-											)
-										)
-											throw new Error(
-												"Attribute removal is not supported by this editor. Retain existing keys.",
-											);
+										const removed = removedAttributes(before, values);
+										if (removed.length)
+											await cognitoCall(scope, "AdminDeleteUserAttributes", {
+												...input,
+												UserAttributeNames: removed,
+											});
 										return cognitoCall(scope, "AdminUpdateUserAttributes", {
 											...input,
 											UserAttributes: changedAttributes(before, values),
@@ -473,7 +440,10 @@ function UserDetail({
 						{mode === "delete" ? (
 							<div>Permanently delete {username} from this pool?</div>
 						) : mode === "attributes" ? (
-							<FormField label="Attributes (JSON object of string values; sub is read-only)">
+							<FormField
+								label="Attributes (JSON object of string values; sub is read-only)"
+								description="Omit a key to remove that attribute."
+							>
 								<Textarea
 									value={text}
 									onChange={({ detail }) => setText(detail.value)}
@@ -545,329 +515,5 @@ function UserMessages({
 				},
 			]}
 		/>
-	);
-}
-export function CognitoGroups({
-	scope,
-	enabled,
-}: {
-	scope: CognitoScope;
-	enabled: boolean;
-}) {
-	const groups = usePoll(() =>
-		enabled
-			? cognitoPages<Group>(scope, "ListGroups", "Groups")
-			: Promise.resolve([]),
-	);
-	const [selected, setSelected] = useState(""),
-		[mode, setMode] = useState(""),
-		[name, setName] = useState(""),
-		[description, setDescription] = useState(""),
-		[error, setError] = useState(""),
-		[busy, setBusy] = useState(false);
-	async function save() {
-		setBusy(true);
-		setError("");
-		try {
-			if (mode === "create")
-				await cognitoCall(scope, "CreateGroup", {
-					GroupName: name,
-					Description: description,
-				});
-			else {
-				await cognitoCall(scope, "DeleteGroup", { GroupName: name });
-				setSelected("");
-			}
-			setMode("");
-			setName("");
-			setDescription("");
-			groups.reload();
-		} catch (e) {
-			setError(errorText(e));
-		} finally {
-			setBusy(false);
-		}
-	}
-	return (
-		<SpaceBetween size="l">
-			<DataTable
-				title="Groups"
-				poll={groups}
-				actions={
-					<Button
-						disabled={!enabled}
-						onClick={() => {
-							setName("");
-							setError("");
-							setMode("create");
-						}}
-					>
-						Create group
-					</Button>
-				}
-				columns={[
-					{
-						id: "name",
-						header: "Name",
-						cell: (g) => (
-							<Button variant="link" onClick={() => setSelected(g.GroupName)}>
-								{g.GroupName}
-							</Button>
-						),
-					},
-					{
-						id: "description",
-						header: "Description",
-						cell: (g) => g.Description ?? "—",
-					},
-					{
-						id: "delete",
-						header: "Actions",
-						cell: (g) => (
-							<Button
-								disabled={!enabled}
-								onClick={() => {
-									setName(g.GroupName);
-									setError("");
-									setMode("delete");
-								}}
-							>
-								Delete
-							</Button>
-						),
-					},
-				]}
-			/>
-			{selected && (
-				<GroupMembers
-					key={selected}
-					scope={scope}
-					group={selected}
-					enabled={enabled}
-				/>
-			)}
-			<Modal
-				visible={!!mode}
-				onDismiss={() => setMode("")}
-				header={mode === "create" ? "Create group" : `Delete group ${name}?`}
-				footer={
-					<SpaceBetween direction="horizontal" size="s">
-						<Button disabled={busy} onClick={() => setMode("")}>
-							Cancel
-						</Button>
-						<Button loading={busy} disabled={!enabled || !name} onClick={save}>
-							{mode === "create" ? "Create group" : "Delete group"}
-						</Button>
-					</SpaceBetween>
-				}
-			>
-				<SpaceBetween size="m">
-					{error && <Alert type="error">{error}</Alert>}
-					{mode === "create" ? (
-						<>
-							<Field label="Group name" value={name} onChange={setName} />
-							<Field
-								label="Description"
-								value={description}
-								onChange={setDescription}
-							/>
-						</>
-					) : (
-						<div>Delete {name} from this pool?</div>
-					)}
-				</SpaceBetween>
-			</Modal>
-		</SpaceBetween>
-	);
-}
-function GroupMembers({
-	scope,
-	group,
-	enabled,
-}: {
-	scope: CognitoScope;
-	group: string;
-	enabled: boolean;
-}) {
-	const members = usePoll(() =>
-		enabled
-			? cognitoPages<CognitoUser>(scope, "ListUsersInGroup", "Users", {
-					GroupName: group,
-				})
-			: Promise.resolve([]),
-	);
-	return (
-		<DataTable
-			title={`Members of ${group}`}
-			poll={members}
-			columns={[
-				{ id: "name", header: "Username", cell: (u) => u.Username },
-				{ id: "status", header: "Status", cell: (u) => u.UserStatus ?? "—" },
-			]}
-		/>
-	);
-}
-export function CognitoClients({
-	scope,
-	enabled,
-}: {
-	scope: CognitoScope;
-	enabled: boolean;
-}) {
-	const clients = usePoll(async () => {
-		if (!enabled) return [];
-		const list = await cognitoPages<Client>(
-			scope,
-			"ListUserPoolClients",
-			"UserPoolClients",
-		);
-		return Promise.all(
-			list.map(async (c) => {
-				const { ClientSecret: _secret, ...metadata } = (
-					await cognitoCall(scope, "DescribeUserPoolClient", {
-						ClientId: c.ClientId,
-					})
-				).UserPoolClient;
-				return metadata;
-			}),
-		);
-	});
-	return (
-		<DataTable
-			title="App clients"
-			poll={clients}
-			columns={[
-				{ id: "name", header: "Name", cell: (c) => c.ClientName },
-				{ id: "id", header: "Client ID", cell: (c) => c.ClientId },
-				{
-					id: "secret",
-					header: "Client secret",
-					cell: (c) => (
-						<ClientSecret
-							key={c.ClientId}
-							scope={scope}
-							client={c.ClientId}
-							enabled={enabled}
-						/>
-					),
-				},
-				{
-					id: "callback",
-					header: "Callback URLs",
-					cell: (c) => (c.CallbackURLs ?? []).join(", ") || "—",
-				},
-				{
-					id: "logout",
-					header: "Logout URLs",
-					cell: (c) => (c.LogoutURLs ?? []).join(", ") || "—",
-				},
-				{
-					id: "oauth",
-					header: "OAuth flows",
-					cell: (c) => (c.AllowedOAuthFlows ?? []).join(", ") || "—",
-				},
-				{
-					id: "auth",
-					header: "Auth flows",
-					cell: (c) => (c.ExplicitAuthFlows ?? []).join(", ") || "—",
-				},
-			]}
-		/>
-	);
-}
-function ClientSecret({
-	scope,
-	client,
-	enabled,
-}: {
-	scope: CognitoScope;
-	client: string;
-	enabled: boolean;
-}) {
-	const [secret, setSecret] = useState<string>(),
-		[busy, setBusy] = useState(false),
-		[error, setError] = useState("");
-	return (
-		<SpaceBetween size="xs">
-			{error && <Alert type="error">{error}</Alert>}
-			{secret !== undefined ? (
-				<>
-					<CodeBlock text={secret || "No client secret"} />
-					<Button onClick={() => setSecret(undefined)}>Hide</Button>
-				</>
-			) : (
-				<>
-					<span>••••••••</span>
-					<Button
-						disabled={!enabled}
-						loading={busy}
-						onClick={async () => {
-							setBusy(true);
-							setError("");
-							try {
-								setSecret(
-									(
-										await cognitoCall(scope, "DescribeUserPoolClient", {
-											ClientId: client,
-										})
-									).UserPoolClient.ClientSecret ?? "",
-								);
-							} catch (e) {
-								setError(errorText(e));
-							} finally {
-								setBusy(false);
-							}
-						}}
-					>
-						Reveal
-					</Button>
-				</>
-			)}
-		</SpaceBetween>
-	);
-}
-export function CognitoDomain({
-	scope,
-	pool,
-	enabled,
-}: {
-	scope: CognitoScope;
-	pool: Pool;
-	enabled: boolean;
-}) {
-	const domain = pool.CustomDomain || pool.Domain;
-	const info = usePoll(() =>
-		enabled && domain
-			? cognitoCall(scope, "DescribeUserPoolDomain", { Domain: domain })
-			: Promise.resolve(undefined),
-	);
-	const host = domain?.includes(".")
-		? domain
-		: `${domain}.auth.${scope.region}.amazoncognito.com`;
-	return (
-		<SpaceBetween size="m">
-			{info.error && <Alert type="error">{info.error}</Alert>}
-			{!domain ? (
-				<div>No domain configured.</div>
-			) : (
-				<>
-					<div>Domain: {domain}</div>
-					<div>
-						Status:{" "}
-						{info.loading
-							? "Loading"
-							: (info.data?.DomainDescription?.Status ?? "—")}
-					</div>
-					<Link external href={`https://${host}/login`}>
-						Hosted UI
-					</Link>
-					<Alert type="info">
-						Use your local gateway with this domain's Host routing and
-						configured TLS. Sign-in requires client_id, response_type and a
-						registered redirect_uri.
-					</Alert>
-				</>
-			)}
-		</SpaceBetween>
 	);
 }

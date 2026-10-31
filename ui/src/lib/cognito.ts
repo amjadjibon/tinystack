@@ -1,7 +1,7 @@
 import { api } from "./api";
 import type { Attribute, CognitoUser } from "./cognitoHelpers";
 export type CognitoScope = { account: string; region: string; id?: string };
-export type Pool = {
+export type Pool = Record<string, unknown> & {
 	Id: string;
 	Name: string;
 	CreationDate?: number;
@@ -10,8 +10,13 @@ export type Pool = {
 	Domain?: string;
 	CustomDomain?: string;
 };
-export type Group = { GroupName: string; Description?: string };
-export type Client = {
+export type Group = {
+	GroupName: string;
+	Description?: string;
+	Precedence?: number;
+	RoleArn?: string;
+};
+export type Client = Record<string, unknown> & {
 	ClientId: string;
 	ClientName: string;
 	ClientSecret?: string;
@@ -22,6 +27,25 @@ export type Client = {
 };
 type UserInput = { Username: string };
 type Inputs = {
+	CreateUserPool: Record<string, unknown>;
+	UpdateUserPool: Record<string, unknown>;
+	DeleteUserPool: Record<string, never>;
+	GetUserPoolMfaConfig: Record<string, never>;
+	SetUserPoolMfaConfig: Record<string, unknown>;
+	AddCustomAttributes: { CustomAttributes: Record<string, unknown>[] };
+	ListTagsForResource: { ResourceArn: string };
+	TagResource: { ResourceArn: string; Tags: Record<string, string> };
+	UntagResource: { ResourceArn: string; TagKeys: string[] };
+	CreateUserPoolClient: Record<string, unknown>;
+	UpdateUserPoolClient: Record<string, unknown>;
+	DeleteUserPoolClient: { ClientId: string };
+	CreateUserPoolDomain: Record<string, unknown>;
+	UpdateUserPoolDomain: Record<string, unknown>;
+	DeleteUserPoolDomain: { Domain: string };
+	GetGroup: { GroupName: string };
+	UpdateGroup: Record<string, unknown>;
+	AdminDeleteUserAttributes: UserInput & { UserAttributeNames: string[] };
+	AdminUserGlobalSignOut: UserInput;
 	ListUserPools: Record<string, never>;
 	DescribeUserPool: Record<string, never>;
 	ListUsers: Record<string, never>;
@@ -49,6 +73,10 @@ type Inputs = {
 	DescribeUserPoolDomain: { Domain: string };
 };
 type Outputs = {
+	CreateUserPool: { UserPool: Pool };
+	GetUserPoolMfaConfig: Record<string, unknown>;
+	ListTagsForResource: { Tags?: Record<string, string> };
+	GetGroup: { Group: Group };
 	ListUserPools: { UserPools?: Pool[] };
 	DescribeUserPool: { UserPool: Pool };
 	ListUsers: { Users?: CognitoUser[] };
@@ -64,6 +92,14 @@ type Outputs = {
 		DomainDescription?: { Domain?: string; Status?: string };
 	};
 };
+const unscopedOperations: string[] = [
+	"ListUserPools",
+	"CreateUserPool",
+	"DescribeUserPoolDomain",
+	"TagResource",
+	"UntagResource",
+	"ListTagsForResource",
+];
 export function cognitoCall<K extends keyof Inputs>(
 	s: CognitoScope,
 	operation: K,
@@ -74,9 +110,7 @@ export function cognitoCall<K extends keyof Inputs>(
 		operation,
 		s.account,
 		{
-			...(s.id &&
-			operation !== "DescribeUserPoolDomain" &&
-			operation !== "ListUserPools"
+			...(s.id && !unscopedOperations.includes(operation)
 				? { UserPoolId: s.id }
 				: {}),
 			...input,
