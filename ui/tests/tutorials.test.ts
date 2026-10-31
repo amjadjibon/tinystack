@@ -219,7 +219,7 @@ test("copied step commands work in CloudShell without a host shell", () => {
 	for (const tutorial of tutorials)
 		for (const task of tutorial.tasks)
 			for (const step of task.steps) {
-				assert.match(step.command, /^aws /);
+				assert.match(step.command, /^aws-local /);
 				assert.doesNotMatch(
 					step.command,
 					/\n|\$\(|\$[A-Z]|\bexport\b|\bprintf\b|[<>|]/,

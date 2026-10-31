@@ -19,7 +19,7 @@ export const snsSqsFanout: Tutorial = {
 					title: "Create a topic",
 					content:
 						"Create a Standard topic named {topic}. Topics distribute a publication to every subscription.",
-					command: "aws sns create-topic --name {topic}",
+					command: "aws-local sns create-topic --name {topic}",
 					hotspotId: HOTSPOT.snsCreate,
 					route: "/services/sns",
 					check: "topic",
@@ -28,7 +28,7 @@ export const snsSqsFanout: Tutorial = {
 					title: "Create a queue",
 					content:
 						"Create a Standard queue named {queue}. It retains messages until a consumer receives and deletes them.",
-					command: "aws sqs create-queue --queue-name {queue}",
+					command: "aws-local sqs create-queue --queue-name {queue}",
 					hotspotId: HOTSPOT.sqsCreate,
 					route: "/services/sqs",
 					check: "queue",
@@ -38,7 +38,7 @@ export const snsSqsFanout: Tutorial = {
 					content:
 						"Open {topic}, choose Create subscription, select SQS, and enter arn:aws:sqs:{region}:{account}:{queue}. In the queue Permissions tab, allow sns.amazonaws.com sqs:SendMessage with aws:SourceArn restricted to arn:aws:sns:{region}:{account}:{topic} when authorization is enforced.",
 					command:
-						"aws sns subscribe --topic-arn arn:aws:sns:{region}:{account}:{topic} --protocol sqs --notification-endpoint arn:aws:sqs:{region}:{account}:{queue}",
+						"aws-local sns subscribe --topic-arn arn:aws:sns:{region}:{account}:{topic} --protocol sqs --notification-endpoint arn:aws:sqs:{region}:{account}:{queue}",
 					hotspotId: HOTSPOT.snsSubscribe,
 					route: "/services/sns?topic={topic}",
 					check: "subscription",
@@ -48,7 +48,7 @@ export const snsSqsFanout: Tutorial = {
 					content:
 						"Open the Publish message tab on {topic}, enter Hello TinyStack, and publish. This step waits for successful delivery to the generated queue.",
 					command:
-						"aws sns publish --topic-arn arn:aws:sns:{region}:{account}:{topic} --message 'Hello TinyStack'",
+						"aws-local sns publish --topic-arn arn:aws:sns:{region}:{account}:{topic} --message 'Hello TinyStack'",
 					hotspotId: HOTSPOT.snsPublish,
 					route: "/services/sns?topic={topic}",
 					check: "delivery",
@@ -57,7 +57,8 @@ export const snsSqsFanout: Tutorial = {
 					title: "Receive the message",
 					content:
 						"Open {queue}, select Send and receive messages, and Poll for messages. The SNS envelope contains your publication. Receiving hides the message for the visibility timeout.",
-					command: "aws sqs receive-message --queue-url /{account}/{queue}",
+					command:
+						"aws-local sqs receive-message --queue-url /{account}/{queue}",
 					hotspotId: HOTSPOT.sqsReceive,
 					route: "/services/sqs?queue={queue}",
 					check: "receive",

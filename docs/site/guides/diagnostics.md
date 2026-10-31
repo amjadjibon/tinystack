@@ -333,4 +333,4 @@ require an administrator session; the page reports that requirement explicitly.
 
 The console includes [interactive tutorials](console-tutorials.md) for S3 and SNS/SQS, with numbered controls,
 live completion checks, scoped saved progress, and confirmed cleanup. Open Tutorials in the top navigation or
-the Get started card on console home.
+the Get started widget on console home.

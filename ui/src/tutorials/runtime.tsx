@@ -3,10 +3,12 @@ import {
 	AnnotationContext,
 	Box,
 	Button,
+	Cards,
 	Container,
 	CopyToClipboard,
 	Header,
 	SpaceBetween,
+	StatusIndicator,
 	TutorialPanel,
 	type TutorialPanelProps,
 } from "@cloudscape-design/components";
@@ -20,8 +22,10 @@ import {
 	useState,
 } from "react";
 import { CodeBlock } from "#/components/CodeBlock";
+import { ServiceIcon } from "#/components/ServiceIcon";
 import { useHealth } from "#/lib/health";
 import { useScope } from "#/lib/scope";
+import { service } from "#/lib/services";
 import { fetchSnapshot } from "#/lib/tutorials";
 import { usePoll } from "#/lib/usePoll";
 import { Cleanup } from "./Cleanup";
@@ -30,11 +34,27 @@ import { tutorials } from "./index";
 import { fresh, load, type Progress, save } from "./progress";
 import { expand, type Step, type Tutorial } from "./types";
 
+const drawerSizeKey = "tinystack.console.tutorial-drawer-size";
 function useTutorialState() {
 	const { account, region } = useScope();
 	const health = useHealth();
 	const [checkError, setCheckError] = useState<string>();
 	const [open, setOpen] = useState(false);
+	const [drawerSize, setSize] = useState(() => {
+		try {
+			return Number(localStorage.getItem(drawerSizeKey)) || 420;
+		} catch {
+			return 420;
+		}
+	});
+	const setDrawerSize = (size: number) => {
+		setSize(size);
+		try {
+			localStorage.setItem(drawerSizeKey, String(Math.round(size)));
+		} catch {
+			/* The size lasts for this session. */
+		}
+	};
 	const [active, setActive] = useState<string | null>(null);
 	const [revision, setRevision] = useState(0);
 	const [records, setRecords] = useState<Record<string, Progress>>({});
@@ -107,6 +127,8 @@ function useTutorialState() {
 		setCheckError,
 		open,
 		setOpen,
+		drawerSize,
+		setDrawerSize,
 		active,
 		setActive,
 		tutorial,
@@ -154,9 +176,9 @@ function StepContent({ step, ctx }: { step: Step; ctx: Context }) {
 		<SpaceBetween size="s">
 			<Box>{expand(step.content, ctx)}</Box>
 			<Box>
-				Run this single command in CloudShell, which supplies the local endpoint
-				and selected account. For an external AWS CLI, set AWS_ENDPOINT_URL to
-				TinyStack and use credentials for account {ctx.account}.
+				Run this command in CloudShell, or in a terminal with aws-local, which
+				always targets TinyStack, so nothing reaches AWS. Outside CloudShell,
+				use credentials for account {ctx.account}.
 			</Box>
 			<CodeBlock text={command} />
 			<CopyToClipboard
@@ -272,46 +294,22 @@ export function TutorialDrawer() {
 					},
 				}}
 			/>
-			{t.tutorial && t.progress && (
-				<>
-					<Box>{t.tutorial.prerequisites}</Box>
-					<Box>
-						{t.progress.completed.length} of {t.steps.length} steps completed
-					</Box>
-					<ol>
-						{t.steps.map((s, i) => (
-							<li key={s.hotspotId}>
-								{s.title}:{" "}
-								{t.progress?.completed.includes(i)
-									? "Completed"
-									: i === t.progress?.step
-										? "Current"
-										: "Pending"}
-							</li>
-						))}
-					</ol>
-					{t.step && (
-						<>
-							<Header variant="h3">{t.step.title}</Header>
-							<StepContent step={t.step} ctx={t.ctx} />
-							<LiveCheck />
-							<SpaceBetween direction="horizontal" size="xs">
-								<Button onClick={t.go}>Go there</Button>
-								<Button onClick={t.previous} disabled={t.progress.step === 0}>
-									Previous
-								</Button>
-								<Button onClick={t.advance}>Next</Button>
-							</SpaceBetween>
-						</>
-					)}
-					<Button
-						onClick={() => {
-							if (t.tutorial) t.start(t.tutorial, true);
-						}}
-					>
-						Restart
-					</Button>
-				</>
+			{t.step && (
+				<Container header={<Header variant="h3">{t.step.title}</Header>}>
+					<SpaceBetween size="s">
+						<StepContent step={t.step} ctx={t.ctx} />
+						<LiveCheck />
+						<SpaceBetween direction="horizontal" size="xs">
+							<Button onClick={t.go}>Go there</Button>
+							<Button onClick={t.previous} disabled={t.progress?.step === 0}>
+								Previous
+							</Button>
+							<Button variant="primary" onClick={t.advance}>
+								Next
+							</Button>
+						</SpaceBetween>
+					</SpaceBetween>
+				</Container>
 			)}
 		</SpaceBetween>
 	);
@@ -343,35 +341,88 @@ function LiveCheck() {
 		</Box>
 	);
 }
-export function TutorialCards({ home = false }: { home?: boolean }) {
+function status(t: ReturnType<typeof useTutorials>, def: Tutorial) {
+	const record = t.records[def.id];
+	if (record?.finishedAt)
+		return <StatusIndicator type="success">Completed</StatusIndicator>;
+	if (!t.available(def))
+		return <StatusIndicator type="stopped">Unavailable</StatusIndicator>;
+	if (!record)
+		return <StatusIndicator type="pending">Not started</StatusIndicator>;
+	const total = def.tasks.flatMap((v) => v.steps).length;
+	return (
+		<StatusIndicator type="in-progress">
+			{record.completed.length} of {total} steps
+		</StatusIndicator>
+	);
+}
+function StartButton({ def }: { def: Tutorial }) {
 	const t = useTutorials();
 	return (
-		<SpaceBetween size="m">
-			{home && <Header variant="h2">Get started</Header>}
-			{tutorials.slice(0, home ? 3 : undefined).map((def) => (
-				<Container
-					key={def.id}
-					header={<Header variant="h2">{def.title}</Header>}
-				>
-					<SpaceBetween size="s">
-						<Box>
-							{def.description} {def.duration}
+		<Button disabled={!t.available(def)} onClick={() => t.start(def)}>
+			{t.records[def.id] ? "Resume" : "Start"}
+		</Button>
+	);
+}
+export function TutorialList() {
+	const t = useTutorials();
+	return (
+		<ul className="dashboard-tutorial-list">
+			{tutorials.map((def) => (
+				<li key={def.id}>
+					<ServiceIcon name={def.services[0]} size="large" />
+					<div>
+						<strong>{def.title}</strong>
+						<Box variant="small" color="text-body-secondary">
+							{def.duration} · {status(t, def)}
 						</Box>
-						<Box>{def.prerequisites}</Box>
-						<Box>
-							{t.records[def.id]?.finishedAt
-								? "Completed"
-								: `${t.records[def.id]?.completed.length ?? 0} of ${def.tasks.flatMap((v) => v.steps).length} steps completed`}
-						</Box>
-						{!t.available(def) && (
-							<Box>Required services or account/Region unavailable.</Box>
-						)}
-						<Button disabled={!t.available(def)} onClick={() => t.start(def)}>
-							{t.records[def.id] ? "Resume" : "Start"}
-						</Button>
-					</SpaceBetween>
-				</Container>
+					</div>
+					<StartButton def={def} />
+				</li>
 			))}
-		</SpaceBetween>
+		</ul>
+	);
+}
+export function TutorialCards() {
+	const t = useTutorials();
+	return (
+		<Cards
+			items={tutorials}
+			trackBy="id"
+			cardsPerRow={[{ cards: 1 }, { minWidth: 700, cards: 2 }]}
+			cardDefinition={{
+				header: (def) => def.title,
+				sections: [
+					{ id: "description", content: (def) => def.description },
+					{
+						id: "services",
+						header: "Services",
+						content: (def) => (
+							<SpaceBetween direction="horizontal" size="xs">
+								{def.services.map((s) => (
+									<ServiceIcon key={s} name={s} size="small" />
+								))}
+								<span>
+									{def.services.map((s) => service(s).title).join(", ")}
+								</span>
+							</SpaceBetween>
+						),
+					},
+					{
+						id: "duration",
+						header: "Duration",
+						content: (def) => def.duration,
+						width: 50,
+					},
+					{
+						id: "status",
+						header: "Status",
+						content: (def) => status(t, def),
+						width: 50,
+					},
+					{ id: "start", content: (def) => <StartButton def={def} /> },
+				],
+			}}
+		/>
 	);
 }

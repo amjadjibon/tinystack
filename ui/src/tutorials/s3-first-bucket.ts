@@ -19,7 +19,7 @@ export const s3FirstBucket: Tutorial = {
 					title: "Create a bucket",
 					content:
 						"Choose Create bucket and name it {bucket}. Leave versioning disabled. A bucket groups your objects in this Region.",
-					command: "aws s3api create-bucket --bucket {bucket}",
+					command: "aws-local s3api create-bucket --bucket {bucket}",
 					hotspotId: HOTSPOT.s3Create,
 					route: "/services/s3",
 					check: "bucket",
@@ -28,7 +28,7 @@ export const s3FirstBucket: Tutorial = {
 					title: "Upload hello.txt",
 					content:
 						"Open {bucket}, choose Upload, select a local hello.txt file, and confirm Upload. Object keys identify files inside a bucket. The CLI command creates an empty hello.txt without needing a host file.",
-					command: "aws s3api put-object --bucket {bucket} --key {key}",
+					command: "aws-local s3api put-object --bucket {bucket} --key {key}",
 					hotspotId: HOTSPOT.s3Upload,
 					route: "/services/s3?bucket={bucket}",
 					check: "object",
@@ -38,7 +38,7 @@ export const s3FirstBucket: Tutorial = {
 					content:
 						"Open hello.txt and choose Download. GetObject retrieves the stored bytes without making the bucket public.",
 					command:
-						"aws s3api get-object --bucket {bucket} --key {key} /tmp/tutorial-download.txt",
+						"aws-local s3api get-object --bucket {bucket} --key {key} /tmp/tutorial-download.txt",
 					hotspotId: HOTSPOT.s3Download,
 					route: "/services/s3?bucket={bucket}&key={key}",
 					check: "download",

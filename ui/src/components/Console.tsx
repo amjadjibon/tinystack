@@ -443,6 +443,17 @@ export type ConsoleLayoutProps = {
 
 // ConsoleLayout is the AWS console page frame: side navigation, breadcrumbs,
 // connection errors, and an optional split panel for details.
+const tutorialIcon = (
+	<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+		<path
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.5"
+			d="M1 5 8 2l7 3-7 3-7-3Zm3 2v4q4 3 8 0V7M15 5v7"
+		/>
+	</svg>
+);
+
 export function ConsoleLayout({
 	breadcrumbs,
 	content,
@@ -475,9 +486,27 @@ export function ConsoleLayout({
 					navigationClose: "Close side navigation",
 				}}
 				maxContentWidth={Number.MAX_VALUE}
-				tools={<TutorialDrawer />}
-				toolsOpen={tutorials.open}
-				onToolsChange={({ detail }) => tutorials.setOpen(detail.open)}
+				toolsHide
+				drawers={[
+					{
+						id: "tutorials",
+						content: <TutorialDrawer />,
+						trigger: { iconSvg: tutorialIcon },
+						ariaLabels: {
+							drawerName: "Tutorials",
+							closeButton: "Close tutorials",
+							triggerButton: "Open tutorials",
+							resizeHandle: "Resize tutorials",
+						},
+						resizable: true,
+						defaultSize: tutorials.drawerSize,
+						onResize: ({ detail }) => tutorials.setDrawerSize(detail.size),
+					},
+				]}
+				activeDrawerId={tutorials.open ? "tutorials" : null}
+				onDrawerChange={({ detail }) =>
+					tutorials.setOpen(detail.activeDrawerId === "tutorials")
+				}
 				navigationOpen={navigationOpen}
 				onNavigationChange={({ detail }) => setNavigationOpen(detail.open)}
 				navigation={

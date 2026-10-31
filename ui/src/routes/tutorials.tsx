@@ -9,7 +9,16 @@ function Tutorials() {
 			contentType="default"
 			breadcrumbs={[{ text: "Tutorials", href: "/tutorials" }]}
 			content={
-				<ContentLayout header={<Header variant="h1">Tutorials</Header>}>
+				<ContentLayout
+					header={
+						<Header
+							variant="h1"
+							description="Guided walkthroughs that check your progress against live TinyStack resources."
+						>
+							Tutorials
+						</Header>
+					}
+				>
 					<TutorialCards />
 				</ContentLayout>
 			}

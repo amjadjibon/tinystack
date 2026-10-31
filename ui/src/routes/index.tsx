@@ -23,7 +23,7 @@ import { useServiceHistory } from "#/lib/serviceHistory";
 import { consoleServiceNames, service } from "#/lib/services";
 import { useFollow } from "#/lib/useFollow";
 import { usePoll } from "#/lib/usePoll";
-import { TutorialCards } from "#/tutorials/runtime";
+import { TutorialList } from "#/tutorials/runtime";
 
 export const Route = createFileRoute("/")({ component: Home });
 const widgetLabels = {
@@ -52,9 +52,7 @@ function Home() {
 		try {
 			const saved = JSON.parse(localStorage.getItem(layoutKey) ?? "null");
 			if (Array.isArray(saved))
-				setVisible(
-					defaults.filter((id) => id === "tutorials" || saved.includes(id)),
-				);
+				setVisible(defaults.filter((id) => saved.includes(id)));
 		} catch {
 			/* The default layout works without saved preferences. */
 		}
@@ -131,7 +129,19 @@ function Home() {
 					}
 				>
 					<div className="console-dashboard">
-						{visible.includes("tutorials") && <TutorialCards home />}
+						{visible.includes("tutorials") && (
+							<Widget
+								id="tutorials"
+								wide
+								action={
+									<Button href="/tutorials" onFollow={follow}>
+										All tutorials
+									</Button>
+								}
+							>
+								<TutorialList />
+							</Widget>
+						)}
 						{visible.includes("recent") && (
 							<Widget
 								id="recent"
