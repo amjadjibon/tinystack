@@ -21,6 +21,7 @@ import (
 const (
 	rootUser    = "root"
 	execCommand = "exec"
+	loopback    = "127.0.0.1"
 )
 
 var _ rds.Runtime = (*Runtime)(nil)
@@ -142,7 +143,7 @@ func (r *Runtime) Ensure(ctx context.Context, spec *rds.Spec) (rds.Started, erro
 
 func (r *Runtime) Probe(ctx context.Context, spec *rds.Spec, started rds.Started) error {
 	dialer := net.Dialer{Timeout: time.Second}
-	conn, err := dialer.DialContext(ctx, "tcp", net.JoinHostPort("127.0.0.1", strconv.FormatInt(started.Port, 10)))
+	conn, err := dialer.DialContext(ctx, "tcp", net.JoinHostPort(loopback, strconv.FormatInt(started.Port, 10)))
 	if err != nil {
 		return err
 	}
@@ -155,7 +156,11 @@ func (r *Runtime) Probe(ctx context.Context, spec *rds.Spec, started rds.Started
 		return probeGremlin(ctx, started.Port)
 	}
 
-	args := []string{execCommand, spec.Name, "pg_isready", "-U", spec.Username, "-d", spec.Database}
+	// Probe over TCP: the image's init server listens only on its socket, and Docker's port proxy accepts
+	// connections before anything in the container listens.
+	args := []string{
+		execCommand, spec.Name, "pg_isready", "-h", loopback, "-U", spec.Username, "-d", spec.Database,
+	}
 	if spec.Engine != rds.EnginePostgres && spec.Engine != rds.EngineDocDB {
 		command := "mysqladmin"
 		if spec.Engine == rds.EngineMariaDB {
@@ -163,7 +168,7 @@ func (r *Runtime) Probe(ctx context.Context, spec *rds.Spec, started rds.Started
 		}
 
 		args = []string{
-			execCommand, "-e", "MYSQL_PWD=" + spec.Password, spec.Name, command, "ping", "--silent", "-h", "127.0.0.1",
+			execCommand, "-e", "MYSQL_PWD=" + spec.Password, spec.Name, command, "ping", "--silent", "-h", loopback,
 			"-u", spec.Username,
 		}
 	}
@@ -276,7 +281,7 @@ func mongoCommand(spec *rds.Spec, script string) []string {
 	}
 
 	return []string{
-		execCommand, spec.Name, shell, "--quiet", "--host", "127.0.0.1",
+		execCommand, spec.Name, shell, "--quiet", "--host", loopback,
 		"--username", spec.Username, "--password", spec.Password, "--authenticationDatabase", "admin",
 		"admin", "--eval", script,
 	}
