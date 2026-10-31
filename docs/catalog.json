@@ -32,7 +32,7 @@
     },
     {
       "title": "Cloudscape console",
-      "summary": "AWS-style dark dashboard with configurable widgets, a favorites bar of starred services, visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus with configured-account choices, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard, API Gateway HTTP/REST, Step Functions, EC2/VPC management workflows, and account-wide Budgets with actual spend, Cost Explorer charts and fixture management, and CUR report management, in-memory signed root console sessions for verify mode, IAM authorization status and explained request decisions, recent requests, delivery history, developer tools for reset/fault injection/init scripts, a live email/SMS mailbox, and metrics through a separately served web console. Interactive S3 and SNS/SQS tutorials offer numbered hotspots, live checks, scoped browser progress, copyable CLI commands and confirmed cleanup. Generic resource pages offer ARN copying, capability-driven tag editing through the Resource Groups Tagging API, and confirmed single-resource deletion for explicitly mapped inventory types.",
+      "summary": "AWS-style dark dashboard with configurable widgets, a favorites bar of starred services, visit history, categorized service catalog with AWS icons, shared top-bar account/Region menus with configured-account choices, resource inventory/details, IAM, S3, SQS, SNS, Lambda, DynamoDB, EventBridge, CloudWatch Logs and CloudWatch metrics/alarms/dashboard, API Gateway HTTP/REST, Step Functions, CloudFormation stacks, EC2/VPC management workflows, and account-wide Budgets with actual spend, Cost Explorer charts and fixture management, and CUR report management, in-memory signed root console sessions for verify mode, IAM authorization status and explained request decisions, recent requests, delivery history, developer tools for reset/fault injection/init scripts, a live email/SMS mailbox, and metrics through a separately served web console. Interactive S3 and SNS/SQS tutorials offer numbered hotspots, live checks, scoped browser progress, copyable CLI commands and confirmed cleanup. Generic resource pages offer ARN copying, capability-driven tag editing through the Resource Groups Tagging API, and confirmed single-resource deletion for explicitly mapped inventory types.",
       "reference": "guides/diagnostics.md"
     },
     {
@@ -1106,12 +1106,14 @@
         "Lambda and SNS custom resource providers receive asynchronous Create/Update/Delete requests with TinyStack PUT response URLs; persisted pending steps await responses with a one-hour timeout, Data attributes, NoEcho and replacement cleanup",
         "Selected SAM resources and event transformations",
         "Resource operations run outside store transactions through the lenient caller",
-        "AWS CDK CLI bootstrap and deploy: template Rules, Systems Manager parameter types, S3 bucket policies and bucket encryption, public access block and lifecycle settings, and the CDK change set options"
+        "AWS CDK CLI bootstrap and deploy: template Rules, Systems Manager parameter types, S3 bucket policies and bucket encryption, public access block and lifecycle settings, and the CDK change set options",
+        "Read-mostly console: stacks with status filter and deleted stacks, events with follow mode and highlighted failures, resources linked to service pages, outputs, parameters (NoEcho hidden), original and processed templates, change set view/execute/delete, nested stacks, and confirmed stack deletion with retained resources"
       ],
       "gaps": [
         "Only registered resource types and properties, plus provider-defined Custom::<Name> properties and attributes, are supported",
         "Nested stack NotificationARNs and custom resource ServiceToken changes are rejected; ServiceToken must name a Lambda function or SNS topic",
         "No stack sets, imports (ImportExistingResources is accepted but ignored) or drift detection",
+        "The console cannot create or update stacks or change sets, and offers no drift detection, continue update rollback or cancel update",
         "No macros/AWS::Include, policies with unsupported semantics or snapshot deletion behavior",
         "IAM capabilities are checked but permission policies and service roles are not evaluated",
         "AWS::IAM::Role accepts PermissionsBoundary only as an absent value; AWS::S3::Bucket AccessControl is limited to Private; EXPRESS deployment mode is rejected"

@@ -157,6 +157,28 @@ metadata remains available without one.
 The RDS service icon is bundled locally from the official AWS Architecture Icons package
 (`Architecture-Service-Icons_07312026/Arch_Databases/32/Arch_Amazon-RDS_32.svg`), like the other service icons.
 
+## CloudFormation workflows
+
+`/services/cloudformation` lists stacks from `ListStacks` (account and Region scoped, all statuses) with a status
+filter and an **Include deleted** toggle, and opens a stack by its ID in `?stack=`, so deleted stacks stay reachable.
+The page calls only the operations on `consoleCloudFormationOperations` in `internal/gateway/actions.go`:
+`ListStacks`, `DescribeStacks`, `DescribeStackEvents`, `ListStackResources`, `GetTemplate`, `ListChangeSets`,
+`DescribeChangeSet`, `ExecuteChangeSet`, `DeleteChangeSet` and `DeleteStack`. `ui/src/lib/cloudformation.ts` wraps them
+(`cfnCall`, `cfnPages` for `NextToken` paging) and `ui/src/lib/cloudformationHelpers.ts` holds the pure status, filter,
+date and inventory-link helpers covered by `ui/tests/cloudformation.test.ts`.
+
+The detail page polls `DescribeStacks` every five seconds. Events and resources poll every three seconds only while
+the status is `*_IN_PROGRESS` (`REVIEW_IN_PROGRESS` waits for a change set and is not followed); otherwise they
+reload on demand. Events read at most 1,000 newest rows. Status is always an icon plus text. `NoEcho` parameters
+arrive from the service as `****` and are labelled hidden. A resource's physical ID links through `resourceHref`
+when it matches an inventory record of the same account and Region (the CloudFormation type's service breaks ties),
+and the inventory row of a stack links back to this page. Deleting needs the stack name typed; the retain list appears
+only for `DELETE_FAILED`.
+
+Detect drift, continue update rollback and cancel update are left out because the service implements none of them
+(`generator/model/profile.json`); add them to the allowlist and page when they exist. Stack creation, updates and
+change set creation stay with the AWS CLI, CDK and SDKs.
+
 ## Cost management
 
 `/services/budgets` lists account-wide budget definitions with their type, time unit, fixed limit, period and

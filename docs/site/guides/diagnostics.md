@@ -213,6 +213,19 @@ Verify mode exposes alarm/dashboard inventory; signed CLI/SDK requests are requi
 configuration inspection and management. Signed CloudWatch requests use the AWS signing name `monitoring`.
 Local metric retention is 15 days; alarm history is retained for 30 days.
 
+Open **CloudFormation** to browse the stacks of the selected account and Region. Deleted stacks are hidden until
+**Include deleted** is on or the status filter names `DELETE_COMPLETE`; the Drift status column shows
+`NOT_CHECKED`, since drift detection is unsupported. A stack's detail page has tabs for events (newest first,
+failed events with their status reason emphasized and a failed-only filter), resources, outputs, parameters,
+template, change sets and nested stacks. While the stack is in an `*_IN_PROGRESS` state, the page and its events and
+resources reload every few seconds. A resource's physical ID links to its service page, or the generic resource page,
+when the inventory knows it. Parameters declared `NoEcho` show as hidden. The template tab shows the original
+and processed stages read-only; there is no template editor and no create or update. Change sets can be viewed,
+executed (when `AVAILABLE`) or deleted after confirmation, and nested stacks link to their own pages. **Delete**
+requires typing the stack name; a `DELETE_FAILED` stack also offers to retain the resources that failed. Detect drift,
+continue update rollback and cancel update are not offered because TinyStack does not implement those operations.
+In verify mode, connect a root console session; stack inventory remains available without one.
+
 ### Developer tools and mailbox
 
 Under **Monitoring**, open **Developer tools** (`/developer`) to reset every account and Region, optionally re-run
