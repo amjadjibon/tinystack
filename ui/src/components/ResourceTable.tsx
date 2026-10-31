@@ -17,6 +17,7 @@ import { type ReactNode, useState } from "react";
 import type { Resource } from "#/lib/api";
 import { gatewayHref } from "#/lib/apigateway";
 import { cloudwatchHref } from "#/lib/cloudwatch";
+import { cognitoHref } from "#/lib/cognito";
 import { costHref } from "#/lib/cost";
 import { dynamoHref } from "#/lib/dynamodb";
 import { ec2Href, ec2Kinds, ec2Sections } from "#/lib/ec2";
@@ -46,6 +47,12 @@ export function resourceHref(r: Resource): string {
 			r.type,
 			r.service === "costexplorer" ? r.arn : r.name,
 		);
+	if (r.service === "cognitoidp" && r.type === "user-pool")
+		return cognitoHref({
+			account: r.account,
+			region: r.region,
+			id: r.arn.split("/").at(-1),
+		});
 	if (r.service === "rds")
 		return rdsHref({
 			account: r.account,
@@ -192,6 +199,7 @@ export function ResourceTable({
 	onRefresh,
 	showService,
 	renderActions,
+	extraColumns = [],
 }: {
 	title: string;
 	resources: Resource[];
@@ -199,6 +207,7 @@ export function ResourceTable({
 	onRefresh: () => void;
 	showService?: boolean;
 	renderActions?: (resource: Resource) => ReactNode;
+	extraColumns?: TableProps.ColumnDefinition<Resource>[];
 }) {
 	const follow = useFollow();
 	const [selected, setSelected] = useState<Resource[]>([]);
@@ -209,6 +218,7 @@ export function ResourceTable({
 			r.type === selected[0]?.type,
 	);
 	const columns: TableProps.ColumnDefinition<Resource>[] = [
+		...extraColumns,
 		{
 			id: "name",
 			header: "Name",

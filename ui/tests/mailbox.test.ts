@@ -81,12 +81,12 @@ test("rich details require the matching delivery and survive missing or truncate
 		new URL(
 			mailboxPoolHref(cognito, "pool/a"),
 			"http://local",
-		).searchParams.get("name"),
+		).searchParams.get("id"),
 		"pool/a",
 	);
 });
 
-test("Cognito generic links use inventory names instead of pool IDs", () => {
+test("Cognito links open the dedicated pool page", () => {
 	const message = {
 		id: "id",
 		time: "now",
@@ -110,6 +110,6 @@ test("Cognito generic links use inventory names instead of pool IDs", () => {
 		mailboxPoolHref(message, "us-east-1_abc", resources),
 		"http://local",
 	);
-	assert.equal(href.pathname, "/services/cognitoidp/resource");
-	assert.equal(href.searchParams.get("name"), "Signups");
+	assert.equal(href.pathname, "/services/cognitoidp");
+	assert.equal(href.searchParams.get("id"), "us-east-1_abc");
 });

@@ -92,5 +92,5 @@ export function mailboxPoolHref(
 			r.region === message.region &&
 			r.arn.endsWith(`/${pool}`),
 	);
-	return `/services/cognitoidp/resource?${new URLSearchParams({ type: "user-pool", name: resource?.name ?? pool, account: message.account ?? "", region: message.region ?? "" })}`;
+	return `/services/cognitoidp?${new URLSearchParams({ id: pool, account: resource?.account ?? message.account ?? "", region: resource?.region ?? message.region ?? "" })}`;
 }

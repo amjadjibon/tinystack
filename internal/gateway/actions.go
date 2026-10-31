@@ -22,6 +22,8 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/resourcegroupstaggingapi"
 )
 
+const consoleCognito = "cognitoidp"
+
 const consoleIAM = "iam"
 
 const consoleSTS = "sts"
@@ -260,6 +262,15 @@ var consoleRDSOperations = strings.Fields(`
  AddTagsToResource RemoveTagsFromResource ListTagsForResource
 `)
 
+// Cognito exposes only operations used by the user pools console.
+var consoleCognitoOperations = strings.Fields(`
+ ListUserPools DescribeUserPool ListUsers AdminGetUser AdminCreateUser AdminConfirmSignUp
+ AdminEnableUser AdminDisableUser AdminResetUserPassword AdminSetUserPassword AdminDeleteUser
+ AdminUpdateUserAttributes AdminListGroupsForUser AdminAddUserToGroup AdminRemoveUserFromGroup
+ ListGroups CreateGroup DeleteGroup ListUsersInGroup ListUserPoolClients DescribeUserPoolClient
+ DescribeUserPoolDomain
+`)
+
 // Only the tagging writes are exposed; discovery remains on the inventory endpoint.
 var consoleResourceGroupsTaggingOperations = strings.Fields(`TagResources UntagResources`)
 
@@ -284,7 +295,7 @@ var consoleResourceDeletes = map[string]consoleResourceDelete{
 	"ssm/parameter":             {"ssm", "DeleteParameter", "Name", consoleIdentifierName},
 	"ecr/repository":            {"ecr", "DeleteRepository", "RepositoryName", consoleIdentifierName},
 	"route53/hosted-zone":       {"route53", "DeleteHostedZone", "Id", consoleIdentifierARNSuffix},
-	"cognitoidp/user-pool":      {"cognitoidp", "DeleteUserPool", "UserPoolId", consoleIdentifierARNSuffix},
+	"cognitoidp/user-pool":      {consoleCognito, "DeleteUserPool", "UserPoolId", consoleIdentifierARNSuffix},
 	"cloudformation/stack":      {"cloudformation", "DeleteStack", "StackName", consoleIdentifierARN},
 	"elasticache/cache-cluster": {"elasticache", "DeleteCacheCluster", "CacheClusterId", consoleIdentifierName},
 	"memorydb/cluster":          {"memorydb", "DeleteCluster", "ClusterName", consoleIdentifierName},
@@ -437,6 +448,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 
 	var operations []string
 	switch in.Service {
+	case consoleCognito:
+		operations = consoleCognitoOperations
 	case "resourcegroupstaggingapi":
 		operations = consoleResourceGroupsTaggingOperations
 	case consoleSTS:
