@@ -291,30 +291,34 @@ func TestColdStartDoesNotBlock(t *testing.T) {
 
 	r := New(Options{Python: slow, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 	t.Cleanup(r.Close)
+	// Under a loaded -race run, starting the probe alone can outlast the default timeout.
+	r.probeTimeout = 10 * time.Second
 	fast := &lambda.Function{
 		ARN: "fast", Name: "fast", Version: "$LATEST", Region: "us-east-1", Runtime: "nodejs22.x",
 		Handler: "app.handler", PackageType: "Zip", Revision: "one", Timeout: 2 * time.Second, MemorySize: 128,
 		Code: packageOf(t, map[string]string{"app.js": "exports.handler=async()=>1;"}),
 	}
 
-	started := make(chan struct{})
+	// The slow invocation must still be probing; if it ends first, report how.
+	ended := make(chan string, 1)
 	go func() {
-		close(started)
-		_, _ = r.Invoke(context.Background(), fn, []byte(`{}`))
+		result, err := r.Invoke(context.Background(), fn, []byte(`{}`))
+		ended <- fmt.Sprintf("error %v, payload %s, log %q", err, result.Payload, result.Log)
 	}()
 
-	<-started
-	deadline := time.Now().Add(10 * time.Second)
+	deadline := time.After(10 * time.Second)
 	for {
 		if _, err := os.Stat(marker); err == nil {
 			break
 		}
 
-		if time.Now().After(deadline) {
+		select {
+		case outcome := <-ended:
+			t.Fatalf("cold start ended before the interpreter probe: %s", outcome)
+		case <-deadline:
 			t.Fatal("cold start did not reach the interpreter probe")
+		case <-time.After(5 * time.Millisecond):
 		}
-
-		time.Sleep(5 * time.Millisecond)
 	}
 
 	begin := time.Now()

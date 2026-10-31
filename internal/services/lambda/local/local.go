@@ -55,6 +55,8 @@ type Runtime struct {
 	options Options
 	mu      sync.Mutex
 	closed  bool
+	// probeTimeout bounds the interpreter version check; a slow interpreter only loses the warning.
+	probeTimeout time.Duration
 }
 
 type pool struct {
@@ -103,7 +105,9 @@ func New(options Options) *Runtime {
 		options.Logger = slog.Default()
 	}
 
-	return &Runtime{options: options, pools: map[string]*pool{}, warned: map[string]bool{}}
+	return &Runtime{
+		options: options, pools: map[string]*pool{}, warned: map[string]bool{}, probeTimeout: 2 * time.Second,
+	}
 }
 
 func (r *Runtime) SupportsDirectories() bool { return true }
@@ -352,7 +356,7 @@ func (r *Runtime) start(ctx context.Context, fn *lambda.Function) (_ *environmen
 }
 
 func (r *Runtime) checkVersion(ctx context.Context, fn *lambda.Function, executable string, env []string) {
-	probeCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	probeCtx, cancel := context.WithTimeout(ctx, r.probeTimeout)
 	defer cancel()
 	// #nosec G204 -- executable is the configured, resolved interpreter.
 	command := exec.CommandContext(probeCtx, executable, "--version")
