@@ -28,6 +28,15 @@ provider. The console shows nothing until someone signs in. Their role's IAM pol
 action, the resource lists show only what IAM lets them list in their own account unless they are an administrator,
 and the request inspector, deliveries, reset, fault and init endpoints need an administrator.
 
+Open **Cognito** (`/services/cognitoidp`) to browse user pools in the selected account and Region,
+including estimated user counts and MFA configuration. Pool tabs manage users and groups, inspect app
+clients and their callback/logout URLs and OAuth/auth flows, and show domain status and a hosted UI link.
+Search users by username, email or status; create with a temporary password, confirm, enable/disable,
+send a password reset code, set a password, edit attributes, manage group membership or delete a named
+user with confirmation. User details include captured email/SMS codes from the mailbox. Codes are
+filtered by destination, account and Region. Client secrets are masked until revealed and can be hidden.
+The hosted UI link needs local domain routing/TLS and client OAuth query parameters; it does not configure them.
+
 Open **IAM** for account selection and dedicated user, user group, role and policy pages. Create and edit
 identities, attach or detach policies, manage group membership, edit trust policies and tags, and create,
 deactivate or delete access keys. A new access-key secret is shown once; copy it before closing the dialog.

@@ -2086,6 +2086,7 @@ Manage users and clients, authenticate locally, and issue pool-signed JWTs.
 **Execution:** Local behavior. **Selected operations:** 86.
 
 - User pools, app clients, users, groups, attributes and resource servers.
+- Dedicated console user-pool page with user lifecycle, groups, client secret reveal, domain details and captured codes.
 - Password and SRP flows, refresh tokens and pool RS256 JWTs.
 - JWKS/OpenID configuration endpoints and client-credentials OAuth tokens.
 - Selected Lambda triggers and inspectable verification/invitation messages.

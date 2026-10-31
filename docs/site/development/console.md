@@ -280,3 +280,23 @@ Extend `ui/tests/tutorials.test.ts` with definition validation, registry-versus-
 positive/negative/wrong-scope/wrong-name cases, and progress isolation/restart/reset coverage. Run `task ui:check`,
 `task ui:test`, `task build`, and `task docs:check`; add Go allowlist tests only when a new cleanup operation is
 needed. Exercise both UI and CLI paths against a local server.
+
+## Cognito user pools
+
+`/services/cognitoidp` replaces generic inventory for Cognito user pools. `ui/src/lib/cognito.ts`
+provides typed operations through `api.action` / `consoleActionFetch`, with explicit account and Region.
+`consoleCognitoOperations` permits only the 22 implemented operations used by this page; normal IAM
+checks apply to reads and writes. Lists collect every page, including Cognito's `PaginationToken` for users.
+The pool table reuses `ResourceTable`; details use Cloudscape tables, `CodeBlock` and `usePoll`.
+
+Users support creation with temporary passwords, confirmation, enable/disable, reset-code delivery,
+temporary/permanent password setting, attribute updates and group membership. User and group deletions
+require a modal naming the target. The attribute editor updates changed keys; attribute deletion is outside
+this editor. Client metadata drops `ClientSecret` before entering polling state; explicit reveal requests
+hold the secret only in component memory. Password fields clear when their modal closes or a request fails.
+Sensitive Cognito operations already redact request-inspector bodies. No new service operations are added.
+
+Recent user codes reuse the mailbox library, filtering `service=cognito-idp` by email/phone destination
+and account/Region. Users sharing a destination may see the same captured messages. Pool status is absent
+from the implemented model; domain status is displayed when available. Domain links require the user's
+existing local routing/TLS setup and OAuth client query parameters. Browser visual review is manual.
