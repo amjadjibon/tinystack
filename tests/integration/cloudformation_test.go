@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	cfn "github.com/aws/aws-sdk-go-v2/service/cloudformation"
@@ -36,7 +37,7 @@ func cfnClient(s *httptest.Server) *cfn.Client {
 func settled(ctx context.Context, t *testing.T, c *cfn.Client, name string) cfntypes.Stack {
 	t.Helper()
 	var st cfntypes.Stack
-	waitFor(t, "stack "+name+" to settle", func() bool {
+	done := func() bool {
 		out, err := c.DescribeStacks(ctx, &cfn.DescribeStacksInput{StackName: &name})
 		if err != nil {
 			t.Fatal(err)
@@ -44,7 +45,21 @@ func settled(ctx context.Context, t *testing.T, c *cfn.Client, name string) cfnt
 
 		st = out.Stacks[0]
 		return !strings.HasSuffix(string(st.StackStatus), "_IN_PROGRESS")
-	})
+	}
+
+	if _, ok := ctx.Deadline(); !ok {
+		waitFor(t, "stack "+name+" to settle", done)
+		return st
+	}
+
+	// A caller's deadline covers stacks whose resources start real containers.
+	for !done() {
+		select {
+		case <-ctx.Done():
+			t.Fatalf("timed out waiting for stack %s to settle", name)
+		case <-time.After(100 * time.Millisecond):
+		}
+	}
 
 	return st
 }
