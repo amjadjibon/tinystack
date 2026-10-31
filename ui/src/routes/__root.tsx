@@ -1,3 +1,4 @@
+import { TutorialProvider } from "#/tutorials/runtime";
 import "@cloudscape-design/global-styles/index.css";
 import { Container } from "@cloudscape-design/components";
 import { TanStackDevtools } from "@tanstack/react-devtools";
@@ -62,7 +63,9 @@ function Root() {
 		<HealthProvider>
 			<ScopeProvider key={session?.arn ?? "signed-out"}>
 				<ServiceHistoryProvider>
-					<Signed />
+					<TutorialProvider>
+						<Signed />
+					</TutorialProvider>
 				</ServiceHistoryProvider>
 			</ScopeProvider>
 		</HealthProvider>

@@ -7,6 +7,7 @@ import {
 	FileUpload,
 	FormField,
 	Header,
+	Hotspot,
 	Input,
 	KeyValuePairs,
 	Link,
@@ -29,6 +30,7 @@ import {
 	sizeLabel,
 } from "#/lib/s3";
 import { useFollow } from "#/lib/useFollow";
+import { HOTSPOT } from "#/tutorials/hotspots";
 import { S3Dialog } from "./S3Dialog";
 import { S3ObjectDetail } from "./S3ObjectDetail";
 import { S3Settings } from "./S3Settings";
@@ -471,16 +473,18 @@ function S3Objects({
 								>
 									Create folder
 								</Button>
-								<Button
-									variant="primary"
-									disabled={!enabled || loading}
-									onClick={() => {
-										setFiles([]);
-										setDialog("upload");
-									}}
-								>
-									Upload
-								</Button>
+								<Hotspot hotspotId={HOTSPOT.s3Upload}>
+									<Button
+										variant="primary"
+										disabled={!enabled || loading}
+										onClick={() => {
+											setFiles([]);
+											setDialog("upload");
+										}}
+									>
+										Upload
+									</Button>
+								</Hotspot>
 							</SpaceBetween>
 						}
 					>

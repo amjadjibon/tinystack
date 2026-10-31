@@ -23,9 +23,11 @@ import { useServiceHistory } from "#/lib/serviceHistory";
 import { consoleServiceNames, service } from "#/lib/services";
 import { useFollow } from "#/lib/useFollow";
 import { usePoll } from "#/lib/usePoll";
+import { TutorialCards } from "#/tutorials/runtime";
 
 export const Route = createFileRoute("/")({ component: Home });
 const widgetLabels = {
+	tutorials: "Get started",
 	recent: "Recently visited",
 	welcome: "Welcome to TinyStack",
 	health: "TinyStack health",
@@ -50,7 +52,9 @@ function Home() {
 		try {
 			const saved = JSON.parse(localStorage.getItem(layoutKey) ?? "null");
 			if (Array.isArray(saved))
-				setVisible(defaults.filter((id) => saved.includes(id)));
+				setVisible(
+					defaults.filter((id) => id === "tutorials" || saved.includes(id)),
+				);
 		} catch {
 			/* The default layout works without saved preferences. */
 		}
@@ -127,6 +131,7 @@ function Home() {
 					}
 				>
 					<div className="console-dashboard">
+						{visible.includes("tutorials") && <TutorialCards home />}
 						{visible.includes("recent") && (
 							<Widget
 								id="recent"

@@ -5,6 +5,7 @@ import {
 	Container,
 	CopyToClipboard,
 	Header,
+	Hotspot,
 	KeyValuePairs,
 	SpaceBetween,
 	Spinner,
@@ -13,6 +14,7 @@ import {
 import { useEffect, useState } from "react";
 import { CodeBlock } from "#/components/CodeBlock";
 import { downloadObject, type S3Scope, s3Call, sizeLabel } from "#/lib/s3";
+import { HOTSPOT } from "#/tutorials/hotspots";
 import { S3Dialog } from "./S3Dialog";
 import { S3Tags } from "./S3Settings";
 
@@ -75,18 +77,21 @@ export function S3ObjectDetail({
 				actions={
 					<SpaceBetween direction="horizontal" size="xs">
 						<Button onClick={onBack}>Back to objects</Button>
+
 						<Button
 							iconName="refresh"
 							ariaLabel="Refresh object"
 							onClick={() => setGeneration((g) => g + 1)}
 						/>
-						<Button
-							disabled={!enabled || !metadata}
-							loading={busy}
-							onClick={download}
-						>
-							Download
-						</Button>
+						<Hotspot hotspotId={HOTSPOT.s3Download}>
+							<Button
+								disabled={!enabled || !metadata}
+								loading={busy}
+								onClick={download}
+							>
+								Download
+							</Button>
+						</Hotspot>
 						<Button disabled={!enabled} onClick={() => setDialog(true)}>
 							Delete
 						</Button>

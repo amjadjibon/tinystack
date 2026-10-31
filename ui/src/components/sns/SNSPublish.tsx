@@ -4,6 +4,7 @@ import {
 	Container,
 	FormField,
 	Header,
+	Hotspot,
 	Input,
 	RadioGroup,
 	SpaceBetween,
@@ -12,6 +13,7 @@ import {
 import { useState } from "react";
 import { errorText, jsonObject } from "#/lib/consoleActions";
 import { type SNSScope, topicCall } from "#/lib/sns";
+import { HOTSPOT } from "#/tutorials/hotspots";
 
 export function SNSPublish({
 	scope,
@@ -167,14 +169,16 @@ export function SNSPublish({
 						</FormField>
 					</SpaceBetween>
 				</fieldset>
-				<Button
-					variant="primary"
-					disabled={!enabled}
-					loading={busy}
-					onClick={publish}
-				>
-					Publish message
-				</Button>
+				<Hotspot hotspotId={HOTSPOT.snsPublish}>
+					<Button
+						variant="primary"
+						disabled={!enabled}
+						loading={busy}
+						onClick={publish}
+					>
+						Publish message
+					</Button>
+				</Hotspot>
 			</SpaceBetween>
 		</Container>
 	);

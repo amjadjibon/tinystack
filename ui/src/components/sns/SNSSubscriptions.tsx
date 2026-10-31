@@ -3,6 +3,7 @@ import {
 	Box,
 	Button,
 	Header,
+	Hotspot,
 	Link,
 	Pagination,
 	SpaceBetween,
@@ -12,6 +13,7 @@ import {
 } from "@cloudscape-design/components";
 import { type SNSSubscription, snsHref, subscriptionScope } from "#/lib/sns";
 import { useFollow } from "#/lib/useFollow";
+import { HOTSPOT } from "#/tutorials/hotspots";
 
 export function SNSSubscriptions({
 	subscriptions,
@@ -49,9 +51,11 @@ export function SNSSubscriptions({
 								onClick={onRefresh}
 							/>
 							{onCreate && (
-								<Button variant="primary" onClick={onCreate}>
-									Create subscription
-								</Button>
+								<Hotspot hotspotId={HOTSPOT.snsSubscribe}>
+									<Button variant="primary" onClick={onCreate}>
+										Create subscription
+									</Button>
+								</Hotspot>
 							)}
 						</SpaceBetween>
 					}

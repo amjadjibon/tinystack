@@ -6,6 +6,7 @@ import {
 	ContentLayout,
 	Flashbar,
 	Header,
+	Hotspot,
 	Link,
 	Pagination,
 	SpaceBetween,
@@ -28,6 +29,7 @@ import { validRegion } from "#/lib/s3";
 import { useScope } from "#/lib/scope";
 import { type SNSScope, snsHref, topicSubscriptions } from "#/lib/sns";
 import { useFollow } from "#/lib/useFollow";
+import { HOTSPOT } from "#/tutorials/hotspots";
 
 export const Route = createFileRoute("/services/sns")({
 	validateSearch: (search: Record<string, unknown>) => ({
@@ -292,13 +294,15 @@ function TopicList({
 									ariaLabel="Refresh topics"
 									onClick={onRefresh}
 								/>
-								<Button
-									variant="primary"
-									disabled={!enabled}
-									onClick={onCreate}
-								>
-									Create topic
-								</Button>
+								<Hotspot hotspotId={HOTSPOT.snsCreate}>
+									<Button
+										variant="primary"
+										disabled={!enabled}
+										onClick={onCreate}
+									>
+										Create topic
+									</Button>
+								</Hotspot>
 							</SpaceBetween>
 						}
 					>

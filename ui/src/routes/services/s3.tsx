@@ -9,6 +9,7 @@ import {
 	Flashbar,
 	FormField,
 	Header,
+	Hotspot,
 	Input,
 	Link,
 	Pagination,
@@ -33,6 +34,7 @@ import {
 } from "#/lib/s3";
 import { useScope } from "#/lib/scope";
 import { useFollow } from "#/lib/useFollow";
+import { HOTSPOT } from "#/tutorials/hotspots";
 
 export const Route = createFileRoute("/services/s3")({
 	validateSearch: (search: Record<string, unknown>) => ({
@@ -324,17 +326,19 @@ function BucketList({
 								>
 									Delete
 								</Button>
-								<Button
-									variant="primary"
-									disabled={!enabled}
-									onClick={() => {
-										setName("");
-										setVersioning(false);
-										setDialog("create");
-									}}
-								>
-									Create bucket
-								</Button>
+								<Hotspot hotspotId={HOTSPOT.s3Create}>
+									<Button
+										variant="primary"
+										disabled={!enabled}
+										onClick={() => {
+											setName("");
+											setVersioning(false);
+											setDialog("create");
+										}}
+									>
+										Create bucket
+									</Button>
+								</Hotspot>
 							</SpaceBetween>
 						}
 					>

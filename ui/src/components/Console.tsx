@@ -34,6 +34,11 @@ import {
 	themes,
 } from "#/lib/theme";
 import { useFollow } from "#/lib/useFollow";
+import {
+	TutorialAnnotations,
+	TutorialDrawer,
+	useTutorials,
+} from "#/tutorials/runtime";
 import { ConsoleSessionDialog } from "./ConsoleSession";
 import { ServiceIcon } from "./ServiceIcon";
 
@@ -43,6 +48,7 @@ const headerID = "console-header";
 // a service search, account/Region menus, the display settings, and the
 // favorites bar of starred services.
 export function ConsoleHeader() {
+	const tutorials = useTutorials();
 	const navigate = useNavigate();
 	const follow = useFollow();
 	const { data } = useHealth();
@@ -185,6 +191,12 @@ export function ConsoleHeader() {
 					</div>
 				}
 				utilities={[
+					{
+						type: "button",
+						text: "Tutorials",
+						iconUrl: "/tutorials.svg",
+						onClick: () => tutorials.setOpen(true),
+					},
 					...(scope.capabilities.data?.requires_signature || scope.session
 						? [
 								{
@@ -387,6 +399,7 @@ function navigation(services: string[]): SideNavigationProps.Item[] {
 	return [
 		{ type: "link", text: "Console home", href: "/" },
 		{ type: "link", text: "All services", href: "/services" },
+		{ type: "link", text: "Tutorials", href: "/tutorials" },
 		{ type: "link", text: "All resources", href: "/resources" },
 		{ type: "link", text: "CloudShell", href: "/cloudshell" },
 		{ type: "divider" },
@@ -444,6 +457,7 @@ export function ConsoleLayout({
 	const follow = useFollow();
 	const { pathname } = useLocation();
 	const { data, error } = useHealth();
+	const tutorials = useTutorials();
 	const [navigationOpen, setNavigationOpen] = useState(true);
 	const [splitPanelPreferences, setSplitPanelPreferences] =
 		useState<AppLayoutProps.SplitPanelPreferences>({
@@ -451,62 +465,66 @@ export function ConsoleLayout({
 		});
 
 	return (
-		<AppLayout
-			headerSelector={`#${headerID}`}
-			contentType={contentType}
-			ariaLabels={{
-				navigation: "Side navigation",
-				navigationToggle: "Open side navigation",
-				navigationClose: "Close side navigation",
-			}}
-			maxContentWidth={Number.MAX_VALUE}
-			toolsHide
-			navigationOpen={navigationOpen}
-			onNavigationChange={({ detail }) => setNavigationOpen(detail.open)}
-			navigation={
-				<SideNavigation
-					header={navigationHeader ?? { href: "/", text: "Console home" }}
-					activeHref={activeHref ?? pathname}
-					items={
-						navigationItems ??
-						navigation(
-							contentType === "dashboard" ? [] : (data?.services ?? []),
-						)
-					}
-					onFollow={follow}
-				/>
-			}
-			breadcrumbs={
-				contentType !== "dashboard" && (
-					<BreadcrumbGroup
-						items={[{ text: "TinyStack", href: "/" }, ...breadcrumbs]}
+		<TutorialAnnotations>
+			<AppLayout
+				headerSelector={`#${headerID}`}
+				contentType={contentType}
+				ariaLabels={{
+					navigation: "Side navigation",
+					navigationToggle: "Open side navigation",
+					navigationClose: "Close side navigation",
+				}}
+				maxContentWidth={Number.MAX_VALUE}
+				tools={<TutorialDrawer />}
+				toolsOpen={tutorials.open}
+				onToolsChange={({ detail }) => tutorials.setOpen(detail.open)}
+				navigationOpen={navigationOpen}
+				onNavigationChange={({ detail }) => setNavigationOpen(detail.open)}
+				navigation={
+					<SideNavigation
+						header={navigationHeader ?? { href: "/", text: "Console home" }}
+						activeHref={activeHref ?? pathname}
+						items={
+							navigationItems ??
+							navigation(
+								contentType === "dashboard" ? [] : (data?.services ?? []),
+							)
+						}
 						onFollow={follow}
-						ariaLabel="Breadcrumbs"
 					/>
-				)
-			}
-			notifications={
-				error && (
-					<Flashbar
-						items={[
-							{
-								type: "error",
-								header: "Cannot reach TinyStack",
-								content: `${error}. Start it with ./bin/tinystack start, or set TINYSTACK_URL for the dev server.`,
-								id: "health",
-							},
-						]}
-					/>
-				)
-			}
-			content={content}
-			splitPanel={splitPanel}
-			splitPanelOpen={splitPanelOpen}
-			onSplitPanelToggle={({ detail }) => onSplitPanelToggle?.(detail.open)}
-			splitPanelPreferences={splitPanelPreferences}
-			onSplitPanelPreferencesChange={({ detail }) =>
-				setSplitPanelPreferences(detail)
-			}
-		/>
+				}
+				breadcrumbs={
+					contentType !== "dashboard" && (
+						<BreadcrumbGroup
+							items={[{ text: "TinyStack", href: "/" }, ...breadcrumbs]}
+							onFollow={follow}
+							ariaLabel="Breadcrumbs"
+						/>
+					)
+				}
+				notifications={
+					error && (
+						<Flashbar
+							items={[
+								{
+									type: "error",
+									header: "Cannot reach TinyStack",
+									content: `${error}. Start it with ./bin/tinystack start, or set TINYSTACK_URL for the dev server.`,
+									id: "health",
+								},
+							]}
+						/>
+					)
+				}
+				content={content}
+				splitPanel={splitPanel}
+				splitPanelOpen={splitPanelOpen}
+				onSplitPanelToggle={({ detail }) => onSplitPanelToggle?.(detail.open)}
+				splitPanelPreferences={splitPanelPreferences}
+				onSplitPanelPreferencesChange={({ detail }) =>
+					setSplitPanelPreferences(detail)
+				}
+			/>
+		</TutorialAnnotations>
 	);
 }

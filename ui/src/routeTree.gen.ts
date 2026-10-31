@@ -17,6 +17,7 @@ import { Route as MailboxRouteImport } from './routes/mailbox'
 import { Route as MetricsRouteImport } from './routes/metrics'
 import { Route as RequestsRouteImport } from './routes/requests'
 import { Route as ResourcesRouteImport } from './routes/resources'
+import { Route as TutorialsRouteImport } from './routes/tutorials'
 import { Route as ServicesIndexRouteImport } from './routes/services/index'
 import { Route as ServicesApigatewayRouteImport } from './routes/services/apigateway'
 import { Route as ServicesApigatewayv2RouteImport } from './routes/services/apigatewayv2'
@@ -78,6 +79,11 @@ const RequestsRoute = RequestsRouteImport.update({
 const ResourcesRoute = ResourcesRouteImport.update({
   id: '/resources',
   path: '/resources',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TutorialsRoute = TutorialsRouteImport.update({
+  id: '/tutorials',
+  path: '/tutorials',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesIndexRoute = ServicesIndexRouteImport.update({
@@ -201,6 +207,7 @@ export interface FileRoutesByFullPath {
   '/metrics': typeof MetricsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
+  '/tutorials': typeof TutorialsRoute
   '/services/apigateway': typeof ServicesApigatewayRoute
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
   '/services/budgets': typeof ServicesBudgetsRoute
@@ -233,6 +240,7 @@ export interface FileRoutesByTo {
   '/metrics': typeof MetricsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
+  '/tutorials': typeof TutorialsRoute
   '/services/apigateway': typeof ServicesApigatewayRoute
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
   '/services/budgets': typeof ServicesBudgetsRoute
@@ -266,6 +274,7 @@ export interface FileRoutesById {
   '/metrics': typeof MetricsRoute
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
+  '/tutorials': typeof TutorialsRoute
   '/services/apigateway': typeof ServicesApigatewayRoute
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
   '/services/budgets': typeof ServicesBudgetsRoute
@@ -300,6 +309,7 @@ export interface FileRouteTypes {
     | '/metrics'
     | '/requests'
     | '/resources'
+    | '/tutorials'
     | '/services/apigateway'
     | '/services/apigatewayv2'
     | '/services/budgets'
@@ -332,6 +342,7 @@ export interface FileRouteTypes {
     | '/metrics'
     | '/requests'
     | '/resources'
+    | '/tutorials'
     | '/services/apigateway'
     | '/services/apigatewayv2'
     | '/services/budgets'
@@ -364,6 +375,7 @@ export interface FileRouteTypes {
     | '/metrics'
     | '/requests'
     | '/resources'
+    | '/tutorials'
     | '/services/apigateway'
     | '/services/apigatewayv2'
     | '/services/budgets'
@@ -397,6 +409,7 @@ export interface RootRouteChildren {
   MetricsRoute: typeof MetricsRoute
   RequestsRoute: typeof RequestsRoute
   ResourcesRoute: typeof ResourcesRoute
+  TutorialsRoute: typeof TutorialsRoute
   ServicesApigatewayRoute: typeof ServicesApigatewayRoute
   ServicesApigatewayv2Route: typeof ServicesApigatewayv2Route
   ServicesBudgetsRoute: typeof ServicesBudgetsRoute
@@ -477,6 +490,13 @@ declare module '@tanstack/react-router' {
       path: '/resources'
       fullPath: '/resources'
       preLoaderRoute: typeof ResourcesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tutorials': {
+      id: '/tutorials'
+      path: '/tutorials'
+      fullPath: '/tutorials'
+      preLoaderRoute: typeof TutorialsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services/': {
@@ -645,6 +665,7 @@ const rootRouteChildren: RootRouteChildren = {
   MetricsRoute: MetricsRoute,
   RequestsRoute: RequestsRoute,
   ResourcesRoute: ResourcesRoute,
+  TutorialsRoute: TutorialsRoute,
   ServicesApigatewayRoute: ServicesApigatewayRoute,
   ServicesApigatewayv2Route: ServicesApigatewayv2Route,
   ServicesBudgetsRoute: ServicesBudgetsRoute,

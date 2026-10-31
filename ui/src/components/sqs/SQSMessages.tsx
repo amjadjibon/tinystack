@@ -6,6 +6,7 @@ import {
 	CopyToClipboard,
 	FormField,
 	Header,
+	Hotspot,
 	Input,
 	KeyValuePairs,
 	Link,
@@ -25,6 +26,7 @@ import {
 	type SQSMessage,
 	type SQSScope,
 } from "#/lib/sqs";
+import { HOTSPOT } from "#/tutorials/hotspots";
 import { SQSDialog } from "./SQSDialog";
 
 export function SQSMessages({
@@ -250,14 +252,16 @@ export function SQSMessages({
 							/>
 						</FormField>
 					</SpaceBetween>
-					<Button
-						variant="primary"
-						disabled={!enabled || !!busy}
-						loading={busy === "receive"}
-						onClick={receive}
-					>
-						Poll for messages
-					</Button>
+					<Hotspot hotspotId={HOTSPOT.sqsReceive}>
+						<Button
+							variant="primary"
+							disabled={!enabled || !!busy}
+							loading={busy === "receive"}
+							onClick={receive}
+						>
+							Poll for messages
+						</Button>
+					</Hotspot>
 				</SpaceBetween>
 			</Container>
 			<Table

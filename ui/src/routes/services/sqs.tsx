@@ -6,6 +6,7 @@ import {
 	ContentLayout,
 	Flashbar,
 	Header,
+	Hotspot,
 	Link,
 	Pagination,
 	SpaceBetween,
@@ -26,6 +27,7 @@ import { validRegion } from "#/lib/s3";
 import { useScope } from "#/lib/scope";
 import { type SQSScope, sqsHref } from "#/lib/sqs";
 import { useFollow } from "#/lib/useFollow";
+import { HOTSPOT } from "#/tutorials/hotspots";
 
 export const Route = createFileRoute("/services/sqs")({
 	validateSearch: (search: Record<string, unknown>) => ({
@@ -239,13 +241,15 @@ function QueueList({
 								>
 									View details
 								</Button>
-								<Button
-									variant="primary"
-									disabled={!enabled}
-									onClick={onCreate}
-								>
-									Create queue
-								</Button>
+								<Hotspot hotspotId={HOTSPOT.sqsCreate}>
+									<Button
+										variant="primary"
+										disabled={!enabled}
+										onClick={onCreate}
+									>
+										Create queue
+									</Button>
+								</Hotspot>
 							</SpaceBetween>
 						}
 					>
