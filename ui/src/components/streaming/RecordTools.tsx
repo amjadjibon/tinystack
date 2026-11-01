@@ -37,7 +37,9 @@ export function RecordTools({
 		[data, setData] = useState(""),
 		[partition, setPartition] = useState("console"),
 		[result, setResult] = useState(""),
-		[reveal, setReveal] = useState(false);
+		[reveal, setReveal] = useState(false),
+		// lastShard points the viewer at the shard that received the last put record.
+		[lastShard, setLastShard] = useState("");
 	return (
 		<SpaceBetween size="m">
 			<Container
@@ -94,6 +96,8 @@ export function RecordTools({
 											: { Record: { Data: encoded } },
 									);
 									setResult(JSON.stringify(out, null, 2));
+									if (typeof out.ShardId === "string")
+										setLastShard(out.ShardId);
 								},
 							},
 						];
@@ -133,9 +137,10 @@ export function RecordTools({
 			)}
 			{service === "kinesis" && (
 				<RecordViewer
-					key={shards.map((s) => s.ShardId).join("/")}
+					key={`${shards.map((s) => s.ShardId).join("/")}:${lastShard}`}
 					call={call}
 					shards={shards}
+					initialShard={lastShard}
 					enabled={enabled}
 				/>
 			)}
@@ -151,13 +156,15 @@ type RecordEntry = {
 function RecordViewer({
 	call,
 	shards,
+	initialShard,
 	enabled,
 }: {
 	call: StreamCall;
 	shards: Shard[];
+	initialShard: string;
 	enabled: boolean;
 }) {
-	const [shard, setShard] = useState(shards[0]?.ShardId ?? ""),
+	const [shard, setShard] = useState(initialShard || shards[0]?.ShardId || ""),
 		[start, setStart] = useState("TRIM_HORIZON"),
 		[iterator, setIterator] = useState(""),
 		[records, setRecords] = useState<RecordEntry[]>([]),

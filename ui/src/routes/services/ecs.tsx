@@ -16,6 +16,7 @@ import {
 	Field,
 	Rows,
 } from "#/components/containers/Controls";
+import { arnTail } from "#/lib/containerHelpers";
 import { type ContainerScope, containerPages } from "#/lib/ecr";
 import {
 	type Cluster,
@@ -93,6 +94,7 @@ function Workspace({
 			{clusters.error && <Alert type="error">{clusters.error}</Alert>}
 			<Rows
 				title="Clusters"
+				emptyText="Choose Create cluster to get started."
 				items={clusters.data ?? []}
 				loading={clusters.loading}
 				actions={
@@ -154,7 +156,7 @@ function Workspace({
 				<ActionDialog
 					title={dialog}
 					submit={dialog}
-					confirmation={dialog === "Delete cluster" ? name : undefined}
+					confirmation={dialog === "Delete cluster" ? arnTail(name) : undefined}
 					onClose={() => setDialog("")}
 					onSaved={() => {
 						setDialog("");
@@ -259,6 +261,7 @@ function DefinitionList({
 			)}
 			<Rows
 				title="Task definition revisions"
+				emptyText="Choose Register task definition to add a revision."
 				items={poll.data ?? []}
 				actions={
 					<Buttons>
@@ -326,7 +329,7 @@ function DefinitionList({
 					title={dialog}
 					submit={dialog === "View task definition" ? "Close" : dialog}
 					confirmation={
-						dialog === "Deregister task definition" ? arn : undefined
+						dialog === "Deregister task definition" ? arnTail(arn) : undefined
 					}
 					onClose={() => setDialog("")}
 					onSaved={() => {
@@ -447,6 +450,7 @@ function ClusterDetails({
 								{services.error && <Alert type="error">{services.error}</Alert>}
 								<Rows
 									title="Services"
+									emptyText="Choose Create service to run a task definition as a service."
 									items={services.data ?? []}
 									actions={
 										<Buttons>
@@ -700,7 +704,7 @@ function Tasks({
 				<ActionDialog
 					title="Stop task"
 					submit="Stop task"
-					confirmation={task}
+					confirmation={arnTail(task)}
 					onClose={() => setTask("")}
 					onSaved={() => {
 						setTask("");

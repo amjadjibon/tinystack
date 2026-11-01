@@ -17,6 +17,7 @@ import {
 	Field,
 	Rows,
 } from "#/components/containers/Controls";
+import { pretty } from "#/lib/api";
 import {
 	type ContainerScope,
 	containerPages,
@@ -83,6 +84,7 @@ function Workspace({
 			{repos.error && <Alert type="error">{repos.error}</Alert>}
 			<Rows
 				title="Repositories"
+				emptyText="Choose Create repository to get started."
 				items={repos.data ?? []}
 				loading={repos.loading}
 				actions={
@@ -169,7 +171,7 @@ function Workspace({
 			{dialog && (
 				<ActionDialog
 					title={dialog}
-					submit={dialog}
+					submit={dialog === "Edit repository" ? "Save changes" : dialog}
 					confirmation={dialog === "Delete repository" ? selected : undefined}
 					onClose={() => setDialog("")}
 					onSaved={changed}
@@ -452,13 +454,17 @@ function Policy({
 			)}
 			{poll.error && <Alert type="error">{poll.error}</Alert>}
 			<BoxCommands
-				text={String(poll.data?.[key] ?? "No policy. Choose Edit to add one.")}
+				text={
+					poll.data?.[key]
+						? pretty(String(poll.data[key]))
+						: "No policy. Choose Edit to add one."
+				}
 			/>
 			<Buttons>
 				<Action
 					disabled={!poll.data || !!poll.error}
 					onClick={() => {
-						setText(String(poll.data?.[key] ?? "{}"));
+						setText(pretty(String(poll.data?.[key] ?? "{}")));
 						setDialog("Edit");
 					}}
 				>
@@ -554,7 +560,6 @@ function Tags({ scope, repo }: { scope: ContainerScope; repo: Repository }) {
 			{edit && (
 				<ActionDialog
 					title="Edit tags"
-					confirmation={repo.RepositoryName}
 					onClose={() => setEdit(false)}
 					onSaved={() => {
 						setEdit(false);

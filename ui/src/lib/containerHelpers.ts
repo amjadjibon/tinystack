@@ -84,3 +84,9 @@ export function desiredCount(value: string, min = 0) {
 		throw new Error(`Enter a whole number of at least ${min}.`);
 	return n;
 }
+
+// arnTail returns the last path segment of an ECS ARN (cluster name, task ID or family:revision), short enough to
+// type as a confirmation.
+export function arnTail(arn: string) {
+	return arn.split("/").at(-1) ?? arn;
+}

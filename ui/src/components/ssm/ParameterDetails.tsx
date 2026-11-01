@@ -260,7 +260,6 @@ export function ParameterDetails({
 			{labelVersion && (
 				<ActionDialog
 					title={`Edit labels for version ${labelVersion.Version}`}
-					confirmation={scope.parameter}
 					onClose={() => setLabelVersion(undefined)}
 					onSaved={() => {
 						setLabelVersion(undefined);

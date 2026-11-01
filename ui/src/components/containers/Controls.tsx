@@ -110,14 +110,15 @@ export function Rows<T>({
 	columns,
 	actions,
 	loading = false,
-	emptyText = "Use the create or register action to get started.",
+	emptyText,
 }: {
 	title: string;
 	items: T[];
 	columns: { id: string; header: string; cell: (row: T) => ReactNode }[];
 	actions?: ReactNode;
 	loading?: boolean;
-	emptyText?: string;
+	// emptyText tells the reader how to add the first item, naming the action that does it.
+	emptyText: string;
 }) {
 	const collection = useCollection(items, {
 		filtering: {
