@@ -334,7 +334,9 @@ function KMSDetails({
 								<pre
 									style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
 								>
-									{data?.policy.Policy ?? "Policy is unavailable."}
+									{data
+										? prettyPolicy(data.policy.Policy)
+										: "Policy is unavailable."}
 								</pre>
 							</Container>
 						),
@@ -482,7 +484,7 @@ function KMSDetails({
 					action={action}
 					alias={alias}
 					keyData={key}
-					policy={data?.policy.Policy}
+					policy={data && prettyPolicy(data.policy.Policy)}
 					tagValue={data?.tags.find((t) => t.TagKey === alias)?.TagValue}
 					onClose={() => setAction("")}
 					onSaved={changed}
@@ -490,6 +492,14 @@ function KMSDetails({
 			)}
 		</SpaceBetween>
 	);
+}
+// prettyPolicy indents a policy document for reading and editing; text that is not JSON is shown as is.
+function prettyPolicy(policy: string) {
+	try {
+		return JSON.stringify(JSON.parse(policy), null, 2);
+	} catch {
+		return policy;
+	}
 }
 function Choice({
 	label,
@@ -542,20 +552,19 @@ function KMSDialog({
 	const create = action === "Create key",
 		aliasAction = action.endsWith("alias"),
 		tagAction = action.endsWith("tag");
+	// Typed confirmation guards actions that destroy data or can lock callers out; reversible ones skip it.
 	const destructive = [
-		"Disable key",
 		"Schedule key deletion",
 		"Delete alias",
-		"Remove tag",
-		"Disable rotation",
 		"Edit key policy",
-		"Update alias",
 	].includes(action);
 	return (
 		<ActionDialog
 			title={action}
-			submit={action}
-			confirmation={destructive ? alias || scope.key : undefined}
+			submit={action.startsWith("Edit ") ? "Save changes" : action}
+			confirmation={
+				destructive ? alias || keyData?.KeyId || scope.key : undefined
+			}
 			onClose={onClose}
 			onSaved={onSaved}
 			plan={async () => {
@@ -794,7 +803,8 @@ function KMSTester({
 					values={["Encrypt", "Decrypt"]}
 					onChange={(s) => {
 						setMode(s);
-						setText("");
+						// Carry the last output over so an encrypt can be decrypted straight back.
+						setText(result);
 						setResult("");
 						setReveal(false);
 					}}

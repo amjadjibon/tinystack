@@ -40,7 +40,8 @@ export async function kmsPages<T>(
 	do {
 		const out = await kmsCall<Record<string, unknown>>(s, operation, {
 			...input,
-			Limit: 100,
+			// 50 is the largest page every KMS list accepts (ListResourceTags caps at 50).
+			Limit: 50,
 			...(marker ? { Marker: marker } : {}),
 		});
 		items.push(...((out[field] as T[] | undefined) ?? []));
