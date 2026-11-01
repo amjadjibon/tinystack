@@ -5,6 +5,7 @@ export type ServiceInfo = {
 	title: string;
 	category: string;
 	icon?: string;
+	href?: string;
 };
 
 const machineLearning = "Machine Learning";
@@ -439,7 +440,12 @@ const catalog: Record<string, ServiceInfo> = {
 		category: integration,
 		icon: "eventbridge",
 	},
-	firehose: { title: "Data Firehose", category: analytics, icon: "firehose" },
+	firehose: {
+		title: "Data Firehose",
+		category: analytics,
+		icon: "firehose",
+		href: "/services/firehose",
+	},
 	glue: { title: "Glue Data Catalog", category: analytics, icon: "glue" },
 	iam: { title: "IAM", category: security, icon: "iam" },
 	iot: { title: "IoT Core", category: iot, icon: "iot" },
@@ -452,6 +458,7 @@ const catalog: Record<string, ServiceInfo> = {
 	iotwireless: { title: "IoT Wireless", category: iot, icon: "iotwireless" },
 	kinesis: {
 		title: "Kinesis Data Streams",
+		href: "/services/kinesis",
 		category: analytics,
 		icon: "kinesis",
 	},

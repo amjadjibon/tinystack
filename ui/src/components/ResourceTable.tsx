@@ -33,6 +33,7 @@ import { secretHref } from "#/lib/secretsmanager";
 import { sfnHref } from "#/lib/sfn";
 import { snsHref } from "#/lib/sns";
 import { sqsHref } from "#/lib/sqs";
+import { streamHref } from "#/lib/streamingHelpers";
 import { useFollow } from "#/lib/useFollow";
 import { EmptyState } from "./EmptyState";
 import { ServiceLabel } from "./ServiceIcon";
@@ -54,6 +55,12 @@ export function resourceHref(r: Resource): string {
 			account: r.account,
 			region: r.region,
 			id: r.arn.split("/").at(-1),
+		});
+	if (r.service === "kinesis" || r.service === "firehose")
+		return streamHref(r.service, {
+			account: r.account,
+			region: r.region,
+			stream: r.name,
 		});
 	if (r.service === "rds")
 		return rdsHref({

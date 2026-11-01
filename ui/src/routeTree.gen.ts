@@ -30,7 +30,9 @@ import { Route as ServicesCostexplorerRouteImport } from './routes/services/cost
 import { Route as ServicesDynamodbRouteImport } from './routes/services/dynamodb'
 import { Route as ServicesEc2RouteImport } from './routes/services/ec2'
 import { Route as ServicesEventbridgeRouteImport } from './routes/services/eventbridge'
+import { Route as ServicesFirehoseRouteImport } from './routes/services/firehose'
 import { Route as ServicesIamRouteImport } from './routes/services/iam'
+import { Route as ServicesKinesisRouteImport } from './routes/services/kinesis'
 import { Route as ServicesKmsRouteImport } from './routes/services/kms'
 import { Route as ServicesLambdaRouteImport } from './routes/services/lambda'
 import { Route as ServicesLogsRouteImport } from './routes/services/logs'
@@ -150,9 +152,19 @@ const ServicesEventbridgeRoute = ServicesEventbridgeRouteImport.update({
   path: '/services/eventbridge',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesFirehoseRoute = ServicesFirehoseRouteImport.update({
+  id: '/services/firehose',
+  path: '/services/firehose',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesIamRoute = ServicesIamRouteImport.update({
   id: '/services/iam',
   path: '/services/iam',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesKinesisRoute = ServicesKinesisRouteImport.update({
+  id: '/services/kinesis',
+  path: '/services/kinesis',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesKmsRoute = ServicesKmsRouteImport.update({
@@ -237,7 +249,9 @@ export interface FileRoutesByFullPath {
   '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/ec2': typeof ServicesEc2Route
   '/services/eventbridge': typeof ServicesEventbridgeRoute
+  '/services/firehose': typeof ServicesFirehoseRoute
   '/services/iam': typeof ServicesIamRoute
+  '/services/kinesis': typeof ServicesKinesisRoute
   '/services/kms': typeof ServicesKmsRoute
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
@@ -273,7 +287,9 @@ export interface FileRoutesByTo {
   '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/ec2': typeof ServicesEc2Route
   '/services/eventbridge': typeof ServicesEventbridgeRoute
+  '/services/firehose': typeof ServicesFirehoseRoute
   '/services/iam': typeof ServicesIamRoute
+  '/services/kinesis': typeof ServicesKinesisRoute
   '/services/kms': typeof ServicesKmsRoute
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
@@ -310,7 +326,9 @@ export interface FileRoutesById {
   '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/ec2': typeof ServicesEc2Route
   '/services/eventbridge': typeof ServicesEventbridgeRoute
+  '/services/firehose': typeof ServicesFirehoseRoute
   '/services/iam': typeof ServicesIamRoute
+  '/services/kinesis': typeof ServicesKinesisRoute
   '/services/kms': typeof ServicesKmsRoute
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
@@ -348,7 +366,9 @@ export interface FileRouteTypes {
     | '/services/dynamodb'
     | '/services/ec2'
     | '/services/eventbridge'
+    | '/services/firehose'
     | '/services/iam'
+    | '/services/kinesis'
     | '/services/kms'
     | '/services/lambda'
     | '/services/logs'
@@ -384,7 +404,9 @@ export interface FileRouteTypes {
     | '/services/dynamodb'
     | '/services/ec2'
     | '/services/eventbridge'
+    | '/services/firehose'
     | '/services/iam'
+    | '/services/kinesis'
     | '/services/kms'
     | '/services/lambda'
     | '/services/logs'
@@ -420,7 +442,9 @@ export interface FileRouteTypes {
     | '/services/dynamodb'
     | '/services/ec2'
     | '/services/eventbridge'
+    | '/services/firehose'
     | '/services/iam'
+    | '/services/kinesis'
     | '/services/kms'
     | '/services/lambda'
     | '/services/logs'
@@ -457,7 +481,9 @@ export interface RootRouteChildren {
   ServicesDynamodbRoute: typeof ServicesDynamodbRoute
   ServicesEc2Route: typeof ServicesEc2Route
   ServicesEventbridgeRoute: typeof ServicesEventbridgeRoute
+  ServicesFirehoseRoute: typeof ServicesFirehoseRoute
   ServicesIamRoute: typeof ServicesIamRoute
+  ServicesKinesisRoute: typeof ServicesKinesisRoute
   ServicesKmsRoute: typeof ServicesKmsRoute
   ServicesLambdaRoute: typeof ServicesLambdaRoute
   ServicesLogsRoute: typeof ServicesLogsRoute
@@ -622,11 +648,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesEventbridgeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/firehose': {
+      id: '/services/firehose'
+      path: '/services/firehose'
+      fullPath: '/services/firehose'
+      preLoaderRoute: typeof ServicesFirehoseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/iam': {
       id: '/services/iam'
       path: '/services/iam'
       fullPath: '/services/iam'
       preLoaderRoute: typeof ServicesIamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/kinesis': {
+      id: '/services/kinesis'
+      path: '/services/kinesis'
+      fullPath: '/services/kinesis'
+      preLoaderRoute: typeof ServicesKinesisRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services/kms': {
@@ -738,7 +778,9 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesDynamodbRoute: ServicesDynamodbRoute,
   ServicesEc2Route: ServicesEc2Route,
   ServicesEventbridgeRoute: ServicesEventbridgeRoute,
+  ServicesFirehoseRoute: ServicesFirehoseRoute,
   ServicesIamRoute: ServicesIamRoute,
+  ServicesKinesisRoute: ServicesKinesisRoute,
   ServicesKmsRoute: ServicesKmsRoute,
   ServicesLambdaRoute: ServicesLambdaRoute,
   ServicesLogsRoute: ServicesLogsRoute,

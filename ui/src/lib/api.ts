@@ -159,6 +159,8 @@ export const api = {
 		ec2: boolean;
 		kms: boolean;
 		secretsmanager: boolean;
+		kinesis: boolean;
+		firehose: boolean;
 		rds: boolean;
 		cloudformation: boolean;
 		budgets: boolean;

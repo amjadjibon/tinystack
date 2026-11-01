@@ -233,6 +233,7 @@ Buffer direct or Kinesis records and deliver them to S3.
 - Kinesis source polling and Lambda processing through the shared caller.
 - With authorization on, S3 writes and Lambda processor calls assume the destination's role, whose trust policy must allow firehose.amazonaws.com for the delivery stream, and are decided by the role's policies; a denied processor call fails its records with Lambda.InvokeAccessDenied and a denied write is recorded as a failed delivery.
 - PutRecord and PutRecordBatch resolve delivery stream ARNs and tags for resource-scoped identity and delivery-role policies.
+- Dedicated console for DirectPut or Kinesis-source delivery stream creation, S3 destination updates, buffering hints, tags and record testing.
 
 [Supported operations](firehose.md#supported-operations) · [Limitations](firehose.md#limitations-and-future-work)
 
@@ -273,6 +274,7 @@ Write and read ordered shard records and feed local Lambda or Firehose consumers
 - Lambda mappings and Firehose sources read records in-process.
 - AWS/Kinesis metrics with dimension StreamName: IncomingRecords and IncomingBytes (PutRecord, PutRecords and DynamoDB streaming destinations) and GetRecords.Records.
 - Stream and consumer resource policies with owner-only management, cross-account IAM and resource grants, and explicit-deny enforcement.
+- Dedicated console for stream creation, shard scaling, retention, encryption settings, enhanced monitoring, tags, record puts and decoded shard record browsing.
 
 [Supported operations](kinesis.md#supported-operations) · [Limitations](kinesis.md#limitations-and-future-work)
 

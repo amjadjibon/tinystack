@@ -79,7 +79,10 @@ export function ServiceCatalog({
 								>
 									<FavoriteButton name={name} />
 									<ServiceIcon name={name} />
-									<Link href={`/services/${name}`} onFollow={follow}>
+									<Link
+										href={service(name).href ?? `/services/${name}`}
+										onFollow={follow}
+									>
 										{service(name).title}
 									</Link>
 									{counts.get(name) ? (

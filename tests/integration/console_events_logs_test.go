@@ -282,50 +282,22 @@ func TestConsoleCloudWatchLogsLifecyclePagingAndInsights(t *testing.T) {
 
 func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 	srv := server(t)
+	// listOperations maps each regional console service to a read operation it allows.
+	listOperations := map[string]string{
+		"eventbridge": "ListEventBuses", "logs": "DescribeLogGroups", "cloudwatch": "ListMetrics",
+		"apigateway": "GetRestApis", "apigatewayv2": "GetApis", "sfn": "ListStateMachines", "ec2": "DescribeVpcs",
+		"secretsmanager": "ListSecrets", "rds": "DescribeDBInstances", "cloudformation": "ListStacks",
+		"kms": "ListKeys", "kinesis": "ListStreams", "firehose": "ListDeliveryStreams",
+	}
 	var capabilities map[string]any
-	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
-		capabilities["eventbridge"] != true ||
-		capabilities["logs"] != true || capabilities["cloudwatch"] != true ||
-		capabilities["apigateway"] != true || capabilities["apigatewayv2"] != true || capabilities["sfn"] != true ||
-		capabilities["ec2"] != true || capabilities["secretsmanager"] != true || capabilities["rds"] != true ||
-		capabilities["cloudformation"] != true || capabilities["kms"] != true {
+	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK {
 		t.Fatal(capabilities)
 	}
-	for _, service := range []string{
-		"eventbridge", "logs", "cloudwatch", "apigateway", "apigatewayv2", "sfn", "ec2", "secretsmanager", "rds",
-		"cloudformation", "kms",
-	} {
-		operation := "ListEventBuses"
-		if service == "kms" {
-			operation = "ListKeys"
+	for service, operation := range listOperations {
+		if capabilities[service] != true {
+			t.Fatal(service, capabilities)
 		}
-		if service == "rds" {
-			operation = "DescribeDBInstances"
-		}
-		if service == "secretsmanager" {
-			operation = "ListSecrets"
-		}
-		if service == "cloudformation" {
-			operation = "ListStacks"
-		}
-		if service == "logs" {
-			operation = "DescribeLogGroups"
-		}
-		if service == "cloudwatch" {
-			operation = "ListMetrics"
-		}
-		if service == "apigateway" {
-			operation = "GetRestApis"
-		}
-		if service == "apigatewayv2" {
-			operation = "GetApis"
-		}
-		if service == "ec2" {
-			operation = "DescribeVpcs"
-		}
-		if service == "sfn" {
-			operation = "ListStateMachines"
-		}
+
 		for _, region := range []string{"", "../us-east-1"} {
 			consoleResponse(
 				t,
@@ -365,6 +337,8 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		{"rds", "rds", "DescribeDBInstances"},
 		{"cloudformation", "cloudformation", "ListStacks"},
 		{"kms", "kms", "ListKeys"},
+		{"kinesis", "kinesis", "ListStreams"},
+		{"firehose", "firehose", "ListDeliveryStreams"},
 	} {
 		for _, mode := range []string{"unsigned", "wrong-service", "wrong-region", "wrong-account", "valid"} {
 			account, region, signing := "111111111111", "us-east-1", tc.signing
