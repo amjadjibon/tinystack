@@ -84,7 +84,13 @@ export function RDSOperationDialog({
 							</Checkbox>
 						) : field.options ? (
 							<Select
-								selectedOption={{ value: String(values[field.key]) }}
+								ariaLabel={field.label}
+								placeholder={`Choose ${field.label.toLowerCase()}`}
+								selectedOption={
+									values[field.key]
+										? { value: String(values[field.key]) }
+										: null
+								}
 								options={field.options.map((value) => ({
 									value,
 									label: value,
