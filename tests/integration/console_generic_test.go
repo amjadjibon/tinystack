@@ -169,10 +169,21 @@ func TestConsoleGenericActions(t *testing.T) {
 				),
 				http.StatusOK,
 			)
-			for _, r := range genericInventory(t, s) {
-				if r.ARN == resource.ARN {
-					t.Fatalf("deleted resource remains: %+v", r)
+			// Some services, including CloudFormation, finish deletion asynchronously.
+			deadline := time.Now().Add(5 * time.Second)
+			for {
+				remaining := slices.ContainsFunc(genericInventory(t, s), func(r genericInventoryResource) bool {
+					return r.ARN == resource.ARN
+				})
+				if !remaining {
+					break
 				}
+
+				if time.Now().After(deadline) {
+					t.Fatalf("deleted resource remains: %+v", resource)
+				}
+
+				time.Sleep(10 * time.Millisecond)
 			}
 		})
 	}
