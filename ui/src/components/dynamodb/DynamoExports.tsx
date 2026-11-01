@@ -34,8 +34,9 @@ export function DynamoExports({
 				<Alert type="error">{exports.error || error}</Alert>
 			)}
 			<Alert>
-				Exports contain the current table state in DynamoDB JSON format. The S3
-				bucket must already exist.
+				Exports contain the current table state in DynamoDB JSON format. The
+				table needs point-in-time recovery, and the S3 bucket must already
+				exist.
 			</Alert>
 			<Table
 				items={exports.data ?? []}

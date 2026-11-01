@@ -43,10 +43,10 @@ export function DynamoBackups({
 	const recovery =
 		pitr.data?.ContinuousBackupsDescription?.PointInTimeRecoveryDescription;
 	const active = recovery?.PointInTimeRecoveryStatus === "ENABLED";
-	const saved = () => {
+	const saved = (message: string) => () => {
 		backups.reload();
 		pitr.reload();
-		onChanged("Backup settings updated.");
+		onChanged(message);
 	};
 	return (
 		<SpaceBetween size="l">
@@ -110,7 +110,11 @@ export function DynamoBackups({
 									},
 								})
 							}
-							onSaved={saved}
+							onSaved={saved(
+								active
+									? "Point-in-time recovery disabled."
+									: "Point-in-time recovery enabled.",
+							)}
 						/>
 						<DynamoAction
 							label="Restore latest"
@@ -129,7 +133,7 @@ export function DynamoBackups({
 									UseLatestRestorableTime: true,
 								})
 							}
-							onSaved={saved}
+							onSaved={saved("Table restore started.")}
 						/>
 					</SpaceBetween>
 				</SpaceBetween>
@@ -152,7 +156,7 @@ export function DynamoBackups({
 										BackupName: dynamoName(v.name),
 									})
 								}
-								onSaved={saved}
+								onSaved={saved("Backup created.")}
 							/>
 						}
 					>
@@ -200,7 +204,7 @@ export function DynamoBackups({
 											TargetTableName: dynamoName(v.target),
 										})
 									}
-									onSaved={saved}
+									onSaved={saved("Table restore started.")}
 								/>
 								<DynamoAction
 									label="Delete backup"
@@ -211,7 +215,7 @@ export function DynamoBackups({
 											BackupArn: b.BackupArn,
 										})
 									}
-									onSaved={saved}
+									onSaved={saved("Backup deleted.")}
 								/>
 							</SpaceBetween>
 						),

@@ -159,47 +159,6 @@ export function DynamoTable({
 					onChange={({ detail }) => setTab(detail.activeTabId)}
 					tabs={[
 						{
-							id: "backups",
-							label: "Backups",
-							content: (
-								<DynamoBackups
-									key={String(enabled && !!table.TableName)}
-									scope={scope}
-									enabled={enabled && !!table.TableName}
-									onChanged={refresh}
-								/>
-							),
-						},
-						{
-							id: "exports",
-							label: "Exports & streaming",
-							content: (
-								<SpaceBetween size="l">
-									<DynamoExports
-										key={String(enabled && !!table.TableName)}
-										scope={scope}
-										enabled={enabled && !!table.TableName}
-									/>
-									<DynamoKinesis
-										key={String(enabled && !!table.TableName)}
-										scope={scope}
-										enabled={enabled && !!table.TableName}
-									/>
-								</SpaceBetween>
-							),
-						},
-						{
-							id: "partiql",
-							label: "PartiQL",
-							content: (
-								<DynamoPartiQL
-									scope={scope}
-									enabled={enabled && !!table.TableName}
-									onChanged={refresh}
-								/>
-							),
-						},
-						{
 							id: "items",
 							label: "Explore items",
 							content: (
@@ -247,6 +206,47 @@ export function DynamoTable({
 									enabled={enabled}
 									lambdaEnabled={lambdaEnabled && !!table.TableName}
 									onChanged={(message) => refresh(message)}
+								/>
+							),
+						},
+						{
+							id: "backups",
+							label: "Backups",
+							content: (
+								<DynamoBackups
+									key={String(enabled && !!table.TableName)}
+									scope={scope}
+									enabled={enabled && !!table.TableName}
+									onChanged={refresh}
+								/>
+							),
+						},
+						{
+							id: "exports",
+							label: "Exports & streaming",
+							content: (
+								<SpaceBetween size="l">
+									<DynamoExports
+										key={String(enabled && !!table.TableName)}
+										scope={scope}
+										enabled={enabled && !!table.TableName}
+									/>
+									<DynamoKinesis
+										key={String(enabled && !!table.TableName)}
+										scope={scope}
+										enabled={enabled && !!table.TableName}
+									/>
+								</SpaceBetween>
+							),
+						},
+						{
+							id: "partiql",
+							label: "PartiQL",
+							content: (
+								<DynamoPartiQL
+									scope={scope}
+									enabled={enabled && !!table.TableName}
+									onChanged={refresh}
 								/>
 							),
 						},

@@ -90,7 +90,11 @@ export function DynamoPartiQL({
 				items={rows}
 				loading={busy}
 				header={<Header variant="h2">Statement results</Header>}
-				empty="No items returned."
+				empty={
+					executed
+						? "No items returned."
+						: "Execute a statement to see results."
+				}
 				resizableColumns
 				wrapLines
 				columnDefinitions={attributes.map((name) => ({
