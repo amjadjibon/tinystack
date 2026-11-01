@@ -57,7 +57,7 @@ func TestConsoleSSMParameterLifecycle(t *testing.T) {
 	)
 	for _, other := range []struct{ account, region string }{{"111111111111", region}, {account, "us-east-1"}} {
 		consoleResponse(t, srv, consoleLambdaRequest(t, srv, "ssm", "GetParameter", other.account, other.region,
-			map[string]any{"Name": name, "WithDecryption": true}), http.StatusBadRequest)
+			map[string]any{"Name": name, "WithDecryption": true}), http.StatusNotFound)
 	}
 	// Document and command operations are outside the console's Parameter Store scope.
 	consoleResponse(t, srv, consoleLambdaRequest(t, srv, "ssm", "ListDocuments", account, region,
