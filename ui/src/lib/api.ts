@@ -168,6 +168,8 @@ export const api = {
 		rds: boolean;
 		elasticache: boolean;
 		elasticache_runtime: string;
+		memorydb: boolean;
+		memorydb_runtime: string;
 		cloudformation: boolean;
 		budgets: boolean;
 		costexplorer: boolean;

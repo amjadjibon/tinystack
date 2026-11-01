@@ -28,6 +28,7 @@ import { type IAMKind, iamHref, iamKinds } from "#/lib/iam";
 import { kmsHref } from "#/lib/kms";
 import { lambdaHref } from "#/lib/lambda";
 import { logsHref } from "#/lib/logs";
+import { memorydbHref } from "#/lib/memorydb";
 import { rdsHref } from "#/lib/rds";
 import { s3Href } from "#/lib/s3";
 import { secretHref } from "#/lib/secretsmanager";
@@ -44,6 +45,9 @@ export function resourceHref(r: Resource): string {
 	if (r.service === "ecr" || r.service === "ecs") {
 		return `/services/${r.service}?${new URLSearchParams({ account: r.account, region: r.region })}`;
 	}
+
+	if (r.service === "memorydb")
+		return memorydbHref({ account: r.account, region: r.region });
 
 	if (
 		r.service === "budgets" ||

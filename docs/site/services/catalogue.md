@@ -690,6 +690,7 @@ Store MemoryDB subnet groups, users, ACLs and clusters, optionally serving a clu
 - AWS::MemoryDB::Cluster, SubnetGroup, User and ACL CloudFormation lifecycle with in-place updates, replacement for immutable properties, Ref returning the name and GetAtt ARN/Arn, ClusterEndpoint.Address/Port and Status.
 - Inventory reports RecordsOnly and ExecutionReady for the selected runtime; official AWS icon and Terraform memorydb endpoint key.
 - Docker runtime shares container execution with ElastiCache; TLS defaults on using TinyStack local CA, ACL changes reconcile every second, named volumes survive shutdown and sqlite restarts, and delete/reset remove owned resources.
+- Console page for clusters (create, update node type, shards, replicas, engine version, ACL and description, delete with typed confirmation), users with masked passwords, ACL membership, subnet groups and tags; the cluster endpoint has a copy button, status is polled while a cluster is creating, updating or deleting, and a notice shows whether the runtime is records-only or Docker.
 
 [Supported operations](memorydb.md#supported-operations) · [Limitations](memorydb.md#limitations-and-future-work)
 

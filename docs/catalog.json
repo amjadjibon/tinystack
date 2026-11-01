@@ -2380,7 +2380,8 @@
         "TagResource, UntagResource and ListTags on cluster, user, acl and subnetgroup ARNs; Resource Groups Tagging API and Resource Groups integration",
         "AWS::MemoryDB::Cluster, SubnetGroup, User and ACL CloudFormation lifecycle with in-place updates, replacement for immutable properties, Ref returning the name and GetAtt ARN/Arn, ClusterEndpoint.Address/Port and Status",
         "Inventory reports RecordsOnly and ExecutionReady for the selected runtime; official AWS icon and Terraform memorydb endpoint key",
-        "Docker runtime shares container execution with ElastiCache; TLS defaults on using TinyStack local CA, ACL changes reconcile every second, named volumes survive shutdown and sqlite restarts, and delete/reset remove owned resources"
+        "Docker runtime shares container execution with ElastiCache; TLS defaults on using TinyStack local CA, ACL changes reconcile every second, named volumes survive shutdown and sqlite restarts, and delete/reset remove owned resources",
+        "Console page for clusters (create, update node type, shards, replicas, engine version, ACL and description, delete with typed confirmation), users with masked passwords, ACL membership, subnet groups and tags; the cluster endpoint has a copy button, status is polled while a cluster is creating, updating or deleting, and a notice shows whether the runtime is records-only or Docker"
       ],
       "gaps": [
         "Docker materializes one engine per cluster; shard and replica counts, node types and engine upgrades remain metadata. The initial engine image remains unchanged across updates and restarts; no distributed replication or failover",
@@ -2391,6 +2392,7 @@
         "DescribeUsers supports the UserName filter only; page size has no default or maximum because the model documents none",
         "Records-mode access strings are checked only for being non-empty and free of reset; Docker evaluates the engine ACL grammar when applying users. IAM data-plane authentication is explicitly unsupported in Docker mode",
         "CloudFormation rejects removing optional properties the API cannot clear and changing AutoMinorVersionUpgrade; ClusterEndpoint, DataTiering, FinalSnapshotName, IpDiscovery, MultiRegionClusterName, NetworkType, SnapshotArns, SnapshotName and SNS properties fail explicitly",
+        "The console offers no snapshots, final snapshot on delete or parameter group management because the service implements none; the parameter group is the default group of the chosen engine version",
         "Redis managed version 7.1 maps to upstream redis:7.2-alpine because no upstream Redis 7.1 image exists; Redis 6.2/7.0 and Valkey 7.2 use their matching alpine image tags",
         "Docker runtime uses TinyStack deadlines of 10 minutes per container start, 10 seconds per reconciliation probe/configuration and 5 seconds for access-string validation; failed reconciliation attempts retry"
       ],

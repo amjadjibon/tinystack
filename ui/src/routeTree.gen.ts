@@ -39,6 +39,7 @@ import { Route as ServicesKinesisRouteImport } from './routes/services/kinesis'
 import { Route as ServicesKmsRouteImport } from './routes/services/kms'
 import { Route as ServicesLambdaRouteImport } from './routes/services/lambda'
 import { Route as ServicesLogsRouteImport } from './routes/services/logs'
+import { Route as ServicesMemorydbRouteImport } from './routes/services/memorydb'
 import { Route as ServicesRdsRouteImport } from './routes/services/rds'
 import { Route as ServicesS3RouteImport } from './routes/services/s3'
 import { Route as ServicesSecretsmanagerRouteImport } from './routes/services/secretsmanager'
@@ -201,6 +202,11 @@ const ServicesLogsRoute = ServicesLogsRouteImport.update({
   path: '/services/logs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesMemorydbRoute = ServicesMemorydbRouteImport.update({
+  id: '/services/memorydb',
+  path: '/services/memorydb',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesRdsRoute = ServicesRdsRouteImport.update({
   id: '/services/rds',
   path: '/services/rds',
@@ -282,6 +288,7 @@ export interface FileRoutesByFullPath {
   '/services/kms': typeof ServicesKmsRoute
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
+  '/services/memorydb': typeof ServicesMemorydbRoute
   '/services/rds': typeof ServicesRdsRoute
   '/services/s3': typeof ServicesS3Route
   '/services/secretsmanager': typeof ServicesSecretsmanagerRoute
@@ -324,6 +331,7 @@ export interface FileRoutesByTo {
   '/services/kms': typeof ServicesKmsRoute
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
+  '/services/memorydb': typeof ServicesMemorydbRoute
   '/services/rds': typeof ServicesRdsRoute
   '/services/s3': typeof ServicesS3Route
   '/services/secretsmanager': typeof ServicesSecretsmanagerRoute
@@ -367,6 +375,7 @@ export interface FileRoutesById {
   '/services/kms': typeof ServicesKmsRoute
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
+  '/services/memorydb': typeof ServicesMemorydbRoute
   '/services/rds': typeof ServicesRdsRoute
   '/services/s3': typeof ServicesS3Route
   '/services/secretsmanager': typeof ServicesSecretsmanagerRoute
@@ -411,6 +420,7 @@ export interface FileRouteTypes {
     | '/services/kms'
     | '/services/lambda'
     | '/services/logs'
+    | '/services/memorydb'
     | '/services/rds'
     | '/services/s3'
     | '/services/secretsmanager'
@@ -453,6 +463,7 @@ export interface FileRouteTypes {
     | '/services/kms'
     | '/services/lambda'
     | '/services/logs'
+    | '/services/memorydb'
     | '/services/rds'
     | '/services/s3'
     | '/services/secretsmanager'
@@ -495,6 +506,7 @@ export interface FileRouteTypes {
     | '/services/kms'
     | '/services/lambda'
     | '/services/logs'
+    | '/services/memorydb'
     | '/services/rds'
     | '/services/s3'
     | '/services/secretsmanager'
@@ -538,6 +550,7 @@ export interface RootRouteChildren {
   ServicesKmsRoute: typeof ServicesKmsRoute
   ServicesLambdaRoute: typeof ServicesLambdaRoute
   ServicesLogsRoute: typeof ServicesLogsRoute
+  ServicesMemorydbRoute: typeof ServicesMemorydbRoute
   ServicesRdsRoute: typeof ServicesRdsRoute
   ServicesS3Route: typeof ServicesS3Route
   ServicesSecretsmanagerRoute: typeof ServicesSecretsmanagerRoute
@@ -763,6 +776,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesLogsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/memorydb': {
+      id: '/services/memorydb'
+      path: '/services/memorydb'
+      fullPath: '/services/memorydb'
+      preLoaderRoute: typeof ServicesMemorydbRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/rds': {
       id: '/services/rds'
       path: '/services/rds'
@@ -867,6 +887,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesKmsRoute: ServicesKmsRoute,
   ServicesLambdaRoute: ServicesLambdaRoute,
   ServicesLogsRoute: ServicesLogsRoute,
+  ServicesMemorydbRoute: ServicesMemorydbRoute,
   ServicesRdsRoute: ServicesRdsRoute,
   ServicesS3Route: ServicesS3Route,
   ServicesSecretsmanagerRoute: ServicesSecretsmanagerRoute,

@@ -288,11 +288,11 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		"apigateway": "GetRestApis", "apigatewayv2": "GetApis", "sfn": "ListStateMachines", "ec2": "DescribeVpcs",
 		"secretsmanager": "ListSecrets", "rds": "DescribeDBInstances", "cloudformation": "ListStacks",
 		"kms": "ListKeys", "kinesis": "ListStreams", "firehose": "ListDeliveryStreams",
-		"ecr": "DescribeRepositories", "ecs": "ListClusters", "ssm": "DescribeParameters",
+		"ecr": "DescribeRepositories", "ecs": "ListClusters", "ssm": "DescribeParameters", "memorydb": "DescribeClusters",
 	}
 	var capabilities map[string]any
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
-		capabilities["ecs_runtime"] != "records" {
+		capabilities["ecs_runtime"] != "records" || capabilities["memorydb_runtime"] != "records" {
 		t.Fatal(capabilities)
 	}
 	for service, operation := range listOperations {
@@ -344,6 +344,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		{"firehose", "firehose", "ListDeliveryStreams"},
 		{"ecr", "ecr", "DescribeRepositories"},
 		{"ecs", "ecs", "ListClusters"},
+		{"memorydb", "memorydb", "DescribeClusters"},
 	} {
 		for _, mode := range []string{"unsigned", "wrong-service", "wrong-region", "wrong-account", "valid"} {
 			account, region, signing := "111111111111", "us-east-1", tc.signing

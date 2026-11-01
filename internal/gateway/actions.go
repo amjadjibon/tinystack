@@ -55,19 +55,19 @@ const consoleSFN = "sfn"
 const consoleEC2 = "ec2"
 
 const (
-	consoleKMS      = "kms"
-	consoleKinesis  = "kinesis"
-	consoleFirehose = "firehose"
-	consoleECR      = "ecr"
-	consoleECS      = "ecs"
-	consoleSSM      = "ssm"
+	consoleKMS         = "kms"
+	consoleKinesis     = "kinesis"
+	consoleFirehose    = "firehose"
+	consoleECR         = "ecr"
+	consoleECS         = "ecs"
+	consoleSSM         = "ssm"
+	consoleElastiCache = "elasticache"
+	consoleMemoryDB    = "memorydb"
 )
 
 const consoleSecretsManager = "secretsmanager"
 
 const consoleRDS = "rds"
-
-const consoleElastiCache = "elasticache"
 
 const consoleCloudFormation = "cloudformation"
 
@@ -296,6 +296,14 @@ var consoleECSOperations = strings.Fields(`
  RunTask ListTasks DescribeTasks StopTask
 `)
 
+var consoleMemoryDBOperations = strings.Fields(`
+ CreateCluster DescribeClusters UpdateCluster DeleteCluster
+ CreateUser DescribeUsers UpdateUser DeleteUser
+ CreateACL DescribeACLs UpdateACL DeleteACL
+ CreateSubnetGroup DescribeSubnetGroups UpdateSubnetGroup DeleteSubnetGroup
+ ListTags TagResource UntagResource
+`)
+
 var consoleSSMOperations = strings.Fields(`
  DescribeParameters GetParameter GetParameterHistory PutParameter DeleteParameter DeleteParameters
  LabelParameterVersion UnlabelParameterVersion ListTagsForResource AddTagsToResource RemoveTagsFromResource
@@ -440,6 +448,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, cur := s.services[consoleCUR]
 		_, rds := s.services[consoleRDS]
 		_, elasticache := s.services[consoleElastiCache]
+		_, memorydb := s.services[consoleMemoryDB]
 		_, cloudformation := s.services[consoleCloudFormation]
 		accounts := []string{s.cfg.Defaults.Account}
 		for _, account := range s.cfg.Identity.Accounts {
@@ -483,6 +492,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleRDS:            rds,
 			consoleElastiCache:    elasticache,
 			"elasticache_runtime": s.cfg.ElastiCache.Caches,
+			consoleMemoryDB:       memorydb,
+			"memorydb_runtime":    s.cfg.MemoryDB.Clusters,
 			consoleCloudFormation: cloudformation,
 			"requires_signature":  s.cfg.Identity.Mode == config.IdentityVerify,
 			"taggable_services":   resourcegroupstaggingapi.TaggableServices(),
@@ -608,6 +619,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleRDSOperations
 	case consoleElastiCache:
 		operations = consoleElastiCacheOperations
+	case consoleMemoryDB:
+		operations = consoleMemoryDBOperations
 	case consoleCloudFormation:
 		operations = consoleCloudFormationOperations
 	}

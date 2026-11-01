@@ -29,6 +29,7 @@ See the [implemented feature catalogue](catalogue.md#amazon-memorydb) for this s
 - DescribeUsers supports the UserName filter only; page size has no default or maximum because the model documents none.
 - Records-mode access strings are checked only for being non-empty and free of reset; Docker evaluates the engine ACL grammar when applying users. IAM data-plane authentication is explicitly unsupported in Docker mode.
 - CloudFormation rejects removing optional properties the API cannot clear and changing AutoMinorVersionUpgrade; ClusterEndpoint, DataTiering, FinalSnapshotName, IpDiscovery, MultiRegionClusterName, NetworkType, SnapshotArns, SnapshotName and SNS properties fail explicitly.
+- The console offers no snapshots, final snapshot on delete or parameter group management because the service implements none; the parameter group is the default group of the chosen engine version.
 - Redis managed version 7.1 maps to upstream redis:7.2-alpine because no upstream Redis 7.1 image exists; Redis 6.2/7.0 and Valkey 7.2 use their matching alpine image tags.
 - Docker runtime uses TinyStack deadlines of 10 minutes per container start, 10 seconds per reconciliation probe/configuration and 5 seconds for access-string validation; failed reconciliation attempts retry.
 
