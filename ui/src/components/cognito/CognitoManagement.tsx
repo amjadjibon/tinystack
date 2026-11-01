@@ -27,21 +27,6 @@ import {
 import { usePoll } from "#/lib/usePoll";
 
 export const poolFields: CognitoField[] = [
-	{
-		key: "DeletionProtection",
-		label: "Deletion protection",
-		options: ["ACTIVE", "INACTIVE"],
-	},
-	{
-		key: "MfaConfiguration",
-		label: "MFA configuration (configure a delivery method before enabling)",
-		options: ["OFF", "OPTIONAL", "ON"],
-	},
-	{
-		key: "SmsConfiguration",
-		label: "SMS configuration (JSON; SnsCallerArn and ExternalId)",
-		kind: "json",
-	},
 	{ key: "PoolName", label: "Pool name", required: true },
 	{
 		key: "Policies.PasswordPolicy.MinimumLength",
@@ -70,6 +55,21 @@ export const poolFields: CognitoField[] = [
 		key: "AutoVerifiedAttributes",
 		label: "Auto-verified attributes (email, phone_number)",
 		kind: "list",
+	},
+	{
+		key: "DeletionProtection",
+		label: "Deletion protection",
+		options: ["ACTIVE", "INACTIVE"],
+	},
+	{
+		key: "MfaConfiguration",
+		label: "MFA configuration (configure a delivery method before enabling)",
+		options: ["OFF", "OPTIONAL", "ON"],
+	},
+	{
+		key: "SmsConfiguration",
+		label: "SMS configuration (JSON; SnsCallerArn and ExternalId)",
+		kind: "json",
 	},
 ];
 export const clientFields: CognitoField[] = [
@@ -152,6 +152,7 @@ export function CognitoForm({
 	return (
 		<ActionDialog
 			title={title}
+			submit={/^(Create|Delete)\b/.test(title) ? title : undefined}
 			confirmation={confirmation}
 			onClose={onClose}
 			onSaved={onSaved}
@@ -168,7 +169,10 @@ export function CognitoForm({
 					const value = values[f.key] ?? "";
 					const change = (v: string) => setValues({ ...values, [f.key]: v });
 					return (
-						<FormField key={f.key} label={f.label}>
+						<FormField
+							key={f.key}
+							label={f.kind === "boolean" ? undefined : f.label}
+						>
 							{f.kind === "boolean" ? (
 								<Checkbox
 									checked={value === "true"}
@@ -179,6 +183,7 @@ export function CognitoForm({
 							) : f.options ? (
 								<Select
 									ariaLabel={f.label}
+									placeholder="Service default"
 									options={f.options.map((v) => ({ label: v, value: v }))}
 									selectedOption={value ? { label: value, value } : null}
 									onChange={({ detail }) =>

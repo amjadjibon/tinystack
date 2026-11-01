@@ -203,6 +203,7 @@ export function ResourceTable({
 	showService,
 	renderActions,
 	extraColumns = [],
+	emptyText = "Create one with the AWS CLI or an SDK.",
 }: {
 	title: string;
 	resources: Resource[];
@@ -211,6 +212,7 @@ export function ResourceTable({
 	showService?: boolean;
 	renderActions?: (resource: Resource) => ReactNode;
 	extraColumns?: TableProps.ColumnDefinition<Resource>[];
+	emptyText?: string;
 }) {
 	const follow = useFollow();
 	const [selected, setSelected] = useState<Resource[]>([]);
@@ -295,12 +297,7 @@ export function ResourceTable({
 	} = useCollection(resources, {
 		propertyFiltering: {
 			filteringProperties,
-			empty: (
-				<EmptyState
-					title="No resources"
-					subtitle="Create one with the AWS CLI or an SDK."
-				/>
-			),
+			empty: <EmptyState title="No resources" subtitle={emptyText} />,
 			noMatch: (
 				<EmptyState
 					title="No matches"

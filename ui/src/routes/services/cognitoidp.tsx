@@ -101,20 +101,30 @@ function Workspace({
 					Connect a console session for this account to manage user pools.
 				</Alert>
 			)}
-			<PoolActions
-				scope={scope}
-				pool={pool}
-				enabled={enabled}
-				onChanged={pools.reload}
-			/>
+			{!scope.id && (
+				<PoolActions
+					scope={scope}
+					pool={pool}
+					enabled={enabled}
+					onChanged={pools.reload}
+				/>
+			)}
 			{pools.error && <Alert type="error">{pools.error}</Alert>}
 			{scope.id ? (
 				<>
 					<Header
 						actions={
-							<Button href={cognitoHref({ ...scope, id: undefined })}>
-								User pools
-							</Button>
+							<SpaceBetween direction="horizontal" size="s">
+								<PoolActions
+									scope={scope}
+									pool={pool}
+									enabled={enabled}
+									onChanged={pools.reload}
+								/>
+								<Button href={cognitoHref({ ...scope, id: undefined })}>
+									User pools
+								</Button>
+							</SpaceBetween>
 						}
 					>
 						{pool?.Name ?? scope.id}
@@ -158,6 +168,7 @@ function Workspace({
 								label: "Domain",
 								content: pool ? (
 									<CognitoDomain
+										key={pool.CustomDomain || pool.Domain}
 										scope={scope}
 										pool={pool}
 										enabled={enabled}
@@ -173,6 +184,7 @@ function Workspace({
 			) : (
 				<ResourceTable
 					title="Cognito user pools"
+					emptyText="Choose Create user pool, or use the AWS CLI or an SDK."
 					loading={pools.loading}
 					onRefresh={pools.reload}
 					resources={(pools.data ?? []).map((p) => ({
