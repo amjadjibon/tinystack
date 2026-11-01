@@ -3,9 +3,10 @@ import type { ChangeSetDetail, TemplateSummary } from "./cloudformationHelpers";
 
 export type CfnScope = { account: string; region: string; stack?: string };
 
-export function cfnHref(s: CfnScope) {
+export function cfnHref(s: CfnScope, changeSet?: string) {
 	const p = new URLSearchParams({ account: s.account, region: s.region });
 	if (s.stack) p.set("stack", s.stack);
+	if (changeSet) p.set("changeset", changeSet);
 	return `/services/cloudformation?${p}`;
 }
 

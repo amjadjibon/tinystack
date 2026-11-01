@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
 	cfnDate,
+	defaultChangeSetName,
 	filterStacks,
 	findInventory,
 	inProgress,
@@ -153,4 +154,22 @@ test("capability acknowledgments include IAM variants and transform expansion", 
 		}),
 		["CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"],
 	);
+});
+
+test("default change set names are valid and unique per second", () => {
+	const at = new Date("2026-11-01T09:08:07.654Z");
+	assert.equal(defaultChangeSetName("web", at), "web-20261101090807");
+	assert.equal(
+		defaultChangeSetName("my_stack.v2", at),
+		"my-stack-v2-20261101090807",
+	);
+	assert.equal(defaultChangeSetName("1app", at), "cs-1app-20261101090807");
+	assert.equal(defaultChangeSetName("", at), "cs-20261101090807");
+	assert.notEqual(
+		defaultChangeSetName("web", at),
+		defaultChangeSetName("web", new Date("2026-11-01T09:08:08Z")),
+	);
+	const long = defaultChangeSetName("a".repeat(200), at);
+	assert.equal(long.length, 128);
+	assert.match(long, /^[a-zA-Z][a-zA-Z0-9-]*$/);
 });

@@ -24,3 +24,13 @@ export function finalSnapshotInput(skip: boolean, identifier: string) {
 	validateName(identifier, 255);
 	return { SkipFinalSnapshot: false, FinalDBSnapshotIdentifier: identifier };
 }
+
+const settledSnapshotStatuses = new Set(["available", "failed", "deleted"]);
+
+// hasPendingSnapshots reports whether any snapshot is still moving through a
+// transitional status such as creating or copying.
+export function hasPendingSnapshots(snapshots: { Status?: string }[]) {
+	return snapshots.some(
+		(s) => !settledSnapshotStatuses.has((s.Status ?? "").toLowerCase()),
+	);
+}

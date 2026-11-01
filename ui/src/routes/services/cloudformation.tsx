@@ -36,6 +36,7 @@ export const Route = createFileRoute("/services/cloudformation")({
 		account: String(s.account ?? ""),
 		region: String(s.region ?? ""),
 		stack: String(s.stack ?? ""),
+		changeset: String(s.changeset ?? ""),
 	}),
 	component: CloudFormationPage,
 });
@@ -89,6 +90,7 @@ function CloudFormationPage() {
 							key={`${account}/${region}/${search.stack}`}
 							scope={scope}
 							inventory={inventory.data ?? []}
+							initialChangeSet={search.changeset || undefined}
 							onChanged={inventory.reload}
 						/>
 					) : (
@@ -195,10 +197,12 @@ function StackList({
 								<StackEditor
 									scope={scope}
 									disabled={!enabled}
-									onSaved={(id) => {
+									onSaved={(id, changeSet) => {
 										poll.reload();
 										if (id)
-											window.location.assign(cfnHref({ ...scope, stack: id }));
+											window.location.assign(
+												cfnHref({ ...scope, stack: id }, changeSet),
+											);
 									}}
 								/>
 								<Button

@@ -135,6 +135,24 @@ test("Forms parse nested policy edits, explicit false, empty lists, and token va
 	);
 });
 
+test("List fields with options accept only listed values and keep string arrays", () => {
+	const fields = [
+		{
+			key: "Flows",
+			label: "Flows",
+			kind: "list" as const,
+			options: ["a", "b"],
+		},
+	];
+	assert.deepEqual(formInput({}, fields, { Flows: "a\nb" }), {
+		Flows: ["a", "b"],
+	});
+	assert.deepEqual(formInput({ Flows: ["a"] }, fields, { Flows: "" }), {
+		Flows: [],
+	});
+	assert.throws(() => formInput({}, fields, { Flows: "a\nz" }), /z/);
+});
+
 test("Blank optional nested units and JSON do not send invalid empty values", () => {
 	assert.deepEqual(
 		formInput(

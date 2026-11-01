@@ -139,7 +139,7 @@ export function formInput(
 				);
 			value = n;
 		} else if (f.kind === "boolean") value = text === "true";
-		else if (f.kind === "list")
+		else if (f.kind === "list") {
 			value = [
 				...new Set(
 					text
@@ -148,14 +148,17 @@ export function formInput(
 						.filter(Boolean),
 				),
 			];
-		else if (f.kind === "json") {
+			const bad =
+				f.options && (value as string[]).find((v) => !f.options?.includes(v));
+			if (bad) throw new Error(`${f.label} has an unsupported value: ${bad}.`);
+		} else if (f.kind === "json") {
 			value = text ? JSON.parse(text) : undefined;
 			if (text && (!value || typeof value !== "object" || Array.isArray(value)))
 				throw new Error(`${f.label} must be an object.`);
 		}
-		if (f.options && text && !f.options.includes(text))
+		if (f.kind !== "list" && f.options && text && !f.options.includes(text))
 			throw new Error(`Choose ${f.label}.`);
-		if (f.options && !text) value = undefined;
+		if (f.kind !== "list" && f.options && !text) value = undefined;
 		const parts = f.key.split(".");
 		let target = out;
 		for (const k of parts.slice(0, -1)) {

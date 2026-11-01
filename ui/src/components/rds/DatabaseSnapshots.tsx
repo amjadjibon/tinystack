@@ -10,7 +10,10 @@ import {
 } from "@cloudscape-design/components";
 import { useState } from "react";
 import {
+	type DBCluster,
+	type DBInstance,
 	type DBSnapshot,
+	hasPendingSnapshots,
 	type RDSScope,
 	rdsDate,
 	rdsPages,
@@ -55,11 +58,31 @@ function SnapshotList({
 }) {
 	const kind = cluster ? "DBClusterSnapshot" : "DBSnapshot",
 		field = `${kind}Identifier`;
-	const poll = usePoll(() =>
-		enabled
-			? rdsPages<DBSnapshot>(scope, `Describe${kind}s`, `${kind}s`)
-			: Promise.resolve([]),
+	const [pending, setPending] = useState(false);
+	const poll = usePoll(
+		async () => {
+			const items = enabled
+				? await rdsPages<DBSnapshot>(scope, `Describe${kind}s`, `${kind}s`)
+				: [];
+			setPending(hasPendingSnapshots(items));
+			return items;
+		},
+		pending ? 3000 : 0,
 	);
+	const sources = usePoll(async () => {
+		if (!enabled) return [];
+		return cluster
+			? (
+					await rdsPages<DBCluster>(scope, "DescribeDBClusters", "DBClusters")
+				).map((c) => c.DBClusterIdentifier)
+			: (
+					await rdsPages<DBInstance>(
+						scope,
+						"DescribeDBInstances",
+						"DBInstances",
+					)
+				).map((i) => i.DBInstanceIdentifier);
+	}, 0);
 	const [selected, setSelected] = useState(""),
 		[action, setAction] = useState("");
 	const identifier = (s: DBSnapshot) =>
@@ -70,17 +93,23 @@ function SnapshotList({
 		onChanged();
 	};
 	let fields: RDSField[] = [];
-	if (action === "Create")
+	if (action === "Create") {
+		const known =
+			snapshot?.DBClusterIdentifier ?? snapshot?.DBInstanceIdentifier;
+		const preselected = [scope.database, known].find(
+			(id) => id && sources.data?.includes(id),
+		);
 		fields = [
 			{
 				key: cluster ? "DBClusterIdentifier" : "DBInstanceIdentifier",
-				label: cluster
-					? "Source cluster identifier"
-					: "Source instance identifier",
+				label: cluster ? "Source DB cluster" : "Source DB instance",
+				options: sources.data ?? [],
+				value: preselected,
 				required: true,
 			},
 			{ key: field, label: "Snapshot identifier", required: true },
 		];
+	}
 	if (action === "Copy")
 		fields = [
 			{

@@ -9,7 +9,7 @@ import {
 	SpaceBetween,
 	Table,
 } from "@cloudscape-design/components";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ActionDialog } from "#/components/ActionDialog";
 import {
 	type CfnScope,
@@ -27,14 +27,17 @@ import { StackParameters } from "./StackValues";
 export function StackChangeSets({
 	scope,
 	deleted,
+	focus,
 	onChanged,
 }: {
 	scope: CfnScope;
 	deleted: boolean;
+	focus?: string;
 	onChanged: () => void;
 }) {
 	const [selected, setSelected] = useState<ChangeSetSummary[]>([]),
-		[viewing, setViewing] = useState(""),
+		[viewing, setViewing] = useState(focus ?? ""),
+		[focused, setFocused] = useState(""),
 		[action, setAction] = useState<"Execute" | "Delete">();
 	const poll = usePoll(
 		() =>
@@ -44,6 +47,14 @@ export function StackChangeSets({
 		0,
 	);
 	const sets = poll.data ?? [];
+	useEffect(() => {
+		if (!focus || focused === focus) return;
+		const found = sets.find((c) => c.ChangeSetName === focus);
+		if (!found) return;
+		setFocused(focus);
+		setViewing(focus);
+		setSelected([found]);
+	}, [focus, focused, sets]);
 	const current = sets.find((c) => c.ChangeSetId === selected[0]?.ChangeSetId);
 	const executable =
 		!deleted &&

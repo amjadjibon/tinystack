@@ -133,6 +133,22 @@ export function filterStacks<T extends { StackStatus: string }>(
 export const stackNameOf = (id: string) =>
 	id.startsWith("arn:") ? (id.split("/")[1] ?? id) : id;
 
+// defaultChangeSetName builds "<stack>-<YYYYMMDDHHmmss>" (UTC). Change set names
+// start with a letter, use only letters, digits and hyphens, and hold at most
+// 128 characters, so the stack part is sanitized and shortened to fit.
+export function defaultChangeSetName(stack: string, now = new Date()) {
+	const stamp = now
+		.toISOString()
+		.replace(/\.\d+Z$/, "")
+		.replace(/[-:T]/g, "");
+	const base = stack
+		.replace(/[^a-zA-Z0-9-]+/g, "-")
+		.replace(/-+/g, "-")
+		.replace(/^-|-$/g, "");
+	const prefix = /^[a-zA-Z]/.test(base) ? base : `cs-${base}`;
+	return `${prefix.slice(0, 128 - stamp.length - 1).replace(/-$/, "")}-${stamp}`;
+}
+
 export function cfnDate(value?: string | number) {
 	if (value === undefined || value === "") return "—";
 	const date = new Date(typeof value === "number" ? value * 1000 : value);

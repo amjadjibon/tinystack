@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
 	finalSnapshotInput,
+	hasPendingSnapshots,
 	validateName,
 	validatePassword,
 } from "../src/lib/rdsHelpers.ts";
@@ -30,4 +31,16 @@ test("instance passwords reject unsupported characters and lengths", () => {
 	])
 		assert.throws(() => validatePassword(password));
 	assert.doesNotThrow(() => validatePassword("console-password"));
+});
+test("snapshot lists poll only while a snapshot is not settled", () => {
+	assert.equal(hasPendingSnapshots([]), false);
+	assert.equal(
+		hasPendingSnapshots([{ Status: "available" }, { Status: "failed" }]),
+		false,
+	);
+	assert.equal(
+		hasPendingSnapshots([{ Status: "available" }, { Status: "creating" }]),
+		true,
+	);
+	assert.equal(hasPendingSnapshots([{ Status: "copying" }]), true);
 });

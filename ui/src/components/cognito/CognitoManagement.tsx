@@ -4,6 +4,7 @@ import {
 	Checkbox,
 	FormField,
 	Input,
+	Multiselect,
 	Select,
 	SpaceBetween,
 	Textarea,
@@ -76,8 +77,16 @@ export const clientFields: CognitoField[] = [
 	{ key: "ClientName", label: "Client name", required: true },
 	{
 		key: "ExplicitAuthFlows",
-		label: "Auth flows (comma separated ALLOW_* names)",
+		label: "Auth flows",
 		kind: "list",
+		options: [
+			"ALLOW_ADMIN_USER_PASSWORD_AUTH",
+			"ALLOW_CUSTOM_AUTH",
+			"ALLOW_USER_PASSWORD_AUTH",
+			"ALLOW_USER_SRP_AUTH",
+			"ALLOW_REFRESH_TOKEN_AUTH",
+			"ALLOW_USER_AUTH",
+		],
 	},
 	{
 		key: "AllowedOAuthFlowsUserPoolClient",
@@ -86,8 +95,9 @@ export const clientFields: CognitoField[] = [
 	},
 	{
 		key: "AllowedOAuthFlows",
-		label: "OAuth flows (code, implicit, client_credentials)",
+		label: "OAuth flows",
 		kind: "list",
+		options: ["code", "implicit", "client_credentials"],
 	},
 	{
 		key: "AllowedOAuthScopes",
@@ -180,6 +190,24 @@ export function CognitoForm({
 								>
 									{f.label}
 								</Checkbox>
+							) : f.kind === "list" && f.options ? (
+								<Multiselect
+									ariaLabel={f.label}
+									placeholder="Choose options"
+									keepOpen
+									options={f.options.map((v) => ({ label: v, value: v }))}
+									selectedOptions={value
+										.split("\n")
+										.filter(Boolean)
+										.map((v) => ({ label: v, value: v }))}
+									onChange={({ detail }) =>
+										change(
+											detail.selectedOptions
+												.map((o) => o.value ?? "")
+												.join("\n"),
+										)
+									}
+								/>
 							) : f.options ? (
 								<Select
 									ariaLabel={f.label}

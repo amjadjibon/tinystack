@@ -128,6 +128,7 @@ export const clusterEngines = [
 
 export {
 	finalSnapshotInput,
+	hasPendingSnapshots,
 	validateName,
 	validatePassword,
 } from "./rdsHelpers";

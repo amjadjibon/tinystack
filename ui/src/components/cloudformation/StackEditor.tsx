@@ -16,6 +16,7 @@ import {
 	saveStack,
 } from "#/lib/cloudformation";
 import {
+	defaultChangeSetName,
 	initialParameters,
 	parameterInput,
 	requiredCapabilities,
@@ -33,7 +34,7 @@ export function StackEditor({
 	scope: CfnScope;
 	stack?: Stack;
 	disabled?: boolean;
-	onSaved: (id?: string) => void;
+	onSaved: (id?: string, changeSet?: string) => void;
 }) {
 	const [open, setOpen] = useState(false);
 	return (
@@ -46,9 +47,9 @@ export function StackEditor({
 					scope={scope}
 					stack={stack}
 					onClose={() => setOpen(false)}
-					onSaved={(id) => {
+					onSaved={(id, changeSet) => {
 						setOpen(false);
-						onSaved(id);
+						onSaved(id, changeSet);
 					}}
 				/>
 			)}
@@ -64,7 +65,7 @@ function Editor({
 	scope: CfnScope;
 	stack?: Stack;
 	onClose: () => void;
-	onSaved: (id?: string) => void;
+	onSaved: (id?: string, changeSet?: string) => void;
 }) {
 	const [name, setName] = useState(stack?.StackName ?? ""),
 		[body, setBody] = useState(""),
@@ -77,10 +78,14 @@ function Editor({
 		),
 		[protectedStack, setProtected] = useState(false),
 		[changeSet, setChangeSet] = useState(false),
-		[changeName, setChangeName] = useState(""),
+		[changeName, setChangeName] = useState<string>(),
+		[stamp] = useState(() => new Date()),
 		[error, setError] = useState(""),
 		[loading, setLoading] = useState(false);
 	const savedId = useRef<string | undefined>(undefined);
+	const savedChangeSet = useRef<string | undefined>(undefined);
+	const effectiveChangeName =
+		changeName ?? defaultChangeSetName(name.trim(), stamp);
 	const invalidate = () => {
 		setSummary(undefined);
 		setValues({});
@@ -115,14 +120,14 @@ function Editor({
 						: "Create stack"
 			}
 			onClose={onClose}
-			onSaved={() => onSaved(savedId.current)}
+			onSaved={() => onSaved(savedId.current, savedChangeSet.current)}
 			plan={async () => {
 				if (!name.trim()) throw new Error("Enter a stack name.");
 				if (!summary)
 					throw new Error("Validate and inspect the template first.");
 				if (requiredCapabilities(summary).some((c) => !caps.includes(c)))
 					throw new Error("Acknowledge required capabilities.");
-				if (changeSet && !changeName.trim())
+				if (changeSet && !effectiveChangeName.trim())
 					throw new Error("Enter a change set name.");
 				const input = {
 					StackName: name,
@@ -132,7 +137,7 @@ function Editor({
 					Tags: Object.entries(tags).map(([Key, Value]) => ({ Key, Value })),
 					...(changeSet
 						? {
-								ChangeSetName: changeName,
+								ChangeSetName: effectiveChangeName.trim(),
 								ChangeSetType: stack ? "UPDATE" : "CREATE",
 							}
 						: stack
@@ -155,6 +160,9 @@ function Editor({
 										input,
 									)
 								).StackId;
+								savedChangeSet.current = changeSet
+									? effectiveChangeName.trim()
+									: undefined;
 							} catch {
 								throw new Error(
 									"Stack action failed. Check template, parameters, capabilities and stack status.",
@@ -326,7 +334,7 @@ function Editor({
 					<FormField label="Change set name">
 						<Input
 							ariaLabel="Change set name"
-							value={changeName}
+							value={effectiveChangeName}
 							onChange={({ detail }) => setChangeName(detail.value)}
 						/>
 					</FormField>

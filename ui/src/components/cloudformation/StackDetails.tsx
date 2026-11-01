@@ -8,6 +8,7 @@ import {
 	SpaceBetween,
 	Tabs,
 } from "@cloudscape-design/components";
+import { useState } from "react";
 import type { Resource } from "#/lib/api";
 import {
 	type CfnScope,
@@ -38,12 +39,16 @@ import { StackOutputs, StackParameters } from "./StackValues";
 export function StackDetails({
 	scope,
 	inventory,
+	initialChangeSet,
 	onChanged,
 }: {
 	scope: CfnScope;
 	inventory: Resource[];
+	initialChangeSet?: string;
 	onChanged: () => void;
 }) {
+	const [tab, setTab] = useState(initialChangeSet ? "changesets" : "events"),
+		[focus, setFocus] = useState(initialChangeSet);
 	const follow = useFollow();
 	const stackPoll = usePoll(
 		async () =>
@@ -102,7 +107,13 @@ export function StackDetails({
 							scope={scope}
 							stack={stack}
 							disabled={deleted || running}
-							onSaved={refresh}
+							onSaved={(_, changeSet) => {
+								refresh();
+								if (changeSet) {
+									setFocus(changeSet);
+									setTab("changesets");
+								}
+							}}
 						/>
 						<StackProtection scope={scope} stack={stack} onChanged={refresh} />
 						<DeleteStack
@@ -180,6 +191,8 @@ export function StackDetails({
 				/>
 			</Container>
 			<Tabs
+				activeTabId={tab}
+				onChange={({ detail }) => setTab(detail.activeTabId)}
 				tabs={[
 					{
 						id: "events",
@@ -219,6 +232,7 @@ export function StackDetails({
 							<StackChangeSets
 								scope={scope}
 								deleted={deleted}
+								focus={focus}
 								onChanged={refresh}
 							/>
 						),
