@@ -616,6 +616,7 @@ Manage repositories and push or pull images through a local Docker Registry API.
 - Images, manifests, tags, layer uploads and download URLs.
 - Authorization tokens scope Docker Registry requests.
 - The gateway serves registry requests at /v2/.
+- Dedicated console for repositories, tag mutability, scan-on-push and AES256 encryption settings, images and digest deletion, repository/lifecycle policy editors, tags, and local Docker login/push commands.
 
 [Supported operations](ecr.md#supported-operations) · [Limitations](ecr.md#limitations-and-future-work)
 
@@ -635,6 +636,7 @@ Manage clusters, task definitions, tasks, and services with optional Docker exec
 - Task containers share localhost through a namespace holder and a dedicated Docker bridge network; host ports publish on the holder.
 - Container CPU, memory and memoryReservation plus overrides map to Docker limits; task CPU/memory budgets divide into per-container ceilings.
 - Stop and reset remove owned containers, namespace holders, task networks and task-scoped volumes, including interrupted startup.
+- Dedicated console for clusters, validated JSON task definition registration and revisions, services with desired counts and revision selection, task run/stop/status, and records-only versus Docker runtime visibility.
 
 [Supported operations](ecs.md#supported-operations) · [Limitations](ecs.md#limitations-and-future-work)
 

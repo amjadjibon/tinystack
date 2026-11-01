@@ -24,6 +24,7 @@ See the [implemented feature catalogue](catalogue.md#ecr) for this service's cap
 - No replication, pull-through cache, scanning results, signing or KMS encryption.
 - Registry policies and tag mutability exclusions are outside the subset.
 - Deleted images do not trigger layer garbage collection.
+- Repository policies are stored as metadata and are not evaluated.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

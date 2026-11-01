@@ -58,6 +58,8 @@ const (
 	consoleKMS      = "kms"
 	consoleKinesis  = "kinesis"
 	consoleFirehose = "firehose"
+	consoleECR      = "ecr"
+	consoleECS      = "ecs"
 )
 
 const consoleSecretsManager = "secretsmanager"
@@ -279,6 +281,18 @@ var consoleFirehoseOperations = strings.Fields(`
  PutRecord ListTagsForDeliveryStream TagDeliveryStream UntagDeliveryStream
 `)
 
+var consoleECROperations = strings.Fields(`
+ CreateRepository DescribeRepositories DeleteRepository PutImageTagMutability PutImageScanningConfiguration
+ DescribeImages BatchDeleteImage GetRepositoryPolicy SetRepositoryPolicy DeleteRepositoryPolicy
+ GetLifecyclePolicy PutLifecyclePolicy DeleteLifecyclePolicy ListTagsForResource TagResource UntagResource
+`)
+
+var consoleECSOperations = strings.Fields(`
+ CreateCluster ListClusters DescribeClusters DeleteCluster RegisterTaskDefinition ListTaskDefinitions
+ DescribeTaskDefinition DeregisterTaskDefinition CreateService ListServices DescribeServices UpdateService DeleteService
+ RunTask ListTasks DescribeTasks StopTask
+`)
+
 var consoleSecretsManagerOperations = strings.Fields(`
  CreateSecret DescribeSecret ListSecrets UpdateSecret DeleteSecret RestoreSecret
  PutSecretValue GetSecretValue ListSecretVersionIds UpdateSecretVersionStage
@@ -398,6 +412,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, kms := s.services[consoleKMS]
 		_, kinesis := s.services[consoleKinesis]
 		_, firehose := s.services[consoleFirehose]
+		_, ecr := s.services[consoleECR]
+		_, ecs := s.services[consoleECS]
 		_, secretsmanager := s.services[consoleSecretsManager]
 		_, budgets := s.services[consoleBudgets]
 		_, costexplorer := s.services[consoleCostExplorer]
@@ -436,6 +452,9 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleKinesis:        kinesis,
 			consoleFirehose:       firehose,
 			consoleSecretsManager: secretsmanager,
+			consoleECR:            ecr,
+			consoleECS:            ecs,
+			"ecs_runtime":         s.cfg.ECS.Containers,
 			consoleBudgets:        budgets,
 			consoleCostExplorer:   costexplorer,
 			consoleCUR:            cur,
@@ -547,6 +566,10 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleKinesisOperations
 	case consoleFirehose:
 		operations = consoleFirehoseOperations
+	case consoleECR:
+		operations = consoleECROperations
+	case consoleECS:
+		operations = consoleECSOperations
 	case consoleSecretsManager:
 		operations = consoleSecretsManagerOperations
 	case consoleBudgets:

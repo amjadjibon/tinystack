@@ -396,12 +396,12 @@ const catalog: Record<string, ServiceInfo> = {
 	},
 	ec2: { title: "EC2", category: compute, icon: "ec2" },
 	ecr: {
-		title: "Elastic Container Registry",
+		title: "Elastic Container Registry (ECR)",
 		category: containers,
 		icon: "ecr",
 	},
 	ecs: {
-		title: "Elastic Container Service",
+		title: "Elastic Container Service (ECS)",
 		category: containers,
 		icon: "ecs",
 	},

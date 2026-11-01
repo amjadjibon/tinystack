@@ -161,6 +161,9 @@ export const api = {
 		secretsmanager: boolean;
 		kinesis: boolean;
 		firehose: boolean;
+		ecr: boolean;
+		ecs: boolean;
+		ecs_runtime: string;
 		rds: boolean;
 		cloudformation: boolean;
 		budgets: boolean;

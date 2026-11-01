@@ -610,12 +610,14 @@
         "Repository lifecycle, tags, policies and lifecycle rules",
         "Images, manifests, tags, layer uploads and download URLs",
         "Authorization tokens scope Docker Registry requests",
-        "The gateway serves registry requests at /v2/"
+        "The gateway serves registry requests at /v2/",
+        "Dedicated console for repositories, tag mutability, scan-on-push and AES256 encryption settings, images and digest deletion, repository/lifecycle policy editors, tags, and local Docker login/push commands"
       ],
       "gaps": [
         "No replication, pull-through cache, scanning results, signing or KMS encryption",
         "Registry policies and tag mutability exclusions are outside the subset",
-        "Deleted images do not trigger layer garbage collection"
+        "Deleted images do not trigger layer garbage collection",
+        "Repository policies are stored as metadata and are not evaluated"
       ],
       "execution": "Local behavior",
       "package": "ecr"
@@ -634,7 +636,8 @@
         "START, COMPLETE, SUCCESS and HEALTHY startup dependencies with cycle validation and bounded waits (startTimeout, default 300 seconds)",
         "Task containers share localhost through a namespace holder and a dedicated Docker bridge network; host ports publish on the holder",
         "Container CPU, memory and memoryReservation plus overrides map to Docker limits; task CPU/memory budgets divide into per-container ceilings",
-        "Stop and reset remove owned containers, namespace holders, task networks and task-scoped volumes, including interrupted startup"
+        "Stop and reset remove owned containers, namespace holders, task networks and task-scoped volumes, including interrupted startup",
+        "Dedicated console for clusters, validated JSON task definition registration and revisions, services with desired counts and revision selection, task run/stop/status, and records-only versus Docker runtime visibility"
       ],
       "gaps": [
         "Records mode starts no containers, resolves no secrets and reports UNKNOWN health",

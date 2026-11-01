@@ -39,6 +39,10 @@ import { EmptyState } from "./EmptyState";
 import { ServiceLabel } from "./ServiceIcon";
 
 export function resourceHref(r: Resource): string {
+	if (r.service === "ecr" || r.service === "ecs") {
+		return `/services/${r.service}?${new URLSearchParams({ account: r.account, region: r.region })}`;
+	}
+
 	if (
 		r.service === "budgets" ||
 		r.service === "costexplorer" ||

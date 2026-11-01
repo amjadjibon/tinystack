@@ -29,6 +29,8 @@ import { Route as ServicesCostandusagereportserviceRouteImport } from './routes/
 import { Route as ServicesCostexplorerRouteImport } from './routes/services/costexplorer'
 import { Route as ServicesDynamodbRouteImport } from './routes/services/dynamodb'
 import { Route as ServicesEc2RouteImport } from './routes/services/ec2'
+import { Route as ServicesEcrRouteImport } from './routes/services/ecr'
+import { Route as ServicesEcsRouteImport } from './routes/services/ecs'
 import { Route as ServicesEventbridgeRouteImport } from './routes/services/eventbridge'
 import { Route as ServicesFirehoseRouteImport } from './routes/services/firehose'
 import { Route as ServicesIamRouteImport } from './routes/services/iam'
@@ -147,6 +149,16 @@ const ServicesEc2Route = ServicesEc2RouteImport.update({
   path: '/services/ec2',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesEcrRoute = ServicesEcrRouteImport.update({
+  id: '/services/ecr',
+  path: '/services/ecr',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesEcsRoute = ServicesEcsRouteImport.update({
+  id: '/services/ecs',
+  path: '/services/ecs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesEventbridgeRoute = ServicesEventbridgeRouteImport.update({
   id: '/services/eventbridge',
   path: '/services/eventbridge',
@@ -248,6 +260,8 @@ export interface FileRoutesByFullPath {
   '/services/costexplorer': typeof ServicesCostexplorerRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/ec2': typeof ServicesEc2Route
+  '/services/ecr': typeof ServicesEcrRoute
+  '/services/ecs': typeof ServicesEcsRoute
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/firehose': typeof ServicesFirehoseRoute
   '/services/iam': typeof ServicesIamRoute
@@ -286,6 +300,8 @@ export interface FileRoutesByTo {
   '/services/costexplorer': typeof ServicesCostexplorerRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/ec2': typeof ServicesEc2Route
+  '/services/ecr': typeof ServicesEcrRoute
+  '/services/ecs': typeof ServicesEcsRoute
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/firehose': typeof ServicesFirehoseRoute
   '/services/iam': typeof ServicesIamRoute
@@ -325,6 +341,8 @@ export interface FileRoutesById {
   '/services/costexplorer': typeof ServicesCostexplorerRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/ec2': typeof ServicesEc2Route
+  '/services/ecr': typeof ServicesEcrRoute
+  '/services/ecs': typeof ServicesEcsRoute
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/firehose': typeof ServicesFirehoseRoute
   '/services/iam': typeof ServicesIamRoute
@@ -365,6 +383,8 @@ export interface FileRouteTypes {
     | '/services/costexplorer'
     | '/services/dynamodb'
     | '/services/ec2'
+    | '/services/ecr'
+    | '/services/ecs'
     | '/services/eventbridge'
     | '/services/firehose'
     | '/services/iam'
@@ -403,6 +423,8 @@ export interface FileRouteTypes {
     | '/services/costexplorer'
     | '/services/dynamodb'
     | '/services/ec2'
+    | '/services/ecr'
+    | '/services/ecs'
     | '/services/eventbridge'
     | '/services/firehose'
     | '/services/iam'
@@ -441,6 +463,8 @@ export interface FileRouteTypes {
     | '/services/costexplorer'
     | '/services/dynamodb'
     | '/services/ec2'
+    | '/services/ecr'
+    | '/services/ecs'
     | '/services/eventbridge'
     | '/services/firehose'
     | '/services/iam'
@@ -480,6 +504,8 @@ export interface RootRouteChildren {
   ServicesCostexplorerRoute: typeof ServicesCostexplorerRoute
   ServicesDynamodbRoute: typeof ServicesDynamodbRoute
   ServicesEc2Route: typeof ServicesEc2Route
+  ServicesEcrRoute: typeof ServicesEcrRoute
+  ServicesEcsRoute: typeof ServicesEcsRoute
   ServicesEventbridgeRoute: typeof ServicesEventbridgeRoute
   ServicesFirehoseRoute: typeof ServicesFirehoseRoute
   ServicesIamRoute: typeof ServicesIamRoute
@@ -641,6 +667,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesEc2RouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/ecr': {
+      id: '/services/ecr'
+      path: '/services/ecr'
+      fullPath: '/services/ecr'
+      preLoaderRoute: typeof ServicesEcrRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/ecs': {
+      id: '/services/ecs'
+      path: '/services/ecs'
+      fullPath: '/services/ecs'
+      preLoaderRoute: typeof ServicesEcsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/eventbridge': {
       id: '/services/eventbridge'
       path: '/services/eventbridge'
@@ -777,6 +817,8 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesCostexplorerRoute: ServicesCostexplorerRoute,
   ServicesDynamodbRoute: ServicesDynamodbRoute,
   ServicesEc2Route: ServicesEc2Route,
+  ServicesEcrRoute: ServicesEcrRoute,
+  ServicesEcsRoute: ServicesEcsRoute,
   ServicesEventbridgeRoute: ServicesEventbridgeRoute,
   ServicesFirehoseRoute: ServicesFirehoseRoute,
   ServicesIamRoute: ServicesIamRoute,
