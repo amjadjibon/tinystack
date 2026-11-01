@@ -26,6 +26,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/awsmetrics"
+	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -45,6 +46,8 @@ const (
 	maxBatch         = 500
 	iteratorLife     = 5 * time.Minute
 	encryptionKMS    = "KMS"
+	// managedKeyID is Kinesis's AWS managed key, which needs no check.
+	managedKeyID = "alias/aws/kinesis"
 )
 
 var _ api.API = (*Service)(nil)
@@ -53,10 +56,11 @@ type Service struct {
 	store   storage.Store
 	now     func() time.Time
 	metrics awsmetrics.Meter
+	keys    *kms.Service
 }
 
-func New(store storage.Store) *Service {
-	return &Service{store: store, now: time.Now}
+func New(store storage.Store, keys *kms.Service) *Service {
+	return &Service{store: store, now: time.Now, keys: keys}
 }
 
 // shard is one shard of a stream.

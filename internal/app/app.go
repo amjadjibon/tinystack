@@ -380,7 +380,7 @@ func build(
 	// Reset ends the pollers first, so they do not write what the reset clears.
 	a.onReset(functions.Reset)
 	a.onReset(queues.Reset)
-	streams := kinesis.New(store)
+	streams := kinesis.New(store, keys)
 	functions.UseKinesis(streams)
 	tables.UseKinesis(streams)
 	topics := sns.New(store, queues, functions, deliveries)

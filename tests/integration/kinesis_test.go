@@ -16,6 +16,7 @@ import (
 	fhtypes "github.com/aws/aws-sdk-go-v2/service/firehose/types"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
 	kintypes "github.com/aws/aws-sdk-go-v2/service/kinesis/types"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
 	sdklambda "github.com/aws/aws-sdk-go-v2/service/lambda"
 	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -569,4 +570,50 @@ func waitForObject(t *testing.T, c *s3.Client, prefix string) string {
 
 	t.Fatalf("no object under %s", prefix)
 	return ""
+}
+
+func TestKinesisStreamEncryptionKeys(t *testing.T) {
+	t.Parallel()
+	s := server(t)
+	c := kinesisClient(s)
+	keys := kmsClient(s, "test", "us-east-1")
+	ctx := context.Background()
+
+	if _, err := c.CreateStream(ctx, &kinesis.CreateStreamInput{
+		StreamName: new("secure"), ShardCount: new(int32(1)),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	start := func(key string) error {
+		_, err := c.StartStreamEncryption(ctx, &kinesis.StartStreamEncryptionInput{
+			StreamName: new("secure"), EncryptionType: kintypes.EncryptionTypeKms, KeyId: new(key),
+		})
+
+		return err
+	}
+
+	code(t, start("update"), "KMSNotFoundException")
+
+	live, err := keys.CreateKey(ctx, &kms.CreateKeyInput{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	off, err := keys.CreateKey(ctx, &kms.CreateKeyInput{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = keys.DisableKey(ctx, &kms.DisableKeyInput{KeyId: off.KeyMetadata.KeyId}); err != nil {
+		t.Fatal(err)
+	}
+
+	code(t, start(*off.KeyMetadata.KeyId), "KMSDisabledException")
+
+	for _, key := range []string{*live.KeyMetadata.KeyId, *live.KeyMetadata.Arn, "alias/aws/kinesis"} {
+		if err = start(key); err != nil {
+			t.Fatalf("%s: %v", key, err)
+		}
+	}
 }

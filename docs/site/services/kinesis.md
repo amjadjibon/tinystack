@@ -23,7 +23,7 @@ See the [implemented feature catalogue](catalogue.md#kinesis-data-streams) for t
 
 - No SubscribeToShard enhanced fan-out delivery or throughput enforcement.
 - Production record-size settings and warm throughput are outside the subset.
-- KMS encryption settings are stored without encrypting stream records.
+- StartStreamEncryption accepts alias/aws/kinesis or a usable customer-managed key, and rejects others with KMSNotFoundException, KMSDisabledException or KMSInvalidStateException; stream records are not encrypted.
 - Kinesis metrics omit shard-level, latency, throughput-exceeded and iterator-age metrics, and GetRecords.Bytes.
 - GetResourcePolicy returns Policy "{}" when no policy is attached (AWS does not document this case); cross-account Lambda mappings and Pipes sources remain unsupported.
 

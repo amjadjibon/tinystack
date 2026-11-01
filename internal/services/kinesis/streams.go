@@ -2,6 +2,7 @@ package kinesis
 
 import (
 	"context"
+	"errors"
 	"math/big"
 	"slices"
 	"strings"
@@ -513,11 +514,16 @@ func (s *Service) StartStreamEncryption(
 	ctx context.Context,
 	in *api.StartStreamEncryptionInput,
 ) (*api.StartStreamEncryptionOutput, error) {
-	err := s.change(ctx, in.StreamName, in.StreamARN, func(_ storage.WriteTx, _ request.Scope, st *stream) error {
-		if common.Value(in.EncryptionType) != encryptionKMS || common.Value(in.KeyId) == "" {
-			return invalidArgument("EncryptionType must be KMS, with a KeyId")
-		}
+	if common.Value(in.EncryptionType) != encryptionKMS || common.Value(in.KeyId) == "" {
+		return nil, invalidArgument("EncryptionType must be KMS, with a KeyId")
+	}
 
+	// The key check reads KMS, so it runs before the stream's transaction.
+	if err := s.useKey(ctx, *in.KeyId); err != nil {
+		return nil, err
+	}
+
+	err := s.change(ctx, in.StreamName, in.StreamARN, func(_ storage.WriteTx, _ request.Scope, st *stream) error {
 		st.Encryption, st.KeyID = encryptionKMS, *in.KeyId
 		return nil
 	})
@@ -663,4 +669,40 @@ func (s *Service) DescribeLimits(ctx context.Context, _ *api.DescribeLimitsInput
 	}
 
 	return out, nil
+}
+
+// kmsCodes maps KMS's errors to the codes Kinesis reports them with. Any other
+// failure to resolve the key is reported as the key not being found.
+const kmsInvalidState = "KMSInvalidStateException"
+
+var kmsCodes = map[string]string{
+	"DisabledException":             "KMSDisabledException",
+	kmsInvalidState:                 kmsInvalidState,
+	"InvalidKeyUsageException":      kmsInvalidState,
+	"UnsupportedOperationException": kmsInvalidState,
+}
+
+// useKey reports why the KMS key id cannot encrypt a stream's records.
+func (s *Service) useKey(ctx context.Context, id string) error {
+	if id == managedKeyID {
+		return nil
+	}
+
+	m, err := request.Regional(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = s.keys.Check(ctx, m.Scope, id)
+	e, ok := errors.AsType[*awserror.Error](err)
+	if !ok {
+		return err
+	}
+
+	code := kmsCodes[e.Code]
+	if code == "" {
+		code = "KMSNotFoundException"
+	}
+
+	return awserror.New(code, e.Message)
 }
