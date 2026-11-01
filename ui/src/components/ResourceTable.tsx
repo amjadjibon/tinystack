@@ -22,6 +22,7 @@ import { cognitoHref } from "#/lib/cognito";
 import { costHref } from "#/lib/cost";
 import { dynamoHref } from "#/lib/dynamodb";
 import { ec2Href, ec2Kinds, ec2Sections } from "#/lib/ec2";
+import { elasticacheHref } from "#/lib/elasticache";
 import { eventHref, inventoryRule } from "#/lib/eventbridge";
 import { type IAMKind, iamHref, iamKinds } from "#/lib/iam";
 import { kmsHref } from "#/lib/kms";
@@ -75,6 +76,17 @@ export function resourceHref(r: Resource): string {
 				? { database: r.name }
 				: { section: r.type === "db-subnet-group" ? "subnets" : "parameters" }),
 		});
+	if (r.service === "elasticache") {
+		const section = {
+			"cache-cluster": "clusters",
+			"cache-replication-group": "groups",
+			"serverless-cache": "serverless",
+			"cache-subnet-group": "subnets",
+			"cache-parameter-group": "parameters",
+		}[r.type];
+		if (section)
+			return elasticacheHref({ account: r.account, region: r.region, section });
+	}
 	if (r.service === "cloudformation" && r.type === "stack")
 		return cfnHref({ account: r.account, region: r.region, stack: r.arn });
 	if (r.service === "kms" && r.type === "key")

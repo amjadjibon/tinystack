@@ -21,6 +21,7 @@ See the [implemented feature catalogue](catalogue.md#elasticache) for this servi
 
 ## Limitations and future work
 
+- The console has no snapshot or final-snapshot options and cannot change node type, which the service fixes at creation; engine versions can only be upgraded, and node counts only change for Memcached.
 - Cache data is lost when containers are removed on shutdown or restart; persistent mode retains metadata only.
 - Host ports can change when nodes restart.
 - Production networking, topology and failover behavior are not reproduced.

@@ -31,6 +31,7 @@ import { Route as ServicesDynamodbRouteImport } from './routes/services/dynamodb
 import { Route as ServicesEc2RouteImport } from './routes/services/ec2'
 import { Route as ServicesEcrRouteImport } from './routes/services/ecr'
 import { Route as ServicesEcsRouteImport } from './routes/services/ecs'
+import { Route as ServicesElasticacheRouteImport } from './routes/services/elasticache'
 import { Route as ServicesEventbridgeRouteImport } from './routes/services/eventbridge'
 import { Route as ServicesFirehoseRouteImport } from './routes/services/firehose'
 import { Route as ServicesIamRouteImport } from './routes/services/iam'
@@ -160,6 +161,11 @@ const ServicesEcsRoute = ServicesEcsRouteImport.update({
   path: '/services/ecs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesElasticacheRoute = ServicesElasticacheRouteImport.update({
+  id: '/services/elasticache',
+  path: '/services/elasticache',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesEventbridgeRoute = ServicesEventbridgeRouteImport.update({
   id: '/services/eventbridge',
   path: '/services/eventbridge',
@@ -268,6 +274,7 @@ export interface FileRoutesByFullPath {
   '/services/ec2': typeof ServicesEc2Route
   '/services/ecr': typeof ServicesEcrRoute
   '/services/ecs': typeof ServicesEcsRoute
+  '/services/elasticache': typeof ServicesElasticacheRoute
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/firehose': typeof ServicesFirehoseRoute
   '/services/iam': typeof ServicesIamRoute
@@ -309,6 +316,7 @@ export interface FileRoutesByTo {
   '/services/ec2': typeof ServicesEc2Route
   '/services/ecr': typeof ServicesEcrRoute
   '/services/ecs': typeof ServicesEcsRoute
+  '/services/elasticache': typeof ServicesElasticacheRoute
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/firehose': typeof ServicesFirehoseRoute
   '/services/iam': typeof ServicesIamRoute
@@ -351,6 +359,7 @@ export interface FileRoutesById {
   '/services/ec2': typeof ServicesEc2Route
   '/services/ecr': typeof ServicesEcrRoute
   '/services/ecs': typeof ServicesEcsRoute
+  '/services/elasticache': typeof ServicesElasticacheRoute
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/firehose': typeof ServicesFirehoseRoute
   '/services/iam': typeof ServicesIamRoute
@@ -394,6 +403,7 @@ export interface FileRouteTypes {
     | '/services/ec2'
     | '/services/ecr'
     | '/services/ecs'
+    | '/services/elasticache'
     | '/services/eventbridge'
     | '/services/firehose'
     | '/services/iam'
@@ -435,6 +445,7 @@ export interface FileRouteTypes {
     | '/services/ec2'
     | '/services/ecr'
     | '/services/ecs'
+    | '/services/elasticache'
     | '/services/eventbridge'
     | '/services/firehose'
     | '/services/iam'
@@ -476,6 +487,7 @@ export interface FileRouteTypes {
     | '/services/ec2'
     | '/services/ecr'
     | '/services/ecs'
+    | '/services/elasticache'
     | '/services/eventbridge'
     | '/services/firehose'
     | '/services/iam'
@@ -518,6 +530,7 @@ export interface RootRouteChildren {
   ServicesEc2Route: typeof ServicesEc2Route
   ServicesEcrRoute: typeof ServicesEcrRoute
   ServicesEcsRoute: typeof ServicesEcsRoute
+  ServicesElasticacheRoute: typeof ServicesElasticacheRoute
   ServicesEventbridgeRoute: typeof ServicesEventbridgeRoute
   ServicesFirehoseRoute: typeof ServicesFirehoseRoute
   ServicesIamRoute: typeof ServicesIamRoute
@@ -694,6 +707,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesEcsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/elasticache': {
+      id: '/services/elasticache'
+      path: '/services/elasticache'
+      fullPath: '/services/elasticache'
+      preLoaderRoute: typeof ServicesElasticacheRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/eventbridge': {
       id: '/services/eventbridge'
       path: '/services/eventbridge'
@@ -839,6 +859,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesEc2Route: ServicesEc2Route,
   ServicesEcrRoute: ServicesEcrRoute,
   ServicesEcsRoute: ServicesEcsRoute,
+  ServicesElasticacheRoute: ServicesElasticacheRoute,
   ServicesEventbridgeRoute: ServicesEventbridgeRoute,
   ServicesFirehoseRoute: ServicesFirehoseRoute,
   ServicesIamRoute: ServicesIamRoute,
@@ -861,13 +882,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

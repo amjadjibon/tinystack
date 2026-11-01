@@ -773,6 +773,7 @@ Manage Redis, Valkey, and Memcached resources with an optional Docker cache runt
 - Engine metadata, tags and lifecycle events.
 - Docker nodes expose allocated host ports and become available after readiness probes.
 - Records mode returns metadata without starting cache processes.
+- Dedicated console for cache clusters, replication groups (replica scaling, test failover), serverless caches, subnet and parameter groups (including parameter edits), events and tags, with engine, version, node type, subnet and parameter group selects, copyable endpoints, status polling while resources change, and records-only versus Docker runtime visibility.
 
 [Supported operations](elasticache.md#supported-operations) · [Limitations](elasticache.md#limitations-and-future-work)
 

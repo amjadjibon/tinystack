@@ -67,6 +67,8 @@ const consoleSecretsManager = "secretsmanager"
 
 const consoleRDS = "rds"
 
+const consoleElastiCache = "elasticache"
+
 const consoleCloudFormation = "cloudformation"
 
 const consoleBudgets = "budgets"
@@ -317,6 +319,17 @@ var consoleRDSOperations = strings.Fields(`
  AddTagsToResource RemoveTagsFromResource ListTagsForResource
 `)
 
+var consoleElastiCacheOperations = strings.Fields(`
+ CreateCacheCluster DescribeCacheClusters ModifyCacheCluster DeleteCacheCluster RebootCacheCluster
+ CreateReplicationGroup DescribeReplicationGroups ModifyReplicationGroup DeleteReplicationGroup
+ IncreaseReplicaCount DecreaseReplicaCount TestFailover
+ CreateServerlessCache DescribeServerlessCaches ModifyServerlessCache DeleteServerlessCache
+ CreateCacheSubnetGroup DescribeCacheSubnetGroups DeleteCacheSubnetGroup
+ CreateCacheParameterGroup DescribeCacheParameterGroups DescribeCacheParameters ModifyCacheParameterGroup
+ DeleteCacheParameterGroup DescribeCacheEngineVersions DescribeEvents
+ AddTagsToResource RemoveTagsFromResource ListTagsForResource
+`)
+
 // Cognito exposes only operations used by the user pools console.
 var consoleCognitoOperations = strings.Fields(`
  ListUserPools DescribeUserPool ListUsers AdminGetUser AdminCreateUser AdminConfirmSignUp
@@ -426,6 +439,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, costexplorer := s.services[consoleCostExplorer]
 		_, cur := s.services[consoleCUR]
 		_, rds := s.services[consoleRDS]
+		_, elasticache := s.services[consoleElastiCache]
 		_, cloudformation := s.services[consoleCloudFormation]
 		accounts := []string{s.cfg.Defaults.Account}
 		for _, account := range s.cfg.Identity.Accounts {
@@ -467,6 +481,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleCostExplorer:   costexplorer,
 			consoleCUR:            cur,
 			consoleRDS:            rds,
+			consoleElastiCache:    elasticache,
+			"elasticache_runtime": s.cfg.ElastiCache.Caches,
 			consoleCloudFormation: cloudformation,
 			"requires_signature":  s.cfg.Identity.Mode == config.IdentityVerify,
 			"taggable_services":   resourcegroupstaggingapi.TaggableServices(),
@@ -590,6 +606,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleCUROperations
 	case consoleRDS:
 		operations = consoleRDSOperations
+	case consoleElastiCache:
+		operations = consoleElastiCacheOperations
 	case consoleCloudFormation:
 		operations = consoleCloudFormationOperations
 	}
