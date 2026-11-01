@@ -318,7 +318,9 @@ function CreateGroup({
 		[engine, setEngine] = useState(
 			engines.includes("redis") ? "redis" : (engines[0] ?? ""),
 		),
-		[version, setVersion] = useState(""),
+		[version, setVersion] = useState(
+			() => versionsFor(options.versions, engine).at(-1) ?? "",
+		),
 		[nodeType, setNodeType] = useState(nodeTypes[0]),
 		[replicas, setReplicas] = useState("1"),
 		[failover, setFailover] = useState(true),
@@ -386,7 +388,7 @@ function CreateGroup({
 					options={engines}
 					onChange={(v) => {
 						setEngine(v);
-						setVersion("");
+						setVersion(versionsFor(options.versions, v).at(-1) ?? "");
 						setParameter("");
 					}}
 				/>

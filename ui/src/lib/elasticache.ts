@@ -165,8 +165,8 @@ export function ecDate(value?: string | number) {
 
 export const runtimeNote = (runtime?: string) =>
 	runtime === "docker"
-		? "Docker runtime configured. Cache nodes run as containers; endpoints show the allocated host ports and status follows readiness probes."
-		: "Records-only runtime. Clusters, replication groups and serverless caches are stored as records; no cache server listens on the endpoint. Set elasticache.caches: docker to run real nodes.";
+		? "Cache nodes run as containers; endpoints show the allocated host ports and status follows readiness probes."
+		: "Clusters, replication groups and serverless caches are stored as records; no cache server listens on the endpoint. Set elasticache.caches: docker to run real nodes.";
 
 export {
 	cliCommand,
@@ -179,5 +179,6 @@ export {
 	isPendingStatus,
 	nodeTypes,
 	statusType,
+	upgradeVersions,
 	versionsFor,
 } from "./elasticacheHelpers";

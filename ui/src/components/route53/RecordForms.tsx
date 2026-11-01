@@ -37,7 +37,10 @@ export function RecordDialog({
 	onSaved: () => void;
 }) {
 	const [form, setForm] = useState<RecordForm>(
-		record ? recordToForm(record, zone.Name) : emptyRecordForm,
+		record
+			? recordToForm(record, zone.Name)
+			: // Alias targets most often live in the same zone.
+				{ ...emptyRecordForm, aliasZoneId: bareZoneId(zone.Id) },
 	);
 	const patch = (next: Partial<RecordForm>) =>
 		setForm((previous) => ({ ...previous, ...next }));
@@ -196,7 +199,7 @@ export function DeleteRecordDialog({
 			]}
 		>
 			<Alert type="warning" header="This cannot be undone">
-				Delete the {record.Type} record set <strong>{record.Name}</strong>.
+				Delete the {record.Type} record set <strong>{record.Name}</strong>
 			</Alert>
 		</ActionDialog>
 	);

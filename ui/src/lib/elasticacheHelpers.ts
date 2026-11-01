@@ -61,8 +61,24 @@ export const defaultPort = (engine: string) =>
 export const engineNames = (versions: EngineVersion[]) =>
 	[...new Set(versions.map((v) => v.Engine))].sort();
 
+// compareVersions orders dotted engine versions numerically, so 7.10 sorts after 7.9.
+export const compareVersions = (a: string, b: string) =>
+	a.localeCompare(b, undefined, { numeric: true });
+
+// versionsFor lists an engine's versions, oldest first.
 export const versionsFor = (versions: EngineVersion[], engine: string) =>
-	versions.filter((v) => v.Engine === engine).map((v) => v.EngineVersion);
+	versions
+		.filter((v) => v.Engine === engine)
+		.map((v) => v.EngineVersion)
+		.sort(compareVersions);
+
+// upgradeVersions lists the versions a cache can move to: its own and later ones.
+export const upgradeVersions = (
+	versions: EngineVersion[],
+	engine: string,
+	current: string,
+) =>
+	versionsFor(versions, engine).filter((v) => compareVersions(v, current) >= 0);
 
 export const familiesFor = (versions: EngineVersion[]) =>
 	[

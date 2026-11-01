@@ -132,7 +132,12 @@ function ZoneWorkspace({
 	const { items, collectionProps, filterProps, paginationProps } =
 		useCollection(all, {
 			filtering: {
-				empty: <Box>No hosted zones in this account.</Box>,
+				empty: (
+					<Box>
+						No hosted zones in this account. Choose Create hosted zone to add
+						one.
+					</Box>
+				),
 				noMatch: <Box>No matching hosted zones.</Box>,
 				filteringFunction: (z, text) =>
 					`${z.Name} ${z.Id} ${z.Config?.Comment ?? ""}`

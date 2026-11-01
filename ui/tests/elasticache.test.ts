@@ -13,6 +13,7 @@ import {
 	replicaCountStep,
 	serverlessCreateInput,
 	statusType,
+	upgradeVersions,
 	validateCacheName,
 	validateGroupName,
 	versionsFor,
@@ -199,4 +200,13 @@ test("engine version lists group by engine and family", () => {
 	assert.deepEqual(engineNames(versions), ["redis", "valkey"]);
 	assert.deepEqual(versionsFor(versions, "redis"), ["7.0", "7.1"]);
 	assert.deepEqual(familiesFor(versions), ["redis7", "valkey8"]);
+});
+
+test("versions sort numerically and upgrades exclude older versions", () => {
+	const versions = ["7.10", "6.2", "7.9"].map((EngineVersion) => ({
+		Engine: "redis",
+		EngineVersion,
+	}));
+	assert.deepEqual(versionsFor(versions, "redis"), ["6.2", "7.9", "7.10"]);
+	assert.deepEqual(upgradeVersions(versions, "redis", "7.9"), ["7.9", "7.10"]);
 });

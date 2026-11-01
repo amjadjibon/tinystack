@@ -179,7 +179,7 @@ export function DeleteZoneDialog({
 		>
 			<SpaceBetween size="m">
 				<Alert type="warning" header="This cannot be undone">
-					Delete the hosted zone <strong>{zone.Name}</strong>. A zone can be
+					Delete the hosted zone <strong>{zone.Name}</strong>; a zone can be
 					deleted only after every record set except its own SOA and NS records
 					has been removed.
 				</Alert>

@@ -22,6 +22,7 @@ import {
 	engineNames,
 	familiesFor,
 	nodeTypes,
+	upgradeVersions,
 	versionsFor,
 } from "#/lib/elasticache";
 import {
@@ -346,7 +347,9 @@ function CreateCluster({
 		[engine, setEngine] = useState(
 			engines.includes("redis") ? "redis" : (engines[0] ?? ""),
 		),
-		[version, setVersion] = useState(""),
+		[version, setVersion] = useState(
+			() => versionsFor(options.versions, engine).at(-1) ?? "",
+		),
 		[nodeType, setNodeType] = useState(nodeTypes[0]),
 		[nodes, setNodes] = useState("1"),
 		[port, setPort] = useState(String(defaultPort(engine))),
@@ -402,7 +405,7 @@ function CreateCluster({
 					options={engines}
 					onChange={(v) => {
 						setEngine(v);
-						setVersion("");
+						setVersion(versionsFor(options.versions, v).at(-1) ?? "");
 						setParameter("");
 						setPort(String(defaultPort(v)));
 					}}
@@ -524,7 +527,11 @@ function ModifyCluster({
 				<SelectField
 					label="Engine version"
 					value={version}
-					options={versionsFor(options.versions, cluster.Engine)}
+					options={upgradeVersions(
+						options.versions,
+						cluster.Engine,
+						cluster.EngineVersion,
+					)}
 					onChange={setVersion}
 				/>
 				{cluster.Engine === "memcached" && (
