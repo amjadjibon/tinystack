@@ -288,7 +288,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		"apigateway": "GetRestApis", "apigatewayv2": "GetApis", "sfn": "ListStateMachines", "ec2": "DescribeVpcs",
 		"secretsmanager": "ListSecrets", "rds": "DescribeDBInstances", "cloudformation": "ListStacks",
 		"kms": "ListKeys", "kinesis": "ListStreams", "firehose": "ListDeliveryStreams",
-		"ecr": "DescribeRepositories", "ecs": "ListClusters",
+		"ecr": "DescribeRepositories", "ecs": "ListClusters", "ssm": "DescribeParameters",
 	}
 	var capabilities map[string]any
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
@@ -336,6 +336,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		{"sfn", "states", "ListStateMachines"},
 		{"ec2", "ec2", "DescribeVpcs"},
 		{"secretsmanager", "secretsmanager", "ListSecrets"},
+		{"ssm", "ssm", "DescribeParameters"},
 		{"rds", "rds", "DescribeDBInstances"},
 		{"cloudformation", "cloudformation", "ListStacks"},
 		{"kms", "kms", "ListKeys"},

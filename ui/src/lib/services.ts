@@ -520,7 +520,7 @@ const catalog: Record<string, ServiceInfo> = {
 	},
 	sqs: { title: "Simple Queue Service", category: integration, icon: "sqs" },
 	ssm: {
-		title: "Systems Manager",
+		title: "Systems Manager — Parameter Store",
 		category: management,
 		icon: "ssm",
 	},

@@ -33,6 +33,7 @@ import { secretHref } from "#/lib/secretsmanager";
 import { sfnHref } from "#/lib/sfn";
 import { snsHref } from "#/lib/sns";
 import { sqsHref } from "#/lib/sqs";
+import { ssmHref } from "#/lib/ssm";
 import { streamHref } from "#/lib/streamingHelpers";
 import { useFollow } from "#/lib/useFollow";
 import { EmptyState } from "./EmptyState";
@@ -82,6 +83,8 @@ export function resourceHref(r: Resource): string {
 			region: r.region,
 			key: r.arn || r.name,
 		});
+	if (r.service === "ssm" && r.type === "parameter")
+		return ssmHref({ account: r.account, region: r.region, parameter: r.name });
 	if (r.service === "secretsmanager" && r.type === "secret")
 		return secretHref({
 			account: r.account,

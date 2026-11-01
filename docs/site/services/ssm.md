@@ -28,6 +28,7 @@ See the [implemented feature catalogue](catalogue.md#systems-manager) for this s
 - No command runs on an instance: each invocation finishes as Success with empty output about a second after SendCommand, unless cancelled first.
 - SendCommand targets running EC2 instances and tag:<key> or InstanceIds targets; notifications, alarms, document hashes and rate controls are not supported.
 - Output is never written to S3 or CloudWatch Logs, though the settings are recorded.
+- The dedicated console covers Parameter Store; documents, Run Command and parameter policies remain CLI/SDK workflows.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

@@ -60,6 +60,7 @@ const (
 	consoleFirehose = "firehose"
 	consoleECR      = "ecr"
 	consoleECS      = "ecs"
+	consoleSSM      = "ssm"
 )
 
 const consoleSecretsManager = "secretsmanager"
@@ -293,6 +294,11 @@ var consoleECSOperations = strings.Fields(`
  RunTask ListTasks DescribeTasks StopTask
 `)
 
+var consoleSSMOperations = strings.Fields(`
+ DescribeParameters GetParameter GetParameterHistory PutParameter DeleteParameter DeleteParameters
+ LabelParameterVersion UnlabelParameterVersion ListTagsForResource AddTagsToResource RemoveTagsFromResource
+`)
+
 var consoleSecretsManagerOperations = strings.Fields(`
  CreateSecret DescribeSecret ListSecrets UpdateSecret DeleteSecret RestoreSecret
  PutSecretValue GetSecretValue ListSecretVersionIds UpdateSecretVersionStage
@@ -415,6 +421,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, ecr := s.services[consoleECR]
 		_, ecs := s.services[consoleECS]
 		_, secretsmanager := s.services[consoleSecretsManager]
+		_, ssm := s.services[consoleSSM]
 		_, budgets := s.services[consoleBudgets]
 		_, costexplorer := s.services[consoleCostExplorer]
 		_, cur := s.services[consoleCUR]
@@ -455,6 +462,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleECR:            ecr,
 			consoleECS:            ecs,
 			"ecs_runtime":         s.cfg.ECS.Containers,
+			consoleSSM:            ssm,
 			consoleBudgets:        budgets,
 			consoleCostExplorer:   costexplorer,
 			consoleCUR:            cur,
@@ -570,6 +578,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleECROperations
 	case consoleECS:
 		operations = consoleECSOperations
+	case consoleSSM:
+		operations = consoleSSMOperations
 	case consoleSecretsManager:
 		operations = consoleSecretsManagerOperations
 	case consoleBudgets:

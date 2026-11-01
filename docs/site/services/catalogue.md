@@ -1600,6 +1600,7 @@ Store versioned parameters, publish documents, and send Run Command requests.
 - Documents: create, update, versions, default version, JSON/YAML conversion, sharing records and tags.
 - AWS-owned documents AWS-RunShellScript and AWS-RunPowerShellScript, found with the Owner and PlatformTypes filters.
 - Run Command records: SendCommand by instance IDs or tag targets, list, get invocation and cancel.
+- Dedicated Parameter Store console: metadata path/prefix, type and tier filters; masked value reveal, version history and labels, tags, create/overwrite and single/bulk deletion.
 
 [Supported operations](ssm.md#supported-operations) · [Limitations](ssm.md#limitations-and-future-work)
 

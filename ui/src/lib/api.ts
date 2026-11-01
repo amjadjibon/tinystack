@@ -164,6 +164,7 @@ export const api = {
 		ecr: boolean;
 		ecs: boolean;
 		ecs_runtime: string;
+		ssm: boolean;
 		rds: boolean;
 		cloudformation: boolean;
 		budgets: boolean;

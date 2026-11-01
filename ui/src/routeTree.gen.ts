@@ -44,6 +44,7 @@ import { Route as ServicesSecretsmanagerRouteImport } from './routes/services/se
 import { Route as ServicesSfnRouteImport } from './routes/services/sfn'
 import { Route as ServicesSnsRouteImport } from './routes/services/sns'
 import { Route as ServicesSqsRouteImport } from './routes/services/sqs'
+import { Route as ServicesSsmRouteImport } from './routes/services/ssm'
 import { Route as ServicesVpcRouteImport } from './routes/services/vpc'
 import { Route as ServicesServiceIndexRouteImport } from './routes/services/$service.index'
 import { Route as ServicesServiceResourceRouteImport } from './routes/services/$service.resource'
@@ -224,6 +225,11 @@ const ServicesSqsRoute = ServicesSqsRouteImport.update({
   path: '/services/sqs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesSsmRoute = ServicesSsmRouteImport.update({
+  id: '/services/ssm',
+  path: '/services/ssm',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesVpcRoute = ServicesVpcRouteImport.update({
   id: '/services/vpc',
   path: '/services/vpc',
@@ -275,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/services/sfn': typeof ServicesSfnRoute
   '/services/sns': typeof ServicesSnsRoute
   '/services/sqs': typeof ServicesSqsRoute
+  '/services/ssm': typeof ServicesSsmRoute
   '/services/vpc': typeof ServicesVpcRoute
   '/services/': typeof ServicesIndexRoute
   '/services/$service/resource': typeof ServicesServiceResourceRoute
@@ -315,6 +322,7 @@ export interface FileRoutesByTo {
   '/services/sfn': typeof ServicesSfnRoute
   '/services/sns': typeof ServicesSnsRoute
   '/services/sqs': typeof ServicesSqsRoute
+  '/services/ssm': typeof ServicesSsmRoute
   '/services/vpc': typeof ServicesVpcRoute
   '/services': typeof ServicesIndexRoute
   '/services/$service/resource': typeof ServicesServiceResourceRoute
@@ -356,6 +364,7 @@ export interface FileRoutesById {
   '/services/sfn': typeof ServicesSfnRoute
   '/services/sns': typeof ServicesSnsRoute
   '/services/sqs': typeof ServicesSqsRoute
+  '/services/ssm': typeof ServicesSsmRoute
   '/services/vpc': typeof ServicesVpcRoute
   '/services/': typeof ServicesIndexRoute
   '/services/$service/resource': typeof ServicesServiceResourceRoute
@@ -398,6 +407,7 @@ export interface FileRouteTypes {
     | '/services/sfn'
     | '/services/sns'
     | '/services/sqs'
+    | '/services/ssm'
     | '/services/vpc'
     | '/services/'
     | '/services/$service/resource'
@@ -438,6 +448,7 @@ export interface FileRouteTypes {
     | '/services/sfn'
     | '/services/sns'
     | '/services/sqs'
+    | '/services/ssm'
     | '/services/vpc'
     | '/services'
     | '/services/$service/resource'
@@ -478,6 +489,7 @@ export interface FileRouteTypes {
     | '/services/sfn'
     | '/services/sns'
     | '/services/sqs'
+    | '/services/ssm'
     | '/services/vpc'
     | '/services/'
     | '/services/$service/resource'
@@ -519,6 +531,7 @@ export interface RootRouteChildren {
   ServicesSfnRoute: typeof ServicesSfnRoute
   ServicesSnsRoute: typeof ServicesSnsRoute
   ServicesSqsRoute: typeof ServicesSqsRoute
+  ServicesSsmRoute: typeof ServicesSsmRoute
   ServicesVpcRoute: typeof ServicesVpcRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
   ServicesServiceResourceRoute: typeof ServicesServiceResourceRoute
@@ -772,6 +785,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesSqsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/ssm': {
+      id: '/services/ssm'
+      path: '/services/ssm'
+      fullPath: '/services/ssm'
+      preLoaderRoute: typeof ServicesSsmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/vpc': {
       id: '/services/vpc'
       path: '/services/vpc'
@@ -832,6 +852,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesSfnRoute: ServicesSfnRoute,
   ServicesSnsRoute: ServicesSnsRoute,
   ServicesSqsRoute: ServicesSqsRoute,
+  ServicesSsmRoute: ServicesSsmRoute,
   ServicesVpcRoute: ServicesVpcRoute,
   ServicesIndexRoute: ServicesIndexRoute,
   ServicesServiceResourceRoute: ServicesServiceResourceRoute,
