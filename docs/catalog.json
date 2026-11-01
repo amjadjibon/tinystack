@@ -793,11 +793,13 @@
       "features": [
         "Public and private hosted zones, record changes and pagination",
         "Routing policy and alias metadata, VPC associations, health-check records and tags",
-        "Private zone VPCs are checked with local EC2"
+        "Private zone VPCs are checked with local EC2",
+        "AWS-style console for hosted zones (create, comment, delete with typed confirmation, tags), record sets (create, edit, delete, alias targets, protected apex SOA and NS) and health checks (create, list, delete)"
       ],
       "gaps": [
         "No DNS listener and no endpoint probing for health checks",
-        "No traffic policies, reusable delegation sets, query logging, DNSSEC or CIDR collections"
+        "No traffic policies, reusable delegation sets, query logging, DNSSEC or CIDR collections",
+        "The console edits simple and existing routing-policy records but cannot choose a new routing policy, associate VPCs with an existing zone or edit health checks"
       ],
       "execution": "Records only",
       "package": "route53"

@@ -23,6 +23,7 @@ See the [implemented feature catalogue](catalogue.md#route-53) for this service'
 
 - No DNS listener and no endpoint probing for health checks.
 - No traffic policies, reusable delegation sets, query logging, DNSSEC or CIDR collections.
+- The console edits simple and existing routing-policy records but cannot choose a new routing policy, associate VPCs with an existing zone or edit health checks.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

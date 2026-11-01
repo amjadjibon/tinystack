@@ -1884,6 +1884,7 @@ Manage hosted zones and record sets without running a DNS server.
 - Public and private hosted zones, record changes and pagination.
 - Routing policy and alias metadata, VPC associations, health-check records and tags.
 - Private zone VPCs are checked with local EC2.
+- AWS-style console for hosted zones (create, comment, delete with typed confirmation, tags), record sets (create, edit, delete, alias targets, protected apex SOA and NS) and health checks (create, list, delete).
 
 [Supported operations](route53.md#supported-operations) · [Limitations](route53.md#limitations-and-future-work)
 

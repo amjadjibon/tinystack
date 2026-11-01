@@ -69,6 +69,8 @@ const consoleSecretsManager = "secretsmanager"
 
 const consoleRDS = "rds"
 
+const consoleRoute53 = "route53"
+
 const consoleCloudFormation = "cloudformation"
 
 const consoleBudgets = "budgets"
@@ -316,6 +318,13 @@ var consoleSecretsManagerOperations = strings.Fields(`
  RotateSecret CancelRotateSecret GetRandomPassword
 `)
 
+var consoleRoute53Operations = strings.Fields(`
+ ListHostedZones GetHostedZone CreateHostedZone DeleteHostedZone UpdateHostedZoneComment
+ ListResourceRecordSets ChangeResourceRecordSets
+ CreateHealthCheck ListHealthChecks DeleteHealthCheck
+ ChangeTagsForResource ListTagsForResource
+`)
+
 var consoleRDSOperations = strings.Fields(`
  CreateDBInstance DescribeDBInstances ModifyDBInstance DeleteDBInstance StopDBInstance StartDBInstance RebootDBInstance
  DescribeDBClusters CreateDBCluster ModifyDBCluster DeleteDBCluster StartDBCluster StopDBCluster
@@ -449,6 +458,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, rds := s.services[consoleRDS]
 		_, elasticache := s.services[consoleElastiCache]
 		_, memorydb := s.services[consoleMemoryDB]
+		_, route53 := s.services[consoleRoute53]
 		_, cloudformation := s.services[consoleCloudFormation]
 		accounts := []string{s.cfg.Defaults.Account}
 		for _, account := range s.cfg.Identity.Accounts {
@@ -494,6 +504,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			"elasticache_runtime": s.cfg.ElastiCache.Caches,
 			consoleMemoryDB:       memorydb,
 			"memorydb_runtime":    s.cfg.MemoryDB.Clusters,
+			consoleRoute53:        route53,
 			consoleCloudFormation: cloudformation,
 			"requires_signature":  s.cfg.Identity.Mode == config.IdentityVerify,
 			"taggable_services":   resourcegroupstaggingapi.TaggableServices(),
@@ -621,6 +632,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleElastiCacheOperations
 	case consoleMemoryDB:
 		operations = consoleMemoryDBOperations
+	case consoleRoute53:
+		operations = consoleRoute53Operations
 	case consoleCloudFormation:
 		operations = consoleCloudFormationOperations
 	}
@@ -650,7 +663,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	regional := in.Service != consoleIAM && in.Service != consoleBudgets &&
+	regional := in.Service != consoleIAM && in.Service != consoleBudgets && in.Service != consoleRoute53 &&
 		in.Service != consoleCostExplorer && in.Service != consoleCUR
 	if regional && !consoleRegion.MatchString(in.Region) {
 		s.consoleFail(

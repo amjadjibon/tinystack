@@ -30,6 +30,7 @@ import { lambdaHref } from "#/lib/lambda";
 import { logsHref } from "#/lib/logs";
 import { memorydbHref } from "#/lib/memorydb";
 import { rdsHref } from "#/lib/rds";
+import { route53Href } from "#/lib/route53";
 import { s3Href } from "#/lib/s3";
 import { secretHref } from "#/lib/secretsmanager";
 import { sfnHref } from "#/lib/sfn";
@@ -101,6 +102,13 @@ export function resourceHref(r: Resource): string {
 		});
 	if (r.service === "ssm" && r.type === "parameter")
 		return ssmHref({ account: r.account, region: r.region, parameter: r.name });
+	if (r.service === "route53" && r.type === "hosted-zone")
+		return route53Href({
+			account: r.account,
+			zone: String(r.details?.Id ?? r.arn.split("/").at(-1)),
+		});
+	if (r.service === "route53" && r.type === "health-check")
+		return `${route53Href({ account: r.account })}&section=healthchecks`;
 	if (r.service === "secretsmanager" && r.type === "secret")
 		return secretHref({
 			account: r.account,

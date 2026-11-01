@@ -101,6 +101,7 @@ function useScopeState() {
 			"create",
 			"bucket",
 			"secret",
+			"zone",
 			"database",
 			"queue",
 			"topic",
