@@ -98,9 +98,20 @@ func TestConsoleMemoryDBLifecycle(t *testing.T) {
 	call("UntagResource", map[string]any{"ResourceArn": arn, "TagKeys": []string{"team"}})
 
 	// A cluster in use blocks its ACL.
-	consoleResponse(t, srv,
-		consoleLambdaRequest(t, srv, "memorydb", "DeleteACL", account, region, map[string]any{"ACLName": "console-acl"}),
-		http.StatusBadRequest)
+	consoleResponse(
+		t,
+		srv,
+		consoleLambdaRequest(
+			t,
+			srv,
+			"memorydb",
+			"DeleteACL",
+			account,
+			region,
+			map[string]any{"ACLName": "console-acl"},
+		),
+		http.StatusBadRequest,
+	)
 
 	call("DeleteCluster", map[string]any{"ClusterName": "console-cluster"})
 	if len(call("DescribeClusters", map[string]any{})["Clusters"].([]any)) != 0 {

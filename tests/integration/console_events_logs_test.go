@@ -284,11 +284,23 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 	srv := server(t)
 	// listOperations maps each regional console service to a read operation it allows.
 	listOperations := map[string]string{
-		"eventbridge": "ListEventBuses", "logs": "DescribeLogGroups", "cloudwatch": "ListMetrics",
-		"apigateway": "GetRestApis", "apigatewayv2": "GetApis", "sfn": "ListStateMachines", "ec2": "DescribeVpcs",
-		"secretsmanager": "ListSecrets", "rds": "DescribeDBInstances", "cloudformation": "ListStacks",
-		"kms": "ListKeys", "kinesis": "ListStreams", "firehose": "ListDeliveryStreams",
-		"ecr": "DescribeRepositories", "ecs": "ListClusters", "ssm": "DescribeParameters", "memorydb": "DescribeClusters",
+		"eventbridge":    "ListEventBuses",
+		"logs":           "DescribeLogGroups",
+		"cloudwatch":     "ListMetrics",
+		"apigateway":     "GetRestApis",
+		"apigatewayv2":   "GetApis",
+		"sfn":            "ListStateMachines",
+		"ec2":            "DescribeVpcs",
+		"secretsmanager": "ListSecrets",
+		"rds":            "DescribeDBInstances",
+		"cloudformation": "ListStacks",
+		"kms":            "ListKeys",
+		"kinesis":        "ListStreams",
+		"firehose":       "ListDeliveryStreams",
+		"ecr":            "DescribeRepositories",
+		"ecs":            "ListClusters",
+		"ssm":            "DescribeParameters",
+		"memorydb":       "DescribeClusters",
 	}
 	var capabilities map[string]any
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
