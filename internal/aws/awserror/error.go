@@ -1,6 +1,7 @@
 package awserror
 
 import (
+	"context"
 	"errors"
 	"fmt"
 )
@@ -35,10 +36,15 @@ func Validation(format string, args ...any) *Error {
 	return New("ValidationException", fmt.Sprintf(format, args...))
 }
 
-// From returns a copy of err's AWS error, hiding any other error as an internal failure.
+// From returns a copy of err's AWS error, reporting a request the client abandoned as RequestCanceled with
+// status 499 and hiding any other error as an internal failure.
 func From(err error) *Error {
 	var awsErr *Error
 	if !errors.As(err, &awsErr) {
+		if errors.Is(err, context.Canceled) {
+			return &Error{Code: "RequestCanceled", Message: "The client canceled the request", StatusCode: 499}
+		}
+
 		return &Error{Code: "InternalServerError", Message: "An internal error occurred", StatusCode: 500}
 	}
 
