@@ -54,6 +54,8 @@ const consoleSFN = "sfn"
 
 const consoleEC2 = "ec2"
 
+const consoleKMS = "kms"
+
 const consoleSecretsManager = "secretsmanager"
 
 const consoleRDS = "rds"
@@ -255,6 +257,12 @@ var consoleEC2Operations = strings.Fields(`
  CreateTags DeleteTags DescribeTags
 `)
 
+var consoleKMSOperations = strings.Fields(`
+ CreateKey DescribeKey ListKeys EnableKey DisableKey ScheduleKeyDeletion CancelKeyDeletion UpdateKeyDescription
+ GetKeyPolicy PutKeyPolicy GetKeyRotationStatus EnableKeyRotation DisableKeyRotation
+ CreateAlias UpdateAlias DeleteAlias ListAliases TagResource UntagResource ListResourceTags Encrypt Decrypt
+`)
+
 var consoleSecretsManagerOperations = strings.Fields(`
  CreateSecret DescribeSecret ListSecrets UpdateSecret DeleteSecret RestoreSecret
  PutSecretValue GetSecretValue ListSecretVersionIds UpdateSecretVersionStage
@@ -371,6 +379,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, httpAPI := s.services[consoleHTTPAPI]
 		_, sfn := s.services[consoleSFN]
 		_, ec2 := s.services[consoleEC2]
+		_, kms := s.services[consoleKMS]
 		_, secretsmanager := s.services[consoleSecretsManager]
 		_, budgets := s.services[consoleBudgets]
 		_, costexplorer := s.services[consoleCostExplorer]
@@ -405,6 +414,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleHTTPAPI:        httpAPI,
 			consoleSFN:            sfn,
 			consoleEC2:            ec2,
+			consoleKMS:            kms,
 			consoleSecretsManager: secretsmanager,
 			consoleBudgets:        budgets,
 			consoleCostExplorer:   costexplorer,
@@ -511,6 +521,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleSFNOperations
 	case consoleEC2:
 		operations = consoleEC2Operations
+	case consoleKMS:
+		operations = consoleKMSOperations
 	case consoleSecretsManager:
 		operations = consoleSecretsManagerOperations
 	case consoleBudgets:

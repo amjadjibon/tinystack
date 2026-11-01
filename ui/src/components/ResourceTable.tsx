@@ -24,6 +24,7 @@ import { dynamoHref } from "#/lib/dynamodb";
 import { ec2Href, ec2Kinds, ec2Sections } from "#/lib/ec2";
 import { eventHref, inventoryRule } from "#/lib/eventbridge";
 import { type IAMKind, iamHref, iamKinds } from "#/lib/iam";
+import { kmsHref } from "#/lib/kms";
 import { lambdaHref } from "#/lib/lambda";
 import { logsHref } from "#/lib/logs";
 import { rdsHref } from "#/lib/rds";
@@ -64,6 +65,12 @@ export function resourceHref(r: Resource): string {
 		});
 	if (r.service === "cloudformation" && r.type === "stack")
 		return cfnHref({ account: r.account, region: r.region, stack: r.arn });
+	if (r.service === "kms" && r.type === "key")
+		return kmsHref({
+			account: r.account,
+			region: r.region,
+			key: r.arn || r.name,
+		});
 	if (r.service === "secretsmanager" && r.type === "secret")
 		return secretHref({
 			account: r.account,

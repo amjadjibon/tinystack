@@ -31,6 +31,7 @@ import { Route as ServicesDynamodbRouteImport } from './routes/services/dynamodb
 import { Route as ServicesEc2RouteImport } from './routes/services/ec2'
 import { Route as ServicesEventbridgeRouteImport } from './routes/services/eventbridge'
 import { Route as ServicesIamRouteImport } from './routes/services/iam'
+import { Route as ServicesKmsRouteImport } from './routes/services/kms'
 import { Route as ServicesLambdaRouteImport } from './routes/services/lambda'
 import { Route as ServicesLogsRouteImport } from './routes/services/logs'
 import { Route as ServicesRdsRouteImport } from './routes/services/rds'
@@ -154,6 +155,11 @@ const ServicesIamRoute = ServicesIamRouteImport.update({
   path: '/services/iam',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesKmsRoute = ServicesKmsRouteImport.update({
+  id: '/services/kms',
+  path: '/services/kms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesLambdaRoute = ServicesLambdaRouteImport.update({
   id: '/services/lambda',
   path: '/services/lambda',
@@ -232,6 +238,7 @@ export interface FileRoutesByFullPath {
   '/services/ec2': typeof ServicesEc2Route
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/iam': typeof ServicesIamRoute
+  '/services/kms': typeof ServicesKmsRoute
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
   '/services/rds': typeof ServicesRdsRoute
@@ -267,6 +274,7 @@ export interface FileRoutesByTo {
   '/services/ec2': typeof ServicesEc2Route
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/iam': typeof ServicesIamRoute
+  '/services/kms': typeof ServicesKmsRoute
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
   '/services/rds': typeof ServicesRdsRoute
@@ -303,6 +311,7 @@ export interface FileRoutesById {
   '/services/ec2': typeof ServicesEc2Route
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/iam': typeof ServicesIamRoute
+  '/services/kms': typeof ServicesKmsRoute
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
   '/services/rds': typeof ServicesRdsRoute
@@ -340,6 +349,7 @@ export interface FileRouteTypes {
     | '/services/ec2'
     | '/services/eventbridge'
     | '/services/iam'
+    | '/services/kms'
     | '/services/lambda'
     | '/services/logs'
     | '/services/rds'
@@ -375,6 +385,7 @@ export interface FileRouteTypes {
     | '/services/ec2'
     | '/services/eventbridge'
     | '/services/iam'
+    | '/services/kms'
     | '/services/lambda'
     | '/services/logs'
     | '/services/rds'
@@ -410,6 +421,7 @@ export interface FileRouteTypes {
     | '/services/ec2'
     | '/services/eventbridge'
     | '/services/iam'
+    | '/services/kms'
     | '/services/lambda'
     | '/services/logs'
     | '/services/rds'
@@ -446,6 +458,7 @@ export interface RootRouteChildren {
   ServicesEc2Route: typeof ServicesEc2Route
   ServicesEventbridgeRoute: typeof ServicesEventbridgeRoute
   ServicesIamRoute: typeof ServicesIamRoute
+  ServicesKmsRoute: typeof ServicesKmsRoute
   ServicesLambdaRoute: typeof ServicesLambdaRoute
   ServicesLogsRoute: typeof ServicesLogsRoute
   ServicesRdsRoute: typeof ServicesRdsRoute
@@ -616,6 +629,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesIamRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/kms': {
+      id: '/services/kms'
+      path: '/services/kms'
+      fullPath: '/services/kms'
+      preLoaderRoute: typeof ServicesKmsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/lambda': {
       id: '/services/lambda'
       path: '/services/lambda'
@@ -719,6 +739,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesEc2Route: ServicesEc2Route,
   ServicesEventbridgeRoute: ServicesEventbridgeRoute,
   ServicesIamRoute: ServicesIamRoute,
+  ServicesKmsRoute: ServicesKmsRoute,
   ServicesLambdaRoute: ServicesLambdaRoute,
   ServicesLogsRoute: ServicesLogsRoute,
   ServicesRdsRoute: ServicesRdsRoute,
@@ -735,13 +756,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

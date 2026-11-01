@@ -456,7 +456,7 @@ const catalog: Record<string, ServiceInfo> = {
 		icon: "kinesis",
 	},
 	kms: {
-		title: "Key Management Service",
+		title: "Key Management Service (KMS)",
 		category: security,
 		icon: "kms",
 	},

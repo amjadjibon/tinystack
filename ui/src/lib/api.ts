@@ -157,6 +157,7 @@ export const api = {
 		apigatewayv2: boolean;
 		sfn: boolean;
 		ec2: boolean;
+		kms: boolean;
 		secretsmanager: boolean;
 		rds: boolean;
 		cloudformation: boolean;

@@ -2160,6 +2160,7 @@ Exercise local cryptographic key and alias workflows.
 - SSM encrypts SecureString values and creates the AWS managed key alias/aws/ssm on first use; AWS managed keys cannot be disabled, scheduled for deletion, or have their policy, description or rotation changed.
 - Default key policies enable IAM delegation; key ID, alias and ARN authorization resolves the owning key policy, with explicit Deny precedence and no root recovery.
 - CreateKey and PutKeyPolicy validate the supported resource policy subset and reject caller lockout unless BypassPolicyLockoutSafetyCheck is true.
+- Dedicated console for key creation, metadata, policies, tags, aliases, enable/disable, scheduled deletion and cancellation, rotation settings, and a masked encrypt/decrypt tester.
 
 [Supported operations](kms.md#supported-operations) · [Limitations](kms.md#limitations-and-future-work)
 
