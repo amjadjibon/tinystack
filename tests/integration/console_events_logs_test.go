@@ -304,6 +304,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		"sesv2":          "ListEmailIdentities",
 		"scheduler":      "ListScheduleGroups",
 		"pipes":          "ListPipes",
+		"athena":         "ListWorkGroups",
 		"elbv2":          "DescribeLoadBalancers",
 		"acm":            "ListCertificates",
 	}
@@ -366,6 +367,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		{"sesv2", "ses", "ListEmailIdentities"},
 		{"scheduler", "scheduler", "ListScheduleGroups"},
 		{"pipes", "pipes", "ListPipes"},
+		{"athena", "athena", "ListWorkGroups"},
 		{"elbv2", "elasticloadbalancing", "DescribeLoadBalancers"},
 	} {
 		for _, mode := range []string{"unsigned", "wrong-service", "wrong-region", "wrong-account", "valid"} {

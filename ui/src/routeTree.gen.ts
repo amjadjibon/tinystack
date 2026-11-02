@@ -22,6 +22,7 @@ import { Route as ServicesIndexRouteImport } from './routes/services/index'
 import { Route as ServicesAcmRouteImport } from './routes/services/acm'
 import { Route as ServicesApigatewayRouteImport } from './routes/services/apigateway'
 import { Route as ServicesApigatewayv2RouteImport } from './routes/services/apigatewayv2'
+import { Route as ServicesAthenaRouteImport } from './routes/services/athena'
 import { Route as ServicesBudgetsRouteImport } from './routes/services/budgets'
 import { Route as ServicesCloudformationRouteImport } from './routes/services/cloudformation'
 import { Route as ServicesCloudfrontRouteImport } from './routes/services/cloudfront'
@@ -121,6 +122,11 @@ const ServicesApigatewayRoute = ServicesApigatewayRouteImport.update({
 const ServicesApigatewayv2Route = ServicesApigatewayv2RouteImport.update({
   id: '/services/apigatewayv2',
   path: '/services/apigatewayv2',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesAthenaRoute = ServicesAthenaRouteImport.update({
+  id: '/services/athena',
+  path: '/services/athena',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesBudgetsRoute = ServicesBudgetsRouteImport.update({
@@ -313,6 +319,7 @@ export interface FileRoutesByFullPath {
   '/services/acm': typeof ServicesAcmRoute
   '/services/apigateway': typeof ServicesApigatewayRoute
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
+  '/services/athena': typeof ServicesAthenaRoute
   '/services/budgets': typeof ServicesBudgetsRoute
   '/services/cloudformation': typeof ServicesCloudformationRoute
   '/services/cloudfront': typeof ServicesCloudfrontRoute
@@ -363,6 +370,7 @@ export interface FileRoutesByTo {
   '/services/acm': typeof ServicesAcmRoute
   '/services/apigateway': typeof ServicesApigatewayRoute
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
+  '/services/athena': typeof ServicesAthenaRoute
   '/services/budgets': typeof ServicesBudgetsRoute
   '/services/cloudformation': typeof ServicesCloudformationRoute
   '/services/cloudfront': typeof ServicesCloudfrontRoute
@@ -414,6 +422,7 @@ export interface FileRoutesById {
   '/services/acm': typeof ServicesAcmRoute
   '/services/apigateway': typeof ServicesApigatewayRoute
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
+  '/services/athena': typeof ServicesAthenaRoute
   '/services/budgets': typeof ServicesBudgetsRoute
   '/services/cloudformation': typeof ServicesCloudformationRoute
   '/services/cloudfront': typeof ServicesCloudfrontRoute
@@ -466,6 +475,7 @@ export interface FileRouteTypes {
     | '/services/acm'
     | '/services/apigateway'
     | '/services/apigatewayv2'
+    | '/services/athena'
     | '/services/budgets'
     | '/services/cloudformation'
     | '/services/cloudfront'
@@ -516,6 +526,7 @@ export interface FileRouteTypes {
     | '/services/acm'
     | '/services/apigateway'
     | '/services/apigatewayv2'
+    | '/services/athena'
     | '/services/budgets'
     | '/services/cloudformation'
     | '/services/cloudfront'
@@ -566,6 +577,7 @@ export interface FileRouteTypes {
     | '/services/acm'
     | '/services/apigateway'
     | '/services/apigatewayv2'
+    | '/services/athena'
     | '/services/budgets'
     | '/services/cloudformation'
     | '/services/cloudfront'
@@ -617,6 +629,7 @@ export interface RootRouteChildren {
   ServicesAcmRoute: typeof ServicesAcmRoute
   ServicesApigatewayRoute: typeof ServicesApigatewayRoute
   ServicesApigatewayv2Route: typeof ServicesApigatewayv2Route
+  ServicesAthenaRoute: typeof ServicesAthenaRoute
   ServicesBudgetsRoute: typeof ServicesBudgetsRoute
   ServicesCloudformationRoute: typeof ServicesCloudformationRoute
   ServicesCloudfrontRoute: typeof ServicesCloudfrontRoute
@@ -746,6 +759,13 @@ declare module '@tanstack/react-router' {
       path: '/services/apigatewayv2'
       fullPath: '/services/apigatewayv2'
       preLoaderRoute: typeof ServicesApigatewayv2RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/athena': {
+      id: '/services/athena'
+      path: '/services/athena'
+      fullPath: '/services/athena'
+      preLoaderRoute: typeof ServicesAthenaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services/budgets': {
@@ -1009,6 +1029,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesAcmRoute: ServicesAcmRoute,
   ServicesApigatewayRoute: ServicesApigatewayRoute,
   ServicesApigatewayv2Route: ServicesApigatewayv2Route,
+  ServicesAthenaRoute: ServicesAthenaRoute,
   ServicesBudgetsRoute: ServicesBudgetsRoute,
   ServicesCloudformationRoute: ServicesCloudformationRoute,
   ServicesCloudfrontRoute: ServicesCloudfrontRoute,

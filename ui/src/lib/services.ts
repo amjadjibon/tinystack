@@ -354,7 +354,12 @@ const catalog: Record<string, ServiceInfo> = {
 		category: integration,
 		icon: "appsync",
 	},
-	athena: { title: "Athena", category: analytics, icon: "athena" },
+	athena: {
+		title: "Athena",
+		category: analytics,
+		icon: "athena",
+		href: "/services/athena",
+	},
 	applicationautoscaling: {
 		title: "Application Auto Scaling",
 		category: management,

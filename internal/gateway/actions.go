@@ -66,6 +66,7 @@ const (
 	consoleSESv2       = "sesv2"
 	consoleScheduler   = "scheduler"
 	consolePipes       = "pipes"
+	consoleAthena      = "athena"
 	consoleELBv2       = "elbv2"
 	consoleACM         = "acm"
 	consoleCloudFront  = "cloudfront"
@@ -328,6 +329,14 @@ var consolePipesOperations = strings.Fields(`
  TagResource UntagResource ListTagsForResource
 `)
 
+var consoleAthenaOperations = strings.Fields(`
+ StartQueryExecution GetQueryExecution GetQueryResults StopQueryExecution ListQueryExecutions BatchGetQueryExecution
+ CreateWorkGroup GetWorkGroup ListWorkGroups UpdateWorkGroup DeleteWorkGroup
+ CreateNamedQuery GetNamedQuery ListNamedQueries DeleteNamedQuery BatchGetNamedQuery
+ GetDataCatalog ListDataCatalogs ListDatabases GetDatabase ListTableMetadata GetTableMetadata
+ TagResource UntagResource ListTagsForResource
+`)
+
 var consoleSchedulerOperations = strings.Fields(`
  CreateScheduleGroup GetScheduleGroup ListScheduleGroups DeleteScheduleGroup
  CreateSchedule GetSchedule ListSchedules UpdateSchedule DeleteSchedule
@@ -517,6 +526,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, sesv2 := s.services[consoleSESv2]
 		_, scheduler := s.services[consoleScheduler]
 		_, pipes := s.services[consolePipes]
+		_, athena := s.services[consoleAthena]
 		_, elbv2 := s.services[consoleELBv2]
 		_, route53 := s.services[consoleRoute53]
 		_, cloudformation := s.services[consoleCloudFormation]
@@ -569,6 +579,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleSESv2:          sesv2,
 			consoleScheduler:      scheduler,
 			consolePipes:          pipes,
+			consoleAthena:         athena,
 			consoleELBv2:          elbv2,
 			consoleRoute53:        route53,
 			consoleCloudFormation: cloudformation,
@@ -706,6 +717,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleSESv2Operations
 	case consolePipes:
 		operations = consolePipesOperations
+	case consoleAthena:
+		operations = consoleAthenaOperations
 	case consoleScheduler:
 		operations = consoleSchedulerOperations
 	case consoleELBv2:

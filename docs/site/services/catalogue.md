@@ -213,6 +213,7 @@ Query local S3 data through the Glue catalog using an in-memory SQLite SQL engin
 
 **Execution:** SQLite SQL engine with local S3 reads/writes and Glue catalog updates. **Selected operations:** 25.
 
+- Dedicated console for SQL execution and cancellation, paginated results, query history and re-run, saved queries, workgroup output configuration and tags, and read-only Glue data catalog browsing.
 - Workgroups, named queries, query execution metadata, pagination and client tokens.
 - SELECT queries over CSV, delimited text, JSON and Parquet, including gzip text and SNAPPY/GZIP/ZSTD Parquet pages.
 - Glue catalog DDL, SHOW, DESCRIBE, MSCK REPAIR and partition changes.
