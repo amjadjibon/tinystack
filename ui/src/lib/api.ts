@@ -177,6 +177,7 @@ export const api = {
 		scheduler: boolean;
 		pipes: boolean;
 		cloudtrail: boolean;
+		servicediscovery: boolean;
 		athena: boolean;
 		glue: boolean;
 		cognitoidentity: boolean;

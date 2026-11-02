@@ -1817,6 +1817,7 @@ Manage regional Cloud Map records and discover registered instances through the 
 - Regional/account-scoped records, resource tags, diagnostic inventory, Resource Groups Tagging API and official-icon console catalogue.
 - CloudFormation HttpNamespace, PrivateDnsNamespace, Service and Instance with selected properties; operations complete synchronously.
 - CreatorRequestId/UpdaterRequestId replay committed namespace/service/registration/HTTP-update results within the account and Region; changed inputs reject reused tokens.
+- Dedicated Cloud Map console for namespaces, services, instance registration and custom health, tags, operation status and filtered discovery; private DNS creation uses the EC2 VPC picker.
 
 [Supported operations](servicediscovery.md#supported-operations) · [Limitations](servicediscovery.md#limitations-and-future-work)
 

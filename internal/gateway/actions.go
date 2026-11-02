@@ -57,24 +57,25 @@ const consoleSFN = "sfn"
 const consoleEC2 = "ec2"
 
 const (
-	consoleKMS         = "kms"
-	consoleKinesis     = "kinesis"
-	consoleFirehose    = "firehose"
-	consoleECR         = "ecr"
-	consoleECS         = "ecs"
-	consoleSSM         = "ssm"
-	consoleElastiCache = "elasticache"
-	consoleMemoryDB    = "memorydb"
-	consoleSESv2       = "sesv2"
-	consoleScheduler   = "scheduler"
-	consoleCloudTrail  = "cloudtrail"
-	consolePipes       = "pipes"
-	consoleAthena      = "athena"
-	consoleGlue        = "glue"
-	consoleELBv2       = "elbv2"
-	consoleACM         = "acm"
-	consoleCloudFront  = "cloudfront"
-	consoleEFS         = "efs"
+	consoleKMS              = "kms"
+	consoleKinesis          = "kinesis"
+	consoleFirehose         = "firehose"
+	consoleECR              = "ecr"
+	consoleECS              = "ecs"
+	consoleSSM              = "ssm"
+	consoleElastiCache      = "elasticache"
+	consoleMemoryDB         = "memorydb"
+	consoleSESv2            = "sesv2"
+	consoleScheduler        = "scheduler"
+	consoleCloudTrail       = "cloudtrail"
+	consolePipes            = "pipes"
+	consoleAthena           = "athena"
+	consoleGlue             = "glue"
+	consoleELBv2            = "elbv2"
+	consoleACM              = "acm"
+	consoleCloudFront       = "cloudfront"
+	consoleEFS              = "efs"
+	consoleServiceDiscovery = "servicediscovery"
 )
 
 const consoleSecretsManager = "secretsmanager"
@@ -345,6 +346,15 @@ var consoleCloudTrailOperations = strings.Fields(`
  PutEventSelectors GetEventSelectors AddTags RemoveTags ListTags LookupEvents
 `)
 
+var consoleServiceDiscoveryOperations = strings.Fields(`
+ CreateHttpNamespace CreatePrivateDnsNamespace CreatePublicDnsNamespace
+ GetOperation ListOperations GetNamespace ListNamespaces DeleteNamespace UpdateHttpNamespace
+ CreateService GetService ListServices UpdateService DeleteService
+ RegisterInstance DeregisterInstance GetInstance ListInstances GetInstancesHealthStatus
+ UpdateInstanceCustomHealthStatus DiscoverInstances DiscoverInstancesRevision
+ TagResource UntagResource ListTagsForResource
+`)
+
 var consolePipesOperations = strings.Fields(`
  CreatePipe DescribePipe UpdatePipe DeletePipe ListPipes StartPipe StopPipe
  TagResource UntagResource ListTagsForResource
@@ -566,6 +576,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, scheduler := s.services[consoleScheduler]
 		_, cloudtrail := s.services[consoleCloudTrail]
 		_, pipes := s.services[consolePipes]
+		_, serviceDiscovery := s.services[consoleServiceDiscovery]
 		_, athena := s.services[consoleAthena]
 		_, glue := s.services[consoleGlue]
 		_, cognitoidentity := s.services[consoleCognitoIdentity]
@@ -593,45 +604,46 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			"signing_names": signingNames,
 			consoleIAM:      iam, consoleS3: s3, consoleSQS: sqs, consoleSNS: sns,
 			consoleLambda: lambda, consoleLogs: logs,
-			consoleDynamoDB:        dynamodb,
-			consoleEventBridge:     eventbridge,
-			consoleCloudWatch:      cloudwatch,
-			consoleAPIGateway:      restAPI,
-			consoleHTTPAPI:         httpAPI,
-			consoleSFN:             sfn,
-			consoleEC2:             ec2,
-			consoleKMS:             kms,
-			consoleKinesis:         kinesis,
-			consoleFirehose:        firehose,
-			consoleSecretsManager:  secretsmanager,
-			consoleECR:             ecr,
-			consoleECS:             ecs,
-			"ecs_runtime":          s.cfg.ECS.Containers,
-			consoleSSM:             ssm,
-			consoleACM:             acm,
-			consoleCloudFront:      cloudfront,
-			consoleBudgets:         budgets,
-			consoleCostExplorer:    costexplorer,
-			consoleCUR:             cur,
-			consoleRDS:             rds,
-			consoleElastiCache:     elasticache,
-			"elasticache_runtime":  s.cfg.ElastiCache.Caches,
-			consoleMemoryDB:        memorydb,
-			"memorydb_runtime":     s.cfg.MemoryDB.Clusters,
-			consoleSESv2:           sesv2,
-			consoleScheduler:       scheduler,
-			consolePipes:           pipes,
-			consoleAthena:          athena,
-			consoleGlue:            glue,
-			consoleELBv2:           elbv2,
-			consoleRoute53:         route53,
-			consoleCloudFormation:  cloudformation,
-			"requires_signature":   s.cfg.Identity.Mode == config.IdentityVerify,
-			"taggable_services":    resourcegroupstaggingapi.TaggableServices(),
-			"resource_deletes":     s.consoleDeleteCapabilities(),
-			consoleCognitoIdentity: cognitoidentity,
-			consoleCloudTrail:      cloudtrail,
-			consoleEFS:             efs,
+			consoleDynamoDB:         dynamodb,
+			consoleEventBridge:      eventbridge,
+			consoleCloudWatch:       cloudwatch,
+			consoleAPIGateway:       restAPI,
+			consoleHTTPAPI:          httpAPI,
+			consoleSFN:              sfn,
+			consoleEC2:              ec2,
+			consoleKMS:              kms,
+			consoleKinesis:          kinesis,
+			consoleFirehose:         firehose,
+			consoleSecretsManager:   secretsmanager,
+			consoleECR:              ecr,
+			consoleECS:              ecs,
+			"ecs_runtime":           s.cfg.ECS.Containers,
+			consoleSSM:              ssm,
+			consoleACM:              acm,
+			consoleCloudFront:       cloudfront,
+			consoleBudgets:          budgets,
+			consoleCostExplorer:     costexplorer,
+			consoleCUR:              cur,
+			consoleRDS:              rds,
+			consoleElastiCache:      elasticache,
+			"elasticache_runtime":   s.cfg.ElastiCache.Caches,
+			consoleMemoryDB:         memorydb,
+			"memorydb_runtime":      s.cfg.MemoryDB.Clusters,
+			consoleSESv2:            sesv2,
+			consoleScheduler:        scheduler,
+			consolePipes:            pipes,
+			consoleAthena:           athena,
+			consoleGlue:             glue,
+			consoleELBv2:            elbv2,
+			consoleRoute53:          route53,
+			consoleCloudFormation:   cloudformation,
+			"requires_signature":    s.cfg.Identity.Mode == config.IdentityVerify,
+			"taggable_services":     resourcegroupstaggingapi.TaggableServices(),
+			"resource_deletes":      s.consoleDeleteCapabilities(),
+			consoleCognitoIdentity:  cognitoidentity,
+			consoleCloudTrail:       cloudtrail,
+			consoleEFS:              efs,
+			consoleServiceDiscovery: serviceDiscovery,
 		}
 
 		if s.cfg.Console.Auth.OIDC != nil {
@@ -767,6 +779,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleGlueOperations
 	case consoleCloudTrail:
 		operations = consoleCloudTrailOperations
+	case consoleServiceDiscovery:
+		operations = consoleServiceDiscoveryOperations
 	case consolePipes:
 		operations = consolePipesOperations
 	case consoleAthena:

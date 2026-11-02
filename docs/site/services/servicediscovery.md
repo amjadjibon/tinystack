@@ -25,7 +25,7 @@ See the [implemented feature catalogue](catalogue.md#cloud-map) for this service
 - Route 53 HealthCheckConfig, DNS namespace Properties and DNS namespace updates are unsupported; custom failure threshold is fixed at 1.
 - Shared namespaces and OwnerAccount discovery/operation inputs are rejected; cross-account sharing and ECS serviceRegistries are unsupported.
 - Instance attributes are records; no ECS task registration, DNS validation/probing or asynchronous health propagation.
-- CloudFormation public namespace and advanced properties, and management console pages are unsupported.
+- CloudFormation public namespace and advanced properties are unsupported.
 - Unknown filter names/conditions and profile-excluded input members fail explicitly.
 - SDKs prefix DiscoverInstances hosts with data-, so http://localhost:4566 or an IP endpoint becomes an unresolvable data-localhost; use http://tinystack.localhost:4566 (data-tinystack.localhost resolves to loopback per RFC 6761) or disable the host prefix in the client (Go: smithyhttp.DisableEndpointHostPrefix).
 

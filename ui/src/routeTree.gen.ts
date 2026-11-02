@@ -54,6 +54,7 @@ import { Route as ServicesRoute53RouteImport } from './routes/services/route53'
 import { Route as ServicesS3RouteImport } from './routes/services/s3'
 import { Route as ServicesSchedulerRouteImport } from './routes/services/scheduler'
 import { Route as ServicesSecretsmanagerRouteImport } from './routes/services/secretsmanager'
+import { Route as ServicesServicediscoveryRouteImport } from './routes/services/servicediscovery'
 import { Route as ServicesSesv2RouteImport } from './routes/services/sesv2'
 import { Route as ServicesSfnRouteImport } from './routes/services/sfn'
 import { Route as ServicesSnsRouteImport } from './routes/services/sns'
@@ -289,6 +290,12 @@ const ServicesSecretsmanagerRoute = ServicesSecretsmanagerRouteImport.update({
   path: '/services/secretsmanager',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesServicediscoveryRoute =
+  ServicesServicediscoveryRouteImport.update({
+    id: '/services/servicediscovery',
+    path: '/services/servicediscovery',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ServicesSesv2Route = ServicesSesv2RouteImport.update({
   id: '/services/sesv2',
   path: '/services/sesv2',
@@ -375,6 +382,7 @@ export interface FileRoutesByFullPath {
   '/services/s3': typeof ServicesS3Route
   '/services/scheduler': typeof ServicesSchedulerRoute
   '/services/secretsmanager': typeof ServicesSecretsmanagerRoute
+  '/services/servicediscovery': typeof ServicesServicediscoveryRoute
   '/services/sesv2': typeof ServicesSesv2Route
   '/services/sfn': typeof ServicesSfnRoute
   '/services/sns': typeof ServicesSnsRoute
@@ -430,6 +438,7 @@ export interface FileRoutesByTo {
   '/services/s3': typeof ServicesS3Route
   '/services/scheduler': typeof ServicesSchedulerRoute
   '/services/secretsmanager': typeof ServicesSecretsmanagerRoute
+  '/services/servicediscovery': typeof ServicesServicediscoveryRoute
   '/services/sesv2': typeof ServicesSesv2Route
   '/services/sfn': typeof ServicesSfnRoute
   '/services/sns': typeof ServicesSnsRoute
@@ -486,6 +495,7 @@ export interface FileRoutesById {
   '/services/s3': typeof ServicesS3Route
   '/services/scheduler': typeof ServicesSchedulerRoute
   '/services/secretsmanager': typeof ServicesSecretsmanagerRoute
+  '/services/servicediscovery': typeof ServicesServicediscoveryRoute
   '/services/sesv2': typeof ServicesSesv2Route
   '/services/sfn': typeof ServicesSfnRoute
   '/services/sns': typeof ServicesSnsRoute
@@ -543,6 +553,7 @@ export interface FileRouteTypes {
     | '/services/s3'
     | '/services/scheduler'
     | '/services/secretsmanager'
+    | '/services/servicediscovery'
     | '/services/sesv2'
     | '/services/sfn'
     | '/services/sns'
@@ -598,6 +609,7 @@ export interface FileRouteTypes {
     | '/services/s3'
     | '/services/scheduler'
     | '/services/secretsmanager'
+    | '/services/servicediscovery'
     | '/services/sesv2'
     | '/services/sfn'
     | '/services/sns'
@@ -653,6 +665,7 @@ export interface FileRouteTypes {
     | '/services/s3'
     | '/services/scheduler'
     | '/services/secretsmanager'
+    | '/services/servicediscovery'
     | '/services/sesv2'
     | '/services/sfn'
     | '/services/sns'
@@ -709,6 +722,7 @@ export interface RootRouteChildren {
   ServicesS3Route: typeof ServicesS3Route
   ServicesSchedulerRoute: typeof ServicesSchedulerRoute
   ServicesSecretsmanagerRoute: typeof ServicesSecretsmanagerRoute
+  ServicesServicediscoveryRoute: typeof ServicesServicediscoveryRoute
   ServicesSesv2Route: typeof ServicesSesv2Route
   ServicesSfnRoute: typeof ServicesSfnRoute
   ServicesSnsRoute: typeof ServicesSnsRoute
@@ -1037,6 +1051,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesSecretsmanagerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/servicediscovery': {
+      id: '/services/servicediscovery'
+      path: '/services/servicediscovery'
+      fullPath: '/services/servicediscovery'
+      preLoaderRoute: typeof ServicesServicediscoveryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/sesv2': {
       id: '/services/sesv2'
       path: '/services/sesv2'
@@ -1142,6 +1163,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesS3Route: ServicesS3Route,
   ServicesSchedulerRoute: ServicesSchedulerRoute,
   ServicesSecretsmanagerRoute: ServicesSecretsmanagerRoute,
+  ServicesServicediscoveryRoute: ServicesServicediscoveryRoute,
   ServicesSesv2Route: ServicesSesv2Route,
   ServicesSfnRoute: ServicesSfnRoute,
   ServicesSnsRoute: ServicesSnsRoute,

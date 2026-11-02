@@ -502,6 +502,7 @@ const catalog: Record<string, ServiceInfo> = {
 		icon: "organizations",
 	},
 	servicediscovery: {
+		href: "/services/servicediscovery",
 		title: "Cloud Map",
 		category: networking,
 		icon: "servicediscovery",

@@ -1503,14 +1503,15 @@
         "Namespace filters TYPE/NAME/HTTP_NAME, service filter NAMESPACE_ID and operation STATUS/TYPE/NAMESPACE_ID/SERVICE_ID filters; EQ/IN (one value) and BEGINS_WITH; list pagination MaxResults 1\u2013100",
         "Regional/account-scoped records, resource tags, diagnostic inventory, Resource Groups Tagging API and official-icon console catalogue",
         "CloudFormation HttpNamespace, PrivateDnsNamespace, Service and Instance with selected properties; operations complete synchronously",
-        "CreatorRequestId/UpdaterRequestId replay committed namespace/service/registration/HTTP-update results within the account and Region; changed inputs reject reused tokens"
+        "CreatorRequestId/UpdaterRequestId replay committed namespace/service/registration/HTTP-update results within the account and Region; changed inputs reject reused tokens",
+        "Dedicated Cloud Map console for namespaces, services, instance registration and custom health, tags, operation status and filtered discovery; private DNS creation uses the EC2 VPC picker"
       ],
       "gaps": [
         "DNS namespaces and DnsConfig are records only: no Route 53 hosted zones or DNS records are created; Vpc is stored as namespace metadata",
         "Route 53 HealthCheckConfig, DNS namespace Properties and DNS namespace updates are unsupported; custom failure threshold is fixed at 1",
         "Shared namespaces and OwnerAccount discovery/operation inputs are rejected; cross-account sharing and ECS serviceRegistries are unsupported",
         "Instance attributes are records; no ECS task registration, DNS validation/probing or asynchronous health propagation",
-        "CloudFormation public namespace and advanced properties, and management console pages are unsupported",
+        "CloudFormation public namespace and advanced properties are unsupported",
         "Unknown filter names/conditions and profile-excluded input members fail explicitly",
         "SDKs prefix DiscoverInstances hosts with data-, so http://localhost:4566 or an IP endpoint becomes an unresolvable data-localhost; use http://tinystack.localhost:4566 (data-tinystack.localhost resolves to loopback per RFC 6761) or disable the host prefix in the client (Go: smithyhttp.DisableEndpointHostPrefix)"
       ],
