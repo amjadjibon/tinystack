@@ -14,6 +14,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	"github.com/aws/aws-sdk-go-v2/service/acm"
 	cfn "github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/elasticache"
@@ -77,6 +78,11 @@ func TestConsoleGenericActions(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	_, err = acmClient(s).RequestCertificate(ctx, &acm.RequestCertificateInput{DomainName: new("console.example.com")})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	rdsCall := func(op string, input map[string]any) map[string]any {
 		t.Helper()
 		response := consoleResponse(t, s,
@@ -123,7 +129,7 @@ func TestConsoleGenericActions(t *testing.T) {
 	}
 
 	if !slices.Contains(capabilities.Taggable, "ssm") || slices.Contains(capabilities.Taggable, "sts") ||
-		len(capabilities.Deletes) != 10 {
+		len(capabilities.Deletes) != 11 {
 		t.Fatal(capabilities)
 	}
 
