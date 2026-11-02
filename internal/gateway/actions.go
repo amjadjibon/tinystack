@@ -65,6 +65,7 @@ const (
 	consoleMemoryDB    = "memorydb"
 	consoleSESv2       = "sesv2"
 	consoleScheduler   = "scheduler"
+	consolePipes       = "pipes"
 	consoleELBv2       = "elbv2"
 	consoleACM         = "acm"
 )
@@ -321,6 +322,11 @@ var consoleSESv2Operations = strings.Fields(`
  SendEmail GetAccount TagResource UntagResource ListTagsForResource
 `)
 
+var consolePipesOperations = strings.Fields(`
+ CreatePipe DescribePipe UpdatePipe DeletePipe ListPipes StartPipe StopPipe
+ TagResource UntagResource ListTagsForResource
+`)
+
 var consoleSchedulerOperations = strings.Fields(`
  CreateScheduleGroup GetScheduleGroup ListScheduleGroups DeleteScheduleGroup
  CreateSchedule GetSchedule ListSchedules UpdateSchedule DeleteSchedule
@@ -499,6 +505,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, memorydb := s.services[consoleMemoryDB]
 		_, sesv2 := s.services[consoleSESv2]
 		_, scheduler := s.services[consoleScheduler]
+		_, pipes := s.services[consolePipes]
 		_, elbv2 := s.services[consoleELBv2]
 		_, route53 := s.services[consoleRoute53]
 		_, cloudformation := s.services[consoleCloudFormation]
@@ -549,6 +556,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			"memorydb_runtime":    s.cfg.MemoryDB.Clusters,
 			consoleSESv2:          sesv2,
 			consoleScheduler:      scheduler,
+			consolePipes:          pipes,
 			consoleELBv2:          elbv2,
 			consoleRoute53:        route53,
 			consoleCloudFormation: cloudformation,
@@ -682,6 +690,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleMemoryDBOperations
 	case consoleSESv2:
 		operations = consoleSESv2Operations
+	case consolePipes:
+		operations = consolePipesOperations
 	case consoleScheduler:
 		operations = consoleSchedulerOperations
 	case consoleELBv2:

@@ -173,6 +173,7 @@ export const api = {
 		memorydb_runtime: string;
 		sesv2: boolean;
 		scheduler: boolean;
+		pipes: boolean;
 		elbv2: boolean;
 		route53: boolean;
 		cloudformation: boolean;

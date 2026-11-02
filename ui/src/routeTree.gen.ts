@@ -42,6 +42,7 @@ import { Route as ServicesKmsRouteImport } from './routes/services/kms'
 import { Route as ServicesLambdaRouteImport } from './routes/services/lambda'
 import { Route as ServicesLogsRouteImport } from './routes/services/logs'
 import { Route as ServicesMemorydbRouteImport } from './routes/services/memorydb'
+import { Route as ServicesPipesRouteImport } from './routes/services/pipes'
 import { Route as ServicesRdsRouteImport } from './routes/services/rds'
 import { Route as ServicesRoute53RouteImport } from './routes/services/route53'
 import { Route as ServicesS3RouteImport } from './routes/services/s3'
@@ -222,6 +223,11 @@ const ServicesMemorydbRoute = ServicesMemorydbRouteImport.update({
   path: '/services/memorydb',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesPipesRoute = ServicesPipesRouteImport.update({
+  id: '/services/pipes',
+  path: '/services/pipes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesRdsRoute = ServicesRdsRouteImport.update({
   id: '/services/rds',
   path: '/services/rds',
@@ -321,6 +327,7 @@ export interface FileRoutesByFullPath {
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
   '/services/memorydb': typeof ServicesMemorydbRoute
+  '/services/pipes': typeof ServicesPipesRoute
   '/services/rds': typeof ServicesRdsRoute
   '/services/route53': typeof ServicesRoute53Route
   '/services/s3': typeof ServicesS3Route
@@ -369,6 +376,7 @@ export interface FileRoutesByTo {
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
   '/services/memorydb': typeof ServicesMemorydbRoute
+  '/services/pipes': typeof ServicesPipesRoute
   '/services/rds': typeof ServicesRdsRoute
   '/services/route53': typeof ServicesRoute53Route
   '/services/s3': typeof ServicesS3Route
@@ -418,6 +426,7 @@ export interface FileRoutesById {
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
   '/services/memorydb': typeof ServicesMemorydbRoute
+  '/services/pipes': typeof ServicesPipesRoute
   '/services/rds': typeof ServicesRdsRoute
   '/services/route53': typeof ServicesRoute53Route
   '/services/s3': typeof ServicesS3Route
@@ -468,6 +477,7 @@ export interface FileRouteTypes {
     | '/services/lambda'
     | '/services/logs'
     | '/services/memorydb'
+    | '/services/pipes'
     | '/services/rds'
     | '/services/route53'
     | '/services/s3'
@@ -516,6 +526,7 @@ export interface FileRouteTypes {
     | '/services/lambda'
     | '/services/logs'
     | '/services/memorydb'
+    | '/services/pipes'
     | '/services/rds'
     | '/services/route53'
     | '/services/s3'
@@ -564,6 +575,7 @@ export interface FileRouteTypes {
     | '/services/lambda'
     | '/services/logs'
     | '/services/memorydb'
+    | '/services/pipes'
     | '/services/rds'
     | '/services/route53'
     | '/services/s3'
@@ -613,6 +625,7 @@ export interface RootRouteChildren {
   ServicesLambdaRoute: typeof ServicesLambdaRoute
   ServicesLogsRoute: typeof ServicesLogsRoute
   ServicesMemorydbRoute: typeof ServicesMemorydbRoute
+  ServicesPipesRoute: typeof ServicesPipesRoute
   ServicesRdsRoute: typeof ServicesRdsRoute
   ServicesRoute53Route: typeof ServicesRoute53Route
   ServicesS3Route: typeof ServicesS3Route
@@ -862,6 +875,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesMemorydbRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/pipes': {
+      id: '/services/pipes'
+      path: '/services/pipes'
+      fullPath: '/services/pipes'
+      preLoaderRoute: typeof ServicesPipesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/rds': {
       id: '/services/rds'
       path: '/services/rds'
@@ -990,6 +1010,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesLambdaRoute: ServicesLambdaRoute,
   ServicesLogsRoute: ServicesLogsRoute,
   ServicesMemorydbRoute: ServicesMemorydbRoute,
+  ServicesPipesRoute: ServicesPipesRoute,
   ServicesRdsRoute: ServicesRdsRoute,
   ServicesRoute53Route: ServicesRoute53Route,
   ServicesS3Route: ServicesS3Route,

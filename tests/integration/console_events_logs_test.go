@@ -303,6 +303,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		"memorydb":       "DescribeClusters",
 		"sesv2":          "ListEmailIdentities",
 		"scheduler":      "ListScheduleGroups",
+		"pipes":          "ListPipes",
 		"elbv2":          "DescribeLoadBalancers",
 		"acm":            "ListCertificates",
 	}
@@ -364,6 +365,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		{"memorydb", "memorydb", "DescribeClusters"},
 		{"sesv2", "ses", "ListEmailIdentities"},
 		{"scheduler", "scheduler", "ListScheduleGroups"},
+		{"pipes", "pipes", "ListPipes"},
 		{"elbv2", "elasticloadbalancing", "DescribeLoadBalancers"},
 	} {
 		for _, mode := range []string{"unsigned", "wrong-service", "wrong-region", "wrong-account", "valid"} {

@@ -470,6 +470,7 @@ const catalog: Record<string, ServiceInfo> = {
 	lambda: { title: "Lambda", category: compute, icon: "lambda" },
 	logs: { title: "CloudWatch Logs", category: management, icon: "logs" },
 	pipes: {
+		href: "/services/pipes",
 		title: "EventBridge Pipes",
 		category: integration,
 		icon: "eventbridge",

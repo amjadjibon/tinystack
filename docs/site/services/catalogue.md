@@ -385,6 +385,7 @@ Connect SQS queues and Kinesis or DynamoDB streams to targets with filtering and
 - Resources appear in the resource inventory.
 - With authorization on, enrichment and target calls assume the pipe's role, whose trust policy must allow pipes.amazonaws.com for the pipe (aws:SourceArn) and account, and are decided by the role's policies; a denied delivery is a failed delivery that the next visit retries, and soft mode records the check.
 - With authorization on, source reads (SQS ReceiveMessage, DeleteMessage and GetQueueAttributes; stream describe, iterator and record reads) are made as the pipe's role too, checked once every 30 seconds per pipe, role and source, including denials; role or source changes force a recheck, deletion drops its entry and reset clears every entry; a denied pipe moves nothing.
+- Dedicated console page with polling, pipe creation and updates, structured details, start/stop, typed-name deletion and tags.
 
 [Supported operations](pipes.md#supported-operations) · [Limitations](pipes.md#limitations-and-future-work)
 

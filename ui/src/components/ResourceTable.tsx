@@ -31,6 +31,7 @@ import { kmsHref } from "#/lib/kms";
 import { lambdaHref } from "#/lib/lambda";
 import { logsHref } from "#/lib/logs";
 import { memorydbHref } from "#/lib/memorydb";
+import { pipesHref } from "#/lib/pipes";
 import { rdsHref } from "#/lib/rds";
 import { route53Href } from "#/lib/route53";
 import { s3Href } from "#/lib/s3";
@@ -59,6 +60,8 @@ export function resourceHref(r: Resource): string {
 
 	if (r.service === "sesv2")
 		return sesv2Href({ account: r.account, region: r.region });
+	if (r.service === "pipes")
+		return pipesHref({ account: r.account, region: r.region });
 	if (r.service === "scheduler")
 		return schedulerHref({ account: r.account, region: r.region });
 
