@@ -2,11 +2,13 @@
 // dependencies. CloudFront is a global service, so resources belong to an
 // account:
 //
-//	<account>/cloudfront/distribution/<id>              (distribution record)
-//	<account>/cloudfront/reference/<caller reference>   (distribution ID)
-//	<account>/cloudfront/alias/<cname>                  (distribution ID)
-//	<account>/cloudfront/oac/<id>                       (OAC record)
-//	<account>/cloudfront/oac-name/<name>                (OAC ID)
+//	<account>/cloudfront/distribution/<id>                          (distribution record and tags)
+//	<account>/cloudfront/reference/<caller reference>               (distribution ID)
+//	<account>/cloudfront/alias/<cname>                              (distribution ID)
+//	<account>/cloudfront/invalidation/<id>/<invalidation ID>        (invalidation record)
+//	<account>/cloudfront/invalidation-ref/<id>/<caller reference>   (invalidation ID)
+//	<account>/cloudfront/oac/<id>                                   (OAC record)
+//	<account>/cloudfront/oac-name/<name>                            (OAC ID)
 //
 // All operations are executed synchronously against the store.
 package cloudfront

@@ -3,6 +3,7 @@ package integration_test
 import (
 	"context"
 	"errors"
+	"maps"
 	"net/http/httptest"
 	"testing"
 
@@ -499,4 +500,138 @@ func TestCloudFrontOriginAccessControl(t *testing.T) {
 	if errors.As(err, &ae) && ae.ErrorCode() != "NoSuchOriginAccessControl" {
 		t.Fatalf("expected NoSuchOriginAccessControl, got %s", ae.ErrorCode())
 	}
+}
+
+// Invalidation records are stored apart from distributions. ListDistributions and the resource inventory read every
+// record of the distribution kind, and failed once an invalidation existed.
+func TestCloudFrontListingsSurviveInvalidations(t *testing.T) {
+	s := server(t)
+	c := cloudfrontClient(s)
+	ctx := context.Background()
+
+	created, err := c.CreateDistribution(ctx, &cloudfront.CreateDistributionInput{
+		DistributionConfig: sampleConfig("listing-ref", "Listing test dist", true),
+	})
+	if err != nil {
+		t.Fatalf("CreateDistribution: %v", err)
+	}
+
+	if _, err = c.CreateInvalidation(ctx, &cloudfront.CreateInvalidationInput{
+		DistributionId: created.Distribution.Id,
+		InvalidationBatch: &cftypes.InvalidationBatch{
+			CallerReference: new("listing-invalidation"),
+			Paths:           &cftypes.Paths{Quantity: new(int32(1)), Items: []string{"/*"}},
+		},
+	}); err != nil {
+		t.Fatalf("CreateInvalidation: %v", err)
+	}
+
+	listed, err := c.ListDistributions(ctx, &cloudfront.ListDistributionsInput{})
+	if err != nil {
+		t.Fatalf("ListDistributions: %v", err)
+	}
+
+	if items := listed.DistributionList.Items; len(items) != 1 || *items[0].Id != *created.Distribution.Id {
+		t.Fatalf("distributions = %+v", items)
+	}
+
+	distributions := 0
+	for _, r := range genericInventory(t, s) {
+		if r.Service == "cloudfront" && r.Type == "distribution" {
+			distributions++
+		}
+	}
+
+	if distributions != 1 {
+		t.Fatalf("the inventory lists %d distributions, want 1", distributions)
+	}
+}
+
+func TestCloudFrontDistributionTags(t *testing.T) {
+	s := server(t)
+	c := cloudfrontClient(s)
+	ctx := context.Background()
+	tag := func(k, v string) cftypes.Tag { return cftypes.Tag{Key: new(k), Value: new(v)} }
+
+	created, err := c.CreateDistributionWithTags(ctx, &cloudfront.CreateDistributionWithTagsInput{
+		DistributionConfigWithTags: &cftypes.DistributionConfigWithTags{
+			DistributionConfig: sampleConfig("tags-ref", "Tagged distribution", false),
+			Tags:               &cftypes.Tags{Items: []cftypes.Tag{tag("env", "dev")}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("CreateDistributionWithTags: %v", err)
+	}
+
+	arn := created.Distribution.ARN
+	tags := func() map[string]string {
+		t.Helper()
+		out, listErr := c.ListTagsForResource(ctx, &cloudfront.ListTagsForResourceInput{Resource: arn})
+		if listErr != nil {
+			t.Fatalf("ListTagsForResource: %v", listErr)
+		}
+
+		got := map[string]string{}
+		for _, tg := range out.Tags.Items {
+			got[*tg.Key] = *tg.Value
+		}
+
+		return got
+	}
+
+	if got := tags(); !maps.Equal(got, map[string]string{"env": "dev"}) {
+		t.Fatalf("tags after creation = %v", got)
+	}
+
+	if _, err = c.TagResource(ctx, &cloudfront.TagResourceInput{
+		Resource: arn, Tags: &cftypes.Tags{Items: []cftypes.Tag{tag("env", "prod"), tag("team", "web")}},
+	}); err != nil {
+		t.Fatalf("TagResource: %v", err)
+	}
+
+	if got := tags(); !maps.Equal(got, map[string]string{"env": "prod", "team": "web"}) {
+		t.Fatalf("tags after TagResource = %v", got)
+	}
+
+	if _, err = c.UntagResource(ctx, &cloudfront.UntagResourceInput{
+		Resource: arn, TagKeys: &cftypes.TagKeys{Items: []string{"env"}},
+	}); err != nil {
+		t.Fatalf("UntagResource: %v", err)
+	}
+
+	if got := tags(); !maps.Equal(got, map[string]string{"team": "web"}) {
+		t.Fatalf("tags after UntagResource = %v", got)
+	}
+
+	// Tagging is not a configuration change, so the ETag stays valid.
+	got, err := c.GetDistribution(ctx, &cloudfront.GetDistributionInput{Id: created.Distribution.Id})
+	if err != nil {
+		t.Fatalf("GetDistribution: %v", err)
+	}
+
+	if *got.ETag != *created.ETag {
+		t.Fatalf("ETag changed from %s to %s", *created.ETag, *got.ETag)
+	}
+
+	inventoried := false
+	for _, r := range genericInventory(t, s) {
+		if r.ARN == *arn {
+			inventoried = maps.Equal(r.Tags, map[string]string{"team": "web"})
+		}
+	}
+
+	if !inventoried {
+		t.Fatal("the inventory does not list the distribution with its tags")
+	}
+
+	_, err = c.ListTagsForResource(ctx, &cloudfront.ListTagsForResourceInput{Resource: new(*arn + "-missing")})
+	wantCode(t, err, "NoSuchResource")
+
+	_, err = c.CreateDistributionWithTags(ctx, &cloudfront.CreateDistributionWithTagsInput{
+		DistributionConfigWithTags: &cftypes.DistributionConfigWithTags{
+			DistributionConfig: sampleConfig("reserved-tag-ref", "Reserved tag", false),
+			Tags:               &cftypes.Tags{Items: []cftypes.Tag{tag("aws:team", "web")}},
+		},
+	})
+	wantCode(t, err, "InvalidArgument")
 }

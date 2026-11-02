@@ -212,7 +212,7 @@ func (s *Service) CreateKeyValueStore(
 		return nil, err
 	}
 
-	tags, err := kvsTags(in.Tags)
+	tags, err := tagSet(in.Tags)
 	if err != nil {
 		return nil, err
 	}

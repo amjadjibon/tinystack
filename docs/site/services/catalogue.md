@@ -1824,7 +1824,9 @@ Manage distribution and origin access control metadata for infrastructure tests.
 **Execution:** Records only. **Selected operations:** 24.
 
 - Distribution lifecycle and ETag-based updates.
-- Alias uniqueness, caller-reference idempotency and tags.
+- Alias uniqueness and caller-reference idempotency.
+- Tags on distributions and key value stores at creation and through TagResource, UntagResource and ListTagsForResource.
+- Invalidations complete at once; they are created idempotently by caller reference, fetched and listed per distribution.
 - Origin access control lifecycle.
 - Key value store create/describe/list/update/delete, status filtering, pagination, separate control/data ETags and resource tags.
 - Local S3 JSON imports with deterministic PROVISIONING to READY or IMPORT_FAILED on first describe/list access.

@@ -3,7 +3,6 @@ package cloudfront
 import (
 	"context"
 	"slices"
-	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/cloudfront"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -274,10 +273,6 @@ func (s *Service) DeleteOriginAccessControl(
 		// Check if in use by any distribution
 		prefix := m.AccountID + "/" + service + "/" + kindDistribution + "/"
 		for _, k := range tx.Keys(prefix) {
-			parts := strings.Split(k, "/")
-			if len(parts) != 4 {
-				continue
-			}
 			dRec, dFound, dErr := storage.Read[distributionRecord](tx, k)
 			if dErr != nil {
 				return dErr

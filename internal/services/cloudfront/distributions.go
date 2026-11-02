@@ -18,19 +18,6 @@ type distributionRecord struct {
 	ETag         string            `json:"etag"`
 }
 
-func parseTags(tags *api.Tags) map[string]string {
-	if tags == nil {
-		return nil
-	}
-	m := make(map[string]string, len(tags.Items))
-	for _, t := range tags.Items {
-		if t.Key != nil && t.Value != nil {
-			m[*t.Key] = *t.Value
-		}
-	}
-	return m
-}
-
 func toSummary(rec *distributionRecord) api.DistributionSummary {
 	if rec == nil || rec.Distribution == nil {
 		return api.DistributionSummary{}
@@ -184,7 +171,11 @@ func (s *Service) CreateDistributionWithTags(
 		return nil, invalidArgument("DistributionConfig is required")
 	}
 
-	tags := parseTags(in.DistributionConfigWithTags.Tags)
+	tags, err := tagSet(in.DistributionConfigWithTags.Tags)
+	if err != nil {
+		return nil, err
+	}
+
 	res, err := s.createDistribution(ctx, m.AccountID, in.DistributionConfigWithTags.DistributionConfig, tags)
 	if err != nil {
 		return nil, err

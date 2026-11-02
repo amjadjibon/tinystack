@@ -28,12 +28,13 @@ func noSuchInvalidation(id string) error {
 	}
 }
 
+// Invalidations have kinds of their own, so that listing distributions never reads them.
 func invKey(account, distID, id string) string {
-	return account + "/" + service + "/" + kindDistribution + "/" + distID + "/" + kindInvalidation + "/" + id
+	return key(account, kindInvalidation, distID+"/"+id)
 }
 
 func invRefKey(account, distID, ref string) string {
-	return account + "/" + service + "/" + kindDistribution + "/" + distID + "/" + kindInvRef + "/" + ref
+	return key(account, kindInvRef, distID+"/"+ref)
 }
 
 func invLocation(distID, id string) string {
@@ -184,8 +185,7 @@ func (s *Service) ListInvalidations(
 			return noSuchDistribution(distID)
 		}
 
-		prefix := m.AccountID + "/" + service + "/" + kindDistribution + "/" + distID + "/" + kindInvalidation + "/"
-		keys := tx.Keys(prefix)
+		keys := tx.Keys(invKey(m.AccountID, distID, ""))
 		slices.Sort(keys)
 
 		for _, k := range keys {
