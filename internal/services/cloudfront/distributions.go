@@ -383,6 +383,12 @@ func (s *Service) DeleteDistribution(
 			}
 		}
 
+		for _, prefix := range []string{invKey(m.AccountID, id, ""), invRefKey(m.AccountID, id, "")} {
+			for _, k := range tx.Keys(prefix) {
+				tx.Delete(k)
+			}
+		}
+
 		return nil
 	})
 	if err != nil {
