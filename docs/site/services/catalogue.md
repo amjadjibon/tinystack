@@ -347,6 +347,7 @@ Run GraphQL APIs with local resolvers and Event APIs with HTTP publishing and We
 - Local HTTP and WebSocket event publishing, wildcard subscriptions and APPSYNC_JS onPublish/onSubscribe handlers.
 - Event connection, publish and subscribe authorization with API keys, IAM, Cognito, OIDC and Lambda.
 - CloudFormation AWS::AppSync::Api and AWS::AppSync::ChannelNamespace.
+- Dedicated regional console for GraphQL API settings and tags, SDL uploads with status polling, data sources, unit/pipeline resolvers, functions and expiring API keys.
 
 [Supported operations](appsync.md#supported-operations) · [Limitations](appsync.md#limitations-and-future-work)
 

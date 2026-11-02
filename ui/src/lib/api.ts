@@ -170,6 +170,7 @@ export const api = {
 		efs: boolean;
 		appconfig: boolean;
 		appconfigdata: boolean;
+		appsync: boolean;
 		rds: boolean;
 		elasticache: boolean;
 		elasticache_runtime: string;

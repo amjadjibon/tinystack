@@ -758,7 +758,8 @@
         "Event API and channel namespace CRUD, pagination, tags and shared API keys",
         "Local HTTP and WebSocket event publishing, wildcard subscriptions and APPSYNC_JS onPublish/onSubscribe handlers",
         "Event connection, publish and subscribe authorization with API keys, IAM, Cognito, OIDC and Lambda",
-        "CloudFormation AWS::AppSync::Api and AWS::AppSync::ChannelNamespace"
+        "CloudFormation AWS::AppSync::Api and AWS::AppSync::ChannelNamespace",
+        "Dedicated regional console for GraphQL API settings and tags, SDL uploads with status polling, data sources, unit/pipeline resolvers, functions and expiring API keys"
       ],
       "gaps": [
         "JavaScript utilities and VTL form a local subset of AppSync runtimes",
@@ -767,7 +768,8 @@
         "Event subscriptions are transient; API, namespace, handler and key records survive sqlite restarts",
         "Event authorization updates apply immediately; Lambda authorization results are not cached",
         "Production scaling, caching and every upstream resolver/data-source option are not reproduced",
-        "Reset keeps real-time WebSocket connections and their subscriptions"
+        "Reset keeps real-time WebSocket connections and their subscriptions",
+        "The console has no query runner: the API Gateway InvokeApi action is service-specific and there is no shared AppSync data-plane proxy. GraphQL API records expose no creation timestamp."
       ],
       "execution": "Local behavior",
       "package": "appsync"

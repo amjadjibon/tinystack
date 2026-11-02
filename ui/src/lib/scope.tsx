@@ -122,6 +122,7 @@ function useScopeState() {
 			"application",
 			"environment",
 			"profile",
+			"appsyncApi",
 			"vpc",
 			"execution",
 			"apiId",

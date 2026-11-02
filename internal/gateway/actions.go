@@ -75,6 +75,7 @@ const (
 	consoleACM              = "acm"
 	consoleCloudFront       = "cloudfront"
 	consoleEFS              = "efs"
+	consoleAppSync          = "appsync"
 	consoleServiceDiscovery = "servicediscovery"
 	consoleAppConfig        = "appconfig"
 )
@@ -411,6 +412,17 @@ var consoleCloudFrontOperations = strings.Fields(`
  TagResource UntagResource ListTagsForResource
 `)
 
+// AppSync exposes only the GraphQL console workflows.
+var consoleAppSyncOperations = strings.Fields(`
+ CreateGraphqlApi GetGraphqlApi UpdateGraphqlApi DeleteGraphqlApi ListGraphqlApis
+ StartSchemaCreation GetSchemaCreationStatus GetIntrospectionSchema ListTypes
+ CreateDataSource UpdateDataSource DeleteDataSource ListDataSources
+ CreateResolver UpdateResolver DeleteResolver ListResolvers
+ CreateFunction UpdateFunction DeleteFunction ListFunctions
+ CreateApiKey ListApiKeys DeleteApiKey
+ TagResource UntagResource
+`)
+
 // EFS exposes the file system, mount target, access point and tag operations the page uses.
 var consoleEFSOperations = strings.Fields(`
  CreateFileSystem DescribeFileSystems UpdateFileSystem DeleteFileSystem
@@ -587,6 +599,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, efs := s.services[consoleEFS]
 		_, appconfig := s.services[consoleAppConfig]
 		_, appconfigdata := s.services[consoleAppConfigData]
+		_, appsync := s.services[consoleAppSync]
 		_, budgets := s.services[consoleBudgets]
 		_, costexplorer := s.services[consoleCostExplorer]
 		_, cur := s.services[consoleCUR]
@@ -664,6 +677,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleCognitoIdentity:  cognitoidentity,
 			consoleCloudTrail:       cloudtrail,
 			consoleEFS:              efs,
+			consoleAppSync:          appsync,
 			consoleServiceDiscovery: serviceDiscovery,
 			consoleAppConfig:        appconfig,
 			consoleAppConfigData:    appconfigdata,
@@ -780,6 +794,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleACMOperations
 	case consoleCloudFront:
 		operations = consoleCloudFrontOperations
+	case consoleAppSync:
+		operations = consoleAppSyncOperations
 	case consoleEFS:
 		operations = consoleEFSOperations
 	case consoleAppConfig:

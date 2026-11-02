@@ -28,6 +28,7 @@ See the [implemented feature catalogue](catalogue.md#appsync-graphql-and-events)
 - Event authorization updates apply immediately; Lambda authorization results are not cached.
 - Production scaling, caching and every upstream resolver/data-source option are not reproduced.
 - Reset keeps real-time WebSocket connections and their subscriptions.
+- The console has no query runner: the API Gateway InvokeApi action is service-specific and there is no shared AppSync data-plane proxy. GraphQL API records expose no creation timestamp.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

@@ -368,6 +368,7 @@ const catalog: Record<string, ServiceInfo> = {
 		title: "AppSync GraphQL & Events",
 		category: integration,
 		icon: "appsync",
+		href: "/services/appsync",
 	},
 	athena: {
 		title: "Athena",
