@@ -61,11 +61,16 @@ func (s *Service) CreateScheduleGroup(
 		})
 }
 
+// groupOutput leaves the dates out for the implicit default group, which has no record.
 func groupOutput(scope request.Scope, g *group) *api.GetScheduleGroupOutput {
-	return &api.GetScheduleGroupOutput{
+	out := &api.GetScheduleGroupOutput{
 		Arn: new(groupARN(scope, g.Name)), Name: new(g.Name), State: new(groupActive),
-		CreationDate: new(g.Created), LastModificationDate: new(g.Modified),
 	}
+	if g.Created != 0 {
+		out.CreationDate, out.LastModificationDate = new(g.Created), new(g.Modified)
+	}
+
+	return out
 }
 
 func (s *Service) GetScheduleGroup(

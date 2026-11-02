@@ -239,7 +239,8 @@ func TestSchedulerGroupsAndValidation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(groups.ScheduleGroups) != 2 || aws.ToString(groups.ScheduleGroups[0].Name) != "default" {
+	if len(groups.ScheduleGroups) != 2 || aws.ToString(groups.ScheduleGroups[0].Name) != "default" ||
+		groups.ScheduleGroups[0].CreationDate != nil || groups.ScheduleGroups[1].CreationDate == nil {
 		t.Fatalf("groups: %+v", groups.ScheduleGroups)
 	}
 
