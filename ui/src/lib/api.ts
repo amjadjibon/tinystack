@@ -165,6 +165,7 @@ export const api = {
 		ecs: boolean;
 		ecs_runtime: string;
 		ssm: boolean;
+		acm: boolean;
 		rds: boolean;
 		elasticache: boolean;
 		elasticache_runtime: string;

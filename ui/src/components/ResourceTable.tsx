@@ -14,6 +14,7 @@ import {
 	type TableProps,
 } from "@cloudscape-design/components";
 import { type ReactNode, useState } from "react";
+import { acmHref } from "#/lib/acm";
 import type { Resource } from "#/lib/api";
 import { gatewayHref } from "#/lib/apigateway";
 import { cfnHref } from "#/lib/cloudformation";
@@ -110,6 +111,12 @@ export function resourceHref(r: Resource): string {
 			account: r.account,
 			region: r.region,
 			key: r.arn || r.name,
+		});
+	if (r.service === "acm" && r.type === "certificate")
+		return acmHref({
+			account: r.account,
+			region: r.region,
+			certificate: r.arn,
 		});
 	if (r.service === "ssm" && r.type === "parameter")
 		return ssmHref({ account: r.account, region: r.region, parameter: r.name });

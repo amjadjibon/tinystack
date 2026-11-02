@@ -304,6 +304,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		"sesv2":          "ListEmailIdentities",
 		"scheduler":      "ListScheduleGroups",
 		"elbv2":          "DescribeLoadBalancers",
+		"acm":            "ListCertificates",
 	}
 	var capabilities map[string]any
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
@@ -352,6 +353,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		{"ec2", "ec2", "DescribeVpcs"},
 		{"secretsmanager", "secretsmanager", "ListSecrets"},
 		{"ssm", "ssm", "DescribeParameters"},
+		{"acm", "acm", "ListCertificates"},
 		{"rds", "rds", "DescribeDBInstances"},
 		{"cloudformation", "cloudformation", "ListStacks"},
 		{"kms", "kms", "ListKeys"},

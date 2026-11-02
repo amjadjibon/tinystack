@@ -992,9 +992,11 @@
         "Certificate request, describe, listing, deletion and tags",
         "Import/get/export, encrypted exported private keys and options",
         "Requests issue immediately through a TinyStack certificate authority",
-        "Issuing helpers are shared with IoT"
+        "Issuing helpers are shared with IoT",
+        "Console page for certificates (request with additional names, validation method, key algorithm, export and transparency options and tags; import and reimport PEM bodies), filtered by status, with domain validation records that have copy buttons, PEM copy and download, passphrase export with a masked private key, transparency logging updates, tags and delete with typed confirmation"
       ],
       "gaps": [
+        "The console cannot request private certificates from a Private CA or renew certificates because the service implements neither; the private key of an import is never shown again",
         "No DNS/email validation wait, Private CA, renewal or ACME",
         "Only exportable certificates retain private keys",
         "Certificates are local CA certificates, not publicly trusted"

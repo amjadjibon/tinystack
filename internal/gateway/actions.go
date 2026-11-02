@@ -66,6 +66,7 @@ const (
 	consoleSESv2       = "sesv2"
 	consoleScheduler   = "scheduler"
 	consoleELBv2       = "elbv2"
+	consoleACM         = "acm"
 )
 
 const consoleSecretsManager = "secretsmanager"
@@ -335,6 +336,11 @@ var consoleELBv2Operations = strings.Fields(`
  AddTags RemoveTags DescribeTags DescribeSSLPolicies
 `)
 
+var consoleACMOperations = strings.Fields(`
+ RequestCertificate DescribeCertificate ListCertificates DeleteCertificate GetCertificate ImportCertificate
+ ExportCertificate AddTagsToCertificate RemoveTagsFromCertificate ListTagsForCertificate UpdateCertificateOptions
+`)
+
 var consoleSSMOperations = strings.Fields(`
  DescribeParameters GetParameter GetParameterHistory PutParameter DeleteParameter DeleteParameters
  LabelParameterVersion UnlabelParameterVersion ListTagsForResource AddTagsToResource RemoveTagsFromResource
@@ -425,6 +431,7 @@ var consoleResourceDeletes = map[string]consoleResourceDelete{
 	},
 	"kinesis/stream":            {"kinesis", "DeleteStream", "StreamARN", consoleIdentifierARN},
 	"ssm/parameter":             {"ssm", "DeleteParameter", "Name", consoleIdentifierName},
+	"acm/certificate":           {consoleACM, "DeleteCertificate", "CertificateArn", consoleIdentifierARN},
 	"ecr/repository":            {"ecr", "DeleteRepository", "RepositoryName", consoleIdentifierName},
 	"route53/hosted-zone":       {"route53", "DeleteHostedZone", "Id", consoleIdentifierARNSuffix},
 	"cognitoidp/user-pool":      {consoleCognito, "DeleteUserPool", "UserPoolId", consoleIdentifierARNSuffix},
@@ -481,6 +488,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, ecs := s.services[consoleECS]
 		_, secretsmanager := s.services[consoleSecretsManager]
 		_, ssm := s.services[consoleSSM]
+		_, acm := s.services[consoleACM]
 		_, budgets := s.services[consoleBudgets]
 		_, costexplorer := s.services[consoleCostExplorer]
 		_, cur := s.services[consoleCUR]
@@ -528,6 +536,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleECS:            ecs,
 			"ecs_runtime":         s.cfg.ECS.Containers,
 			consoleSSM:            ssm,
+			consoleACM:            acm,
 			consoleBudgets:        budgets,
 			consoleCostExplorer:   costexplorer,
 			consoleCUR:            cur,
@@ -653,6 +662,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleECSOperations
 	case consoleSSM:
 		operations = consoleSSMOperations
+	case consoleACM:
+		operations = consoleACMOperations
 	case consoleSecretsManager:
 		operations = consoleSecretsManagerOperations
 	case consoleBudgets:

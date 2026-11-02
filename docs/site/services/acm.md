@@ -21,6 +21,7 @@ See the [implemented feature catalogue](catalogue.md#certificate-manager) for th
 
 ## Limitations and future work
 
+- The console cannot request private certificates from a Private CA or renew certificates because the service implements neither; the private key of an import is never shown again.
 - No DNS/email validation wait, Private CA, renewal or ACME.
 - Only exportable certificates retain private keys.
 - Certificates are local CA certificates, not publicly trusted.

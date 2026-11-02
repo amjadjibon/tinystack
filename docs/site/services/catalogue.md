@@ -2075,6 +2075,7 @@ Issue or import local certificates and exercise certificate lifecycle APIs.
 - Import/get/export, encrypted exported private keys and options.
 - Requests issue immediately through a TinyStack certificate authority.
 - Issuing helpers are shared with IoT.
+- Console page for certificates (request with additional names, validation method, key algorithm, export and transparency options and tags; import and reimport PEM bodies), filtered by status, with domain validation records that have copy buttons, PEM copy and download, passphrase export with a masked private key, transparency logging updates, tags and delete with typed confirmation.
 
 [Supported operations](acm.md#supported-operations) · [Limitations](acm.md#limitations-and-future-work)
 

@@ -19,6 +19,7 @@ import { Route as RequestsRouteImport } from './routes/requests'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as TutorialsRouteImport } from './routes/tutorials'
 import { Route as ServicesIndexRouteImport } from './routes/services/index'
+import { Route as ServicesAcmRouteImport } from './routes/services/acm'
 import { Route as ServicesApigatewayRouteImport } from './routes/services/apigateway'
 import { Route as ServicesApigatewayv2RouteImport } from './routes/services/apigatewayv2'
 import { Route as ServicesBudgetsRouteImport } from './routes/services/budgets'
@@ -103,6 +104,11 @@ const TutorialsRoute = TutorialsRouteImport.update({
 const ServicesIndexRoute = ServicesIndexRouteImport.update({
   id: '/services/',
   path: '/services/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesAcmRoute = ServicesAcmRouteImport.update({
+  id: '/services/acm',
+  path: '/services/acm',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesApigatewayRoute = ServicesApigatewayRouteImport.update({
@@ -292,6 +298,7 @@ export interface FileRoutesByFullPath {
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/tutorials': typeof TutorialsRoute
+  '/services/acm': typeof ServicesAcmRoute
   '/services/apigateway': typeof ServicesApigatewayRoute
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
   '/services/budgets': typeof ServicesBudgetsRoute
@@ -339,6 +346,7 @@ export interface FileRoutesByTo {
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/tutorials': typeof TutorialsRoute
+  '/services/acm': typeof ServicesAcmRoute
   '/services/apigateway': typeof ServicesApigatewayRoute
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
   '/services/budgets': typeof ServicesBudgetsRoute
@@ -387,6 +395,7 @@ export interface FileRoutesById {
   '/requests': typeof RequestsRoute
   '/resources': typeof ResourcesRoute
   '/tutorials': typeof TutorialsRoute
+  '/services/acm': typeof ServicesAcmRoute
   '/services/apigateway': typeof ServicesApigatewayRoute
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
   '/services/budgets': typeof ServicesBudgetsRoute
@@ -436,6 +445,7 @@ export interface FileRouteTypes {
     | '/requests'
     | '/resources'
     | '/tutorials'
+    | '/services/acm'
     | '/services/apigateway'
     | '/services/apigatewayv2'
     | '/services/budgets'
@@ -483,6 +493,7 @@ export interface FileRouteTypes {
     | '/requests'
     | '/resources'
     | '/tutorials'
+    | '/services/acm'
     | '/services/apigateway'
     | '/services/apigatewayv2'
     | '/services/budgets'
@@ -530,6 +541,7 @@ export interface FileRouteTypes {
     | '/requests'
     | '/resources'
     | '/tutorials'
+    | '/services/acm'
     | '/services/apigateway'
     | '/services/apigatewayv2'
     | '/services/budgets'
@@ -578,6 +590,7 @@ export interface RootRouteChildren {
   RequestsRoute: typeof RequestsRoute
   ResourcesRoute: typeof ResourcesRoute
   TutorialsRoute: typeof TutorialsRoute
+  ServicesAcmRoute: typeof ServicesAcmRoute
   ServicesApigatewayRoute: typeof ServicesApigatewayRoute
   ServicesApigatewayv2Route: typeof ServicesApigatewayv2Route
   ServicesBudgetsRoute: typeof ServicesBudgetsRoute
@@ -686,6 +699,13 @@ declare module '@tanstack/react-router' {
       path: '/services'
       fullPath: '/services/'
       preLoaderRoute: typeof ServicesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/acm': {
+      id: '/services/acm'
+      path: '/services/acm'
+      fullPath: '/services/acm'
+      preLoaderRoute: typeof ServicesAcmRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services/apigateway': {
@@ -946,6 +966,7 @@ const rootRouteChildren: RootRouteChildren = {
   RequestsRoute: RequestsRoute,
   ResourcesRoute: ResourcesRoute,
   TutorialsRoute: TutorialsRoute,
+  ServicesAcmRoute: ServicesAcmRoute,
   ServicesApigatewayRoute: ServicesApigatewayRoute,
   ServicesApigatewayv2Route: ServicesApigatewayv2Route,
   ServicesBudgetsRoute: ServicesBudgetsRoute,
