@@ -486,6 +486,7 @@ Render and inspect email workflows without sending external mail.
 - Delivery records contain messages; configuration set events reach SNS, EventBridge and Firehose.
 - Mailbox simulator addresses generate bounce/complaint behavior.
 - Identities, templates, configuration sets and send counts are shared with SES v1.
+- Console page for identities (create, DKIM and verification details, tags, delete with typed confirmation), configuration sets with event destination create/update/delete, templates (create, edit, test render with template data, delete), a test email sender for simple or template content, the account sending quota, and a Sent messages tab that reads the captured mail for the selected account and Region.
 
 [Supported operations](sesv2.md#supported-operations) · [Limitations](sesv2.md#limitations-and-future-work)
 

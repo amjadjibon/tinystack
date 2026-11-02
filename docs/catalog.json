@@ -1172,9 +1172,11 @@
         "SendEmail and bulk email validate senders and render a Handlebars subset",
         "Delivery records contain messages; configuration set events reach SNS, EventBridge and Firehose",
         "Mailbox simulator addresses generate bounce/complaint behavior",
-        "Identities, templates, configuration sets and send counts are shared with SES v1"
+        "Identities, templates, configuration sets and send counts are shared with SES v1",
+        "Console page for identities (create, DKIM and verification details, tags, delete with typed confirmation), configuration sets with event destination create/update/delete, templates (create, edit, test render with template data, delete), a test email sender for simple or template content, the account sending quota, and a Sent messages tab that reads the captured mail for the selected account and Region"
       ],
       "gaps": [
+        "The console does not send bulk email although the service supports it, and offers no suppression list, contact list, dedicated IP or account settings management because the service implements none; the Sent messages tab needs administrator access to the captured mail",
         "No SMTP or real outbound email delivery",
         "Identity verification is immediate; template rendering and sending limits are local approximations"
       ],

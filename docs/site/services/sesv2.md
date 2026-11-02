@@ -21,6 +21,7 @@ See the [implemented feature catalogue](catalogue.md#ses-v2) for this service's 
 
 ## Limitations and future work
 
+- The console does not send bulk email although the service supports it, and offers no suppression list, contact list, dedicated IP or account settings management because the service implements none; the Sent messages tab needs administrator access to the captured mail.
 - No SMTP or real outbound email delivery.
 - Identity verification is immediate; template rendering and sending limits are local approximations.
 

@@ -170,6 +170,7 @@ export const api = {
 		elasticache_runtime: string;
 		memorydb: boolean;
 		memorydb_runtime: string;
+		sesv2: boolean;
 		route53: boolean;
 		cloudformation: boolean;
 		budgets: boolean;
