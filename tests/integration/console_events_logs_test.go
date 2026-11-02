@@ -303,6 +303,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		"memorydb":       "DescribeClusters",
 		"sesv2":          "ListEmailIdentities",
 		"scheduler":      "ListScheduleGroups",
+		"elbv2":          "DescribeLoadBalancers",
 	}
 	var capabilities map[string]any
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
@@ -361,6 +362,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		{"memorydb", "memorydb", "DescribeClusters"},
 		{"sesv2", "ses", "ListEmailIdentities"},
 		{"scheduler", "scheduler", "ListScheduleGroups"},
+		{"elbv2", "elasticloadbalancing", "DescribeLoadBalancers"},
 	} {
 		for _, mode := range []string{"unsigned", "wrong-service", "wrong-region", "wrong-account", "valid"} {
 			account, region, signing := "111111111111", "us-east-1", tc.signing

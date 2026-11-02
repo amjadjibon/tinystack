@@ -21,6 +21,7 @@ See the [implemented feature catalogue](catalogue.md#elastic-load-balancing-v2) 
 
 ## Limitations and future work
 
+- The console forwards to one target group per action and has no weighted forwarding, stickiness or authenticate actions; it manages application and network load balancers only.
 - No Gateway load balancers or real raw TCP/UDP forwarding.
 - HTTPS listener metadata is served over plain HTTP; no TLS termination.
 - No health probes, stickiness, authenticate actions, access-log delivery or capacity reservations.

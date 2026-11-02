@@ -23,6 +23,7 @@ import { costHref } from "#/lib/cost";
 import { dynamoHref } from "#/lib/dynamodb";
 import { ec2Href, ec2Kinds, ec2Sections } from "#/lib/ec2";
 import { elasticacheHref } from "#/lib/elasticache";
+import { elbv2Href } from "#/lib/elbv2";
 import { eventHref, inventoryRule } from "#/lib/eventbridge";
 import { type IAMKind, iamHref, iamKinds } from "#/lib/iam";
 import { kmsHref } from "#/lib/kms";
@@ -48,6 +49,9 @@ export function resourceHref(r: Resource): string {
 	if (r.service === "ecr" || r.service === "ecs") {
 		return `/services/${r.service}?${new URLSearchParams({ account: r.account, region: r.region })}`;
 	}
+
+	if (r.service === "elbv2")
+		return elbv2Href({ account: r.account, region: r.region });
 
 	if (r.service === "memorydb")
 		return memorydbHref({ account: r.account, region: r.region });

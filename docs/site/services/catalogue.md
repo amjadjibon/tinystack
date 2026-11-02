@@ -1874,6 +1874,7 @@ Manage application and network load balancer metadata and invoke HTTP listener b
 - Fixed responses, redirects, Lambda targets and HTTP IP targets.
 - Related subnet, security group and certificate checks through local services.
 - With authorization on, a Lambda target needs the function policy to allow elasticloadbalancing.amazonaws.com with the target group as aws:SourceArn; RegisterTargets fails with AccessDenied without it in enforce mode, and a request to a target that lost its permission answers 502.
+- Console page for load balancers (create with subnet and security group pickers, edit subnets and security groups, attributes, tags, delete with typed confirmation that explains deletion protection), target groups (create, health check, attributes, register and deregister targets, target health), listeners (HTTP, HTTPS, TCP, TLS, UDP with certificates, SSL policies and attributes) and rules (path, host, header, method, query string and source IP conditions, reorder through SetRulePriorities); the load balancer list is polled while a balancer is provisioning.
 
 [Supported operations](elbv2.md#supported-operations) · [Limitations](elbv2.md#limitations-and-future-work)
 

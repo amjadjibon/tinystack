@@ -65,6 +65,7 @@ const (
 	consoleMemoryDB    = "memorydb"
 	consoleSESv2       = "sesv2"
 	consoleScheduler   = "scheduler"
+	consoleELBv2       = "elbv2"
 )
 
 const consoleSecretsManager = "secretsmanager"
@@ -323,6 +324,17 @@ var consoleSchedulerOperations = strings.Fields(`
  TagResource UntagResource ListTagsForResource
 `)
 
+var consoleELBv2Operations = strings.Fields(`
+ CreateLoadBalancer DescribeLoadBalancers DeleteLoadBalancer DescribeLoadBalancerAttributes
+ ModifyLoadBalancerAttributes SetSecurityGroups SetSubnets
+ CreateTargetGroup DescribeTargetGroups ModifyTargetGroup DeleteTargetGroup
+ DescribeTargetGroupAttributes ModifyTargetGroupAttributes RegisterTargets DeregisterTargets DescribeTargetHealth
+ CreateListener DescribeListeners ModifyListener DeleteListener DescribeListenerAttributes ModifyListenerAttributes
+ AddListenerCertificates DescribeListenerCertificates RemoveListenerCertificates
+ CreateRule DescribeRules ModifyRule DeleteRule SetRulePriorities
+ AddTags RemoveTags DescribeTags DescribeSSLPolicies
+`)
+
 var consoleSSMOperations = strings.Fields(`
  DescribeParameters GetParameter GetParameterHistory PutParameter DeleteParameter DeleteParameters
  LabelParameterVersion UnlabelParameterVersion ListTagsForResource AddTagsToResource RemoveTagsFromResource
@@ -477,6 +489,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, memorydb := s.services[consoleMemoryDB]
 		_, sesv2 := s.services[consoleSESv2]
 		_, scheduler := s.services[consoleScheduler]
+		_, elbv2 := s.services[consoleELBv2]
 		_, route53 := s.services[consoleRoute53]
 		_, cloudformation := s.services[consoleCloudFormation]
 		accounts := []string{s.cfg.Defaults.Account}
@@ -525,6 +538,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			"memorydb_runtime":    s.cfg.MemoryDB.Clusters,
 			consoleSESv2:          sesv2,
 			consoleScheduler:      scheduler,
+			consoleELBv2:          elbv2,
 			consoleRoute53:        route53,
 			consoleCloudFormation: cloudformation,
 			"requires_signature":  s.cfg.Identity.Mode == config.IdentityVerify,
@@ -657,6 +671,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleSESv2Operations
 	case consoleScheduler:
 		operations = consoleSchedulerOperations
+	case consoleELBv2:
+		operations = consoleELBv2Operations
 	case consoleRoute53:
 		operations = consoleRoute53Operations
 	case consoleCloudFormation:
