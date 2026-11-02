@@ -17,6 +17,8 @@ import { type ReactNode, useState } from "react";
 import { acmHref } from "#/lib/acm";
 import type { Resource } from "#/lib/api";
 import { gatewayHref } from "#/lib/apigateway";
+import { appconfigHref } from "#/lib/appconfig";
+import { inventoryTarget } from "#/lib/appconfigHelpers";
 import { cfnHref } from "#/lib/cloudformation";
 import { cloudfrontHref } from "#/lib/cloudfront";
 import { cloudwatchHref } from "#/lib/cloudwatch";
@@ -142,6 +144,12 @@ export function resourceHref(r: Resource): string {
 			account: r.account,
 			region: r.region,
 			filesystem: inventoryFileSystem(r),
+		});
+	if (r.service === "appconfig")
+		return appconfigHref({
+			account: r.account,
+			region: r.region,
+			...inventoryTarget(r.arn),
 		});
 	if (r.service === "ssm" && r.type === "parameter")
 		return ssmHref({ account: r.account, region: r.region, parameter: r.name });

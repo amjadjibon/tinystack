@@ -1529,7 +1529,8 @@
         "Start/Get/List/Stop deployments; deployments complete immediately with 100 percent progress, and the environment becomes READY_FOR_DEPLOYMENT; AllowRevert restores the previous hosted version of the latest deployment and marks the environment REVERTED",
         "Inventory and Resource Groups Tagging API; console catalogue entries with official AWS architecture icons",
         "CloudFormation Application, Environment, ConfigurationProfile, HostedConfigurationVersion, DeploymentStrategy and Deployment with selected properties; application/environment/profile/strategy metadata and tags update in place",
-        "Regional/account isolation; records, content and sessions persist with SQLite; reset clears all state"
+        "Regional/account isolation; records, content and sessions persist with SQLite; reset clears all state",
+        "Dedicated account/Region-scoped console. Applications are listed, created with tags, edited, tagged and deleted. An application's page lists its environments and configuration profiles (hosted, Freeform or FeatureFlags, with validators), which are created, edited and deleted, and fetches what is deployed through a data plane session. An environment's page starts, lists, inspects and stops deployments, polling while one is in progress; a profile's page lists, creates (JSON, YAML or text, or copied from an earlier version), views and deletes hosted versions. Deployment strategies include the four AWS ones and can be created, edited and deleted. Every delete asks for the name, or the version number, to be typed"
       ],
       "gaps": [
         "Only hosted LocationUri is supported; S3, SSM and Secrets Manager retrieval and retrieval roles fail explicitly",
@@ -1538,7 +1539,8 @@
         "Extensions, Lambda agent layer, KMS encryption, experiments, account settings and deletion protection checks are unsupported; members outside the profile fail explicitly",
         "StopDeployment requires AllowRevert=true because deployment completes synchronously; only the latest completed deployment can be reverted",
         "Applications and profiles require child deletion first; deleting an environment removes its deployment history; deployed hosted versions cannot be deleted",
-        "CloudFormation deletion of Deployment reverts the latest deployment; hosted versions/deployments and trail property changes use replacement; management pages are absent"
+        "CloudFormation deletion of Deployment reverts the latest deployment; hosted versions/deployments and trail property changes use replacement",
+        "The console offers only what the service implements: no CloudWatch alarm monitors on environments, no S3, SSM or Secrets Manager sources, and no deployment event log. A profile's type and source are fixed when it is created, and a strategy cannot be renamed"
       ],
       "execution": "Hosted configuration / immediate deployment",
       "package": "appconfig"

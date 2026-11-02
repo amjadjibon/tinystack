@@ -214,7 +214,12 @@ const catalog: Record<string, ServiceInfo> = {
 		category: management,
 		icon: "organizations",
 	},
-	appconfig: { title: "AppConfig", category: management, icon: "appconfig" },
+	appconfig: {
+		title: "AppConfig",
+		category: management,
+		icon: "appconfig",
+		href: "/services/appconfig",
+	},
 	appconfigdata: {
 		title: "AppConfig Data",
 		category: management,

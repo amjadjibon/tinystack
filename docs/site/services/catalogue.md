@@ -1427,6 +1427,7 @@ Manage hosted configuration and deploy it immediately to regional environments.
 - Inventory and Resource Groups Tagging API; console catalogue entries with official AWS architecture icons.
 - CloudFormation Application, Environment, ConfigurationProfile, HostedConfigurationVersion, DeploymentStrategy and Deployment with selected properties; application/environment/profile/strategy metadata and tags update in place.
 - Regional/account isolation; records, content and sessions persist with SQLite; reset clears all state.
+- Dedicated account/Region-scoped console. Applications are listed, created with tags, edited, tagged and deleted. An application's page lists its environments and configuration profiles (hosted, Freeform or FeatureFlags, with validators), which are created, edited and deleted, and fetches what is deployed through a data plane session. An environment's page starts, lists, inspects and stops deployments, polling while one is in progress; a profile's page lists, creates (JSON, YAML or text, or copied from an earlier version), views and deletes hosted versions. Deployment strategies include the four AWS ones and can be created, edited and deleted. Every delete asks for the name, or the version number, to be typed.
 
 [Supported operations](appconfig.md#supported-operations) · [Limitations](appconfig.md#limitations-and-future-work)
 

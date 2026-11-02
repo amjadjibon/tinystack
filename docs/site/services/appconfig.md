@@ -27,7 +27,8 @@ See the [implemented feature catalogue](catalogue.md#appconfig) for this service
 - Extensions, Lambda agent layer, KMS encryption, experiments, account settings and deletion protection checks are unsupported; members outside the profile fail explicitly.
 - StopDeployment requires AllowRevert=true because deployment completes synchronously; only the latest completed deployment can be reverted.
 - Applications and profiles require child deletion first; deleting an environment removes its deployment history; deployed hosted versions cannot be deleted.
-- CloudFormation deletion of Deployment reverts the latest deployment; hosted versions/deployments and trail property changes use replacement; management pages are absent.
+- CloudFormation deletion of Deployment reverts the latest deployment; hosted versions/deployments and trail property changes use replacement.
+- The console offers only what the service implements: no CloudWatch alarm monitors on environments, no S3, SSM or Secrets Manager sources, and no deployment event log. A profile's type and source are fixed when it is created, and a strategy cannot be renamed.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

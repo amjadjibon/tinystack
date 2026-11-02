@@ -309,6 +309,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		"acm":             "ListCertificates",
 		"cognitoidentity": "ListIdentityPools",
 		"efs":             "DescribeFileSystems",
+		"appconfig":       "ListApplications",
 	}
 	var capabilities map[string]any
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
@@ -375,6 +376,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		{"elbv2", "elasticloadbalancing", "DescribeLoadBalancers"},
 		{"cognitoidentity", "cognito-identity", "ListIdentityPools"},
 		{"efs", "elasticfilesystem", "DescribeFileSystems"},
+		{"appconfig", "appconfig", "ListApplications"},
 	} {
 		for _, mode := range []string{"unsigned", "wrong-service", "wrong-region", "wrong-account", "valid"} {
 			account, region, signing := "111111111111", "us-east-1", tc.signing

@@ -76,7 +76,11 @@ const (
 	consoleCloudFront       = "cloudfront"
 	consoleEFS              = "efs"
 	consoleServiceDiscovery = "servicediscovery"
+	consoleAppConfig        = "appconfig"
 )
+
+// consoleAppConfigData is the AppConfig data plane, a service of its own that signs as appconfig.
+const consoleAppConfigData = "appconfigdata"
 
 const consoleSecretsManager = "secretsmanager"
 
@@ -416,6 +420,21 @@ var consoleEFSOperations = strings.Fields(`
  TagResource UntagResource
 `)
 
+// AppConfig exposes the hosted configuration operations the page uses; the data plane serves its fetch panel.
+var consoleAppConfigOperations = strings.Fields(`
+ CreateApplication GetApplication UpdateApplication DeleteApplication ListApplications
+ CreateEnvironment GetEnvironment UpdateEnvironment DeleteEnvironment ListEnvironments
+ CreateConfigurationProfile GetConfigurationProfile UpdateConfigurationProfile DeleteConfigurationProfile
+ ListConfigurationProfiles
+ CreateDeploymentStrategy UpdateDeploymentStrategy DeleteDeploymentStrategy ListDeploymentStrategies
+ CreateHostedConfigurationVersion GetHostedConfigurationVersion ListHostedConfigurationVersions
+ DeleteHostedConfigurationVersion
+ StartDeployment GetDeployment ListDeployments StopDeployment
+ TagResource UntagResource ListTagsForResource
+`)
+
+var consoleAppConfigDataOperations = strings.Fields(`StartConfigurationSession GetLatestConfiguration`)
+
 var consoleSSMOperations = strings.Fields(`
  DescribeParameters GetParameter GetParameterHistory PutParameter DeleteParameter DeleteParameters
  LabelParameterVersion UnlabelParameterVersion ListTagsForResource AddTagsToResource RemoveTagsFromResource
@@ -566,6 +585,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, acm := s.services[consoleACM]
 		_, cloudfront := s.services[consoleCloudFront]
 		_, efs := s.services[consoleEFS]
+		_, appconfig := s.services[consoleAppConfig]
+		_, appconfigdata := s.services[consoleAppConfigData]
 		_, budgets := s.services[consoleBudgets]
 		_, costexplorer := s.services[consoleCostExplorer]
 		_, cur := s.services[consoleCUR]
@@ -644,6 +665,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleCloudTrail:       cloudtrail,
 			consoleEFS:              efs,
 			consoleServiceDiscovery: serviceDiscovery,
+			consoleAppConfig:        appconfig,
+			consoleAppConfigData:    appconfigdata,
 		}
 
 		if s.cfg.Console.Auth.OIDC != nil {
@@ -759,6 +782,10 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleCloudFrontOperations
 	case consoleEFS:
 		operations = consoleEFSOperations
+	case consoleAppConfig:
+		operations = consoleAppConfigOperations
+	case consoleAppConfigData:
+		operations = consoleAppConfigDataOperations
 	case consoleSecretsManager:
 		operations = consoleSecretsManagerOperations
 	case consoleBudgets:

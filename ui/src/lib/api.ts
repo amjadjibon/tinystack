@@ -168,6 +168,8 @@ export const api = {
 		acm: boolean;
 		cloudfront: boolean;
 		efs: boolean;
+		appconfig: boolean;
+		appconfigdata: boolean;
 		rds: boolean;
 		elasticache: boolean;
 		elasticache_runtime: string;

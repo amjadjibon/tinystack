@@ -22,6 +22,7 @@ import { Route as ServicesIndexRouteImport } from './routes/services/index'
 import { Route as ServicesAcmRouteImport } from './routes/services/acm'
 import { Route as ServicesApigatewayRouteImport } from './routes/services/apigateway'
 import { Route as ServicesApigatewayv2RouteImport } from './routes/services/apigatewayv2'
+import { Route as ServicesAppconfigRouteImport } from './routes/services/appconfig'
 import { Route as ServicesAthenaRouteImport } from './routes/services/athena'
 import { Route as ServicesBudgetsRouteImport } from './routes/services/budgets'
 import { Route as ServicesCloudformationRouteImport } from './routes/services/cloudformation'
@@ -127,6 +128,11 @@ const ServicesApigatewayRoute = ServicesApigatewayRouteImport.update({
 const ServicesApigatewayv2Route = ServicesApigatewayv2RouteImport.update({
   id: '/services/apigatewayv2',
   path: '/services/apigatewayv2',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesAppconfigRoute = ServicesAppconfigRouteImport.update({
+  id: '/services/appconfig',
+  path: '/services/appconfig',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesAthenaRoute = ServicesAthenaRouteImport.update({
@@ -350,6 +356,7 @@ export interface FileRoutesByFullPath {
   '/services/acm': typeof ServicesAcmRoute
   '/services/apigateway': typeof ServicesApigatewayRoute
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
+  '/services/appconfig': typeof ServicesAppconfigRoute
   '/services/athena': typeof ServicesAthenaRoute
   '/services/budgets': typeof ServicesBudgetsRoute
   '/services/cloudformation': typeof ServicesCloudformationRoute
@@ -406,6 +413,7 @@ export interface FileRoutesByTo {
   '/services/acm': typeof ServicesAcmRoute
   '/services/apigateway': typeof ServicesApigatewayRoute
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
+  '/services/appconfig': typeof ServicesAppconfigRoute
   '/services/athena': typeof ServicesAthenaRoute
   '/services/budgets': typeof ServicesBudgetsRoute
   '/services/cloudformation': typeof ServicesCloudformationRoute
@@ -463,6 +471,7 @@ export interface FileRoutesById {
   '/services/acm': typeof ServicesAcmRoute
   '/services/apigateway': typeof ServicesApigatewayRoute
   '/services/apigatewayv2': typeof ServicesApigatewayv2Route
+  '/services/appconfig': typeof ServicesAppconfigRoute
   '/services/athena': typeof ServicesAthenaRoute
   '/services/budgets': typeof ServicesBudgetsRoute
   '/services/cloudformation': typeof ServicesCloudformationRoute
@@ -521,6 +530,7 @@ export interface FileRouteTypes {
     | '/services/acm'
     | '/services/apigateway'
     | '/services/apigatewayv2'
+    | '/services/appconfig'
     | '/services/athena'
     | '/services/budgets'
     | '/services/cloudformation'
@@ -577,6 +587,7 @@ export interface FileRouteTypes {
     | '/services/acm'
     | '/services/apigateway'
     | '/services/apigatewayv2'
+    | '/services/appconfig'
     | '/services/athena'
     | '/services/budgets'
     | '/services/cloudformation'
@@ -633,6 +644,7 @@ export interface FileRouteTypes {
     | '/services/acm'
     | '/services/apigateway'
     | '/services/apigatewayv2'
+    | '/services/appconfig'
     | '/services/athena'
     | '/services/budgets'
     | '/services/cloudformation'
@@ -690,6 +702,7 @@ export interface RootRouteChildren {
   ServicesAcmRoute: typeof ServicesAcmRoute
   ServicesApigatewayRoute: typeof ServicesApigatewayRoute
   ServicesApigatewayv2Route: typeof ServicesApigatewayv2Route
+  ServicesAppconfigRoute: typeof ServicesAppconfigRoute
   ServicesAthenaRoute: typeof ServicesAthenaRoute
   ServicesBudgetsRoute: typeof ServicesBudgetsRoute
   ServicesCloudformationRoute: typeof ServicesCloudformationRoute
@@ -825,6 +838,13 @@ declare module '@tanstack/react-router' {
       path: '/services/apigatewayv2'
       fullPath: '/services/apigatewayv2'
       preLoaderRoute: typeof ServicesApigatewayv2RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/appconfig': {
+      id: '/services/appconfig'
+      path: '/services/appconfig'
+      fullPath: '/services/appconfig'
+      preLoaderRoute: typeof ServicesAppconfigRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services/athena': {
@@ -1130,6 +1150,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesAcmRoute: ServicesAcmRoute,
   ServicesApigatewayRoute: ServicesApigatewayRoute,
   ServicesApigatewayv2Route: ServicesApigatewayv2Route,
+  ServicesAppconfigRoute: ServicesAppconfigRoute,
   ServicesAthenaRoute: ServicesAthenaRoute,
   ServicesBudgetsRoute: ServicesBudgetsRoute,
   ServicesCloudformationRoute: ServicesCloudformationRoute,
