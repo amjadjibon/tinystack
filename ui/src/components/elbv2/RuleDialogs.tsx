@@ -54,7 +54,12 @@ export function RuleDialog({
 			onSaved={onSaved}
 			plan={async () => {
 				if (rule) {
-					const input = ruleModifyInput(rule.RuleArn, conditions, action);
+					const input = ruleModifyInput(
+						rule.RuleArn,
+						conditions,
+						action,
+						rule.Actions ?? [],
+					);
 					return [
 						{
 							label: "ModifyRule",

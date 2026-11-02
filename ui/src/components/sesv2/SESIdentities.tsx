@@ -115,6 +115,7 @@ export function SESIdentities({
 					key={selected}
 					scope={scope}
 					name={selected}
+					configSets={configSets}
 					enabled={enabled}
 				/>
 			)}
@@ -198,11 +199,15 @@ function IdentityDetails({
 	scope,
 	name,
 	enabled,
+	configSets,
 }: {
 	scope: SESScope;
 	name: string;
 	enabled: boolean;
+	configSets: string[];
 }) {
+	const [editing, setEditing] = useState(false),
+		[set, setSet] = useState(none);
 	const poll = usePoll(() => getIdentity(scope, name), 0),
 		d = poll.data;
 	return (
@@ -210,7 +215,20 @@ function IdentityDetails({
 			{poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Facts
 				title={name}
-				actions={<Action onClick={poll.reload}>Refresh</Action>}
+				actions={
+					<Buttons>
+						<Action onClick={poll.reload}>Refresh</Action>
+						<Action
+							disabled={!enabled || !d}
+							onClick={() => {
+								setSet(d?.ConfigurationSetName || none);
+								setEditing(true);
+							}}
+						>
+							Edit default configuration set
+						</Action>
+					</Buttons>
+				}
 				facts={[
 					[
 						"Type",
@@ -237,6 +255,37 @@ function IdentityDetails({
 			/>
 			{!!d?.DkimAttributes?.Tokens?.length && (
 				<CodeBlock text={d.DkimAttributes.Tokens.join("\n")} />
+			)}
+			{editing && (
+				<ActionDialog
+					title="Edit default configuration set"
+					onClose={() => setEditing(false)}
+					onSaved={() => {
+						setEditing(false);
+						poll.reload();
+					}}
+					plan={async () => [
+						{
+							label: "PutEmailIdentityConfigurationSetAttributes",
+							run: () =>
+								sesv2Call(scope, "PutEmailIdentityConfigurationSetAttributes", {
+									EmailIdentity: name,
+									...(set !== none ? { ConfigurationSetName: set } : {}),
+								}),
+						},
+					]}
+				>
+					<Pick
+						label="Default configuration set"
+						value={set}
+						placeholder="Choose a configuration set"
+						options={[
+							{ value: none },
+							...configSets.map((value) => ({ value })),
+						]}
+						onChange={setSet}
+					/>
+				</ActionDialog>
 			)}
 			<ResourceTags
 				scope={scope}

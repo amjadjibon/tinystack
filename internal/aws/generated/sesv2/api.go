@@ -3,7 +3,11 @@ package sesv2
 
 import (
 	"context"
+	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/validation"
+	"regexp"
+	"unicode/utf8"
 )
 
 type Tag struct {
@@ -409,6 +413,837 @@ type ListTagsForResourceResponse struct {
 	Tags []Tag `json:"Tags,omitempty"`
 }
 
+type PutConfigurationSetDeliveryOptionsRequest struct {
+	ConfigurationSetName *string `json:"-"`
+	TlsPolicy            *string `json:"TlsPolicy,omitempty"`
+	SendingPoolName      *string `json:"SendingPoolName,omitempty"`
+	MaxDeliverySeconds   *int64  `json:"MaxDeliverySeconds,omitempty"`
+}
+
+type PutConfigurationSetDeliveryOptionsResponse struct {
+}
+
+type PutConfigurationSetReputationOptionsRequest struct {
+	ConfigurationSetName     *string `json:"-"`
+	ReputationMetricsEnabled *bool   `json:"ReputationMetricsEnabled,omitempty"`
+}
+
+type PutConfigurationSetReputationOptionsResponse struct {
+}
+
+type PutConfigurationSetSendingOptionsRequest struct {
+	ConfigurationSetName *string `json:"-"`
+	SendingEnabled       *bool   `json:"SendingEnabled,omitempty"`
+}
+
+type PutConfigurationSetSendingOptionsResponse struct {
+}
+
+type PutConfigurationSetTrackingOptionsRequest struct {
+	ConfigurationSetName *string `json:"-"`
+	CustomRedirectDomain *string `json:"CustomRedirectDomain,omitempty"`
+	HttpsPolicy          *string `json:"HttpsPolicy,omitempty"`
+}
+
+type PutConfigurationSetTrackingOptionsResponse struct {
+}
+
+type PutConfigurationSetSuppressionOptionsRequest struct {
+	ConfigurationSetName *string  `json:"-"`
+	SuppressedReasons    []string `json:"SuppressedReasons,omitempty"`
+}
+
+type PutConfigurationSetSuppressionOptionsResponse struct {
+}
+
+type PutEmailIdentityConfigurationSetAttributesRequest struct {
+	EmailIdentity        *string `json:"-"`
+	ConfigurationSetName *string `json:"ConfigurationSetName,omitempty"`
+}
+
+type PutEmailIdentityConfigurationSetAttributesResponse struct {
+}
+
+var enum0 = []string{"OPTIONAL", "REQUIRE"}
+
+var enum1 = []string{"BOUNCE", "CLICK", "COMPLAINT", "DELIVERY", "DELIVERY_DELAY", "OPEN", "REJECT", "RENDERING_FAILURE", "SEND", "SUBSCRIPTION"}
+
+var pattern0 = regexp.MustCompile("^[!-9;-@A-~]+$")
+
+var pattern1 = regexp.MustCompile("^[ -~]*$")
+
+var enum2 = []string{"BOUNCE", "COMPLAINT"}
+
+var enum3 = []string{"OPTIONAL", "REQUIRE", "REQUIRE_OPEN_ONLY"}
+
+func (v *Body) Validate(path string) error {
+	if v.Text != nil {
+		if err := (*v.Text).Validate(path + "Text" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Html != nil {
+		if err := (*v.Html).Validate(path + "Html" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *BulkEmailContent) Validate(path string) error {
+	if v.Template != nil {
+		if err := (*v.Template).Validate(path + "Template" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *BulkEmailEntry) Validate(path string) error {
+	if err := validation.Required(path+"Destination", v.Destination != nil); err != nil {
+		return err
+	}
+	if v.Destination != nil {
+		if err := (*v.Destination).Validate(path + "Destination" + "."); err != nil {
+			return err
+		}
+	}
+	if v.ReplacementTags != nil {
+		for i0, e0 := range v.ReplacementTags {
+			if err := e0.Validate(validation.Index(path+"ReplacementTags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.ReplacementEmailContent != nil {
+		if err := (*v.ReplacementEmailContent).Validate(path + "ReplacementEmailContent" + "."); err != nil {
+			return err
+		}
+	}
+	if v.ReplacementHeaders != nil {
+		if err := validation.Length(path+"ReplacementHeaders", len(v.ReplacementHeaders), new(int64(0)), new(int64(15))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.ReplacementHeaders {
+			if err := e0.Validate(validation.Index(path+"ReplacementHeaders", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *Content) Validate(path string) error {
+	if err := validation.Required(path+"Data", v.Data != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *CreateConfigurationSetEventDestinationRequest) Validate(path string) error {
+	if err := validation.Required(path+"ConfigurationSetName", v.ConfigurationSetName != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"EventDestinationName", v.EventDestinationName != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"EventDestination", v.EventDestination != nil); err != nil {
+		return err
+	}
+	if v.EventDestination != nil {
+		if err := (*v.EventDestination).Validate(path + "EventDestination" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreateConfigurationSetRequest) Validate(path string) error {
+	if err := validation.Required(path+"ConfigurationSetName", v.ConfigurationSetName != nil); err != nil {
+		return err
+	}
+	if v.TrackingOptions != nil {
+		if err := (*v.TrackingOptions).Validate(path + "TrackingOptions" + "."); err != nil {
+			return err
+		}
+	}
+	if v.DeliveryOptions != nil {
+		if err := (*v.DeliveryOptions).Validate(path + "DeliveryOptions" + "."); err != nil {
+			return err
+		}
+	}
+	if v.ReputationOptions != nil {
+		if err := (*v.ReputationOptions).Validate(path + "ReputationOptions" + "."); err != nil {
+			return err
+		}
+	}
+	if v.SendingOptions != nil {
+		if err := (*v.SendingOptions).Validate(path + "SendingOptions" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"Tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.SuppressionOptions != nil {
+		if err := (*v.SuppressionOptions).Validate(path + "SuppressionOptions" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreateEmailIdentityRequest) Validate(path string) error {
+	if err := validation.Required(path+"EmailIdentity", v.EmailIdentity != nil); err != nil {
+		return err
+	}
+	if v.EmailIdentity != nil {
+		if err := validation.Length(path+"EmailIdentity", utf8.RuneCountInString((*v.EmailIdentity)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"Tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *CreateEmailTemplateRequest) Validate(path string) error {
+	if err := validation.Required(path+"TemplateName", v.TemplateName != nil); err != nil {
+		return err
+	}
+	if v.TemplateName != nil {
+		if err := validation.Length(path+"TemplateName", utf8.RuneCountInString((*v.TemplateName)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"TemplateContent", v.TemplateContent != nil); err != nil {
+		return err
+	}
+	if v.TemplateContent != nil {
+		if err := (*v.TemplateContent).Validate(path + "TemplateContent" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"Tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *DeleteConfigurationSetEventDestinationRequest) Validate(path string) error {
+	if err := validation.Required(path+"ConfigurationSetName", v.ConfigurationSetName != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"EventDestinationName", v.EventDestinationName != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *DeleteConfigurationSetRequest) Validate(path string) error {
+	if err := validation.Required(path+"ConfigurationSetName", v.ConfigurationSetName != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *DeleteEmailIdentityRequest) Validate(path string) error {
+	if err := validation.Required(path+"EmailIdentity", v.EmailIdentity != nil); err != nil {
+		return err
+	}
+	if v.EmailIdentity != nil {
+		if err := validation.Length(path+"EmailIdentity", utf8.RuneCountInString((*v.EmailIdentity)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteEmailTemplateRequest) Validate(path string) error {
+	if err := validation.Required(path+"TemplateName", v.TemplateName != nil); err != nil {
+		return err
+	}
+	if v.TemplateName != nil {
+		if err := validation.Length(path+"TemplateName", utf8.RuneCountInString((*v.TemplateName)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeliveryOptions) Validate(path string) error {
+	if v.TlsPolicy != nil {
+		if err := validation.Enum(path+"TlsPolicy", (*v.TlsPolicy), enum0); err != nil {
+			return err
+		}
+	}
+	if v.MaxDeliverySeconds != nil {
+		if err := validation.Range(path+"MaxDeliverySeconds", float64((*v.MaxDeliverySeconds)), new(float64(300)), new(float64(50400))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *Destination) Validate(path string) error {
+	return nil
+}
+
+func (v *EmailContent) Validate(path string) error {
+	if v.Simple != nil {
+		if err := (*v.Simple).Validate(path + "Simple" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Raw != nil {
+		if err := (*v.Raw).Validate(path + "Raw" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Template != nil {
+		if err := (*v.Template).Validate(path + "Template" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *EmailTemplateContent) Validate(path string) error {
+	return nil
+}
+
+func (v *EventBridgeDestination) Validate(path string) error {
+	if err := validation.Required(path+"EventBusArn", v.EventBusArn != nil); err != nil {
+		return err
+	}
+	if v.EventBusArn != nil {
+		if err := validation.Length(path+"EventBusArn", utf8.RuneCountInString((*v.EventBusArn)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *EventDestinationDefinition) Validate(path string) error {
+	if v.MatchingEventTypes != nil {
+		for i0, e0 := range v.MatchingEventTypes {
+			if err := validation.Enum(validation.Index(path+"MatchingEventTypes", i0), e0, enum1); err != nil {
+				return err
+			}
+		}
+	}
+	if v.KinesisFirehoseDestination != nil {
+		if err := (*v.KinesisFirehoseDestination).Validate(path + "KinesisFirehoseDestination" + "."); err != nil {
+			return err
+		}
+	}
+	if v.SnsDestination != nil {
+		if err := (*v.SnsDestination).Validate(path + "SnsDestination" + "."); err != nil {
+			return err
+		}
+	}
+	if v.EventBridgeDestination != nil {
+		if err := (*v.EventBridgeDestination).Validate(path + "EventBridgeDestination" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetAccountRequest) Validate(path string) error {
+	return nil
+}
+
+func (v *GetConfigurationSetEventDestinationsRequest) Validate(path string) error {
+	if err := validation.Required(path+"ConfigurationSetName", v.ConfigurationSetName != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *GetConfigurationSetRequest) Validate(path string) error {
+	if err := validation.Required(path+"ConfigurationSetName", v.ConfigurationSetName != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *GetEmailIdentityRequest) Validate(path string) error {
+	if err := validation.Required(path+"EmailIdentity", v.EmailIdentity != nil); err != nil {
+		return err
+	}
+	if v.EmailIdentity != nil {
+		if err := validation.Length(path+"EmailIdentity", utf8.RuneCountInString((*v.EmailIdentity)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *GetEmailTemplateRequest) Validate(path string) error {
+	if err := validation.Required(path+"TemplateName", v.TemplateName != nil); err != nil {
+		return err
+	}
+	if v.TemplateName != nil {
+		if err := validation.Length(path+"TemplateName", utf8.RuneCountInString((*v.TemplateName)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *KinesisFirehoseDestination) Validate(path string) error {
+	if err := validation.Required(path+"IamRoleArn", v.IamRoleArn != nil); err != nil {
+		return err
+	}
+	if v.IamRoleArn != nil {
+		if err := validation.Length(path+"IamRoleArn", utf8.RuneCountInString((*v.IamRoleArn)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"DeliveryStreamArn", v.DeliveryStreamArn != nil); err != nil {
+		return err
+	}
+	if v.DeliveryStreamArn != nil {
+		if err := validation.Length(path+"DeliveryStreamArn", utf8.RuneCountInString((*v.DeliveryStreamArn)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListConfigurationSetsRequest) Validate(path string) error {
+	return nil
+}
+
+func (v *ListEmailIdentitiesRequest) Validate(path string) error {
+	return nil
+}
+
+func (v *ListEmailTemplatesRequest) Validate(path string) error {
+	return nil
+}
+
+func (v *ListTagsForResourceRequest) Validate(path string) error {
+	if err := validation.Required(path+"ResourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if v.ResourceArn != nil {
+		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *Message) Validate(path string) error {
+	if err := validation.Required(path+"Subject", v.Subject != nil); err != nil {
+		return err
+	}
+	if v.Subject != nil {
+		if err := (*v.Subject).Validate(path + "Subject" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Body", v.Body != nil); err != nil {
+		return err
+	}
+	if v.Body != nil {
+		if err := (*v.Body).Validate(path + "Body" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Headers != nil {
+		if err := validation.Length(path+"Headers", len(v.Headers), new(int64(0)), new(int64(15))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.Headers {
+			if err := e0.Validate(validation.Index(path+"Headers", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *MessageHeader) Validate(path string) error {
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"Name", utf8.RuneCountInString((*v.Name)), new(int64(1)), new(int64(126))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Name", (*v.Name), pattern0, nil, "^[!-9;-@A-~]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Value", v.Value != nil); err != nil {
+		return err
+	}
+	if v.Value != nil {
+		if err := validation.Length(path+"Value", utf8.RuneCountInString((*v.Value)), new(int64(1)), new(int64(995))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"Value", (*v.Value), pattern1, nil, "^[ -~]*$"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *MessageTag) Validate(path string) error {
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"Value", v.Value != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *PutConfigurationSetDeliveryOptionsRequest) Validate(path string) error {
+	if err := validation.Required(path+"ConfigurationSetName", v.ConfigurationSetName != nil); err != nil {
+		return err
+	}
+	if v.TlsPolicy != nil {
+		if err := validation.Enum(path+"TlsPolicy", (*v.TlsPolicy), enum0); err != nil {
+			return err
+		}
+	}
+	if v.MaxDeliverySeconds != nil {
+		if err := validation.Range(path+"MaxDeliverySeconds", float64((*v.MaxDeliverySeconds)), new(float64(300)), new(float64(50400))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *PutConfigurationSetReputationOptionsRequest) Validate(path string) error {
+	if err := validation.Required(path+"ConfigurationSetName", v.ConfigurationSetName != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *PutConfigurationSetSendingOptionsRequest) Validate(path string) error {
+	if err := validation.Required(path+"ConfigurationSetName", v.ConfigurationSetName != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *PutConfigurationSetSuppressionOptionsRequest) Validate(path string) error {
+	if err := validation.Required(path+"ConfigurationSetName", v.ConfigurationSetName != nil); err != nil {
+		return err
+	}
+	if v.SuppressedReasons != nil {
+		for i0, e0 := range v.SuppressedReasons {
+			if err := validation.Enum(validation.Index(path+"SuppressedReasons", i0), e0, enum2); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *PutConfigurationSetTrackingOptionsRequest) Validate(path string) error {
+	if err := validation.Required(path+"ConfigurationSetName", v.ConfigurationSetName != nil); err != nil {
+		return err
+	}
+	if v.HttpsPolicy != nil {
+		if err := validation.Enum(path+"HttpsPolicy", (*v.HttpsPolicy), enum3); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *PutEmailIdentityConfigurationSetAttributesRequest) Validate(path string) error {
+	if err := validation.Required(path+"EmailIdentity", v.EmailIdentity != nil); err != nil {
+		return err
+	}
+	if v.EmailIdentity != nil {
+		if err := validation.Length(path+"EmailIdentity", utf8.RuneCountInString((*v.EmailIdentity)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *RawMessage) Validate(path string) error {
+	if err := validation.Required(path+"Data", v.Data != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *ReplacementEmailContent) Validate(path string) error {
+	if v.ReplacementTemplate != nil {
+		if err := (*v.ReplacementTemplate).Validate(path + "ReplacementTemplate" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ReplacementTemplate) Validate(path string) error {
+	if v.ReplacementTemplateData != nil {
+		if err := validation.Length(path+"ReplacementTemplateData", utf8.RuneCountInString((*v.ReplacementTemplateData)), new(int64(0)), new(int64(262144))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ReputationOptions) Validate(path string) error {
+	return nil
+}
+
+func (v *SendBulkEmailRequest) Validate(path string) error {
+	if v.DefaultEmailTags != nil {
+		for i0, e0 := range v.DefaultEmailTags {
+			if err := e0.Validate(validation.Index(path+"DefaultEmailTags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if err := validation.Required(path+"DefaultContent", v.DefaultContent != nil); err != nil {
+		return err
+	}
+	if v.DefaultContent != nil {
+		if err := (*v.DefaultContent).Validate(path + "DefaultContent" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"BulkEmailEntries", v.BulkEmailEntries != nil); err != nil {
+		return err
+	}
+	if v.BulkEmailEntries != nil {
+		for i0, e0 := range v.BulkEmailEntries {
+			if err := e0.Validate(validation.Index(path+"BulkEmailEntries", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *SendEmailRequest) Validate(path string) error {
+	if v.Destination != nil {
+		if err := (*v.Destination).Validate(path + "Destination" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Content", v.Content != nil); err != nil {
+		return err
+	}
+	if v.Content != nil {
+		if err := (*v.Content).Validate(path + "Content" + "."); err != nil {
+			return err
+		}
+	}
+	if v.EmailTags != nil {
+		for i0, e0 := range v.EmailTags {
+			if err := e0.Validate(validation.Index(path+"EmailTags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *SendingOptions) Validate(path string) error {
+	return nil
+}
+
+func (v *SnsDestination) Validate(path string) error {
+	if err := validation.Required(path+"TopicArn", v.TopicArn != nil); err != nil {
+		return err
+	}
+	if v.TopicArn != nil {
+		if err := validation.Length(path+"TopicArn", utf8.RuneCountInString((*v.TopicArn)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *SuppressionOptions) Validate(path string) error {
+	if v.SuppressedReasons != nil {
+		for i0, e0 := range v.SuppressedReasons {
+			if err := validation.Enum(validation.Index(path+"SuppressedReasons", i0), e0, enum2); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *Tag) Validate(path string) error {
+	if err := validation.Required(path+"Key", v.Key != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"Value", v.Value != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *TagResourceRequest) Validate(path string) error {
+	if err := validation.Required(path+"ResourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if v.ResourceArn != nil {
+		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"Tags", v.Tags != nil); err != nil {
+		return err
+	}
+	if v.Tags != nil {
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"Tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *Template) Validate(path string) error {
+	if v.TemplateName != nil {
+		if err := validation.Length(path+"TemplateName", utf8.RuneCountInString((*v.TemplateName)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if v.TemplateArn != nil {
+		if err := validation.Length(path+"TemplateArn", utf8.RuneCountInString((*v.TemplateArn)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if v.TemplateContent != nil {
+		if err := (*v.TemplateContent).Validate(path + "TemplateContent" + "."); err != nil {
+			return err
+		}
+	}
+	if v.TemplateData != nil {
+		if err := validation.Length(path+"TemplateData", utf8.RuneCountInString((*v.TemplateData)), new(int64(0)), new(int64(262144))); err != nil {
+			return err
+		}
+	}
+	if v.Headers != nil {
+		if err := validation.Length(path+"Headers", len(v.Headers), new(int64(0)), new(int64(15))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.Headers {
+			if err := e0.Validate(validation.Index(path+"Headers", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *TestRenderEmailTemplateRequest) Validate(path string) error {
+	if err := validation.Required(path+"TemplateName", v.TemplateName != nil); err != nil {
+		return err
+	}
+	if v.TemplateName != nil {
+		if err := validation.Length(path+"TemplateName", utf8.RuneCountInString((*v.TemplateName)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"TemplateData", v.TemplateData != nil); err != nil {
+		return err
+	}
+	if v.TemplateData != nil {
+		if err := validation.Length(path+"TemplateData", utf8.RuneCountInString((*v.TemplateData)), new(int64(0)), new(int64(262144))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *TrackingOptions) Validate(path string) error {
+	if err := validation.Required(path+"CustomRedirectDomain", v.CustomRedirectDomain != nil); err != nil {
+		return err
+	}
+	if v.HttpsPolicy != nil {
+		if err := validation.Enum(path+"HttpsPolicy", (*v.HttpsPolicy), enum3); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *UntagResourceRequest) Validate(path string) error {
+	if err := validation.Required(path+"ResourceArn", v.ResourceArn != nil); err != nil {
+		return err
+	}
+	if v.ResourceArn != nil {
+		if err := validation.Length(path+"ResourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"TagKeys", v.TagKeys != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *UpdateConfigurationSetEventDestinationRequest) Validate(path string) error {
+	if err := validation.Required(path+"ConfigurationSetName", v.ConfigurationSetName != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"EventDestinationName", v.EventDestinationName != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"EventDestination", v.EventDestination != nil); err != nil {
+		return err
+	}
+	if v.EventDestination != nil {
+		if err := (*v.EventDestination).Validate(path + "EventDestination" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *UpdateEmailTemplateRequest) Validate(path string) error {
+	if err := validation.Required(path+"TemplateName", v.TemplateName != nil); err != nil {
+		return err
+	}
+	if v.TemplateName != nil {
+		if err := validation.Length(path+"TemplateName", utf8.RuneCountInString((*v.TemplateName)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"TemplateContent", v.TemplateContent != nil); err != nil {
+		return err
+	}
+	if v.TemplateContent != nil {
+		if err := (*v.TemplateContent).Validate(path + "TemplateContent" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type API interface {
 	CreateEmailIdentity(context.Context, *CreateEmailIdentityRequest) (*CreateEmailIdentityResponse, error)
 	GetEmailIdentity(context.Context, *GetEmailIdentityRequest) (*GetEmailIdentityResponse, error)
@@ -434,81 +1269,225 @@ type API interface {
 	TagResource(context.Context, *TagResourceRequest) (*TagResourceResponse, error)
 	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceResponse, error)
 	ListTagsForResource(context.Context, *ListTagsForResourceRequest) (*ListTagsForResourceResponse, error)
+	PutConfigurationSetDeliveryOptions(context.Context, *PutConfigurationSetDeliveryOptionsRequest) (*PutConfigurationSetDeliveryOptionsResponse, error)
+	PutConfigurationSetReputationOptions(context.Context, *PutConfigurationSetReputationOptionsRequest) (*PutConfigurationSetReputationOptionsResponse, error)
+	PutConfigurationSetSendingOptions(context.Context, *PutConfigurationSetSendingOptionsRequest) (*PutConfigurationSetSendingOptionsResponse, error)
+	PutConfigurationSetTrackingOptions(context.Context, *PutConfigurationSetTrackingOptionsRequest) (*PutConfigurationSetTrackingOptionsResponse, error)
+	PutConfigurationSetSuppressionOptions(context.Context, *PutConfigurationSetSuppressionOptionsRequest) (*PutConfigurationSetSuppressionOptionsResponse, error)
+	PutEmailIdentityConfigurationSetAttributes(context.Context, *PutEmailIdentityConfigurationSetAttributesRequest) (*PutEmailIdentityConfigurationSetAttributesResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
 	return catalog.Service{Name: "sesv2", SigningName: "ses", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "ses", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"AccountSuspendedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "AlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "BadRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "MailFromDomainNotVerifiedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "MessageRejected": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "SendingPausedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TooManyRequestsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}}, Operations: map[string]catalog.Operation{
 		"CreateEmailIdentity": {Name: "CreateEmailIdentity", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:CreateEmailIdentity", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ConfigurationSetName": catalog.MemberBinding{Location: "document", Name: "ConfigurationSetName", Format: ""}, "EmailIdentity": catalog.MemberBinding{Location: "document", Name: "EmailIdentity", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Output: map[string]catalog.MemberBinding{"DkimAttributes": catalog.MemberBinding{Location: "document", Name: "DkimAttributes", Format: ""}, "IdentityType": catalog.MemberBinding{Location: "document", Name: "IdentityType", Format: ""}, "VerifiedForSendingStatus": catalog.MemberBinding{Location: "document", Name: "VerifiedForSendingStatus", Format: ""}}, Method: "POST", URI: "/v2/email/identities", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateEmailIdentityRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateEmailIdentity(ctx, input.(*CreateEmailIdentityRequest))
+			in := input.(*CreateEmailIdentityRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.CreateEmailIdentity(ctx, in)
 		}},
 		"GetEmailIdentity": {Name: "GetEmailIdentity", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:GetEmailIdentity", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"EmailIdentity": catalog.MemberBinding{Location: "label", Name: "EmailIdentity", Format: ""}}, Output: map[string]catalog.MemberBinding{"ConfigurationSetName": catalog.MemberBinding{Location: "document", Name: "ConfigurationSetName", Format: ""}, "DkimAttributes": catalog.MemberBinding{Location: "document", Name: "DkimAttributes", Format: ""}, "FeedbackForwardingStatus": catalog.MemberBinding{Location: "document", Name: "FeedbackForwardingStatus", Format: ""}, "IdentityType": catalog.MemberBinding{Location: "document", Name: "IdentityType", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}, "VerificationStatus": catalog.MemberBinding{Location: "document", Name: "VerificationStatus", Format: ""}, "VerifiedForSendingStatus": catalog.MemberBinding{Location: "document", Name: "VerifiedForSendingStatus", Format: ""}}, Method: "GET", URI: "/v2/email/identities/{EmailIdentity}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetEmailIdentityRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.GetEmailIdentity(ctx, input.(*GetEmailIdentityRequest))
+			in := input.(*GetEmailIdentityRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.GetEmailIdentity(ctx, in)
 		}},
 		"ListEmailIdentities": {Name: "ListEmailIdentities", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:ListEmailIdentities", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}, "PageSize": catalog.MemberBinding{Location: "document", Name: "PageSize", Format: ""}}, Output: map[string]catalog.MemberBinding{"EmailIdentities": catalog.MemberBinding{Location: "document", Name: "EmailIdentities", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}}, Method: "POST", URI: "/v2/email/list-identities", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListEmailIdentitiesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListEmailIdentities(ctx, input.(*ListEmailIdentitiesRequest))
+			in := input.(*ListEmailIdentitiesRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.ListEmailIdentities(ctx, in)
 		}},
 		"DeleteEmailIdentity": {Name: "DeleteEmailIdentity", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:DeleteEmailIdentity", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"EmailIdentity": catalog.MemberBinding{Location: "label", Name: "EmailIdentity", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/v2/email/identities/{EmailIdentity}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteEmailIdentityRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteEmailIdentity(ctx, input.(*DeleteEmailIdentityRequest))
+			in := input.(*DeleteEmailIdentityRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.DeleteEmailIdentity(ctx, in)
 		}},
 		"CreateEmailTemplate": {Name: "CreateEmailTemplate", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:CreateEmailTemplate", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}, "TemplateContent": catalog.MemberBinding{Location: "document", Name: "TemplateContent", Format: ""}, "TemplateName": catalog.MemberBinding{Location: "document", Name: "TemplateName", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/v2/email/templates", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateEmailTemplateRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateEmailTemplate(ctx, input.(*CreateEmailTemplateRequest))
+			in := input.(*CreateEmailTemplateRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.CreateEmailTemplate(ctx, in)
 		}},
 		"GetEmailTemplate": {Name: "GetEmailTemplate", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:GetEmailTemplate", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"TemplateName": catalog.MemberBinding{Location: "label", Name: "TemplateName", Format: ""}}, Output: map[string]catalog.MemberBinding{"Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}, "TemplateContent": catalog.MemberBinding{Location: "document", Name: "TemplateContent", Format: ""}, "TemplateName": catalog.MemberBinding{Location: "document", Name: "TemplateName", Format: ""}}, Method: "GET", URI: "/v2/email/templates/{TemplateName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetEmailTemplateRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.GetEmailTemplate(ctx, input.(*GetEmailTemplateRequest))
+			in := input.(*GetEmailTemplateRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.GetEmailTemplate(ctx, in)
 		}},
 		"UpdateEmailTemplate": {Name: "UpdateEmailTemplate", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:UpdateEmailTemplate", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"TemplateContent": catalog.MemberBinding{Location: "document", Name: "TemplateContent", Format: ""}, "TemplateName": catalog.MemberBinding{Location: "label", Name: "TemplateName", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/v2/email/templates/{TemplateName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateEmailTemplateRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UpdateEmailTemplate(ctx, input.(*UpdateEmailTemplateRequest))
+			in := input.(*UpdateEmailTemplateRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.UpdateEmailTemplate(ctx, in)
 		}},
 		"DeleteEmailTemplate": {Name: "DeleteEmailTemplate", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:DeleteEmailTemplate", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"TemplateName": catalog.MemberBinding{Location: "label", Name: "TemplateName", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/v2/email/templates/{TemplateName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteEmailTemplateRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteEmailTemplate(ctx, input.(*DeleteEmailTemplateRequest))
+			in := input.(*DeleteEmailTemplateRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.DeleteEmailTemplate(ctx, in)
 		}},
 		"ListEmailTemplates": {Name: "ListEmailTemplates", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:ListEmailTemplates", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "query", Name: "NextToken", Format: ""}, "PageSize": catalog.MemberBinding{Location: "query", Name: "PageSize", Format: ""}}, Output: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}, "TemplatesMetadata": catalog.MemberBinding{Location: "document", Name: "TemplatesMetadata", Format: ""}}, Method: "GET", URI: "/v2/email/templates", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListEmailTemplatesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListEmailTemplates(ctx, input.(*ListEmailTemplatesRequest))
+			in := input.(*ListEmailTemplatesRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.ListEmailTemplates(ctx, in)
 		}},
 		"TestRenderEmailTemplate": {Name: "TestRenderEmailTemplate", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:TestRenderEmailTemplate", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"TemplateData": catalog.MemberBinding{Location: "document", Name: "TemplateData", Format: ""}, "TemplateName": catalog.MemberBinding{Location: "label", Name: "TemplateName", Format: ""}}, Output: map[string]catalog.MemberBinding{"RenderedTemplate": catalog.MemberBinding{Location: "document", Name: "RenderedTemplate", Format: ""}}, Method: "POST", URI: "/v2/email/templates/{TemplateName}/render", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &TestRenderEmailTemplateRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.TestRenderEmailTemplate(ctx, input.(*TestRenderEmailTemplateRequest))
+			in := input.(*TestRenderEmailTemplateRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.TestRenderEmailTemplate(ctx, in)
 		}},
 		"CreateConfigurationSet": {Name: "CreateConfigurationSet", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:CreateConfigurationSet", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ConfigurationSetName": catalog.MemberBinding{Location: "document", Name: "ConfigurationSetName", Format: ""}, "DeliveryOptions": catalog.MemberBinding{Location: "document", Name: "DeliveryOptions", Format: ""}, "ReputationOptions": catalog.MemberBinding{Location: "document", Name: "ReputationOptions", Format: ""}, "SendingOptions": catalog.MemberBinding{Location: "document", Name: "SendingOptions", Format: ""}, "SuppressionOptions": catalog.MemberBinding{Location: "document", Name: "SuppressionOptions", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}, "TrackingOptions": catalog.MemberBinding{Location: "document", Name: "TrackingOptions", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/v2/email/configuration-sets", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateConfigurationSetRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateConfigurationSet(ctx, input.(*CreateConfigurationSetRequest))
+			in := input.(*CreateConfigurationSetRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.CreateConfigurationSet(ctx, in)
 		}},
 		"GetConfigurationSet": {Name: "GetConfigurationSet", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:GetConfigurationSet", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ConfigurationSetName": catalog.MemberBinding{Location: "label", Name: "ConfigurationSetName", Format: ""}}, Output: map[string]catalog.MemberBinding{"ConfigurationSetName": catalog.MemberBinding{Location: "document", Name: "ConfigurationSetName", Format: ""}, "DeliveryOptions": catalog.MemberBinding{Location: "document", Name: "DeliveryOptions", Format: ""}, "ReputationOptions": catalog.MemberBinding{Location: "document", Name: "ReputationOptions", Format: ""}, "SendingOptions": catalog.MemberBinding{Location: "document", Name: "SendingOptions", Format: ""}, "SuppressionOptions": catalog.MemberBinding{Location: "document", Name: "SuppressionOptions", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}, "TrackingOptions": catalog.MemberBinding{Location: "document", Name: "TrackingOptions", Format: ""}}, Method: "GET", URI: "/v2/email/configuration-sets/{ConfigurationSetName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetConfigurationSetRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.GetConfigurationSet(ctx, input.(*GetConfigurationSetRequest))
+			in := input.(*GetConfigurationSetRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.GetConfigurationSet(ctx, in)
 		}},
 		"ListConfigurationSets": {Name: "ListConfigurationSets", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:ListConfigurationSets", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}, "PageSize": catalog.MemberBinding{Location: "document", Name: "PageSize", Format: ""}}, Output: map[string]catalog.MemberBinding{"ConfigurationSets": catalog.MemberBinding{Location: "document", Name: "ConfigurationSets", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}}, Method: "POST", URI: "/v2/email/list-configuration-sets", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListConfigurationSetsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListConfigurationSets(ctx, input.(*ListConfigurationSetsRequest))
+			in := input.(*ListConfigurationSetsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.ListConfigurationSets(ctx, in)
 		}},
 		"DeleteConfigurationSet": {Name: "DeleteConfigurationSet", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:DeleteConfigurationSet", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ConfigurationSetName": catalog.MemberBinding{Location: "label", Name: "ConfigurationSetName", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/v2/email/configuration-sets/{ConfigurationSetName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteConfigurationSetRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteConfigurationSet(ctx, input.(*DeleteConfigurationSetRequest))
+			in := input.(*DeleteConfigurationSetRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.DeleteConfigurationSet(ctx, in)
 		}},
 		"CreateConfigurationSetEventDestination": {Name: "CreateConfigurationSetEventDestination", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:CreateConfigurationSetEventDestination", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ConfigurationSetName": catalog.MemberBinding{Location: "label", Name: "ConfigurationSetName", Format: ""}, "EventDestination": catalog.MemberBinding{Location: "document", Name: "EventDestination", Format: ""}, "EventDestinationName": catalog.MemberBinding{Location: "document", Name: "EventDestinationName", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/v2/email/configuration-sets/{ConfigurationSetName}/event-destinations", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateConfigurationSetEventDestinationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.CreateConfigurationSetEventDestination(ctx, input.(*CreateConfigurationSetEventDestinationRequest))
+			in := input.(*CreateConfigurationSetEventDestinationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.CreateConfigurationSetEventDestination(ctx, in)
 		}},
 		"GetConfigurationSetEventDestinations": {Name: "GetConfigurationSetEventDestinations", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:GetConfigurationSetEventDestinations", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ConfigurationSetName": catalog.MemberBinding{Location: "label", Name: "ConfigurationSetName", Format: ""}}, Output: map[string]catalog.MemberBinding{"EventDestinations": catalog.MemberBinding{Location: "document", Name: "EventDestinations", Format: ""}}, Method: "GET", URI: "/v2/email/configuration-sets/{ConfigurationSetName}/event-destinations", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetConfigurationSetEventDestinationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.GetConfigurationSetEventDestinations(ctx, input.(*GetConfigurationSetEventDestinationsRequest))
+			in := input.(*GetConfigurationSetEventDestinationsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.GetConfigurationSetEventDestinations(ctx, in)
 		}},
 		"UpdateConfigurationSetEventDestination": {Name: "UpdateConfigurationSetEventDestination", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:UpdateConfigurationSetEventDestination", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ConfigurationSetName": catalog.MemberBinding{Location: "label", Name: "ConfigurationSetName", Format: ""}, "EventDestination": catalog.MemberBinding{Location: "document", Name: "EventDestination", Format: ""}, "EventDestinationName": catalog.MemberBinding{Location: "label", Name: "EventDestinationName", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/v2/email/configuration-sets/{ConfigurationSetName}/event-destinations/{EventDestinationName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateConfigurationSetEventDestinationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UpdateConfigurationSetEventDestination(ctx, input.(*UpdateConfigurationSetEventDestinationRequest))
+			in := input.(*UpdateConfigurationSetEventDestinationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.UpdateConfigurationSetEventDestination(ctx, in)
 		}},
 		"DeleteConfigurationSetEventDestination": {Name: "DeleteConfigurationSetEventDestination", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:DeleteConfigurationSetEventDestination", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ConfigurationSetName": catalog.MemberBinding{Location: "label", Name: "ConfigurationSetName", Format: ""}, "EventDestinationName": catalog.MemberBinding{Location: "label", Name: "EventDestinationName", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/v2/email/configuration-sets/{ConfigurationSetName}/event-destinations/{EventDestinationName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteConfigurationSetEventDestinationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.DeleteConfigurationSetEventDestination(ctx, input.(*DeleteConfigurationSetEventDestinationRequest))
+			in := input.(*DeleteConfigurationSetEventDestinationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.DeleteConfigurationSetEventDestination(ctx, in)
 		}},
 		"SendEmail": {Name: "SendEmail", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:SendEmail", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ConfigurationSetName": catalog.MemberBinding{Location: "document", Name: "ConfigurationSetName", Format: ""}, "Content": catalog.MemberBinding{Location: "document", Name: "Content", Format: ""}, "Destination": catalog.MemberBinding{Location: "document", Name: "Destination", Format: ""}, "EmailTags": catalog.MemberBinding{Location: "document", Name: "EmailTags", Format: ""}, "FromEmailAddress": catalog.MemberBinding{Location: "document", Name: "FromEmailAddress", Format: ""}, "ReplyToAddresses": catalog.MemberBinding{Location: "document", Name: "ReplyToAddresses", Format: ""}}, Output: map[string]catalog.MemberBinding{"MessageId": catalog.MemberBinding{Location: "document", Name: "MessageId", Format: ""}}, Method: "POST", URI: "/v2/email/outbound-emails", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &SendEmailRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.SendEmail(ctx, input.(*SendEmailRequest))
+			in := input.(*SendEmailRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.SendEmail(ctx, in)
 		}},
 		"SendBulkEmail": {Name: "SendBulkEmail", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:SendBulkEmail", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"BulkEmailEntries": catalog.MemberBinding{Location: "document", Name: "BulkEmailEntries", Format: ""}, "ConfigurationSetName": catalog.MemberBinding{Location: "document", Name: "ConfigurationSetName", Format: ""}, "DefaultContent": catalog.MemberBinding{Location: "document", Name: "DefaultContent", Format: ""}, "DefaultEmailTags": catalog.MemberBinding{Location: "document", Name: "DefaultEmailTags", Format: ""}, "FromEmailAddress": catalog.MemberBinding{Location: "document", Name: "FromEmailAddress", Format: ""}, "ReplyToAddresses": catalog.MemberBinding{Location: "document", Name: "ReplyToAddresses", Format: ""}}, Output: map[string]catalog.MemberBinding{"BulkEmailEntryResults": catalog.MemberBinding{Location: "document", Name: "BulkEmailEntryResults", Format: ""}}, Method: "POST", URI: "/v2/email/outbound-bulk-emails", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &SendBulkEmailRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.SendBulkEmail(ctx, input.(*SendBulkEmailRequest))
+			in := input.(*SendBulkEmailRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.SendBulkEmail(ctx, in)
 		}},
 		"GetAccount": {Name: "GetAccount", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:GetAccount", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{}, Output: map[string]catalog.MemberBinding{"DedicatedIpAutoWarmupEnabled": catalog.MemberBinding{Location: "document", Name: "DedicatedIpAutoWarmupEnabled", Format: ""}, "EnforcementStatus": catalog.MemberBinding{Location: "document", Name: "EnforcementStatus", Format: ""}, "ProductionAccessEnabled": catalog.MemberBinding{Location: "document", Name: "ProductionAccessEnabled", Format: ""}, "SendQuota": catalog.MemberBinding{Location: "document", Name: "SendQuota", Format: ""}, "SendingEnabled": catalog.MemberBinding{Location: "document", Name: "SendingEnabled", Format: ""}}, Method: "GET", URI: "/v2/email/account", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetAccountRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.GetAccount(ctx, input.(*GetAccountRequest))
+			in := input.(*GetAccountRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.GetAccount(ctx, in)
 		}},
 		"TagResource": {Name: "TagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:TagResource", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceArn": catalog.MemberBinding{Location: "document", Name: "ResourceArn", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/v2/email/tags", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &TagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.TagResource(ctx, input.(*TagResourceRequest))
+			in := input.(*TagResourceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.TagResource(ctx, in)
 		}},
 		"UntagResource": {Name: "UntagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:UntagResource", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceArn": catalog.MemberBinding{Location: "query", Name: "ResourceArn", Format: ""}, "TagKeys": catalog.MemberBinding{Location: "query", Name: "TagKeys", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/v2/email/tags", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UntagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.UntagResource(ctx, input.(*UntagResourceRequest))
+			in := input.(*UntagResourceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.UntagResource(ctx, in)
 		}},
 		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:ListTagsForResource", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceArn": catalog.MemberBinding{Location: "query", Name: "ResourceArn", Format: ""}}, Output: map[string]catalog.MemberBinding{"Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Method: "GET", URI: "/v2/email/tags", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
-			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceRequest))
+			in := input.(*ListTagsForResourceRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.ListTagsForResource(ctx, in)
+		}},
+		"PutConfigurationSetDeliveryOptions": {Name: "PutConfigurationSetDeliveryOptions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:PutConfigurationSetDeliveryOptions", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ConfigurationSetName": catalog.MemberBinding{Location: "label", Name: "ConfigurationSetName", Format: ""}, "MaxDeliverySeconds": catalog.MemberBinding{Location: "document", Name: "MaxDeliverySeconds", Format: ""}, "SendingPoolName": catalog.MemberBinding{Location: "document", Name: "SendingPoolName", Format: ""}, "TlsPolicy": catalog.MemberBinding{Location: "document", Name: "TlsPolicy", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/v2/email/configuration-sets/{ConfigurationSetName}/delivery-options", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &PutConfigurationSetDeliveryOptionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*PutConfigurationSetDeliveryOptionsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.PutConfigurationSetDeliveryOptions(ctx, in)
+		}},
+		"PutConfigurationSetReputationOptions": {Name: "PutConfigurationSetReputationOptions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:PutConfigurationSetReputationOptions", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ConfigurationSetName": catalog.MemberBinding{Location: "label", Name: "ConfigurationSetName", Format: ""}, "ReputationMetricsEnabled": catalog.MemberBinding{Location: "document", Name: "ReputationMetricsEnabled", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/v2/email/configuration-sets/{ConfigurationSetName}/reputation-options", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &PutConfigurationSetReputationOptionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*PutConfigurationSetReputationOptionsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.PutConfigurationSetReputationOptions(ctx, in)
+		}},
+		"PutConfigurationSetSendingOptions": {Name: "PutConfigurationSetSendingOptions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:PutConfigurationSetSendingOptions", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ConfigurationSetName": catalog.MemberBinding{Location: "label", Name: "ConfigurationSetName", Format: ""}, "SendingEnabled": catalog.MemberBinding{Location: "document", Name: "SendingEnabled", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/v2/email/configuration-sets/{ConfigurationSetName}/sending", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &PutConfigurationSetSendingOptionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*PutConfigurationSetSendingOptionsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.PutConfigurationSetSendingOptions(ctx, in)
+		}},
+		"PutConfigurationSetTrackingOptions": {Name: "PutConfigurationSetTrackingOptions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:PutConfigurationSetTrackingOptions", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ConfigurationSetName": catalog.MemberBinding{Location: "label", Name: "ConfigurationSetName", Format: ""}, "CustomRedirectDomain": catalog.MemberBinding{Location: "document", Name: "CustomRedirectDomain", Format: ""}, "HttpsPolicy": catalog.MemberBinding{Location: "document", Name: "HttpsPolicy", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/v2/email/configuration-sets/{ConfigurationSetName}/tracking-options", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &PutConfigurationSetTrackingOptionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*PutConfigurationSetTrackingOptionsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.PutConfigurationSetTrackingOptions(ctx, in)
+		}},
+		"PutConfigurationSetSuppressionOptions": {Name: "PutConfigurationSetSuppressionOptions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:PutConfigurationSetSuppressionOptions", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ConfigurationSetName": catalog.MemberBinding{Location: "label", Name: "ConfigurationSetName", Format: ""}, "SuppressedReasons": catalog.MemberBinding{Location: "document", Name: "SuppressedReasons", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/v2/email/configuration-sets/{ConfigurationSetName}/suppression-options", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &PutConfigurationSetSuppressionOptionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*PutConfigurationSetSuppressionOptionsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.PutConfigurationSetSuppressionOptions(ctx, in)
+		}},
+		"PutEmailIdentityConfigurationSetAttributes": {Name: "PutEmailIdentityConfigurationSetAttributes", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ses:PutEmailIdentityConfigurationSetAttributes", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ConfigurationSetName": catalog.MemberBinding{Location: "document", Name: "ConfigurationSetName", Format: ""}, "EmailIdentity": catalog.MemberBinding{Location: "label", Name: "EmailIdentity", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/v2/email/identities/{EmailIdentity}/configuration-set", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &PutEmailIdentityConfigurationSetAttributesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*PutEmailIdentityConfigurationSetAttributesRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.PutEmailIdentityConfigurationSetAttributes(ctx, in)
 		}},
 	}}
 }

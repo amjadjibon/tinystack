@@ -13,7 +13,7 @@ Render and inspect email workflows without sending external mail.
 | API version | `2019-09-27` |
 | Scope | Account and region |
 | Execution | Recorded delivery |
-| Selected operations | 24 of 116 in the pinned model |
+| Selected operations | 30 of 116 in the pinned model |
 
 ## Implemented behavior
 
@@ -54,6 +54,12 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `ListEmailIdentities` | `POST /v2/email/list-identities` |
 | `ListEmailTemplates` | `GET /v2/email/templates` |
 | `ListTagsForResource` | `GET /v2/email/tags` |
+| `PutConfigurationSetDeliveryOptions` | `PUT /v2/email/configuration-sets/{ConfigurationSetName}/delivery-options` |
+| `PutConfigurationSetReputationOptions` | `PUT /v2/email/configuration-sets/{ConfigurationSetName}/reputation-options` |
+| `PutConfigurationSetSendingOptions` | `PUT /v2/email/configuration-sets/{ConfigurationSetName}/sending` |
+| `PutConfigurationSetSuppressionOptions` | `PUT /v2/email/configuration-sets/{ConfigurationSetName}/suppression-options` |
+| `PutConfigurationSetTrackingOptions` | `PUT /v2/email/configuration-sets/{ConfigurationSetName}/tracking-options` |
+| `PutEmailIdentityConfigurationSetAttributes` | `PUT /v2/email/identities/{EmailIdentity}/configuration-set` |
 | `SendBulkEmail` | `POST /v2/email/outbound-bulk-emails` |
 | `SendEmail` | `POST /v2/email/outbound-emails` |
 | `TagResource` | `POST /v2/email/tags` |
@@ -64,7 +70,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "92 modeled operations outside the implementation"
+??? info "86 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -135,17 +141,11 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `PutAccountSuppressionAttributes`
     - `PutAccountVdmAttributes`
     - `PutConfigurationSetArchivingOptions`
-    - `PutConfigurationSetDeliveryOptions`
-    - `PutConfigurationSetReputationOptions`
-    - `PutConfigurationSetSendingOptions`
-    - `PutConfigurationSetSuppressionOptions`
-    - `PutConfigurationSetTrackingOptions`
     - `PutConfigurationSetVdmOptions`
     - `PutDedicatedIpInPool`
     - `PutDedicatedIpPoolScalingAttributes`
     - `PutDedicatedIpWarmupAttributes`
     - `PutDeliverabilityDashboardOption`
-    - `PutEmailIdentityConfigurationSetAttributes`
     - `PutEmailIdentityDkimAttributes`
     - `PutEmailIdentityDkimSigningAttributes`
     - `PutEmailIdentityFeedbackAttributes`

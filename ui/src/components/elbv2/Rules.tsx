@@ -114,6 +114,7 @@ export function Rules({
 			</Alert>
 			{(dialog === "create" || (dialog === "edit" && target)) && (
 				<RuleDialog
+					key={target?.RuleArn ?? "create"}
 					scope={scope}
 					listener={listener}
 					rule={dialog === "edit" ? target : undefined}

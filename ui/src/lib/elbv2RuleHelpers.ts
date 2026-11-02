@@ -362,10 +362,15 @@ export function ruleModifyInput(
 	ruleArn: string,
 	conditions: ConditionForm[],
 	action: ActionForm,
+	originalActions: Action[],
 ) {
 	return {
 		RuleArn: ruleArn,
 		Conditions: conditionInput(conditions),
-		Actions: actionInput(action),
+		// Preserve weights and other action settings that this form does not expose.
+		Actions:
+			JSON.stringify(action) === JSON.stringify(actionFormFrom(originalActions))
+				? originalActions
+				: actionInput(action),
 	};
 }

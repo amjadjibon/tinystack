@@ -125,29 +125,7 @@ export function SESConfigSets({
 							onChange={(name) => setForm({ ...form, name })}
 							constraint="1 to 64 letters, digits, hyphens or underscores."
 						/>
-						<Pick
-							label="TLS policy"
-							value={form.tlsPolicy}
-							placeholder="Choose a TLS policy"
-							options={tlsPolicies.map((value) => ({ value }))}
-							onChange={(tlsPolicy) => setForm({ ...form, tlsPolicy })}
-						/>
-						<Checkbox
-							checked={form.sendingEnabled}
-							onChange={({ detail }) =>
-								setForm({ ...form, sendingEnabled: detail.checked })
-							}
-						>
-							Sending enabled
-						</Checkbox>
-						<Checkbox
-							checked={form.reputationMetrics}
-							onChange={({ detail }) =>
-								setForm({ ...form, reputationMetrics: detail.checked })
-							}
-						>
-							Reputation metrics enabled
-						</Checkbox>
+						<ConfigOptions form={form} setForm={setForm} />
 					</SpaceBetween>
 				</ActionDialog>
 			)}
@@ -173,11 +151,47 @@ export function SESConfigSets({
 					]}
 				>
 					<Alert type="warning">
-						The event destinations of {target} are deleted with it. An identity
-						that uses it as its default blocks the delete.
+						The event destinations of {target} are deleted with it. Update any
+						identities that use it as their default before deleting it.
 					</Alert>
 				</ActionDialog>
 			)}
+		</SpaceBetween>
+	);
+}
+
+function ConfigOptions({
+	form,
+	setForm,
+}: {
+	form: ConfigSetForm;
+	setForm: (form: ConfigSetForm) => void;
+}) {
+	return (
+		<SpaceBetween size="m">
+			<Pick
+				label="TLS policy"
+				value={form.tlsPolicy}
+				placeholder="Choose a TLS policy"
+				options={tlsPolicies.map((value) => ({ value }))}
+				onChange={(tlsPolicy) => setForm({ ...form, tlsPolicy })}
+			/>
+			<Checkbox
+				checked={form.sendingEnabled}
+				onChange={({ detail }) =>
+					setForm({ ...form, sendingEnabled: detail.checked })
+				}
+			>
+				Sending enabled
+			</Checkbox>
+			<Checkbox
+				checked={form.reputationMetrics}
+				onChange={({ detail }) =>
+					setForm({ ...form, reputationMetrics: detail.checked })
+				}
+			>
+				Reputation metrics enabled
+			</Checkbox>
 		</SpaceBetween>
 	);
 }
@@ -191,6 +205,8 @@ function ConfigSetDetails({
 	name: string;
 	enabled: boolean;
 }) {
+	const [editing, setEditing] = useState(false),
+		[form, setForm] = useState(emptyConfigSet);
 	const set = usePoll(() => getConfigSet(scope, name), 0),
 		destinations = usePoll(() => getDestinations(scope, name), 0),
 		d = set.data;
@@ -203,7 +219,26 @@ function ConfigSetDetails({
 			{set.error && <Alert type="error">{set.error}</Alert>}
 			<Facts
 				title={name}
-				actions={<Action onClick={reload}>Refresh</Action>}
+				actions={
+					<Buttons>
+						<Action onClick={reload}>Refresh</Action>
+						<Action
+							disabled={!enabled || !d}
+							onClick={() => {
+								setForm({
+									name,
+									tlsPolicy: d?.DeliveryOptions?.TlsPolicy ?? "OPTIONAL",
+									sendingEnabled: d?.SendingOptions?.SendingEnabled ?? true,
+									reputationMetrics:
+										d?.ReputationOptions?.ReputationMetricsEnabled ?? false,
+								});
+								setEditing(true);
+							}}
+						>
+							Edit options
+						</Action>
+					</Buttons>
+				}
 				facts={[
 					[
 						"Sending",
@@ -230,6 +265,45 @@ function ConfigSetDetails({
 					["Sending pool", d?.DeliveryOptions?.SendingPoolName],
 				]}
 			/>
+			{editing && (
+				<ActionDialog
+					title={`Edit options for ${name}`}
+					onClose={() => setEditing(false)}
+					onSaved={() => {
+						setEditing(false);
+						reload();
+					}}
+					plan={async () => [
+						{
+							label: "PutConfigurationSetDeliveryOptions",
+							run: () =>
+								sesv2Call(scope, "PutConfigurationSetDeliveryOptions", {
+									ConfigurationSetName: name,
+									...d?.DeliveryOptions,
+									TlsPolicy: form.tlsPolicy,
+								}),
+						},
+						{
+							label: "PutConfigurationSetSendingOptions",
+							run: () =>
+								sesv2Call(scope, "PutConfigurationSetSendingOptions", {
+									ConfigurationSetName: name,
+									SendingEnabled: form.sendingEnabled,
+								}),
+						},
+						{
+							label: "PutConfigurationSetReputationOptions",
+							run: () =>
+								sesv2Call(scope, "PutConfigurationSetReputationOptions", {
+									ConfigurationSetName: name,
+									ReputationMetricsEnabled: form.reputationMetrics,
+								}),
+						},
+					]}
+				>
+					<ConfigOptions form={form} setForm={setForm} />
+				</ActionDialog>
+			)}
 			<EventDestinations
 				scope={scope}
 				set={name}

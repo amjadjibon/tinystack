@@ -1,7 +1,9 @@
 import {
 	Alert,
 	Button,
+	ExpandableSection,
 	FormField,
+	KeyValuePairs,
 	Modal,
 	RadioGroup,
 	Select,
@@ -60,7 +62,7 @@ export function SchedulerSchedules({
 		[dialog, setDialog] = useState<Dialog>(""),
 		[target, setTarget] = useState<ScheduleSummary>(),
 		[form, setForm] = useState<ScheduleForm>(emptyScheduleForm()),
-		[detail, setDetail] = useState<string>(),
+		[detail, setDetail] = useState<ScheduleDetail>(),
 		[error, setError] = useState(""),
 		[busy, setBusy] = useState("");
 	const shown = group
@@ -83,7 +85,7 @@ export function SchedulerSchedules({
 	};
 	const view = async (s: ScheduleSummary) => {
 		const out = await load(s);
-		if (out) setDetail(JSON.stringify(out, null, 2));
+		if (out) setDetail(out);
 	};
 	const edit = async (s: ScheduleSummary) => {
 		const out = await load(s);
@@ -162,7 +164,49 @@ export function SchedulerSchedules({
 					closeAriaLabel="Close dialog"
 					onDismiss={() => setDetail(undefined)}
 				>
-					<CodeBlock text={detail} />
+					<SpaceBetween size="l">
+						<KeyValuePairs
+							columns={2}
+							items={[
+								["Name", detail.Name],
+								["Group", detail.GroupName],
+								["Description", detail.Description],
+								["Expression", detail.ScheduleExpression],
+								["Time zone", detail.ScheduleExpressionTimezone],
+								["State", detail.State],
+								["Flexible time window", detail.FlexibleTimeWindow?.Mode],
+								[
+									"Maximum window (minutes)",
+									detail.FlexibleTimeWindow?.MaximumWindowInMinutes,
+								],
+								["Start date", unixTime(detail.StartDate)],
+								["End date", unixTime(detail.EndDate)],
+								["Target ARN", detail.Target?.Arn],
+								["Role ARN", detail.Target?.RoleArn],
+								[
+									"Maximum event age (seconds)",
+									detail.Target?.RetryPolicy?.MaximumEventAgeInSeconds,
+								],
+								[
+									"Maximum retry attempts",
+									detail.Target?.RetryPolicy?.MaximumRetryAttempts,
+								],
+								["Dead-letter queue ARN", detail.Target?.DeadLetterConfig?.Arn],
+								["Action after completion", detail.ActionAfterCompletion],
+								["Created", unixTime(detail.CreationDate)],
+								["Modified", unixTime(detail.LastModificationDate)],
+							].map(([label, value]) => ({
+								label: String(label),
+								value: value ?? "-",
+							}))}
+						/>
+						<ExpandableSection headerText="Target input" defaultExpanded>
+							<CodeBlock text={detail.Target?.Input ?? ""} />
+						</ExpandableSection>
+						<ExpandableSection headerText="JSON definition">
+							<CodeBlock text={JSON.stringify(detail, null, 2)} />
+						</ExpandableSection>
+					</SpaceBetween>
 				</Modal>
 			)}
 			{(dialog === "create" || dialog === "edit") && (

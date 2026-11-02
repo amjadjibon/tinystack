@@ -476,3 +476,172 @@ func toStrings(v any) []string {
 
 	return out
 }
+
+func TestSESUpdateOptions(t *testing.T) {
+	ctx := context.Background()
+	c := sesClient(server(t))
+	name := "editable"
+	if _, err := c.CreateConfigurationSet(
+		ctx,
+		&sesv2.CreateConfigurationSetInput{ConfigurationSetName: new(name)},
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	updates := []struct {
+		run  func(string, bool) error
+		name string
+	}{
+		{name: "Delivery", run: func(name string, clear bool) error {
+			in := &sesv2.PutConfigurationSetDeliveryOptionsInput{ConfigurationSetName: new(name)}
+			if !clear {
+				*in = sesv2.PutConfigurationSetDeliveryOptionsInput{
+					ConfigurationSetName: new(name),
+					TlsPolicy:            sestypes.TlsPolicyRequire,
+					SendingPoolName:      new("pool"),
+					MaxDeliverySeconds:   new(int64(600)),
+				}
+			}
+
+			_, err := c.PutConfigurationSetDeliveryOptions(ctx, in)
+			return err
+		}},
+		{name: "Reputation", run: func(name string, clear bool) error {
+			in := &sesv2.PutConfigurationSetReputationOptionsInput{ConfigurationSetName: new(name)}
+			if !clear {
+				*in = sesv2.PutConfigurationSetReputationOptionsInput{
+					ConfigurationSetName:     new(name),
+					ReputationMetricsEnabled: true,
+				}
+			}
+
+			_, err := c.PutConfigurationSetReputationOptions(ctx, in)
+			return err
+		}},
+		{name: "Sending", run: func(name string, clear bool) error {
+			in := &sesv2.PutConfigurationSetSendingOptionsInput{ConfigurationSetName: new(name)}
+			if !clear {
+				*in = sesv2.PutConfigurationSetSendingOptionsInput{
+					ConfigurationSetName: new(name),
+					SendingEnabled:       false,
+				}
+			}
+
+			_, err := c.PutConfigurationSetSendingOptions(ctx, in)
+			return err
+		}},
+		{name: "Tracking", run: func(name string, clear bool) error {
+			in := &sesv2.PutConfigurationSetTrackingOptionsInput{ConfigurationSetName: new(name)}
+			if !clear {
+				*in = sesv2.PutConfigurationSetTrackingOptionsInput{
+					ConfigurationSetName: new(name),
+					CustomRedirectDomain: new("track.example.com"),
+					HttpsPolicy:          sestypes.HttpsPolicyRequire,
+				}
+			}
+
+			_, err := c.PutConfigurationSetTrackingOptions(ctx, in)
+			return err
+		}},
+		{name: "Suppression", run: func(name string, clear bool) error {
+			in := &sesv2.PutConfigurationSetSuppressionOptionsInput{ConfigurationSetName: new(name)}
+			if !clear {
+				*in = sesv2.PutConfigurationSetSuppressionOptionsInput{
+					ConfigurationSetName: new(name),
+					SuppressedReasons:    []sestypes.SuppressionListReason{sestypes.SuppressionListReasonBounce},
+				}
+			}
+
+			_, err := c.PutConfigurationSetSuppressionOptions(ctx, in)
+			return err
+		}},
+	}
+	for _, update := range updates {
+		t.Run(update.name, func(t *testing.T) {
+			if err := update.run("missing", false); errorCode(err) != "NotFoundException" {
+				t.Fatalf("missing set: %v", err)
+			}
+
+			if err := update.run(name, false); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+
+	got, err := c.GetConfigurationSet(ctx, &sesv2.GetConfigurationSetInput{ConfigurationSetName: new(name)})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got.DeliveryOptions == nil || got.DeliveryOptions.TlsPolicy != sestypes.TlsPolicyRequire ||
+		aws.ToString(
+			got.DeliveryOptions.SendingPoolName,
+		) != "pool" || aws.ToInt64(got.DeliveryOptions.MaxDeliverySeconds) != 600 ||
+		got.ReputationOptions == nil || !got.ReputationOptions.ReputationMetricsEnabled ||
+		got.SendingOptions == nil || got.SendingOptions.SendingEnabled ||
+		got.TrackingOptions == nil || aws.ToString(got.TrackingOptions.CustomRedirectDomain) != "track.example.com" ||
+		got.TrackingOptions.HttpsPolicy != sestypes.HttpsPolicyRequire ||
+		got.SuppressionOptions == nil ||
+		!slices.Equal(got.SuppressionOptions.SuppressedReasons,
+			[]sestypes.SuppressionListReason{sestypes.SuppressionListReasonBounce}) {
+		t.Fatalf("options not retained: %#v", got)
+	}
+
+	for _, update := range updates {
+		if clearErr := update.run(name, true); clearErr != nil {
+			t.Fatal(clearErr)
+		}
+	}
+
+	got, err = c.GetConfigurationSet(ctx, &sesv2.GetConfigurationSetInput{ConfigurationSetName: new(name)})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got.DeliveryOptions.TlsPolicy != "" || got.DeliveryOptions.SendingPoolName != nil ||
+		got.DeliveryOptions.MaxDeliverySeconds != nil || got.TrackingOptions.CustomRedirectDomain != nil ||
+		got.ReputationOptions.ReputationMetricsEnabled || len(got.SuppressionOptions.SuppressedReasons) != 0 {
+		t.Fatalf("options not cleared: %#v", got)
+	}
+
+	identity := "edit@example.com"
+	if _, err = c.CreateEmailIdentity(ctx, &sesv2.CreateEmailIdentityInput{EmailIdentity: new(identity)}); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, set := range []*string{new(name), nil, new(name), new("")} {
+		if _, err = c.PutEmailIdentityConfigurationSetAttributes(
+			ctx,
+			&sesv2.PutEmailIdentityConfigurationSetAttributesInput{
+				EmailIdentity: new(identity), ConfigurationSetName: set,
+			},
+		); err != nil {
+			t.Fatal(err)
+		}
+
+		out, getErr := c.GetEmailIdentity(ctx, &sesv2.GetEmailIdentityInput{EmailIdentity: new(identity)})
+		if getErr != nil || aws.ToString(out.ConfigurationSetName) != aws.ToString(set) {
+			t.Fatalf("identity default: %#v, %v", out, getErr)
+		}
+	}
+
+	for _, input := range []*sesv2.PutEmailIdentityConfigurationSetAttributesInput{
+		{EmailIdentity: new("missing@example.com"), ConfigurationSetName: new(name)},
+		{EmailIdentity: new(identity), ConfigurationSetName: new("missing")},
+	} {
+		if _, err = c.PutEmailIdentityConfigurationSetAttributes(ctx, input); errorCode(err) != "NotFoundException" {
+			t.Fatalf("missing identity or set: %v", err)
+		}
+	}
+
+	if _, err = c.PutConfigurationSetDeliveryOptions(ctx, &sesv2.PutConfigurationSetDeliveryOptionsInput{
+		ConfigurationSetName: new(name), TlsPolicy: "unsupported",
+	}); errorCode(err) != "BadRequestException" {
+		t.Fatalf("invalid TLS policy: %v", err)
+	}
+	if _, err = c.PutConfigurationSetSuppressionOptions(ctx, &sesv2.PutConfigurationSetSuppressionOptionsInput{
+		ConfigurationSetName: new(name), SuppressionScope: "ACCOUNT",
+	}); errorCode(err) != "NotImplemented" {
+		t.Fatalf("unsupported suppression scope: %v", err)
+	}
+}

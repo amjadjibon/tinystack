@@ -33,7 +33,11 @@ export type IdentityDetails = {
 };
 export type ConfigSetDetails = {
 	ConfigurationSetName?: string;
-	DeliveryOptions?: { TlsPolicy?: string; SendingPoolName?: string };
+	DeliveryOptions?: {
+		TlsPolicy?: string;
+		SendingPoolName?: string;
+		MaxDeliverySeconds?: number;
+	};
 	ReputationOptions?: { ReputationMetricsEnabled?: boolean };
 	SendingOptions?: { SendingEnabled?: boolean };
 	SuppressionOptions?: { SuppressedReasons?: string[] };

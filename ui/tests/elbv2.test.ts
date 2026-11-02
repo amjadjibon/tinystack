@@ -23,6 +23,7 @@ import {
 	listenerInput,
 	nextPriority,
 	ruleCreateInput,
+	ruleModifyInput,
 	rulePrioritiesInput,
 } from "../src/lib/elbv2RuleHelpers.ts";
 
@@ -314,4 +315,61 @@ test("rule priorities detect duplicates and changes", () => {
 	assert.throws(() => rulePrioritiesInput(rules, {}), /No rule priority/);
 	assert.throws(() => rulePrioritiesInput(rules, { a: "x" }), /whole number/);
 	assert.equal(nextPriority(rules), 30);
+});
+
+test("rule priorities swap in one request and omit the default rule", () => {
+	assert.deepEqual(
+		rulePrioritiesInput(
+			[
+				{ RuleArn: "a", Priority: "10" },
+				{ RuleArn: "b", Priority: "20" },
+				{ RuleArn: "default", Priority: "default", IsDefault: true },
+			],
+			{ a: "20", b: "10" },
+		),
+		{
+			RulePriorities: [
+				{ RuleArn: "a", Priority: 20 },
+				{ RuleArn: "b", Priority: 10 },
+			],
+		},
+	);
+});
+test("rule edits preserve weighted forwarding while updating conditions", () => {
+	const actions = [
+		{
+			Type: "forward",
+			ForwardConfig: {
+				TargetGroups: [
+					{ TargetGroupArn: "a", Weight: 20 },
+					{ TargetGroupArn: "b", Weight: 80 },
+				],
+			},
+		},
+	];
+	const conditions = conditionForms([
+		{ Field: "path-pattern", Values: ["/new/*"] },
+	]);
+	const input = ruleModifyInput(
+		"rule",
+		conditions,
+		actionFormFrom(actions),
+		actions,
+	);
+	assert.equal(input.RuleArn, "rule");
+	assert.deepEqual(input.Conditions, conditionInput(conditions));
+	assert.deepEqual(input.Actions, actions);
+	const changed = ruleModifyInput(
+		"rule",
+		conditions,
+		{ ...emptyActionForm, type: "fixed-response", fixedStatus: "403" },
+		actions,
+	);
+	assert.deepEqual(changed.Actions, [
+		{
+			Type: "fixed-response",
+			Order: 1,
+			FixedResponseConfig: { StatusCode: "403", ContentType: "text/plain" },
+		},
+	]);
 });

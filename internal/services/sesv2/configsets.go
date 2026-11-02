@@ -169,8 +169,8 @@ func checkDestination(d *api.EventDestinationDefinition) error {
 	return nil
 }
 
-// editDestinations changes a configuration set's event destinations with fn.
-func (s *Service) editDestinations(ctx context.Context, set *string, fn func(*configSet) error) error {
+// editConfigSet changes a configuration set with fn.
+func (s *Service) editConfigSet(ctx context.Context, set *string, fn func(*configSet) error) error {
 	return s.update(ctx, func(tx storage.WriteTx, scope request.Scope) error {
 		c, err := loadConfigSet(tx, scope, set)
 		if err != nil {
@@ -217,7 +217,7 @@ func (s *Service) CreateConfigurationSetEventDestination(
 		return nil, err
 	}
 
-	err := s.editDestinations(ctx, in.ConfigurationSetName, func(c *configSet) error {
+	err := s.editConfigSet(ctx, in.ConfigurationSetName, func(c *configSet) error {
 		if _, err := c.destination(in.EventDestinationName); err == nil {
 			return alreadyExists("Event destination %s already exists.", *in.EventDestinationName)
 		}
@@ -257,7 +257,7 @@ func (s *Service) UpdateConfigurationSetEventDestination(
 		return nil, err
 	}
 
-	err := s.editDestinations(ctx, in.ConfigurationSetName, func(c *configSet) error {
+	err := s.editConfigSet(ctx, in.ConfigurationSetName, func(c *configSet) error {
 		i, err := c.destination(in.EventDestinationName)
 		if err == nil {
 			c.Destinations[i] = eventDestination(in.EventDestinationName, in.EventDestination)
@@ -276,7 +276,7 @@ func (s *Service) DeleteConfigurationSetEventDestination(
 	ctx context.Context,
 	in *api.DeleteConfigurationSetEventDestinationRequest,
 ) (*api.DeleteConfigurationSetEventDestinationResponse, error) {
-	err := s.editDestinations(ctx, in.ConfigurationSetName, func(c *configSet) error {
+	err := s.editConfigSet(ctx, in.ConfigurationSetName, func(c *configSet) error {
 		i, err := c.destination(in.EventDestinationName)
 		if err == nil {
 			c.Destinations = slices.Delete(c.Destinations, i, i+1)

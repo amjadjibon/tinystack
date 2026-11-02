@@ -458,7 +458,8 @@
         "Background runner claims due schedules and invokes targets in-process",
         "Failed deliveries can reach a target SQS dead-letter queue",
         "With authorization on, each run (and the send to the dead-letter queue) assumes the target's role, whose trust policy must allow scheduler.amazonaws.com for the schedule's group (aws:SourceArn) and account, and is decided by the role's identity policies, boundary and the target's resource policy; enforce mode fails the run into the dead-letter path with the denial as ERROR_CODE and ERROR_MESSAGE, soft mode records the check",
-        "Console page for schedule groups (create, view, tag, delete with typed confirmation that also deletes the group's schedules) and schedules (create, edit with the full definition prefilled from GetSchedule, view, delete) with a rate, cron or one-time expression picker, time zone, start and end dates, flexible window, state, action after completion, retry policy and dead-letter queue; target and role ARNs are chosen from the account's existing resources or typed in"
+        "Console page for schedule groups (create, view, tag, delete with typed confirmation that also deletes the group's schedules) and schedules (create, edit with the full definition prefilled from GetSchedule, view, delete) with a rate, cron or one-time expression picker, time zone, start and end dates, flexible window, state, action after completion, retry policy and dead-letter queue; target and role ARNs are chosen from the account's existing resources or typed in",
+        "Console schedule details show expression, time zone, state, flexible window, dates, target and retry/DLQ settings, and completion action, with an expandable JSON definition."
       ],
       "gaps": [
         "No delivery retries; a failed run goes directly to its dead-letter queue",
@@ -778,7 +779,8 @@
         "Fixed responses, redirects, Lambda targets and HTTP IP targets",
         "Related subnet, security group and certificate checks through local services",
         "With authorization on, a Lambda target needs the function policy to allow elasticloadbalancing.amazonaws.com with the target group as aws:SourceArn; RegisterTargets fails with AccessDenied without it in enforce mode, and a request to a target that lost its permission answers 502",
-        "Console page for load balancers (create with subnet and security group pickers, edit subnets and security groups, attributes, tags, delete with typed confirmation that explains deletion protection), target groups (create, health check, attributes, register and deregister targets, target health), listeners (HTTP, HTTPS, TCP, TLS, UDP with certificates, SSL policies and attributes) and rules (path, host, header, method, query string and source IP conditions, reorder through SetRulePriorities); the load balancer list is polled while a balancer is provisioning"
+        "Console page for load balancers (create with subnet and security group pickers, edit subnets and security groups, attributes, tags, delete with typed confirmation that explains deletion protection), target groups (create, health check, attributes, register and deregister targets, target health), listeners (HTTP, HTTPS, TCP, TLS, UDP with certificates, SSL policies and attributes) and rules (path, host, header, method, query string and source IP conditions, reorder through SetRulePriorities); the load balancer list is polled while a balancer is provisioning",
+        "Console rules support atomic priority swaps and edits; condition-only edits preserve weighted forwarding settings, and the table reloads after saving."
       ],
       "gaps": [
         "The console forwards to one target group per action and has no weighted forwarding, stickiness or authenticate actions; it manages application and network load balancers only",
@@ -1179,7 +1181,8 @@
         "Delivery records contain messages; configuration set events reach SNS, EventBridge and Firehose",
         "Mailbox simulator addresses generate bounce/complaint behavior",
         "Identities, templates, configuration sets and send counts are shared with SES v1",
-        "Console page for identities (create, DKIM and verification details, tags, delete with typed confirmation), configuration sets with event destination create/update/delete, templates (create, edit, test render with template data, delete), a test email sender for simple or template content, the account sending quota, and a Sent messages tab that reads the captured mail for the selected account and Region"
+        "Console page for identities (create, DKIM and verification details, tags, delete with typed confirmation), configuration sets with event destination create/update/delete, templates (create, edit, test render with template data, delete), a test email sender for simple or template content, the account sending quota, and a Sent messages tab that reads the captured mail for the selected account and Region",
+        "Configuration set delivery, reputation, sending, tracking and suppression options can be updated; identity default configuration sets can be set or cleared. The console edits TLS, sending and reputation options and identity defaults."
       ],
       "gaps": [
         "The console does not send bulk email although the service supports it, and offers no suppression list, contact list, dedicated IP or account settings management because the service implements none; the Sent messages tab needs administrator access to the captured mail",

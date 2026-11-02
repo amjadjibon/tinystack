@@ -19939,6 +19939,7 @@
     }
   },
   "sesv2": {
+    "validation": {"code": "BadRequestException"},
     "operations": [
       "CreateEmailIdentity",
       "GetEmailIdentity",
@@ -19963,7 +19964,13 @@
       "GetAccount",
       "TagResource",
       "UntagResource",
-      "ListTagsForResource"
+      "ListTagsForResource",
+      "PutConfigurationSetDeliveryOptions",
+      "PutConfigurationSetReputationOptions",
+      "PutConfigurationSetSendingOptions",
+      "PutConfigurationSetTrackingOptions",
+      "PutConfigurationSetSuppressionOptions",
+      "PutEmailIdentityConfigurationSetAttributes"
     ],
     "shapes": {
       "CreateEmailIdentityRequest": [
@@ -20266,6 +20273,33 @@
       ],
       "ListTagsForResourceResponse": [
         "Tags"
+      ],
+      "PutConfigurationSetDeliveryOptionsRequest": [
+        "ConfigurationSetName",
+        "TlsPolicy",
+        "SendingPoolName",
+        "MaxDeliverySeconds"
+      ],
+      "PutConfigurationSetReputationOptionsRequest": [
+        "ConfigurationSetName",
+        "ReputationMetricsEnabled"
+      ],
+      "PutConfigurationSetSendingOptionsRequest": [
+        "ConfigurationSetName",
+        "SendingEnabled"
+      ],
+      "PutConfigurationSetTrackingOptionsRequest": [
+        "ConfigurationSetName",
+        "CustomRedirectDomain",
+        "HttpsPolicy"
+      ],
+      "PutConfigurationSetSuppressionOptionsRequest": [
+        "ConfigurationSetName",
+        "SuppressedReasons"
+      ],
+      "PutEmailIdentityConfigurationSetAttributesRequest": [
+        "EmailIdentity",
+        "ConfigurationSetName"
       ]
     }
   },

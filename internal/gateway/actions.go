@@ -311,6 +311,8 @@ var consoleMemoryDBOperations = strings.Fields(`
 `)
 
 var consoleSESv2Operations = strings.Fields(`
+ PutConfigurationSetDeliveryOptions PutConfigurationSetReputationOptions PutConfigurationSetSendingOptions
+ PutConfigurationSetTrackingOptions PutConfigurationSetSuppressionOptions PutEmailIdentityConfigurationSetAttributes
  CreateEmailIdentity GetEmailIdentity ListEmailIdentities DeleteEmailIdentity
  CreateEmailTemplate GetEmailTemplate UpdateEmailTemplate DeleteEmailTemplate ListEmailTemplates TestRenderEmailTemplate
  CreateConfigurationSet GetConfigurationSet ListConfigurationSets DeleteConfigurationSet

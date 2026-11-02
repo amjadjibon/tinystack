@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -225,6 +226,50 @@ func TestLoadBalancerManagement(t *testing.T) {
 		aws.ToString(rules.Rules[0].RuleArn) != aws.ToString(second.Rules[0].RuleArn) ||
 		!aws.ToBool(rules.Rules[2].IsDefault) {
 		t.Fatalf("rules: %v", order)
+	}
+
+	// A reorder is atomic, so priorities can be swapped without an intermediate collision.
+	_, err = c.SetRulePriorities(ctx, &elb.SetRulePrioritiesInput{RulePriorities: []elbtypes.RulePriorityPair{
+		{RuleArn: first.Rules[0].RuleArn, Priority: new(int32(20))},
+		{RuleArn: second.Rules[0].RuleArn, Priority: new(int32(30))},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.ModifyRule(ctx, &elb.ModifyRuleInput{
+		RuleArn: first.Rules[0].RuleArn,
+		Conditions: []elbtypes.RuleCondition{
+			{
+				Field:             new("path-pattern"),
+				PathPatternConfig: &elbtypes.PathPatternConditionConfig{Values: []string{"/edited/*"}},
+			},
+		},
+		Actions: []elbtypes.Action{
+			{
+				Type: elbtypes.ActionTypeEnumFixedResponse,
+				FixedResponseConfig: &elbtypes.FixedResponseActionConfig{
+					StatusCode:  new("403"),
+					ContentType: new("text/plain"),
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	refreshed, err := c.DescribeRules(ctx, &elb.DescribeRulesInput{ListenerArn: listenerArn})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	edited := refreshed.Rules[0]
+	if aws.ToString(edited.RuleArn) != aws.ToString(first.Rules[0].RuleArn) || aws.ToString(edited.Priority) != "20" ||
+		!slices.Equal(edited.Conditions[0].PathPatternConfig.Values, []string{"/edited/*"}) ||
+		edited.Actions[0].Type != elbtypes.ActionTypeEnumFixedResponse ||
+		aws.ToString(edited.Actions[0].FixedResponseConfig.StatusCode) != "403" {
+		t.Fatalf("rules did not refresh after edit: %#v", edited)
 	}
 
 	_, err = c.DeleteRule(ctx, &elb.DeleteRuleInput{RuleArn: rules.Rules[2].RuleArn})
