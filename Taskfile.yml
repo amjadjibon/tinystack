@@ -1,11 +1,20 @@
 version: '3'
 
 tasks:
+  # ---------------------------------------------------------------------------
+  # Overview and merge gates
+  # ---------------------------------------------------------------------------
+
+  # Running `task` with no arguments prints every task, including ones without a desc.
   default:
+    desc: "List every task"
     cmds:
       - task --list-all
 
+  # Broadest local run: regenerates code first, then everything `check` skips (console Go tests, console build,
+  # console unit tests). Needs Go, golangci-lint, Node.js and pnpm.
   all:
+    desc: "Generate, lint, run Go and console tests, build, and check the console"
     cmds:
       - task generate
       - task lint
@@ -15,6 +24,8 @@ tasks:
       - task ui:check
       - task ui:test
 
+  # Run before merging. TestReproducibleGeneration inside the Go tests fails on stale generated code. The Terraform
+  # step needs Terraform and downloads the hashicorp/aws provider on first use.
   check:
     desc: "Gate a merge: lint, Go tests (generated code freshness included), docs, headless build, console, Terraform"
     cmds:
@@ -25,22 +36,30 @@ tasks:
       - task ui:check
       - task test:terraform
 
+  # ---------------------------------------------------------------------------
+  # Build and run
+  # ---------------------------------------------------------------------------
+
+  # The release binary: the console is embedded through the `console` build tag.
   build:
     desc: "Build bin/tinystack with the web console built in (needs Node.js and pnpm)"
     deps: [ui:build]
     cmds:
       - go build -tags console -trimpath -ldflags="-s -w" -o bin/tinystack ./cmd/tinystack
 
+  # Same server without the console; use it when Node.js isn't installed.
   build:headless:
     desc: "Build bin/tinystack-headless without the web console (needs only Go)"
     cmds:
       - go build -trimpath -ldflags="-s -w" -o bin/tinystack-headless ./cmd/tinystack
 
+  # Uses .air.toml: starts with examples/tinystack.yaml and its seed script. Extra flags go after `--`.
   dev:
     desc: "Run TinyStack with sample data (AWS CLI required); rebuild on Go, console, config or seed changes"
     cmds:
       - go tool air -- {{.CLI_ARGS}}
 
+  # Wrappers that point the AWS CLI, Terraform, SAM and CDK at a local TinyStack endpoint.
   build:tools:
     desc: "Build bin/aws-local, bin/terraform-local, bin/sam-local, and bin/cdk-local wrappers (and symlinks awslocal, tflocal, samlocal, cdklocal)"
     cmds:
@@ -53,33 +72,88 @@ tasks:
       - ln -sf sam-local bin/samlocal
       - ln -sf cdk-local bin/cdklocal
 
-  test:
+  # Container image build and run; state lives in a Compose volume. Extra flags go after `--` (e.g. `-- -d`).
+  up:
+    desc: "Run TinyStack (:4566, console on :4567) with Docker Compose"
     cmds:
-      - go test -race -count=1 -timeout 30m -v ./...
-  test:console:
-    desc: "Test what only the console build has, the CloudShell and MCP server (embeds the console, so it builds it first)"
-    deps: [ui:build]
+      - docker compose up --build {{.CLI_ARGS}}
+
+  # Pair of `up`; `task down -- -v` also removes the volume, so all saved state is lost.
+  down:
+    desc: "Stop the Docker Compose stack (task down -- -v also deletes its state)"
     cmds:
-      - go test -race -count=1 -tags console ./internal/console ./internal/gateway ./internal/services/sts
-      - go test -race -count=1 -tags console ./tests/integration -run 'TestShell|TestMCP'
-  lint:
+      - docker compose down {{.CLI_ARGS}}
+
+  # Removes build output and coverage files only; generated code and ui/dist are left alone.
+  clean:
+    desc: "Delete bin/ and coverage files"
     cmds:
-      - go vet ./...
-      - golangci-lint run ./...
+      - rm -rf bin
+      - rm -rf coverage.out
+      - rm -rf coverage.html
+      - rm -rf coverage.txt
+
+  # ---------------------------------------------------------------------------
+  # Code generation and lint
+  # ---------------------------------------------------------------------------
+
+  # Rewrites internal/aws/generated/<service>/api.go from generator/model/. Run it after editing profile.json.
   generate:
+    desc: "Regenerate internal/aws/generated/<service>/api.go from the Smithy models and profile.json"
     cmds:
       - go generate ./...
 
+  # Changes the vendored upstream models; only for adding a service or moving to a newer SDK commit.
   models:sync:
     desc: "Vendor the pinned Smithy models at an aws-sdk-go-v2 ref and regenerate (task models:sync -- -ref main -add sts)"
     cmds:
       - go run ./generator/sync {{.CLI_ARGS}}
       - task generate
 
+  # Uses .golangci.yml (gofumpt, goimports, gci, gosec and more). Part of `check`.
+  lint:
+    desc: "Vet and lint the Go code"
+    cmds:
+      - go vet ./...
+      - golangci-lint run ./...
+
+  # The Testcontainers module has its own go.mod, so the root lint doesn't cover it.
+  lint:testcontainers:
+    desc: "Vet and lint the separate Go Testcontainers module"
+    dir: tests/testcontainers
+    cmds:
+      - go vet ./...
+      - golangci-lint run --allow-serial-runners --config ../../.golangci.yml ./...
+
+  # ---------------------------------------------------------------------------
+  # Go tests
+  # ---------------------------------------------------------------------------
+
+  # Verbose run of every Go package, integration tests included. For one test:
+  # go test -race ./tests/integration -run TestName
+  test:
+    desc: "Run all Go tests with the race detector (verbose)"
+    cmds:
+      - go test -race -count=1 -timeout 30m -v ./...
+
+  # The plain test run can't reach code behind the `console` build tag; this one can.
+  test:console:
+    desc: "Test what only the console build has, the CloudShell and MCP server (embeds the console, so it builds it first)"
+    deps: [ui:build]
+    cmds:
+      - go test -race -count=1 -tags console ./internal/console ./internal/gateway ./internal/services/sts
+      - go test -race -count=1 -tags console ./tests/integration -run 'TestShell|TestMCP'
+
+  # Opt-in: starts real containers through the docker CLI and may pull images. Slow (30m timeout).
   test:docker:
+    desc: "Test the Docker runtimes with real containers (Lambda, ECS, EKS, ElastiCache, MemoryDB, RDS, DSQL, OpenSearch, MQ, MSK, Batch, CodeBuild, AgentCore)"
     cmds:
       - TINYSTACK_DOCKER_TESTS=1 go test -race -count=1 ./internal/services/lambda/docker ./internal/services/ecs/docker ./internal/services/eks/k3s ./internal/services/elasticache/docker
       - TINYSTACK_DOCKER_TESTS=1 go test -race -count=1 -timeout 30m ./tests/integration -run 'Test(DSQLDocker|RDS(Docker|DataDocker)|BatchDocker|MemoryDBDocker|ElastiCacheDocker|OpenSearchDocker|MQDocker|MSKDocker|CodeBuildDocker|BedrockAgentCoreDocker|BedrockOllamaDocker)'
+
+  # ---------------------------------------------------------------------------
+  # Testcontainers modules (each is its own project; set TINYSTACK_IMAGE to skip the local image build)
+  # ---------------------------------------------------------------------------
 
   test:testcontainers:
     desc: "Test the separate Go Testcontainers module (requires Docker; builds the image unless TINYSTACK_IMAGE is set)"
@@ -87,6 +161,7 @@ tasks:
     cmds:
       - go test -race -count=1 -timeout 30m -v ./...
 
+  # Creates tests/testcontainers-python/.venv on first run.
   test:testcontainers:python:
     desc: "Test the separate Python Testcontainers module (requires Docker; builds the image unless TINYSTACK_IMAGE is set)"
     dir: tests/testcontainers-python
@@ -95,48 +170,60 @@ tasks:
       - .venv/bin/pip install -q -e '.[test]'
       - .venv/bin/pytest -v
 
+  # Uses the Maven wrapper checked into the module.
   test:testcontainers:java:
     desc: "Test the separate Java Testcontainers module (requires Docker and JDK 17+; builds the image unless TINYSTACK_IMAGE is set)"
     dir: tests/testcontainers-java
     cmds:
       - ./mvnw -q test
 
+  # Run `npm install` in tests/testcontainers-node first.
   test:testcontainers:node:
     desc: "Test the separate Node Testcontainers module (requires Docker and npm; builds the image unless TINYSTACK_IMAGE is set)"
     dir: tests/testcontainers-node
     cmds:
       - npm test
 
+  # Needs the .NET SDK.
   test:testcontainers:dotnet:
     desc: "Test the separate .NET Testcontainers module (requires Docker; builds the image unless TINYSTACK_IMAGE is set)"
     dir: tests/testcontainers-dotnet
     cmds:
       - dotnet test
 
-  lint:testcontainers:
-    desc: "Vet and lint the separate Go Testcontainers module"
-    dir: tests/testcontainers
-    cmds:
-      - go vet ./...
-      - golangci-lint run --allow-serial-runners --config ../../.golangci.yml ./...
+  # ---------------------------------------------------------------------------
+  # Tool end-to-end tests (each script builds TinyStack and starts it on a free port)
+  # ---------------------------------------------------------------------------
 
+  # Needs the AWS CLI.
   smoke:
+    desc: "Build and start TinyStack, then exercise it with the installed AWS CLI"
     cmds:
       - python3 tests/awscli/smoke.py
 
+  # Needs Terraform; downloads the hashicorp/aws provider on first use. Part of `check`.
   test:terraform:
+    desc: "Build and start TinyStack, then apply, update, and destroy tests/terraform/main.tf with Terraform"
     cmds:
       - python3 tests/terraform/terraform.py
 
+  # Needs the SAM CLI and the AWS CLI; the deployed API is only invoked when Docker is available.
   test:sam:
+    desc: "Build and start TinyStack, then deploy, update, and delete tests/sam/template.yaml with the AWS SAM CLI"
     cmds:
       - python3 tests/sam/sam.py
 
+  # Needs node, the cdk CLI and the AWS CLI.
   test:cdk:
     desc: "Bootstrap, deploy, and destroy a CDK app (needs node, the cdk CLI, and the AWS CLI; installs aws-cdk-lib)"
     cmds:
       - python3 tests/cdk/cdk.py
 
+  # ---------------------------------------------------------------------------
+  # Web console (ui/)
+  # ---------------------------------------------------------------------------
+
+  # Skipped when package.json and pnpm-lock.yaml are unchanged since the last install.
   ui:install:
     desc: "Install the console's dependencies"
     dir: ui
@@ -148,6 +235,7 @@ tasks:
     cmds:
       - pnpm install --frozen-lockfile
 
+  # Hot-reloading console against a TinyStack you start separately (e.g. bin/tinystack start).
   ui:dev:
     desc: "Run the console dev server on :4568 (TINYSTACK_URL defaults to http://127.0.0.1:4566)"
     dir: ui
@@ -155,6 +243,7 @@ tasks:
     cmds:
       - pnpm dev
 
+  # Skipped when no listed source changed. `build`, `dev` and `test:console` depend on it.
   ui:build:
     desc: "Build the console into ui/dist/client and gzip it into ui/dist/console"
     dir: ui
@@ -174,6 +263,7 @@ tasks:
     cmds:
       - pnpm build
 
+  # Biome lint and format check, then TypeScript. Part of `check`.
   ui:check:
     desc: "Lint, format-check, and typecheck the console"
     dir: ui
@@ -182,6 +272,7 @@ tasks:
       - pnpm check
       - pnpm exec tsc --noEmit
 
+  # Node's built-in test runner over ui/tests/*.test.ts.
   ui:test:
     desc: "Test console session signing and credential boundaries"
     dir: ui
@@ -189,11 +280,11 @@ tasks:
     cmds:
       - pnpm test
 
-  up:
-    desc: "Run TinyStack (:4566, console on :4567) with Docker Compose"
-    cmds:
-      - docker compose up --build {{.CLI_ARGS}}
+  # ---------------------------------------------------------------------------
+  # Documentation (MkDocs in .venv-docs)
+  # ---------------------------------------------------------------------------
 
+  # Skipped when docs/requirements.txt is unchanged since the last install.
   docs:install:
     desc: "Create the isolated MkDocs environment and install pinned dependencies"
     sources:
@@ -205,11 +296,13 @@ tasks:
       - .venv-docs/bin/python -m pip install --disable-pip-version-check -r docs/requirements.txt
       - touch .venv-docs/.installed
 
+  # Run after editing docs/catalog.json or any behavior the docs describe.
   docs:generate:
     desc: "Refresh service support, roadmap, navigation, and CloudFormation resource documentation"
     cmds:
       - python3 scripts/docs.py
 
+  # Writes the static site to site/.
   docs:build:
     desc: "Build the MkDocs site strictly into site/"
     deps: [docs:install]
@@ -217,6 +310,7 @@ tasks:
       - task docs:generate
       - .venv-docs/bin/mkdocs build --strict
 
+  # Fails when `docs:generate` would change anything. Part of `check`.
   docs:check:
     desc: "Check generated documentation freshness and build with strict link/nav validation"
     deps: [docs:install]
@@ -224,21 +318,10 @@ tasks:
       - python3 scripts/docs.py --check
       - .venv-docs/bin/mkdocs build --strict
 
+  # Local preview while writing docs.
   docs:serve:
     desc: "Serve MkDocs with live reload on http://127.0.0.1:8000"
     deps: [docs:install]
     cmds:
       - task docs:generate
       - .venv-docs/bin/mkdocs serve -a 127.0.0.1:8000
-
-  down:
-    desc: "Stop the Docker Compose stack (task down -- -v also deletes its state)"
-    cmds:
-      - docker compose down {{.CLI_ARGS}}
-
-  clean:
-    cmds:
-      - rm -rf bin
-      - rm -rf coverage.out
-      - rm -rf coverage.html
-      - rm -rf coverage.txt
