@@ -1567,6 +1567,7 @@
       "features": [
         "Trail create/get/describe/update/delete, logging status and start/stop records; S3 destination bucket existence is checked via the S3 service outside transactions",
         "Basic and advanced event selectors are stored trail configuration; selectors do not filter independent event history",
+        "Dedicated console page for filtered, paginated event history with expandable JSON, trail CRUD, logging status, event selectors and tags",
         "Trail tags, inventory, Resource Groups Tagging API, console catalogue and CloudFormation AWS::CloudTrail::Trail with selected properties",
         "Completed external gateway AWS operations generate per-account/Region events whether or not a trail exists or is logging; internal catalog.Caller and console actions are excluded",
         "Event ID/name/source/time, caller access key as Username, ReadOnly, user identity, Region, source IP, user agent, request ID and modeled failure code/message; S3 bucket resources are exposed where routes identify them",
@@ -1579,7 +1580,7 @@
         "Event selectors do not execute delivery and data-event collection is not modeled separately; event history describes gateway AWS operations",
         "Request parameters and response bodies are always omitted to prevent secrets entering history; sensitive operation error messages use the gateway redaction marker",
         "Username is the access key rather than resolved IAM user name; resource enrichment currently includes only S3 bucket route labels",
-        "History bound is fixed at 1000, not configurable; no CloudTrail Lake, Insights, channels or management console pages"
+        "History bound is fixed at 1000, not configurable; no CloudTrail Lake, Insights or channels"
       ],
       "execution": "Trail records / bounded local event history",
       "package": "cloudtrail"

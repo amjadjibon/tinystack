@@ -1505,6 +1505,7 @@ Manage regional trail records and look up external SDK management request histor
 
 - Trail create/get/describe/update/delete, logging status and start/stop records; S3 destination bucket existence is checked via the S3 service outside transactions.
 - Basic and advanced event selectors are stored trail configuration; selectors do not filter independent event history.
+- Dedicated console page for filtered, paginated event history with expandable JSON, trail CRUD, logging status, event selectors and tags.
 - Trail tags, inventory, Resource Groups Tagging API, console catalogue and CloudFormation AWS::CloudTrail::Trail with selected properties.
 - Completed external gateway AWS operations generate per-account/Region events whether or not a trail exists or is logging; internal catalog.Caller and console actions are excluded.
 - Event ID/name/source/time, caller access key as Username, ReadOnly, user identity, Region, source IP, user agent, request ID and modeled failure code/message; S3 bucket resources are exposed where routes identify them.

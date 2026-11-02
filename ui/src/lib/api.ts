@@ -175,6 +175,7 @@ export const api = {
 		sesv2: boolean;
 		scheduler: boolean;
 		pipes: boolean;
+		cloudtrail: boolean;
 		athena: boolean;
 		glue: boolean;
 		cognitoidentity: boolean;

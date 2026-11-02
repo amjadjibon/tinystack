@@ -26,7 +26,7 @@ See the [implemented feature catalogue](catalogue.md#cloudtrail) for this servic
 - Event selectors do not execute delivery and data-event collection is not modeled separately; event history describes gateway AWS operations.
 - Request parameters and response bodies are always omitted to prevent secrets entering history; sensitive operation error messages use the gateway redaction marker.
 - Username is the access key rather than resolved IAM user name; resource enrichment currently includes only S3 bucket route labels.
-- History bound is fixed at 1000, not configurable; no CloudTrail Lake, Insights, channels or management console pages.
+- History bound is fixed at 1000, not configurable; no CloudTrail Lake, Insights or channels.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

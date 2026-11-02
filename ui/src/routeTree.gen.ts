@@ -26,6 +26,7 @@ import { Route as ServicesAthenaRouteImport } from './routes/services/athena'
 import { Route as ServicesBudgetsRouteImport } from './routes/services/budgets'
 import { Route as ServicesCloudformationRouteImport } from './routes/services/cloudformation'
 import { Route as ServicesCloudfrontRouteImport } from './routes/services/cloudfront'
+import { Route as ServicesCloudtrailRouteImport } from './routes/services/cloudtrail'
 import { Route as ServicesCloudwatchRouteImport } from './routes/services/cloudwatch'
 import { Route as ServicesCognitoidentityRouteImport } from './routes/services/cognitoidentity'
 import { Route as ServicesCognitoidpRouteImport } from './routes/services/cognitoidp'
@@ -144,6 +145,11 @@ const ServicesCloudformationRoute = ServicesCloudformationRouteImport.update({
 const ServicesCloudfrontRoute = ServicesCloudfrontRouteImport.update({
   id: '/services/cloudfront',
   path: '/services/cloudfront',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesCloudtrailRoute = ServicesCloudtrailRouteImport.update({
+  id: '/services/cloudtrail',
+  path: '/services/cloudtrail',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesCloudwatchRoute = ServicesCloudwatchRouteImport.update({
@@ -335,6 +341,7 @@ export interface FileRoutesByFullPath {
   '/services/budgets': typeof ServicesBudgetsRoute
   '/services/cloudformation': typeof ServicesCloudformationRoute
   '/services/cloudfront': typeof ServicesCloudfrontRoute
+  '/services/cloudtrail': typeof ServicesCloudtrailRoute
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
   '/services/cognitoidentity': typeof ServicesCognitoidentityRoute
   '/services/cognitoidp': typeof ServicesCognitoidpRoute
@@ -388,6 +395,7 @@ export interface FileRoutesByTo {
   '/services/budgets': typeof ServicesBudgetsRoute
   '/services/cloudformation': typeof ServicesCloudformationRoute
   '/services/cloudfront': typeof ServicesCloudfrontRoute
+  '/services/cloudtrail': typeof ServicesCloudtrailRoute
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
   '/services/cognitoidentity': typeof ServicesCognitoidentityRoute
   '/services/cognitoidp': typeof ServicesCognitoidpRoute
@@ -442,6 +450,7 @@ export interface FileRoutesById {
   '/services/budgets': typeof ServicesBudgetsRoute
   '/services/cloudformation': typeof ServicesCloudformationRoute
   '/services/cloudfront': typeof ServicesCloudfrontRoute
+  '/services/cloudtrail': typeof ServicesCloudtrailRoute
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
   '/services/cognitoidentity': typeof ServicesCognitoidentityRoute
   '/services/cognitoidp': typeof ServicesCognitoidpRoute
@@ -497,6 +506,7 @@ export interface FileRouteTypes {
     | '/services/budgets'
     | '/services/cloudformation'
     | '/services/cloudfront'
+    | '/services/cloudtrail'
     | '/services/cloudwatch'
     | '/services/cognitoidentity'
     | '/services/cognitoidp'
@@ -550,6 +560,7 @@ export interface FileRouteTypes {
     | '/services/budgets'
     | '/services/cloudformation'
     | '/services/cloudfront'
+    | '/services/cloudtrail'
     | '/services/cloudwatch'
     | '/services/cognitoidentity'
     | '/services/cognitoidp'
@@ -603,6 +614,7 @@ export interface FileRouteTypes {
     | '/services/budgets'
     | '/services/cloudformation'
     | '/services/cloudfront'
+    | '/services/cloudtrail'
     | '/services/cloudwatch'
     | '/services/cognitoidentity'
     | '/services/cognitoidp'
@@ -657,6 +669,7 @@ export interface RootRouteChildren {
   ServicesBudgetsRoute: typeof ServicesBudgetsRoute
   ServicesCloudformationRoute: typeof ServicesCloudformationRoute
   ServicesCloudfrontRoute: typeof ServicesCloudfrontRoute
+  ServicesCloudtrailRoute: typeof ServicesCloudtrailRoute
   ServicesCloudwatchRoute: typeof ServicesCloudwatchRoute
   ServicesCognitoidentityRoute: typeof ServicesCognitoidentityRoute
   ServicesCognitoidpRoute: typeof ServicesCognitoidpRoute
@@ -813,6 +826,13 @@ declare module '@tanstack/react-router' {
       path: '/services/cloudfront'
       fullPath: '/services/cloudfront'
       preLoaderRoute: typeof ServicesCloudfrontRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/cloudtrail': {
+      id: '/services/cloudtrail'
+      path: '/services/cloudtrail'
+      fullPath: '/services/cloudtrail'
+      preLoaderRoute: typeof ServicesCloudtrailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services/cloudwatch': {
@@ -1073,6 +1093,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesBudgetsRoute: ServicesBudgetsRoute,
   ServicesCloudformationRoute: ServicesCloudformationRoute,
   ServicesCloudfrontRoute: ServicesCloudfrontRoute,
+  ServicesCloudtrailRoute: ServicesCloudtrailRoute,
   ServicesCloudwatchRoute: ServicesCloudwatchRoute,
   ServicesCognitoidentityRoute: ServicesCognitoidentityRoute,
   ServicesCognitoidpRoute: ServicesCognitoidpRoute,

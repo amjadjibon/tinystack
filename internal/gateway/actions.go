@@ -67,6 +67,7 @@ const (
 	consoleMemoryDB    = "memorydb"
 	consoleSESv2       = "sesv2"
 	consoleScheduler   = "scheduler"
+	consoleCloudTrail  = "cloudtrail"
 	consolePipes       = "pipes"
 	consoleAthena      = "athena"
 	consoleGlue        = "glue"
@@ -338,6 +339,11 @@ CreateWorkflow GetWorkflow ListWorkflows UpdateWorkflow DeleteWorkflow
 TagResource UntagResource GetTags
 `)
 
+var consoleCloudTrailOperations = strings.Fields(`
+ CreateTrail GetTrail DescribeTrails UpdateTrail DeleteTrail GetTrailStatus StartLogging StopLogging
+ PutEventSelectors GetEventSelectors AddTags RemoveTags ListTags LookupEvents
+`)
+
 var consolePipesOperations = strings.Fields(`
  CreatePipe DescribePipe UpdatePipe DeletePipe ListPipes StartPipe StopPipe
  TagResource UntagResource ListTagsForResource
@@ -547,6 +553,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, memorydb := s.services[consoleMemoryDB]
 		_, sesv2 := s.services[consoleSESv2]
 		_, scheduler := s.services[consoleScheduler]
+		_, cloudtrail := s.services[consoleCloudTrail]
 		_, pipes := s.services[consolePipes]
 		_, athena := s.services[consoleAthena]
 		_, glue := s.services[consoleGlue]
@@ -612,6 +619,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			"taggable_services":    resourcegroupstaggingapi.TaggableServices(),
 			"resource_deletes":     s.consoleDeleteCapabilities(),
 			consoleCognitoIdentity: cognitoidentity,
+			consoleCloudTrail:      cloudtrail,
 		}
 
 		if s.cfg.Console.Auth.OIDC != nil {
@@ -743,6 +751,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleSESv2Operations
 	case consoleGlue:
 		operations = consoleGlueOperations
+	case consoleCloudTrail:
+		operations = consoleCloudTrailOperations
 	case consolePipes:
 		operations = consolePipesOperations
 	case consoleAthena:

@@ -306,7 +306,12 @@ const catalog: Record<string, ServiceInfo> = {
 	efs: { title: "Elastic File System", category: storage, icon: "efs" },
 	backup: { title: "AWS Backup", category: management, icon: "backup" },
 	config: { title: "AWS Config", category: management, icon: "config" },
-	cloudtrail: { title: "CloudTrail", category: management, icon: "cloudtrail" },
+	cloudtrail: {
+		href: "/services/cloudtrail",
+		title: "CloudTrail",
+		category: management,
+		icon: "cloudtrail",
+	},
 	vpc: { title: "VPC", category: networking, icon: "ec2" },
 	route53resolver: {
 		title: "Route 53 Resolver",
