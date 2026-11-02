@@ -388,6 +388,7 @@ const catalog: Record<string, ServiceInfo> = {
 	},
 	cloudwatch: { title: "CloudWatch", category: management, icon: "cloudwatch" },
 	cognitoidentity: {
+		href: "/services/cognitoidentity",
 		title: "Cognito Identity Pools",
 		category: security,
 		icon: "cognitoidp",

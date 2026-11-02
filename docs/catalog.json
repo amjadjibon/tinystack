@@ -955,12 +955,14 @@
         "Identity pools, identities, role mappings, developer tokens and login linking",
         "Cognito user-pool and configured OIDC logins",
         "Authenticated and unauthenticated role selection",
-        "Credential exchange through STS AssumeRoleWithWebIdentity"
+        "Credential exchange through STS AssumeRoleWithWebIdentity",
+        "Dedicated console page with polling, pool creation and edits (user pool, OpenID Connect, social and developer providers), typed-name deletion, roles and role mappings, identity listing, details and deletion, tags, and a test that exchanges an unauthenticated identity for temporary credentials"
       ],
       "gaps": [
         "Social login providers are rejected",
         "STS and IAM limitations apply to issued credentials",
-        "Only selected pool and mapping members are implemented"
+        "Only selected pool and mapping members are implemented",
+        "The console tests only unauthenticated identities; tokens, developer identities and login unlinking are API-only"
       ],
       "execution": "Local behavior",
       "package": "cognitoidentity"

@@ -21,6 +21,7 @@ import { cfnHref } from "#/lib/cloudformation";
 import { cloudfrontHref } from "#/lib/cloudfront";
 import { cloudwatchHref } from "#/lib/cloudwatch";
 import { cognitoHref } from "#/lib/cognito";
+import { identityHref } from "#/lib/cognitoidentity";
 import { costHref } from "#/lib/cost";
 import { dynamoHref } from "#/lib/dynamodb";
 import { ec2Href, ec2Kinds, ec2Sections } from "#/lib/ec2";
@@ -76,6 +77,11 @@ export function resourceHref(r: Resource): string {
 			r.account,
 			r.type,
 			r.service === "costexplorer" ? r.arn : r.name,
+		);
+	if (r.service === "cognitoidentity" && r.type === "identity-pool")
+		return identityHref(
+			{ account: r.account, region: r.region },
+			String(r.details?.IdentityPoolId ?? ""),
 		);
 	if (r.service === "cognitoidp" && r.type === "user-pool")
 		return cognitoHref({

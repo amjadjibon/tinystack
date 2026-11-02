@@ -24,6 +24,8 @@ import (
 
 const consoleCognito = "cognitoidp"
 
+const consoleCognitoIdentity = "cognitoidentity"
+
 const consoleIAM = "iam"
 
 const consoleSTS = "sts"
@@ -366,6 +368,14 @@ var consoleELBv2Operations = strings.Fields(`
  AddTags RemoveTags DescribeTags DescribeSSLPolicies
 `)
 
+// Cognito identity pools exposes pool, role, identity and tag management, plus the two calls the test panel makes for
+// an unauthenticated identity. Token issue and login linking stay API-only.
+var consoleCognitoIdentityOperations = strings.Fields(`
+ CreateIdentityPool DescribeIdentityPool UpdateIdentityPool DeleteIdentityPool ListIdentityPools
+ SetIdentityPoolRoles GetIdentityPoolRoles ListIdentities DescribeIdentity DeleteIdentities
+ GetId GetCredentialsForIdentity TagResource UntagResource ListTagsForResource
+`)
+
 var consoleACMOperations = strings.Fields(`
  RequestCertificate DescribeCertificate ListCertificates DeleteCertificate GetCertificate ImportCertificate
  ExportCertificate AddTagsToCertificate RemoveTagsFromCertificate ListTagsForCertificate UpdateCertificateOptions
@@ -540,6 +550,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, pipes := s.services[consolePipes]
 		_, athena := s.services[consoleAthena]
 		_, glue := s.services[consoleGlue]
+		_, cognitoidentity := s.services[consoleCognitoIdentity]
 		_, elbv2 := s.services[consoleELBv2]
 		_, route53 := s.services[consoleRoute53]
 		_, cloudformation := s.services[consoleCloudFormation]
@@ -564,42 +575,43 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			"signing_names": signingNames,
 			consoleIAM:      iam, consoleS3: s3, consoleSQS: sqs, consoleSNS: sns,
 			consoleLambda: lambda, consoleLogs: logs,
-			consoleDynamoDB:       dynamodb,
-			consoleEventBridge:    eventbridge,
-			consoleCloudWatch:     cloudwatch,
-			consoleAPIGateway:     restAPI,
-			consoleHTTPAPI:        httpAPI,
-			consoleSFN:            sfn,
-			consoleEC2:            ec2,
-			consoleKMS:            kms,
-			consoleKinesis:        kinesis,
-			consoleFirehose:       firehose,
-			consoleSecretsManager: secretsmanager,
-			consoleECR:            ecr,
-			consoleECS:            ecs,
-			"ecs_runtime":         s.cfg.ECS.Containers,
-			consoleSSM:            ssm,
-			consoleACM:            acm,
-			consoleCloudFront:     cloudfront,
-			consoleBudgets:        budgets,
-			consoleCostExplorer:   costexplorer,
-			consoleCUR:            cur,
-			consoleRDS:            rds,
-			consoleElastiCache:    elasticache,
-			"elasticache_runtime": s.cfg.ElastiCache.Caches,
-			consoleMemoryDB:       memorydb,
-			"memorydb_runtime":    s.cfg.MemoryDB.Clusters,
-			consoleSESv2:          sesv2,
-			consoleScheduler:      scheduler,
-			consolePipes:          pipes,
-			consoleAthena:         athena,
-			consoleGlue:           glue,
-			consoleELBv2:          elbv2,
-			consoleRoute53:        route53,
-			consoleCloudFormation: cloudformation,
-			"requires_signature":  s.cfg.Identity.Mode == config.IdentityVerify,
-			"taggable_services":   resourcegroupstaggingapi.TaggableServices(),
-			"resource_deletes":    s.consoleDeleteCapabilities(),
+			consoleDynamoDB:        dynamodb,
+			consoleEventBridge:     eventbridge,
+			consoleCloudWatch:      cloudwatch,
+			consoleAPIGateway:      restAPI,
+			consoleHTTPAPI:         httpAPI,
+			consoleSFN:             sfn,
+			consoleEC2:             ec2,
+			consoleKMS:             kms,
+			consoleKinesis:         kinesis,
+			consoleFirehose:        firehose,
+			consoleSecretsManager:  secretsmanager,
+			consoleECR:             ecr,
+			consoleECS:             ecs,
+			"ecs_runtime":          s.cfg.ECS.Containers,
+			consoleSSM:             ssm,
+			consoleACM:             acm,
+			consoleCloudFront:      cloudfront,
+			consoleBudgets:         budgets,
+			consoleCostExplorer:    costexplorer,
+			consoleCUR:             cur,
+			consoleRDS:             rds,
+			consoleElastiCache:     elasticache,
+			"elasticache_runtime":  s.cfg.ElastiCache.Caches,
+			consoleMemoryDB:        memorydb,
+			"memorydb_runtime":     s.cfg.MemoryDB.Clusters,
+			consoleSESv2:           sesv2,
+			consoleScheduler:       scheduler,
+			consolePipes:           pipes,
+			consoleAthena:          athena,
+			consoleGlue:            glue,
+			consoleELBv2:           elbv2,
+			consoleRoute53:         route53,
+			consoleCloudFormation:  cloudformation,
+			"requires_signature":   s.cfg.Identity.Mode == config.IdentityVerify,
+			"taggable_services":    resourcegroupstaggingapi.TaggableServices(),
+			"resource_deletes":     s.consoleDeleteCapabilities(),
+			consoleCognitoIdentity: cognitoidentity,
 		}
 
 		if s.cfg.Console.Auth.OIDC != nil {
@@ -735,6 +747,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consolePipesOperations
 	case consoleAthena:
 		operations = consoleAthenaOperations
+	case consoleCognitoIdentity:
+		operations = consoleCognitoIdentityOperations
 	case consoleScheduler:
 		operations = consoleSchedulerOperations
 	case consoleELBv2:

@@ -177,6 +177,7 @@ export const api = {
 		pipes: boolean;
 		athena: boolean;
 		glue: boolean;
+		cognitoidentity: boolean;
 		elbv2: boolean;
 		route53: boolean;
 		cloudformation: boolean;

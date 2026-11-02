@@ -27,6 +27,7 @@ import { Route as ServicesBudgetsRouteImport } from './routes/services/budgets'
 import { Route as ServicesCloudformationRouteImport } from './routes/services/cloudformation'
 import { Route as ServicesCloudfrontRouteImport } from './routes/services/cloudfront'
 import { Route as ServicesCloudwatchRouteImport } from './routes/services/cloudwatch'
+import { Route as ServicesCognitoidentityRouteImport } from './routes/services/cognitoidentity'
 import { Route as ServicesCognitoidpRouteImport } from './routes/services/cognitoidp'
 import { Route as ServicesCostandusagereportserviceRouteImport } from './routes/services/costandusagereportservice'
 import { Route as ServicesCostexplorerRouteImport } from './routes/services/costexplorer'
@@ -148,6 +149,11 @@ const ServicesCloudfrontRoute = ServicesCloudfrontRouteImport.update({
 const ServicesCloudwatchRoute = ServicesCloudwatchRouteImport.update({
   id: '/services/cloudwatch',
   path: '/services/cloudwatch',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesCognitoidentityRoute = ServicesCognitoidentityRouteImport.update({
+  id: '/services/cognitoidentity',
+  path: '/services/cognitoidentity',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesCognitoidpRoute = ServicesCognitoidpRouteImport.update({
@@ -330,6 +336,7 @@ export interface FileRoutesByFullPath {
   '/services/cloudformation': typeof ServicesCloudformationRoute
   '/services/cloudfront': typeof ServicesCloudfrontRoute
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
+  '/services/cognitoidentity': typeof ServicesCognitoidentityRoute
   '/services/cognitoidp': typeof ServicesCognitoidpRoute
   '/services/costandusagereportservice': typeof ServicesCostandusagereportserviceRoute
   '/services/costexplorer': typeof ServicesCostexplorerRoute
@@ -382,6 +389,7 @@ export interface FileRoutesByTo {
   '/services/cloudformation': typeof ServicesCloudformationRoute
   '/services/cloudfront': typeof ServicesCloudfrontRoute
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
+  '/services/cognitoidentity': typeof ServicesCognitoidentityRoute
   '/services/cognitoidp': typeof ServicesCognitoidpRoute
   '/services/costandusagereportservice': typeof ServicesCostandusagereportserviceRoute
   '/services/costexplorer': typeof ServicesCostexplorerRoute
@@ -435,6 +443,7 @@ export interface FileRoutesById {
   '/services/cloudformation': typeof ServicesCloudformationRoute
   '/services/cloudfront': typeof ServicesCloudfrontRoute
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
+  '/services/cognitoidentity': typeof ServicesCognitoidentityRoute
   '/services/cognitoidp': typeof ServicesCognitoidpRoute
   '/services/costandusagereportservice': typeof ServicesCostandusagereportserviceRoute
   '/services/costexplorer': typeof ServicesCostexplorerRoute
@@ -489,6 +498,7 @@ export interface FileRouteTypes {
     | '/services/cloudformation'
     | '/services/cloudfront'
     | '/services/cloudwatch'
+    | '/services/cognitoidentity'
     | '/services/cognitoidp'
     | '/services/costandusagereportservice'
     | '/services/costexplorer'
@@ -541,6 +551,7 @@ export interface FileRouteTypes {
     | '/services/cloudformation'
     | '/services/cloudfront'
     | '/services/cloudwatch'
+    | '/services/cognitoidentity'
     | '/services/cognitoidp'
     | '/services/costandusagereportservice'
     | '/services/costexplorer'
@@ -593,6 +604,7 @@ export interface FileRouteTypes {
     | '/services/cloudformation'
     | '/services/cloudfront'
     | '/services/cloudwatch'
+    | '/services/cognitoidentity'
     | '/services/cognitoidp'
     | '/services/costandusagereportservice'
     | '/services/costexplorer'
@@ -646,6 +658,7 @@ export interface RootRouteChildren {
   ServicesCloudformationRoute: typeof ServicesCloudformationRoute
   ServicesCloudfrontRoute: typeof ServicesCloudfrontRoute
   ServicesCloudwatchRoute: typeof ServicesCloudwatchRoute
+  ServicesCognitoidentityRoute: typeof ServicesCognitoidentityRoute
   ServicesCognitoidpRoute: typeof ServicesCognitoidpRoute
   ServicesCostandusagereportserviceRoute: typeof ServicesCostandusagereportserviceRoute
   ServicesCostexplorerRoute: typeof ServicesCostexplorerRoute
@@ -807,6 +820,13 @@ declare module '@tanstack/react-router' {
       path: '/services/cloudwatch'
       fullPath: '/services/cloudwatch'
       preLoaderRoute: typeof ServicesCloudwatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/cognitoidentity': {
+      id: '/services/cognitoidentity'
+      path: '/services/cognitoidentity'
+      fullPath: '/services/cognitoidentity'
+      preLoaderRoute: typeof ServicesCognitoidentityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services/cognitoidp': {
@@ -1054,6 +1074,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesCloudformationRoute: ServicesCloudformationRoute,
   ServicesCloudfrontRoute: ServicesCloudfrontRoute,
   ServicesCloudwatchRoute: ServicesCloudwatchRoute,
+  ServicesCognitoidentityRoute: ServicesCognitoidentityRoute,
   ServicesCognitoidpRoute: ServicesCognitoidpRoute,
   ServicesCostandusagereportserviceRoute:
     ServicesCostandusagereportserviceRoute,

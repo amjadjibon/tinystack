@@ -2098,6 +2098,7 @@ Link supported logins to identities and exchange them for local STS role credent
 - Cognito user-pool and configured OIDC logins.
 - Authenticated and unauthenticated role selection.
 - Credential exchange through STS AssumeRoleWithWebIdentity.
+- Dedicated console page with polling, pool creation and edits (user pool, OpenID Connect, social and developer providers), typed-name deletion, roles and role mappings, identity listing, details and deletion, tags, and a test that exchanges an unauthenticated identity for temporary credentials.
 
 [Supported operations](cognitoidentity.md#supported-operations) · [Limitations](cognitoidentity.md#limitations-and-future-work)
 

@@ -284,29 +284,30 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 	srv := server(t)
 	// listOperations maps each regional console service to a read operation it allows.
 	listOperations := map[string]string{
-		"eventbridge":    "ListEventBuses",
-		"logs":           "DescribeLogGroups",
-		"cloudwatch":     "ListMetrics",
-		"apigateway":     "GetRestApis",
-		"apigatewayv2":   "GetApis",
-		"sfn":            "ListStateMachines",
-		"ec2":            "DescribeVpcs",
-		"secretsmanager": "ListSecrets",
-		"rds":            "DescribeDBInstances",
-		"cloudformation": "ListStacks",
-		"kms":            "ListKeys",
-		"kinesis":        "ListStreams",
-		"firehose":       "ListDeliveryStreams",
-		"ecr":            "DescribeRepositories",
-		"ecs":            "ListClusters",
-		"ssm":            "DescribeParameters",
-		"memorydb":       "DescribeClusters",
-		"sesv2":          "ListEmailIdentities",
-		"scheduler":      "ListScheduleGroups",
-		"pipes":          "ListPipes",
-		"athena":         "ListWorkGroups",
-		"elbv2":          "DescribeLoadBalancers",
-		"acm":            "ListCertificates",
+		"eventbridge":     "ListEventBuses",
+		"logs":            "DescribeLogGroups",
+		"cloudwatch":      "ListMetrics",
+		"apigateway":      "GetRestApis",
+		"apigatewayv2":    "GetApis",
+		"sfn":             "ListStateMachines",
+		"ec2":             "DescribeVpcs",
+		"secretsmanager":  "ListSecrets",
+		"rds":             "DescribeDBInstances",
+		"cloudformation":  "ListStacks",
+		"kms":             "ListKeys",
+		"kinesis":         "ListStreams",
+		"firehose":        "ListDeliveryStreams",
+		"ecr":             "DescribeRepositories",
+		"ecs":             "ListClusters",
+		"ssm":             "DescribeParameters",
+		"memorydb":        "DescribeClusters",
+		"sesv2":           "ListEmailIdentities",
+		"scheduler":       "ListScheduleGroups",
+		"pipes":           "ListPipes",
+		"athena":          "ListWorkGroups",
+		"elbv2":           "DescribeLoadBalancers",
+		"acm":             "ListCertificates",
+		"cognitoidentity": "ListIdentityPools",
 	}
 	var capabilities map[string]any
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
@@ -345,6 +346,8 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		consoleResponse(t, srv, req, http.StatusForbidden)
 	}
 	verified := verifyingServer(t)
+	// listInputs are the inputs of the list operations that need one.
+	listInputs := map[string]map[string]any{"ListIdentityPools": {"MaxResults": 60}}
 	for _, tc := range []struct{ service, signing, operation string }{
 		{"eventbridge", "events", "ListEventBuses"},
 		{"logs", "logs", "DescribeLogGroups"},
@@ -369,6 +372,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		{"pipes", "pipes", "ListPipes"},
 		{"athena", "athena", "ListWorkGroups"},
 		{"elbv2", "elasticloadbalancing", "DescribeLoadBalancers"},
+		{"cognitoidentity", "cognito-identity", "ListIdentityPools"},
 	} {
 		for _, mode := range []string{"unsigned", "wrong-service", "wrong-region", "wrong-account", "valid"} {
 			account, region, signing := "111111111111", "us-east-1", tc.signing
@@ -381,7 +385,12 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 			if mode == "wrong-service" {
 				signing = "lambda"
 			}
-			req := consoleLambdaRequest(t, verified, tc.service, tc.operation, account, "us-east-1", map[string]any{})
+			input, ok := listInputs[tc.operation]
+			if !ok {
+				input = map[string]any{}
+			}
+
+			req := consoleLambdaRequest(t, verified, tc.service, tc.operation, account, "us-east-1", input)
 			if mode != "unsigned" {
 				body, err := io.ReadAll(req.Body)
 				if err != nil {

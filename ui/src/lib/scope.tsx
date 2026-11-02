@@ -117,6 +117,7 @@ function useScopeState() {
 			"machine",
 			"id",
 			"distribution",
+			"pool",
 			"vpc",
 			"execution",
 			"apiId",

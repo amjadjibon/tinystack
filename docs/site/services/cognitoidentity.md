@@ -24,6 +24,7 @@ See the [implemented feature catalogue](catalogue.md#cognito-identity-pools) for
 - Social login providers are rejected.
 - STS and IAM limitations apply to issued credentials.
 - Only selected pool and mapping members are implemented.
+- The console tests only unauthenticated identities; tokens, developer identities and login unlinking are API-only.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
