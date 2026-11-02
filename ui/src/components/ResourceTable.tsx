@@ -32,6 +32,7 @@ import { memorydbHref } from "#/lib/memorydb";
 import { rdsHref } from "#/lib/rds";
 import { route53Href } from "#/lib/route53";
 import { s3Href } from "#/lib/s3";
+import { schedulerHref } from "#/lib/scheduler";
 import { secretHref } from "#/lib/secretsmanager";
 import { sesv2Href } from "#/lib/sesv2";
 import { sfnHref } from "#/lib/sfn";
@@ -53,6 +54,8 @@ export function resourceHref(r: Resource): string {
 
 	if (r.service === "sesv2")
 		return sesv2Href({ account: r.account, region: r.region });
+	if (r.service === "scheduler")
+		return schedulerHref({ account: r.account, region: r.region });
 
 	if (
 		r.service === "budgets" ||

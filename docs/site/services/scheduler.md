@@ -26,6 +26,7 @@ See the [implemented feature catalogue](catalogue.md#eventbridge-scheduler) for 
 - ECS, SageMaker and CodeBuild templated targets are unsupported.
 - KMS key ARNs are stored without customer-managed encryption.
 - Role sessions are named after the schedule and the denial's error code is the target service's own (such as AccessDeniedException), where AWS reports its own scheduler codes.
+- The console shows no next run time because GetSchedule does not return one, and lists IAM roles from the resource inventory because the console IAM allowlist has no ListRoles.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

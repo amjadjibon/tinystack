@@ -398,6 +398,7 @@ Run one-time, rate, and cron schedules against implemented services.
 - Background runner claims due schedules and invokes targets in-process.
 - Failed deliveries can reach a target SQS dead-letter queue.
 - With authorization on, each run (and the send to the dead-letter queue) assumes the target's role, whose trust policy must allow scheduler.amazonaws.com for the schedule's group (aws:SourceArn) and account, and is decided by the role's identity policies, boundary and the target's resource policy; enforce mode fails the run into the dead-letter path with the denial as ERROR_CODE and ERROR_MESSAGE, soft mode records the check.
+- Console page for schedule groups (create, view, tag, delete with typed confirmation that also deletes the group's schedules) and schedules (create, edit with the full definition prefilled from GetSchedule, view, delete) with a rate, cron or one-time expression picker, time zone, start and end dates, flexible window, state, action after completion, retry policy and dead-letter queue; target and role ARNs are chosen from the account's existing resources or typed in.
 
 [Supported operations](scheduler.md#supported-operations) · [Limitations](scheduler.md#limitations-and-future-work)
 

@@ -43,6 +43,7 @@ import { Route as ServicesMemorydbRouteImport } from './routes/services/memorydb
 import { Route as ServicesRdsRouteImport } from './routes/services/rds'
 import { Route as ServicesRoute53RouteImport } from './routes/services/route53'
 import { Route as ServicesS3RouteImport } from './routes/services/s3'
+import { Route as ServicesSchedulerRouteImport } from './routes/services/scheduler'
 import { Route as ServicesSecretsmanagerRouteImport } from './routes/services/secretsmanager'
 import { Route as ServicesSesv2RouteImport } from './routes/services/sesv2'
 import { Route as ServicesSfnRouteImport } from './routes/services/sfn'
@@ -224,6 +225,11 @@ const ServicesS3Route = ServicesS3RouteImport.update({
   path: '/services/s3',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesSchedulerRoute = ServicesSchedulerRouteImport.update({
+  id: '/services/scheduler',
+  path: '/services/scheduler',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesSecretsmanagerRoute = ServicesSecretsmanagerRouteImport.update({
   id: '/services/secretsmanager',
   path: '/services/secretsmanager',
@@ -304,6 +310,7 @@ export interface FileRoutesByFullPath {
   '/services/rds': typeof ServicesRdsRoute
   '/services/route53': typeof ServicesRoute53Route
   '/services/s3': typeof ServicesS3Route
+  '/services/scheduler': typeof ServicesSchedulerRoute
   '/services/secretsmanager': typeof ServicesSecretsmanagerRoute
   '/services/sesv2': typeof ServicesSesv2Route
   '/services/sfn': typeof ServicesSfnRoute
@@ -349,6 +356,7 @@ export interface FileRoutesByTo {
   '/services/rds': typeof ServicesRdsRoute
   '/services/route53': typeof ServicesRoute53Route
   '/services/s3': typeof ServicesS3Route
+  '/services/scheduler': typeof ServicesSchedulerRoute
   '/services/secretsmanager': typeof ServicesSecretsmanagerRoute
   '/services/sesv2': typeof ServicesSesv2Route
   '/services/sfn': typeof ServicesSfnRoute
@@ -395,6 +403,7 @@ export interface FileRoutesById {
   '/services/rds': typeof ServicesRdsRoute
   '/services/route53': typeof ServicesRoute53Route
   '/services/s3': typeof ServicesS3Route
+  '/services/scheduler': typeof ServicesSchedulerRoute
   '/services/secretsmanager': typeof ServicesSecretsmanagerRoute
   '/services/sesv2': typeof ServicesSesv2Route
   '/services/sfn': typeof ServicesSfnRoute
@@ -442,6 +451,7 @@ export interface FileRouteTypes {
     | '/services/rds'
     | '/services/route53'
     | '/services/s3'
+    | '/services/scheduler'
     | '/services/secretsmanager'
     | '/services/sesv2'
     | '/services/sfn'
@@ -487,6 +497,7 @@ export interface FileRouteTypes {
     | '/services/rds'
     | '/services/route53'
     | '/services/s3'
+    | '/services/scheduler'
     | '/services/secretsmanager'
     | '/services/sesv2'
     | '/services/sfn'
@@ -532,6 +543,7 @@ export interface FileRouteTypes {
     | '/services/rds'
     | '/services/route53'
     | '/services/s3'
+    | '/services/scheduler'
     | '/services/secretsmanager'
     | '/services/sesv2'
     | '/services/sfn'
@@ -578,6 +590,7 @@ export interface RootRouteChildren {
   ServicesRdsRoute: typeof ServicesRdsRoute
   ServicesRoute53Route: typeof ServicesRoute53Route
   ServicesS3Route: typeof ServicesS3Route
+  ServicesSchedulerRoute: typeof ServicesSchedulerRoute
   ServicesSecretsmanagerRoute: typeof ServicesSecretsmanagerRoute
   ServicesSesv2Route: typeof ServicesSesv2Route
   ServicesSfnRoute: typeof ServicesSfnRoute
@@ -830,6 +843,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesS3RouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/scheduler': {
+      id: '/services/scheduler'
+      path: '/services/scheduler'
+      fullPath: '/services/scheduler'
+      preLoaderRoute: typeof ServicesSchedulerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/secretsmanager': {
       id: '/services/secretsmanager'
       path: '/services/secretsmanager'
@@ -931,6 +951,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesRdsRoute: ServicesRdsRoute,
   ServicesRoute53Route: ServicesRoute53Route,
   ServicesS3Route: ServicesS3Route,
+  ServicesSchedulerRoute: ServicesSchedulerRoute,
   ServicesSecretsmanagerRoute: ServicesSecretsmanagerRoute,
   ServicesSesv2Route: ServicesSesv2Route,
   ServicesSfnRoute: ServicesSfnRoute,

@@ -64,6 +64,7 @@ const (
 	consoleElastiCache = "elasticache"
 	consoleMemoryDB    = "memorydb"
 	consoleSESv2       = "sesv2"
+	consoleScheduler   = "scheduler"
 )
 
 const consoleSecretsManager = "secretsmanager"
@@ -316,6 +317,12 @@ var consoleSESv2Operations = strings.Fields(`
  SendEmail GetAccount TagResource UntagResource ListTagsForResource
 `)
 
+var consoleSchedulerOperations = strings.Fields(`
+ CreateScheduleGroup GetScheduleGroup ListScheduleGroups DeleteScheduleGroup
+ CreateSchedule GetSchedule ListSchedules UpdateSchedule DeleteSchedule
+ TagResource UntagResource ListTagsForResource
+`)
+
 var consoleSSMOperations = strings.Fields(`
  DescribeParameters GetParameter GetParameterHistory PutParameter DeleteParameter DeleteParameters
  LabelParameterVersion UnlabelParameterVersion ListTagsForResource AddTagsToResource RemoveTagsFromResource
@@ -469,6 +476,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, elasticache := s.services[consoleElastiCache]
 		_, memorydb := s.services[consoleMemoryDB]
 		_, sesv2 := s.services[consoleSESv2]
+		_, scheduler := s.services[consoleScheduler]
 		_, route53 := s.services[consoleRoute53]
 		_, cloudformation := s.services[consoleCloudFormation]
 		accounts := []string{s.cfg.Defaults.Account}
@@ -516,6 +524,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleMemoryDB:       memorydb,
 			"memorydb_runtime":    s.cfg.MemoryDB.Clusters,
 			consoleSESv2:          sesv2,
+			consoleScheduler:      scheduler,
 			consoleRoute53:        route53,
 			consoleCloudFormation: cloudformation,
 			"requires_signature":  s.cfg.Identity.Mode == config.IdentityVerify,
@@ -646,6 +655,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleMemoryDBOperations
 	case consoleSESv2:
 		operations = consoleSESv2Operations
+	case consoleScheduler:
+		operations = consoleSchedulerOperations
 	case consoleRoute53:
 		operations = consoleRoute53Operations
 	case consoleCloudFormation:
