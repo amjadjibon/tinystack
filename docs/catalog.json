@@ -1717,7 +1717,8 @@
         "Validated unique tags, modeled lengths/character sets/reserved prefixes and 50-tag limit; deterministic sorted retrieval, inventory and Resource Groups Tagging API filters elasticfilesystem:file-system/access-point",
         "Scoped/filter-bound deterministic pagination with default 100 and positive requested sizes capped at 1000; stable ID/key order and resume after cursor deletion",
         "SQLite restart, offline export/import fixtures and shared reset retain exact identifiers/configuration/relations/tokens; default app assembly, verified SigV4, resource browser, official console icon and Terraform efs endpoint",
-        "CloudFormation FileSystem/MountTarget/AccessPoint Ref/GetAtt, mutable throughput/security-group/tag updates and immutable replacement. EFS-specific retirement orders children first and restores original incarnations during rollback; 50-tag replacement and failed-tag compensation preserve unrelated tags"
+        "CloudFormation FileSystem/MountTarget/AccessPoint Ref/GetAtt, mutable throughput/security-group/tag updates and immutable replacement. EFS-specific retirement orders children first and restores original incarnations during rollback; 50-tag replacement and failed-tag compensation preserve unrelated tags",
+        "Dedicated account/Region-scoped console with polling. File systems are listed, created (token, Name tag, performance and throughput mode with a provisioned amount, encryption with a KMS key, tags), edited (throughput, tags) and deleted by typing their ID. A file system's page lists its mount targets, which are created from EC2 subnets and security groups (one VPC, one per Availability Zone), have their groups replaced and are deleted, and its access points. Access points are also listed across the Region, created with a POSIX user, a root directory with creation info and tags, and deleted with typed confirmation"
       ],
       "gaps": [
         "Records only: no NFS server, mount listener, mountable filesystem, filesystem bytes, POSIX execution, EC2 interfaces or real IP allocation, IAM/KMS evaluation, backup/replication/lifecycle jobs or throughput cooldown/capacity simulation",
@@ -1729,7 +1730,7 @@
         "Tokens contain 1-64 printable ASCII characters; at most 1000 filesystems per account/Region and 10000 access points per filesystem, without adjustable quotas",
         "CloudFormation FileSystem: Encrypted/KmsKeyId/PerformanceMode/ThroughputMode/ProvisionedThroughputInMibps/FileSystemTags; MountTarget: FileSystemId/SubnetId/IpAddress/IpAddressType/SecurityGroups; AccessPoint: FileSystemId/ClientToken/PosixUser/RootDirectory/AccessPointTags. Unsupported properties are rejected",
         "Immutable filesystem settings, mount placement/address and access-point token/POSIX/root settings require replacement. Reusing an explicit access-point token or creating a replacement mount in an occupied AZ/address fails safely with rollback; change the token/placement/address as needed",
-        "No dedicated mutation console. Follow the [executable records workflow](../guides/efs-records.md) for exact supported members, defaults, reference rules and CLI commands"
+        "The console offers only what the service implements: no One Zone, backup, lifecycle, file system policy, protection or replication settings. Follow the [executable records workflow](../guides/efs-records.md) for exact supported members, defaults, reference rules and CLI commands"
       ],
       "execution": "Records only",
       "package": "efs"

@@ -30,7 +30,7 @@ See the [implemented feature catalogue](catalogue.md#amazon-efs) for this servic
 - Tokens contain 1-64 printable ASCII characters; at most 1000 filesystems per account/Region and 10000 access points per filesystem, without adjustable quotas.
 - CloudFormation FileSystem: Encrypted/KmsKeyId/PerformanceMode/ThroughputMode/ProvisionedThroughputInMibps/FileSystemTags; MountTarget: FileSystemId/SubnetId/IpAddress/IpAddressType/SecurityGroups; AccessPoint: FileSystemId/ClientToken/PosixUser/RootDirectory/AccessPointTags. Unsupported properties are rejected.
 - Immutable filesystem settings, mount placement/address and access-point token/POSIX/root settings require replacement. Reusing an explicit access-point token or creating a replacement mount in an occupied AZ/address fails safely with rollback; change the token/placement/address as needed.
-- No dedicated mutation console. Follow the [executable records workflow](../guides/efs-records.md) for exact supported members, defaults, reference rules and CLI commands.
+- The console offers only what the service implements: no One Zone, backup, lifecycle, file system policy, protection or replication settings. Follow the [executable records workflow](../guides/efs-records.md) for exact supported members, defaults, reference rules and CLI commands.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

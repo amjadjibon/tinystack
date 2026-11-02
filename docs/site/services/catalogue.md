@@ -2276,6 +2276,7 @@ Persist regional file-system, mount-target and access-point metadata without a m
 - Scoped/filter-bound deterministic pagination with default 100 and positive requested sizes capped at 1000; stable ID/key order and resume after cursor deletion.
 - SQLite restart, offline export/import fixtures and shared reset retain exact identifiers/configuration/relations/tokens; default app assembly, verified SigV4, resource browser, official console icon and Terraform efs endpoint.
 - CloudFormation FileSystem/MountTarget/AccessPoint Ref/GetAtt, mutable throughput/security-group/tag updates and immutable replacement. EFS-specific retirement orders children first and restores original incarnations during rollback; 50-tag replacement and failed-tag compensation preserve unrelated tags.
+- Dedicated account/Region-scoped console with polling. File systems are listed, created (token, Name tag, performance and throughput mode with a provisioned amount, encryption with a KMS key, tags), edited (throughput, tags) and deleted by typing their ID. A file system's page lists its mount targets, which are created from EC2 subnets and security groups (one VPC, one per Availability Zone), have their groups replaced and are deleted, and its access points. Access points are also listed across the Region, created with a POSIX user, a root directory with creation info and tags, and deleted with typed confirmation.
 
 [Supported operations](efs.md#supported-operations) · [Limitations](efs.md#limitations-and-future-work)
 

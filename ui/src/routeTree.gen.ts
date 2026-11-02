@@ -36,6 +36,7 @@ import { Route as ServicesDynamodbRouteImport } from './routes/services/dynamodb
 import { Route as ServicesEc2RouteImport } from './routes/services/ec2'
 import { Route as ServicesEcrRouteImport } from './routes/services/ecr'
 import { Route as ServicesEcsRouteImport } from './routes/services/ecs'
+import { Route as ServicesEfsRouteImport } from './routes/services/efs'
 import { Route as ServicesElasticacheRouteImport } from './routes/services/elasticache'
 import { Route as ServicesElbv2RouteImport } from './routes/services/elbv2'
 import { Route as ServicesEventbridgeRouteImport } from './routes/services/eventbridge'
@@ -198,6 +199,11 @@ const ServicesEcsRoute = ServicesEcsRouteImport.update({
   path: '/services/ecs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesEfsRoute = ServicesEfsRouteImport.update({
+  id: '/services/efs',
+  path: '/services/efs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesElasticacheRoute = ServicesElasticacheRouteImport.update({
   id: '/services/elasticache',
   path: '/services/elasticache',
@@ -351,6 +357,7 @@ export interface FileRoutesByFullPath {
   '/services/ec2': typeof ServicesEc2Route
   '/services/ecr': typeof ServicesEcrRoute
   '/services/ecs': typeof ServicesEcsRoute
+  '/services/efs': typeof ServicesEfsRoute
   '/services/elasticache': typeof ServicesElasticacheRoute
   '/services/elbv2': typeof ServicesElbv2Route
   '/services/eventbridge': typeof ServicesEventbridgeRoute
@@ -405,6 +412,7 @@ export interface FileRoutesByTo {
   '/services/ec2': typeof ServicesEc2Route
   '/services/ecr': typeof ServicesEcrRoute
   '/services/ecs': typeof ServicesEcsRoute
+  '/services/efs': typeof ServicesEfsRoute
   '/services/elasticache': typeof ServicesElasticacheRoute
   '/services/elbv2': typeof ServicesElbv2Route
   '/services/eventbridge': typeof ServicesEventbridgeRoute
@@ -460,6 +468,7 @@ export interface FileRoutesById {
   '/services/ec2': typeof ServicesEc2Route
   '/services/ecr': typeof ServicesEcrRoute
   '/services/ecs': typeof ServicesEcsRoute
+  '/services/efs': typeof ServicesEfsRoute
   '/services/elasticache': typeof ServicesElasticacheRoute
   '/services/elbv2': typeof ServicesElbv2Route
   '/services/eventbridge': typeof ServicesEventbridgeRoute
@@ -516,6 +525,7 @@ export interface FileRouteTypes {
     | '/services/ec2'
     | '/services/ecr'
     | '/services/ecs'
+    | '/services/efs'
     | '/services/elasticache'
     | '/services/elbv2'
     | '/services/eventbridge'
@@ -570,6 +580,7 @@ export interface FileRouteTypes {
     | '/services/ec2'
     | '/services/ecr'
     | '/services/ecs'
+    | '/services/efs'
     | '/services/elasticache'
     | '/services/elbv2'
     | '/services/eventbridge'
@@ -624,6 +635,7 @@ export interface FileRouteTypes {
     | '/services/ec2'
     | '/services/ecr'
     | '/services/ecs'
+    | '/services/efs'
     | '/services/elasticache'
     | '/services/elbv2'
     | '/services/eventbridge'
@@ -679,6 +691,7 @@ export interface RootRouteChildren {
   ServicesEc2Route: typeof ServicesEc2Route
   ServicesEcrRoute: typeof ServicesEcrRoute
   ServicesEcsRoute: typeof ServicesEcsRoute
+  ServicesEfsRoute: typeof ServicesEfsRoute
   ServicesElasticacheRoute: typeof ServicesElasticacheRoute
   ServicesElbv2Route: typeof ServicesElbv2Route
   ServicesEventbridgeRoute: typeof ServicesEventbridgeRoute
@@ -898,6 +911,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesEcsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/efs': {
+      id: '/services/efs'
+      path: '/services/efs'
+      fullPath: '/services/efs'
+      preLoaderRoute: typeof ServicesEfsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/elasticache': {
       id: '/services/elasticache'
       path: '/services/elasticache'
@@ -1104,6 +1124,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesEc2Route: ServicesEc2Route,
   ServicesEcrRoute: ServicesEcrRoute,
   ServicesEcsRoute: ServicesEcsRoute,
+  ServicesEfsRoute: ServicesEfsRoute,
   ServicesElasticacheRoute: ServicesElasticacheRoute,
   ServicesElbv2Route: ServicesElbv2Route,
   ServicesEventbridgeRoute: ServicesEventbridgeRoute,

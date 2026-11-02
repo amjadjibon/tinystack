@@ -74,6 +74,7 @@ const (
 	consoleELBv2       = "elbv2"
 	consoleACM         = "acm"
 	consoleCloudFront  = "cloudfront"
+	consoleEFS         = "efs"
 )
 
 const consoleSecretsManager = "secretsmanager"
@@ -396,6 +397,15 @@ var consoleCloudFrontOperations = strings.Fields(`
  TagResource UntagResource ListTagsForResource
 `)
 
+// EFS exposes the file system, mount target, access point and tag operations the page uses.
+var consoleEFSOperations = strings.Fields(`
+ CreateFileSystem DescribeFileSystems UpdateFileSystem DeleteFileSystem
+ CreateMountTarget DescribeMountTargets DeleteMountTarget
+ DescribeMountTargetSecurityGroups ModifyMountTargetSecurityGroups
+ CreateAccessPoint DescribeAccessPoints DeleteAccessPoint
+ TagResource UntagResource
+`)
+
 var consoleSSMOperations = strings.Fields(`
  DescribeParameters GetParameter GetParameterHistory PutParameter DeleteParameter DeleteParameters
  LabelParameterVersion UnlabelParameterVersion ListTagsForResource AddTagsToResource RemoveTagsFromResource
@@ -545,6 +555,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, ssm := s.services[consoleSSM]
 		_, acm := s.services[consoleACM]
 		_, cloudfront := s.services[consoleCloudFront]
+		_, efs := s.services[consoleEFS]
 		_, budgets := s.services[consoleBudgets]
 		_, costexplorer := s.services[consoleCostExplorer]
 		_, cur := s.services[consoleCUR]
@@ -620,6 +631,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			"resource_deletes":     s.consoleDeleteCapabilities(),
 			consoleCognitoIdentity: cognitoidentity,
 			consoleCloudTrail:      cloudtrail,
+			consoleEFS:             efs,
 		}
 
 		if s.cfg.Console.Auth.OIDC != nil {
@@ -733,6 +745,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleACMOperations
 	case consoleCloudFront:
 		operations = consoleCloudFrontOperations
+	case consoleEFS:
+		operations = consoleEFSOperations
 	case consoleSecretsManager:
 		operations = consoleSecretsManagerOperations
 	case consoleBudgets:

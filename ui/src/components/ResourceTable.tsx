@@ -25,6 +25,8 @@ import { identityHref } from "#/lib/cognitoidentity";
 import { costHref } from "#/lib/cost";
 import { dynamoHref } from "#/lib/dynamodb";
 import { ec2Href, ec2Kinds, ec2Sections } from "#/lib/ec2";
+import { efsHref } from "#/lib/efs";
+import { inventoryFileSystem } from "#/lib/efsHelpers";
 import { elasticacheHref } from "#/lib/elasticache";
 import { elbv2Href } from "#/lib/elbv2";
 import { eventHref, inventoryRule } from "#/lib/eventbridge";
@@ -134,6 +136,12 @@ export function resourceHref(r: Resource): string {
 			...(r.type === "distribution"
 				? { distribution: r.name }
 				: { tab: r.type === "key-value-store" ? "kvs" : "oacs" }),
+		});
+	if (r.service === "efs")
+		return efsHref({
+			account: r.account,
+			region: r.region,
+			filesystem: inventoryFileSystem(r),
 		});
 	if (r.service === "ssm" && r.type === "parameter")
 		return ssmHref({ account: r.account, region: r.region, parameter: r.name });

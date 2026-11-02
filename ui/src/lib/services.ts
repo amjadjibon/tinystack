@@ -303,7 +303,12 @@ const catalog: Record<string, ServiceInfo> = {
 		icon: "xray",
 	},
 	batch: { title: "AWS Batch", category: compute, icon: "batch" },
-	efs: { title: "Elastic File System", category: storage, icon: "efs" },
+	efs: {
+		title: "Elastic File System",
+		category: storage,
+		icon: "efs",
+		href: "/services/efs",
+	},
 	backup: { title: "AWS Backup", category: management, icon: "backup" },
 	config: { title: "AWS Config", category: management, icon: "config" },
 	cloudtrail: {
