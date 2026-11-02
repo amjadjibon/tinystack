@@ -1831,6 +1831,7 @@ Manage distribution and origin access control metadata for infrastructure tests.
 - Key value store create/describe/list/update/delete, status filtering, pagination, separate control/data ETags and resource tags.
 - Local S3 JSON imports with deterministic PROVISIONING to READY or IMPORT_FAILED on first describe/list access.
 - AWS::CloudFront::KeyValueStore and Terraform aws_cloudfront_key_value_store.
+- Console page for distributions (create with S3 or custom origins, an origin access control, aliases, a default cache behavior and tags; edit, enable or disable, and delete once disabled), their origins, behaviors, ETag, invalidations with paths and tags, origin access controls, and key value stores with comment edits and tags, deleting with typed confirmation.
 
 [Supported operations](cloudfront.md#supported-operations) · [Limitations](cloudfront.md#limitations-and-future-work)
 

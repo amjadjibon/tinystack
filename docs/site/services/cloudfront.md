@@ -24,6 +24,7 @@ See the [implemented feature catalogue](catalogue.md#cloudfront) for this servic
 - No CDN caching, edge delivery or origin proxy runtime.
 - Only selected distribution/configuration fields are implemented.
 - No CloudFront Functions operations or key value store function associations.
+- The console edits origins and the default cache behavior, and keeps other settings of a distribution as stored: extra cache behaviors, origin groups, error pages and certificates are shown or preserved but not editable; it offers no S3 import or key editing for key value stores.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

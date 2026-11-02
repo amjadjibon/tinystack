@@ -116,6 +116,7 @@ function useScopeState() {
 			"dashboard",
 			"machine",
 			"id",
+			"distribution",
 			"vpc",
 			"execution",
 			"apiId",

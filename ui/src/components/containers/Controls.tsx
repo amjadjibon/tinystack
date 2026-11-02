@@ -114,7 +114,13 @@ export function Rows<T>({
 }: {
 	title: string;
 	items: T[];
-	columns: { id: string; header: string; cell: (row: T) => ReactNode }[];
+	columns: {
+		id: string;
+		header: string;
+		cell: (row: T) => ReactNode;
+		// minWidth keeps a column of buttons from wrapping their text in a wide table.
+		minWidth?: number;
+	}[];
 	actions?: ReactNode;
 	loading?: boolean;
 	// emptyText tells the reader how to add the first item, naming the action that does it.

@@ -18,6 +18,7 @@ import { acmHref } from "#/lib/acm";
 import type { Resource } from "#/lib/api";
 import { gatewayHref } from "#/lib/apigateway";
 import { cfnHref } from "#/lib/cloudformation";
+import { cloudfrontHref } from "#/lib/cloudfront";
 import { cloudwatchHref } from "#/lib/cloudwatch";
 import { cognitoHref } from "#/lib/cognito";
 import { costHref } from "#/lib/cost";
@@ -120,6 +121,13 @@ export function resourceHref(r: Resource): string {
 			account: r.account,
 			region: r.region,
 			certificate: r.arn,
+		});
+	if (r.service === "cloudfront")
+		return cloudfrontHref({
+			account: r.account,
+			...(r.type === "distribution"
+				? { distribution: r.name }
+				: { tab: r.type === "key-value-store" ? "kvs" : "oacs" }),
 		});
 	if (r.service === "ssm" && r.type === "parameter")
 		return ssmHref({ account: r.account, region: r.region, parameter: r.name });

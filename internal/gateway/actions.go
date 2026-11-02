@@ -68,6 +68,7 @@ const (
 	consolePipes       = "pipes"
 	consoleELBv2       = "elbv2"
 	consoleACM         = "acm"
+	consoleCloudFront  = "cloudfront"
 )
 
 const consoleSecretsManager = "secretsmanager"
@@ -349,6 +350,15 @@ var consoleACMOperations = strings.Fields(`
  ExportCertificate AddTagsToCertificate RemoveTagsFromCertificate ListTagsForCertificate UpdateCertificateOptions
 `)
 
+var consoleCloudFrontOperations = strings.Fields(`
+ CreateDistributionWithTags GetDistribution GetDistributionConfig ListDistributions UpdateDistribution
+ DeleteDistribution CreateInvalidation GetInvalidation ListInvalidations
+ CreateOriginAccessControl GetOriginAccessControl GetOriginAccessControlConfig ListOriginAccessControls
+ UpdateOriginAccessControl DeleteOriginAccessControl
+ CreateKeyValueStore DescribeKeyValueStore ListKeyValueStores UpdateKeyValueStore DeleteKeyValueStore
+ TagResource UntagResource ListTagsForResource
+`)
+
 var consoleSSMOperations = strings.Fields(`
  DescribeParameters GetParameter GetParameterHistory PutParameter DeleteParameter DeleteParameters
  LabelParameterVersion UnlabelParameterVersion ListTagsForResource AddTagsToResource RemoveTagsFromResource
@@ -497,6 +507,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, secretsmanager := s.services[consoleSecretsManager]
 		_, ssm := s.services[consoleSSM]
 		_, acm := s.services[consoleACM]
+		_, cloudfront := s.services[consoleCloudFront]
 		_, budgets := s.services[consoleBudgets]
 		_, costexplorer := s.services[consoleCostExplorer]
 		_, cur := s.services[consoleCUR]
@@ -546,6 +557,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			"ecs_runtime":         s.cfg.ECS.Containers,
 			consoleSSM:            ssm,
 			consoleACM:            acm,
+			consoleCloudFront:     cloudfront,
 			consoleBudgets:        budgets,
 			consoleCostExplorer:   costexplorer,
 			consoleCUR:            cur,
@@ -674,6 +686,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleSSMOperations
 	case consoleACM:
 		operations = consoleACMOperations
+	case consoleCloudFront:
+		operations = consoleCloudFrontOperations
 	case consoleSecretsManager:
 		operations = consoleSecretsManagerOperations
 	case consoleBudgets:
@@ -728,7 +742,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	regional := in.Service != consoleIAM && in.Service != consoleBudgets && in.Service != consoleRoute53 &&
-		in.Service != consoleCostExplorer && in.Service != consoleCUR
+		in.Service != consoleCostExplorer && in.Service != consoleCUR && in.Service != consoleCloudFront
 	if regional && !consoleRegion.MatchString(in.Region) {
 		s.consoleFail(
 			w,
