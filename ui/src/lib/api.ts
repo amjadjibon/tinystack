@@ -176,6 +176,7 @@ export const api = {
 		scheduler: boolean;
 		pipes: boolean;
 		athena: boolean;
+		glue: boolean;
 		elbv2: boolean;
 		route53: boolean;
 		cloudformation: boolean;

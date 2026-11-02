@@ -245,6 +245,7 @@ Manage the Data Catalog, classify and crawl S3 data, and orchestrate local Pytho
 **Execution:** Records / local S3 crawling / optional local Python host execution. **Selected operations:** 70.
 
 - Database CRUD, tags and pagination.
+- Dedicated account/Region-scoped console for databases, tables with schema details, partitions, crawlers with start/stop and last crawl, jobs with run history, triggers, workflows and tags; typed deletion confirmations and polling.
 - Table CRUD and batch deletion.
 - Partition CRUD, batch operations and partition listings.
 - Names are normalized to lowercase; deleting a database removes its tables and partitions.

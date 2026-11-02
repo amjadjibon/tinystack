@@ -451,7 +451,12 @@ const catalog: Record<string, ServiceInfo> = {
 		icon: "firehose",
 		href: "/services/firehose",
 	},
-	glue: { title: "Glue Data Catalog", category: analytics, icon: "glue" },
+	glue: {
+		href: "/services/glue",
+		title: "AWS Glue",
+		category: analytics,
+		icon: "glue",
+	},
 	iam: { title: "IAM", category: security, icon: "iam" },
 	iot: { title: "IoT Core", category: iot, icon: "iot" },
 	iotdataplane: { title: "IoT Data Plane", category: iot, icon: "iot" },

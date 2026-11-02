@@ -38,6 +38,7 @@ import { Route as ServicesElasticacheRouteImport } from './routes/services/elast
 import { Route as ServicesElbv2RouteImport } from './routes/services/elbv2'
 import { Route as ServicesEventbridgeRouteImport } from './routes/services/eventbridge'
 import { Route as ServicesFirehoseRouteImport } from './routes/services/firehose'
+import { Route as ServicesGlueRouteImport } from './routes/services/glue'
 import { Route as ServicesIamRouteImport } from './routes/services/iam'
 import { Route as ServicesKinesisRouteImport } from './routes/services/kinesis'
 import { Route as ServicesKmsRouteImport } from './routes/services/kms'
@@ -205,6 +206,11 @@ const ServicesFirehoseRoute = ServicesFirehoseRouteImport.update({
   path: '/services/firehose',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesGlueRoute = ServicesGlueRouteImport.update({
+  id: '/services/glue',
+  path: '/services/glue',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesIamRoute = ServicesIamRouteImport.update({
   id: '/services/iam',
   path: '/services/iam',
@@ -335,6 +341,7 @@ export interface FileRoutesByFullPath {
   '/services/elbv2': typeof ServicesElbv2Route
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/firehose': typeof ServicesFirehoseRoute
+  '/services/glue': typeof ServicesGlueRoute
   '/services/iam': typeof ServicesIamRoute
   '/services/kinesis': typeof ServicesKinesisRoute
   '/services/kms': typeof ServicesKmsRoute
@@ -386,6 +393,7 @@ export interface FileRoutesByTo {
   '/services/elbv2': typeof ServicesElbv2Route
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/firehose': typeof ServicesFirehoseRoute
+  '/services/glue': typeof ServicesGlueRoute
   '/services/iam': typeof ServicesIamRoute
   '/services/kinesis': typeof ServicesKinesisRoute
   '/services/kms': typeof ServicesKmsRoute
@@ -438,6 +446,7 @@ export interface FileRoutesById {
   '/services/elbv2': typeof ServicesElbv2Route
   '/services/eventbridge': typeof ServicesEventbridgeRoute
   '/services/firehose': typeof ServicesFirehoseRoute
+  '/services/glue': typeof ServicesGlueRoute
   '/services/iam': typeof ServicesIamRoute
   '/services/kinesis': typeof ServicesKinesisRoute
   '/services/kms': typeof ServicesKmsRoute
@@ -491,6 +500,7 @@ export interface FileRouteTypes {
     | '/services/elbv2'
     | '/services/eventbridge'
     | '/services/firehose'
+    | '/services/glue'
     | '/services/iam'
     | '/services/kinesis'
     | '/services/kms'
@@ -542,6 +552,7 @@ export interface FileRouteTypes {
     | '/services/elbv2'
     | '/services/eventbridge'
     | '/services/firehose'
+    | '/services/glue'
     | '/services/iam'
     | '/services/kinesis'
     | '/services/kms'
@@ -593,6 +604,7 @@ export interface FileRouteTypes {
     | '/services/elbv2'
     | '/services/eventbridge'
     | '/services/firehose'
+    | '/services/glue'
     | '/services/iam'
     | '/services/kinesis'
     | '/services/kms'
@@ -645,6 +657,7 @@ export interface RootRouteChildren {
   ServicesElbv2Route: typeof ServicesElbv2Route
   ServicesEventbridgeRoute: typeof ServicesEventbridgeRoute
   ServicesFirehoseRoute: typeof ServicesFirehoseRoute
+  ServicesGlueRoute: typeof ServicesGlueRoute
   ServicesIamRoute: typeof ServicesIamRoute
   ServicesKinesisRoute: typeof ServicesKinesisRoute
   ServicesKmsRoute: typeof ServicesKmsRoute
@@ -873,6 +886,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesFirehoseRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/glue': {
+      id: '/services/glue'
+      path: '/services/glue'
+      fullPath: '/services/glue'
+      preLoaderRoute: typeof ServicesGlueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/iam': {
       id: '/services/iam'
       path: '/services/iam'
@@ -1046,6 +1066,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesElbv2Route: ServicesElbv2Route,
   ServicesEventbridgeRoute: ServicesEventbridgeRoute,
   ServicesFirehoseRoute: ServicesFirehoseRoute,
+  ServicesGlueRoute: ServicesGlueRoute,
   ServicesIamRoute: ServicesIamRoute,
   ServicesKinesisRoute: ServicesKinesisRoute,
   ServicesKmsRoute: ServicesKmsRoute,

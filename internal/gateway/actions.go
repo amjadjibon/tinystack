@@ -67,6 +67,7 @@ const (
 	consoleScheduler   = "scheduler"
 	consolePipes       = "pipes"
 	consoleAthena      = "athena"
+	consoleGlue        = "glue"
 	consoleELBv2       = "elbv2"
 	consoleACM         = "acm"
 	consoleCloudFront  = "cloudfront"
@@ -324,6 +325,17 @@ var consoleSESv2Operations = strings.Fields(`
  SendEmail GetAccount TagResource UntagResource ListTagsForResource
 `)
 
+var consoleGlueOperations = strings.Fields(`
+CreateDatabase GetDatabase GetDatabases UpdateDatabase DeleteDatabase
+CreateTable GetTable GetTables UpdateTable DeleteTable
+CreatePartition GetPartition GetPartitions DeletePartition
+CreateCrawler GetCrawler GetCrawlers UpdateCrawler DeleteCrawler StartCrawler StopCrawler
+CreateJob GetJob GetJobs UpdateJob DeleteJob StartJobRun GetJobRuns
+CreateTrigger GetTrigger GetTriggers UpdateTrigger DeleteTrigger StartTrigger StopTrigger
+CreateWorkflow GetWorkflow ListWorkflows UpdateWorkflow DeleteWorkflow
+TagResource UntagResource GetTags
+`)
+
 var consolePipesOperations = strings.Fields(`
  CreatePipe DescribePipe UpdatePipe DeletePipe ListPipes StartPipe StopPipe
  TagResource UntagResource ListTagsForResource
@@ -527,6 +539,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		_, scheduler := s.services[consoleScheduler]
 		_, pipes := s.services[consolePipes]
 		_, athena := s.services[consoleAthena]
+		_, glue := s.services[consoleGlue]
 		_, elbv2 := s.services[consoleELBv2]
 		_, route53 := s.services[consoleRoute53]
 		_, cloudformation := s.services[consoleCloudFormation]
@@ -580,6 +593,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			consoleScheduler:      scheduler,
 			consolePipes:          pipes,
 			consoleAthena:         athena,
+			consoleGlue:           glue,
 			consoleELBv2:          elbv2,
 			consoleRoute53:        route53,
 			consoleCloudFormation: cloudformation,
@@ -715,6 +729,8 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 		operations = consoleMemoryDBOperations
 	case consoleSESv2:
 		operations = consoleSESv2Operations
+	case consoleGlue:
+		operations = consoleGlueOperations
 	case consolePipes:
 		operations = consolePipesOperations
 	case consoleAthena:
