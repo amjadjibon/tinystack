@@ -14,6 +14,7 @@ import { Action, Buttons, Rows } from "#/components/containers/Controls";
 import { Text } from "#/components/memorydb/Fields";
 import { Facts, ResourceTags } from "#/components/sesv2/Facts";
 import { errorText } from "#/lib/consoleActions";
+import { unixTime } from "#/lib/format";
 import {
 	getTemplate,
 	resourceArn,
@@ -27,7 +28,6 @@ import {
 	parseTemplateData,
 	type TemplateForm,
 	templateForm,
-	unixTime,
 	updateTemplateInput,
 } from "#/lib/sesv2Helpers";
 import { usePoll } from "#/lib/usePoll";

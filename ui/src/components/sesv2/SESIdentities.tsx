@@ -9,6 +9,7 @@ import { CodeBlock } from "#/components/CodeBlock";
 import { Action, Buttons, Rows } from "#/components/containers/Controls";
 import { Pick, Text } from "#/components/memorydb/Fields";
 import { Facts, ResourceTags } from "#/components/sesv2/Facts";
+import { unixTime } from "#/lib/format";
 import {
 	getIdentity,
 	type IdentityInfo,
@@ -19,7 +20,6 @@ import {
 import {
 	dkimSummary,
 	identityKind,
-	unixTime,
 	validateIdentity,
 } from "#/lib/sesv2Helpers";
 import { usePoll } from "#/lib/usePoll";

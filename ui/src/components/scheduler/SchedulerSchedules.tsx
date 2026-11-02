@@ -15,6 +15,7 @@ import { Action, Buttons, Rows } from "#/components/containers/Controls";
 import { Pick, Text } from "#/components/memorydb/Fields";
 import { Suggest } from "#/components/scheduler/Fields";
 import { errorText } from "#/lib/consoleActions";
+import { unixTime } from "#/lib/format";
 import {
 	type ScheduleGroup,
 	type SchedulerScope,
@@ -27,7 +28,6 @@ import {
 	type ExpressionKind,
 	emptyScheduleForm,
 	expressionHints,
-	formatDate,
 	formFromSchedule,
 	type RateUnit,
 	type ScheduleDetail,
@@ -127,7 +127,7 @@ export function SchedulerSchedules({
 					{
 						id: "modified",
 						header: "Last modified",
-						cell: (s) => formatDate(s.LastModificationDate),
+						cell: (s) => unixTime(s.LastModificationDate),
 					},
 					{
 						id: "actions",

@@ -14,13 +14,14 @@ import { ConsoleTags } from "#/components/ConsoleTags";
 import { Action, Buttons, Rows } from "#/components/containers/Controls";
 import { Text } from "#/components/memorydb/Fields";
 import { stringMap } from "#/lib/consoleActions";
+import { unixTime } from "#/lib/format";
 import { tagList, tagMap } from "#/lib/memorydbHelpers";
 import {
 	type ScheduleGroup,
 	type SchedulerScope,
 	schedulerCall,
 } from "#/lib/scheduler";
-import { defaultGroup, formatDate, validName } from "#/lib/schedulerHelpers";
+import { defaultGroup, validName } from "#/lib/schedulerHelpers";
 import { usePoll } from "#/lib/usePoll";
 
 type Dialog = "" | "create" | "delete";
@@ -72,7 +73,7 @@ export function SchedulerGroups({
 					{
 						id: "created",
 						header: "Created",
-						cell: (g) => formatDate(g.CreationDate),
+						cell: (g) => unixTime(g.CreationDate),
 					},
 					{
 						id: "actions",
@@ -213,11 +214,11 @@ function GroupDetail({
 					</div>
 					<div>
 						<Box variant="awsui-key-label">Created</Box>
-						<Box>{formatDate(group.CreationDate)}</Box>
+						<Box>{unixTime(group.CreationDate)}</Box>
 					</div>
 					<div>
 						<Box variant="awsui-key-label">Last modified</Box>
-						<Box>{formatDate(group.LastModificationDate)}</Box>
+						<Box>{unixTime(group.LastModificationDate)}</Box>
 					</div>
 				</ColumnLayout>
 			</Container>

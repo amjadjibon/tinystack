@@ -25,11 +25,8 @@ import {
 	type CertificateSummary,
 	listCertificates,
 } from "#/lib/acm";
-import {
-	certificateStatuses,
-	certificateType,
-	formatEpoch,
-} from "#/lib/acmHelpers";
+import { certificateStatuses, certificateType } from "#/lib/acmHelpers";
+import { unixTime } from "#/lib/format";
 import { validRegion } from "#/lib/s3";
 import { useScope } from "#/lib/scope";
 import { useFollow } from "#/lib/useFollow";
@@ -176,7 +173,9 @@ function CertificateList({
 	const reload = poll.reload;
 	// Reload at once when the status filter changes instead of waiting for the next poll.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: status is the trigger
-	useEffect(() => reload(), [status, reload]);
+	useEffect(() => {
+		reload();
+	}, [status, reload]);
 	const certificates = poll.data ?? [];
 	const { items, collectionProps, filterProps, paginationProps } =
 		useCollection(certificates, {
@@ -311,7 +310,7 @@ function CertificateList({
 						id: "notAfter",
 						header: "Not after",
 						sortingField: "NotAfter",
-						cell: (c) => formatEpoch(c.NotAfter),
+						cell: (c) => unixTime(c.NotAfter),
 					},
 					{
 						id: "arn",

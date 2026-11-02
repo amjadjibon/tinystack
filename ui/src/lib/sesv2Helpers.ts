@@ -441,11 +441,6 @@ export function dkimSummary(d?: {
 	return `${d.Status ?? "UNKNOWN"}, signing ${d.SigningEnabled ? "enabled" : "disabled"}${tokens}`;
 }
 
-// unixTime shows a timestamp the API gives in seconds.
-export function unixTime(seconds?: number) {
-	return seconds ? new Date(seconds * 1000).toLocaleString() : "-";
-}
-
 // senderOptions lists the addresses a message may be sent from: each email
 // identity, and a no-reply address at each domain identity.
 export function senderOptions(

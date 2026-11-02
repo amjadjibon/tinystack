@@ -216,7 +216,7 @@ export function parseDate(text: string, label: string): number | undefined {
 	return Math.floor(ms / 1000);
 }
 
-export function formatDate(seconds: number | undefined) {
+function formatDate(seconds: number | undefined) {
 	if (seconds === undefined) return "";
 	return new Date(seconds * 1000).toISOString().replace(/\.\d+Z$/, "Z");
 }

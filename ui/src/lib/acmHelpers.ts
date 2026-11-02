@@ -46,10 +46,6 @@ export function certificateType(type: string | undefined) {
 			: type || "—";
 }
 
-export function formatEpoch(seconds: number | undefined) {
-	return seconds ? new Date(seconds * 1000).toISOString() : "—";
-}
-
 // utf8Base64 encodes text as the base64 that blob members carry.
 export function utf8Base64(value: string) {
 	return btoa(

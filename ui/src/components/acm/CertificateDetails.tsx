@@ -23,12 +23,12 @@ import {
 } from "#/lib/acm";
 import {
 	certificateType,
-	formatEpoch,
 	maskKey,
 	passphraseError,
 	pemFileName,
 	utf8Base64,
 } from "#/lib/acmHelpers";
+import { unixTime } from "#/lib/format";
 import { usePoll } from "#/lib/usePoll";
 import { Choice } from "./Fields";
 import { ImportDialog } from "./ImportDialog";
@@ -289,7 +289,11 @@ export function CertificateDetails({
 					<SpaceBetween direction="horizontal" size="xs">
 						<Button onClick={poll.reload}>Refresh</Button>
 						<Button
-							disabled={!enabled || !cert}
+							disabled={
+								!enabled ||
+								cert?.Type !== "AMAZON_ISSUED" ||
+								cert.Options?.Export !== "ENABLED"
+							}
 							onClick={() => setDialog("export")}
 						>
 							Export certificate
@@ -363,10 +367,10 @@ export function CertificateDetails({
 						</Field>
 						<Field label="Export">{cert.Options?.Export ?? "—"}</Field>
 						<Field label="Issued / imported at">
-							{formatEpoch(cert.IssuedAt ?? cert.ImportedAt)}
+							{unixTime(cert.IssuedAt ?? cert.ImportedAt)}
 						</Field>
-						<Field label="Not before">{formatEpoch(cert.NotBefore)}</Field>
-						<Field label="Not after">{formatEpoch(cert.NotAfter)}</Field>
+						<Field label="Not before">{unixTime(cert.NotBefore)}</Field>
+						<Field label="Not after">{unixTime(cert.NotAfter)}</Field>
 						<Field label="Subject">{cert.Subject ?? "—"}</Field>
 						<Field label="Issuer">{cert.Issuer ?? "—"}</Field>
 						<Field label="Serial">{cert.Serial ?? "—"}</Field>
