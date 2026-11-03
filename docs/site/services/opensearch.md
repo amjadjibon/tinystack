@@ -28,6 +28,7 @@ See the [implemented feature catalogue](catalogue.md#amazon-opensearch-service) 
 - Docker engine versions are limited to OpenSearch 1.0-1.3, 2.0-2.19 and 3.0-3.9 and Elasticsearch_7.10; the host port changes when a domain's container is recreated, and volumes of an in-memory store stay until the next startup removes them as orphans.
 - VPC options, Cognito authentication, SAML/IAM identity federation, and automated snapshot pauses are excluded from the initial domain slice.
 - Package management, outbound/inbound connections, direct query, application integration, and serverless collections require separate implementations.
+- The console offers only what the service implements: no advanced options, VPC or custom endpoint options, version upgrades, and no search or index view of the engine. ListVersions and GetCompatibleVersions are not implemented, so the engine version is chosen from a fixed list. An EBS volume's IOPS and throughput can be changed but not removed, because UpdateDomainConfig keeps the members a request does not name.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

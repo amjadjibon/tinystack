@@ -52,6 +52,7 @@ import { Route as ServicesKmsRouteImport } from './routes/services/kms'
 import { Route as ServicesLambdaRouteImport } from './routes/services/lambda'
 import { Route as ServicesLogsRouteImport } from './routes/services/logs'
 import { Route as ServicesMemorydbRouteImport } from './routes/services/memorydb'
+import { Route as ServicesOpensearchRouteImport } from './routes/services/opensearch'
 import { Route as ServicesPipesRouteImport } from './routes/services/pipes'
 import { Route as ServicesRdsRouteImport } from './routes/services/rds'
 import { Route as ServicesRoute53RouteImport } from './routes/services/route53'
@@ -284,6 +285,11 @@ const ServicesMemorydbRoute = ServicesMemorydbRouteImport.update({
   path: '/services/memorydb',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesOpensearchRoute = ServicesOpensearchRouteImport.update({
+  id: '/services/opensearch',
+  path: '/services/opensearch',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesPipesRoute = ServicesPipesRouteImport.update({
   id: '/services/pipes',
   path: '/services/pipes',
@@ -404,6 +410,7 @@ export interface FileRoutesByFullPath {
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
   '/services/memorydb': typeof ServicesMemorydbRoute
+  '/services/opensearch': typeof ServicesOpensearchRoute
   '/services/pipes': typeof ServicesPipesRoute
   '/services/rds': typeof ServicesRdsRoute
   '/services/route53': typeof ServicesRoute53Route
@@ -464,6 +471,7 @@ export interface FileRoutesByTo {
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
   '/services/memorydb': typeof ServicesMemorydbRoute
+  '/services/opensearch': typeof ServicesOpensearchRoute
   '/services/pipes': typeof ServicesPipesRoute
   '/services/rds': typeof ServicesRdsRoute
   '/services/route53': typeof ServicesRoute53Route
@@ -525,6 +533,7 @@ export interface FileRoutesById {
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
   '/services/memorydb': typeof ServicesMemorydbRoute
+  '/services/opensearch': typeof ServicesOpensearchRoute
   '/services/pipes': typeof ServicesPipesRoute
   '/services/rds': typeof ServicesRdsRoute
   '/services/route53': typeof ServicesRoute53Route
@@ -587,6 +596,7 @@ export interface FileRouteTypes {
     | '/services/lambda'
     | '/services/logs'
     | '/services/memorydb'
+    | '/services/opensearch'
     | '/services/pipes'
     | '/services/rds'
     | '/services/route53'
@@ -647,6 +657,7 @@ export interface FileRouteTypes {
     | '/services/lambda'
     | '/services/logs'
     | '/services/memorydb'
+    | '/services/opensearch'
     | '/services/pipes'
     | '/services/rds'
     | '/services/route53'
@@ -707,6 +718,7 @@ export interface FileRouteTypes {
     | '/services/lambda'
     | '/services/logs'
     | '/services/memorydb'
+    | '/services/opensearch'
     | '/services/pipes'
     | '/services/rds'
     | '/services/route53'
@@ -768,6 +780,7 @@ export interface RootRouteChildren {
   ServicesLambdaRoute: typeof ServicesLambdaRoute
   ServicesLogsRoute: typeof ServicesLogsRoute
   ServicesMemorydbRoute: typeof ServicesMemorydbRoute
+  ServicesOpensearchRoute: typeof ServicesOpensearchRoute
   ServicesPipesRoute: typeof ServicesPipesRoute
   ServicesRdsRoute: typeof ServicesRdsRoute
   ServicesRoute53Route: typeof ServicesRoute53Route
@@ -1089,6 +1102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesMemorydbRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/opensearch': {
+      id: '/services/opensearch'
+      path: '/services/opensearch'
+      fullPath: '/services/opensearch'
+      preLoaderRoute: typeof ServicesOpensearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/pipes': {
       id: '/services/pipes'
       path: '/services/pipes'
@@ -1241,6 +1261,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesLambdaRoute: ServicesLambdaRoute,
   ServicesLogsRoute: ServicesLogsRoute,
   ServicesMemorydbRoute: ServicesMemorydbRoute,
+  ServicesOpensearchRoute: ServicesOpensearchRoute,
   ServicesPipesRoute: ServicesPipesRoute,
   ServicesRdsRoute: ServicesRdsRoute,
   ServicesRoute53Route: ServicesRoute53Route,

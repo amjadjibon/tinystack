@@ -140,6 +140,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			"ecs_runtime":         s.cfg.ECS.Containers,
 			"elasticache_runtime": s.cfg.ElastiCache.Caches,
 			"memorydb_runtime":    s.cfg.MemoryDB.Clusters,
+			"opensearch_runtime":  s.cfg.OpenSearch.Domains,
 			"requires_signature":  s.cfg.Identity.Mode == config.IdentityVerify,
 			"taggable_services":   resourcegroupstaggingapi.TaggableServices(),
 			"resource_deletes":    s.consoleDeleteCapabilities(),

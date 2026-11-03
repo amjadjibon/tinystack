@@ -2083,7 +2083,8 @@
         "Docker creation returns Processing=true without an endpoint; GET /_cluster/health?wait_for_status=yellow answering 200 sets Processing=false and publishes Endpoint 127.0.0.1:<host port> (loopback, no scheme); an engine that stops answering is started again and the domain processes until it does",
         "A Docker domain whose container cannot start, or whose engine is not healthy within five minutes, keeps its record with Processing=false, no endpoint and a Failure inventory detail; delete it as usual",
         "Docker DeleteDomain returns Deleted=true and Processing=true and keeps the name until the container and volume are removed; reset removes both; shutdown removes containers and keeps volumes; persistent restart recreates containers from records against their volumes; startup removes orphaned containers and volumes whose domain record is gone",
-        "CloudFormation domain creation waits for the Docker engine before publishing Ref and DomainEndpoint"
+        "CloudFormation domain creation waits for the Docker engine before publishing Ref and DomainEndpoint",
+        "Dedicated account/Region-scoped console with polling, announcing the records or Docker runtime. Domains are listed (status, engine version, instances, endpoint, creation time), created (name, engine version, instance type and count, dedicated masters, zone awareness, EBS storage, access policy, encryption at rest, node-to-node encryption, HTTPS and TLS policy, tags), edited with the same settings and deleted by typing their name. A domain's page shows its endpoint, ARN, settings, access policy, the state of each configuration option and its tags, which are edited there, and in Docker mode a curl command for its engine. The status shows Processing while a Docker engine starts and Deleting while it is removed, and the page reloads until the domain settles"
       ],
       "gaps": [
         "Records mode runs no search engine: its endpoint is metadata and nothing listens on it",
@@ -2092,7 +2093,8 @@
         "UpgradeDomain and EngineVersion changes are unsupported; the data plane is reached directly on the published port, not through the gateway by hostname",
         "Docker engine versions are limited to OpenSearch 1.0-1.3, 2.0-2.19 and 3.0-3.9 and Elasticsearch_7.10; the host port changes when a domain's container is recreated, and volumes of an in-memory store stay until the next startup removes them as orphans",
         "VPC options, Cognito authentication, SAML/IAM identity federation, and automated snapshot pauses are excluded from the initial domain slice",
-        "Package management, outbound/inbound connections, direct query, application integration, and serverless collections require separate implementations"
+        "Package management, outbound/inbound connections, direct query, application integration, and serverless collections require separate implementations",
+        "The console offers only what the service implements: no advanced options, VPC or custom endpoint options, version upgrades, and no search or index view of the engine. ListVersions and GetCompatibleVersions are not implemented, so the engine version is chosen from a fixed list. An EBS volume's IOPS and throughput can be changed but not removed, because UpdateDomainConfig keeps the members a request does not name"
       ]
     },
     "route53resolver": {

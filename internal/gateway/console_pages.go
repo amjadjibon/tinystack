@@ -308,6 +308,11 @@ TagResource UntagResource GetTags
  CreateSubnetGroup DescribeSubnetGroups UpdateSubnetGroup DeleteSubnetGroup
  ListTags TagResource UntagResource
 `)},
+	// OpenSearch exposes the domain and tag operations the page uses; the engine's search API is not reachable here.
+	"opensearch": {operations: strings.Fields(`
+ CreateDomain DescribeDomain DescribeDomains DescribeDomainConfig ListDomainNames
+ UpdateDomainConfig DeleteDomain AddTags ListTags RemoveTags
+`)},
 	"pipes": {operations: strings.Fields(`
  CreatePipe DescribePipe UpdatePipe DeletePipe ListPipes StartPipe StopPipe
  TagResource UntagResource ListTagsForResource

@@ -313,6 +313,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		"kafka":           "ListClusters",
 		"appconfig":       "ListApplications",
 		"appsync":         "ListGraphqlApis",
+		"opensearch":      "ListDomainNames",
 	}
 	var capabilities map[string]any
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||

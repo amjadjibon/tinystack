@@ -296,6 +296,7 @@ const catalog: Record<string, ServiceInfo> = {
 		title: "OpenSearch Service",
 		category: analytics,
 		icon: "opensearch",
+		href: "/services/opensearch",
 	},
 	codepipeline: {
 		title: "CodePipeline",

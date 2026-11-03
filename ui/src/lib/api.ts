@@ -154,6 +154,7 @@ export const api = {
 		ecs_runtime: string;
 		elasticache_runtime: string;
 		memorydb_runtime: string;
+		opensearch_runtime: string;
 		requires_signature: boolean;
 		sso?: { login_url: string };
 	}> => (await get("/actions")).json(),
