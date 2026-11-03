@@ -103,7 +103,7 @@ export function SecretDetails({
 						: "Secret not found in this account and Region."}
 				</Box>
 			) : (
-				<>
+				<SpaceBetween size="l">
 					<Header
 						variant="h1"
 						actions={
@@ -395,7 +395,7 @@ export function SecretDetails({
 							)}
 						</ActionDialog>
 					)}
-				</>
+				</SpaceBetween>
 			)}
 		</SpaceBetween>
 	);

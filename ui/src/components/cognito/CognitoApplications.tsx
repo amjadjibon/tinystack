@@ -208,12 +208,12 @@ function ClientSecret({
 		<SpaceBetween size="xs">
 			{error && <Alert type="error">{error}</Alert>}
 			{secret !== undefined ? (
-				<>
+				<SpaceBetween size="xs">
 					<CodeBlock text={secret || "No client secret"} />
 					<Button onClick={() => setSecret(undefined)}>Hide</Button>
-				</>
+				</SpaceBetween>
 			) : (
-				<>
+				<SpaceBetween size="xs">
 					<span>••••••••</span>
 					<Button
 						disabled={!enabled}
@@ -238,7 +238,7 @@ function ClientSecret({
 					>
 						Reveal
 					</Button>
-				</>
+				</SpaceBetween>
 			)}
 		</SpaceBetween>
 	);
@@ -351,7 +351,7 @@ export function CognitoDomain({
 			{!domain ? (
 				<div>No domain configured.</div>
 			) : (
-				<>
+				<SpaceBetween size="m">
 					<div>Domain: {domain}</div>
 					<div>
 						Status:{" "}
@@ -367,7 +367,7 @@ export function CognitoDomain({
 						configured TLS. Sign-in requires client_id, response_type and a
 						registered redirect_uri.
 					</Alert>
-				</>
+				</SpaceBetween>
 			)}
 		</SpaceBetween>
 	);

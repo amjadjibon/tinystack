@@ -210,7 +210,7 @@ function Workspace({
 			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			{build ? (
 				b ? (
-					<>
+					<SpaceBetween size="m">
 						<Buttons>
 							<Action onClick={() => go(project, "", "builds")}>
 								Build history
@@ -235,7 +235,7 @@ function Workspace({
 							scope={scope}
 							logsEnabled={logsEnabled}
 						/>
-					</>
+					</SpaceBetween>
 				) : (
 					!poll.loading && (
 						<Alert>Build not found in this account and Region.</Alert>
@@ -243,7 +243,7 @@ function Workspace({
 				)
 			) : project ? (
 				p ? (
-					<>
+					<SpaceBetween size="m">
 						<Buttons>
 							<Action onClick={() => go("", "", "projects")}>Projects</Action>
 							<Action onClick={poll.reload}>Refresh</Action>
@@ -276,7 +276,7 @@ function Workspace({
 								{ id: "builds", label: "Build history", content: buildRows },
 							]}
 						/>
-					</>
+					</SpaceBetween>
 				) : (
 					!poll.loading && (
 						<Alert>Project not found in this account and Region.</Alert>

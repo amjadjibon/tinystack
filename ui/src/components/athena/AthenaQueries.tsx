@@ -225,7 +225,7 @@ export function AthenaQueries({
 					</Alert>
 				))}
 			{mode === "editor" && (
-				<>
+				<SpaceBetween size="m">
 					<Choice
 						label="Catalog"
 						value={catalog}
@@ -294,7 +294,7 @@ export function AthenaQueries({
 						</Action>
 					</Buttons>
 					{current && (
-						<>
+						<SpaceBetween size="m">
 							<Box>
 								Status: {current.Status?.State ?? "-"} —{" "}
 								{current.Status?.StateChangeReason ?? ""}
@@ -316,10 +316,10 @@ export function AthenaQueries({
 							<Box>
 								Results: {current.ResultConfiguration?.OutputLocation ?? "-"}
 							</Box>
-						</>
+						</SpaceBetween>
 					)}
 					{results && (
-						<>
+						<SpaceBetween size="m">
 							<Table
 								loading={resultBusy}
 								empty="No result rows."
@@ -354,9 +354,9 @@ export function AthenaQueries({
 									Next results
 								</Action>
 							</Buttons>
-						</>
+						</SpaceBetween>
 					)}
-				</>
+				</SpaceBetween>
 			)}
 			{mode === "history" && (
 				<Rows
@@ -473,14 +473,14 @@ export function AthenaQueries({
 						<SpaceBetween size="m">
 							<Field label="Name" value={name} onChange={setName} />
 							{mode === "saved" && (
-								<>
+								<SpaceBetween size="m">
 									<Field
 										label="Database"
 										value={database}
 										onChange={setDatabase}
 									/>
 									<Field label="SQL" value={sql} onChange={setSQL} multiline />
-								</>
+								</SpaceBetween>
 							)}
 							<Field
 								label="Description"

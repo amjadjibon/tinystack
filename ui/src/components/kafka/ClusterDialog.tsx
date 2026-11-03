@@ -82,7 +82,7 @@ export function ClusterDialog({
 			<SpaceBetween size="m">
 				{!!options.error && <Alert type="error">{options.error}</Alert>}
 				{!cluster && (
-					<>
+					<SpaceBetween size="m">
 						<Alert>
 							Provisioned clusters use ZooKeeper version metadata. Choose
 							subnets in distinct Availability Zones within one VPC. Docker runs
@@ -170,7 +170,7 @@ export function ClusterDialog({
 							value={f.tags}
 							onChange={(tags) => set({ tags })}
 						/>
-					</>
+					</SpaceBetween>
 				)}
 				<Choice
 					label="Enhanced monitoring"

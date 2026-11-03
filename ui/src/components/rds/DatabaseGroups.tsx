@@ -227,15 +227,15 @@ export function DatabaseGroups({
 							{field("Group name", name, setName)}
 							{field("Description", description, setDescription)}
 							{subnet ? (
-								<>
+								<SpaceBetween size="m">
 									{field("Subnet IDs (comma separated)", ids, setIds)}
 									<Alert type="info">
 										Use existing EC2 subnets in the selected account and Region,
 										all in one VPC.
 									</Alert>
-								</>
+								</SpaceBetween>
 							) : (
-								<>
+								<SpaceBetween size="m">
 									<FormField label="Parameter group family">
 										<Select
 											selectedOption={{ label: family, value: family }}
@@ -254,7 +254,7 @@ export function DatabaseGroups({
 										Parameter groups store metadata. Engine settings are not
 										applied.
 									</Alert>
-								</>
+								</SpaceBetween>
 							)}
 							<FormField label="Tags (JSON)">
 								<Textarea

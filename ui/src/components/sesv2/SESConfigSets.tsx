@@ -458,7 +458,7 @@ function EventDestinations({
 							/>
 						)}
 						{form.kind === "firehose" && (
-							<>
+							<SpaceBetween size="m">
 								<Text
 									label="Delivery stream ARN"
 									value={form.streamArn}
@@ -469,7 +469,7 @@ function EventDestinations({
 									value={form.roleArn}
 									onChange={(roleArn) => patch({ roleArn })}
 								/>
-							</>
+							</SpaceBetween>
 						)}
 						<PickMany
 							label="Event types"

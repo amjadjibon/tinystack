@@ -180,14 +180,14 @@ export function CognitoGroups({
 				<SpaceBetween size="m">
 					{error && <Alert type="error">{error}</Alert>}
 					{mode === "create" ? (
-						<>
+						<SpaceBetween size="m">
 							<Field label="Group name" value={name} onChange={setName} />
 							<Field
 								label="Description"
 								value={description}
 								onChange={setDescription}
 							/>
-						</>
+						</SpaceBetween>
 					) : (
 						<div>Delete {name} from this pool?</div>
 					)}

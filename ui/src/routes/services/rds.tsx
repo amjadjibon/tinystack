@@ -210,11 +210,11 @@ function RDSWorkspace({
 							onDeleted={deleted}
 						/>
 					) : (
-						<>
+						<SpaceBetween size="l">
 							<Header variant="h1">{detail.DBInstanceIdentifier}</Header>
 							<DatabaseStatus status={detail.DBInstanceStatus} />
 							<Box>Engine: {detail.Engine}</Box>
-						</>
+						</SpaceBetween>
 					)
 				) : (
 					!poll.loading &&

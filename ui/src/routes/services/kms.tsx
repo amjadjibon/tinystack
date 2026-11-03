@@ -147,7 +147,7 @@ function KMSWorkspace({
 					onChanged={changed}
 				/>
 			) : (
-				<>
+				<SpaceBetween size="l">
 					<Header
 						actions={
 							<Button
@@ -181,7 +181,7 @@ function KMSWorkspace({
 							},
 						]}
 					/>
-				</>
+				</SpaceBetween>
 			)}
 			{!!action && (
 				<KMSDialog
@@ -655,7 +655,7 @@ function KMSDialog({
 					</FormField>
 				)}
 				{create && (
-					<>
+					<SpaceBetween size="m">
 						<Choice
 							label="Key spec"
 							value={spec}
@@ -674,10 +674,10 @@ function KMSDialog({
 						<Alert type="info">
 							Keys are created in a single Region with KMS-generated material.
 						</Alert>
-					</>
+					</SpaceBetween>
 				)}
 				{action === "Schedule key deletion" && (
-					<>
+					<SpaceBetween size="m">
 						<Alert type="warning">
 							Deletion permanently removes the key after the waiting period.
 							Data encrypted with it will become inaccessible.
@@ -688,7 +688,7 @@ function KMSDialog({
 							values={Array.from({ length: 24 }, (_, i) => String(i + 7))}
 							onChange={setDays}
 						/>
-					</>
+					</SpaceBetween>
 				)}
 				{action === "Cancel key deletion" && (
 					<Alert type="info">

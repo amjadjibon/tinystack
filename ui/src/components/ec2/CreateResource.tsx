@@ -252,7 +252,7 @@ export function CreateResource({
 					/>
 				)}
 				{scope.section === "subnets" && (
-					<>
+					<SpaceBetween size="l">
 						<Field
 							label="Availability Zone (optional)"
 							value={zone}
@@ -265,7 +265,7 @@ export function CreateResource({
 						>
 							Auto-assign public IPv4 addresses
 						</Checkbox>
-					</>
+					</SpaceBetween>
 				)}
 				{scope.section === "groups" && (
 					<Field
@@ -275,7 +275,7 @@ export function CreateResource({
 					/>
 				)}
 				{scope.section === "nat" && (
-					<>
+					<SpaceBetween size="l">
 						<Choice
 							label="Subnet"
 							value={subnet}
@@ -308,10 +308,10 @@ export function CreateResource({
 								onChange={setAllocation}
 							/>
 						)}
-					</>
+					</SpaceBetween>
 				)}
 				{scope.section === "endpoints" && (
-					<>
+					<SpaceBetween size="l">
 						<Choice
 							label="Endpoint type"
 							value={endpointType}
@@ -335,7 +335,7 @@ export function CreateResource({
 								onChange={setRouteIds}
 							/>
 						) : (
-							<>
+							<SpaceBetween size="l">
 								<Choices
 									label="Subnets"
 									value={subnetIds}
@@ -354,7 +354,7 @@ export function CreateResource({
 								>
 									Enable private DNS
 								</Checkbox>
-							</>
+							</SpaceBetween>
 						)}
 						<Field
 							label="Endpoint policy (JSON, optional)"
@@ -363,10 +363,10 @@ export function CreateResource({
 							multiline
 							description="Leave empty for the default policy. Endpoint policies are stored as metadata."
 						/>
-					</>
+					</SpaceBetween>
 				)}
 				{scope.section === "keys" && (
-					<>
+					<SpaceBetween size="l">
 						<Checkbox
 							checked={importKey}
 							onChange={({ detail }) => setImportKey(detail.checked)}
@@ -381,7 +381,7 @@ export function CreateResource({
 								multiline
 							/>
 						) : (
-							<>
+							<SpaceBetween size="l">
 								<Choice
 									label="Key type"
 									value={keyType}
@@ -395,9 +395,9 @@ export function CreateResource({
 									The private key is returned once after creation. Save it
 									before closing the result.
 								</Alert>
-							</>
+							</SpaceBetween>
 						)}
-					</>
+					</SpaceBetween>
 				)}
 				<Field
 					label="Tags (JSON)"

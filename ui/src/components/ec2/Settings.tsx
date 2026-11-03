@@ -185,7 +185,7 @@ export function Settings({
 			<SpaceBetween size="l">
 				<ChoiceStatus {...choices} />
 				{section === "vpcs" && (
-					<>
+					<SpaceBetween size="l">
 						<ChoiceStatus {...dns} />
 						<Checkbox
 							checked={dnsSupport}
@@ -199,7 +199,7 @@ export function Settings({
 						>
 							Enable DNS hostnames
 						</Checkbox>
-					</>
+					</SpaceBetween>
 				)}
 				{section === "subnets" && (
 					<Checkbox
@@ -245,7 +245,7 @@ export function Settings({
 						/>
 					))}
 				{section === "endpoints" && (
-					<>
+					<SpaceBetween size="l">
 						{text(row, "VpcEndpointType") === "Gateway" ? (
 							<Choices
 								label="Route tables"
@@ -259,7 +259,7 @@ export function Settings({
 								)}
 							/>
 						) : (
-							<>
+							<SpaceBetween size="l">
 								<Choices
 									label="Subnets"
 									value={subnetIds}
@@ -288,7 +288,7 @@ export function Settings({
 								>
 									Enable private DNS
 								</Checkbox>
-							</>
+							</SpaceBetween>
 						)}
 						<Checkbox
 							checked={reset}
@@ -304,7 +304,7 @@ export function Settings({
 								onChange={setPolicy}
 							/>
 						)}
-					</>
+					</SpaceBetween>
 				)}
 			</SpaceBetween>
 		</ActionDialog>

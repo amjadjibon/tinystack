@@ -158,7 +158,7 @@ export function MemoryDBUsers({
 							</Checkbox>
 						)}
 						{showAuth && (
-							<>
+							<SpaceBetween size="m">
 								<Pick
 									label="Authentication type"
 									value={auth}
@@ -190,7 +190,7 @@ export function MemoryDBUsers({
 											}
 										/>
 									))}
-							</>
+							</SpaceBetween>
 						)}
 					</SpaceBetween>
 				</ActionDialog>

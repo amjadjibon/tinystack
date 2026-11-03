@@ -257,7 +257,7 @@ function RuleForm({
 					]}
 				/>
 				{protocol !== "-1" && (
-					<>
+					<SpaceBetween size="l">
 						<Field
 							label={protocol.startsWith("icmp") ? "ICMP type" : "From port"}
 							value={from}
@@ -268,7 +268,7 @@ function RuleForm({
 							value={to}
 							onChange={setTo}
 						/>
-					</>
+					</SpaceBetween>
 				)}
 				<Choice
 					label={egress ? "Destination type" : "Source type"}

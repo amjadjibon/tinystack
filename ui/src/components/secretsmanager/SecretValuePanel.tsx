@@ -115,7 +115,7 @@ export function SecretValuePanel({
 				/>
 				{error && <Alert type="error">{error}</Alert>}
 				{value ? (
-					<>
+					<SpaceBetween size="m">
 						<Box>
 							Version ID: {value.VersionId} ·{" "}
 							{value.VersionStages?.join(", ") || "No staging labels"}
@@ -140,9 +140,9 @@ export function SecretValuePanel({
 								copyErrorText="Could not copy secret value"
 							/>
 						</SpaceBetween>
-					</>
+					</SpaceBetween>
 				) : (
-					<>
+					<SpaceBetween size="m">
 						<Box>
 							Secret values are hidden. Retrieve a value explicitly to display
 							it here.
@@ -171,7 +171,7 @@ export function SecretValuePanel({
 							Retrieve secret value
 						</Button>
 						{busy && <Button onClick={clear}>Cancel retrieval</Button>}
-					</>
+					</SpaceBetween>
 				)}
 			</SpaceBetween>
 			{editing && (

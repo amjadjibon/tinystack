@@ -37,7 +37,7 @@ export function LambdaSettings({
 				/>
 			</FormField>
 			{!image && (
-				<>
+				<SpaceBetween size="l">
 					<FormField label="Runtime">
 						<Select
 							selectedOption={{ value: value.runtime, label: value.runtime }}
@@ -57,7 +57,7 @@ export function LambdaSettings({
 							onChange={({ detail }) => set({ handler: detail.value })}
 						/>
 					</FormField>
-				</>
+				</SpaceBetween>
 			)}
 			<FormField
 				label="Execution role"

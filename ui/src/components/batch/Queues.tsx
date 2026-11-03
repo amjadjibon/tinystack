@@ -100,7 +100,7 @@ export function Queues({
 					]}
 				/>
 			) : q ? (
-				<>
+				<SpaceBetween size="m">
 					<Buttons>
 						<Action onClick={() => navigate({ href: list })}>Job queues</Action>
 						<Action onClick={poll.reload}>Refresh</Action>
@@ -142,7 +142,7 @@ export function Queues({
 							/>
 						}
 					/>
-				</>
+				</SpaceBetween>
 			) : (
 				!poll.loading && (
 					<Alert>Job queue not found in this account and Region.</Alert>

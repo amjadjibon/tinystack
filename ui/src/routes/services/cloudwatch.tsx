@@ -249,7 +249,7 @@ function WatchWorkspace({
 											filteringPlaceholder={`Find ${title.toLowerCase()}`}
 										/>
 										{section === "alarms" && (
-											<>
+											<SpaceBetween direction="horizontal" size="xs">
 												<Select
 													selectedOption={{
 														value: state,
@@ -278,7 +278,7 @@ function WatchWorkspace({
 														setKind(detail.selectedOption.value ?? "")
 													}
 												/>
-											</>
+											</SpaceBetween>
 										)}
 									</SpaceBetween>
 								}

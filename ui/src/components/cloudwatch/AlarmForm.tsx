@@ -280,7 +280,7 @@ export function AlarmForm({
 								/>
 							</FormField>
 						) : (
-							<>
+							<SpaceBetween size="m">
 								<ColumnLayout columns={2}>
 									{field("Namespace", namespace, setNamespace)}
 									{field("Metric name", metricName, setMetricName)}
@@ -306,7 +306,7 @@ export function AlarmForm({
 										"10, 20, 30, or a multiple of 60",
 									)}
 								</ColumnLayout>
-							</>
+							</SpaceBetween>
 						)}
 						<ColumnLayout columns={2}>
 							{optionField(

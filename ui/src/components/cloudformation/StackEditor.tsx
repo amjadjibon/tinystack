@@ -196,7 +196,7 @@ function Editor({
 					</Checkbox>
 				)}
 				{!previous && (
-					<>
+					<SpaceBetween size="m">
 						<FormField label="Template body (JSON or YAML)">
 							<Textarea
 								disabled={loading}
@@ -230,14 +230,14 @@ function Editor({
 								}}
 							/>
 						</FormField>
-					</>
+					</SpaceBetween>
 				)}
 				<Button loading={loading} onClick={inspect}>
 					Validate and inspect template
 				</Button>
 				{error && <Alert type="error">{error}</Alert>}
 				{summary && (
-					<>
+					<SpaceBetween size="m">
 						{(summary.Parameters ?? []).map((p) => (
 							<FormField
 								key={p.ParameterKey}
@@ -310,7 +310,7 @@ function Editor({
 								I acknowledge {c}
 							</Checkbox>
 						))}
-					</>
+					</SpaceBetween>
 				)}
 				<ConsoleTags
 					tags={tags}

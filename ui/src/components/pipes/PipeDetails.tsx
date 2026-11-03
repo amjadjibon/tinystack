@@ -58,7 +58,7 @@ export function PipeDetails({
 				{poll.error && <Alert type="error">{poll.error}</Alert>}
 				{!p && <Box>Loading pipe…</Box>}
 				{p && (
-					<>
+					<SpaceBetween size="m">
 						<Container header={<Header variant="h2">Configuration</Header>}>
 							<ColumnLayout columns={2} variant="text-grid">
 								{facts.map(([label, value]) => (
@@ -119,7 +119,7 @@ export function PipeDetails({
 						<ExpandableSection headerText="Raw JSON">
 							<CodeBlock text={JSON.stringify(p, null, 2)} />
 						</ExpandableSection>
-					</>
+					</SpaceBetween>
 				)}
 			</SpaceBetween>
 		</Modal>

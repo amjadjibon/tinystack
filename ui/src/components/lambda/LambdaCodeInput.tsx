@@ -37,7 +37,7 @@ export function LambdaCodeInput({
 					/>
 				</FormField>
 			) : (
-				<>
+				<SpaceBetween size="l">
 					<FormField label="Code source">
 						<RadioGroup
 							value={value.source}
@@ -72,7 +72,7 @@ export function LambdaCodeInput({
 							/>
 						</FormField>
 					) : (
-						<>
+						<SpaceBetween size="l">
 							<FormField
 								label="S3 bucket"
 								description="The package is copied from this bucket in the selected account and Region."
@@ -106,9 +106,9 @@ export function LambdaCodeInput({
 									onChange={({ detail }) => set({ version: detail.value })}
 								/>
 							</FormField>
-						</>
+						</SpaceBetween>
 					)}
-				</>
+				</SpaceBetween>
 			)}
 		</SpaceBetween>
 	);

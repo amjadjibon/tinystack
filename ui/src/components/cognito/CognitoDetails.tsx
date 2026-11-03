@@ -256,7 +256,7 @@ function UserDetail({
 				{user.loading ? (
 					"Loading user"
 				) : (
-					<>
+					<SpaceBetween size="m">
 						<div>
 							Status: {user.data?.UserStatus ?? "—"} ·{" "}
 							{user.data?.Enabled ? "Enabled" : "Disabled"}
@@ -264,7 +264,7 @@ function UserDetail({
 						<CodeBlock
 							text={JSON.stringify(user.data?.UserAttributes ?? [], null, 2)}
 						/>
-					</>
+					</SpaceBetween>
 				)}
 				<SpaceBetween direction="horizontal" size="xs">
 					<Button

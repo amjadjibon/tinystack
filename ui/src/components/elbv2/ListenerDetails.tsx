@@ -68,7 +68,7 @@ export function ListenerDetails({
 		>
 			<SpaceBetween size="l">
 				{secure && (
-					<>
+					<SpaceBetween size="l">
 						{certs.error && <Alert type="error">{certs.error}</Alert>}
 						<Rows
 							title="Certificates"
@@ -108,7 +108,7 @@ export function ListenerDetails({
 								},
 							]}
 						/>
-					</>
+					</SpaceBetween>
 				)}
 				<Rules
 					scope={scope}

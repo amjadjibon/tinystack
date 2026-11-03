@@ -186,7 +186,7 @@ function Workspace({
 					]}
 				/>
 			) : c ? (
-				<>
+				<SpaceBetween size="m">
 					<Buttons>
 						<Action onClick={() => navigate({ href: kafkaHref(scope) })}>
 							Clusters
@@ -264,7 +264,7 @@ function Workspace({
 							},
 						]}
 					/>
-				</>
+				</SpaceBetween>
 			) : (
 				!poll.loading && (
 					<Alert>Cluster not found in this account and Region.</Alert>

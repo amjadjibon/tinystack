@@ -57,7 +57,7 @@ export function ActionFields({
 				/>
 			)}
 			{form.type === "fixed-response" && (
-				<>
+				<SpaceBetween size="m">
 					<Text
 						label="Response status code"
 						value={form.fixedStatus}
@@ -82,10 +82,10 @@ export function ActionFields({
 							onChange={({ detail }) => onChange({ fixedBody: detail.value })}
 						/>
 					</FormField>
-				</>
+				</SpaceBetween>
 			)}
 			{form.type === "redirect" && (
-				<>
+				<SpaceBetween size="m">
 					<Pick
 						label="Redirect status"
 						value={form.redirectCode}
@@ -118,7 +118,7 @@ export function ActionFields({
 						value={form.redirectQuery}
 						onChange={(redirectQuery) => onChange({ redirectQuery })}
 					/>
-				</>
+				</SpaceBetween>
 			)}
 		</SpaceBetween>
 	);

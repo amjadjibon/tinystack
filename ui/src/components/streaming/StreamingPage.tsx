@@ -162,7 +162,7 @@ function Workspace({
 				</Alert>
 			)}
 			{!scope.stream ? (
-				<>
+				<SpaceBetween size="l">
 					<Header
 						variant="h1"
 						actions={
@@ -189,9 +189,9 @@ function Workspace({
 						}}
 						emptyText="Create a stream to begin sending records in this account and Region."
 					/>
-				</>
+				</SpaceBetween>
 			) : (
-				<>
+				<SpaceBetween size="l">
 					<Header
 						variant="h1"
 						actions={
@@ -213,12 +213,12 @@ function Workspace({
 						{scope.stream}
 					</Header>
 					{d && (
-						<>
+						<SpaceBetween size="l">
 							<Container header={<Header variant="h2">Configuration</Header>}>
 								<CodeBlock text={JSON.stringify(d, null, 2)} />
 							</Container>
 							{service === "kinesis" ? (
-								<>
+								<SpaceBetween size="l">
 									<SpaceBetween direction="horizontal" size="s">
 										{["shards", "retention", "encryption", "monitoring"].map(
 											(kind) => (
@@ -256,7 +256,7 @@ function Workspace({
 											},
 										]}
 									/>
-								</>
+								</SpaceBetween>
 							) : (
 								<Button
 									disabled={!enabled}
@@ -316,9 +316,9 @@ function Workspace({
 									service === "kinesis" || d.DeliveryStreamType === "DirectPut"
 								}
 							/>
-						</>
+						</SpaceBetween>
 					)}
-				</>
+				</SpaceBetween>
 			)}
 			{(dialog === "create" || (dialog === "destination" && d)) && (
 				<StreamForm

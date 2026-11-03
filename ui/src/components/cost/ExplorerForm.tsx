@@ -200,7 +200,7 @@ export function ExplorerForm({
 					disabled={category && !!resource}
 				/>
 				{category ? (
-					<>
+					<SpaceBetween size="m">
 						<CostJSON
 							label="Rules (JSON)"
 							value={rules}
@@ -212,10 +212,10 @@ export function ExplorerForm({
 							value={fallback}
 							onChange={setFallback}
 						/>
-					</>
+					</SpaceBetween>
 				) : monitor ? (
 					!resource && (
-						<>
+						<SpaceBetween size="m">
 							<CostSelect
 								label="Monitor type"
 								value={type}
@@ -244,10 +244,10 @@ export function ExplorerForm({
 									description="CUSTOM: LINKED_ACCOUNT or Tags with 1–10 values, or CostCategories with one value. TAG/COST_CATEGORY dimensional: only the corresponding key."
 								/>
 							)}
-						</>
+						</SpaceBetween>
 					)
 				) : (
-					<>
+					<SpaceBetween size="m">
 						<CostSelect
 							label="Frequency"
 							value={frequency}
@@ -271,7 +271,7 @@ export function ExplorerForm({
 							onChange={setAddresses}
 							description="IMMEDIATE uses SNS topic ARNs; DAILY and WEEKLY use email addresses."
 						/>
-					</>
+					</SpaceBetween>
 				)}
 			</SpaceBetween>
 		</ActionDialog>

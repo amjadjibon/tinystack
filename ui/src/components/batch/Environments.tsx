@@ -105,7 +105,7 @@ export function Environments({
 					]}
 				/>
 			) : c ? (
-				<>
+				<SpaceBetween size="m">
 					<Buttons>
 						<Action onClick={() => navigate({ href: list })}>
 							Compute environments
@@ -143,7 +143,7 @@ export function Environments({
 							/>
 						}
 					/>
-				</>
+				</SpaceBetween>
 			) : (
 				!poll.loading && (
 					<Alert>

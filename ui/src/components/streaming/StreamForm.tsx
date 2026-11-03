@@ -147,7 +147,7 @@ export function StreamForm({
 					<Field label="Stream name" value={name} onChange={setName} />
 				)}
 				{service === "kinesis" ? (
-					<>
+					<SpaceBetween size="m">
 						<Choice
 							label="Capacity mode"
 							value={mode}
@@ -162,11 +162,11 @@ export function StreamForm({
 								onChange={setShards}
 							/>
 						)}
-					</>
+					</SpaceBetween>
 				) : (
-					<>
+					<SpaceBetween size="m">
 						{!editing && (
-							<>
+							<SpaceBetween size="m">
 								<Choice
 									label="Source"
 									value={source}
@@ -174,7 +174,7 @@ export function StreamForm({
 									options={["DirectPut", "KinesisStreamAsSource"]}
 								/>
 								{source === "KinesisStreamAsSource" && (
-									<>
+									<SpaceBetween size="m">
 										<Field
 											label="Kinesis stream ARN"
 											value={sourceArn}
@@ -185,9 +185,9 @@ export function StreamForm({
 											value={sourceRole}
 											onChange={setSourceRole}
 										/>
-									</>
+									</SpaceBetween>
 								)}
-							</>
+							</SpaceBetween>
 						)}
 						<Field label="S3 bucket ARN" value={bucket} onChange={setBucket} />
 						<Field
@@ -214,7 +214,7 @@ export function StreamForm({
 							onChange={setCompression}
 							options={["UNCOMPRESSED", "GZIP"]}
 						/>
-					</>
+					</SpaceBetween>
 				)}
 			</SpaceBetween>
 		</ActionDialog>

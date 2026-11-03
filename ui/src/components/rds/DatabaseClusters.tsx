@@ -274,7 +274,7 @@ export function DatabaseClusters({
 				]}
 			/>
 			{cluster && (
-				<>
+				<SpaceBetween size="l">
 					<KeyValuePairs
 						items={[
 							{ label: "ARN", value: cluster.DBClusterArn },
@@ -296,7 +296,7 @@ export function DatabaseClusters({
 						tags={cluster.TagList}
 						onChanged={changed}
 					/>
-				</>
+				</SpaceBetween>
 			)}
 			{action && (
 				<RDSOperationDialog

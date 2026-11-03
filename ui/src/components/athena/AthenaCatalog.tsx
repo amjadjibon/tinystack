@@ -172,7 +172,7 @@ export function AthenaCatalog({
 				]}
 			/>
 			{metadata.data && (
-				<>
+				<SpaceBetween size="m">
 					<Rows
 						title="Columns"
 						items={metadata.data.Columns ?? []}
@@ -193,7 +193,7 @@ export function AthenaCatalog({
 							2,
 						)}
 					</pre>
-				</>
+				</SpaceBetween>
 			)}
 		</SpaceBetween>
 	);

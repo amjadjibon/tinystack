@@ -101,7 +101,7 @@ export function CreateEnvironmentDialog({
 					onChange={(serviceRole) => set({ serviceRole })}
 				/>
 				{managed ? (
-					<>
+					<SpaceBetween size="m">
 						<Alert>
 							Managed environments describe EC2 capacity. No instances start;
 							Docker mode runs jobs within the maximum vCPUs.
@@ -144,7 +144,7 @@ export function CreateEnvironmentDialog({
 								.map((g) => ({ value: g.GroupId ?? "", label: g.GroupName }))}
 							onChange={(groups) => set({ groups })}
 						/>
-					</>
+					</SpaceBetween>
 				) : (
 					<Alert>
 						An unmanaged environment is capacity you bring. It has no
@@ -202,7 +202,7 @@ export function EditEnvironmentDialog({
 					onChange={(state) => setF((v) => ({ ...v, state }))}
 				/>
 				{r ? (
-					<>
+					<SpaceBetween size="m">
 						<CapacityFields
 							value={f}
 							onChange={(patch) => setF((v) => ({ ...v, ...patch }))}
@@ -211,7 +211,7 @@ export function EditEnvironmentDialog({
 							Desired vCPUs can grow but not shrink, and must stay between the
 							minimum and maximum.
 						</Alert>
-					</>
+					</SpaceBetween>
 				) : (
 					<Alert>An unmanaged environment has no capacity to change.</Alert>
 				)}

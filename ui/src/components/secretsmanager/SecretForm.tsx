@@ -252,7 +252,7 @@ export function SecretForm({
 					{...{ scope, format, setFormat, text, setText, rows, setRows }}
 				/>
 				{create && (
-					<>
+					<SpaceBetween size="l">
 						<FormField label="Secret name">
 							<Input
 								ariaLabel="Secret name"
@@ -284,7 +284,7 @@ export function SecretForm({
 								onChange={({ detail }) => setTags(detail.value)}
 							/>
 						</FormField>
-					</>
+					</SpaceBetween>
 				)}
 			</SpaceBetween>
 		</ActionDialog>

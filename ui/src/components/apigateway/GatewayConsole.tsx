@@ -407,7 +407,7 @@ function ApiWorkspace({
 							: "API configuration is unavailable."}
 					</Box>
 				) : (
-					<>
+					<SpaceBetween size="l">
 						{section === "routes" || section === "apis" ? (
 							http ? (
 								<HttpRoutes
@@ -504,7 +504,7 @@ function ApiWorkspace({
 								</Alert>
 							</ActionDialog>
 						)}
-					</>
+					</SpaceBetween>
 				)}
 			</SpaceBetween>
 		</ContentLayout>

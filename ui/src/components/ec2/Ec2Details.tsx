@@ -104,7 +104,7 @@ export function Ec2Details({
 							onClick={poll.reload}
 						/>
 						{scope.section === "instances" && (
-							<>
+							<SpaceBetween direction="horizontal" size="xs">
 								<Button
 									disabled={!enabled || state !== "stopped"}
 									onClick={() => setDialog("StartInstances")}
@@ -129,7 +129,7 @@ export function Ec2Details({
 								>
 									Manage IAM profile
 								</Button>
-							</>
+							</SpaceBetween>
 						)}
 						{["vpcs", "subnets", "gateways", "addresses", "endpoints"].includes(
 							scope.section,
@@ -199,7 +199,7 @@ export function Ec2Details({
 						: "Resource not found in this account and Region."}
 				</Box>
 			) : (
-				<>
+				<SpaceBetween size="l">
 					<Container header={<Header variant="h2">Details</Header>}>
 						<KeyValuePairs
 							columns={3}
@@ -504,7 +504,7 @@ export function Ec2Details({
 							</p>
 						</ActionDialog>
 					)}
-				</>
+				</SpaceBetween>
 			)}
 		</SpaceBetween>
 	);

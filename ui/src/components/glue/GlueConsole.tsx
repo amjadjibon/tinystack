@@ -42,7 +42,7 @@ export function GlueConsole({
 								}}
 							/>
 							{database && (
-								<>
+								<SpaceBetween size="m">
 									<Alert type="info">
 										Database: {database}{" "}
 										<Button
@@ -64,10 +64,10 @@ export function GlueConsole({
 										onChanged={onChanged}
 										onSelect={(r) => setTable(r.Name)}
 									/>
-								</>
+								</SpaceBetween>
 							)}
 							{database && table && (
-								<>
+								<SpaceBetween size="m">
 									<Alert type="info">
 										Table: {table}{" "}
 										<Button
@@ -85,7 +85,7 @@ export function GlueConsole({
 										enabled={enabled}
 										onChanged={onChanged}
 									/>
-								</>
+								</SpaceBetween>
 							)}
 						</SpaceBetween>
 					),

@@ -76,7 +76,7 @@ export function TrailDetails({
 				<SpaceBetween size="m">
 					{poll.error && <Alert type="error">{poll.error}</Alert>}
 					{poll.data && (
-						<>
+						<SpaceBetween size="m">
 							<Box>
 								Logging: {poll.data.status.IsLogging ? "Started" : "Stopped"}
 							</Box>
@@ -128,7 +128,7 @@ export function TrailDetails({
 										: []),
 								]}
 							/>
-						</>
+						</SpaceBetween>
 					)}
 				</SpaceBetween>
 			</Modal>

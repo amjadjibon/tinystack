@@ -238,7 +238,7 @@ export function SQSQueueForm({
 									</FormField>
 								))}
 								{fifo && (
-									<>
+									<SpaceBetween size="l">
 										<Checkbox
 											checked={dedup}
 											onChange={({ detail }) => setDedup(detail.checked)}
@@ -253,7 +253,7 @@ export function SQSQueueForm({
 										>
 											High throughput FIFO (deduplicate per message group)
 										</Checkbox>
-									</>
+									</SpaceBetween>
 								)}
 							</SpaceBetween>
 						</Container>
@@ -269,7 +269,7 @@ export function SQSQueueForm({
 									]}
 								/>
 								{encryption === "kms" && (
-									<>
+									<SpaceBetween size="l">
 										<FormField label="KMS key">
 											<Input
 												ariaLabel="KMS key"
@@ -288,7 +288,7 @@ export function SQSQueueForm({
 												onChange={({ detail }) => setReuse(detail.value)}
 											/>
 										</FormField>
-									</>
+									</SpaceBetween>
 								)}
 								<Box color="text-body-secondary">
 									TinyStack stores messages as sent. SSE settings are retained;

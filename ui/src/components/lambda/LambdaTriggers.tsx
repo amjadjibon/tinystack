@@ -419,7 +419,7 @@ export function LambdaTriggers({
 										the trigger.
 									</Alert>
 								) : (
-									<>
+									<SpaceBetween size="l">
 										<Alert type="info">
 											An enabled mapping polls its source and invokes your
 											function. SQS messages are deleted after successful
@@ -474,7 +474,7 @@ export function LambdaTriggers({
 												onChange={({ detail }) => setFilters(detail.value)}
 											/>
 										</FormField>
-									</>
+									</SpaceBetween>
 								)}
 							</SpaceBetween>
 						)}

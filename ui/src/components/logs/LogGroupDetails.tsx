@@ -130,7 +130,7 @@ export function LogGroupDetails({
 								onClick={() => refresh("")}
 							/>
 							{scope.stream ? (
-								<>
+								<SpaceBetween direction="horizontal" size="xs">
 									<Button
 										disabled={!enabled}
 										onClick={() => {
@@ -147,9 +147,9 @@ export function LogGroupDetails({
 									>
 										Delete stream
 									</Button>
-								</>
+								</SpaceBetween>
 							) : (
-								<>
+								<SpaceBetween direction="horizontal" size="xs">
 									<Button
 										disabled={!enabled || !data.LogGroupName}
 										onClick={() => {
@@ -165,7 +165,7 @@ export function LogGroupDetails({
 									>
 										Delete group
 									</Button>
-								</>
+								</SpaceBetween>
 							)}
 						</SpaceBetween>
 					}
@@ -192,7 +192,7 @@ export function LogGroupDetails({
 						enabled={enabled && !!data.LogGroupName}
 					/>
 				) : (
-					<>
+					<SpaceBetween size="l">
 						<Container header={<Header variant="h2">Log group details</Header>}>
 							<KeyValuePairs
 								columns={3}
@@ -361,7 +361,7 @@ export function LogGroupDetails({
 								},
 							]}
 						/>
-					</>
+					</SpaceBetween>
 				)}
 				{dialog && (
 					<ActionDialog

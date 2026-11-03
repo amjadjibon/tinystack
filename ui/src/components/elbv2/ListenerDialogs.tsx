@@ -104,7 +104,7 @@ export function ListenerDialog({
 					onChange={(port) => set({ port })}
 				/>
 				{secure && (
-					<>
+					<SpaceBetween size="m">
 						<Text
 							label="Certificate ARN"
 							value={form.certificate}
@@ -118,7 +118,7 @@ export function ListenerDialog({
 							options={suitable.map((p) => ({ value: p.Name ?? "" }))}
 							onChange={(sslPolicy) => set({ sslPolicy })}
 						/>
-					</>
+					</SpaceBetween>
 				)}
 				<ActionFields
 					form={form.action}

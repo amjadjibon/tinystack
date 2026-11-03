@@ -179,7 +179,7 @@ export function ResourceDialog({
 					/>
 				)}
 				{edit.kind === "namespace" && !edit.editing && (
-					<>
+					<SpaceBetween size="m">
 						<Choice
 							label="Namespace type"
 							value={type}
@@ -187,7 +187,7 @@ export function ResourceDialog({
 							onChange={setType}
 						/>
 						{type === "DNS_PRIVATE" && (
-							<>
+							<SpaceBetween size="m">
 								<Choice
 									label="VPC"
 									value={vpc}
@@ -201,12 +201,12 @@ export function ResourceDialog({
 									</Alert>
 								)}
 								{vpcs.error && <Alert type="error">{vpcs.error}</Alert>}
-							</>
+							</SpaceBetween>
 						)}
-					</>
+					</SpaceBetween>
 				)}
 				{edit.kind === "service" && (
-					<>
+					<SpaceBetween size="m">
 						{!edit.editing && edit.namespace?.Type !== "HTTP" && (
 							<Choice
 								label="Service discovery"
@@ -216,7 +216,7 @@ export function ResourceDialog({
 							/>
 						)}
 						{(edit.editing ? !!edit.service?.DnsConfig : dns === "DNS") && (
-							<>
+							<SpaceBetween size="m">
 								{!edit.editing && (
 									<Choice
 										label="Routing policy"
@@ -273,7 +273,7 @@ export function ResourceDialog({
 										Add DNS record
 									</Button>
 								)}
-							</>
+							</SpaceBetween>
 						)}
 						{!edit.editing && (
 							<Choice
@@ -283,7 +283,7 @@ export function ResourceDialog({
 								onChange={setHealth}
 							/>
 						)}
-					</>
+					</SpaceBetween>
 				)}
 				{edit.kind === "instance" && (
 					<Pairs

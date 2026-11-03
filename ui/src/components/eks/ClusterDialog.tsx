@@ -108,7 +108,7 @@ export function ClusterDialog({
 					/>
 				)}
 				{!cluster && (
-					<>
+					<SpaceBetween size="m">
 						<Field
 							label="Cluster role ARN"
 							value={f.role}
@@ -140,10 +140,10 @@ export function ClusterDialog({
 							value={f.tags}
 							onChange={(tags) => set({ tags })}
 						/>
-					</>
+					</SpaceBetween>
 				)}
 				{!versionOnly && (
-					<>
+					<SpaceBetween size="m">
 						<Checkbox
 							checked={f.public}
 							onChange={({ detail }) => set({ public: detail.checked })}
@@ -169,7 +169,7 @@ export function ClusterDialog({
 							options={["CONFIG_MAP", "API_AND_CONFIG_MAP", "API"]}
 							onChange={(auth) => set({ auth })}
 						/>
-					</>
+					</SpaceBetween>
 				)}
 			</SpaceBetween>
 		</ActionDialog>

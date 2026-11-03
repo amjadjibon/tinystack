@@ -140,7 +140,7 @@ export function SESSend({
 					onChange={(mode) => patch({ mode: mode as SendForm["mode"] })}
 				/>
 				{form.mode === "simple" ? (
-					<>
+					<SpaceBetween size="m">
 						<Text
 							label="Subject"
 							value={form.subject}
@@ -165,9 +165,9 @@ export function SESSend({
 								onChange={({ detail }) => patch({ html: detail.value })}
 							/>
 						</FormField>
-					</>
+					</SpaceBetween>
 				) : (
-					<>
+					<SpaceBetween size="m">
 						<Pick
 							label="Template"
 							value={form.template}
@@ -191,7 +191,7 @@ export function SESSend({
 								onChange={({ detail }) => patch({ data: detail.value })}
 							/>
 						</FormField>
-					</>
+					</SpaceBetween>
 				)}
 				<Box color="text-body-secondary" fontSize="body-s">
 					Quotas are reported but not enforced.

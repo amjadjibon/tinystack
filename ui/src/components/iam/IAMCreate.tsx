@@ -507,7 +507,7 @@ export function IAMCreate({
 					{kind === "user" && permissionMode === "groups" ? (
 						<Box>User groups: {groups.join(", ") || "None"}</Box>
 					) : kind === "user" && permissionMode === "copy" ? (
-						<>
+						<SpaceBetween size="s">
 							<Box>Copy from: {copyUser[0] ?? "None"}</Box>
 							<Box>
 								Group memberships:{" "}
@@ -529,7 +529,7 @@ export function IAMCreate({
 									", ",
 								) || "None"}
 							</Box>
-						</>
+						</SpaceBetween>
 					) : (
 						<Box>
 							Policies:{" "}
@@ -539,7 +539,7 @@ export function IAMCreate({
 						</Box>
 					)}
 					{kind === "role" && (
-						<>
+						<SpaceBetween size="s">
 							<Box>Trust policy</Box>
 							<pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
 								{trust}
@@ -550,7 +550,7 @@ export function IAMCreate({
 									{profile ? values.Name || "Same name as role" : "Not created"}
 								</Box>
 							)}
-						</>
+						</SpaceBetween>
 					)}
 				</SpaceBetween>
 			</Container>
@@ -652,10 +652,10 @@ export function IAMCreate({
 								The resource was created. Retry to finish the remaining steps.
 							</Alert>
 						) : (
-							<>
+							<SpaceBetween size="l">
 								{details}
 								{kind === "group" && (
-									<>
+									<SpaceBetween size="l">
 										<IAMSelection
 											disabled={busy}
 											title="Users"
@@ -664,9 +664,9 @@ export function IAMCreate({
 											onChange={setUsers}
 										/>
 										{permissions}
-									</>
+									</SpaceBetween>
 								)}
-							</>
+							</SpaceBetween>
 						)}
 					</SpaceBetween>
 				</Form>

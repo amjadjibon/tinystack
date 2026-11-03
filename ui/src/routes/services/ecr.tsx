@@ -131,7 +131,7 @@ function Workspace({
 				]}
 			/>
 			{repo && (
-				<>
+				<SpaceBetween size="l">
 					<Header
 						actions={
 							<Buttons>
@@ -166,7 +166,7 @@ function Workspace({
 						scope={scope}
 						repo={repo}
 					/>
-				</>
+				</SpaceBetween>
 			)}
 			{!!dialog && (
 				<ActionDialog
@@ -242,7 +242,7 @@ function Workspace({
 								Force deletion, including all images
 							</Checkbox>
 						) : (
-							<>
+							<SpaceBetween size="m">
 								{dialog === "Create repository" && (
 									<Field
 										label="Repository name"
@@ -270,7 +270,7 @@ function Workspace({
 										onChange={setEncryption}
 									/>
 								)}
-							</>
+							</SpaceBetween>
 						)}
 					</SpaceBetween>
 				</ActionDialog>

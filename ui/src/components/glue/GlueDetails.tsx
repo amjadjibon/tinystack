@@ -67,7 +67,7 @@ export function GlueDetails({
 				{poll.error && <Alert type="error">{poll.error}</Alert>}
 				{!p && <Box>Loading…</Box>}
 				{p && (
-					<>
+					<SpaceBetween size="m">
 						{Object.entries(p)
 							.filter(([k]) =>
 								[
@@ -177,7 +177,7 @@ export function GlueDetails({
 							/>
 						)}
 						<CodeBlock text={JSON.stringify(p, null, 2)} />
-					</>
+					</SpaceBetween>
 				)}
 			</SpaceBetween>
 		</Modal>

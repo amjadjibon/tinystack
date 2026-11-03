@@ -133,7 +133,7 @@ export function Definitions({
 					]}
 				/>
 			) : d ? (
-				<>
+				<SpaceBetween size="m">
 					<Buttons>
 						<Action onClick={() => navigate({ href: list })}>
 							Job definitions
@@ -175,7 +175,7 @@ export function Definitions({
 							/>
 						}
 					/>
-				</>
+				</SpaceBetween>
 			) : (
 				!poll.loading && (
 					<Alert>Job definition not found in this account and Region.</Alert>

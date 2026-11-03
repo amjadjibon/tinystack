@@ -1,4 +1,4 @@
-import { stringMap } from "./consoleActions.ts";
+import { stringMap, words } from "./consoleActions.ts";
 export type MQScope = { account: string; region: string };
 export type Broker = {
 	BrokerId: string;
@@ -27,7 +27,6 @@ export type Broker = {
 };
 export const pending = (state?: string) =>
 	!!state && state.endsWith("_IN_PROGRESS");
-export const words = (s: string) => s.split(/[\s,]+/).filter(Boolean);
 export function mqHref(s: MQScope, broker = "", tab = "overview") {
 	const p = new URLSearchParams({ ...s, tab });
 	if (broker) p.set("broker", broker);

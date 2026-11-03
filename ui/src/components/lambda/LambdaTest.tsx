@@ -179,16 +179,16 @@ export function LambdaTest({
 							]}
 						/>
 						{result.Payload && (
-							<>
+							<SpaceBetween size="l">
 								<Header variant="h3">Response</Header>
 								<CodeBlock text={pretty(decodeText(result.Payload))} />
-							</>
+							</SpaceBetween>
 						)}
 						{result.LogResult && (
-							<>
+							<SpaceBetween size="l">
 								<Header variant="h3">Log output (last 4 KiB)</Header>
 								<CodeBlock text={decodeText(result.LogResult)} />
-							</>
+							</SpaceBetween>
 						)}
 					</SpaceBetween>
 				</Container>

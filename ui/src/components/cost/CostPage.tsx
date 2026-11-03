@@ -136,7 +136,7 @@ export function CostPage({
 					)}
 					{service === "costexplorer" &&
 					(section === "usage" || section === "data") ? (
-						<>
+						<SpaceBetween size="l">
 							<Tabs
 								activeTabId={section}
 								onChange={({ detail }) => {
@@ -151,7 +151,7 @@ export function CostPage({
 							) : (
 								<CostData key={account} />
 							)}
-						</>
+						</SpaceBetween>
 					) : (
 						<CostRecords
 							key={`${service}/${account}/${section}/${name}/${enabled}`}

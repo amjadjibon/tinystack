@@ -1,4 +1,4 @@
-import { integer, stringMap } from "./consoleActions.ts";
+import { integer, stringMap, words } from "./consoleActions.ts";
 export type KafkaScope = { account: string; region: string };
 export type Cluster = {
 	ClusterArn: string;
@@ -48,7 +48,6 @@ export const pending = (state?: string) =>
 		"MAINTENANCE",
 		"REBOOTING_BROKER",
 	].includes(state ?? "");
-export const words = (text: string) => text.split(/[\s,]+/).filter(Boolean);
 export function kafkaHref(s: KafkaScope, cluster = "", tab = "overview") {
 	const params = new URLSearchParams({ ...s, tab });
 	if (cluster) params.set("cluster", cluster);

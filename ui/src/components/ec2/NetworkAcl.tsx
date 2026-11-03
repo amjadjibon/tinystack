@@ -293,7 +293,7 @@ function AclForm({
 					]}
 				/>
 				{protocol !== "-1" && (
-					<>
+					<SpaceBetween size="l">
 						<Field
 							label={protocol === "1" ? "ICMP type" : "From port"}
 							value={from}
@@ -304,7 +304,7 @@ function AclForm({
 							value={to}
 							onChange={setTo}
 						/>
-					</>
+					</SpaceBetween>
 				)}
 				<Field
 					label={entry.Egress ? "Destination IPv4 CIDR" : "Source IPv4 CIDR"}

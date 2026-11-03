@@ -603,7 +603,7 @@ function ClusterDetails({
 								Force service deletion
 							</Checkbox>
 						) : (
-							<>
+							<SpaceBetween size="m">
 								{dialog === "Create service" && (
 									<Field label="Service name" value={name} onChange={setName} />
 								)}
@@ -627,7 +627,7 @@ function ClusterDetails({
 									value={count}
 									onChange={setCount}
 								/>
-							</>
+							</SpaceBetween>
 						)}
 					</SpaceBetween>
 				</ActionDialog>

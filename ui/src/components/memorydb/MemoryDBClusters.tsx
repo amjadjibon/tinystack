@@ -319,7 +319,7 @@ export function MemoryDBClusters({
 							onChange={(acl) => set({ acl })}
 						/>
 						{dialog === "create" && (
-							<>
+							<SpaceBetween size="m">
 								<Pick
 									label="Subnet group"
 									value={form.subnetGroup}
@@ -342,7 +342,7 @@ export function MemoryDBClusters({
 									value={form.port}
 									onChange={(port) => set({ port })}
 								/>
-							</>
+							</SpaceBetween>
 						)}
 					</SpaceBetween>
 				</ActionDialog>

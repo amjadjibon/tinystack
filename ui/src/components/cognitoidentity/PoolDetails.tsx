@@ -95,7 +95,7 @@ export function PoolDetails({
 				{pool?.IdentityPoolName ?? id}
 			</Header>
 			{pool && roles && (
-				<>
+				<SpaceBetween size="l">
 					<Container header={<Header variant="h2">Configuration</Header>}>
 						<ColumnLayout columns={3} variant="text-grid">
 							<Field label="Name">{pool.IdentityPoolName}</Field>
@@ -213,7 +213,7 @@ export function PoolDetails({
 								: []),
 						]}
 					/>
-				</>
+				</SpaceBetween>
 			)}
 			{dialog === "edit" && pool && (
 				<PoolDialog

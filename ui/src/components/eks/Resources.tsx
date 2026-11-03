@@ -9,7 +9,7 @@ import {
 	Rows,
 } from "#/components/containers/Controls";
 import { PickMany } from "#/components/memorydb/Fields";
-import { stringMap } from "#/lib/consoleActions";
+import { stringMap, words } from "#/lib/consoleActions";
 import { eksCall, eksList } from "#/lib/eks";
 import {
 	type Cluster,
@@ -18,7 +18,6 @@ import {
 	resourceName,
 	role,
 	scaling,
-	words,
 } from "#/lib/eksHelpers";
 import { unixTime } from "#/lib/format";
 import { usePoll } from "#/lib/usePoll";
@@ -351,7 +350,7 @@ function ResourceDialog({
 				{op === "delete" ? (
 					<Alert type="warning">Delete {name} permanently.</Alert>
 				) : (
-					<>
+					<SpaceBetween size="m">
 						{!!catalog.error && <Alert type="error">{catalog.error}</Alert>}
 						{op === "create" &&
 							(kind === "addons" ? (
@@ -370,7 +369,7 @@ function ResourceDialog({
 							))}
 						{op === "create" &&
 							(kind === "nodegroups" || kind === "fargate") && (
-								<>
+								<SpaceBetween size="m">
 									<Field
 										label={
 											kind === "fargate"
@@ -394,10 +393,10 @@ function ResourceDialog({
 										value={f.labels}
 										onChange={(labels) => set({ labels })}
 									/>
-								</>
+								</SpaceBetween>
 							)}
 						{kind === "nodegroups" && (
-							<>
+							<SpaceBetween size="m">
 								<Field
 									label="Minimum size"
 									value={f.min}
@@ -414,7 +413,7 @@ function ResourceDialog({
 									onChange={(desired) => set({ desired })}
 								/>
 								{op === "create" && (
-									<>
+									<SpaceBetween size="m">
 										<Field
 											label="Instance types (comma separated)"
 											value={f.instances}
@@ -431,9 +430,9 @@ function ResourceDialog({
 											value={f.ami}
 											onChange={(ami) => set({ ami })}
 										/>
-									</>
+									</SpaceBetween>
 								)}
-							</>
+							</SpaceBetween>
 						)}
 						{kind === "fargate" && (
 							<Field
@@ -443,7 +442,7 @@ function ResourceDialog({
 							/>
 						)}
 						{kind === "access" && (
-							<>
+							<SpaceBetween size="m">
 								<Field
 									label="Kubernetes groups (comma separated)"
 									value={f.groups}
@@ -454,9 +453,9 @@ function ResourceDialog({
 									value={f.username}
 									onChange={(username) => set({ username })}
 								/>
-							</>
+							</SpaceBetween>
 						)}
-					</>
+					</SpaceBetween>
 				)}
 			</SpaceBetween>
 		</ActionDialog>

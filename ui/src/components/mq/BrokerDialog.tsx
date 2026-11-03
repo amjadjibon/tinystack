@@ -8,6 +8,7 @@ import {
 import { useState } from "react";
 import { ActionDialog } from "#/components/ActionDialog";
 import { Action, Choice, Field } from "#/components/containers/Controls";
+import { words } from "#/lib/consoleActions";
 import { mqCall } from "#/lib/mq";
 import {
 	type Broker,
@@ -16,7 +17,6 @@ import {
 	type InitialUser,
 	type MQScope,
 	versions,
-	words,
 } from "#/lib/mqHelpers";
 export function BrokerDialog({
 	scope,
@@ -85,7 +85,7 @@ export function BrokerDialog({
 		>
 			<SpaceBetween size="m">
 				{!b && (
-					<>
+					<SpaceBetween size="m">
 						<Field
 							label="Broker name"
 							value={f.name}
@@ -107,7 +107,7 @@ export function BrokerDialog({
 								]);
 							}}
 						/>
-					</>
+					</SpaceBetween>
 				)}
 				<Choice
 					label="Engine version"
@@ -126,7 +126,7 @@ export function BrokerDialog({
 					onChange={(v) => set("instance", v)}
 				/>
 				{!b && (
-					<>
+					<SpaceBetween size="m">
 						<Choice
 							label="Deployment mode"
 							value={f.mode}
@@ -151,7 +151,7 @@ export function BrokerDialog({
 								onChange={(v) => set("subnets", v)}
 							/>
 						)}
-					</>
+					</SpaceBetween>
 				)}
 				{!f.public && (
 					<Field
@@ -200,7 +200,7 @@ export function BrokerDialog({
 					RabbitMQ major/minor upgrades require recreation.
 				</Alert>
 				{!b && (
-					<>
+					<SpaceBetween size="m">
 						<Field
 							label="Tags (JSON string map)"
 							value={f.tags}
@@ -229,7 +229,7 @@ export function BrokerDialog({
 									/>
 								</FormField>
 								{docker && f.engine === "ACTIVEMQ" && (
-									<>
+									<SpaceBetween size="s">
 										<Checkbox
 											checked={u.ConsoleAccess ?? false}
 											onChange={({ detail }) =>
@@ -243,7 +243,7 @@ export function BrokerDialog({
 											value={u.Groups?.join(", ") ?? ""}
 											onChange={(v) => user(i, { Groups: words(v) })}
 										/>
-									</>
+									</SpaceBetween>
 								)}
 								{users.length > 1 && (
 									<Action
@@ -267,7 +267,7 @@ export function BrokerDialog({
 								Add user
 							</Action>
 						)}
-					</>
+					</SpaceBetween>
 				)}
 			</SpaceBetween>
 		</ActionDialog>

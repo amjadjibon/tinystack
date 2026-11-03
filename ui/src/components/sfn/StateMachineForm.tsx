@@ -258,7 +258,7 @@ export function StateMachineForm({
 					/>
 				</FormField>
 				{level !== "OFF" && (
-					<>
+					<SpaceBetween size="l">
 						<FormField
 							label="CloudWatch Logs group"
 							constraintText="Log group ARN ending in :*. The log group must exist for execution logs to be written."
@@ -289,7 +289,7 @@ export function StateMachineForm({
 						>
 							Include execution input and output in logs
 						</Checkbox>
-					</>
+					</SpaceBetween>
 				)}
 				{!machine && (
 					<FormField label="Tags (JSON)" description="Object of string values.">

@@ -164,7 +164,7 @@ export function BudgetForm({
 		>
 			<SpaceBetween size="m">
 				{!resource && (
-					<>
+					<SpaceBetween size="m">
 						<CostInput label="Budget name" value={name} onChange={setName} />
 						<CostSelect
 							label="Budget type"
@@ -178,12 +178,12 @@ export function BudgetForm({
 							options={["MONTHLY", "QUARTERLY", "ANNUALLY"]}
 							onChange={setTime}
 						/>
-					</>
+					</SpaceBetween>
 				)}
 				<CostInput label="Limit amount" value={amount} onChange={setAmount} />
 				<CostInput label="Limit unit" value={unit} onChange={setUnit} />
 				{!resource && (
-					<>
+					<SpaceBetween size="m">
 						<Checkbox
 							checked={notify}
 							onChange={({ detail }) => setNotify(detail.checked)}
@@ -193,7 +193,7 @@ export function BudgetForm({
 						{notify && (
 							<BudgetNotificationFields value={values} onChange={setValues} />
 						)}
-					</>
+					</SpaceBetween>
 				)}
 			</SpaceBetween>
 		</ActionDialog>

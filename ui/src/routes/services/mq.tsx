@@ -177,7 +177,7 @@ function Workspace({
 					]}
 				/>
 			) : c ? (
-				<>
+				<SpaceBetween size="m">
 					<Buttons>
 						<Action onClick={() => navigate({ href: mqHref(scope) })}>
 							Brokers
@@ -260,7 +260,7 @@ function Workspace({
 							},
 						]}
 					/>
-				</>
+				</SpaceBetween>
 			) : (
 				!poll.loading && (
 					<Alert>Broker not found in this account and Region.</Alert>

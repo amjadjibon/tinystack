@@ -111,7 +111,7 @@ function Workspace({
 			)}
 			{pools.error && <Alert type="error">{pools.error}</Alert>}
 			{scope.id ? (
-				<>
+				<SpaceBetween size="l">
 					<Header
 						actions={
 							<SpaceBetween direction="horizontal" size="s">
@@ -180,7 +180,7 @@ function Workspace({
 							},
 						]}
 					/>
-				</>
+				</SpaceBetween>
 			) : (
 				<ResourceTable
 					title="Cognito user pools"

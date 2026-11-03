@@ -56,7 +56,7 @@ function IdentityDetails({
 				{poll.error && <Alert type="error">{poll.error}</Alert>}
 				{!i && !poll.error && <Box>Loading identity…</Box>}
 				{i && (
-					<>
+					<SpaceBetween size="m">
 						<ColumnLayout columns={2} variant="text-grid">
 							<Field label="Identity ID">
 								<Copy text={i.IdentityId} label="Identity ID" />
@@ -71,7 +71,7 @@ function IdentityDetails({
 						<ExpandableSection headerText="Raw JSON">
 							<CodeBlock text={JSON.stringify(i, null, 2)} />
 						</ExpandableSection>
-					</>
+					</SpaceBetween>
 				)}
 			</SpaceBetween>
 		</Modal>

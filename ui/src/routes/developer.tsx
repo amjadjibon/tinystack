@@ -166,7 +166,7 @@ function Developer() {
 						<SpaceBetween size="l">
 							{faults.error && <Alert type="error">{faults.error}</Alert>}
 							{!faults.error?.includes("administrator access required") && (
-								<>
+								<SpaceBetween size="l">
 									<Table
 										loading={faults.loading}
 										loadingText="Loading fault rules"
@@ -268,7 +268,7 @@ function Developer() {
 											Add rule
 										</Button>
 									</SpaceBetween>
-								</>
+								</SpaceBetween>
 							)}
 							{effects.error && <Alert type="error">{effects.error}</Alert>}
 							{!effects.error?.includes("administrator access required") && (
@@ -323,7 +323,7 @@ function Developer() {
 						<SpaceBetween size="m">
 							{init.error && <Alert type="error">{init.error}</Alert>}
 							{!init.error?.includes("administrator access required") && (
-								<>
+								<SpaceBetween size="m">
 									{Object.entries(init.data?.stages ?? {}).map(
 										([stage, state]) => (
 											<div key={stage}>
@@ -389,7 +389,7 @@ function Developer() {
 											},
 										]}
 									/>
-								</>
+								</SpaceBetween>
 							)}
 						</SpaceBetween>
 					</Container>

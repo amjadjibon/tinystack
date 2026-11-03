@@ -156,7 +156,7 @@ export function ViewVersionDialog({
 				{poll.error && <Alert type="error">{poll.error}</Alert>}
 				{!v && !poll.error && <Box>Loading version…</Box>}
 				{v && content && (
-					<>
+					<SpaceBetween size="m">
 						<Details
 							items={[
 								["Version", String(v.VersionNumber)],
@@ -172,7 +172,7 @@ export function ViewVersionDialog({
 							</Alert>
 						)}
 						<CodeBlock text={content.text ?? v.Content ?? ""} />
-					</>
+					</SpaceBetween>
 				)}
 			</SpaceBetween>
 		</Modal>

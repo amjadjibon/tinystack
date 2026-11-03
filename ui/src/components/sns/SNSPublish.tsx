@@ -132,7 +132,7 @@ export function SNSPublish({
 							/>
 						</FormField>
 						{fifo && (
-							<>
+							<SpaceBetween size="l">
 								<FormField label="Message group ID">
 									<Input
 										ariaLabel="SNS message group ID"
@@ -154,7 +154,7 @@ export function SNSPublish({
 										onChange={({ detail }) => setDedup(detail.value)}
 									/>
 								</FormField>
-							</>
+							</SpaceBetween>
 						)}
 						<FormField
 							label="Message attributes — optional"

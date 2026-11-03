@@ -109,7 +109,7 @@ export function DatabaseActions({
 				>
 					<SpaceBetween size="m">
 						{action === "Delete" ? (
-							<>
+							<SpaceBetween size="m">
 								<Alert type="warning">
 									This permanently deletes the database and its SQL data.
 								</Alert>
@@ -129,9 +129,9 @@ export function DatabaseActions({
 										/>
 									</FormField>
 								)}
-							</>
+							</SpaceBetween>
 						) : action === "Modify" ? (
-							<>
+							<SpaceBetween size="m">
 								<Alert type="info">
 									Changes apply immediately. Class changes affect metadata only.
 									Leave the password blank to retain it.
@@ -165,7 +165,7 @@ export function DatabaseActions({
 								>
 									Show passwords
 								</Checkbox>
-							</>
+							</SpaceBetween>
 						) : (
 							<Alert type="info">
 								{action} database {id}? Existing SQL connections may be

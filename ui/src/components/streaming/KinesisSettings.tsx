@@ -128,7 +128,7 @@ export function KinesisSettings({
 					/>
 				)}
 				{kind === "encryption" && (
-					<>
+					<SpaceBetween size="m">
 						<Choice
 							label="Encryption"
 							value={encryption}
@@ -136,7 +136,7 @@ export function KinesisSettings({
 							options={["NONE", "KMS"]}
 						/>
 						<Field label="KMS key ID" value={key} onChange={setKey} />
-					</>
+					</SpaceBetween>
 				)}
 				{kind === "monitoring" &&
 					metrics.map((metric) => (

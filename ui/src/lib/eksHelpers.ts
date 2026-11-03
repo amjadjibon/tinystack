@@ -20,7 +20,6 @@ export type Cluster = {
 	Logging?: { ClusterLogging?: { Types?: string[]; Enabled?: boolean }[] };
 	AccessConfig?: { AuthenticationMode?: string };
 };
-export const words = (text: string) => text.split(/[\s,]+/).filter(Boolean);
 export function scaling(min: string, max: string, desired: string) {
 	const MinSize = integer(min, "Minimum size", 0, 1000),
 		MaxSize = integer(max, "Maximum size", 1, 1000),

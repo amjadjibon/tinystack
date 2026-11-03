@@ -41,7 +41,7 @@ function HealthFields({
 	return (
 		<SpaceBetween size="m">
 			{!lambda && (
-				<>
+				<SpaceBetween size="m">
 					<Pick
 						label="Health check protocol"
 						value={form.healthProtocol}
@@ -55,10 +55,10 @@ function HealthFields({
 						constraint="traffic-port or 1 to 65535."
 						onChange={(healthPort) => set({ healthPort })}
 					/>
-				</>
+				</SpaceBetween>
 			)}
 			{web && (
-				<>
+				<SpaceBetween size="m">
 					<Text
 						label="Health check path"
 						value={form.healthPath}
@@ -70,7 +70,7 @@ function HealthFields({
 						constraint="For example 200 or 200-299."
 						onChange={(matcher) => set({ matcher })}
 					/>
-				</>
+				</SpaceBetween>
 			)}
 			<Text
 				label="Interval (seconds)"
@@ -151,7 +151,7 @@ export function CreateTargetGroupDialog({
 					onChange={(targetType) => set({ targetType, healthPath: "/" })}
 				/>
 				{!lambda && (
-					<>
+					<SpaceBetween size="m">
 						<Pick
 							label="Protocol"
 							value={form.protocol}
@@ -179,7 +179,7 @@ export function CreateTargetGroupDialog({
 							}))}
 							onChange={(vpc) => set({ vpc })}
 						/>
-					</>
+					</SpaceBetween>
 				)}
 				<HealthFields form={form} set={set} />
 				<TagRowsField rows={form.tags} onChange={(tags) => set({ tags })} />

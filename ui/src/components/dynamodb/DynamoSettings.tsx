@@ -359,7 +359,7 @@ export function DynamoSettings({
 								]}
 							/>
 							{mode === "PROVISIONED" && (
-								<>
+								<SpaceBetween size="l">
 									<SpaceBetween direction="horizontal" size="s">
 										<FormField label="Read capacity units">
 											<Input
@@ -413,7 +413,7 @@ export function DynamoSettings({
 											</SpaceBetween>
 										</Container>
 									))}
-								</>
+								</SpaceBetween>
 							)}
 						</SpaceBetween>
 					)}

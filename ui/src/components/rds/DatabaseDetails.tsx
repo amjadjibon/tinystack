@@ -117,7 +117,7 @@ export function DatabaseDetails({
 				<SpaceBetween size="m">
 					<Alert type="info">{runtimeNote}</Alert>
 					{d.DBInstanceStatus === "available" && port > 0 ? (
-						<>
+						<SpaceBetween size="m">
 							<Header variant="h3" actions={copy(command)}>
 								Command (prompts for password)
 							</Header>
@@ -130,7 +130,7 @@ export function DatabaseDetails({
 								Replace &lt;PASSWORD&gt; with a URL-encoded password when
 								connecting.
 							</Alert>
-						</>
+						</SpaceBetween>
 					) : (
 						<Alert type="warning">
 							Connection commands are available once the database is available.

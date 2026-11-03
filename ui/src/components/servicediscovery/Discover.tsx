@@ -78,7 +78,7 @@ export function Discover({
 			</Button>
 			{error && <Alert type="error">{error}</Alert>}
 			{result && (
-				<>
+				<SpaceBetween size="m">
 					<p>Instances revision: {result.InstancesRevision ?? "-"}</p>
 					<Rows
 						title="Discovery results"
@@ -100,7 +100,7 @@ export function Discover({
 							},
 						]}
 					/>
-				</>
+				</SpaceBetween>
 			)}
 		</SpaceBetween>
 	);

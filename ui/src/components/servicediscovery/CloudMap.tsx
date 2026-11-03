@@ -111,7 +111,7 @@ export function CloudMap({
 				]}
 			/>
 			{namespace && (
-				<>
+				<SpaceBetween size="l">
 					<Button onClick={() => setNamespace(undefined)}>
 						Close namespace
 					</Button>
@@ -126,7 +126,7 @@ export function CloudMap({
 							onOperation: setOperation,
 						}}
 					/>
-				</>
+				</SpaceBetween>
 			)}
 			<Discover
 				key={`${namespace?.Id ?? ""}`}
@@ -393,7 +393,7 @@ function NamespaceServices({
 				]}
 			/>
 			{service && (
-				<>
+				<SpaceBetween size="m">
 					<Button onClick={() => setService(undefined)}>Close service</Button>
 					<Instances
 						key={service.Id}
@@ -405,7 +405,7 @@ function NamespaceServices({
 							onOperation,
 						}}
 					/>
-				</>
+				</SpaceBetween>
 			)}
 			{edit && (
 				<ResourceDialog
