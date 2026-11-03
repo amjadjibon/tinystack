@@ -318,7 +318,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		t.Fatal(capabilities)
 	}
 	for service, operation := range listOperations {
-		if capabilities[service] != true {
+		if !consolePage(capabilities, service) {
 			t.Fatal(service, capabilities)
 		}
 
@@ -348,38 +348,12 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		req.Header.Set("Origin", "https://evil.example")
 		consoleResponse(t, srv, req, http.StatusForbidden)
 	}
+	signingNames := capabilities["signing_names"].(map[string]any)
 	verified := verifyingServer(t)
 	// listInputs are the inputs of the list operations that need one.
 	listInputs := map[string]map[string]any{"ListIdentityPools": {"MaxResults": 60}}
-	for _, tc := range []struct{ service, signing, operation string }{
-		{"eventbridge", "events", "ListEventBuses"},
-		{"logs", "logs", "DescribeLogGroups"},
-		{"cloudwatch", "monitoring", "ListMetrics"},
-		{"apigateway", "apigateway", "GetRestApis"},
-		{"apigatewayv2", "apigateway", "GetApis"},
-		{"sfn", "states", "ListStateMachines"},
-		{"ec2", "ec2", "DescribeVpcs"},
-		{"secretsmanager", "secretsmanager", "ListSecrets"},
-		{"ssm", "ssm", "DescribeParameters"},
-		{"acm", "acm", "ListCertificates"},
-		{"rds", "rds", "DescribeDBInstances"},
-		{"cloudformation", "cloudformation", "ListStacks"},
-		{"kms", "kms", "ListKeys"},
-		{"kinesis", "kinesis", "ListStreams"},
-		{"firehose", "firehose", "ListDeliveryStreams"},
-		{"ecr", "ecr", "DescribeRepositories"},
-		{"ecs", "ecs", "ListClusters"},
-		{"memorydb", "memorydb", "DescribeClusters"},
-		{"sesv2", "ses", "ListEmailIdentities"},
-		{"scheduler", "scheduler", "ListScheduleGroups"},
-		{"pipes", "pipes", "ListPipes"},
-		{"athena", "athena", "ListWorkGroups"},
-		{"elbv2", "elasticloadbalancing", "DescribeLoadBalancers"},
-		{"cognitoidentity", "cognito-identity", "ListIdentityPools"},
-		{"efs", "elasticfilesystem", "DescribeFileSystems"},
-		{"appconfig", "appconfig", "ListApplications"},
-		{"appsync", "appsync", "ListGraphqlApis"},
-	} {
+	for service, operation := range listOperations {
+		tc := struct{ service, signing, operation string }{service, signingNames[service].(string), operation}
 		for _, mode := range []string{"unsigned", "wrong-service", "wrong-region", "wrong-account", "valid"} {
 			account, region, signing := "111111111111", "us-east-1", tc.signing
 			if mode == "wrong-account" {

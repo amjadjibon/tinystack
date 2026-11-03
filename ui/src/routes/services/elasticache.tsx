@@ -39,7 +39,7 @@ function ElastiCachePage() {
 		{ canWrite, account, region, capabilities, inventory } = useScope();
 	const scope = { account, region, section: search.section };
 	const enabled =
-		!!capabilities.data?.elasticache &&
+		!!capabilities.data?.pages.elasticache &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -84,7 +84,7 @@ function ElastiCachePage() {
 							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
-					{capabilities.data && !capabilities.data.elasticache && (
+					{capabilities.data && !capabilities.data.pages.elasticache && (
 						<Alert type="warning">
 							ElastiCache is not enabled on this server.
 						</Alert>

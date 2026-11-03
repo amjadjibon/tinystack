@@ -59,7 +59,7 @@ function EventPage() {
 	const [notice, setNotice] = useState({ scope: "", message: "" });
 	const scopeId = `${context.account}/${context.region}`;
 	const enabled =
-		!!context.capabilities.data?.eventbridge &&
+		!!context.capabilities.data?.pages.eventbridge &&
 		context.canWrite &&
 		/^\d{12}$/.test(context.account) &&
 		validRegion(context.region);
@@ -188,7 +188,7 @@ function EventWorkspace({
 							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
-					{capabilities.data && !capabilities.data.eventbridge && (
+					{capabilities.data && !capabilities.data.pages.eventbridge && (
 						<Alert type="warning">
 							EventBridge is not enabled on this server.
 						</Alert>

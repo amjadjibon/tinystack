@@ -46,7 +46,7 @@ function CloudFormationPage() {
 		{ canWrite, account, region, capabilities, inventory } = useScope();
 	const scope: CfnScope = { account, region, stack: search.stack || undefined };
 	const enabled =
-		!!capabilities.data?.cloudformation &&
+		!!capabilities.data?.pages.cloudformation &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -80,7 +80,7 @@ function CloudFormationPage() {
 							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
-					{capabilities.data && !capabilities.data.cloudformation && (
+					{capabilities.data && !capabilities.data.pages.cloudformation && (
 						<Alert type="warning">
 							CloudFormation is not enabled on this server.
 						</Alert>

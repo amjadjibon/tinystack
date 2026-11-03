@@ -21,7 +21,7 @@ func TestConsoleSchedulerLifecycle(t *testing.T) {
 
 	var capabilities map[string]any
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
-		capabilities["scheduler"] != true {
+		!consolePage(capabilities, "scheduler") {
 		t.Fatalf("capabilities = %+v", capabilities)
 	}
 

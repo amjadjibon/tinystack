@@ -78,7 +78,7 @@ export function Ec2Console({
 		setNotice(undefined);
 	}, [account, region]);
 	const enabled =
-		!!capabilities.data?.ec2 &&
+		!!capabilities.data?.pages.ec2 &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -189,7 +189,7 @@ export function Ec2Console({
 							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
-					{capabilities.data && !capabilities.data.ec2 && (
+					{capabilities.data && !capabilities.data.pages.ec2 && (
 						<Alert type="warning">EC2 is not enabled on this server.</Alert>
 					)}
 					<Workspace

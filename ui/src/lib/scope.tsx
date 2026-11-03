@@ -13,14 +13,9 @@ import { usePoll } from "./usePoll";
 
 type Scope = { account: string; region: string };
 const storageKey = "tinystack-console-scope";
-const globalServices = new Set([
-	"iam",
-	"route53",
-	"cloudfront",
-	"budgets",
-	"costexplorer",
-	"costandusagereportservice",
-]);
+// Scope-independent search parameters. Every other one names a resource of
+// the old scope, so switching scope returns to the service's list.
+const keptParams = new Set(["account", "region", "section", "tab"]);
 
 function rememberedScope(): Scope {
 	try {
@@ -63,7 +58,8 @@ function useScopeState() {
 		"";
 	const name = location.pathname.split("/")[2];
 	const global =
-		location.pathname.startsWith("/services/") && globalServices.has(name);
+		location.pathname.startsWith("/services/") &&
+		!!capabilities.data?.global_services.includes(name);
 	const canWrite =
 		!!capabilities.data &&
 		(session
@@ -94,45 +90,8 @@ function useScopeState() {
 		params.set("account", scope.account);
 		if (!global) params.set("region", scope.region);
 		else params.delete("region");
-		// A resource belongs to the old scope. Return to its list when switching.
-		for (const key of [
-			"name",
-			"type",
-			"create",
-			"bucket",
-			"secret",
-			"zone",
-			"database",
-			"queue",
-			"topic",
-			"subscription",
-			"function",
-			"table",
-			"bus",
-			"rule",
-			"group",
-			"stream",
-			"alarm",
-			"dashboard",
-			"machine",
-			"id",
-			"distribution",
-			"pool",
-			"filesystem",
-			"application",
-			"environment",
-			"profile",
-			"appsyncApi",
-			"vpc",
-			"execution",
-			"apiId",
-			"resourceId",
-			"method",
-			"prefix",
-			"key",
-			"version",
-		])
-			params.delete(key);
+		for (const key of [...params.keys()])
+			if (!keptParams.has(key)) params.delete(key);
 		const pathname = location.pathname.endsWith("/resource")
 			? location.pathname.slice(0, -9)
 			: location.pathname;

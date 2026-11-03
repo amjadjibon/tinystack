@@ -22,7 +22,7 @@ func TestConsoleSESv2Lifecycle(t *testing.T) {
 
 	var capabilities map[string]any
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
-		capabilities["sesv2"] != true {
+		!consolePage(capabilities, "sesv2") {
 		t.Fatal(capabilities)
 	}
 

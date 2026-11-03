@@ -25,7 +25,7 @@ export const Route = createFileRoute("/services/scheduler")({
 function SchedulerPage() {
 	const { canWrite, account, region, capabilities, inventory } = useScope();
 	const enabled =
-		!!capabilities.data?.scheduler &&
+		!!capabilities.data?.pages.scheduler &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -47,7 +47,7 @@ function SchedulerPage() {
 					{(capabilities.error || inventory.error) && (
 						<Alert type="error">{capabilities.error || inventory.error}</Alert>
 					)}
-					{capabilities.data && !capabilities.data.scheduler && (
+					{capabilities.data && !capabilities.data.pages.scheduler && (
 						<Alert type="warning">
 							EventBridge Scheduler is not enabled on this server.
 						</Alert>

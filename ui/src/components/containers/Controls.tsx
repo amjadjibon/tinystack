@@ -90,7 +90,7 @@ export function ContainerLayout({
 					{capabilities.error && (
 						<Alert type="error">{capabilities.error}</Alert>
 					)}
-					{capabilities.data && !capabilities.data[service] && (
+					{capabilities.data && !capabilities.data.pages[service] && (
 						<Alert type="warning">This service is not enabled.</Alert>
 					)}
 					{!canWrite && (

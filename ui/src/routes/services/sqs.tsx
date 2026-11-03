@@ -58,7 +58,7 @@ function SQSPage() {
 	// biome-ignore lint/correctness/useExhaustiveDependencies: notices belong to the selected account and Region.
 	useEffect(() => setNotice(""), [account, region]);
 	const enabled =
-		!!capabilities.data?.sqs &&
+		!!capabilities.data?.pages.sqs &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -127,7 +127,7 @@ function SQSPage() {
 							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
-					{capabilities.data && !capabilities.data.sqs && (
+					{capabilities.data && !capabilities.data.pages.sqs && (
 						<Alert type="warning">SQS is not enabled on this server.</Alert>
 					)}
 					{search.create ? (

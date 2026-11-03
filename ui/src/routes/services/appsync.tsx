@@ -22,7 +22,7 @@ function AppSyncPage() {
 	const scope = { account, region },
 		home = appsyncHref(scope);
 	const enabled =
-		!!capabilities.data?.appsync &&
+		!!capabilities.data?.pages.appsync &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -51,7 +51,7 @@ function AppSyncPage() {
 					{(capabilities.error || inventory.error) && (
 						<Alert type="error">{capabilities.error || inventory.error}</Alert>
 					)}
-					{capabilities.data && !capabilities.data.appsync && (
+					{capabilities.data && !capabilities.data.pages.appsync && (
 						<Alert type="warning">AppSync is not enabled on this server.</Alert>
 					)}
 					{!canWrite && (

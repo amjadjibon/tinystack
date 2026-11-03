@@ -56,7 +56,7 @@ function RDSPage() {
 		section: search.section,
 	};
 	const enabled =
-		!!capabilities.data?.rds &&
+		!!capabilities.data?.pages.rds &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -105,7 +105,7 @@ function RDSPage() {
 							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
-					{capabilities.data && !capabilities.data.rds && (
+					{capabilities.data && !capabilities.data.pages.rds && (
 						<Alert type="warning">RDS is not enabled on this server.</Alert>
 					)}
 					<RDSWorkspace

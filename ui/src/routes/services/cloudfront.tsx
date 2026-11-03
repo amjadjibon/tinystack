@@ -28,7 +28,9 @@ function CloudFrontPage() {
 	const search = Route.useSearch();
 	const { canWrite, account, capabilities, inventory } = useScope();
 	const enabled =
-		!!capabilities.data?.cloudfront && canWrite && /^\d{12}$/.test(account);
+		!!capabilities.data?.pages.cloudfront &&
+		canWrite &&
+		/^\d{12}$/.test(account);
 	const scope = { account };
 	const home = cloudfrontHref(scope);
 	return (
@@ -61,7 +63,7 @@ function CloudFrontPage() {
 					{(capabilities.error || inventory.error) && (
 						<Alert type="error">{capabilities.error || inventory.error}</Alert>
 					)}
-					{capabilities.data && !capabilities.data.cloudfront && (
+					{capabilities.data && !capabilities.data.pages.cloudfront && (
 						<Alert type="warning">
 							CloudFront is not enabled on this server.
 						</Alert>

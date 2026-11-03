@@ -49,7 +49,7 @@ function CloudWatchPage() {
 		[notice, setNotice] = useState({ scope: "", message: "" });
 	const scopeId = `${context.account}/${context.region}`;
 	const enabled =
-		!!context.capabilities.data?.cloudwatch &&
+		!!context.capabilities.data?.pages.cloudwatch &&
 		context.canWrite &&
 		/^\d{12}$/.test(context.account) &&
 		validRegion(context.region);
@@ -178,7 +178,7 @@ function WatchWorkspace({
 							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
-					{capabilities.data && !capabilities.data.cloudwatch && (
+					{capabilities.data && !capabilities.data.pages.cloudwatch && (
 						<Alert type="warning">
 							CloudWatch is not enabled on this server.
 						</Alert>

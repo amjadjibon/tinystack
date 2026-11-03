@@ -17,7 +17,7 @@ export const Route = createFileRoute("/services/servicediscovery")({
 function CloudMapPage() {
 	const { canWrite, account, region, capabilities, inventory } = useScope();
 	const enabled =
-		!!capabilities.data?.servicediscovery &&
+		!!capabilities.data?.pages.servicediscovery &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -39,7 +39,7 @@ function CloudMapPage() {
 					{(capabilities.error || inventory.error) && (
 						<Alert type="error">{capabilities.error || inventory.error}</Alert>
 					)}
-					{capabilities.data && !capabilities.data.servicediscovery && (
+					{capabilities.data && !capabilities.data.pages.servicediscovery && (
 						<Alert type="warning">
 							Cloud Map is not enabled on this server.
 						</Alert>

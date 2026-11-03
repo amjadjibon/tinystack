@@ -144,52 +144,14 @@ export const api = {
 		accounts?: string[];
 		signing_names?: Record<string, string>;
 		region: string;
-		iam: boolean;
-		s3: boolean;
-		sqs: boolean;
-		sns: boolean;
-		lambda: boolean;
-		logs: boolean;
-		dynamodb: boolean;
-		eventbridge: boolean;
-		cloudwatch: boolean;
-		apigateway: boolean;
-		apigatewayv2: boolean;
-		sfn: boolean;
-		ec2: boolean;
-		kms: boolean;
-		secretsmanager: boolean;
-		kinesis: boolean;
-		firehose: boolean;
-		ecr: boolean;
-		ecs: boolean;
+		// pages has an entry for every service a console page calls; it is
+		// true when that service is registered.
+		pages: Record<string, boolean>;
+		// global_services carry no Region in their console scope.
+		global_services: string[];
 		ecs_runtime: string;
-		ssm: boolean;
-		acm: boolean;
-		cloudfront: boolean;
-		efs: boolean;
-		appconfig: boolean;
-		appconfigdata: boolean;
-		appsync: boolean;
-		rds: boolean;
-		elasticache: boolean;
 		elasticache_runtime: string;
-		memorydb: boolean;
 		memorydb_runtime: string;
-		sesv2: boolean;
-		scheduler: boolean;
-		pipes: boolean;
-		cloudtrail: boolean;
-		servicediscovery: boolean;
-		athena: boolean;
-		glue: boolean;
-		cognitoidentity: boolean;
-		elbv2: boolean;
-		route53: boolean;
-		cloudformation: boolean;
-		budgets: boolean;
-		costexplorer: boolean;
-		costandusagereportservice: boolean;
 		requires_signature: boolean;
 		sso?: { login_url: string };
 	}> => (await get("/actions")).json(),

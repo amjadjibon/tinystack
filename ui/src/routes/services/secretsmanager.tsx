@@ -40,7 +40,7 @@ function SecretsManagerPage() {
 	const search = Route.useSearch(),
 		{ canWrite, account, region, inventory, capabilities } = useScope();
 	const enabled =
-		!!capabilities.data?.secretsmanager &&
+		!!capabilities.data?.pages.secretsmanager &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -81,7 +81,7 @@ function SecretsManagerPage() {
 							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
-					{capabilities.data && !capabilities.data.secretsmanager && (
+					{capabilities.data && !capabilities.data.pages.secretsmanager && (
 						<Alert type="warning">
 							Secrets Manager is not enabled on this server.
 						</Alert>

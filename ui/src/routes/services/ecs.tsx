@@ -40,7 +40,7 @@ export const Route = createFileRoute("/services/ecs")({
 function Page() {
 	const s = useScope();
 	const enabled =
-		!!s.capabilities.data?.ecs &&
+		!!s.capabilities.data?.pages.ecs &&
 		s.canWrite &&
 		/^\d{12}$/.test(s.account) &&
 		validRegion(s.region);

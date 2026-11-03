@@ -47,7 +47,7 @@ function SSMPage() {
 	const scope = { account, region, parameter: search.parameter },
 		list = ssmHref({ account, region });
 	const enabled =
-		!!capabilities.data?.ssm &&
+		!!capabilities.data?.pages.ssm &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -71,7 +71,7 @@ function SSMPage() {
 					{capabilities.error && (
 						<Alert type="error">{capabilities.error}</Alert>
 					)}
-					{capabilities.data && !capabilities.data.ssm && (
+					{capabilities.data && !capabilities.data.pages.ssm && (
 						<Alert type="warning">
 							Systems Manager is not enabled on this server.
 						</Alert>

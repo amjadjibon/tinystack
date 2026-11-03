@@ -17,7 +17,7 @@ export const Route = createFileRoute("/services/cloudtrail")({
 function CloudTrailPage() {
 	const { canWrite, account, region, capabilities, inventory } = useScope();
 	const enabled =
-		!!capabilities.data?.cloudtrail &&
+		!!capabilities.data?.pages.cloudtrail &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -39,7 +39,7 @@ function CloudTrailPage() {
 					{(capabilities.error || inventory.error) && (
 						<Alert type="error">{capabilities.error || inventory.error}</Alert>
 					)}
-					{capabilities.data && !capabilities.data.cloudtrail && (
+					{capabilities.data && !capabilities.data.pages.cloudtrail && (
 						<Alert type="warning">
 							CloudTrail is not enabled on this server.
 						</Alert>

@@ -63,7 +63,7 @@ function AppConfigPage() {
 	const search = Route.useSearch();
 	const { canWrite, account, region, capabilities, inventory } = useScope();
 	const enabled =
-		!!capabilities.data?.appconfig &&
+		!!capabilities.data?.pages.appconfig &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -145,7 +145,7 @@ function AppConfigPage() {
 					{(capabilities.error || inventory.error) && (
 						<Alert type="error">{capabilities.error || inventory.error}</Alert>
 					)}
-					{capabilities.data && !capabilities.data.appconfig && (
+					{capabilities.data && !capabilities.data.pages.appconfig && (
 						<Alert type="warning">
 							AppConfig is not enabled on this server.
 						</Alert>

@@ -58,7 +58,7 @@ func TestConsoleLambdaLifecycleAndLogs(t *testing.T) {
 	}
 	var capabilities map[string]any
 	if internal(t, s, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
-		capabilities["lambda"] != true || capabilities["logs"] != true {
+		!consolePage(capabilities, "lambda") || !consolePage(capabilities, "logs") {
 		t.Fatalf("capabilities = %+v", capabilities)
 	}
 

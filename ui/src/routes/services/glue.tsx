@@ -17,7 +17,7 @@ export const Route = createFileRoute("/services/glue")({
 function GluePage() {
 	const { canWrite, account, region, capabilities, inventory } = useScope();
 	const enabled =
-		!!capabilities.data?.glue &&
+		!!capabilities.data?.pages.glue &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -39,7 +39,7 @@ function GluePage() {
 					{(capabilities.error || inventory.error) && (
 						<Alert type="error">{capabilities.error || inventory.error}</Alert>
 					)}
-					{capabilities.data && !capabilities.data.glue && (
+					{capabilities.data && !capabilities.data.pages.glue && (
 						<Alert type="warning">
 							AWS Glue is not enabled on this server.
 						</Alert>

@@ -58,7 +58,7 @@ func TestConsoleSNSLifecycle(t *testing.T) {
 	}
 	var capabilities map[string]any
 	if internal(t, s, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
-		capabilities["sns"] != true {
+		!consolePage(capabilities, "sns") {
 		t.Fatalf("capabilities = %+v", capabilities)
 	}
 

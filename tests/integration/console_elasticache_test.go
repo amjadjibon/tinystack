@@ -17,7 +17,7 @@ func TestConsoleElastiCacheLifecycle(t *testing.T) {
 
 	var capabilities map[string]any
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
-		capabilities["elasticache"] != true || capabilities["elasticache_runtime"] != "records" {
+		!consolePage(capabilities, "elasticache") || capabilities["elasticache_runtime"] != "records" {
 		t.Fatalf("capabilities = %+v", capabilities)
 	}
 

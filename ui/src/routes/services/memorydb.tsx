@@ -33,7 +33,7 @@ export const Route = createFileRoute("/services/memorydb")({
 function MemoryDBPage() {
 	const { canWrite, account, region, capabilities, inventory } = useScope();
 	const enabled =
-		!!capabilities.data?.memorydb &&
+		!!capabilities.data?.pages.memorydb &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -56,7 +56,7 @@ function MemoryDBPage() {
 					{(capabilities.error || inventory.error) && (
 						<Alert type="error">{capabilities.error || inventory.error}</Alert>
 					)}
-					{capabilities.data && !capabilities.data.memorydb && (
+					{capabilities.data && !capabilities.data.pages.memorydb && (
 						<Alert type="warning">
 							MemoryDB is not enabled on this server.
 						</Alert>

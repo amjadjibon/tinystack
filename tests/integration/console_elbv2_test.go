@@ -36,7 +36,7 @@ func TestConsoleELBv2Lifecycle(t *testing.T) {
 
 	var capabilities map[string]any
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
-		capabilities["elbv2"] != true {
+		!consolePage(capabilities, "elbv2") {
 		t.Fatal(capabilities)
 	}
 

@@ -60,7 +60,7 @@ function DynamoPage() {
 	useEffect(() => setNotice(""), [account, region]);
 	const actionable =
 		canWrite && /^\d{12}$/.test(account) && validRegion(region);
-	const enabled = !!capabilities.data?.dynamodb && actionable;
+	const enabled = !!capabilities.data?.pages.dynamodb && actionable;
 	const tables = (inventory.data ?? []).filter(
 		(r) =>
 			r.service === "dynamodb" &&
@@ -140,7 +140,7 @@ function DynamoPage() {
 							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
-					{capabilities.data && !capabilities.data.dynamodb && (
+					{capabilities.data && !capabilities.data.pages.dynamodb && (
 						<Alert type="warning">
 							DynamoDB is not enabled on this server.
 						</Alert>
@@ -189,7 +189,7 @@ function DynamoPage() {
 							resource={tables.find((t) => t.name === search.table)}
 							resources={inventory.data ?? []}
 							enabled={enabled}
-							lambdaEnabled={!!capabilities.data?.lambda && actionable}
+							lambdaEnabled={!!capabilities.data?.pages.lambda && actionable}
 							loading={inventory.loading}
 							initialTab="items"
 							onRefresh={inventory.reload}

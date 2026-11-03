@@ -22,6 +22,12 @@ import (
 
 const consoleActionsPath = "/_tinystack/actions"
 
+// consolePage reports whether the console capabilities enable the dedicated page for a service.
+func consolePage(capabilities map[string]any, service string) bool {
+	pages, _ := capabilities["pages"].(map[string]any)
+	return pages[service] == true
+}
+
 func consoleRequest(t *testing.T, s *httptest.Server, operation, account string, input map[string]any) *http.Request {
 	t.Helper()
 	body, err := json.Marshal(map[string]any{

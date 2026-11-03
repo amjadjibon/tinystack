@@ -32,7 +32,7 @@ func TestConsoleDynamoDBItemsAndIndexes(t *testing.T) {
 		return write(operation, input)
 	}
 	var caps map[string]any
-	if internal(t, srv, http.MethodGet, consoleActionsPath, &caps) != http.StatusOK || caps["dynamodb"] != true {
+	if internal(t, srv, http.MethodGet, consoleActionsPath, &caps) != http.StatusOK || !consolePage(caps, "dynamodb") {
 		t.Fatalf("capabilities = %+v", caps)
 	}
 	created := call("CreateTable", map[string]any{

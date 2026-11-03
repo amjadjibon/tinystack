@@ -46,7 +46,7 @@ export function StreamingPage({
 		service === "kinesis" ? "Kinesis Data Streams" : "Data Firehose";
 	const href = streamHref(service, { account, region });
 	const enabled =
-		!!capabilities.data?.[service] &&
+		!!capabilities.data?.pages[service] &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -68,7 +68,7 @@ export function StreamingPage({
 					{capabilities.error && (
 						<Alert type="error">{capabilities.error}</Alert>
 					)}
-					{capabilities.data && !capabilities.data[service] && (
+					{capabilities.data && !capabilities.data.pages[service] && (
 						<Alert type="warning">
 							This service is not enabled on this server.
 						</Alert>

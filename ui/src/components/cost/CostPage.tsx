@@ -72,7 +72,7 @@ export function CostPage({
 				r.account === account &&
 				(service === "costexplorer" ? r.arn === name : r.name === name),
 		)?.name ?? name;
-	const available = !!capabilities.data?.[service];
+	const available = !!capabilities.data?.pages[service];
 	const enabled = available && canWrite && /^\d{12}$/.test(account);
 	return (
 		<ConsoleLayout

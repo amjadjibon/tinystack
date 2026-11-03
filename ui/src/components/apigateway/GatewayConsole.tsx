@@ -72,7 +72,7 @@ export function GatewayConsole({
 		[notice, setNotice] = useState({ scope: "", message: "" });
 	const scopeId = `${context.account}/${context.region}/${kind}`;
 	const enabled =
-		!!context.capabilities.data?.[kind] &&
+		!!context.capabilities.data?.pages[kind] &&
 		context.canWrite &&
 		/^\d{12}$/.test(context.account) &&
 		validRegion(context.region);
@@ -219,7 +219,7 @@ function Workspace({
 							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
-					{capabilities.data && !capabilities.data[scope.kind] && (
+					{capabilities.data && !capabilities.data.pages[scope.kind] && (
 						<Alert type="warning">
 							{title} are not enabled on this server.
 						</Alert>

@@ -17,7 +17,7 @@ export const Route = createFileRoute("/services/athena")({
 function AthenaPage() {
 	const { canWrite, account, region, capabilities, inventory } = useScope();
 	const enabled =
-		!!capabilities.data?.athena &&
+		!!capabilities.data?.pages.athena &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -39,7 +39,7 @@ function AthenaPage() {
 					{(capabilities.error || inventory.error) && (
 						<Alert type="error">{capabilities.error || inventory.error}</Alert>
 					)}
-					{capabilities.data && !capabilities.data.athena && (
+					{capabilities.data && !capabilities.data.pages.athena && (
 						<Alert type="warning">Athena is not enabled on this server.</Alert>
 					)}
 					{!canWrite && (

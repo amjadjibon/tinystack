@@ -47,7 +47,7 @@ function KMSPage() {
 	const search = Route.useSearch(),
 		{ account, region, canWrite, capabilities, inventory } = useScope();
 	const enabled =
-		!!capabilities.data?.kms &&
+		!!capabilities.data?.pages.kms &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -75,7 +75,7 @@ function KMSPage() {
 							Connect a root console session for this account to manage keys.
 						</Alert>
 					)}
-					{capabilities.data && !capabilities.data.kms && (
+					{capabilities.data && !capabilities.data.pages.kms && (
 						<Alert type="warning">KMS is not enabled on this server.</Alert>
 					)}
 					<KMSWorkspace

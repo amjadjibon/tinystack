@@ -32,7 +32,7 @@ func TestConsoleEFSLifecycle(t *testing.T) {
 
 	var capabilities map[string]any
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
-		capabilities["efs"] != true {
+		!consolePage(capabilities, "efs") {
 		t.Fatal(capabilities)
 	}
 

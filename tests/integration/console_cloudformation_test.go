@@ -37,7 +37,7 @@ func TestConsoleCloudFormationPage(t *testing.T) {
 	}
 	var capabilities map[string]any
 	if internal(t, s, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
-		capabilities["cloudformation"] != true {
+		!consolePage(capabilities, "cloudformation") {
 		t.Fatalf("capabilities = %+v", capabilities)
 	}
 

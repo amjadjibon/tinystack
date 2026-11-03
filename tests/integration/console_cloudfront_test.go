@@ -43,7 +43,7 @@ func TestConsoleCloudFrontLifecycle(t *testing.T) {
 
 	var capabilities map[string]any
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
-		capabilities["cloudfront"] != true {
+		!consolePage(capabilities, "cloudfront") {
 		t.Fatal(capabilities)
 	}
 

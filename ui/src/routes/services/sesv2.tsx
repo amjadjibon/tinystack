@@ -32,7 +32,7 @@ export const Route = createFileRoute("/services/sesv2")({
 function SESv2Page() {
 	const { canWrite, account, region, capabilities, inventory } = useScope();
 	const enabled =
-		!!capabilities.data?.sesv2 &&
+		!!capabilities.data?.pages.sesv2 &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -54,7 +54,7 @@ function SESv2Page() {
 					{(capabilities.error || inventory.error) && (
 						<Alert type="error">{capabilities.error || inventory.error}</Alert>
 					)}
-					{capabilities.data && !capabilities.data.sesv2 && (
+					{capabilities.data && !capabilities.data.pages.sesv2 && (
 						<Alert type="warning">
 							Simple Email Service is not enabled on this server.
 						</Alert>

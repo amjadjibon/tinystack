@@ -39,7 +39,7 @@ export const Route = createFileRoute("/services/ecr")({
 function Page() {
 	const s = useScope();
 	const enabled =
-		!!s.capabilities.data?.ecr &&
+		!!s.capabilities.data?.pages.ecr &&
 		s.canWrite &&
 		/^\d{12}$/.test(s.account) &&
 		validRegion(s.region);

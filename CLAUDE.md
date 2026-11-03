@@ -91,7 +91,8 @@ service, listeners, shutdown) → `internal/gateway.Server` → generated `catal
    `internal/services/<service>` (with `inventory.go`), and construct it and register `api.Descriptor(...)` in
    `internal/app/app.go`, which both `app.Run` and the integration tests build. Also add the
    `tag.go` tagger, the console entry in `ui/src/lib/services.ts`, and the SDK client as a direct `go.mod` dependency.
-   A dedicated console page may call only the operations on its allowlist in `internal/gateway/actions.go`.
+   A dedicated console page may call only the operations on its `consolePages` entry in
+   `internal/gateway/console_pages.go`, which also marks global services and feeds the capability flags.
 3. **Docs, for every behavior change:** edit `docs/catalog.json` (features, gaps, execution), `task docs:generate`,
    `task docs:check`. Product docs live under `docs/site/`; internal plans in `.spec/` (gitignored, never committed).
 

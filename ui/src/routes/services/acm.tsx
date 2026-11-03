@@ -47,7 +47,7 @@ function ACMPage() {
 	const scope = { account, region, certificate: search.certificate },
 		list = acmHref({ account, region });
 	const enabled =
-		!!capabilities.data?.acm &&
+		!!capabilities.data?.pages.acm &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -71,7 +71,7 @@ function ACMPage() {
 					{capabilities.error && (
 						<Alert type="error">{capabilities.error}</Alert>
 					)}
-					{capabilities.data && !capabilities.data.acm && (
+					{capabilities.data && !capabilities.data.pages.acm && (
 						<Alert type="warning">
 							Certificate Manager is not enabled on this server.
 						</Alert>

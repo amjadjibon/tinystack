@@ -49,7 +49,7 @@ function LogsPage() {
 	const [notice, setNotice] = useState({ scope: "", message: "" });
 	const scopeId = `${context.account}/${context.region}`;
 	const enabled =
-		!!context.capabilities.data?.logs &&
+		!!context.capabilities.data?.pages.logs &&
 		context.canWrite &&
 		/^\d{12}$/.test(context.account) &&
 		validRegion(context.region);
@@ -168,7 +168,7 @@ function LogsWorkspace({
 							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
-					{capabilities.data && !capabilities.data.logs && (
+					{capabilities.data && !capabilities.data.pages.logs && (
 						<Alert type="warning">
 							CloudWatch Logs is not enabled on this server.
 						</Alert>

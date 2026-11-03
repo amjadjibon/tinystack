@@ -40,7 +40,7 @@ function Route53Page() {
 	const search = Route.useSearch(),
 		{ canWrite, account, inventory, capabilities } = useScope();
 	const enabled =
-		!!capabilities.data?.route53 && canWrite && /^\d{12}$/.test(account);
+		!!capabilities.data?.pages.route53 && canWrite && /^\d{12}$/.test(account);
 	const scope: Route53Scope = { account, zone: search.zone || undefined };
 	const list = route53Href({ account });
 	const checks = `${list}&section=healthchecks`;
@@ -80,7 +80,7 @@ function Route53Page() {
 							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
-					{capabilities.data && !capabilities.data.route53 && (
+					{capabilities.data && !capabilities.data.pages.route53 && (
 						<Alert type="warning">
 							Route 53 is not enabled on this server.
 						</Alert>

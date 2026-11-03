@@ -31,7 +31,7 @@ func TestConsoleCostDefinitions(t *testing.T) {
 	}
 
 	for _, service := range []string{"budgets", "costexplorer", "costandusagereportservice"} {
-		if capabilities[service] != true {
+		if !consolePage(capabilities, service) {
 			t.Fatalf("missing capability: %s", service)
 		}
 	}

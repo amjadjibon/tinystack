@@ -22,7 +22,7 @@ func TestConsoleCognitoIdentityLifecycle(t *testing.T) {
 
 	var capabilities map[string]any
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
-		capabilities["cognitoidentity"] != true {
+		!consolePage(capabilities, "cognitoidentity") {
 		t.Fatalf("capabilities = %+v", capabilities)
 	}
 

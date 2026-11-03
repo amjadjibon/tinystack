@@ -59,11 +59,11 @@ function S3Page() {
 	// biome-ignore lint/correctness/useExhaustiveDependencies: clear the previous scope’s success notice when switching.
 	useEffect(() => setNotice(""), [account, region]);
 	const enabled =
-		!!capabilities.data?.s3 &&
+		!!capabilities.data?.pages.s3 &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
-	const readable = !!capabilities.data?.s3 && canWrite;
+	const readable = !!capabilities.data?.pages.s3 && canWrite;
 	const go = (next: S3Scope, prefix = "", key = "", version = "") =>
 		navigate({ to: "/services/s3", search: { ...next, prefix, key, version } });
 	const refresh = (message: string) => {

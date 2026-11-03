@@ -27,8 +27,8 @@ export const Route = createFileRoute("/services/elbv2")({
 function ELBv2Page() {
 	const { canWrite, account, region, capabilities, inventory } = useScope();
 	const enabled =
-		!!capabilities.data?.elbv2 &&
-		!!capabilities.data?.ec2 &&
+		!!capabilities.data?.pages.elbv2 &&
+		!!capabilities.data?.pages.ec2 &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -50,12 +50,12 @@ function ELBv2Page() {
 					{(capabilities.error || inventory.error) && (
 						<Alert type="error">{capabilities.error || inventory.error}</Alert>
 					)}
-					{capabilities.data && !capabilities.data.elbv2 && (
+					{capabilities.data && !capabilities.data.pages.elbv2 && (
 						<Alert type="warning">
 							Elastic Load Balancing is not enabled on this server.
 						</Alert>
 					)}
-					{capabilities.data?.elbv2 && !capabilities.data.ec2 && (
+					{capabilities.data?.pages.elbv2 && !capabilities.data.pages.ec2 && (
 						<Alert type="warning">
 							EC2 is not enabled, so subnets, security groups and VPCs cannot be
 							listed.

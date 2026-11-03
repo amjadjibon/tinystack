@@ -72,7 +72,7 @@ function IAMPage() {
 		(r) => r.service === "iam" && r.account === account,
 	);
 	const enabled =
-		!!capabilities.data?.iam && canWrite && /^\d{12}$/.test(account);
+		!!capabilities.data?.pages.iam && canWrite && /^\d{12}$/.test(account);
 	const go = (
 		section: IAMSection,
 		name = "",

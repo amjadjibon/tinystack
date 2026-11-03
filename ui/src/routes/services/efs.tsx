@@ -22,7 +22,7 @@ function EFSPage() {
 	const search = Route.useSearch();
 	const { canWrite, account, region, capabilities, inventory } = useScope();
 	const enabled =
-		!!capabilities.data?.efs &&
+		!!capabilities.data?.pages.efs &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -61,7 +61,7 @@ function EFSPage() {
 					{(capabilities.error || inventory.error) && (
 						<Alert type="error">{capabilities.error || inventory.error}</Alert>
 					)}
-					{capabilities.data && !capabilities.data.efs && (
+					{capabilities.data && !capabilities.data.pages.efs && (
 						<Alert type="warning">
 							Elastic File System is not enabled on this server.
 						</Alert>

@@ -58,7 +58,7 @@ func TestConsoleSQSLifecycle(t *testing.T) {
 	}
 	var capabilities map[string]any
 	if internal(t, s, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
-		capabilities["sqs"] != true {
+		!consolePage(capabilities, "sqs") {
 		t.Fatalf("SQS capability = %+v", capabilities)
 	}
 

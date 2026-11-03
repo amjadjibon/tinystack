@@ -254,7 +254,7 @@ administrative tools.
 | --- | --- |
 | `GET /_tinystack/health` | Registered services, storage mode and active identity authentication/authorization modes |
 | `GET /_tinystack/resources` | Resources across accounts and regions |
-| `GET /_tinystack/actions` | Console action capabilities, configured account IDs and default account/region |
+| `GET /_tinystack/actions` | Console page availability (`pages`, `global_services`), configured account IDs and default account/region |
 | `POST /_tinystack/actions` | Selected IAM/S3/SQS/SNS/Lambda/DynamoDB/EventBridge/CloudWatch Logs/CloudWatch operations with an explicit account, regional scope except IAM and SDK-style input |
 | `GET /_tinystack/requests` | Last 256 AWS requests, newest first |
 | `DELETE /_tinystack/requests` | Clear request history |

@@ -56,7 +56,7 @@ function LambdaPage() {
 	useEffect(() => setNotice(""), [account, region]);
 	const actionable =
 		canWrite && /^\d{12}$/.test(account) && validRegion(region);
-	const enabled = !!capabilities.data?.lambda && actionable;
+	const enabled = !!capabilities.data?.pages.lambda && actionable;
 	const functions = (inventory.data ?? []).filter(
 		(r) =>
 			r.service === "lambda" &&
@@ -127,7 +127,7 @@ function LambdaPage() {
 							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
-					{capabilities.data && !capabilities.data.lambda && (
+					{capabilities.data && !capabilities.data.pages.lambda && (
 						<Alert type="warning">Lambda is not enabled on this server.</Alert>
 					)}
 					{search.create ? (
@@ -154,8 +154,8 @@ function LambdaPage() {
 							resource={functions.find((f) => f.name === search.function)}
 							resources={inventory.data ?? []}
 							enabled={enabled}
-							snsEnabled={!!capabilities.data?.sns && actionable}
-							logsEnabled={!!capabilities.data?.logs && actionable}
+							snsEnabled={!!capabilities.data?.pages.sns && actionable}
+							logsEnabled={!!capabilities.data?.pages.logs && actionable}
 							loading={inventory.loading}
 							onRefresh={inventory.reload}
 							onChanged={changed}

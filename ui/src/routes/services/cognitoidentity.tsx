@@ -24,7 +24,7 @@ function IdentityPoolsPage() {
 	const scope = { account, region };
 	const home = identityHref(scope);
 	const enabled =
-		!!capabilities.data?.cognitoidentity &&
+		!!capabilities.data?.pages.cognitoidentity &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -55,7 +55,7 @@ function IdentityPoolsPage() {
 					{(capabilities.error || inventory.error) && (
 						<Alert type="error">{capabilities.error || inventory.error}</Alert>
 					)}
-					{capabilities.data && !capabilities.data.cognitoidentity && (
+					{capabilities.data && !capabilities.data.pages.cognitoidentity && (
 						<Alert type="warning">
 							Cognito identity pools is not enabled on this server.
 						</Alert>

@@ -39,7 +39,7 @@ func TestConsoleAppConfigLifecycle(t *testing.T) {
 
 	var capabilities map[string]any
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||
-		capabilities["appconfig"] != true || capabilities["appconfigdata"] != true {
+		!consolePage(capabilities, "appconfig") || !consolePage(capabilities, "appconfigdata") {
 		t.Fatal(capabilities)
 	}
 

@@ -17,7 +17,7 @@ export const Route = createFileRoute("/services/pipes")({
 function PipesPage() {
 	const { canWrite, account, region, capabilities, inventory } = useScope();
 	const enabled =
-		!!capabilities.data?.pipes &&
+		!!capabilities.data?.pages.pipes &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -39,7 +39,7 @@ function PipesPage() {
 					{(capabilities.error || inventory.error) && (
 						<Alert type="error">{capabilities.error || inventory.error}</Alert>
 					)}
-					{capabilities.data && !capabilities.data.pipes && (
+					{capabilities.data && !capabilities.data.pages.pipes && (
 						<Alert type="warning">
 							EventBridge Pipes is not enabled on this server.
 						</Alert>

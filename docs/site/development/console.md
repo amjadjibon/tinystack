@@ -177,7 +177,8 @@ The RDS service icon is bundled locally from the official AWS Architecture Icons
 
 `/services/cloudformation` lists stacks from `ListStacks` (account and Region scoped, all statuses) with a status
 filter and an **Include deleted** toggle, and opens a stack by its ID in `?stack=`, so deleted stacks stay reachable.
-The page calls only the operations on `consoleCloudFormationOperations` in `internal/gateway/actions.go`:
+The page calls only the operations on the `cloudformation` entry of `consolePages` in
+`internal/gateway/console_pages.go`:
 `ListStacks`, `DescribeStacks`, `DescribeStackEvents`, `ListStackResources`, `GetTemplate`, `ListChangeSets`,
 `DescribeChangeSet`, `ExecuteChangeSet`, `DeleteChangeSet`, `DeleteStack`, `CreateStack`, `UpdateStack`,
 `CreateChangeSet`, `ValidateTemplate`, `GetTemplateSummary`, `UpdateTerminationProtection`,

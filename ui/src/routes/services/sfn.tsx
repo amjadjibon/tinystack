@@ -57,7 +57,7 @@ function StepFunctionsPage() {
 	// biome-ignore lint/correctness/useExhaustiveDependencies: notices belong to the selected account and Region.
 	useEffect(() => setNotice(""), [account, region]);
 	const enabled =
-		!!capabilities.data?.sfn &&
+		!!capabilities.data?.pages.sfn &&
 		canWrite &&
 		/^\d{12}$/.test(account) &&
 		validRegion(region);
@@ -132,7 +132,7 @@ function StepFunctionsPage() {
 							session in the top bar, or use signed AWS CLI/SDK requests.
 						</Alert>
 					)}
-					{capabilities.data && !capabilities.data.sfn && (
+					{capabilities.data && !capabilities.data.pages.sfn && (
 						<Alert type="warning">
 							Step Functions is not enabled on this server.
 						</Alert>
