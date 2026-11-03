@@ -25,6 +25,7 @@ import { Route as ServicesApigatewayv2RouteImport } from './routes/services/apig
 import { Route as ServicesAppconfigRouteImport } from './routes/services/appconfig'
 import { Route as ServicesAppsyncRouteImport } from './routes/services/appsync'
 import { Route as ServicesAthenaRouteImport } from './routes/services/athena'
+import { Route as ServicesBatchRouteImport } from './routes/services/batch'
 import { Route as ServicesBudgetsRouteImport } from './routes/services/budgets'
 import { Route as ServicesCloudformationRouteImport } from './routes/services/cloudformation'
 import { Route as ServicesCloudfrontRouteImport } from './routes/services/cloudfront'
@@ -148,6 +149,11 @@ const ServicesAppsyncRoute = ServicesAppsyncRouteImport.update({
 const ServicesAthenaRoute = ServicesAthenaRouteImport.update({
   id: '/services/athena',
   path: '/services/athena',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesBatchRoute = ServicesBatchRouteImport.update({
+  id: '/services/batch',
+  path: '/services/batch',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesBudgetsRoute = ServicesBudgetsRouteImport.update({
@@ -389,6 +395,7 @@ export interface FileRoutesByFullPath {
   '/services/appconfig': typeof ServicesAppconfigRoute
   '/services/appsync': typeof ServicesAppsyncRoute
   '/services/athena': typeof ServicesAthenaRoute
+  '/services/batch': typeof ServicesBatchRoute
   '/services/budgets': typeof ServicesBudgetsRoute
   '/services/cloudformation': typeof ServicesCloudformationRoute
   '/services/cloudfront': typeof ServicesCloudfrontRoute
@@ -451,6 +458,7 @@ export interface FileRoutesByTo {
   '/services/appconfig': typeof ServicesAppconfigRoute
   '/services/appsync': typeof ServicesAppsyncRoute
   '/services/athena': typeof ServicesAthenaRoute
+  '/services/batch': typeof ServicesBatchRoute
   '/services/budgets': typeof ServicesBudgetsRoute
   '/services/cloudformation': typeof ServicesCloudformationRoute
   '/services/cloudfront': typeof ServicesCloudfrontRoute
@@ -514,6 +522,7 @@ export interface FileRoutesById {
   '/services/appconfig': typeof ServicesAppconfigRoute
   '/services/appsync': typeof ServicesAppsyncRoute
   '/services/athena': typeof ServicesAthenaRoute
+  '/services/batch': typeof ServicesBatchRoute
   '/services/budgets': typeof ServicesBudgetsRoute
   '/services/cloudformation': typeof ServicesCloudformationRoute
   '/services/cloudfront': typeof ServicesCloudfrontRoute
@@ -578,6 +587,7 @@ export interface FileRouteTypes {
     | '/services/appconfig'
     | '/services/appsync'
     | '/services/athena'
+    | '/services/batch'
     | '/services/budgets'
     | '/services/cloudformation'
     | '/services/cloudfront'
@@ -640,6 +650,7 @@ export interface FileRouteTypes {
     | '/services/appconfig'
     | '/services/appsync'
     | '/services/athena'
+    | '/services/batch'
     | '/services/budgets'
     | '/services/cloudformation'
     | '/services/cloudfront'
@@ -702,6 +713,7 @@ export interface FileRouteTypes {
     | '/services/appconfig'
     | '/services/appsync'
     | '/services/athena'
+    | '/services/batch'
     | '/services/budgets'
     | '/services/cloudformation'
     | '/services/cloudfront'
@@ -765,6 +777,7 @@ export interface RootRouteChildren {
   ServicesAppconfigRoute: typeof ServicesAppconfigRoute
   ServicesAppsyncRoute: typeof ServicesAppsyncRoute
   ServicesAthenaRoute: typeof ServicesAthenaRoute
+  ServicesBatchRoute: typeof ServicesBatchRoute
   ServicesBudgetsRoute: typeof ServicesBudgetsRoute
   ServicesCloudformationRoute: typeof ServicesCloudformationRoute
   ServicesCloudfrontRoute: typeof ServicesCloudfrontRoute
@@ -924,6 +937,13 @@ declare module '@tanstack/react-router' {
       path: '/services/athena'
       fullPath: '/services/athena'
       preLoaderRoute: typeof ServicesAthenaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/batch': {
+      id: '/services/batch'
+      path: '/services/batch'
+      fullPath: '/services/batch'
+      preLoaderRoute: typeof ServicesBatchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services/budgets': {
@@ -1253,6 +1273,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesAppconfigRoute: ServicesAppconfigRoute,
   ServicesAppsyncRoute: ServicesAppsyncRoute,
   ServicesAthenaRoute: ServicesAthenaRoute,
+  ServicesBatchRoute: ServicesBatchRoute,
   ServicesBudgetsRoute: ServicesBudgetsRoute,
   ServicesCloudformationRoute: ServicesCloudformationRoute,
   ServicesCloudfrontRoute: ServicesCloudfrontRoute,

@@ -65,6 +65,14 @@ var consolePages = map[string]consolePage{
  GetDataCatalog ListDataCatalogs ListDatabases GetDatabase ListTableMetadata GetTableMetadata
  TagResource UntagResource ListTagsForResource
 `)},
+	// Batch exposes every operation the service implements: environments, queues, definitions, jobs and tags.
+	"batch": {operations: strings.Fields(`
+ CreateComputeEnvironment DescribeComputeEnvironments UpdateComputeEnvironment DeleteComputeEnvironment
+ CreateJobQueue DescribeJobQueues UpdateJobQueue DeleteJobQueue
+ RegisterJobDefinition DescribeJobDefinitions DeregisterJobDefinition
+ SubmitJob DescribeJobs ListJobs CancelJob TerminateJob
+ TagResource UntagResource ListTagsForResource
+`)},
 	"budgets": {operations: strings.Fields(`
 	CreateBudget
 	DescribeBudget

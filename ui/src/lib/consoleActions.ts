@@ -22,6 +22,8 @@ export function stringMap(text: string, label: string): Record<string, string> {
 		throw new Error(`${label} values must be strings.`);
 	return value as Record<string, string>;
 }
+// words splits a list a person typed with commas, spaces or new lines.
+export const words = (text: string) => text.split(/[\s,]+/).filter(Boolean);
 export function integer(text: string, label: string, min: number, max: number) {
 	if (
 		!/^\d+$/.test(text) ||

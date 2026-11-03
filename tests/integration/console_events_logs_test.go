@@ -315,6 +315,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		"appconfig":       "ListApplications",
 		"appsync":         "ListGraphqlApis",
 		"opensearch":      "ListDomainNames",
+		"batch":           "DescribeComputeEnvironments",
 	}
 	var capabilities map[string]any
 	if internal(t, srv, http.MethodGet, consoleActionsPath, &capabilities) != http.StatusOK ||

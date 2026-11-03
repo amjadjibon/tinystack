@@ -150,6 +150,7 @@ export const api = {
 		// global_services carry no Region in their console scope.
 		global_services: string[];
 		eks_runtime: string;
+		batch_runtime: string;
 		kafka_runtime: string;
 		mq_runtime: string;
 		ecs_runtime: string;

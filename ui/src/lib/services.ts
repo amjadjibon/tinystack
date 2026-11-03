@@ -318,7 +318,12 @@ const catalog: Record<string, ServiceInfo> = {
 		category: developerTools,
 		icon: "xray",
 	},
-	batch: { title: "AWS Batch", category: compute, icon: "batch" },
+	batch: {
+		title: "AWS Batch",
+		category: compute,
+		icon: "batch",
+		href: "/services/batch",
+	},
 	efs: {
 		title: "Elastic File System",
 		category: storage,
