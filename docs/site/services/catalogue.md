@@ -655,6 +655,7 @@ Manage Kubernetes cluster metadata and optionally start local k3s API servers.
 **Execution:** Records / optional k3s. **Selected operations:** 46.
 
 - Clusters, node groups, Fargate profiles, add-ons and update metadata.
+- Dedicated console page for clusters, node groups, add-ons, Fargate profiles, access entries and policies, cluster tags and copyable kubeconfig.
 - Access entries, access policy associations, pod identity metadata and OIDC configuration.
 - Optional privileged k3s container per cluster with an HTTPS proxy.
 - EKS tokens map callers to the cluster account.

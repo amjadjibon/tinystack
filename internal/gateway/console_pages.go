@@ -204,6 +204,16 @@ var consolePages = map[string]consolePage{
  CreateAccessPoint DescribeAccessPoints DeleteAccessPoint
  TagResource UntagResource
 `)},
+	"eks": {operations: strings.Fields(`
+ CreateCluster DescribeCluster ListClusters DeleteCluster UpdateClusterConfig UpdateClusterVersion
+ DescribeClusterVersions
+ CreateNodegroup DescribeNodegroup ListNodegroups DeleteNodegroup UpdateNodegroupConfig
+ CreateAddon DescribeAddon ListAddons DeleteAddon DescribeAddonVersions
+ CreateFargateProfile DescribeFargateProfile ListFargateProfiles DeleteFargateProfile
+ CreateAccessEntry DescribeAccessEntry ListAccessEntries DeleteAccessEntry
+ AssociateAccessPolicy DisassociateAccessPolicy ListAssociatedAccessPolicies ListAccessPolicies
+ TagResource UntagResource
+`)},
 	"elasticache": {operations: strings.Fields(`
  CreateCacheCluster DescribeCacheClusters ModifyCacheCluster DeleteCacheCluster RebootCacheCluster
  CreateReplicationGroup DescribeReplicationGroups ModifyReplicationGroup DeleteReplicationGroup

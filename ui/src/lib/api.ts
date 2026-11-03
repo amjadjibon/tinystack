@@ -149,6 +149,7 @@ export const api = {
 		pages: Record<string, boolean>;
 		// global_services carry no Region in their console scope.
 		global_services: string[];
+		eks_runtime: string;
 		ecs_runtime: string;
 		elasticache_runtime: string;
 		memorydb_runtime: string;

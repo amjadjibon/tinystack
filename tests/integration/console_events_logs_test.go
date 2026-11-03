@@ -309,6 +309,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		"acm":             "ListCertificates",
 		"cognitoidentity": "ListIdentityPools",
 		"efs":             "DescribeFileSystems",
+		"eks":             "ListClusters",
 		"appconfig":       "ListApplications",
 		"appsync":         "ListGraphqlApis",
 	}

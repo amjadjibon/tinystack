@@ -428,6 +428,7 @@ const catalog: Record<string, ServiceInfo> = {
 		icon: "ecs",
 	},
 	eks: {
+		href: "/services/eks",
 		title: "Elastic Kubernetes Service",
 		category: containers,
 		icon: "eks",

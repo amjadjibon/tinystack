@@ -135,6 +135,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			"signing_names":       signingNames,
 			"pages":               pages,
 			"global_services":     global,
+			"eks_runtime":         s.cfg.EKS.Clusters,
 			"ecs_runtime":         s.cfg.ECS.Containers,
 			"elasticache_runtime": s.cfg.ElastiCache.Caches,
 			"memorydb_runtime":    s.cfg.MemoryDB.Clusters,
