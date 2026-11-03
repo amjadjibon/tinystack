@@ -36,6 +36,7 @@ import { Route as ServicesCognitoidentityRouteImport } from './routes/services/c
 import { Route as ServicesCognitoidpRouteImport } from './routes/services/cognitoidp'
 import { Route as ServicesCostandusagereportserviceRouteImport } from './routes/services/costandusagereportservice'
 import { Route as ServicesCostexplorerRouteImport } from './routes/services/costexplorer'
+import { Route as ServicesDsqlRouteImport } from './routes/services/dsql'
 import { Route as ServicesDynamodbRouteImport } from './routes/services/dynamodb'
 import { Route as ServicesEc2RouteImport } from './routes/services/ec2'
 import { Route as ServicesEcrRouteImport } from './routes/services/ecr'
@@ -206,6 +207,11 @@ const ServicesCostandusagereportserviceRoute =
 const ServicesCostexplorerRoute = ServicesCostexplorerRouteImport.update({
   id: '/services/costexplorer',
   path: '/services/costexplorer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesDsqlRoute = ServicesDsqlRouteImport.update({
+  id: '/services/dsql',
+  path: '/services/dsql',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesDynamodbRoute = ServicesDynamodbRouteImport.update({
@@ -412,6 +418,7 @@ export interface FileRoutesByFullPath {
   '/services/cognitoidp': typeof ServicesCognitoidpRoute
   '/services/costandusagereportservice': typeof ServicesCostandusagereportserviceRoute
   '/services/costexplorer': typeof ServicesCostexplorerRoute
+  '/services/dsql': typeof ServicesDsqlRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/ec2': typeof ServicesEc2Route
   '/services/ecr': typeof ServicesEcrRoute
@@ -476,6 +483,7 @@ export interface FileRoutesByTo {
   '/services/cognitoidp': typeof ServicesCognitoidpRoute
   '/services/costandusagereportservice': typeof ServicesCostandusagereportserviceRoute
   '/services/costexplorer': typeof ServicesCostexplorerRoute
+  '/services/dsql': typeof ServicesDsqlRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/ec2': typeof ServicesEc2Route
   '/services/ecr': typeof ServicesEcrRoute
@@ -541,6 +549,7 @@ export interface FileRoutesById {
   '/services/cognitoidp': typeof ServicesCognitoidpRoute
   '/services/costandusagereportservice': typeof ServicesCostandusagereportserviceRoute
   '/services/costexplorer': typeof ServicesCostexplorerRoute
+  '/services/dsql': typeof ServicesDsqlRoute
   '/services/dynamodb': typeof ServicesDynamodbRoute
   '/services/ec2': typeof ServicesEc2Route
   '/services/ecr': typeof ServicesEcrRoute
@@ -607,6 +616,7 @@ export interface FileRouteTypes {
     | '/services/cognitoidp'
     | '/services/costandusagereportservice'
     | '/services/costexplorer'
+    | '/services/dsql'
     | '/services/dynamodb'
     | '/services/ec2'
     | '/services/ecr'
@@ -671,6 +681,7 @@ export interface FileRouteTypes {
     | '/services/cognitoidp'
     | '/services/costandusagereportservice'
     | '/services/costexplorer'
+    | '/services/dsql'
     | '/services/dynamodb'
     | '/services/ec2'
     | '/services/ecr'
@@ -735,6 +746,7 @@ export interface FileRouteTypes {
     | '/services/cognitoidp'
     | '/services/costandusagereportservice'
     | '/services/costexplorer'
+    | '/services/dsql'
     | '/services/dynamodb'
     | '/services/ec2'
     | '/services/ecr'
@@ -800,6 +812,7 @@ export interface RootRouteChildren {
   ServicesCognitoidpRoute: typeof ServicesCognitoidpRoute
   ServicesCostandusagereportserviceRoute: typeof ServicesCostandusagereportserviceRoute
   ServicesCostexplorerRoute: typeof ServicesCostexplorerRoute
+  ServicesDsqlRoute: typeof ServicesDsqlRoute
   ServicesDynamodbRoute: typeof ServicesDynamodbRoute
   ServicesEc2Route: typeof ServicesEc2Route
   ServicesEcrRoute: typeof ServicesEcrRoute
@@ -1027,6 +1040,13 @@ declare module '@tanstack/react-router' {
       path: '/services/costexplorer'
       fullPath: '/services/costexplorer'
       preLoaderRoute: typeof ServicesCostexplorerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/dsql': {
+      id: '/services/dsql'
+      path: '/services/dsql'
+      fullPath: '/services/dsql'
+      preLoaderRoute: typeof ServicesDsqlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services/dynamodb': {
@@ -1305,6 +1325,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesCostandusagereportserviceRoute:
     ServicesCostandusagereportserviceRoute,
   ServicesCostexplorerRoute: ServicesCostexplorerRoute,
+  ServicesDsqlRoute: ServicesDsqlRoute,
   ServicesDynamodbRoute: ServicesDynamodbRoute,
   ServicesEc2Route: ServicesEc2Route,
   ServicesEcrRoute: ServicesEcrRoute,

@@ -169,6 +169,10 @@ var consolePages = map[string]consolePage{
 	UpdateAnomalySubscription
 	UpdateCostCategoryDefinition
 `), global: true},
+	// Aurora DSQL exposes the cluster and tag operations the page uses; cluster policies stay API-only.
+	"dsql": {operations: strings.Fields(`
+ CreateCluster GetCluster ListClusters UpdateCluster DeleteCluster TagResource UntagResource
+`)},
 	"dynamodb": {operations: strings.Fields(`
 	CreateTable DeleteTable DescribeTable ListTables UpdateTable
 	GetItem PutItem UpdateItem DeleteItem Query Scan BatchWriteItem

@@ -154,6 +154,7 @@ export const api = {
 		kafka_runtime: string;
 		mq_runtime: string;
 		codebuild_runtime: string;
+		dsql_runtime: string;
 		ecs_runtime: string;
 		elasticache_runtime: string;
 		memorydb_runtime: string;

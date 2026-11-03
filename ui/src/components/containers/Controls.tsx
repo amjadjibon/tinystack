@@ -49,15 +49,19 @@ export function Choice({
 	value,
 	options,
 	onChange,
+	placeholder,
 }: {
 	label: string;
 	value: string;
 	options: string[];
 	onChange: (s: string) => void;
+	// placeholder shows while nothing is chosen.
+	placeholder?: string;
 }) {
 	return (
 		<FormField label={label}>
 			<Select
+				placeholder={placeholder}
 				selectedOption={value ? { label: value, value } : null}
 				options={options.map((value) => ({ label: value, value }))}
 				onChange={({ detail }) => onChange(detail.selectedOption.value ?? "")}

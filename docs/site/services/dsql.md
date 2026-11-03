@@ -56,6 +56,8 @@ client certificate; it does not forward tokens to PostgreSQL or connect every se
 bootstrap superuser cannot log in through the proxy. Passwords alone cannot authenticate directly to the backend.
 `AWS IAM GRANT` and `AWS IAM REVOKE` fail explicitly as unsupported SQL; IAM-to-role mappings are not emulated.
 
+The console's Aurora DSQL page shows the same loopback proxy address, a ready-made `psql` command and the token command on the overview of each `ACTIVE` Docker cluster. It never creates tokens itself.
+
 Shutdown closes sessions and removes owned containers while retaining named data volumes. Restart recovers owned
 containers and data, and rebinds the persisted proxy port. Delete (after disabling deletion protection) and reset
 remove owned containers and volumes. Unrelated Docker resources are excluded by per-store ownership labels.
@@ -67,6 +69,7 @@ remove owned containers and volumes. Unrelated Docker resources are excluded by 
 - IDLE and INACTIVE are not synthesized: TinyStack does not emulate the inactivity clock. Deleted records disappear after DELETING rather than retaining a DELETED tombstone.
 - KmsEncryptionKey accepts only AWS_OWNED_KMS_KEY; custom KMS keys and encryption changes fail ValidationException. EncryptionDetails describes AWS-owned metadata only.
 - Resource policy JSON objects and Statement presence are checked; policies are stored without enforcement. Lockout safety evaluation is unsupported, so create/put with a policy requires bypassPolicyLockoutSafetyCheck=true; CloudFormation PolicyDocument therefore fails explicitly rather than bypassing safety on behalf of the caller.
+- The console manages clusters, their settings, multi-Region pairing and tags. Cluster resource policies and the PrivateLink service name stay API-only, and the console never creates database auth tokens.
 - Removing CloudFormation MultiRegionProperties is explicitly unsupported; no implicit replacement. CloudFormation exposes PolicyVersion and AWS-owned EncryptionDetails attributes.
 - The four CDC stream operations are not whitelisted; no change stream delivery, backups, capacity scaling, regional failures, database IAM role mapping or account quotas.
 - Terraform multi-Region peering requires normal parallel apply: both reciprocal aws_dsql_cluster_peering resources must run concurrently. Serial apply can wait indefinitely for the reciprocal request.

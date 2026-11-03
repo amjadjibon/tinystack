@@ -87,7 +87,12 @@ const catalog: Record<string, ServiceInfo> = {
 		icon: "globalaccelerator",
 	},
 	shield: { title: "AWS Shield Advanced", category: security, icon: "shield" },
-	dsql: { title: "Amazon Aurora DSQL", category: database, icon: "dsql" },
+	dsql: {
+		title: "Amazon Aurora DSQL",
+		category: database,
+		icon: "dsql",
+		href: "/services/dsql",
+	},
 	bedrockagentcorecontrol: {
 		title: "Amazon Bedrock AgentCore",
 		category: machineLearning,

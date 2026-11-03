@@ -681,6 +681,7 @@ Manage Aurora DSQL clusters, reciprocal multi-Region peering and policies, with 
 - Reciprocal two-cluster peering requires existing clusters in different Regions of the same account, a shared third witness Region and a common documented continent Region set.
 - Public endpoint <identifier>.dsql.<region>.on.aws, cluster ARN, AWS-owned encryption metadata and deterministic cluster-specific PrivateLink service/DNS metadata.
 - Tags in cluster records, storage-key-order pagination, inventory and Resource Groups Tagging API integration.
+- Dedicated regional console: cluster list with transitional-status polling; creation with deletion protection, tags and an optional multi-Region witness Region and peer; settings updates, including pairing a peer; typed-identifier deletion that is blocked while deletion protection is on; cluster tags; copyable endpoint with auth-token guidance and, for Docker clusters, the loopback proxy address and psql command; runtime capability notice.
 - CloudFormation AWS::DSQL::Cluster with in-place updates and no replacement properties, identifier Ref and endpoint attributes; Terraform aws_dsql_cluster and reciprocal aws_dsql_cluster_peering using two regional provider aliases against one endpoint.
 
 [Supported operations](dsql.md#supported-operations) · [Limitations](dsql.md#limitations-and-future-work)
