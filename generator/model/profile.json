@@ -27657,10 +27657,15 @@
       "DescribeDomain",
       "DescribeDomainConfig",
       "DescribeDomains",
+      "GetCompatibleVersions",
+      "GetUpgradeHistory",
+      "GetUpgradeStatus",
       "ListDomainNames",
       "ListTags",
+      "ListVersions",
       "RemoveTags",
-      "UpdateDomainConfig"
+      "UpdateDomainConfig",
+      "UpgradeDomain"
     ],
     "shapes": {
       "AccessPoliciesStatus": [
@@ -27692,7 +27697,8 @@
         "EncryptionAtRestOptions",
         "EngineVersion",
         "NodeToNodeEncryptionOptions",
-        "TagList"
+        "TagList",
+        "AdvancedOptions"
       ],
       "CreateDomainResponse": [
         "DomainStatus"
@@ -27728,7 +27734,8 @@
         "EBSOptions",
         "EncryptionAtRestOptions",
         "EngineVersion",
-        "NodeToNodeEncryptionOptions"
+        "NodeToNodeEncryptionOptions",
+        "AdvancedOptions"
       ],
       "DomainEndpointOptions": [
         "CustomEndpoint",
@@ -27758,7 +27765,11 @@
         "Endpoint",
         "EngineVersion",
         "NodeToNodeEncryptionOptions",
-        "Processing"
+        "Processing",
+        "AdvancedOptions",
+        "DomainProcessingStatus",
+        "ModifyingProperties",
+        "UpgradeProcessing"
       ],
       "EBSOptions": [
         "EBSEnabled",
@@ -27820,7 +27831,8 @@
         "DomainName",
         "EBSOptions",
         "EncryptionAtRestOptions",
-        "NodeToNodeEncryptionOptions"
+        "NodeToNodeEncryptionOptions",
+        "AdvancedOptions"
       ],
       "UpdateDomainConfigResponse": [
         "DomainConfig"
@@ -27828,6 +27840,76 @@
       "VersionStatus": [
         "Options",
         "Status"
+      ],
+      "ListVersionsRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListVersionsResponse": [
+        "Versions",
+        "NextToken"
+      ],
+      "GetCompatibleVersionsRequest": [
+        "DomainName"
+      ],
+      "GetCompatibleVersionsResponse": [
+        "CompatibleVersions"
+      ],
+      "UpgradeDomainRequest": [
+        "DomainName",
+        "TargetVersion",
+        "PerformCheckOnly",
+        "AdvancedOptions"
+      ],
+      "UpgradeDomainResponse": [
+        "UpgradeId",
+        "DomainName",
+        "TargetVersion",
+        "PerformCheckOnly",
+        "AdvancedOptions"
+      ],
+      "GetUpgradeStatusRequest": [
+        "DomainName"
+      ],
+      "GetUpgradeStatusResponse": [
+        "UpgradeStep",
+        "StepStatus",
+        "UpgradeName"
+      ],
+      "GetUpgradeHistoryRequest": [
+        "DomainName",
+        "MaxResults",
+        "NextToken"
+      ],
+      "GetUpgradeHistoryResponse": [
+        "UpgradeHistories",
+        "NextToken"
+      ],
+      "CompatibleVersionsMap": [
+        "SourceVersion",
+        "TargetVersions"
+      ],
+      "UpgradeHistory": [
+        "UpgradeName",
+        "StartTimestamp",
+        "UpgradeStatus",
+        "StepsList"
+      ],
+      "UpgradeStepItem": [
+        "UpgradeStep",
+        "UpgradeStepStatus",
+        "Issues",
+        "ProgressPercent"
+      ],
+      "AdvancedOptionsStatus": [
+        "Options",
+        "Status"
+      ],
+      "ModifyingProperties": [
+        "Name",
+        "ActiveValue",
+        "PendingValue",
+        "ValueType"
       ]
     }
   },

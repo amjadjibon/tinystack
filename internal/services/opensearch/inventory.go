@@ -11,7 +11,7 @@ import (
 
 func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 	out := []catalog.Resource{}
-	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		for _, key := range tx.Keys("") {
 			account, region, rest, ok := storage.Scoped(key, serviceName)
 			if !ok {
@@ -30,6 +30,10 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 			if rec.Status == nil || rec.Status.DomainName == nil || rec.Status.ARN == nil {
 				continue
+			}
+
+			if settleErr := settle(tx, key, rec); settleErr != nil {
+				return settleErr
 			}
 
 			details := map[string]any{

@@ -57,11 +57,19 @@ export async function getDomainConfig(
 
 // getDomainDetail reads a domain with the state of each of its configuration options.
 export async function getDomainDetail(s: OpenSearchScope, name: string) {
-	const [domain, config] = await Promise.all([
+	const [domain, config, history, upgrade] = await Promise.all([
 		getDomain(s, name),
 		getDomainConfig(s, name),
+		opensearchCall<{
+			UpgradeHistories?: import("./opensearchHelpers").UpgradeHistory[];
+		}>(s, "GetUpgradeHistory", { DomainName: name }),
+		opensearchCall<{ StepStatus?: string; UpgradeStep?: string }>(
+			s,
+			"GetUpgradeStatus",
+			{ DomainName: name },
+		),
 	]);
-	return { domain, config };
+	return { domain, config, history: history.UpgradeHistories ?? [], upgrade };
 }
 
 // listDomains describes every domain in the Region. A domain's creation time is on its configuration, not on its

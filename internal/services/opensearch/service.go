@@ -21,6 +21,8 @@ import (
 )
 
 const (
+	engineElasticsearch = "Elasticsearch"
+	engineOpenSearch    = "OpenSearch"
 	serviceName         = "opensearch"
 	domainKind          = "domain"
 	maxDomains          = 100
@@ -47,16 +49,21 @@ type (
 	}
 
 	domainRecord struct {
-		Status        *api.DomainStatus
-		Tags          map[string]string
-		CreatedAt     time.Time
-		UpdatedAt     time.Time
-		Since         time.Time // when the current container started, for the startup deadline
-		Container     string
-		Failure       string // why the container could not start; the domain keeps no endpoint
-		Port          int64  // the container's published loopback port
-		UpdateVersion int64
-		Initialized   bool // the volume has held a ready engine, so a failure keeps it
+		Status         *api.DomainStatus
+		Tags           map[string]string
+		OptionStatuses map[string]*api.OptionStatus
+		CreatedAt      time.Time
+		UpdatedAt      time.Time
+		Since          time.Time // when the current container started, for the startup deadline
+		PendingUntil   time.Time
+		Container      string
+		Failure        string // why the container could not start; the domain keeps no endpoint
+		UpgradeTarget  string
+		History        []api.UpgradeHistory
+		Port           int64 // the container's published loopback port
+		UpdateVersion  int64
+		UpgradeCheck   bool
+		Initialized    bool // the volume has held a ready engine, so a failure keeps it
 	}
 )
 

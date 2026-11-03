@@ -2074,10 +2074,10 @@
       "execution": "Records / optional Docker",
       "package": "opensearch",
       "features": [
-        "Ten pinned REST JSON domain, domain config, and tag operations with AWS SDK v2 integration",
+        "Fifteen pinned REST JSON domain, configuration, version discovery, upgrade and tag operations with AWS SDK v2 integration",
         "Deterministic domain lifecycle with unique names, cluster config, EBS options, encryption at rest, node-to-node encryption, endpoint options, and access policies",
         "Deterministic domain ARN (arn:aws:es:<region>:<account>:domain/<name>) and metadata endpoint (search-<name>-<random>.<region>.es.amazonaws.com)",
-        "Domain configuration retrieval with option statuses (Active, version, dates) and atomic updates",
+        "Domain configuration retrieval with per-option Processing/Active statuses, stable creation dates and change-specific update dates and versions",
         "ListDomainNames filtering by OpenSearch and Elasticsearch engine types",
         "Resource tagging on domain ARNs with AddTags, ListTags, RemoveTags, and RGTA support",
         "AWS::OpenSearchService::Domain CloudFormation resource with Ref DomainName, Fn::GetAtt (Arn, DomainArn, DomainEndpoint, Id), and retagging",
@@ -2088,18 +2088,21 @@
         "Docker creation returns Processing=true without an endpoint; GET /_cluster/health?wait_for_status=yellow answering 200 sets Processing=false and publishes Endpoint 127.0.0.1:<host port> (loopback, no scheme); an engine that stops answering is started again and the domain processes until it does",
         "A Docker domain whose container cannot start, or whose engine is not healthy within five minutes, keeps its record with Processing=false, no endpoint and a Failure inventory detail; delete it as usual",
         "Docker DeleteDomain returns Deleted=true and Processing=true and keeps the name until the container and volume are removed; reset removes both; shutdown removes containers and keeps volumes; persistent restart recreates containers from records against their volumes; startup removes orphaned containers and volumes whose domain record is gone",
-        "CloudFormation domain creation waits for the Docker engine before publishing Ref and DomainEndpoint",
-        "Dedicated account/Region-scoped console with polling, announcing the records or Docker runtime. Domains are listed (status, engine version, instances, endpoint, creation time), created (name, engine version, instance type and count, dedicated masters, zone awareness, EBS storage, access policy, encryption at rest, node-to-node encryption, HTTPS and TLS policy, tags), edited with the same settings and deleted by typing their name. A domain's page shows its endpoint, ARN, settings, access policy, the state of each configuration option and its tags, which are edited there, and in Docker mode a curl command for its engine. The status shows Processing while a Docker engine starts and Deleting while it is removed, and the page reloads until the domain settles"
+        "CloudFormation domain creation waits for the Docker engine before publishing Ref and DomainEndpoint; configuration updates wait for processing to finish",
+        "Dedicated account/Region-scoped console with polling, announcing the records or Docker runtime. Domains are listed (status, engine version, instances, endpoint, creation time), created (name, engine version, instance type and count, dedicated masters, zone awareness, EBS storage, access policy, encryption at rest, node-to-node encryption, HTTPS and TLS policy, tags), edited with the same settings and deleted by typing their name. A domain's page shows its endpoint, ARN, settings, access policy, the state of each configuration option and its tags, which are edited there, and in Docker mode a curl command for its engine. The status shows Processing while a Docker engine starts and Deleting while it is removed, and the page reloads until the domain settles",
+        "ListVersions with pagination and GetCompatibleVersions with optional domain filtering; records-mode UpgradeDomain and check-only upgrades with processing states, status and paginated history",
+        "AdvancedOptions defaults and validated editing through create, update and describe operations; EBS volume type changes clear IOPS and throughput and explicit zero clears either setting",
+        "Console version discovery, compatible upgrade targets, check-only upgrades, upgrade status and history, advanced options editor and pending configuration changes"
       ],
       "gaps": [
         "Records mode runs no search engine: its endpoint is metadata and nothing listens on it",
         "Docker mode runs one single node per domain: instance type and count, dedicated masters, zone awareness and EBS options are records, and UpdateDomainConfig does not resize or restart the container",
         "Access policies, encryption at rest, node-to-node encryption, TLS policy and EnforceHTTPS are configuration only: the Docker data plane serves plain HTTP on a loopback port with no IAM signing or authentication checks. AdvancedSecurityOptions (fine-grained access control) fail with NotImplemented",
-        "UpgradeDomain and EngineVersion changes are unsupported; the data plane is reached directly on the published port, not through the gateway by hostname",
         "Docker engine versions are limited to OpenSearch 1.0-1.3, 2.0-2.19 and 3.0-3.9 and Elasticsearch_7.10; the host port changes when a domain's container is recreated, and volumes of an in-memory store stay until the next startup removes them as orphans",
         "VPC options, Cognito authentication, SAML/IAM identity federation, and automated snapshot pauses are excluded from the initial domain slice",
         "Package management, outbound/inbound connections, direct query, application integration, and serverless collections require separate implementations",
-        "The console offers only what the service implements: no advanced options, VPC or custom endpoint options, version upgrades, and no search or index view of the engine. ListVersions and GetCompatibleVersions are not implemented, so the engine version is chosen from a fixed list. An EBS volume's IOPS and throughput can be changed but not removed, because UpdateDomainConfig keeps the members a request does not name"
+        "Docker engine upgrades and upgrade checks fail explicitly with DisabledOperationException; create another domain with the desired version. Custom AdvancedOptions on create or update also fail explicitly in Docker mode; default options remain configuration metadata",
+        "Compatibility is a fixed emulator catalogue with forward minor and next-major upgrades; upgrades simulate processing and do not migrate indexed data. No VPC or custom endpoint editor or search/index view; CloudFormation EngineVersion changes remain explicitly unsupported"
       ]
     },
     "route53resolver": {

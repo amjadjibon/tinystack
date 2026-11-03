@@ -47,7 +47,7 @@ export function CreateDomainDialog({
 				];
 			}}
 		>
-			<DomainFormFields form={form} set={set} />
+			<DomainFormFields scope={scope} form={form} set={set} />
 		</ActionDialog>
 	);
 }
@@ -83,10 +83,10 @@ export function EditDomainDialog({
 		>
 			<SpaceBetween size="l">
 				<Alert type="info">
-					The name and the engine version cannot change: TinyStack does not
-					implement upgrades. Tags are edited on the page.
+					The name cannot change. Use Upgrade engine for version changes. Tags
+					are edited on the page.
 				</Alert>
-				<DomainFormFields form={form} set={set} domain={domain} />
+				<DomainFormFields scope={scope} form={form} set={set} domain={domain} />
 			</SpaceBetween>
 		</ActionDialog>
 	);

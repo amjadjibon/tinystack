@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { unixTime } from "../src/lib/format.ts";
 import {
+	advancedOptionsInput,
 	capacityText,
 	configProcessing,
 	connectCommand,
@@ -31,8 +32,8 @@ import {
 	stateLabels,
 	stateType,
 	updateDomainInput,
+	upgradeTargets,
 	valueText,
-	volumeTypeChoices,
 	volumeTypes,
 } from "../src/lib/opensearchHelpers.ts";
 
@@ -47,6 +48,7 @@ const policy = '{"Version":"2012-10-17","Statement":[]}';
 test("a blank domain is what the service creates when nothing is set", () => {
 	assert.deepEqual(createDomainInput(named()), {
 		DomainName: "search-one",
+		AdvancedOptions: {},
 		EngineVersion: "OpenSearch_2.11",
 		ClusterConfig: {
 			InstanceType: "m5.large.search",
@@ -96,6 +98,7 @@ test("a domain carries every setting the form sets", () => {
 	);
 	assert.deepEqual(input, {
 		DomainName: "search-two",
+		AdvancedOptions: {},
 		EngineVersion: "Elasticsearch_7.10",
 		ClusterConfig: {
 			InstanceType: "r6g.large.search",
@@ -290,6 +293,7 @@ test("the edit form starts from the settings the domain has", () => {
 		volumeSize: "20",
 		iops: "3000",
 		throughput: "125",
+		advancedOptions: "{}",
 		policy: JSON.stringify(JSON.parse(policy), null, 2),
 		atRest: true,
 		kmsKey: "alias/search",
@@ -428,17 +432,6 @@ test("an update checks the groups it sends and no others", () => {
 	);
 });
 
-test("a volume with IOPS or throughput keeps to the types that take them", () => {
-	assert.deepEqual(volumeTypeChoices(undefined), volumeTypes);
-	assert.deepEqual(
-		volumeTypeChoices({ VolumeType: "gp2", VolumeSize: 10 }),
-		volumeTypes,
-	);
-	assert.deepEqual(volumeTypeChoices({ Iops: 1000 }), ["gp3", "io1"]);
-	assert.deepEqual(volumeTypeChoices({ Iops: 3000, Throughput: 125 }), ["gp3"]);
-	assert.deepEqual(volumeTypeChoices({ Throughput: 125 }), ["gp3"]);
-});
-
 test("a domain's state follows its flags", () => {
 	const active = { Endpoint: "e", Processing: false, Deleted: false };
 	assert.equal(domainState(active), "active");
@@ -544,6 +537,7 @@ test("every option has a row, in the order of the page", () => {
 		rows.map((r) => r.label),
 		[
 			"Engine version",
+			"Advanced options",
 			"Cluster configuration",
 			"EBS storage",
 			"Access policy",
@@ -552,9 +546,9 @@ test("every option has a row, in the order of the page", () => {
 			"Domain endpoint",
 		],
 	);
-	assert.equal(rows[1].status?.UpdateVersion, 3);
-	assert.equal(rows[2].status, undefined);
-	assert.equal(optionRows(undefined).length, 7);
+	assert.equal(rows[2].status?.UpdateVersion, 3);
+	assert.equal(rows[3].status, undefined);
+	assert.equal(optionRows(undefined).length, 8);
 });
 
 test("a domain was created when its first option was", () => {
@@ -628,4 +622,63 @@ test("a failed domain's reason comes from the inventory", () => {
 	assert.equal(inventoryFailure([{ arn, details: { Failure: 7 } }], arn), "");
 	assert.equal(inventoryFailure([{ arn }], arn), "");
 	assert.equal(inventoryFailure([], arn), "");
+});
+
+test("advanced options accept supported string settings and reject unsupported input", () => {
+	assert.deepEqual(
+		advancedOptionsInput('{"override_main_response_version":"true"}'),
+		{ override_main_response_version: "true" },
+	);
+	assert.throws(
+		() => advancedOptionsInput('{"unknown":"true"}'),
+		/Unsupported/,
+	);
+	assert.throws(
+		() => advancedOptionsInput('{"override_main_response_version":true}'),
+		/strings/,
+	);
+	assert.throws(
+		() => advancedOptionsInput('{"override_main_response_version":"yes"}'),
+		/true or false/,
+	);
+	assert.throws(
+		() => advancedOptionsInput('{"indices.fielddata.cache.size":"bad"}'),
+		/integer/,
+	);
+});
+test("upgrade choices come from compatibility for the current source", () => {
+	assert.deepEqual(
+		upgradeTargets([{ SourceVersion: "a", TargetVersions: ["b"] }], "a"),
+		["b"],
+	);
+	assert.deepEqual(upgradeTargets([], "a"), []);
+});
+
+test("advanced options flow through create and update payloads", () => {
+	const form = named({
+		advancedOptions: '{"override_main_response_version":"true"}',
+	});
+	assert.deepEqual(createDomainInput(form).AdvancedOptions, {
+		override_main_response_version: "true",
+	});
+	assert.deepEqual(
+		updateDomainInput(domain, {
+			...formFromDomain(domain),
+			advancedOptions: form.advancedOptions,
+		}),
+		{
+			DomainName: domain.DomainName,
+			AdvancedOptions: { override_main_response_version: "true" },
+		},
+	);
+});
+
+test("clearing provisioned fields sends explicit zeroes", () => {
+	const input = updateDomainInput(domain, {
+		...formFromDomain(domain),
+		iops: "",
+		throughput: "",
+	});
+	assert.equal((input.EBSOptions as { Iops?: number }).Iops, 0);
+	assert.equal((input.EBSOptions as { Throughput?: number }).Throughput, 0);
 });

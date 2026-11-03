@@ -157,12 +157,23 @@ func TestConsoleOpenSearchLifecycle(t *testing.T) {
 		return call("DescribeDomain", map[string]any{"DomainName": name})["DomainStatus"].(map[string]any)
 	}
 
+	settled := func() {
+		t.Helper()
+		waitFor(
+			t,
+			"console domain change to finish",
+			func() bool { return describe("console-search")["Processing"] == false },
+		)
+	}
+
 	changed := describe("console-search")
 	cluster, volume = changed["ClusterConfig"].(map[string]any), changed["EBSOptions"].(map[string]any)
 	if cluster["InstanceCount"] != float64(4) || cluster["InstanceType"] != "m5.large.search" ||
 		volume["VolumeSize"] != float64(40) || volume["Iops"] != float64(3000) || changed["AccessPolicies"] != policy {
 		t.Fatal(changed)
 	}
+
+	settled()
 
 	// Turning dedicated masters off drops their type and count.
 	call("UpdateDomainConfig", map[string]any{
@@ -174,6 +185,8 @@ func TestConsoleOpenSearchLifecycle(t *testing.T) {
 		cluster["DedicatedMasterCount"] != nil {
 		t.Fatal(cluster)
 	}
+
+	settled()
 
 	// An empty policy removes the access policy, and the page edits the policy and endpoint options.
 	call("UpdateDomainConfig", map[string]any{
@@ -191,6 +204,8 @@ func TestConsoleOpenSearchLifecycle(t *testing.T) {
 		endpoint["TLSSecurityPolicy"] != "Policy-Min-TLS-1-2-PFS-2023-10" {
 		t.Fatal(changed)
 	}
+
+	settled()
 
 	// Settings that cannot be undone or are inconsistent are refused.
 	refuse("UpdateDomainConfig", map[string]any{
@@ -253,7 +268,34 @@ func TestConsoleOpenSearchLifecycle(t *testing.T) {
 		t.Fatal(left)
 	}
 
-	// Upgrades are not implemented, so the page does not list them.
-	refuse("UpgradeDomain", map[string]any{"DomainName": "console-search", "TargetVersion": "OpenSearch_3.1"},
-		http.StatusBadRequest, "UnknownOperationException")
+	// The console can discover versions, check compatibility, and inspect checks and upgrades.
+	if versions, _ := call("ListVersions", map[string]any{})["Versions"].([]any); len(versions) == 0 {
+		t.Fatal("missing version catalogue")
+	}
+	compatible := call("GetCompatibleVersions", map[string]any{"DomainName": "console-search"})
+	if entries, _ := compatible["CompatibleVersions"].([]any); len(entries) != 1 {
+		t.Fatal(compatible)
+	}
+	for _, checkOnly := range []bool{true, false} {
+		call(
+			"UpgradeDomain",
+			map[string]any{
+				"DomainName":       "console-search",
+				"TargetVersion":    "OpenSearch_3.1",
+				"PerformCheckOnly": checkOnly,
+			},
+		)
+		settled()
+		status := call("GetUpgradeStatus", map[string]any{"DomainName": "console-search"})
+		if status["StepStatus"] != "SUCCEEDED" {
+			t.Fatal(status)
+		}
+	}
+	if describe("console-search")["EngineVersion"] != "OpenSearch_3.1" {
+		t.Fatal("upgrade did not change the version")
+	}
+	history := call("GetUpgradeHistory", map[string]any{"DomainName": "console-search"})
+	if entries, _ := history["UpgradeHistories"].([]any); len(entries) != 2 {
+		t.Fatal(history)
+	}
 }

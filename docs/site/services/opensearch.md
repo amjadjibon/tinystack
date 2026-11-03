@@ -13,7 +13,7 @@ Manage OpenSearch and Elasticsearch domain configurations and tags, with an opti
 | API version | `2021-01-01` |
 | Scope | Account and region |
 | Execution | Records / optional Docker |
-| Selected operations | 10 of 96 in the pinned model |
+| Selected operations | 15 of 96 in the pinned model |
 
 ## Implemented behavior
 
@@ -24,11 +24,11 @@ See the [implemented feature catalogue](catalogue.md#amazon-opensearch-service) 
 - Records mode runs no search engine: its endpoint is metadata and nothing listens on it.
 - Docker mode runs one single node per domain: instance type and count, dedicated masters, zone awareness and EBS options are records, and UpdateDomainConfig does not resize or restart the container.
 - Access policies, encryption at rest, node-to-node encryption, TLS policy and EnforceHTTPS are configuration only: the Docker data plane serves plain HTTP on a loopback port with no IAM signing or authentication checks. AdvancedSecurityOptions (fine-grained access control) fail with NotImplemented.
-- UpgradeDomain and EngineVersion changes are unsupported; the data plane is reached directly on the published port, not through the gateway by hostname.
 - Docker engine versions are limited to OpenSearch 1.0-1.3, 2.0-2.19 and 3.0-3.9 and Elasticsearch_7.10; the host port changes when a domain's container is recreated, and volumes of an in-memory store stay until the next startup removes them as orphans.
 - VPC options, Cognito authentication, SAML/IAM identity federation, and automated snapshot pauses are excluded from the initial domain slice.
 - Package management, outbound/inbound connections, direct query, application integration, and serverless collections require separate implementations.
-- The console offers only what the service implements: no advanced options, VPC or custom endpoint options, version upgrades, and no search or index view of the engine. ListVersions and GetCompatibleVersions are not implemented, so the engine version is chosen from a fixed list. An EBS volume's IOPS and throughput can be changed but not removed, because UpdateDomainConfig keeps the members a request does not name.
+- Docker engine upgrades and upgrade checks fail explicitly with DisabledOperationException; create another domain with the desired version. Custom AdvancedOptions on create or update also fail explicitly in Docker mode; default options remain configuration metadata.
+- Compatibility is a fixed emulator catalogue with forward minor and next-major upgrades; upgrades simulate processing and do not migrate indexed data. No VPC or custom endpoint editor or search/index view; CloudFormation EngineVersion changes remain explicitly unsupported.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -48,14 +48,19 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `DescribeDomain` | `GET /2021-01-01/opensearch/domain/{DomainName}` |
 | `DescribeDomainConfig` | `GET /2021-01-01/opensearch/domain/{DomainName}/config` |
 | `DescribeDomains` | `POST /2021-01-01/opensearch/domain-info` |
+| `GetCompatibleVersions` | `GET /2021-01-01/opensearch/compatibleVersions` |
+| `GetUpgradeHistory` | `GET /2021-01-01/opensearch/upgradeDomain/{DomainName}/history` |
+| `GetUpgradeStatus` | `GET /2021-01-01/opensearch/upgradeDomain/{DomainName}/status` |
 | `ListDomainNames` | `GET /2021-01-01/domain` |
 | `ListTags` | `GET /2021-01-01/tags` |
+| `ListVersions` | `GET /2021-01-01/opensearch/versions` |
 | `RemoveTags` | `POST /2021-01-01/tags-removal` |
 | `UpdateDomainConfig` | `POST /2021-01-01/opensearch/domain/{DomainName}/config` |
+| `UpgradeDomain` | `POST /2021-01-01/opensearch/upgradeDomain` |
 
 ## Operations not implemented
 
-??? info "86 modeled operations outside the implementation"
+??? info "81 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -101,7 +106,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DissociatePackages`
     - `GetApplication`
     - `GetCapability`
-    - `GetCompatibleVersions`
     - `GetDataSource`
     - `GetDefaultApplicationSetting`
     - `GetDirectQueryDataSource`
@@ -109,8 +113,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetIndex`
     - `GetMigration`
     - `GetPackageVersionHistory`
-    - `GetUpgradeHistory`
-    - `GetUpgradeStatus`
     - `InsightFeedback`
     - `ListApplications`
     - `ListDataSourceAttachments`
@@ -123,7 +125,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListMigrations`
     - `ListPackagesForDomain`
     - `ListScheduledActions`
-    - `ListVersions`
     - `ListVpcEndpointAccess`
     - `ListVpcEndpoints`
     - `ListVpcEndpointsForDomain`
@@ -144,7 +145,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `UpdatePackageScope`
     - `UpdateScheduledAction`
     - `UpdateVpcEndpoint`
-    - `UpgradeDomain`
 
 ## Source and examples
 

@@ -79,7 +79,7 @@ func parseIndexKey(key string) (scope request.Scope, name string, ok bool) {
 
 // ready reports whether the domain's engine answered its last probe.
 func (r *domainRecord) ready() bool {
-	return r.Container != "" && r.Failure == "" && !common.Value(r.Status.Processing)
+	return r.Container != "" && r.Failure == "" && (!common.Value(r.Status.Processing) || !r.PendingUntil.IsZero())
 }
 
 // UseRuntime has every domain run in a container. Domains that already exist, such as those a persistent store
@@ -325,9 +325,11 @@ func (s *Service) advance(ctx context.Context, key string) error {
 
 		current.Container, current.Port, current.Since = started.ID, started.Port, since
 		current.Status.Processing, current.Status.Endpoint = new(true), nil
+		current.Status.DomainProcessingStatus = new("Creating")
 		if probeErr == nil {
 			current.Initialized = true
 			current.Status.Processing = new(false)
+			current.Status.DomainProcessingStatus = new("Active")
 			current.Status.Endpoint = new(fmt.Sprintf("127.0.0.1:%d", started.Port))
 		}
 

@@ -37,6 +37,8 @@ export type DomainStatus = {
 	Deleted?: boolean;
 	Processing?: boolean;
 	AccessPolicies?: string;
+	AdvancedOptions?: Record<string, string>;
+	DomainProcessingStatus?: string;
 	ClusterConfig?: ClusterConfig;
 	EBSOptions?: EBSOptions;
 	EncryptionAtRestOptions?: EncryptionAtRestOptions;
@@ -57,6 +59,7 @@ export type OptionStatus = {
 // The options DescribeDomainConfig reports a status for, with the names the page gives them.
 export const configOptions = [
 	["EngineVersion", "Engine version"],
+	["AdvancedOptions", "Advanced options"],
 	["ClusterConfig", "Cluster configuration"],
 	["EBSOptions", "EBS storage"],
 	["AccessPolicies", "Access policy"],
@@ -71,8 +74,7 @@ export type DomainConfig = Partial<
 
 // Choices ------------------------------------------------------------------
 
-// The service accepts any OpenSearch_X.Y or Elasticsearch_X.Y, but does not implement ListVersions, so the page
-// offers the versions AWS has released that the Docker runtime can start.
+// Fallback choices used before version discovery completes.
 export const engineVersions = [
 	"OpenSearch_3.3",
 	"OpenSearch_3.1",
@@ -133,13 +135,49 @@ const maxThroughput = 4000;
 export const carriesIops = (type: string) => type === "io1" || type === "gp3";
 export const carriesThroughput = (type: string) => type === "gp3";
 
-// The service keeps a volume's IOPS and throughput when only its type changes, so a domain that has them can
-// move only to a type that can carry them.
-export function volumeTypeChoices(current?: EBSOptions) {
-	return volumeTypes.filter(
-		(type) =>
-			(current?.Iops === undefined || carriesIops(type)) &&
-			(current?.Throughput === undefined || carriesThroughput(type)),
+export function advancedOptionsInput(text: string): Record<string, string> {
+	const value = jsonObject(text, "Advanced options");
+	for (const [key, item] of Object.entries(value)) {
+		if (
+			![
+				"override_main_response_version",
+				"rest.action.multi_allow_explicit_index",
+				"indices.fielddata.cache.size",
+				"indices.query.bool.max_clause_count",
+			].includes(key)
+		)
+			throw new Error(`Unsupported advanced option: ${key}`);
+		if (typeof item !== "string")
+			throw new Error("Advanced option values must be strings.");
+		if (
+			[
+				"override_main_response_version",
+				"rest.action.multi_allow_explicit_index",
+			].includes(key) &&
+			item !== "true" &&
+			item !== "false"
+		)
+			throw new Error(`${key} must be true or false.`);
+		if (key.startsWith("indices.") && !/^\d+$/.test(item))
+			throw new Error(`${key} must be a nonnegative integer.`);
+	}
+	return value as Record<string, string>;
+}
+
+export type UpgradeHistory = {
+	UpgradeName?: string;
+	StartTimestamp?: number;
+	UpgradeStatus?: string;
+	StepsList?: { UpgradeStep?: string; ProgressPercent?: number }[];
+};
+
+export function upgradeTargets(
+	compatible: { SourceVersion?: string; TargetVersions?: string[] }[],
+	source?: string,
+) {
+	return (
+		compatible.find((entry) => entry.SourceVersion === source)
+			?.TargetVersions ?? []
 	);
 }
 
@@ -160,6 +198,7 @@ export type DomainForm = {
 	iops: string;
 	throughput: string;
 	policy: string;
+	advancedOptions: string;
 	atRest: boolean;
 	kmsKey: string;
 	nodeToNode: boolean;
@@ -184,6 +223,7 @@ export function emptyDomainForm(): DomainForm {
 		iops: "",
 		throughput: "",
 		policy: "",
+		advancedOptions: "{}",
 		atRest: false,
 		kmsKey: "",
 		nodeToNode: false,
@@ -223,6 +263,7 @@ export function formFromDomain(d: DomainStatus): DomainForm {
 		throughput:
 			volume?.Throughput === undefined ? "" : String(volume.Throughput),
 		policy: prettyPolicy(d.AccessPolicies),
+		advancedOptions: JSON.stringify(d.AdvancedOptions ?? {}, null, 2),
 		atRest: !!d.EncryptionAtRestOptions?.Enabled,
 		kmsKey: d.EncryptionAtRestOptions?.KmsKeyId ?? "",
 		nodeToNode: !!d.NodeToNodeEncryptionOptions?.Enabled,
@@ -364,6 +405,7 @@ export function createDomainInput(f: DomainForm) {
 	const tags = tagsFromRows(f.tags);
 	return {
 		DomainName: name,
+		AdvancedOptions: advancedOptionsInput(f.advancedOptions),
 		EngineVersion: f.engineVersion,
 		ClusterConfig: groups.ClusterConfig.build(f),
 		EBSOptions: groups.EBSOptions.build(f),
@@ -383,6 +425,16 @@ export function updateDomainInput(domain: DomainStatus, form: DomainForm) {
 	for (const [name, group] of Object.entries(groups))
 		if (group.fields.some((field) => form[field] !== before[field]))
 			input[name] = group.build(form);
+	if (input.EBSOptions && form.ebsEnabled) {
+		const storage = input.EBSOptions as EBSOptions;
+		if (domain.EBSOptions?.Iops !== undefined && !form.iops.trim())
+			storage.Iops = 0;
+		if (domain.EBSOptions?.Throughput !== undefined && !form.throughput.trim())
+			storage.Throughput = 0;
+	}
+
+	if (form.advancedOptions !== before.advancedOptions)
+		input.AdvancedOptions = advancedOptionsInput(form.advancedOptions);
 	if (form.policy !== before.policy)
 		input.AccessPolicies = policyText(form.policy);
 	if (Object.keys(input).length === 1)
@@ -501,7 +553,7 @@ export const runtimeHeader = (runtime?: string) =>
 
 export const runtimeNote = (runtime?: string) =>
 	runtime === "docker"
-		? "Each domain runs one single-node OpenSearch or Elasticsearch engine in Docker. A new domain is processing until its engine answers, and the page refreshes the status while a domain changes. Instance, storage and security settings are stored as configuration: they do not resize or secure the engine."
+		? "Each domain runs one single-node OpenSearch or Elasticsearch engine in Docker. A new domain is processing until its engine answers, and the page refreshes the status while a domain changes. Instance, storage and security settings are stored as configuration: they do not resize or secure the engine. Engine upgrades, upgrade checks and custom advanced options are unavailable in Docker mode."
 		: "Domains are stored as records. No search engine runs, so the endpoint is a placeholder name that nothing listens on. Set opensearch.domains to docker for a working engine.";
 
 // connectCommand shows how to reach a Docker domain's engine, which answers plain HTTP on a loopback port. A

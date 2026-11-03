@@ -181,9 +181,14 @@ func TestDockerDomainLifecycle(t *testing.T) {
 		t.Fatalf("update was not recorded: %+v", updated.DomainConfig.ClusterConfig)
 	}
 
-	if status, _ = describe(t, svc, "logs"); *status.Endpoint != "127.0.0.1:19200" || *status.Processing {
+	if status, _ = describe(t, svc, "logs"); *status.Endpoint != "127.0.0.1:19200" || !*status.Processing {
 		t.Fatalf("an update must keep the endpoint: %+v", status)
 	}
+
+	eventually(t, "the configuration change to finish", func() bool {
+		current, _ := describe(t, svc, "logs")
+		return !*current.Processing
+	})
 
 	// An engine that stops answering is started again and the domain processes until it does.
 	rt.become(false)

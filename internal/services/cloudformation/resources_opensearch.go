@@ -162,6 +162,20 @@ func init() {
 				return nil, err
 			}
 
+			described, describeErr := c.call(
+				ctx,
+				"opensearch",
+				"DescribeDomain",
+				map[string]any{memberDomainName: r.Physical},
+			)
+			if describeErr != nil {
+				return nil, describeErr
+			}
+
+			if _, readyErr := readyOpenSearch(ctx, c, r.Physical, described); readyErr != nil {
+				return nil, readyErr
+			}
+
 			arn, _ := r.Attributes[memberArn].(string)
 			if arn != "" {
 				if err := retag(ctx, c, r.Properties, p, openSearchTagger(arn)); err != nil {

@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
@@ -254,7 +255,7 @@ func TestOpenSearchRuntimeLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if after := openSearchDomain(ctx, t, c, "logs"); aws.ToBool(after.Processing) ||
+	if after := openSearchDomain(ctx, t, c, "logs"); !aws.ToBool(after.Processing) ||
 		aws.ToString(
 			after.Endpoint,
 		) != aws.ToString(
@@ -262,6 +263,36 @@ func TestOpenSearchRuntimeLifecycle(t *testing.T) {
 		) || aws.ToInt32(after.ClusterConfig.InstanceCount) != 3 {
 		t.Fatalf("an update keeps the endpoint: %+v", after)
 	}
+
+	if _, upgradeErr := c.UpgradeDomain(
+		ctx,
+		&sdk.UpgradeDomainInput{DomainName: new("logs"), TargetVersion: new("OpenSearch_2.13")},
+	); upgradeErr == nil ||
+		!strings.Contains(upgradeErr.Error(), "Docker mode") {
+		t.Fatalf("Docker upgrades must be explicitly rejected: %v", upgradeErr)
+	}
+	if _, advancedErr := c.UpdateDomainConfig(
+		ctx,
+		&sdk.UpdateDomainConfigInput{
+			DomainName:      new("logs"),
+			AdvancedOptions: map[string]string{"override_main_response_version": "true"},
+		},
+	); advancedErr == nil ||
+		!strings.Contains(advancedErr.Error(), "Docker mode") {
+		t.Fatalf("Docker advanced options must be rejected: %v", advancedErr)
+	}
+	if _, advancedErr := c.CreateDomain(
+		ctx,
+		&sdk.CreateDomainInput{
+			DomainName:      new("custom-options"),
+			AdvancedOptions: map[string]string{"override_main_response_version": "true"},
+		},
+	); advancedErr == nil ||
+		!strings.Contains(advancedErr.Error(), "Docker mode") {
+		t.Fatalf("Docker create advanced options must be rejected: %v", advancedErr)
+	}
+
+	awaitOpenSearchDomain(ctx, t, c, "logs")
 
 	if engines.running() != 1 {
 		t.Fatalf("%d containers, want 1", engines.running())

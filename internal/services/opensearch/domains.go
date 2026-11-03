@@ -3,7 +3,9 @@ package opensearch
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -48,6 +50,10 @@ func (s *Service) CreateDomain(
 	}
 
 	if s.runtime != nil {
+		if len(in.AdvancedOptions) > 0 {
+			return nil, unsupported("Custom advanced options are not supported in Docker mode")
+		}
+
 		if _, engineErr := engineSpec(engineVer); engineErr != nil {
 			return nil, engineErr
 		}
@@ -68,14 +74,16 @@ func (s *Service) CreateDomain(
 	now := time.Now().UTC()
 
 	status := &api.DomainStatus{
-		ARN:            new(arn),
-		DomainId:       new(domainID),
-		DomainName:     new(name),
-		Created:        new(true),
-		Deleted:        new(false),
-		Processing:     new(false),
-		EngineVersion:  new(engineVer),
-		AccessPolicies: in.AccessPolicies,
+		ARN:                    new(arn),
+		DomainId:               new(domainID),
+		DomainName:             new(name),
+		Created:                new(true),
+		Deleted:                new(false),
+		Processing:             new(false),
+		EngineVersion:          new(engineVer),
+		AccessPolicies:         in.AccessPolicies,
+		AdvancedOptions:        defaultAdvancedOptions(),
+		DomainProcessingStatus: new("Active"),
 	}
 
 	if s.runtime == nil {
@@ -83,6 +91,11 @@ func (s *Service) CreateDomain(
 	} else {
 		// The engine's loopback port is known once its container runs; the domain processes until then.
 		status.Processing = new(true)
+		status.DomainProcessingStatus = new("Creating")
+	}
+
+	if changeErr := applyAdvanced(status, in.AdvancedOptions); changeErr != nil {
+		return nil, changeErr
 	}
 
 	base := baseDomain()
@@ -162,7 +175,7 @@ func (s *Service) DescribeDomain(
 
 	var rec *domainRecord
 	key := scope.Key(serviceName, domainKind, *in.DomainName)
-	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		r, found, readErr := storage.Read[domainRecord](tx, key)
 		if readErr != nil {
 			return readErr
@@ -170,6 +183,10 @@ func (s *Service) DescribeDomain(
 
 		if !found {
 			return notFound("Domain not found: %s", *in.DomainName)
+		}
+
+		if changeErr := settle(tx, key, r); changeErr != nil {
+			return changeErr
 		}
 
 		rec = r
@@ -196,7 +213,7 @@ func (s *Service) DescribeDomains(
 	}
 
 	var list []api.DomainStatus
-	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		for _, name := range in.DomainNames {
 			key := scope.Key(serviceName, domainKind, name)
 			r, found, readErr := storage.Read[domainRecord](tx, key)
@@ -205,6 +222,10 @@ func (s *Service) DescribeDomains(
 			}
 
 			if found && r != nil && r.Status != nil {
+				if changeErr := settle(tx, key, r); changeErr != nil {
+					return changeErr
+				}
+
 				list = append(list, *common.Clone(r.Status))
 			}
 		}
@@ -233,7 +254,7 @@ func (s *Service) DescribeDomainConfig(
 
 	var rec *domainRecord
 	key := scope.Key(serviceName, domainKind, *in.DomainName)
-	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		r, found, readErr := storage.Read[domainRecord](tx, key)
 		if readErr != nil {
 			return readErr
@@ -241,6 +262,10 @@ func (s *Service) DescribeDomainConfig(
 
 		if !found {
 			return notFound("Domain not found: %s", *in.DomainName)
+		}
+
+		if changeErr := settle(tx, key, r); changeErr != nil {
+			return changeErr
 		}
 
 		rec = r
@@ -263,14 +288,14 @@ func (s *Service) ListDomainNames(
 	}
 
 	if in != nil && in.EngineType != nil && *in.EngineType != "" {
-		if *in.EngineType != "OpenSearch" && *in.EngineType != "Elasticsearch" {
+		if *in.EngineType != engineOpenSearch && *in.EngineType != engineElasticsearch {
 			return nil, invalid("Invalid EngineType: %s. Must be OpenSearch or Elasticsearch", *in.EngineType)
 		}
 	}
 
 	var infos []api.DomainInfo
 	prefix := scope.Prefix(serviceName, domainKind)
-	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		for _, key := range tx.Keys(prefix) {
 			rec, found, readErr := storage.Read[domainRecord](tx, key)
 			if readErr != nil {
@@ -281,9 +306,13 @@ func (s *Service) ListDomainNames(
 				continue
 			}
 
-			engineType := "OpenSearch"
-			if rec.Status.EngineVersion != nil && strings.HasPrefix(*rec.Status.EngineVersion, "Elasticsearch") {
-				engineType = "Elasticsearch"
+			if settleErr := settle(tx, key, rec); settleErr != nil {
+				return settleErr
+			}
+
+			engineType := engineOpenSearch
+			if rec.Status.EngineVersion != nil && strings.HasPrefix(*rec.Status.EngineVersion, engineElasticsearch) {
+				engineType = engineElasticsearch
 			}
 
 			if in != nil && in.EngineType != nil && *in.EngineType != "" && *in.EngineType != engineType {
@@ -328,6 +357,10 @@ func (s *Service) UpdateDomainConfig(
 		}
 	}
 
+	if s.runtime != nil && len(in.AdvancedOptions) > 0 {
+		return nil, unsupported("Custom advanced options are not supported in Docker mode")
+	}
+
 	key := scope.Key(serviceName, domainKind, *in.DomainName)
 	var updatedRec domainRecord
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -344,10 +377,22 @@ func (s *Service) UpdateDomainConfig(
 			return invalid("Domain %s is being deleted", *in.DomainName)
 		}
 
-		candidate := *rec
+		if changeErr := settle(tx, key, rec); changeErr != nil {
+			return changeErr
+		}
+
+		if !rec.PendingUntil.IsZero() || common.Value(rec.Status.Processing) {
+			return invalid("Domain is processing another change")
+		}
+
+		candidate := *common.Clone(rec)
 		candidate.Status = common.Clone(rec.Status)
 		candidate.Tags = common.CloneTags(rec.Tags)
 		candidate.UpdatedAt = time.Now().UTC()
+		if !candidate.UpdatedAt.After(rec.UpdatedAt.Add(time.Millisecond)) {
+			candidate.UpdatedAt = rec.UpdatedAt.Add(time.Millisecond)
+		}
+
 		candidate.UpdateVersion = rec.UpdateVersion + 1
 
 		if in.AccessPolicies != nil {
@@ -365,6 +410,10 @@ func (s *Service) UpdateDomainConfig(
 			return checkErr
 		}
 
+		if changeErr := applyAdvanced(candidate.Status, in.AdvancedOptions); changeErr != nil {
+			return changeErr
+		}
+		beginChange(&candidate, rec.Status)
 		updatedRec = candidate
 		return storage.Write(tx, key, candidate)
 	})
@@ -410,7 +459,9 @@ func (s *Service) DeleteDomain(
 		}
 
 		// The domain processes until its container and volume are gone, and keeps its name until then.
+		rec.PendingUntil = time.Time{}
 		rec.Status.Deleted, rec.Status.Processing = new(true), new(true)
+		rec.Status.DomainProcessingStatus = new("Deleting")
 		deletedStatus = common.Clone(rec.Status)
 		if writeErr := storage.Write(tx, indexKey(scope, *in.DomainName), true); writeErr != nil {
 			return writeErr
@@ -490,10 +541,22 @@ func merge(status *api.DomainStatus, o domainOptions) {
 
 		cur := status.EBSOptions
 		cur.EBSEnabled = common.OrElse(e.EBSEnabled, cur.EBSEnabled)
+		previousType := common.Value(cur.VolumeType)
 		cur.VolumeType = common.OrElse(e.VolumeType, cur.VolumeType)
 		cur.VolumeSize = common.OrElse(e.VolumeSize, cur.VolumeSize)
+		if e.VolumeType != nil && *e.VolumeType != previousType {
+			cur.Iops, cur.Throughput = nil, nil
+		}
+
 		cur.Iops = common.OrElse(e.Iops, cur.Iops)
 		cur.Throughput = common.OrElse(e.Throughput, cur.Throughput)
+		if common.Value(cur.Iops) == 0 {
+			cur.Iops = nil
+		}
+
+		if common.Value(cur.Throughput) == 0 {
+			cur.Throughput = nil
+		}
 	}
 
 	if e := o.atRest; e != nil {
@@ -608,8 +671,8 @@ func checkDomain(status, previous *api.DomainStatus) error {
 
 func defaultOptionStatus(created, updated time.Time, version int64) *api.OptionStatus {
 	return &api.OptionStatus{
-		CreationDate:    common.Seconds(created),
-		UpdateDate:      common.Seconds(updated),
+		CreationDate:    common.SecondsMilli(created),
+		UpdateDate:      common.SecondsMilli(updated),
 		UpdateVersion:   new(version),
 		State:           new("Active"),
 		PendingDeletion: new(false),
@@ -617,37 +680,155 @@ func defaultOptionStatus(created, updated time.Time, version int64) *api.OptionS
 }
 
 func domainConfigFromRecord(rec *domainRecord) *api.DomainConfig {
-	optStatus := defaultOptionStatus(rec.CreatedAt, rec.UpdatedAt, rec.UpdateVersion)
+	status := func(name string) *api.OptionStatus {
+		if st := rec.OptionStatuses[name]; st != nil {
+			return st
+		}
+
+		st := defaultOptionStatus(rec.CreatedAt, rec.CreatedAt, 1)
+		if common.Value(rec.Status.Processing) && rec.PendingUntil.IsZero() {
+			st.State = new("Processing")
+		}
+
+		return st
+	}
+
 	cfg := &api.DomainConfig{
+		AdvancedOptions: &api.AdvancedOptionsStatus{
+			Options: rec.Status.AdvancedOptions,
+			Status:  status("AdvancedOptions"),
+		},
 		EngineVersion: &api.VersionStatus{
 			Options: rec.Status.EngineVersion,
-			Status:  optStatus,
+			Status:  status("EngineVersion"),
 		},
 		ClusterConfig: &api.ClusterConfigStatus{
 			Options: rec.Status.ClusterConfig,
-			Status:  optStatus,
+			Status:  status("ClusterConfig"),
 		},
 		EBSOptions: &api.EBSOptionsStatus{
 			Options: rec.Status.EBSOptions,
-			Status:  optStatus,
+			Status:  status("EBSOptions"),
 		},
 		AccessPolicies: &api.AccessPoliciesStatus{
 			Options: rec.Status.AccessPolicies,
-			Status:  optStatus,
+			Status:  status("AccessPolicies"),
 		},
 		EncryptionAtRestOptions: &api.EncryptionAtRestOptionsStatus{
 			Options: rec.Status.EncryptionAtRestOptions,
-			Status:  optStatus,
+			Status:  status("EncryptionAtRestOptions"),
 		},
 		NodeToNodeEncryptionOptions: &api.NodeToNodeEncryptionOptionsStatus{
 			Options: rec.Status.NodeToNodeEncryptionOptions,
-			Status:  optStatus,
+			Status:  status("NodeToNodeEncryptionOptions"),
 		},
 		DomainEndpointOptions: &api.DomainEndpointOptionsStatus{
 			Options: rec.Status.DomainEndpointOptions,
-			Status:  optStatus,
+			Status:  status("DomainEndpointOptions"),
 		},
 	}
 
+	if common.Value(rec.Status.UpgradeProcessing) && !rec.UpgradeCheck {
+		cfg.EngineVersion.Options = new(rec.UpgradeTarget)
+	}
+
 	return cfg
+}
+
+// beginChange records only changed options; unrelated option dates and versions stay stable.
+func beginChange(rec *domainRecord, previous *api.DomainStatus) {
+	if rec.OptionStatuses == nil {
+		rec.OptionStatuses = map[string]*api.OptionStatus{}
+	}
+
+	before, after := reflect.ValueOf(previous).Elem(), reflect.ValueOf(rec.Status).Elem()
+	for _, name := range []string{
+		"EngineVersion", "ClusterConfig", "EBSOptions", "AccessPolicies", "AdvancedOptions",
+		"EncryptionAtRestOptions", "NodeToNodeEncryptionOptions", "DomainEndpointOptions",
+	} {
+		old, pending := before.FieldByName(name).Interface(), after.FieldByName(name).Interface()
+		if reflect.DeepEqual(old, pending) {
+			continue
+		}
+
+		st := rec.OptionStatuses[name]
+		if st == nil {
+			st = defaultOptionStatus(rec.CreatedAt, rec.CreatedAt, 1)
+		}
+
+		st.UpdateVersion = new(common.Value(st.UpdateVersion) + 1)
+		st.UpdateDate, st.State = common.SecondsMilli(rec.UpdatedAt), new("Processing")
+		rec.OptionStatuses[name] = st
+		activeJSON, _ := json.Marshal(old)
+		pendingJSON, _ := json.Marshal(pending)
+		rec.Status.ModifyingProperties = append(rec.Status.ModifyingProperties, api.ModifyingProperties{
+			Name: new(
+				name,
+			),
+			ActiveValue:  new(string(activeJSON)),
+			PendingValue: new(string(pendingJSON)),
+			ValueType:    new("PLAIN_TEXT"),
+		})
+	}
+
+	if len(rec.Status.ModifyingProperties) > 0 {
+		rec.PendingUntil = rec.UpdatedAt.Add(time.Second)
+		rec.Status.Processing, rec.Status.DomainProcessingStatus = new(true), new("Modifying")
+	}
+}
+
+// settle persists completion on the next observation, including after a process restart.
+func settle(tx storage.WriteTx, key string, rec *domainRecord) error {
+	if rec.PendingUntil.IsZero() || time.Now().Before(rec.PendingUntil) {
+		return nil
+	}
+
+	rec.PendingUntil = time.Time{}
+	rec.Status.Processing, rec.Status.UpgradeProcessing = new(false), new(false)
+	rec.Status.DomainProcessingStatus = new("Active")
+	rec.Status.ModifyingProperties = nil
+	for _, st := range rec.OptionStatuses {
+		st.State = new("Active")
+	}
+
+	if len(rec.History) > 0 && common.Value(rec.History[len(rec.History)-1].UpgradeStatus) == "IN_PROGRESS" {
+		h := &rec.History[len(rec.History)-1]
+		h.UpgradeStatus = new("SUCCEEDED")
+		h.StepsList[0].UpgradeStepStatus, h.StepsList[0].ProgressPercent = new("SUCCEEDED"), new(float64(100))
+		if !rec.UpgradeCheck {
+			rec.Status.EngineVersion = new(rec.UpgradeTarget)
+		}
+	}
+
+	return storage.Write(tx, key, *rec)
+}
+
+func defaultAdvancedOptions() map[string]string {
+	return map[string]string{
+		"override_main_response_version":         "false",
+		"rest.action.multi_allow_explicit_index": "true",
+		"indices.fielddata.cache.size":           "20",
+		"indices.query.bool.max_clause_count":    "1024",
+	}
+}
+
+func applyAdvanced(status *api.DomainStatus, options map[string]string) error {
+	for k, v := range options {
+		switch k {
+		case "override_main_response_version", "rest.action.multi_allow_explicit_index":
+			if v != "true" && v != "false" {
+				return invalid("%s must be true or false", k)
+			}
+		case "indices.fielddata.cache.size", "indices.query.bool.max_clause_count":
+			if n, err := strconv.Atoi(v); err != nil || n < 0 {
+				return invalid("%s must be a nonnegative integer", k)
+			}
+		default:
+			return unsupported("Advanced option %s is not supported", k)
+		}
+
+		status.AdvancedOptions[k] = v
+	}
+
+	return nil
 }

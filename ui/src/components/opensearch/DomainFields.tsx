@@ -8,6 +8,7 @@ import {
 import type { ReactNode } from "react";
 import { TagRowsField } from "#/components/elbv2/Shared";
 import { Pick, Text } from "#/components/memorydb/Fields";
+import { type OpenSearchScope, opensearchCall } from "#/lib/opensearch";
 import {
 	carriesIops,
 	carriesThroughput,
@@ -16,9 +17,9 @@ import {
 	engineVersions,
 	instanceTypes,
 	tlsPolicies,
-	volumeTypeChoices,
 	volumeTypes,
 } from "#/lib/opensearchHelpers";
+import { usePoll } from "#/lib/usePoll";
 
 type Patch = (patch: Partial<DomainForm>) => void;
 
@@ -87,17 +88,14 @@ function ClusterFields({ form, set }: { form: DomainForm; set: Patch }) {
 function StorageFields({
 	form,
 	set,
-	domain,
 }: {
 	form: DomainForm;
 	set: Patch;
 	domain?: DomainStatus;
 }) {
-	// A domain keeps its IOPS and throughput when the volume type changes, so it can move only to a type that takes them.
-	const types = domain ? volumeTypeChoices(domain.EBSOptions) : volumeTypes;
-	const optional = domain
-		? "Optional. A stored value can be changed but not removed."
-		: "Optional.";
+	// The backend drops stale provisioned settings when the volume type changes.
+	const types = volumeTypes;
+	const optional = "Optional. Clear to remove a stored value.";
 	return (
 		<Section title="Storage">
 			<Toggle
@@ -214,11 +212,17 @@ export function DomainFormFields({
 	form,
 	set,
 	domain,
+	scope,
 }: {
 	form: DomainForm;
 	set: Patch;
 	domain?: DomainStatus;
+	scope: OpenSearchScope;
 }) {
+	const versions = usePoll(
+		() => opensearchCall<{ Versions?: string[] }>(scope, "ListVersions"),
+		0,
+	);
 	return (
 		<SpaceBetween size="l">
 			{!domain && (
@@ -233,8 +237,8 @@ export function DomainFormFields({
 						label="Engine version"
 						value={form.engineVersion}
 						placeholder="Choose an engine version"
-						description="The versions TinyStack can run in Docker. A domain keeps its version: TinyStack does not implement upgrades."
-						options={options(engineVersions)}
+						description="Choose an engine version. Records domains can be upgraded later."
+						options={options(versions.data?.Versions ?? engineVersions)}
 						onChange={(engineVersion) => set({ engineVersion })}
 					/>
 				</Section>
@@ -252,6 +256,18 @@ export function DomainFormFields({
 						rows={8}
 						value={form.policy}
 						onChange={({ detail }) => set({ policy: detail.value })}
+					/>
+				</FormField>
+			</Section>
+			<Section title="Advanced options">
+				<FormField
+					label="Advanced options (JSON)"
+					description="String values. Omitted keys keep their current values."
+				>
+					<Textarea
+						value={form.advancedOptions}
+						onChange={({ detail }) => set({ advancedOptions: detail.value })}
+						rows={6}
 					/>
 				</FormField>
 			</Section>

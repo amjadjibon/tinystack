@@ -35,8 +35,9 @@ import {
 import { usePoll } from "#/lib/usePoll";
 import { DeleteDomainDialog, EditDomainDialog } from "./DomainDialogs";
 import { DomainTags } from "./Shared";
+import { UpgradeDialog } from "./UpgradeDialog";
 
-type Dialog = "" | "edit" | "delete";
+type Dialog = "" | "edit" | "delete" | "upgrade";
 
 export function DomainDetails({
 	scope,
@@ -92,7 +93,18 @@ export function DomainDetails({
 						<Action onClick={poll.reload}>Refresh</Action>
 						<Action onClick={onBack}>Back to domains</Action>
 						<Action
-							disabled={!enabled || !domain || state === "deleting"}
+							disabled={
+								!enabled ||
+								!domain ||
+								state !== "active" ||
+								runtime === "docker"
+							}
+							onClick={() => setDialog("upgrade")}
+						>
+							Upgrade engine
+						</Action>
+						<Action
+							disabled={!enabled || !domain || state !== "active"}
 							onClick={() => setDialog("edit")}
 						>
 							Edit
@@ -241,6 +253,52 @@ export function DomainDetails({
 					)}
 				</Container>
 			)}
+			{domain && (
+				<Container header={<Header variant="h2">Advanced options</Header>}>
+					<CodeBlock
+						text={JSON.stringify(domain.AdvancedOptions ?? {}, null, 2)}
+					/>
+				</Container>
+			)}
+			{domain && (
+				<Container
+					header={
+						<Header
+							variant="h2"
+							description={
+								poll.data?.upgrade.StepStatus
+									? `${poll.data.upgrade.UpgradeStep}: ${poll.data.upgrade.StepStatus}`
+									: "No upgrade has run"
+							}
+						>
+							Upgrade history
+						</Header>
+					}
+				>
+					<Table
+						variant="embedded"
+						items={poll.data?.history ?? []}
+						columnDefinitions={[
+							{
+								id: "name",
+								header: "Upgrade",
+								cell: (h) => h.UpgradeName ?? "-",
+							},
+							{
+								id: "start",
+								header: "Started",
+								cell: (h) => unixTime(h.StartTimestamp),
+							},
+							{
+								id: "status",
+								header: "Status",
+								cell: (h) => h.UpgradeStatus ?? "-",
+							},
+						]}
+						empty="No upgrade history"
+					/>
+				</Container>
+			)}
 			{config && (
 				<Container
 					header={
@@ -285,6 +343,17 @@ export function DomainDetails({
 			)}
 			{domain && (
 				<DomainTags scope={scope} arn={domain.ARN ?? ""} enabled={enabled} />
+			)}
+			{dialog === "upgrade" && domain && (
+				<UpgradeDialog
+					scope={scope}
+					domain={domain}
+					onClose={() => setDialog("")}
+					onSaved={() => {
+						setDialog("");
+						refresh();
+					}}
+				/>
 			)}
 			{dialog === "edit" && domain && (
 				<EditDomainDialog

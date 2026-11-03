@@ -61,6 +61,14 @@ type CreateDomainRequest struct {
 	EngineVersion               *string                      `json:"EngineVersion,omitempty"`
 	NodeToNodeEncryptionOptions *NodeToNodeEncryptionOptions `json:"NodeToNodeEncryptionOptions,omitempty"`
 	TagList                     []Tag                        `json:"TagList,omitempty"`
+	AdvancedOptions             map[string]string            `json:"AdvancedOptions,omitempty"`
+}
+
+type ModifyingProperties struct {
+	Name         *string `json:"Name,omitempty"`
+	ActiveValue  *string `json:"ActiveValue,omitempty"`
+	PendingValue *string `json:"PendingValue,omitempty"`
+	ValueType    *string `json:"ValueType,omitempty"`
 }
 
 type DomainStatus struct {
@@ -78,6 +86,10 @@ type DomainStatus struct {
 	EngineVersion               *string                      `json:"EngineVersion,omitempty"`
 	NodeToNodeEncryptionOptions *NodeToNodeEncryptionOptions `json:"NodeToNodeEncryptionOptions,omitempty"`
 	Processing                  *bool                        `json:"Processing,omitempty"`
+	AdvancedOptions             map[string]string            `json:"AdvancedOptions,omitempty"`
+	DomainProcessingStatus      *string                      `json:"DomainProcessingStatus,omitempty"`
+	ModifyingProperties         []ModifyingProperties        `json:"ModifyingProperties,omitempty"`
+	UpgradeProcessing           *bool                        `json:"UpgradeProcessing,omitempty"`
 }
 
 type CreateDomainResponse struct {
@@ -147,6 +159,11 @@ type NodeToNodeEncryptionOptionsStatus struct {
 	Status  *OptionStatus                `json:"Status,omitempty"`
 }
 
+type AdvancedOptionsStatus struct {
+	Options map[string]string `json:"Options,omitempty"`
+	Status  *OptionStatus     `json:"Status,omitempty"`
+}
+
 type DomainConfig struct {
 	AccessPolicies              *AccessPoliciesStatus              `json:"AccessPolicies,omitempty"`
 	ClusterConfig               *ClusterConfigStatus               `json:"ClusterConfig,omitempty"`
@@ -155,6 +172,7 @@ type DomainConfig struct {
 	EncryptionAtRestOptions     *EncryptionAtRestOptionsStatus     `json:"EncryptionAtRestOptions,omitempty"`
 	EngineVersion               *VersionStatus                     `json:"EngineVersion,omitempty"`
 	NodeToNodeEncryptionOptions *NodeToNodeEncryptionOptionsStatus `json:"NodeToNodeEncryptionOptions,omitempty"`
+	AdvancedOptions             *AdvancedOptionsStatus             `json:"AdvancedOptions,omitempty"`
 }
 
 type DescribeDomainConfigResponse struct {
@@ -167,6 +185,54 @@ type DescribeDomainsRequest struct {
 
 type DescribeDomainsResponse struct {
 	DomainStatusList []DomainStatus `json:"DomainStatusList,omitempty"`
+}
+
+type GetCompatibleVersionsRequest struct {
+	DomainName *string `json:"-"`
+}
+
+type CompatibleVersionsMap struct {
+	SourceVersion  *string  `json:"SourceVersion,omitempty"`
+	TargetVersions []string `json:"TargetVersions,omitempty"`
+}
+
+type GetCompatibleVersionsResponse struct {
+	CompatibleVersions []CompatibleVersionsMap `json:"CompatibleVersions,omitempty"`
+}
+
+type GetUpgradeHistoryRequest struct {
+	DomainName *string `json:"-"`
+	MaxResults *int64  `json:"-"`
+	NextToken  *string `json:"-"`
+}
+
+type UpgradeStepItem struct {
+	UpgradeStep       *string  `json:"UpgradeStep,omitempty"`
+	UpgradeStepStatus *string  `json:"UpgradeStepStatus,omitempty"`
+	Issues            []string `json:"Issues,omitempty"`
+	ProgressPercent   *float64 `json:"ProgressPercent,omitempty"`
+}
+
+type UpgradeHistory struct {
+	UpgradeName    *string           `json:"UpgradeName,omitempty"`
+	StartTimestamp *float64          `json:"StartTimestamp,omitempty"`
+	UpgradeStatus  *string           `json:"UpgradeStatus,omitempty"`
+	StepsList      []UpgradeStepItem `json:"StepsList,omitempty"`
+}
+
+type GetUpgradeHistoryResponse struct {
+	UpgradeHistories []UpgradeHistory `json:"UpgradeHistories,omitempty"`
+	NextToken        *string          `json:"NextToken,omitempty"`
+}
+
+type GetUpgradeStatusRequest struct {
+	DomainName *string `json:"-"`
+}
+
+type GetUpgradeStatusResponse struct {
+	UpgradeStep *string `json:"UpgradeStep,omitempty"`
+	StepStatus  *string `json:"StepStatus,omitempty"`
+	UpgradeName *string `json:"UpgradeName,omitempty"`
 }
 
 type ListDomainNamesRequest struct {
@@ -190,6 +256,16 @@ type ListTagsResponse struct {
 	TagList []Tag `json:"TagList,omitempty"`
 }
 
+type ListVersionsRequest struct {
+	MaxResults *int64  `json:"-"`
+	NextToken  *string `json:"-"`
+}
+
+type ListVersionsResponse struct {
+	Versions  []string `json:"Versions,omitempty"`
+	NextToken *string  `json:"NextToken,omitempty"`
+}
+
 type RemoveTagsOutput struct{}
 
 type RemoveTagsRequest struct {
@@ -205,10 +281,26 @@ type UpdateDomainConfigRequest struct {
 	EBSOptions                  *EBSOptions                  `json:"EBSOptions,omitempty"`
 	EncryptionAtRestOptions     *EncryptionAtRestOptions     `json:"EncryptionAtRestOptions,omitempty"`
 	NodeToNodeEncryptionOptions *NodeToNodeEncryptionOptions `json:"NodeToNodeEncryptionOptions,omitempty"`
+	AdvancedOptions             map[string]string            `json:"AdvancedOptions,omitempty"`
 }
 
 type UpdateDomainConfigResponse struct {
 	DomainConfig *DomainConfig `json:"DomainConfig,omitempty"`
+}
+
+type UpgradeDomainRequest struct {
+	DomainName       *string           `json:"DomainName,omitempty"`
+	TargetVersion    *string           `json:"TargetVersion,omitempty"`
+	PerformCheckOnly *bool             `json:"PerformCheckOnly,omitempty"`
+	AdvancedOptions  map[string]string `json:"AdvancedOptions,omitempty"`
+}
+
+type UpgradeDomainResponse struct {
+	UpgradeId        *string           `json:"UpgradeId,omitempty"`
+	DomainName       *string           `json:"DomainName,omitempty"`
+	TargetVersion    *string           `json:"TargetVersion,omitempty"`
+	PerformCheckOnly *bool             `json:"PerformCheckOnly,omitempty"`
+	AdvancedOptions  map[string]string `json:"AdvancedOptions,omitempty"`
 }
 
 type API interface {
@@ -218,16 +310,21 @@ type API interface {
 	DescribeDomain(context.Context, *DescribeDomainRequest) (*DescribeDomainResponse, error)
 	DescribeDomainConfig(context.Context, *DescribeDomainConfigRequest) (*DescribeDomainConfigResponse, error)
 	DescribeDomains(context.Context, *DescribeDomainsRequest) (*DescribeDomainsResponse, error)
+	GetCompatibleVersions(context.Context, *GetCompatibleVersionsRequest) (*GetCompatibleVersionsResponse, error)
+	GetUpgradeHistory(context.Context, *GetUpgradeHistoryRequest) (*GetUpgradeHistoryResponse, error)
+	GetUpgradeStatus(context.Context, *GetUpgradeStatusRequest) (*GetUpgradeStatusResponse, error)
 	ListDomainNames(context.Context, *ListDomainNamesRequest) (*ListDomainNamesResponse, error)
 	ListTags(context.Context, *ListTagsRequest) (*ListTagsResponse, error)
+	ListVersions(context.Context, *ListVersionsRequest) (*ListVersionsResponse, error)
 	RemoveTags(context.Context, *RemoveTagsRequest) (*RemoveTagsOutput, error)
 	UpdateDomainConfig(context.Context, *UpdateDomainConfigRequest) (*UpdateDomainConfigResponse, error)
+	UpgradeDomain(context.Context, *UpgradeDomainRequest) (*UpgradeDomainResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
 	return catalog.Service{Name: "opensearch", SigningName: "es", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "es", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"BaseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "DisabledOperationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "InternalException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidTypeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "ValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"AddTags": {Name: "AddTags", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "es:AddTags", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ARN": catalog.MemberBinding{Location: "document", Name: "ARN", Format: ""}, "TagList": catalog.MemberBinding{Location: "document", Name: "TagList", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/2021-01-01/tags", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &AddTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.AddTags(ctx, input.(*AddTagsRequest)) }},
-		"CreateDomain": {Name: "CreateDomain", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "es:CreateDomain", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccessPolicies": catalog.MemberBinding{Location: "document", Name: "AccessPolicies", Format: ""}, "ClusterConfig": catalog.MemberBinding{Location: "document", Name: "ClusterConfig", Format: ""}, "DomainEndpointOptions": catalog.MemberBinding{Location: "document", Name: "DomainEndpointOptions", Format: ""}, "DomainName": catalog.MemberBinding{Location: "document", Name: "DomainName", Format: ""}, "EBSOptions": catalog.MemberBinding{Location: "document", Name: "EBSOptions", Format: ""}, "EncryptionAtRestOptions": catalog.MemberBinding{Location: "document", Name: "EncryptionAtRestOptions", Format: ""}, "EngineVersion": catalog.MemberBinding{Location: "document", Name: "EngineVersion", Format: ""}, "NodeToNodeEncryptionOptions": catalog.MemberBinding{Location: "document", Name: "NodeToNodeEncryptionOptions", Format: ""}, "TagList": catalog.MemberBinding{Location: "document", Name: "TagList", Format: ""}}, Output: map[string]catalog.MemberBinding{"DomainStatus": catalog.MemberBinding{Location: "document", Name: "DomainStatus", Format: ""}}, Method: "POST", URI: "/2021-01-01/opensearch/domain", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateDomainRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"CreateDomain": {Name: "CreateDomain", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "es:CreateDomain", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccessPolicies": catalog.MemberBinding{Location: "document", Name: "AccessPolicies", Format: ""}, "AdvancedOptions": catalog.MemberBinding{Location: "document", Name: "AdvancedOptions", Format: ""}, "ClusterConfig": catalog.MemberBinding{Location: "document", Name: "ClusterConfig", Format: ""}, "DomainEndpointOptions": catalog.MemberBinding{Location: "document", Name: "DomainEndpointOptions", Format: ""}, "DomainName": catalog.MemberBinding{Location: "document", Name: "DomainName", Format: ""}, "EBSOptions": catalog.MemberBinding{Location: "document", Name: "EBSOptions", Format: ""}, "EncryptionAtRestOptions": catalog.MemberBinding{Location: "document", Name: "EncryptionAtRestOptions", Format: ""}, "EngineVersion": catalog.MemberBinding{Location: "document", Name: "EngineVersion", Format: ""}, "NodeToNodeEncryptionOptions": catalog.MemberBinding{Location: "document", Name: "NodeToNodeEncryptionOptions", Format: ""}, "TagList": catalog.MemberBinding{Location: "document", Name: "TagList", Format: ""}}, Output: map[string]catalog.MemberBinding{"DomainStatus": catalog.MemberBinding{Location: "document", Name: "DomainStatus", Format: ""}}, Method: "POST", URI: "/2021-01-01/opensearch/domain", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateDomainRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateDomain(ctx, input.(*CreateDomainRequest))
 		}},
 		"DeleteDomain": {Name: "DeleteDomain", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "es:DeleteDomain", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"DomainName": catalog.MemberBinding{Location: "label", Name: "DomainName", Format: ""}}, Output: map[string]catalog.MemberBinding{"DomainStatus": catalog.MemberBinding{Location: "document", Name: "DomainStatus", Format: ""}}, Method: "DELETE", URI: "/2021-01-01/opensearch/domain/{DomainName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteDomainRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
@@ -242,15 +339,30 @@ func Descriptor(api API) catalog.Service {
 		"DescribeDomains": {Name: "DescribeDomains", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "es:DescribeDomains", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"DomainNames": catalog.MemberBinding{Location: "document", Name: "DomainNames", Format: ""}}, Output: map[string]catalog.MemberBinding{"DomainStatusList": catalog.MemberBinding{Location: "document", Name: "DomainStatusList", Format: ""}}, Method: "POST", URI: "/2021-01-01/opensearch/domain-info", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeDomainsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DescribeDomains(ctx, input.(*DescribeDomainsRequest))
 		}},
+		"GetCompatibleVersions": {Name: "GetCompatibleVersions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "es:GetCompatibleVersions", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"DomainName": catalog.MemberBinding{Location: "query", Name: "domainName", Format: ""}}, Output: map[string]catalog.MemberBinding{"CompatibleVersions": catalog.MemberBinding{Location: "document", Name: "CompatibleVersions", Format: ""}}, Method: "GET", URI: "/2021-01-01/opensearch/compatibleVersions", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetCompatibleVersionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetCompatibleVersions(ctx, input.(*GetCompatibleVersionsRequest))
+		}},
+		"GetUpgradeHistory": {Name: "GetUpgradeHistory", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "es:GetUpgradeHistory", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"DomainName": catalog.MemberBinding{Location: "label", Name: "DomainName", Format: ""}, "MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}, "UpgradeHistories": catalog.MemberBinding{Location: "document", Name: "UpgradeHistories", Format: ""}}, Method: "GET", URI: "/2021-01-01/opensearch/upgradeDomain/{DomainName}/history", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetUpgradeHistoryRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetUpgradeHistory(ctx, input.(*GetUpgradeHistoryRequest))
+		}},
+		"GetUpgradeStatus": {Name: "GetUpgradeStatus", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "es:GetUpgradeStatus", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"DomainName": catalog.MemberBinding{Location: "label", Name: "DomainName", Format: ""}}, Output: map[string]catalog.MemberBinding{"StepStatus": catalog.MemberBinding{Location: "document", Name: "StepStatus", Format: ""}, "UpgradeName": catalog.MemberBinding{Location: "document", Name: "UpgradeName", Format: ""}, "UpgradeStep": catalog.MemberBinding{Location: "document", Name: "UpgradeStep", Format: ""}}, Method: "GET", URI: "/2021-01-01/opensearch/upgradeDomain/{DomainName}/status", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetUpgradeStatusRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetUpgradeStatus(ctx, input.(*GetUpgradeStatusRequest))
+		}},
 		"ListDomainNames": {Name: "ListDomainNames", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "es:ListDomainNames", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"EngineType": catalog.MemberBinding{Location: "query", Name: "engineType", Format: ""}}, Output: map[string]catalog.MemberBinding{"DomainNames": catalog.MemberBinding{Location: "document", Name: "DomainNames", Format: ""}}, Method: "GET", URI: "/2021-01-01/domain", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListDomainNamesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListDomainNames(ctx, input.(*ListDomainNamesRequest))
 		}},
 		"ListTags": {Name: "ListTags", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "es:ListTags", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ARN": catalog.MemberBinding{Location: "query", Name: "arn", Format: ""}}, Output: map[string]catalog.MemberBinding{"TagList": catalog.MemberBinding{Location: "document", Name: "TagList", Format: ""}}, Method: "GET", URI: "/2021-01-01/tags", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.ListTags(ctx, input.(*ListTagsRequest)) }},
+		"ListVersions": {Name: "ListVersions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "es:ListVersions", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}, "Versions": catalog.MemberBinding{Location: "document", Name: "Versions", Format: ""}}, Method: "GET", URI: "/2021-01-01/opensearch/versions", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListVersionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListVersions(ctx, input.(*ListVersionsRequest))
+		}},
 		"RemoveTags": {Name: "RemoveTags", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "es:RemoveTags", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ARN": catalog.MemberBinding{Location: "document", Name: "ARN", Format: ""}, "TagKeys": catalog.MemberBinding{Location: "document", Name: "TagKeys", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/2021-01-01/tags-removal", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &RemoveTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.RemoveTags(ctx, input.(*RemoveTagsRequest))
 		}},
-		"UpdateDomainConfig": {Name: "UpdateDomainConfig", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "es:UpdateDomainConfig", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccessPolicies": catalog.MemberBinding{Location: "document", Name: "AccessPolicies", Format: ""}, "ClusterConfig": catalog.MemberBinding{Location: "document", Name: "ClusterConfig", Format: ""}, "DomainEndpointOptions": catalog.MemberBinding{Location: "document", Name: "DomainEndpointOptions", Format: ""}, "DomainName": catalog.MemberBinding{Location: "label", Name: "DomainName", Format: ""}, "EBSOptions": catalog.MemberBinding{Location: "document", Name: "EBSOptions", Format: ""}, "EncryptionAtRestOptions": catalog.MemberBinding{Location: "document", Name: "EncryptionAtRestOptions", Format: ""}, "NodeToNodeEncryptionOptions": catalog.MemberBinding{Location: "document", Name: "NodeToNodeEncryptionOptions", Format: ""}}, Output: map[string]catalog.MemberBinding{"DomainConfig": catalog.MemberBinding{Location: "document", Name: "DomainConfig", Format: ""}}, Method: "POST", URI: "/2021-01-01/opensearch/domain/{DomainName}/config", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateDomainConfigRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UpdateDomainConfig": {Name: "UpdateDomainConfig", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "es:UpdateDomainConfig", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccessPolicies": catalog.MemberBinding{Location: "document", Name: "AccessPolicies", Format: ""}, "AdvancedOptions": catalog.MemberBinding{Location: "document", Name: "AdvancedOptions", Format: ""}, "ClusterConfig": catalog.MemberBinding{Location: "document", Name: "ClusterConfig", Format: ""}, "DomainEndpointOptions": catalog.MemberBinding{Location: "document", Name: "DomainEndpointOptions", Format: ""}, "DomainName": catalog.MemberBinding{Location: "label", Name: "DomainName", Format: ""}, "EBSOptions": catalog.MemberBinding{Location: "document", Name: "EBSOptions", Format: ""}, "EncryptionAtRestOptions": catalog.MemberBinding{Location: "document", Name: "EncryptionAtRestOptions", Format: ""}, "NodeToNodeEncryptionOptions": catalog.MemberBinding{Location: "document", Name: "NodeToNodeEncryptionOptions", Format: ""}}, Output: map[string]catalog.MemberBinding{"DomainConfig": catalog.MemberBinding{Location: "document", Name: "DomainConfig", Format: ""}}, Method: "POST", URI: "/2021-01-01/opensearch/domain/{DomainName}/config", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateDomainConfigRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.UpdateDomainConfig(ctx, input.(*UpdateDomainConfigRequest))
+		}},
+		"UpgradeDomain": {Name: "UpgradeDomain", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "es:UpgradeDomain", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AdvancedOptions": catalog.MemberBinding{Location: "document", Name: "AdvancedOptions", Format: ""}, "DomainName": catalog.MemberBinding{Location: "document", Name: "DomainName", Format: ""}, "PerformCheckOnly": catalog.MemberBinding{Location: "document", Name: "PerformCheckOnly", Format: ""}, "TargetVersion": catalog.MemberBinding{Location: "document", Name: "TargetVersion", Format: ""}}, Output: map[string]catalog.MemberBinding{"AdvancedOptions": catalog.MemberBinding{Location: "document", Name: "AdvancedOptions", Format: ""}, "DomainName": catalog.MemberBinding{Location: "document", Name: "DomainName", Format: ""}, "PerformCheckOnly": catalog.MemberBinding{Location: "document", Name: "PerformCheckOnly", Format: ""}, "TargetVersion": catalog.MemberBinding{Location: "document", Name: "TargetVersion", Format: ""}, "UpgradeId": catalog.MemberBinding{Location: "document", Name: "UpgradeId", Format: ""}}, Method: "POST", URI: "/2021-01-01/opensearch/upgradeDomain", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpgradeDomainRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpgradeDomain(ctx, input.(*UpgradeDomainRequest))
 		}},
 	}}
 }
