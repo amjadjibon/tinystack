@@ -1,7 +1,8 @@
 import { CopyToClipboard } from "@cloudscape-design/components";
 import { ConsoleTags } from "#/components/ConsoleTags";
 import { type EFSScope, efsCall } from "#/lib/efs";
-import { type Tag, tagList, tagMap } from "#/lib/efsHelpers";
+import type { Tag } from "#/lib/efsHelpers";
+import { tagList, tagMap } from "#/lib/tags";
 
 // Copy shows text that is worth pasting elsewhere, such as an ID or an ARN.
 export function Copy({ text, label }: { text?: string; label: string }) {

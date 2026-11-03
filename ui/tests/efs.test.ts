@@ -20,14 +20,13 @@ import {
 	posixUserText,
 	sizeText,
 	subnetLabel,
-	tagList,
-	tagMap,
 	tagSet,
 	throughputChoices,
 	throughputText,
 	updateFileSystemInput,
 } from "../src/lib/efsHelpers.ts";
 import { unixTime } from "../src/lib/format.ts";
+import { tagList, tagMap } from "../src/lib/tags.ts";
 
 const generated = "console-1-abc";
 

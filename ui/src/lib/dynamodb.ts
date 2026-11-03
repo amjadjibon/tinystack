@@ -91,9 +91,6 @@ export function tableArn(scope: DynamoScope) {
 export function tableDetails(resource?: Resource): DynamoTable {
 	return (resource?.details as DynamoTable) ?? {};
 }
-export function dynamoTags(tags: Record<string, string>) {
-	return Object.entries(tags).map(([Key, Value]) => ({ Key, Value }));
-}
 export function keySchema(partition: string, sort = ""): KeySchema {
 	if (
 		!partition ||

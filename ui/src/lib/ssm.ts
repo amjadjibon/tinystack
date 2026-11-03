@@ -1,6 +1,7 @@
 import { api } from "./api";
 import type { ActionStep } from "./consoleActions";
 import { parameterMetadata } from "./ssmHelpers";
+import { tagList } from "./tags.ts";
 
 export type SSMScope = { account: string; region: string; parameter?: string };
 export type Parameter = {
@@ -80,10 +81,7 @@ export function ssmTagPlan(
 						run: () =>
 							ssmCall(s, "AddTagsToResource", {
 								...input,
-								Tags: Object.entries(tags).map(([Key, Value]) => ({
-									Key,
-									Value,
-								})),
+								Tags: tagList(tags),
 							}),
 					},
 				]

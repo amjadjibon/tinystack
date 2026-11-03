@@ -41,6 +41,7 @@ import {
 } from "#/lib/eventbridge";
 import { validRegion } from "#/lib/s3";
 import { useScope } from "#/lib/scope";
+import { tagList } from "#/lib/tags";
 import { useFollow } from "#/lib/useFollow";
 import { usePoll } from "#/lib/usePoll";
 export const Route = createFileRoute("/services/eventbridge")({
@@ -362,10 +363,7 @@ function EventWorkspace({
 											eventCall(scope, "CreateEventBus", {
 												Name: name,
 												Description: description,
-												Tags: Object.entries(values).map(([Key, Value]) => ({
-													Key,
-													Value,
-												})),
+												Tags: tagList(values),
 											}),
 									},
 								];

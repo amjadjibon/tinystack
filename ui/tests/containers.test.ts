@@ -3,7 +3,6 @@ import test from "node:test";
 import {
 	containerPages,
 	desiredCount,
-	jsonObject,
 	taskDefinitionInput,
 } from "../src/lib/containerHelpers.ts";
 
@@ -40,7 +39,7 @@ test("task definition registration rejects invalid containers and accepts revisi
 		assert.throws(() => desiredCount(v));
 	assert.equal(desiredCount("0"), 0);
 	assert.throws(() => desiredCount("0", 1));
-	assert.throws(() => jsonObject("null"));
+	assert.throws(() => taskDefinitionInput("null"));
 });
 test("container listing collects pages and rejects repeated tokens", async () => {
 	let n = 0;

@@ -59,6 +59,3 @@ export function subscriptionScope(subscription: SNSSubscription): SNSScope {
 	const [, , , region, account, topic] = subscription.TopicArn.split(":");
 	return { account, region, topic };
 }
-export function snsTags(tags: Record<string, string>) {
-	return Object.entries(tags).map(([Key, Value]) => ({ Key, Value }));
-}

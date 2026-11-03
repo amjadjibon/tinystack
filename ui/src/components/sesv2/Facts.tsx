@@ -9,7 +9,7 @@ import {
 import type { ReactNode } from "react";
 import { ConsoleTags } from "#/components/ConsoleTags";
 import { listTags, type SESScope, sesv2Call } from "#/lib/sesv2";
-import { tagList, tagMap } from "#/lib/sesv2Helpers";
+import { tagList, tagMap } from "#/lib/tags";
 import { usePoll } from "#/lib/usePoll";
 
 export function Facts({

@@ -24,12 +24,12 @@ import {
 	type EngineVersion,
 	ecCall,
 	ecPages,
-	ecTags,
 	type ParameterGroup,
 	type SubnetGroup,
 	statusType,
 	type Tag,
 } from "#/lib/elasticache";
+import { tagList } from "#/lib/tags";
 import { usePoll } from "#/lib/usePoll";
 
 export function CacheStatus({ status }: { status?: string }) {
@@ -322,7 +322,7 @@ export function CacheTags({
 								run: () =>
 									ecCall(scope, "AddTagsToResource", {
 										ResourceName: arn,
-										Tags: ecTags(next),
+										Tags: tagList(next),
 									}),
 							},
 						]

@@ -19,7 +19,8 @@ import {
 	type ELBv2Scope,
 	elbv2Call,
 } from "#/lib/elbv2";
-import { attributeChanges, toTags } from "#/lib/elbv2Helpers";
+import { attributeChanges } from "#/lib/elbv2Helpers";
+import { tagList } from "#/lib/tags";
 import { usePoll } from "#/lib/usePoll";
 
 export function Details({ items }: { items: [string, ReactNode][] }) {
@@ -177,7 +178,7 @@ export function ResourceTags({
 									run: () =>
 										elbv2Call(scope, "AddTags", {
 											ResourceArns: [arn],
-											Tags: toTags(next),
+											Tags: tagList(next),
 										}),
 								},
 							]

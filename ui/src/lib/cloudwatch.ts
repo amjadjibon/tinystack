@@ -1,5 +1,6 @@
 import { api } from "./api";
 import { type ActionStep, integer, stringMap } from "./consoleActions";
+import { tagList } from "./tags.ts";
 export type WatchScope = {
 	account: string;
 	region: string;
@@ -115,9 +116,6 @@ export function dimensions(text: string) {
 		Value,
 	}));
 }
-export function tagsInput(tags: Record<string, string>) {
-	return Object.entries(tags).map(([Key, Value]) => ({ Key, Value }));
-}
 export function finite(text: string, label: string) {
 	if (!text.trim() || !Number.isFinite(Number(text)))
 		throw new Error(`${label} must be a finite number.`);
@@ -208,7 +206,7 @@ export function watchTagPlan(
 						run: () =>
 							watchCall(scope, "TagResource", {
 								ResourceARN: arn,
-								Tags: tagsInput(tags),
+								Tags: tagList(tags),
 							}),
 					},
 				]

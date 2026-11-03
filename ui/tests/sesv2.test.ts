@@ -15,11 +15,10 @@ import {
 	senderOptions,
 	sendInput,
 	sesMessages,
-	tagList,
-	tagMap,
 	updateTemplateInput,
 	validateIdentity,
 } from "../src/lib/sesv2Helpers.ts";
+import { tagList, tagMap } from "../src/lib/tags.ts";
 
 test("identity names are an address or a domain", () => {
 	assert.equal(validateIdentity("a@example.com"), "");

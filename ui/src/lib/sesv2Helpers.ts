@@ -1,3 +1,4 @@
+import { tagList } from "./tags.ts";
 // Pure helpers for the SES v2 page. They mirror what internal/services/sesv2
 // accepts so forms reject bad input before a request is sent.
 
@@ -24,16 +25,6 @@ const configSetPattern = /^[A-Za-z0-9_-]{1,64}$/;
 const templatePattern = /^[A-Za-z0-9_-]{1,64}$/;
 
 export type Tag = { Key?: string; Value?: string };
-
-export function tagMap(tags?: Tag[]): Record<string, string> {
-	return Object.fromEntries(
-		(tags ?? []).map((t) => [t.Key ?? "", t.Value ?? ""]),
-	);
-}
-
-export function tagList(tags: Record<string, string>): Tag[] {
-	return Object.entries(tags).map(([Key, Value]) => ({ Key, Value }));
-}
 
 export function isEmailAddress(text: string) {
 	return addressPattern.test(text);

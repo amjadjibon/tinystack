@@ -1,5 +1,6 @@
 import { api } from "./api";
 import type { ActionStep } from "./consoleActions";
+import { tagList } from "./tags.ts";
 
 export type SecretScope = { account: string; region: string; secret?: string };
 export type Secret = {
@@ -75,8 +76,6 @@ export async function secretPages<T>(
 }
 export const secretDate = (v?: number) =>
 	v === undefined ? "—" : new Date(v * 1000).toISOString();
-export const secretTags = (tags: Record<string, string>) =>
-	Object.entries(tags).map(([Key, Value]) => ({ Key, Value }));
 export function secretTagPlan(
 	s: SecretScope,
 	tags: Record<string, string>,
@@ -95,7 +94,7 @@ export function secretTagPlan(
 			? [
 					{
 						label: "Save tags",
-						run: () => secretCall(s, "TagResource", { Tags: secretTags(tags) }),
+						run: () => secretCall(s, "TagResource", { Tags: tagList(tags) }),
 					},
 				]
 			: []),

@@ -15,9 +15,9 @@ import {
 	type RDSScope,
 	rdsCall,
 	rdsDate,
-	rdsTags,
 	runtimeNote,
 } from "#/lib/rds";
+import { tagList } from "#/lib/tags";
 import { DatabaseActions } from "./DatabaseActions";
 export function DatabaseStatus({ status }: { status: string }) {
 	const type =
@@ -205,7 +205,7 @@ export function DatabaseDetails({
 													run: () =>
 														rdsCall(scope, "AddTagsToResource", {
 															ResourceName: d.DBInstanceArn,
-															Tags: rdsTags(tags),
+															Tags: tagList(tags),
 														}),
 												},
 											]

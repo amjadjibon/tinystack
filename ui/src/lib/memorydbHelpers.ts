@@ -362,13 +362,3 @@ export function subnetGroupInput(
 		SubnetIds: ids,
 	};
 }
-
-export function tagList(tags: Record<string, string>) {
-	return Object.entries(tags).map(([Key, Value]) => ({ Key, Value }));
-}
-
-export function tagMap(list: { Key?: string; Value?: string }[] | undefined) {
-	return Object.fromEntries(
-		(list ?? []).map((t) => [t.Key ?? "", t.Value ?? ""]),
-	);
-}

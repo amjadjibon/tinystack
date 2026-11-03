@@ -18,12 +18,12 @@ import {
 	Rows,
 } from "#/components/containers/Controls";
 import { pretty } from "#/lib/api";
+import { jsonObject } from "#/lib/consoleActions";
+import { containerPages } from "#/lib/containerHelpers";
 import {
 	type ContainerScope,
-	containerPages,
 	ecrCall,
 	type Image,
-	jsonObject,
 	type Repository,
 } from "#/lib/ecr";
 import { validRegion } from "#/lib/s3";
@@ -488,7 +488,7 @@ function Policy({
 						poll.reload();
 					}}
 					plan={async () => {
-						if (dialog === "Edit") jsonObject(text);
+						if (dialog === "Edit") jsonObject(text, "Policy");
 						return [
 							{
 								label: dialog,
@@ -566,7 +566,7 @@ function Tags({ scope, repo }: { scope: ContainerScope; repo: Repository }) {
 						poll.reload();
 					}}
 					plan={async () => {
-						const value = jsonObject(text);
+						const value = jsonObject(text, "Tags");
 						if (
 							Object.entries(value).some(
 								([k, v]) => !k || typeof v !== "string",

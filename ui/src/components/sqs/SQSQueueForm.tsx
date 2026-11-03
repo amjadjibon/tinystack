@@ -16,16 +16,14 @@ import {
 } from "@cloudscape-design/components";
 import { useState } from "react";
 import type { Resource } from "#/lib/api";
+import { errorText, integer, stringMap } from "#/lib/consoleActions";
 import {
-	errorText,
-	integer,
 	type QueueAttributes,
 	queueCall,
 	queueNumbers,
 	redriveTarget,
 	type SQSScope,
 	sqsCall,
-	stringMap,
 } from "#/lib/sqs";
 
 export function SQSQueueForm({

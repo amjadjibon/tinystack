@@ -21,11 +21,11 @@ import { type ActionStep, jsonObject, stringMap } from "#/lib/consoleActions";
 import {
 	type SNSScope,
 	snsCall,
-	snsTags,
 	topicArn,
 	topicCall,
 	topicSubscriptions,
 } from "#/lib/sns";
+import { tagList } from "#/lib/tags";
 import { usePoll } from "#/lib/usePoll";
 import { SNSDeliveries } from "./SNSDeliveries";
 import { SNSPublish } from "./SNSPublish";
@@ -155,7 +155,7 @@ export function SNSTopic({
 							run: () =>
 								snsCall(scope, "TagResource", {
 									ResourceArn: arn,
-									Tags: snsTags(next),
+									Tags: tagList(next),
 								}),
 						},
 					]

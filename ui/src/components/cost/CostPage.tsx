@@ -30,6 +30,7 @@ import {
 	period,
 } from "#/lib/cost";
 import { useScope } from "#/lib/scope";
+import { tagList } from "#/lib/tags";
 import { useFollow } from "#/lib/useFollow";
 import { BudgetAlerts } from "./BudgetAlerts";
 import { BudgetForm } from "./BudgetForm";
@@ -371,10 +372,7 @@ function CostRecords({
 										: cur
 											? { ReportName: selected.name }
 											: { ResourceArn: selected.arn };
-									const Tags = Object.entries(next).map(([Key, Value]) => ({
-										Key,
-										Value,
-									}));
+									const Tags = tagList(next);
 									return [
 										...(removed.length
 											? [

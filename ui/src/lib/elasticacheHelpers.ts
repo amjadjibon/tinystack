@@ -1,3 +1,4 @@
+import { tagList } from "./tags.ts";
 export const nodeTypes = [
 	"cache.t4g.micro",
 	"cache.t4g.small",
@@ -121,9 +122,6 @@ export function cliCommand(engine: string, endpoint: string) {
 		return `printf 'stats\\r\\nquit\\r\\n' | nc ${host} ${port}`;
 	return `${engine === "valkey" ? "valkey-cli" : "redis-cli"} -h ${host} -p ${port}`;
 }
-
-const tagList = (tags: Record<string, string>) =>
-	Object.entries(tags).map(([Key, Value]) => ({ Key, Value }));
 
 export type ClusterForm = {
 	id: string;

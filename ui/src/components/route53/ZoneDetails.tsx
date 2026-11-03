@@ -28,6 +28,7 @@ import {
 	recordTarget,
 	relativeName,
 } from "#/lib/route53Helpers";
+import { tagList } from "#/lib/tags";
 import { usePoll } from "#/lib/usePoll";
 import { DeleteRecordDialog, RecordDialog } from "./RecordForms";
 import { DeleteZoneDialog, EditCommentDialog } from "./ZoneForms";
@@ -236,10 +237,7 @@ export function ZoneDetails({
 								ResourceId: id,
 								...(Object.keys(next).length
 									? {
-											AddTags: Object.entries(next).map(([Key, Value]) => ({
-												Key,
-												Value,
-											})),
+											AddTags: tagList(next),
 										}
 									: {}),
 								...(removed.length ? { RemoveTagKeys: removed } : {}),

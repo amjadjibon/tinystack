@@ -15,6 +15,7 @@ import type {
 	Operation,
 	Service,
 } from "#/lib/servicediscoveryHelpers";
+import { tagList } from "#/lib/tags";
 import { usePoll } from "#/lib/usePoll";
 import { Discover } from "./Discover";
 import { type Edit, ResourceDialog } from "./ResourceDialog";
@@ -260,10 +261,7 @@ function Tags({
 									run: () =>
 										cloudMapCall(scope, "TagResource", {
 											ResourceARN: arn,
-											Tags: Object.entries(next).map(([Key, Value]) => ({
-												Key,
-												Value,
-											})),
+											Tags: tagList(next),
 										}),
 								},
 							]

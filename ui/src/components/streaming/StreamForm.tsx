@@ -1,11 +1,11 @@
 import { SpaceBetween } from "@cloudscape-design/components";
 import { useState } from "react";
 import { ActionDialog } from "#/components/ActionDialog";
-import {
-	integer,
-	type StreamCall,
-	type StreamDescription,
-	type StreamService,
+import { integer } from "#/lib/consoleActions";
+import type {
+	StreamCall,
+	StreamDescription,
+	StreamService,
 } from "#/lib/streamingHelpers";
 import { Choice, Field } from "./Fields";
 export function StreamForm({

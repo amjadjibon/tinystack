@@ -7,7 +7,6 @@ export function ecrCall<T = Record<string, unknown>>(
 ) {
 	return api.action<T>("ecr", operation, s.account, input, s.region);
 }
-export { containerPages, jsonObject } from "./containerHelpers";
 export type Repository = {
 	RepositoryName: string;
 	RepositoryArn: string;

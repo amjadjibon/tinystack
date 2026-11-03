@@ -21,12 +21,12 @@ import {
 	type Metric,
 	periodValue,
 	statistics,
-	tagsInput,
 	type WatchScope,
 	watchCall,
 } from "#/lib/cloudwatch";
 import { integer, stringMap } from "#/lib/consoleActions";
 import { useScope } from "#/lib/scope";
+import { tagList } from "#/lib/tags";
 
 export function AlarmForm({
 	scope,
@@ -206,7 +206,7 @@ export function AlarmForm({
 					}
 				}
 				if (!initial) {
-					input.Tags = tagsInput(stringMap(tags, "Tags"));
+					input.Tags = tagList(stringMap(tags, "Tags"));
 					const exists = await watchCall<{
 						MetricAlarms?: unknown[];
 						CompositeAlarms?: unknown[];

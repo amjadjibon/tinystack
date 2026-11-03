@@ -17,11 +17,11 @@ import {
 	type RDSScope,
 	rdsCall,
 	rdsPages,
-	rdsTags,
 	runtimeNote,
 	validateName,
 	validatePassword,
 } from "#/lib/rds";
+import { tagList } from "#/lib/tags";
 import { usePoll } from "#/lib/usePoll";
 export function DatabaseForm({
 	scope,
@@ -111,7 +111,7 @@ export function DatabaseForm({
 					...(db ? { DBName: db } : {}),
 					...(subnet ? { DBSubnetGroupName: subnet } : {}),
 					...(parameter ? { DBParameterGroupName: parameter } : {}),
-					Tags: rdsTags(stringMap(tags, "Tags")),
+					Tags: tagList(stringMap(tags, "Tags")),
 				};
 				return [
 					{

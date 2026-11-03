@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { integer } from "../src/lib/consoleActions.ts";
 import {
 	decodeRecord,
 	encodeRecord,
-	integer,
 	type StreamCall,
 	streamNames,
 	streamShards,

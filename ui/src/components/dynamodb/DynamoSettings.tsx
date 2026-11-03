@@ -21,10 +21,10 @@ import {
 	type DynamoScope,
 	type DynamoTable,
 	dynamoCall,
-	dynamoTags,
 	tableArn,
 	tableCall,
 } from "#/lib/dynamodb";
+import { tagList } from "#/lib/tags";
 import { usePoll } from "#/lib/usePoll";
 
 export function DynamoSettings({
@@ -201,7 +201,7 @@ export function DynamoSettings({
 							run: () =>
 								dynamoCall(scope, "TagResource", {
 									ResourceArn: tableArn(scope),
-									Tags: dynamoTags(next),
+									Tags: tagList(next),
 								}),
 						},
 					]

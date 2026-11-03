@@ -29,6 +29,7 @@ import {
 	utf8Base64,
 } from "#/lib/acmHelpers";
 import { unixTime } from "#/lib/format";
+import { tagList } from "#/lib/tags";
 import { usePoll } from "#/lib/usePoll";
 import { Choice } from "./Fields";
 import { ImportDialog } from "./ImportDialog";
@@ -487,10 +488,7 @@ export function CertificateDetails({
 									run: () =>
 										acmCall(scope, "AddTagsToCertificate", {
 											CertificateArn: arn,
-											Tags: Object.entries(next).map(([Key, Value]) => ({
-												Key,
-												Value,
-											})),
+											Tags: tagList(next),
 										}),
 								},
 							]

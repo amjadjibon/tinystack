@@ -1,12 +1,8 @@
 import { Checkbox, SpaceBetween } from "@cloudscape-design/components";
 import { useState } from "react";
 import { ActionDialog } from "#/components/ActionDialog";
-import type { ActionStep } from "#/lib/consoleActions";
-import {
-	integer,
-	type StreamCall,
-	type StreamDescription,
-} from "#/lib/streamingHelpers";
+import { type ActionStep, integer } from "#/lib/consoleActions";
+import type { StreamCall, StreamDescription } from "#/lib/streamingHelpers";
 import { Choice, Field } from "./Fields";
 export function KinesisSettings({
 	kind,

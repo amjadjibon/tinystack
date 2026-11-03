@@ -24,6 +24,7 @@ import {
 	type TemplateSummary,
 	templateInput,
 } from "#/lib/cloudformationHelpers";
+import { tagList } from "#/lib/tags";
 
 export function StackEditor({
 	scope,
@@ -134,7 +135,7 @@ function Editor({
 					...templateInput(body, previous),
 					Parameters: parameterInput(summary.Parameters ?? [], values),
 					Capabilities: caps,
-					Tags: Object.entries(tags).map(([Key, Value]) => ({ Key, Value })),
+					Tags: tagList(tags),
 					...(changeSet
 						? {
 								ChangeSetName: effectiveChangeName.trim(),

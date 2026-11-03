@@ -18,10 +18,10 @@ import {
 	machineArn,
 	type SfnScope,
 	sampleDefinition,
-	sdkTags,
 	sfnCall,
 	validateDefinition,
 } from "#/lib/sfn";
+import { tagList } from "#/lib/tags";
 
 export function StateMachineForm({
 	scope,
@@ -113,7 +113,7 @@ export function StateMachineForm({
 					throw new Error("Choose or enter a CloudWatch Logs group ARN.");
 				const tagValues = machine
 					? undefined
-					: sdkTags(stringMap(tags, "Tags"));
+					: tagList(stringMap(tags, "Tags"));
 				const checked = await validateDefinition(scope, definition, type);
 				if (checked.Result !== "OK")
 					throw new Error(

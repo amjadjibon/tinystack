@@ -1,3 +1,4 @@
+import { jsonObject } from "./consoleActions.ts";
 export async function containerPages<T>(
 	call: (
 		operation: string,
@@ -24,14 +25,8 @@ export async function containerPages<T>(
 	} while (nextToken);
 	return items;
 }
-export function jsonObject(text: string): Record<string, unknown> {
-	const value: unknown = JSON.parse(text);
-	if (!value || typeof value !== "object" || Array.isArray(value))
-		throw new Error("Enter a JSON object.");
-	return value as Record<string, unknown>;
-}
 export function taskDefinitionInput(text: string) {
-	const value = jsonObject(text);
+	const value = jsonObject(text, "Task definition");
 	if (typeof value.family !== "string" || !/^[\w-]{1,255}$/.test(value.family))
 		throw new Error(
 			"Family must contain 1–255 letters, numbers, underscores or hyphens.",

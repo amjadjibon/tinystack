@@ -13,9 +13,10 @@ import {
 	Table,
 } from "@cloudscape-design/components";
 import { useState } from "react";
+import { ActionDialog } from "#/components/ActionDialog";
 import type { Resource } from "#/lib/api";
+import { integer } from "#/lib/consoleActions";
 import {
-	integer,
 	type MoveTask,
 	redriveTarget,
 	type SQSScope,
@@ -24,7 +25,6 @@ import {
 } from "#/lib/sqs";
 import { useFollow } from "#/lib/useFollow";
 import { usePoll } from "#/lib/usePoll";
-import { SQSDialog } from "./SQSDialog";
 
 export function SQSRedrive({
 	scope,
@@ -207,7 +207,7 @@ export function SQSRedrive({
 				}
 			/>
 			{dialog && (
-				<SQSDialog
+				<ActionDialog
 					title={
 						dialog === "start"
 							? "Start dead-letter queue redrive"
@@ -293,7 +293,7 @@ export function SQSRedrive({
 							</FormField>
 						</SpaceBetween>
 					)}
-				</SQSDialog>
+				</ActionDialog>
 			)}
 		</SpaceBetween>
 	);

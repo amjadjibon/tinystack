@@ -22,8 +22,6 @@ export type MoveTask = {
 	ApproximateNumberOfMessagesToMove: number;
 	StartedTimestamp: number;
 };
-export type { ActionStep as SQSStep } from "./consoleActions";
-export { errorText, integer, jsonObject, stringMap } from "./consoleActions";
 export function sqsHref(scope: SQSScope, create = false) {
 	const search = new URLSearchParams({
 		account: scope.account,

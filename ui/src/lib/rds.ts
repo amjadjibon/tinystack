@@ -77,8 +77,6 @@ export async function rdsPages<T>(
 	} while (marker);
 	return items;
 }
-export const rdsTags = (tags: Record<string, string>) =>
-	Object.entries(tags).map(([Key, Value]) => ({ Key, Value }));
 export const runtimeNote =
 	"SQL connections require rds.instances: docker and a working local Docker daemon. In records mode, no database listens on the endpoint. Class and storage are metadata; parameter groups do not apply engine settings.";
 

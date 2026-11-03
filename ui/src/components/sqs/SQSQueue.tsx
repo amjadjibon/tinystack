@@ -13,20 +13,18 @@ import {
 	Textarea,
 } from "@cloudscape-design/components";
 import { useState } from "react";
+import { ActionDialog } from "#/components/ActionDialog";
 import type { Resource } from "#/lib/api";
+import { type ActionStep, jsonObject, stringMap } from "#/lib/consoleActions";
 import {
-	jsonObject,
 	type QueueAttributes,
 	queueCall,
 	queueNumbers,
 	redriveTarget,
 	type SQSScope,
-	type SQSStep,
 	sqsCall,
-	stringMap,
 } from "#/lib/sqs";
 import { usePoll } from "#/lib/usePoll";
-import { SQSDialog } from "./SQSDialog";
 import { SQSMessages } from "./SQSMessages";
 import { SQSQueueForm } from "./SQSQueueForm";
 import { SQSRedrive } from "./SQSRedrive";
@@ -105,7 +103,7 @@ export function SQSQueue({
 				}}
 			/>
 		);
-	const plan = async (): Promise<SQSStep[]> => {
+	const plan = async (): Promise<ActionStep[]> => {
 		if (dialog === "delete" || dialog === "purge")
 			return [
 				{
@@ -464,7 +462,7 @@ export function SQSQueue({
 				/>
 			</SpaceBetween>
 			{dialog && (
-				<SQSDialog
+				<ActionDialog
 					title={
 						dialog === "delete"
 							? `Delete queue ${scope.queue}`
@@ -524,7 +522,7 @@ export function SQSQueue({
 							/>
 						</FormField>
 					)}
-				</SQSDialog>
+				</ActionDialog>
 			)}
 		</ContentLayout>
 	);

@@ -11,12 +11,8 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { ActionDialog } from "#/components/ActionDialog";
 import { errorText, stringMap } from "#/lib/consoleActions";
-import {
-	type SecretScope,
-	secretCall,
-	secretTags,
-	valueInput,
-} from "#/lib/secretsmanager";
+import { type SecretScope, secretCall, valueInput } from "#/lib/secretsmanager";
+import { tagList } from "#/lib/tags";
 
 export function ValueEditor({
 	scope,
@@ -226,7 +222,7 @@ export function SecretForm({
 								Name: name,
 								Description: description,
 								...(key.trim() ? { KmsKeyId: key.trim() } : {}),
-								Tags: secretTags(stringMap(tags, "Tags")),
+								Tags: tagList(stringMap(tags, "Tags")),
 							}
 						: {}),
 				};

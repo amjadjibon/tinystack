@@ -1,6 +1,7 @@
 // Pure logic for the CloudFront page: payload builders, checks and display summaries.
 import { isValidDomain } from "./acmHelpers.ts";
 import { lines, parseInteger, tagsFromRows } from "./elbv2Helpers.ts";
+import { tagList } from "./tags.ts";
 
 // CloudFront lists carry their length in Quantity beside Items; an empty list has no Items.
 export type Quantified<T> = { Quantity?: number; Items?: T[] };
@@ -364,7 +365,7 @@ export type TagItems = { Items: { Key: string; Value: string }[] };
 
 export function tagItems(tags: Record<string, string>): TagItems {
 	return {
-		Items: Object.entries(tags).map(([Key, Value]) => ({ Key, Value })),
+		Items: tagList(tags),
 	};
 }
 

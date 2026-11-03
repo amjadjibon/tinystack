@@ -17,7 +17,7 @@ import {
 	workgroupSettings,
 } from "#/lib/athenaHelpers";
 import { unixTime } from "#/lib/format";
-import { tagList, tagMap } from "#/lib/memorydbHelpers";
+import { tagList, tagMap } from "#/lib/tags";
 import { usePoll } from "#/lib/usePoll";
 export function AthenaWorkgroups({
 	scope,

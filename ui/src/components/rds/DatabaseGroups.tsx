@@ -22,9 +22,9 @@ import {
 	type RDSScope,
 	rdsCall,
 	rdsPages,
-	rdsTags,
 	validateName,
 } from "#/lib/rds";
+import { tagList } from "#/lib/tags";
 import { usePoll } from "#/lib/usePoll";
 export function DatabaseGroups({
 	scope,
@@ -212,7 +212,7 @@ export function DatabaseGroups({
 													Description: description,
 													DBParameterGroupFamily: family,
 												}),
-										Tags: rdsTags(stringMap(tags, "Tags")),
+										Tags: tagList(stringMap(tags, "Tags")),
 									}),
 							},
 						];

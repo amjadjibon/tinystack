@@ -21,13 +21,13 @@ import {
 	capacity,
 	type DynamoScope,
 	dynamoCall,
-	dynamoTags,
 	type IndexInput,
 	indexDefaults,
 	indexDefinitions,
 	keySchema,
 	streamViews,
 } from "#/lib/dynamodb";
+import { tagList } from "#/lib/tags";
 import { DynamoIndexFields } from "./DynamoIndexFields";
 import { DynamoKeyFields } from "./DynamoKeyFields";
 
@@ -93,7 +93,7 @@ export function DynamoTableForm({
 				...(provisioned
 					? { ProvisionedThroughput: capacity(read, write) }
 					: {}),
-				Tags: dynamoTags(stringMap(tags, "Tags")),
+				Tags: tagList(stringMap(tags, "Tags")),
 				GlobalSecondaryIndexes: resolved
 					.filter((i) => !i.local)
 					.map((i) => buildIndex(i.value, provisioned)),

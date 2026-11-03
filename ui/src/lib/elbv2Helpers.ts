@@ -1,3 +1,4 @@
+import { tagList } from "./tags.ts";
 // Pure logic for the Elastic Load Balancing page: payload builders and checks.
 
 export const applicationListenerProtocols = ["HTTP", "HTTPS"];
@@ -45,10 +46,6 @@ export function lines(text: string) {
 export const isPendingState = (code?: string) => code === "provisioning";
 export const hasPendingBalancers = (items: { State?: { Code?: string } }[]) =>
 	items.some((i) => isPendingState(i.State?.Code));
-
-export function toTags(tags: Record<string, string>) {
-	return Object.entries(tags).map(([Key, Value]) => ({ Key, Value }));
-}
 
 // tagsFromRows rejects blank and repeated keys.
 export function tagsFromRows(rows: { key: string; value: string }[]) {
@@ -113,7 +110,7 @@ export function createLoadBalancerInput(f: LoadBalancerForm) {
 		...(application && f.securityGroups.length
 			? { SecurityGroups: f.securityGroups }
 			: {}),
-		...(Object.keys(tags).length ? { Tags: toTags(tags) } : {}),
+		...(Object.keys(tags).length ? { Tags: tagList(tags) } : {}),
 	};
 }
 
@@ -214,7 +211,7 @@ export function createTargetGroupInput(f: TargetGroupForm) {
 					VpcId: f.vpc,
 				}),
 		...healthInput(f, lambda),
-		...(Object.keys(tags).length ? { Tags: toTags(tags) } : {}),
+		...(Object.keys(tags).length ? { Tags: tagList(tags) } : {}),
 	};
 }
 

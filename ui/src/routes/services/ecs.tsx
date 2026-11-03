@@ -16,16 +16,19 @@ import {
 	Field,
 	Rows,
 } from "#/components/containers/Controls";
-import { arnTail } from "#/lib/containerHelpers";
-import { type ContainerScope, containerPages } from "#/lib/ecr";
+import {
+	arnTail,
+	containerPages,
+	desiredCount,
+	taskDefinitionInput,
+} from "#/lib/containerHelpers";
+import type { ContainerScope } from "#/lib/ecr";
 import {
 	type Cluster,
-	desiredCount,
 	type ECSService,
 	type ECSTask,
 	ecsCall,
 	ecsDescribe,
-	taskDefinitionInput,
 } from "#/lib/ecs";
 import { validRegion } from "#/lib/s3";
 import { useScope } from "#/lib/scope";

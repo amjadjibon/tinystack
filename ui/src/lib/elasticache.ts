@@ -154,9 +154,6 @@ export async function serverlessPages(
 	return items;
 }
 
-export const ecTags = (tags: Record<string, string>) =>
-	Object.entries(tags).map(([Key, Value]) => ({ Key, Value }));
-
 export function ecDate(value?: string | number) {
 	if (value === undefined) return "—";
 	const date = new Date(typeof value === "number" ? value * 1000 : value);

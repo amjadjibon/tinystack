@@ -1,5 +1,6 @@
 import { ConsoleTags } from "#/components/ConsoleTags";
-import { type RDSScope, rdsCall, rdsTags, type Tag } from "#/lib/rds";
+import { type RDSScope, rdsCall, type Tag } from "#/lib/rds";
+import { tagList } from "#/lib/tags";
 export function RDSTags({
 	scope,
 	arn,
@@ -38,7 +39,7 @@ export function RDSTags({
 								run: () =>
 									rdsCall(scope, "AddTagsToResource", {
 										ResourceName: arn,
-										Tags: rdsTags(next),
+										Tags: tagList(next),
 									}),
 							},
 						]

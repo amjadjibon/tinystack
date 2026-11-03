@@ -1,5 +1,6 @@
 import { api, type Resource } from "./api";
 import type { ActionStep } from "./consoleActions";
+import { tagList } from "./tags.ts";
 
 export const ec2Sections = [
 	"instances",
@@ -304,14 +305,12 @@ export const rowState = (r: Ec2Row) =>
 	text(r, "Status");
 export const parentVpc = (r: Ec2Row) =>
 	text(r, "VpcId") || text(rows(r, "Attachments")[0] ?? {}, "VpcId");
-export const tagValues = (tags: Record<string, string>) =>
-	Object.entries(tags).map(([Key, Value]) => ({ Key, Value }));
 export const tagSpecifications = (
 	section: Ec2Section,
 	tags: Record<string, string>,
 ) =>
 	Object.keys(tags).length
-		? [{ ResourceType: ec2Kinds[section].type, Tags: tagValues(tags) }]
+		? [{ ResourceType: ec2Kinds[section].type, Tags: tagList(tags) }]
 		: undefined;
 export function ec2Call<T = Ec2Row>(
 	s: Pick<Ec2Scope, "account" | "region">,
@@ -376,7 +375,7 @@ export function inventoryRow(r: Resource): Ec2Row {
 	return {
 		[ec2Kinds[section].id]: id,
 		Name: r.name,
-		Tags: tagValues(r.tags ?? {}),
+		Tags: tagList(r.tags ?? {}),
 		State: r.details?.State,
 		VpcId: r.details?.VPCID,
 	};
@@ -406,7 +405,7 @@ export function ec2TagPlan(
 						run: () =>
 							ec2Call(s, "CreateTags", {
 								Resources: [s.id],
-								Tags: tagValues(tags),
+								Tags: tagList(tags),
 							}),
 					},
 				]

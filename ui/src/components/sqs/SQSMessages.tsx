@@ -16,18 +16,16 @@ import {
 	Textarea,
 } from "@cloudscape-design/components";
 import { useState } from "react";
+import { ActionDialog } from "#/components/ActionDialog";
 import { pretty } from "#/lib/api";
+import { errorText, integer, jsonObject } from "#/lib/consoleActions";
 import {
-	errorText,
-	integer,
-	jsonObject,
 	type QueueAttributes,
 	queueCall,
 	type SQSMessage,
 	type SQSScope,
 } from "#/lib/sqs";
 import { HOTSPOT } from "#/tutorials/hotspots";
-import { SQSDialog } from "./SQSDialog";
 
 export function SQSMessages({
 	scope,
@@ -396,7 +394,7 @@ export function SQSMessages({
 				</Modal>
 			)}
 			{dialog && target && (
-				<SQSDialog
+				<ActionDialog
 					title={
 						dialog === "delete" ? "Delete message" : "Change message visibility"
 					}
@@ -462,7 +460,7 @@ export function SQSMessages({
 							</FormField>
 						)}
 					</SpaceBetween>
-				</SQSDialog>
+				</ActionDialog>
 			)}
 		</SpaceBetween>
 	);

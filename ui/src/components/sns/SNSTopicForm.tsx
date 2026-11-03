@@ -15,7 +15,8 @@ import {
 import { useState } from "react";
 import type { Resource } from "#/lib/api";
 import { errorText, jsonObject, stringMap } from "#/lib/consoleActions";
-import { type SNSScope, snsCall, snsTags } from "#/lib/sns";
+import { type SNSScope, snsCall } from "#/lib/sns";
+import { tagList } from "#/lib/tags";
 
 export function SNSTopicForm({
 	scope,
@@ -70,7 +71,7 @@ export function SNSTopicForm({
 			await snsCall(scope, "CreateTopic", {
 				Name: name,
 				Attributes: attributes,
-				Tags: snsTags(stringMap(tags, "Tags")),
+				Tags: tagList(stringMap(tags, "Tags")),
 			});
 			onSaved(name);
 		} catch (err) {

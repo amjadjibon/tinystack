@@ -13,12 +13,8 @@ import {
 	type SubnetGroup,
 	type User,
 } from "#/lib/memorydb";
-import {
-	subnetGroupInput,
-	subnetLabel,
-	tagList,
-	tagMap,
-} from "#/lib/memorydbHelpers";
+import { subnetGroupInput, subnetLabel } from "#/lib/memorydbHelpers";
+import { tagList, tagMap } from "#/lib/tags";
 import { usePoll } from "#/lib/usePoll";
 
 type Dialog = "" | "create" | "update" | "delete";

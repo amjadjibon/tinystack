@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { type ActionStep, errorText, jsonObject } from "./consoleActions";
+import { tagList } from "./tags.ts";
 
 export type SfnScope = {
 	account: string;
@@ -98,8 +99,6 @@ export function executionCall<T = Record<string, unknown>>(
 }
 export const timestamp = (v?: number) =>
 	v === undefined ? "—" : new Date(v * 1000).toISOString();
-export const sdkTags = (v: Record<string, string>) =>
-	Object.entries(v).map(([Key, Value]) => ({ Key, Value }));
 export function tagPlan(
 	s: SfnScope,
 	tags: Record<string, string>,
@@ -121,7 +120,7 @@ export function tagPlan(
 					{
 						label: "Save tags",
 						run: () =>
-							sfnCall(s, "TagResource", { ResourceArn, Tags: sdkTags(tags) }),
+							sfnCall(s, "TagResource", { ResourceArn, Tags: tagList(tags) }),
 					},
 				]
 			: []),

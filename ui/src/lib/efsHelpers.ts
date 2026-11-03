@@ -1,5 +1,6 @@
 // Pure logic for the EFS page: payload builders, checks and display summaries.
 import { parseInteger, tagsFromRows } from "./elbv2Helpers.ts";
+import { tagList } from "./tags.ts";
 
 export type Tag = { Key?: string; Value?: string };
 export type TagRow = { key: string; value: string };
@@ -81,18 +82,6 @@ export const maxMountTargetGroups = 5;
 const maxTags = 50;
 const maxSecondaryGids = 16;
 const maxPosixId = 4294967295;
-
-// Tags ---------------------------------------------------------------------
-
-export function tagMap(tags?: Tag[]) {
-	return Object.fromEntries(
-		(tags ?? []).map((t) => [t.Key ?? "", t.Value ?? ""]),
-	);
-}
-
-export function tagList(tags: Record<string, string>) {
-	return Object.entries(tags).map(([Key, Value]) => ({ Key, Value }));
-}
 
 // tagSet is the tags a create dialog sets. The Name field is the Name tag, so a
 // Name row beside a name would say it twice.

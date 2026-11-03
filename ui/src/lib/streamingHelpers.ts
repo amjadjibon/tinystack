@@ -59,12 +59,6 @@ export function decodeRecord(data: string) {
 		return `[Binary data, base64] ${data}`;
 	}
 }
-export function integer(text: string, label: string, min: number, max: number) {
-	const value = Number(text);
-	if (!text.trim() || !Number.isInteger(value) || value < min || value > max)
-		throw new Error(`${label} must be an integer between ${min} and ${max}.`);
-	return value;
-}
 export type StreamCall = <T = Record<string, unknown>>(
 	operation: string,
 	input?: Record<string, unknown>,

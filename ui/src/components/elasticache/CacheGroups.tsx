@@ -16,13 +16,13 @@ import {
 	ecCall,
 	ecDate,
 	ecPages,
-	ecTags,
 	familiesFor,
 	isDefaultGroup,
 	type ParameterGroup,
 	type SubnetGroup,
 } from "#/lib/elasticache";
 import { validateGroupName } from "#/lib/elasticacheHelpers";
+import { tagList } from "#/lib/tags";
 import { usePoll } from "#/lib/usePoll";
 import {
 	CacheList,
@@ -150,7 +150,7 @@ export function SubnetGroups({
 							CacheSubnetGroupName: name,
 							CacheSubnetGroupDescription: description.trim(),
 							SubnetIds: subnets,
-							Tags: ecTags(stringMap(tags, "Tags")),
+							Tags: tagList(stringMap(tags, "Tags")),
 						};
 						return [
 							{
@@ -386,7 +386,7 @@ export function ParameterGroups({
 							CacheParameterGroupName: name,
 							CacheParameterGroupFamily: family,
 							Description: description.trim(),
-							Tags: ecTags(stringMap(tags, "Tags")),
+							Tags: tagList(stringMap(tags, "Tags")),
 						};
 						return [
 							{

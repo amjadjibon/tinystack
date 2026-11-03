@@ -15,13 +15,13 @@ import { Action, Buttons, Rows } from "#/components/containers/Controls";
 import { Text } from "#/components/memorydb/Fields";
 import { stringMap } from "#/lib/consoleActions";
 import { unixTime } from "#/lib/format";
-import { tagList, tagMap } from "#/lib/memorydbHelpers";
 import {
 	type ScheduleGroup,
 	type SchedulerScope,
 	schedulerCall,
 } from "#/lib/scheduler";
 import { defaultGroup, validName } from "#/lib/schedulerHelpers";
+import { tagList, tagMap } from "#/lib/tags";
 import { usePoll } from "#/lib/usePoll";
 
 type Dialog = "" | "create" | "delete";
