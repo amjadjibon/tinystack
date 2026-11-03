@@ -53,6 +53,7 @@ import { Route as ServicesLambdaRouteImport } from './routes/services/lambda'
 import { Route as ServicesLogsRouteImport } from './routes/services/logs'
 import { Route as ServicesMemorydbRouteImport } from './routes/services/memorydb'
 import { Route as ServicesOpensearchRouteImport } from './routes/services/opensearch'
+import { Route as ServicesMqRouteImport } from './routes/services/mq'
 import { Route as ServicesPipesRouteImport } from './routes/services/pipes'
 import { Route as ServicesRdsRouteImport } from './routes/services/rds'
 import { Route as ServicesRoute53RouteImport } from './routes/services/route53'
@@ -290,6 +291,11 @@ const ServicesOpensearchRoute = ServicesOpensearchRouteImport.update({
   path: '/services/opensearch',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesMqRoute = ServicesMqRouteImport.update({
+  id: '/services/mq',
+  path: '/services/mq',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesPipesRoute = ServicesPipesRouteImport.update({
   id: '/services/pipes',
   path: '/services/pipes',
@@ -411,6 +417,7 @@ export interface FileRoutesByFullPath {
   '/services/logs': typeof ServicesLogsRoute
   '/services/memorydb': typeof ServicesMemorydbRoute
   '/services/opensearch': typeof ServicesOpensearchRoute
+  '/services/mq': typeof ServicesMqRoute
   '/services/pipes': typeof ServicesPipesRoute
   '/services/rds': typeof ServicesRdsRoute
   '/services/route53': typeof ServicesRoute53Route
@@ -472,6 +479,7 @@ export interface FileRoutesByTo {
   '/services/logs': typeof ServicesLogsRoute
   '/services/memorydb': typeof ServicesMemorydbRoute
   '/services/opensearch': typeof ServicesOpensearchRoute
+  '/services/mq': typeof ServicesMqRoute
   '/services/pipes': typeof ServicesPipesRoute
   '/services/rds': typeof ServicesRdsRoute
   '/services/route53': typeof ServicesRoute53Route
@@ -534,6 +542,7 @@ export interface FileRoutesById {
   '/services/logs': typeof ServicesLogsRoute
   '/services/memorydb': typeof ServicesMemorydbRoute
   '/services/opensearch': typeof ServicesOpensearchRoute
+  '/services/mq': typeof ServicesMqRoute
   '/services/pipes': typeof ServicesPipesRoute
   '/services/rds': typeof ServicesRdsRoute
   '/services/route53': typeof ServicesRoute53Route
@@ -597,6 +606,7 @@ export interface FileRouteTypes {
     | '/services/logs'
     | '/services/memorydb'
     | '/services/opensearch'
+    | '/services/mq'
     | '/services/pipes'
     | '/services/rds'
     | '/services/route53'
@@ -658,6 +668,7 @@ export interface FileRouteTypes {
     | '/services/logs'
     | '/services/memorydb'
     | '/services/opensearch'
+    | '/services/mq'
     | '/services/pipes'
     | '/services/rds'
     | '/services/route53'
@@ -719,6 +730,7 @@ export interface FileRouteTypes {
     | '/services/logs'
     | '/services/memorydb'
     | '/services/opensearch'
+    | '/services/mq'
     | '/services/pipes'
     | '/services/rds'
     | '/services/route53'
@@ -781,6 +793,7 @@ export interface RootRouteChildren {
   ServicesLogsRoute: typeof ServicesLogsRoute
   ServicesMemorydbRoute: typeof ServicesMemorydbRoute
   ServicesOpensearchRoute: typeof ServicesOpensearchRoute
+  ServicesMqRoute: typeof ServicesMqRoute
   ServicesPipesRoute: typeof ServicesPipesRoute
   ServicesRdsRoute: typeof ServicesRdsRoute
   ServicesRoute53Route: typeof ServicesRoute53Route
@@ -1109,6 +1122,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesOpensearchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/mq': {
+      id: '/services/mq'
+      path: '/services/mq'
+      fullPath: '/services/mq'
+      preLoaderRoute: typeof ServicesMqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/pipes': {
       id: '/services/pipes'
       path: '/services/pipes'
@@ -1262,6 +1282,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesLogsRoute: ServicesLogsRoute,
   ServicesMemorydbRoute: ServicesMemorydbRoute,
   ServicesOpensearchRoute: ServicesOpensearchRoute,
+  ServicesMqRoute: ServicesMqRoute,
   ServicesPipesRoute: ServicesPipesRoute,
   ServicesRdsRoute: ServicesRdsRoute,
   ServicesRoute53Route: ServicesRoute53Route,

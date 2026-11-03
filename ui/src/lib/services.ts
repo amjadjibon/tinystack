@@ -207,7 +207,12 @@ const catalog: Record<string, ServiceInfo> = {
 		icon: "transfer",
 	},
 	mwaa: { title: "Amazon MWAA", category: integration, icon: "mwaa" },
-	mq: { title: "Amazon MQ", category: integration, icon: "mq" },
+	mq: {
+		title: "Amazon MQ",
+		category: integration,
+		icon: "mq",
+		href: "/services/mq",
+	},
 	kafka: {
 		title: "MSK",
 		category: analytics,

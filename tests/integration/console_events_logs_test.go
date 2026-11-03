@@ -311,6 +311,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		"efs":             "DescribeFileSystems",
 		"eks":             "ListClusters",
 		"kafka":           "ListClusters",
+		"mq":              "ListBrokers",
 		"appconfig":       "ListApplications",
 		"appsync":         "ListGraphqlApis",
 		"opensearch":      "ListDomainNames",

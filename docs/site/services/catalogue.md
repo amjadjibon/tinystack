@@ -297,7 +297,7 @@ Store scoped broker configuration and tags, with opt-in local RabbitMQ and Activ
 - Persistent scoped creator-token replay/conflict semantics, atomic name uniqueness and effective-candidate updates; retained false log/public flags and documented maintenance/encryption defaults.
 - Atomic merged tags, ARN-scoped tag APIs and Resource Groups Tagging API integration; deterministic 20-default/5-100-bound pages with scope/API-bound deletion-resilient cursors.
 - CloudFormation AWS::AmazonMQ::Broker Ref ID/GetAtt Arn, owned/external tags and configuration in one atomic update, live-state rollback and create-first replacement with collision preservation.
-- Resource browser reports records mode and Docker execution readiness, official AWS icon and actual Terraform mq endpoint key.
+- Dedicated regional console with broker creation, supported updates, typed-name deletion, Docker reboot, copyable live endpoints/web console URLs, initial ActiveMQ usernames and broker tags; runtime capability and transitional-state polling. Resource browser reports execution readiness, official AWS icon and actual Terraform mq endpoint key.
 - Opt-in Docker RabbitMQ 3.13/4.0/4.1 and ActiveMQ 5.17/5.18/5.19 brokers: real messaging, console credentials, readiness, reboot, durable SQLite recovery, delete/reset and store-owned orphan cleanup.
 
 [Supported operations](mq.md#supported-operations) · [Limitations](mq.md#limitations-and-future-work)
