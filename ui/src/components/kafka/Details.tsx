@@ -54,6 +54,11 @@ export function Details({
 				{c.CurrentBrokerSoftwareInfo?.KafkaVersion ?? "-"} · Metadata: ZooKeeper
 				(no ZooKeeper runtime)
 			</div>
+			<div>
+				Configuration:{" "}
+				{c.CurrentBrokerSoftwareInfo?.ConfigurationArn ?? "Default"} · Revision:{" "}
+				{c.CurrentBrokerSoftwareInfo?.ConfigurationRevision ?? "-"}
+			</div>
 			<div>Current version: {c.CurrentVersion ?? "-"}</div>
 			<div>
 				Requested brokers: {c.NumberOfBrokerNodes ?? "-"} · Instance:{" "}

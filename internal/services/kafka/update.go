@@ -54,6 +54,10 @@ func (s *Service) update(
 			return invalid(staleRevisionMessage)
 		}
 
+		if common.Value(r.State) == "UPDATING" {
+			return invalid("Cluster must be ACTIVE before updating")
+		}
+
 		before = common.Clone(r)
 		if restore != nil {
 			if common.Value(restore.ClusterArn) != arn || !reflect.DeepEqual(r.CreationTime, restore.CreationTime) {

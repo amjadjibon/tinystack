@@ -2,7 +2,7 @@
 
 TinyStack stores provisioned Standard cluster configuration and tags. The default `kafka.clusters: records`
 creates no Kafka processes, listeners or data plane. Inventory marks `RecordsOnly: true` and
-`ExecutionReady: false`. Descriptions omit cluster state and operation ARNs in records mode.
+`ExecutionReady: false`. New records omit cluster state until a broker/configuration/version update. Those updates expose UPDATING then ACTIVE.
 GetBootstrapBrokers returns deterministic AWS-format metadata addresses that **do not resolve**;
 ListNodes returns synthetic broker metadata. Monitoring changes affect metadata immediately and deliver no metrics.
 Opt-in Docker mode runs one Kafka-compatible Redpanda broker as described below.
@@ -18,7 +18,7 @@ ARN labels are URL encoded, including their name/identifier slashes.
 
 | Operation | Selected request | Result |
 | --- | --- | --- |
-| CreateCluster | POST `/v1/clusters`: `clusterName`, `kafkaVersion`, `numberOfBrokerNodes`, `brokerNodeGroupInfo`, optional `enhancedMonitoring`, `tags`, `clientAuthentication`, `encryptionInfo` | `clusterArn`, `clusterName` |
+| CreateCluster | POST `/v1/clusters`: `clusterName`, `kafkaVersion`, `numberOfBrokerNodes`, `brokerNodeGroupInfo`, optional `enhancedMonitoring`, `tags`, `clientAuthentication`, `encryptionInfo`, `configurationInfo` | `clusterArn`, `clusterName` |
 | GetBootstrapBrokers | GET `/v1/clusters/{ClusterArn}/bootstrap-brokers` | Enabled plaintext, TLS, SCRAM and IAM bootstrap strings |
 | ListNodes | GET `/v1/clusters/{ClusterArn}/nodes`: optional `maxResults`, `nextToken` | Broker metadata and listener endpoints, optional continuation token |
 | DescribeCluster | GET `/v1/clusters/{ClusterArn}` | `clusterInfo` containing the selected configuration |
@@ -30,7 +30,7 @@ ARN labels are URL encoded, including their name/identifier slashes.
 | UntagResource | DELETE `/v1/tags/{ResourceArn}`: required repeated query `tagKeys` | HTTP 204, no body |
 
 Both Describe and List select `clusterArn`, `clusterName`, `creationTime`, `currentVersion`,
-`currentBrokerSoftwareInfo.kafkaVersion`, `numberOfBrokerNodes`, `brokerNodeGroupInfo`,
+`currentBrokerSoftwareInfo` (Kafka version and attached configuration ARN/revision), `numberOfBrokerNodes`, `brokerNodeGroupInfo`,
 `enhancedMonitoring`, `tags`, `clientAuthentication` and `encryptionInfo`. Docker descriptions also return `state` and startup failure `stateInfo`.
 
 Names are required, locally restricted to 1–64 ASCII letters/digits/hyphens/underscores, and unique
@@ -73,14 +73,49 @@ selected inside `brokerNodeGroupInfo`. `storageInfo` selects only `ebsStorageInf
 scope. Deleted, foreign-scope, wrong-VPC, same-AZ and unsupported-zone references reject creation.
 Lookups share the storage transaction, with no external I/O or resource allocation.
 
-`configurationInfo`, `loggingInfo`, `openMonitoring`,
+`loggingInfo`, `openMonitoring`,
 `rebalancing`, `storageMode`, `connectivityInfo`, `zoneIds` and EBS `provisionedThroughput` are excluded,
 even when false/null/empty. No credential, KMS key or metrics endpoint is synthesized.
+
+## Configurations and provisioned cluster updates
+
+CreateConfiguration, DescribeConfiguration, DescribeConfigurationRevision, ListConfigurations,
+ListConfigurationRevisions, UpdateConfiguration and DeleteConfiguration manage scoped configuration
+records. Names match `^[0-9A-Za-z][0-9A-Za-z-]*$` and are unique within an account and Region.
+ServerProperties contains nonempty UTF-8 server.properties text with `key=value` or `key:value` entries;
+REST/console action payloads encode the bytes as base64. Property semantics are not fully validated.
+Optional KafkaVersions is restricted to the local 3.8.x/3.9.x matrix; omission permits either version.
+Each update appends an immutable numbered revision. Revision descriptions and creation times are retained.
+Lists accept MaxResults 1–100 and scoped continuation tokens. Deleting a configuration removes all its
+revisions and rejects while a cluster references it.
+
+CreateCluster accepts ConfigurationInfo with Arn and Revision. DescribeCluster returns the attachment
+under CurrentBrokerSoftwareInfo.ConfigurationArn and ConfigurationRevision. Attachments must reference
+an existing scoped revision compatible with the cluster Kafka version.
+
+UpdateBrokerCount, UpdateBrokerStorage, UpdateClusterConfiguration and UpdateClusterKafkaVersion require
+a matching CurrentVersion and an idle cluster. Successful changes generate a new opaque version and a
+cluster-operation ARN, expose UPDATING for one second, then ACTIVE. The completion deadline survives
+storage restart; no operation-history APIs are implemented. Concurrent updates and stale versions fail
+with BadRequestException. Broker count must increase, remain at most 15 and divide evenly among client
+subnets. Storage must target ALL brokers, increase, and be 101–16384 GiB. The supported Kafka upgrade is
+3.8.x to 3.9.x, optionally with a new compatible configuration revision. Invalid changes write nothing.
+Storage cooldown and optimization are not simulated.
+
+ListClustersV2 and DescribeClusterV2 return PROVISIONED clusters with their broker fields inside
+Provisioned. ListClustersV2 supports cluster name/type filters and pagination; SERVERLESS returns no rows.
+Serverless/CreateClusterV2 is not implemented because cluster records and broker paths require provisioned
+broker, subnet, storage and software metadata.
+
+Configuration CRUD is available in both runtimes. Custom configuration attachments and the four new
+cluster mutation APIs explicitly reject Docker mode: the single-node Redpanda runtime cannot apply
+these MSK broker/storage/version/configuration changes. The console exposes configurations and revisions,
+with broker count/storage/configuration actions available for records clusters.
 
 ## Revisions, monitoring and tags
 
 `CurrentVersion` is a stored opaque configuration revision. Obtain it through DescribeCluster before
-UpdateMonitoring. Required versions must match atomically; simultaneous changes using the same version
+UpdateMonitoring or a broker/configuration/version update. Required versions must match atomically; simultaneous changes using the same version
 allow exactly one effective change. Failed validation, stale versions and overflow preserve the exact
 record and revision. Delete's optional version must match when supplied, including an empty value.
 
@@ -127,7 +162,7 @@ template defaults. Compensation requires the committed revision and generates a 
 restoring effective configuration, preventing reuse of a previous optimistic token.
 
 KafkaVersion, NumberOfBrokerNodes, broker InstanceType and StorageInfo mutations/removals fail before
-writing: their real update APIs are outside this slice. Required-property removals fail too. These
+writing in CloudFormation: these fields are not wired to their service update APIs. Required-property removals fail too. These
 mutable fields are not silently retained or treated as artificial replacements, even alongside a name
 change. ClusterName and selected immutable subnet/security-group/distribution changes use create-first
 replacement. Removing an explicit immutable broker choice rejects before replacement. A same-name
@@ -135,7 +170,7 @@ immutable replacement collides safely; give it a new name. Name collisions prese
 unrelated cluster. A later failure restores the original physical incarnation and its metadata. Create
 rollback deletes newly created records. Existing EFS/Batch/CodeBuild/MQ hooks remain active.
 
-Configuration CRUD/revisions, SCRAM associations, other updates, V2/serverless and advanced authentication are [future extensions](../roadmap/services/msk-runtime.md).
+Serverless/CreateClusterV2, SCRAM associations, other updates and advanced authentication remain [future extensions](../roadmap/services/msk-runtime.md).
 Terraform's `kafka` endpoint points to the API; this slice does not satisfy running-state waiters.
 
 ## Bootstrap brokers and authentication metadata
@@ -157,9 +192,9 @@ listener, following AWS. These metadata hostnames are deterministic but do not r
 ListNodes returns broker IDs, retained software/instance/subnet metadata, creation timestamps and the
 same enabled endpoints. Node pages default to 100 with model bounds 1–100 and cluster-bound cursors.
 Missing clusters return NotFoundException for both operations. GetBootstrapBrokers uses the standard
-SDK fields that Terraform's `aws_msk_cluster` read consumes; records mode still omits state and does
-not satisfy Terraform's running-state waiter. Current provider versions also use DescribeClusterV2,
-which remains outside this slice in both modes; only bootstrap-read compatibility is claimed.
+SDK fields that Terraform's `aws_msk_cluster` read consumes. DescribeClusterV2 is supported for
+provisioned clusters in both modes. Newly created records still omit state, so records-mode creation
+does not satisfy Terraform's running-state waiter.
 
 ## Redpanda Docker runtime
 

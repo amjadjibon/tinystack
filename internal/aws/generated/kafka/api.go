@@ -63,6 +63,11 @@ type EncryptionInfo struct {
 	EncryptionInTransit *EncryptionInTransit `json:"encryptionInTransit,omitempty"`
 }
 
+type ConfigurationInfo struct {
+	Arn      *string `json:"arn,omitempty"`
+	Revision *int64  `json:"revision,omitempty"`
+}
+
 type CreateClusterRequest struct {
 	BrokerNodeGroupInfo  *BrokerNodeGroupInfo  `json:"brokerNodeGroupInfo,omitempty"`
 	ClusterName          *string               `json:"clusterName,omitempty"`
@@ -72,6 +77,7 @@ type CreateClusterRequest struct {
 	Tags                 map[string]string     `json:"tags,omitempty"`
 	ClientAuthentication *ClientAuthentication `json:"clientAuthentication,omitempty"`
 	EncryptionInfo       *EncryptionInfo       `json:"encryptionInfo,omitempty"`
+	ConfigurationInfo    *ConfigurationInfo    `json:"configurationInfo,omitempty"`
 }
 
 type CreateClusterResponse struct {
@@ -85,7 +91,9 @@ type DescribeClusterRequest struct {
 }
 
 type BrokerSoftwareInfo struct {
-	KafkaVersion *string `json:"kafkaVersion,omitempty"`
+	KafkaVersion          *string `json:"kafkaVersion,omitempty"`
+	ConfigurationArn      *string `json:"configurationArn,omitempty"`
+	ConfigurationRevision *int64  `json:"configurationRevision,omitempty"`
 }
 
 type StateInfo struct {
@@ -201,11 +209,208 @@ type ListNodesResponse struct {
 	NextToken    *string    `json:"nextToken,omitempty"`
 }
 
+type CreateConfigurationRequest struct {
+	Description      *string  `json:"description,omitempty"`
+	KafkaVersions    []string `json:"kafkaVersions,omitempty"`
+	Name             *string  `json:"name,omitempty"`
+	ServerProperties []byte   `json:"serverProperties,omitempty"`
+}
+
+type ConfigurationRevision struct {
+	CreationTime *time.Time `json:"creationTime,omitempty"`
+	Description  *string    `json:"description,omitempty"`
+	Revision     *int64     `json:"revision,omitempty"`
+}
+
+type CreateConfigurationResponse struct {
+	Arn            *string                `json:"arn,omitempty"`
+	CreationTime   *time.Time             `json:"creationTime,omitempty"`
+	LatestRevision *ConfigurationRevision `json:"latestRevision,omitempty"`
+	Name           *string                `json:"name,omitempty"`
+	State          *string                `json:"state,omitempty"`
+}
+
+type DescribeConfigurationRequest struct {
+	Arn *string `json:"-"`
+}
+
+type DescribeConfigurationResponse struct {
+	Arn            *string                `json:"arn,omitempty"`
+	CreationTime   *time.Time             `json:"creationTime,omitempty"`
+	Description    *string                `json:"description,omitempty"`
+	KafkaVersions  []string               `json:"kafkaVersions,omitempty"`
+	LatestRevision *ConfigurationRevision `json:"latestRevision,omitempty"`
+	Name           *string                `json:"name,omitempty"`
+	State          *string                `json:"state,omitempty"`
+}
+
+type DescribeConfigurationRevisionRequest struct {
+	Arn      *string `json:"-"`
+	Revision *int64  `json:"-"`
+}
+
+type DescribeConfigurationRevisionResponse struct {
+	Arn              *string    `json:"arn,omitempty"`
+	CreationTime     *time.Time `json:"creationTime,omitempty"`
+	Description      *string    `json:"description,omitempty"`
+	Revision         *int64     `json:"revision,omitempty"`
+	ServerProperties []byte     `json:"serverProperties,omitempty"`
+}
+
+type ListConfigurationsRequest struct {
+	MaxResults *int64  `json:"-"`
+	NextToken  *string `json:"-"`
+}
+
+type Configuration struct {
+	Arn            *string                `json:"arn,omitempty"`
+	CreationTime   *time.Time             `json:"creationTime,omitempty"`
+	Description    *string                `json:"description,omitempty"`
+	KafkaVersions  []string               `json:"kafkaVersions,omitempty"`
+	LatestRevision *ConfigurationRevision `json:"latestRevision,omitempty"`
+	Name           *string                `json:"name,omitempty"`
+	State          *string                `json:"state,omitempty"`
+}
+
+type ListConfigurationsResponse struct {
+	Configurations []Configuration `json:"configurations,omitempty"`
+	NextToken      *string         `json:"nextToken,omitempty"`
+}
+
+type ListConfigurationRevisionsRequest struct {
+	Arn        *string `json:"-"`
+	MaxResults *int64  `json:"-"`
+	NextToken  *string `json:"-"`
+}
+
+type ListConfigurationRevisionsResponse struct {
+	NextToken *string                 `json:"nextToken,omitempty"`
+	Revisions []ConfigurationRevision `json:"revisions,omitempty"`
+}
+
+type UpdateConfigurationRequest struct {
+	Arn              *string `json:"-"`
+	Description      *string `json:"description,omitempty"`
+	ServerProperties []byte  `json:"serverProperties,omitempty"`
+}
+
+type UpdateConfigurationResponse struct {
+	Arn            *string                `json:"arn,omitempty"`
+	LatestRevision *ConfigurationRevision `json:"latestRevision,omitempty"`
+}
+
+type DeleteConfigurationRequest struct {
+	Arn *string `json:"-"`
+}
+
+type DeleteConfigurationResponse struct {
+	Arn   *string `json:"arn,omitempty"`
+	State *string `json:"state,omitempty"`
+}
+
+type UpdateBrokerCountRequest struct {
+	ClusterArn                *string `json:"-"`
+	CurrentVersion            *string `json:"currentVersion,omitempty"`
+	TargetNumberOfBrokerNodes *int64  `json:"targetNumberOfBrokerNodes,omitempty"`
+}
+
+type UpdateBrokerCountResponse struct {
+	ClusterArn          *string `json:"clusterArn,omitempty"`
+	ClusterOperationArn *string `json:"clusterOperationArn,omitempty"`
+}
+
+type BrokerEBSVolumeInfo struct {
+	KafkaBrokerNodeId *string `json:"kafkaBrokerNodeId,omitempty"`
+	VolumeSizeGB      *int64  `json:"volumeSizeGB,omitempty"`
+}
+
+type UpdateBrokerStorageRequest struct {
+	ClusterArn                *string               `json:"-"`
+	CurrentVersion            *string               `json:"currentVersion,omitempty"`
+	TargetBrokerEBSVolumeInfo []BrokerEBSVolumeInfo `json:"targetBrokerEBSVolumeInfo,omitempty"`
+}
+
+type UpdateBrokerStorageResponse struct {
+	ClusterArn          *string `json:"clusterArn,omitempty"`
+	ClusterOperationArn *string `json:"clusterOperationArn,omitempty"`
+}
+
+type UpdateClusterConfigurationRequest struct {
+	ClusterArn        *string            `json:"-"`
+	ConfigurationInfo *ConfigurationInfo `json:"configurationInfo,omitempty"`
+	CurrentVersion    *string            `json:"currentVersion,omitempty"`
+}
+
+type UpdateClusterConfigurationResponse struct {
+	ClusterArn          *string `json:"clusterArn,omitempty"`
+	ClusterOperationArn *string `json:"clusterOperationArn,omitempty"`
+}
+
+type UpdateClusterKafkaVersionRequest struct {
+	ClusterArn         *string            `json:"-"`
+	ConfigurationInfo  *ConfigurationInfo `json:"configurationInfo,omitempty"`
+	CurrentVersion     *string            `json:"currentVersion,omitempty"`
+	TargetKafkaVersion *string            `json:"targetKafkaVersion,omitempty"`
+}
+
+type UpdateClusterKafkaVersionResponse struct {
+	ClusterArn          *string `json:"clusterArn,omitempty"`
+	ClusterOperationArn *string `json:"clusterOperationArn,omitempty"`
+}
+
+type ListClustersV2Request struct {
+	ClusterNameFilter *string `json:"-"`
+	ClusterTypeFilter *string `json:"-"`
+	MaxResults        *int64  `json:"-"`
+	NextToken         *string `json:"-"`
+}
+
+type Provisioned struct {
+	BrokerNodeGroupInfo       *BrokerNodeGroupInfo  `json:"brokerNodeGroupInfo,omitempty"`
+	CurrentBrokerSoftwareInfo *BrokerSoftwareInfo   `json:"currentBrokerSoftwareInfo,omitempty"`
+	EnhancedMonitoring        *string               `json:"enhancedMonitoring,omitempty"`
+	NumberOfBrokerNodes       *int64                `json:"numberOfBrokerNodes,omitempty"`
+	ClientAuthentication      *ClientAuthentication `json:"clientAuthentication,omitempty"`
+	EncryptionInfo            *EncryptionInfo       `json:"encryptionInfo,omitempty"`
+}
+
+type Cluster struct {
+	ClusterType    *string           `json:"clusterType,omitempty"`
+	ClusterArn     *string           `json:"clusterArn,omitempty"`
+	ClusterName    *string           `json:"clusterName,omitempty"`
+	CreationTime   *time.Time        `json:"creationTime,omitempty"`
+	CurrentVersion *string           `json:"currentVersion,omitempty"`
+	State          *string           `json:"state,omitempty"`
+	StateInfo      *StateInfo        `json:"stateInfo,omitempty"`
+	Tags           map[string]string `json:"tags,omitempty"`
+	Provisioned    *Provisioned      `json:"provisioned,omitempty"`
+}
+
+type ListClustersV2Response struct {
+	ClusterInfoList []Cluster `json:"clusterInfoList,omitempty"`
+	NextToken       *string   `json:"nextToken,omitempty"`
+}
+
+type DescribeClusterV2Request struct {
+	ClusterArn *string `json:"-"`
+}
+
+type DescribeClusterV2Response struct {
+	ClusterInfo *Cluster `json:"clusterInfo,omitempty"`
+}
+
 var enum0 = []string{"DEFAULT"}
 
 var enum1 = []string{"DEFAULT", "PER_BROKER", "PER_TOPIC_PER_BROKER", "PER_TOPIC_PER_PARTITION"}
 
 var enum2 = []string{"PLAINTEXT", "TLS", "TLS_PLAINTEXT"}
+
+func (v *BrokerEBSVolumeInfo) Validate(path string) error {
+	if err := validation.Required(path+"KafkaBrokerNodeId", v.KafkaBrokerNodeId != nil); err != nil {
+		return err
+	}
+	return nil
+}
 
 func (v *BrokerNodeGroupInfo) Validate(path string) error {
 	if v.BrokerAZDistribution != nil {
@@ -247,6 +452,16 @@ func (v *ClientAuthentication) Validate(path string) error {
 		if err := (*v.Unauthenticated).Validate(path + "Unauthenticated" + "."); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (v *ConfigurationInfo) Validate(path string) error {
+	if err := validation.Required(path+"Arn", v.Arn != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"Revision", v.Revision != nil); err != nil {
+		return err
 	}
 	return nil
 }
@@ -299,6 +514,21 @@ func (v *CreateClusterRequest) Validate(path string) error {
 			return err
 		}
 	}
+	if v.ConfigurationInfo != nil {
+		if err := (*v.ConfigurationInfo).Validate(path + "ConfigurationInfo" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *CreateConfigurationRequest) Validate(path string) error {
+	if err := validation.Required(path+"Name", v.Name != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"ServerProperties", v.ServerProperties != nil); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -309,8 +539,39 @@ func (v *DeleteClusterRequest) Validate(path string) error {
 	return nil
 }
 
+func (v *DeleteConfigurationRequest) Validate(path string) error {
+	if err := validation.Required(path+"Arn", v.Arn != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (v *DescribeClusterRequest) Validate(path string) error {
 	if err := validation.Required(path+"ClusterArn", v.ClusterArn != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *DescribeClusterV2Request) Validate(path string) error {
+	if err := validation.Required(path+"ClusterArn", v.ClusterArn != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *DescribeConfigurationRequest) Validate(path string) error {
+	if err := validation.Required(path+"Arn", v.Arn != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *DescribeConfigurationRevisionRequest) Validate(path string) error {
+	if err := validation.Required(path+"Arn", v.Arn != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"Revision", v.Revision != nil); err != nil {
 		return err
 	}
 	return nil
@@ -355,6 +616,36 @@ func (v *Iam) Validate(path string) error {
 }
 
 func (v *ListClustersRequest) Validate(path string) error {
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"MaxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListClustersV2Request) Validate(path string) error {
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"MaxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListConfigurationRevisionsRequest) Validate(path string) error {
+	if err := validation.Required(path+"Arn", v.Arn != nil); err != nil {
+		return err
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"MaxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListConfigurationsRequest) Validate(path string) error {
 	if v.MaxResults != nil {
 		if err := validation.Range(path+"MaxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(100))); err != nil {
 			return err
@@ -437,6 +728,90 @@ func (v *UntagResourceRequest) Validate(path string) error {
 	return nil
 }
 
+func (v *UpdateBrokerCountRequest) Validate(path string) error {
+	if err := validation.Required(path+"ClusterArn", v.ClusterArn != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"CurrentVersion", v.CurrentVersion != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"TargetNumberOfBrokerNodes", v.TargetNumberOfBrokerNodes != nil); err != nil {
+		return err
+	}
+	if v.TargetNumberOfBrokerNodes != nil {
+		if err := validation.Range(path+"TargetNumberOfBrokerNodes", float64((*v.TargetNumberOfBrokerNodes)), new(float64(1)), new(float64(15))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *UpdateBrokerStorageRequest) Validate(path string) error {
+	if err := validation.Required(path+"ClusterArn", v.ClusterArn != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"CurrentVersion", v.CurrentVersion != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"TargetBrokerEBSVolumeInfo", v.TargetBrokerEBSVolumeInfo != nil); err != nil {
+		return err
+	}
+	if v.TargetBrokerEBSVolumeInfo != nil {
+		for i0, e0 := range v.TargetBrokerEBSVolumeInfo {
+			if err := e0.Validate(validation.Index(path+"TargetBrokerEBSVolumeInfo", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *UpdateClusterConfigurationRequest) Validate(path string) error {
+	if err := validation.Required(path+"ClusterArn", v.ClusterArn != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"ConfigurationInfo", v.ConfigurationInfo != nil); err != nil {
+		return err
+	}
+	if v.ConfigurationInfo != nil {
+		if err := (*v.ConfigurationInfo).Validate(path + "ConfigurationInfo" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"CurrentVersion", v.CurrentVersion != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *UpdateClusterKafkaVersionRequest) Validate(path string) error {
+	if err := validation.Required(path+"ClusterArn", v.ClusterArn != nil); err != nil {
+		return err
+	}
+	if v.ConfigurationInfo != nil {
+		if err := (*v.ConfigurationInfo).Validate(path + "ConfigurationInfo" + "."); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"CurrentVersion", v.CurrentVersion != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"TargetKafkaVersion", v.TargetKafkaVersion != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *UpdateConfigurationRequest) Validate(path string) error {
+	if err := validation.Required(path+"Arn", v.Arn != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"ServerProperties", v.ServerProperties != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (v *UpdateMonitoringRequest) Validate(path string) error {
 	if err := validation.Required(path+"ClusterArn", v.ClusterArn != nil); err != nil {
 		return err
@@ -463,11 +838,24 @@ type API interface {
 	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceOutput, error)
 	GetBootstrapBrokers(context.Context, *GetBootstrapBrokersRequest) (*GetBootstrapBrokersResponse, error)
 	ListNodes(context.Context, *ListNodesRequest) (*ListNodesResponse, error)
+	CreateConfiguration(context.Context, *CreateConfigurationRequest) (*CreateConfigurationResponse, error)
+	DescribeConfiguration(context.Context, *DescribeConfigurationRequest) (*DescribeConfigurationResponse, error)
+	DescribeConfigurationRevision(context.Context, *DescribeConfigurationRevisionRequest) (*DescribeConfigurationRevisionResponse, error)
+	ListConfigurations(context.Context, *ListConfigurationsRequest) (*ListConfigurationsResponse, error)
+	ListConfigurationRevisions(context.Context, *ListConfigurationRevisionsRequest) (*ListConfigurationRevisionsResponse, error)
+	UpdateConfiguration(context.Context, *UpdateConfigurationRequest) (*UpdateConfigurationResponse, error)
+	DeleteConfiguration(context.Context, *DeleteConfigurationRequest) (*DeleteConfigurationResponse, error)
+	UpdateBrokerCount(context.Context, *UpdateBrokerCountRequest) (*UpdateBrokerCountResponse, error)
+	UpdateBrokerStorage(context.Context, *UpdateBrokerStorageRequest) (*UpdateBrokerStorageResponse, error)
+	UpdateClusterConfiguration(context.Context, *UpdateClusterConfigurationRequest) (*UpdateClusterConfigurationResponse, error)
+	UpdateClusterKafkaVersion(context.Context, *UpdateClusterKafkaVersionRequest) (*UpdateClusterKafkaVersionResponse, error)
+	ListClustersV2(context.Context, *ListClustersV2Request) (*ListClustersV2Response, error)
+	DescribeClusterV2(context.Context, *DescribeClusterV2Request) (*DescribeClusterV2Response, error)
 }
 
 func Descriptor(api API) catalog.Service {
 	return catalog.Service{Name: "kafka", SigningName: "kafka", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "kafka", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"BadRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "ForbiddenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "InternalServerErrorException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "NotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServiceUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 503}, "TooManyRequestsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "UnauthorizedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 401}}, Operations: map[string]catalog.Operation{
-		"CreateCluster": {Name: "CreateCluster", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:CreateCluster", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"BrokerNodeGroupInfo": catalog.MemberBinding{Location: "document", Name: "BrokerNodeGroupInfo", Format: ""}, "ClientAuthentication": catalog.MemberBinding{Location: "document", Name: "ClientAuthentication", Format: ""}, "ClusterName": catalog.MemberBinding{Location: "document", Name: "ClusterName", Format: ""}, "EncryptionInfo": catalog.MemberBinding{Location: "document", Name: "EncryptionInfo", Format: ""}, "EnhancedMonitoring": catalog.MemberBinding{Location: "document", Name: "EnhancedMonitoring", Format: ""}, "KafkaVersion": catalog.MemberBinding{Location: "document", Name: "KafkaVersion", Format: ""}, "NumberOfBrokerNodes": catalog.MemberBinding{Location: "document", Name: "NumberOfBrokerNodes", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Output: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "document", Name: "ClusterArn", Format: ""}, "ClusterName": catalog.MemberBinding{Location: "document", Name: "ClusterName", Format: ""}, "State": catalog.MemberBinding{Location: "document", Name: "State", Format: ""}}, Method: "POST", URI: "/v1/clusters", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateClusterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"CreateCluster": {Name: "CreateCluster", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:CreateCluster", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"BrokerNodeGroupInfo": catalog.MemberBinding{Location: "document", Name: "BrokerNodeGroupInfo", Format: ""}, "ClientAuthentication": catalog.MemberBinding{Location: "document", Name: "ClientAuthentication", Format: ""}, "ClusterName": catalog.MemberBinding{Location: "document", Name: "ClusterName", Format: ""}, "ConfigurationInfo": catalog.MemberBinding{Location: "document", Name: "ConfigurationInfo", Format: ""}, "EncryptionInfo": catalog.MemberBinding{Location: "document", Name: "EncryptionInfo", Format: ""}, "EnhancedMonitoring": catalog.MemberBinding{Location: "document", Name: "EnhancedMonitoring", Format: ""}, "KafkaVersion": catalog.MemberBinding{Location: "document", Name: "KafkaVersion", Format: ""}, "NumberOfBrokerNodes": catalog.MemberBinding{Location: "document", Name: "NumberOfBrokerNodes", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Output: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "document", Name: "ClusterArn", Format: ""}, "ClusterName": catalog.MemberBinding{Location: "document", Name: "ClusterName", Format: ""}, "State": catalog.MemberBinding{Location: "document", Name: "State", Format: ""}}, Method: "POST", URI: "/v1/clusters", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateClusterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*CreateClusterRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("BadRequestException", err.Error())
@@ -536,6 +924,97 @@ func Descriptor(api API) catalog.Service {
 				return nil, awserror.New("BadRequestException", err.Error())
 			}
 			return api.ListNodes(ctx, in)
+		}},
+		"CreateConfiguration": {Name: "CreateConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:CreateConfiguration", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Description": catalog.MemberBinding{Location: "document", Name: "Description", Format: ""}, "KafkaVersions": catalog.MemberBinding{Location: "document", Name: "KafkaVersions", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "Name", Format: ""}, "ServerProperties": catalog.MemberBinding{Location: "document", Name: "ServerProperties", Format: ""}}, Output: map[string]catalog.MemberBinding{"Arn": catalog.MemberBinding{Location: "document", Name: "Arn", Format: ""}, "CreationTime": catalog.MemberBinding{Location: "document", Name: "CreationTime", Format: ""}, "LatestRevision": catalog.MemberBinding{Location: "document", Name: "LatestRevision", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "Name", Format: ""}, "State": catalog.MemberBinding{Location: "document", Name: "State", Format: ""}}, Method: "POST", URI: "/v1/configurations", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*CreateConfigurationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.CreateConfiguration(ctx, in)
+		}},
+		"DescribeConfiguration": {Name: "DescribeConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:DescribeConfiguration", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Arn": catalog.MemberBinding{Location: "label", Name: "Arn", Format: ""}}, Output: map[string]catalog.MemberBinding{"Arn": catalog.MemberBinding{Location: "document", Name: "Arn", Format: ""}, "CreationTime": catalog.MemberBinding{Location: "document", Name: "CreationTime", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "Description", Format: ""}, "KafkaVersions": catalog.MemberBinding{Location: "document", Name: "KafkaVersions", Format: ""}, "LatestRevision": catalog.MemberBinding{Location: "document", Name: "LatestRevision", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "Name", Format: ""}, "State": catalog.MemberBinding{Location: "document", Name: "State", Format: ""}}, Method: "GET", URI: "/v1/configurations/{Arn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*DescribeConfigurationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.DescribeConfiguration(ctx, in)
+		}},
+		"DescribeConfigurationRevision": {Name: "DescribeConfigurationRevision", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:DescribeConfigurationRevision", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Arn": catalog.MemberBinding{Location: "label", Name: "Arn", Format: ""}, "Revision": catalog.MemberBinding{Location: "label", Name: "Revision", Format: ""}}, Output: map[string]catalog.MemberBinding{"Arn": catalog.MemberBinding{Location: "document", Name: "Arn", Format: ""}, "CreationTime": catalog.MemberBinding{Location: "document", Name: "CreationTime", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "Description", Format: ""}, "Revision": catalog.MemberBinding{Location: "document", Name: "Revision", Format: ""}, "ServerProperties": catalog.MemberBinding{Location: "document", Name: "ServerProperties", Format: ""}}, Method: "GET", URI: "/v1/configurations/{Arn}/revisions/{Revision}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeConfigurationRevisionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*DescribeConfigurationRevisionRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.DescribeConfigurationRevision(ctx, in)
+		}},
+		"ListConfigurations": {Name: "ListConfigurations", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:ListConfigurations", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"Configurations": catalog.MemberBinding{Location: "document", Name: "Configurations", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}}, Method: "GET", URI: "/v1/configurations", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListConfigurationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListConfigurationsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.ListConfigurations(ctx, in)
+		}},
+		"ListConfigurationRevisions": {Name: "ListConfigurationRevisions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:ListConfigurationRevisions", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Arn": catalog.MemberBinding{Location: "label", Name: "Arn", Format: ""}, "MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}, "Revisions": catalog.MemberBinding{Location: "document", Name: "Revisions", Format: ""}}, Method: "GET", URI: "/v1/configurations/{Arn}/revisions", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListConfigurationRevisionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListConfigurationRevisionsRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.ListConfigurationRevisions(ctx, in)
+		}},
+		"UpdateConfiguration": {Name: "UpdateConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:UpdateConfiguration", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Arn": catalog.MemberBinding{Location: "label", Name: "Arn", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "Description", Format: ""}, "ServerProperties": catalog.MemberBinding{Location: "document", Name: "ServerProperties", Format: ""}}, Output: map[string]catalog.MemberBinding{"Arn": catalog.MemberBinding{Location: "document", Name: "Arn", Format: ""}, "LatestRevision": catalog.MemberBinding{Location: "document", Name: "LatestRevision", Format: ""}}, Method: "PUT", URI: "/v1/configurations/{Arn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*UpdateConfigurationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.UpdateConfiguration(ctx, in)
+		}},
+		"DeleteConfiguration": {Name: "DeleteConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:DeleteConfiguration", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Arn": catalog.MemberBinding{Location: "label", Name: "Arn", Format: ""}}, Output: map[string]catalog.MemberBinding{"Arn": catalog.MemberBinding{Location: "document", Name: "Arn", Format: ""}, "State": catalog.MemberBinding{Location: "document", Name: "State", Format: ""}}, Method: "DELETE", URI: "/v1/configurations/{Arn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*DeleteConfigurationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.DeleteConfiguration(ctx, in)
+		}},
+		"UpdateBrokerCount": {Name: "UpdateBrokerCount", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:UpdateBrokerCount", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "label", Name: "ClusterArn", Format: ""}, "CurrentVersion": catalog.MemberBinding{Location: "document", Name: "CurrentVersion", Format: ""}, "TargetNumberOfBrokerNodes": catalog.MemberBinding{Location: "document", Name: "TargetNumberOfBrokerNodes", Format: ""}}, Output: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "document", Name: "ClusterArn", Format: ""}, "ClusterOperationArn": catalog.MemberBinding{Location: "document", Name: "ClusterOperationArn", Format: ""}}, Method: "PUT", URI: "/v1/clusters/{ClusterArn}/nodes/count", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateBrokerCountRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*UpdateBrokerCountRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.UpdateBrokerCount(ctx, in)
+		}},
+		"UpdateBrokerStorage": {Name: "UpdateBrokerStorage", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:UpdateBrokerStorage", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "label", Name: "ClusterArn", Format: ""}, "CurrentVersion": catalog.MemberBinding{Location: "document", Name: "CurrentVersion", Format: ""}, "TargetBrokerEBSVolumeInfo": catalog.MemberBinding{Location: "document", Name: "TargetBrokerEBSVolumeInfo", Format: ""}}, Output: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "document", Name: "ClusterArn", Format: ""}, "ClusterOperationArn": catalog.MemberBinding{Location: "document", Name: "ClusterOperationArn", Format: ""}}, Method: "PUT", URI: "/v1/clusters/{ClusterArn}/nodes/storage", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateBrokerStorageRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*UpdateBrokerStorageRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.UpdateBrokerStorage(ctx, in)
+		}},
+		"UpdateClusterConfiguration": {Name: "UpdateClusterConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:UpdateClusterConfiguration", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "label", Name: "ClusterArn", Format: ""}, "ConfigurationInfo": catalog.MemberBinding{Location: "document", Name: "ConfigurationInfo", Format: ""}, "CurrentVersion": catalog.MemberBinding{Location: "document", Name: "CurrentVersion", Format: ""}}, Output: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "document", Name: "ClusterArn", Format: ""}, "ClusterOperationArn": catalog.MemberBinding{Location: "document", Name: "ClusterOperationArn", Format: ""}}, Method: "PUT", URI: "/v1/clusters/{ClusterArn}/configuration", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateClusterConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*UpdateClusterConfigurationRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.UpdateClusterConfiguration(ctx, in)
+		}},
+		"UpdateClusterKafkaVersion": {Name: "UpdateClusterKafkaVersion", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:UpdateClusterKafkaVersion", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "label", Name: "ClusterArn", Format: ""}, "ConfigurationInfo": catalog.MemberBinding{Location: "document", Name: "ConfigurationInfo", Format: ""}, "CurrentVersion": catalog.MemberBinding{Location: "document", Name: "CurrentVersion", Format: ""}, "TargetKafkaVersion": catalog.MemberBinding{Location: "document", Name: "TargetKafkaVersion", Format: ""}}, Output: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "document", Name: "ClusterArn", Format: ""}, "ClusterOperationArn": catalog.MemberBinding{Location: "document", Name: "ClusterOperationArn", Format: ""}}, Method: "PUT", URI: "/v1/clusters/{ClusterArn}/version", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateClusterKafkaVersionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*UpdateClusterKafkaVersionRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.UpdateClusterKafkaVersion(ctx, in)
+		}},
+		"ListClustersV2": {Name: "ListClustersV2", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:ListClustersV2", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ClusterNameFilter": catalog.MemberBinding{Location: "query", Name: "clusterNameFilter", Format: ""}, "ClusterTypeFilter": catalog.MemberBinding{Location: "query", Name: "clusterTypeFilter", Format: ""}, "MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"ClusterInfoList": catalog.MemberBinding{Location: "document", Name: "ClusterInfoList", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}}, Method: "GET", URI: "/api/v2/clusters", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListClustersV2Request{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListClustersV2Request)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.ListClustersV2(ctx, in)
+		}},
+		"DescribeClusterV2": {Name: "DescribeClusterV2", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "kafka:DescribeClusterV2", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ClusterArn": catalog.MemberBinding{Location: "label", Name: "ClusterArn", Format: ""}}, Output: map[string]catalog.MemberBinding{"ClusterInfo": catalog.MemberBinding{Location: "document", Name: "ClusterInfo", Format: ""}}, Method: "GET", URI: "/api/v2/clusters/{ClusterArn}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeClusterV2Request{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*DescribeClusterV2Request)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("BadRequestException", err.Error())
+			}
+			return api.DescribeClusterV2(ctx, in)
 		}},
 	}}
 }

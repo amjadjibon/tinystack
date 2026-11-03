@@ -7,7 +7,11 @@ export type Cluster = {
 	CurrentVersion?: string;
 	State?: string;
 	StateInfo?: { Code?: string; Message?: string };
-	CurrentBrokerSoftwareInfo?: { KafkaVersion?: string };
+	CurrentBrokerSoftwareInfo?: {
+		KafkaVersion?: string;
+		ConfigurationArn?: string;
+		ConfigurationRevision?: number;
+	};
 	NumberOfBrokerNodes?: number;
 	EnhancedMonitoring?: string;
 	Tags?: Record<string, string>;
@@ -140,6 +144,84 @@ export function clusterInput(f: ClusterForm, region: string, docker: boolean) {
 				ClientBroker: f.encryption,
 				InCluster: f.inCluster,
 			},
+		},
+	};
+}
+
+export type Configuration = {
+	Arn: string;
+	Name: string;
+	Description?: string;
+	CreationTime?: string;
+	KafkaVersions?: string[];
+	State?: string;
+	LatestRevision?: ConfigurationRevision;
+};
+export type ConfigurationRevision = {
+	Revision: number;
+	CreationTime?: string;
+	Description?: string;
+};
+export function configurationInput(
+	name: string,
+	description: string,
+	properties: string,
+) {
+	if (!/^[A-Za-z0-9][A-Za-z0-9-]*$/.test(name))
+		throw new Error(
+			"Choose a configuration name containing letters, digits or hyphens, starting with a letter or digit.",
+		);
+	if (!properties.trim()) throw new Error("Enter server.properties text.");
+	return {
+		Name: name,
+		Description: description,
+		ServerProperties: btoa(
+			String.fromCharCode(...new TextEncoder().encode(properties)),
+		),
+	};
+}
+export function clusterUpdateInput(
+	cluster: Cluster,
+	action: string,
+	value: string,
+	revision = "",
+) {
+	const base = {
+		ClusterArn: cluster.ClusterArn,
+		CurrentVersion: cluster.CurrentVersion,
+	};
+	if (action === "count") {
+		const count = integer(value, "Broker count", 1, 15);
+		if (
+			count <= (cluster.NumberOfBrokerNodes ?? 0) ||
+			count % (cluster.BrokerNodeGroupInfo?.ClientSubnets?.length ?? 1)
+		)
+			throw new Error(
+				"Broker count must increase and be a multiple of subnet count.",
+			);
+		return { ...base, TargetNumberOfBrokerNodes: count };
+	}
+	if (action === "storage") {
+		const size = integer(value, "Storage (GiB)", 101, 16384);
+		if (
+			size <=
+			(cluster.BrokerNodeGroupInfo?.StorageInfo?.EbsStorageInfo?.VolumeSize ??
+				0)
+		)
+			throw new Error("Storage must increase.");
+		return {
+			...base,
+			TargetBrokerEBSVolumeInfo: [
+				{ KafkaBrokerNodeId: "ALL", VolumeSizeGB: size },
+			],
+		};
+	}
+	if (!value.trim()) throw new Error("Enter a configuration ARN.");
+	return {
+		...base,
+		ConfigurationInfo: {
+			Arn: value.trim(),
+			Revision: integer(revision, "Revision", 1, Number.MAX_SAFE_INTEGER),
 		},
 	};
 }

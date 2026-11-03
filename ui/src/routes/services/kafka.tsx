@@ -6,7 +6,9 @@ import { ConsoleLayout } from "#/components/Console";
 import { ConsoleTags } from "#/components/ConsoleTags";
 import { Action, Buttons, Rows } from "#/components/containers/Controls";
 import { ClusterDialog } from "#/components/kafka/ClusterDialog";
+import { Configurations } from "#/components/kafka/Configurations";
 import { Details } from "#/components/kafka/Details";
+import { UpdateDialog } from "#/components/kafka/UpdateDialog";
 import { isoTime } from "#/lib/format";
 import { kafkaCall, kafkaList } from "#/lib/kafka";
 import {
@@ -26,7 +28,12 @@ export const Route = createFileRoute("/services/kafka")({
 		account: String(s.account ?? ""),
 		region: String(s.region ?? ""),
 		cluster: String(s.cluster ?? ""),
-		tab: s.tab === "tags" ? "tags" : "overview",
+		tab:
+			s.tab === "tags"
+				? "tags"
+				: s.tab === "configurations"
+					? "configurations"
+					: "overview",
 	}),
 	component: KafkaPage,
 });
@@ -47,6 +54,11 @@ function KafkaPage() {
 			activeHref={home}
 			navigationItems={[
 				{ type: "link", text: "Clusters", href: home },
+				{
+					type: "link",
+					text: "Configurations",
+					href: kafkaHref(scope, "", "configurations"),
+				},
 				{ type: "link", text: "All services", href: "/services" },
 			]}
 			breadcrumbs={[
@@ -139,7 +151,13 @@ function Workspace({
 	return (
 		<SpaceBetween size="m">
 			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
-			{!name ? (
+			{!name && tab === "configurations" ? (
+				<Configurations
+					key={`${scope.account}/${scope.region}`}
+					scope={scope}
+					enabled={enabled}
+				/>
+			) : !name ? (
 				<Rows
 					title="Clusters"
 					items={poll.data ?? []}
@@ -192,6 +210,19 @@ function Workspace({
 							Clusters
 						</Action>
 						<Action onClick={poll.reload}>Refresh</Action>
+						{(["count", "storage", "configuration"] as const).map((action) => (
+							<Action
+								key={action}
+								disabled={!enabled || docker || pending(c.State)}
+								onClick={() => setDialog(action)}
+							>
+								{action === "count"
+									? "Increase broker count"
+									: action === "storage"
+										? "Increase storage"
+										: "Change configuration"}
+							</Action>
+						))}
 						<Action
 							disabled={!enabled || pending(c.State)}
 							onClick={() => setDialog("monitor")}
@@ -280,6 +311,15 @@ function Workspace({
 					scope={scope}
 					docker={docker}
 					cluster={dialog === "create" ? undefined : c}
+					onClose={() => setDialog("")}
+					onSaved={saved}
+				/>
+			)}
+			{["count", "storage", "configuration"].includes(dialog) && !!c && (
+				<UpdateDialog
+					scope={scope}
+					cluster={c}
+					action={dialog}
 					onClose={() => setDialog("")}
 					onSaved={saved}
 				/>

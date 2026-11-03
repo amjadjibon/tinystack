@@ -3,6 +3,8 @@ import test from "node:test";
 import {
 	type ClusterForm,
 	clusterInput,
+	clusterUpdateInput,
+	configurationInput,
 	kafkaHref,
 	pending,
 } from "../src/lib/kafkaHelpers.ts";
@@ -107,4 +109,50 @@ test("cluster links encode names and retain scope", () => {
 	assert.equal(url.searchParams.get("cluster"), "a&b");
 	assert.equal(url.searchParams.get("tab"), "tags");
 	assert.equal(url.searchParams.get("region"), "us-east-1");
+});
+
+test("configuration text preserves UTF-8 and rejects empty text", () => {
+	const input = configurationInput("example", "revision", "key=日本語\n");
+	assert.equal(
+		new TextDecoder().decode(
+			Uint8Array.from(atob(input.ServerProperties), (c) => c.charCodeAt(0)),
+		),
+		"key=日本語\n",
+	);
+	assert.throws(() => configurationInput("-bad", "", "key=value"));
+	assert.throws(() => configurationInput("bad_name", "", "key=value"));
+	assert.throws(() => configurationInput("good", "", ""));
+});
+test("cluster updates enforce growth and subnet multiples", () => {
+	const c = {
+		ClusterArn: "arn",
+		ClusterName: "test",
+		CurrentVersion: "v1",
+		NumberOfBrokerNodes: 4,
+		BrokerNodeGroupInfo: {
+			ClientSubnets: ["a", "b"],
+			StorageInfo: { EbsStorageInfo: { VolumeSize: 234 } },
+		},
+	};
+	assert.throws(() => clusterUpdateInput(c, "count", "5"));
+	assert.throws(() => clusterUpdateInput(c, "count", "4"));
+	assert.deepEqual(clusterUpdateInput(c, "count", "6"), {
+		ClusterArn: "arn",
+		CurrentVersion: "v1",
+		TargetNumberOfBrokerNodes: 6,
+	});
+	assert.throws(() => clusterUpdateInput(c, "storage", "200"));
+	assert.deepEqual(clusterUpdateInput(c, "storage", "300"), {
+		ClusterArn: "arn",
+		CurrentVersion: "v1",
+		TargetBrokerEBSVolumeInfo: [
+			{ KafkaBrokerNodeId: "ALL", VolumeSizeGB: 300 },
+		],
+	});
+	assert.throws(() => clusterUpdateInput(c, "configuration", "arn", "0"));
+	assert.deepEqual(clusterUpdateInput(c, "configuration", "arn", "2"), {
+		ClusterArn: "arn",
+		CurrentVersion: "v1",
+		ConfigurationInfo: { Arn: "arn", Revision: 2 },
+	});
 });

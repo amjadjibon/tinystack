@@ -19939,7 +19939,9 @@
     }
   },
   "sesv2": {
-    "validation": {"code": "BadRequestException"},
+    "validation": {
+      "code": "BadRequestException"
+    },
     "operations": [
       "CreateEmailIdentity",
       "GetEmailIdentity",
@@ -26224,7 +26226,9 @@
     }
   },
   "mq": {
-    "validation": {"code": "BadRequestException"},
+    "validation": {
+      "code": "BadRequestException"
+    },
     "operations": [
       "CreateBroker",
       "DescribeBroker",
@@ -26237,8 +26241,13 @@
       "RebootBroker"
     ],
     "shapes": {
-      "RebootBrokerRequest": ["BrokerId"],
-      "BrokerInstance": ["ConsoleURL", "Endpoints"],
+      "RebootBrokerRequest": [
+        "BrokerId"
+      ],
+      "BrokerInstance": [
+        "ConsoleURL",
+        "Endpoints"
+      ],
       "CreateBrokerRequest": [
         "AutoMinorVersionUpgrade",
         "BrokerName",
@@ -26382,7 +26391,20 @@
       "TagResource",
       "UntagResource",
       "GetBootstrapBrokers",
-      "ListNodes"
+      "ListNodes",
+      "CreateConfiguration",
+      "DescribeConfiguration",
+      "DescribeConfigurationRevision",
+      "ListConfigurations",
+      "ListConfigurationRevisions",
+      "UpdateConfiguration",
+      "DeleteConfiguration",
+      "UpdateBrokerCount",
+      "UpdateBrokerStorage",
+      "UpdateClusterConfiguration",
+      "UpdateClusterKafkaVersion",
+      "ListClustersV2",
+      "DescribeClusterV2"
     ],
     "shapes": {
       "CreateClusterRequest": [
@@ -26393,7 +26415,8 @@
         "EnhancedMonitoring",
         "Tags",
         "ClientAuthentication",
-        "EncryptionInfo"
+        "EncryptionInfo",
+        "ConfigurationInfo"
       ],
       "CreateClusterResponse": [
         "ClusterArn",
@@ -26435,7 +26458,9 @@
         "VolumeSize"
       ],
       "BrokerSoftwareInfo": [
-        "KafkaVersion"
+        "KafkaVersion",
+        "ConfigurationArn",
+        "ConfigurationRevision"
       ],
       "ListClustersRequest": [
         "ClusterNameFilter",
@@ -26537,6 +26562,169 @@
       "StateInfo": [
         "Code",
         "Message"
+      ],
+      "CreateConfigurationRequest": [
+        "Description",
+        "KafkaVersions",
+        "Name",
+        "ServerProperties"
+      ],
+      "CreateConfigurationResponse": [
+        "Arn",
+        "CreationTime",
+        "LatestRevision",
+        "Name",
+        "State"
+      ],
+      "DescribeConfigurationRequest": [
+        "Arn"
+      ],
+      "DescribeConfigurationResponse": [
+        "Arn",
+        "CreationTime",
+        "Description",
+        "KafkaVersions",
+        "LatestRevision",
+        "Name",
+        "State"
+      ],
+      "DescribeConfigurationRevisionRequest": [
+        "Arn",
+        "Revision"
+      ],
+      "DescribeConfigurationRevisionResponse": [
+        "Arn",
+        "CreationTime",
+        "Description",
+        "Revision",
+        "ServerProperties"
+      ],
+      "ListConfigurationsRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListConfigurationsResponse": [
+        "Configurations",
+        "NextToken"
+      ],
+      "ListConfigurationRevisionsRequest": [
+        "Arn",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListConfigurationRevisionsResponse": [
+        "NextToken",
+        "Revisions"
+      ],
+      "UpdateConfigurationRequest": [
+        "Arn",
+        "Description",
+        "ServerProperties"
+      ],
+      "UpdateConfigurationResponse": [
+        "Arn",
+        "LatestRevision"
+      ],
+      "DeleteConfigurationRequest": [
+        "Arn"
+      ],
+      "DeleteConfigurationResponse": [
+        "Arn",
+        "State"
+      ],
+      "UpdateBrokerCountRequest": [
+        "ClusterArn",
+        "CurrentVersion",
+        "TargetNumberOfBrokerNodes"
+      ],
+      "UpdateBrokerCountResponse": [
+        "ClusterArn",
+        "ClusterOperationArn"
+      ],
+      "UpdateBrokerStorageRequest": [
+        "ClusterArn",
+        "CurrentVersion",
+        "TargetBrokerEBSVolumeInfo"
+      ],
+      "UpdateBrokerStorageResponse": [
+        "ClusterArn",
+        "ClusterOperationArn"
+      ],
+      "UpdateClusterConfigurationRequest": [
+        "ClusterArn",
+        "ConfigurationInfo",
+        "CurrentVersion"
+      ],
+      "UpdateClusterConfigurationResponse": [
+        "ClusterArn",
+        "ClusterOperationArn"
+      ],
+      "UpdateClusterKafkaVersionRequest": [
+        "ClusterArn",
+        "ConfigurationInfo",
+        "CurrentVersion",
+        "TargetKafkaVersion"
+      ],
+      "UpdateClusterKafkaVersionResponse": [
+        "ClusterArn",
+        "ClusterOperationArn"
+      ],
+      "ListClustersV2Request": [
+        "ClusterNameFilter",
+        "ClusterTypeFilter",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListClustersV2Response": [
+        "ClusterInfoList",
+        "NextToken"
+      ],
+      "DescribeClusterV2Request": [
+        "ClusterArn"
+      ],
+      "DescribeClusterV2Response": [
+        "ClusterInfo"
+      ],
+      "Configuration": [
+        "Arn",
+        "CreationTime",
+        "Description",
+        "KafkaVersions",
+        "LatestRevision",
+        "Name",
+        "State"
+      ],
+      "ConfigurationRevision": [
+        "CreationTime",
+        "Description",
+        "Revision"
+      ],
+      "ConfigurationInfo": [
+        "Arn",
+        "Revision"
+      ],
+      "BrokerEBSVolumeInfo": [
+        "KafkaBrokerNodeId",
+        "VolumeSizeGB"
+      ],
+      "Cluster": [
+        "ClusterType",
+        "ClusterArn",
+        "ClusterName",
+        "CreationTime",
+        "CurrentVersion",
+        "State",
+        "StateInfo",
+        "Tags",
+        "Provisioned"
+      ],
+      "Provisioned": [
+        "BrokerNodeGroupInfo",
+        "CurrentBrokerSoftwareInfo",
+        "EnhancedMonitoring",
+        "NumberOfBrokerNodes",
+        "ClientAuthentication",
+        "EncryptionInfo"
       ]
     }
   },

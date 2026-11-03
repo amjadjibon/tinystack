@@ -289,6 +289,10 @@ TagResource UntagResource GetTags
 	"kafka": {operations: strings.Fields(`
  CreateCluster DescribeCluster ListClusters DeleteCluster UpdateMonitoring
  GetBootstrapBrokers ListNodes ListTagsForResource TagResource UntagResource
+ ListClustersV2 DescribeClusterV2 UpdateBrokerCount UpdateBrokerStorage
+ UpdateClusterConfiguration UpdateClusterKafkaVersion
+ CreateConfiguration DescribeConfiguration DescribeConfigurationRevision ListConfigurations
+ ListConfigurationRevisions UpdateConfiguration DeleteConfiguration
 `)},
 	"kinesis": {operations: strings.Fields(`
  ListStreams CreateStream DeleteStream DescribeStream ListShards UpdateShardCount

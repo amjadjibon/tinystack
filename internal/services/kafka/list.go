@@ -17,6 +17,12 @@ import (
 type cursor struct{ Name, ARN string }
 
 func (s *Service) ListClusters(ctx context.Context, in *api.ListClustersRequest) (*api.ListClustersResponse, error) {
+	return s.listClusters(ctx, in, "ListClusters")
+}
+
+func (s *Service) listClusters(
+	ctx context.Context, in *api.ListClustersRequest, tokenScope string,
+) (*api.ListClustersResponse, error) {
 	scope, e := request.RegionalScope(ctx)
 	if e != nil {
 		return nil, e
@@ -32,7 +38,7 @@ func (s *Service) ListClusters(ctx context.Context, in *api.ListClustersRequest)
 	}
 
 	filter := common.Value(in.ClusterNameFilter)
-	sum := sha256.Sum256([]byte(scope.AccountID + "/" + scope.Region + "/kafka/ListClusters/" + filter))
+	sum := sha256.Sum256([]byte(scope.AccountID + "/" + scope.Region + "/kafka/" + tokenScope + "/" + filter))
 	prefix := fmt.Sprintf("%x:", sum)
 	after := cursor{}
 	if in.NextToken != nil {
@@ -54,6 +60,17 @@ func (s *Service) ListClusters(ctx context.Context, in *api.ListClustersRequest)
 	e = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var err error
 		rows, err = storage.Records[api.ClusterInfo](tx, scope.Prefix(serviceName, clusterKind))
+		if err != nil {
+			return err
+		}
+
+		for i, r := range rows {
+			rows[i], err = read(tx, scope, *r.ClusterArn)
+			if err != nil {
+				return err
+			}
+		}
+
 		return err
 	})
 	if e != nil {
