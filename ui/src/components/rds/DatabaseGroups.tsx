@@ -164,7 +164,7 @@ export function DatabaseGroups({
 							]),
 				]}
 			/>
-			{dialog && (
+			{!!dialog && (
 				<ActionDialog
 					title={`${dialog} ${kind.toLowerCase()} group`}
 					submit={`${dialog} group`}

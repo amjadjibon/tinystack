@@ -81,7 +81,7 @@ export function ActionDialog({
 			}
 		>
 			<SpaceBetween size="l">
-				{error && (
+				{!!error && (
 					<Alert type="error" header="Action failed">
 						{error}
 					</Alert>
@@ -92,7 +92,7 @@ export function ActionDialog({
 				>
 					{children}
 				</fieldset>
-				{confirmation && (
+				{!!confirmation && (
 					<FormField
 						label={
 							<>
@@ -108,7 +108,7 @@ export function ActionDialog({
 						/>
 					</FormField>
 				)}
-				{steps.current && error && (
+				{!!steps.current && !!error && (
 					<Alert type="info">
 						Completed changes remain in place. Retrying resumes unfinished
 						steps.

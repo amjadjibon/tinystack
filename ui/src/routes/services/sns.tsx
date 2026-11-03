@@ -135,7 +135,7 @@ function SNSPage() {
 			]}
 			content={
 				<SpaceBetween size="l">
-					{notice && (
+					{!!notice && (
 						<Flashbar
 							items={[
 								{

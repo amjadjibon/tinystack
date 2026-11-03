@@ -67,7 +67,7 @@ export function AthenaWorkgroups({
 	}
 	return (
 		<SpaceBetween size="m">
-			{error && <Alert type="error">{error}</Alert>}
+			{!!error && <Alert type="error">{error}</Alert>}
 			<Rows
 				title="Workgroups"
 				items={groups}
@@ -136,7 +136,7 @@ export function AthenaWorkgroups({
 					enabled={enabled}
 				/>
 			)}
-			{dialog && (
+			{!!dialog && (
 				<ActionDialog
 					title={`${dialog === "create" ? "Create" : dialog === "edit" ? "Edit" : "Delete"} workgroup`}
 					submit={dialog === "delete" ? "Delete" : "Save"}

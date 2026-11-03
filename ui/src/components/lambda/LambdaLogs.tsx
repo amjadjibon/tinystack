@@ -142,7 +142,7 @@ export function LambdaLogs({
 						requires signatures.
 					</Alert>
 				)}
-				{error && <Alert type="error">{error}</Alert>}
+				{!!error && <Alert type="error">{error}</Alert>}
 				<Table
 					items={events}
 					loading={busy}

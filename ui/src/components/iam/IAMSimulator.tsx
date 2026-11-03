@@ -587,7 +587,7 @@ export function IAMSimulator({
 								aws:PrincipalTag/department, or s3:prefix evaluated in policy
 								Condition blocks.
 							</Box>
-							{contextError && (
+							{!!contextError && (
 								<Alert type="error" header="Invalid context key configuration">
 									{contextError}
 								</Alert>

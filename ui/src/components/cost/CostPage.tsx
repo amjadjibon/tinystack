@@ -274,12 +274,12 @@ function CostRecords({
 		costCall(service, account, operation, input);
 	return (
 		<SpaceBetween size="l">
-			{spendError && (
+			{!!spendError && (
 				<Alert type="error" header="Cannot load actual spend">
 					{spendError}
 				</Alert>
 			)}
-			{notice && (
+			{!!notice && (
 				<Flashbar
 					items={[
 						{

@@ -83,7 +83,7 @@ export function EventHistory({
 			>
 				Apply filters
 			</Button>
-			{error && <Alert type="error">{error}</Alert>}
+			{!!error && <Alert type="error">{error}</Alert>}
 			<HistoryPages
 				key={JSON.stringify(query)}
 				scope={scope}

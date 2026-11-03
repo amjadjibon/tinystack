@@ -79,8 +79,8 @@ export function CostData() {
 				account selected in the console. Different fixture IDs add together.
 				Saving an existing ID replaces its complete dataset.
 			</Alert>
-			{error && <Alert type="error">{error}</Alert>}
-			{notice && <Alert type="success">{notice}</Alert>}
+			{!!error && <Alert type="error">{error}</Alert>}
+			{!!notice && <Alert type="success">{notice}</Alert>}
 			<Table
 				items={fixtures}
 				loading={busy}
@@ -219,7 +219,7 @@ export function CostData() {
 					}
 				>
 					Delete {deleting} and all its cost lines?
-					{error && <Alert type="error">{error}</Alert>}
+					{!!error && <Alert type="error">{error}</Alert>}
 				</Modal>
 			)}
 		</SpaceBetween>

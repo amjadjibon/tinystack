@@ -100,7 +100,7 @@ export function S3ObjectDetail({
 			>
 				{objectKey}
 			</Header>
-			{error && (
+			{!!error && (
 				<Alert type="error" header="Cannot complete object action">
 					{error}
 				</Alert>

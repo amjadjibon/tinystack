@@ -351,7 +351,7 @@ export function DynamoItems({
 					</Button>
 				</SpaceBetween>
 			</Container>
-			{editingError && (
+			{!!editingError && (
 				<Alert type="error" header="Cannot open item">
 					{editingError}
 				</Alert>

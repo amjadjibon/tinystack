@@ -122,7 +122,7 @@ export function FetchConfig({
 						Fetch configuration
 					</Button>
 				</Box>
-				{error && (
+				{!!error && (
 					<Alert type="error" header="Fetch failed">
 						{error}
 					</Alert>

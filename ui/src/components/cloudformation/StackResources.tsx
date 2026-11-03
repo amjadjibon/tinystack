@@ -39,7 +39,7 @@ export function StackResources({
 	const resources = poll.data ?? [];
 	return (
 		<SpaceBetween size="s">
-			{error && <Alert type="error">{error}</Alert>}
+			{!!error && <Alert type="error">{error}</Alert>}
 			<Button
 				onClick={async () => {
 					try {
@@ -60,7 +60,7 @@ export function StackResources({
 			>
 				Describe all resources
 			</Button>
-			{detail && <CodeBlock text={detail} />}
+			{!!detail && <CodeBlock text={detail} />}
 			{poll.error && (
 				<Alert type="error" header="Cannot load resources">
 					{poll.error}

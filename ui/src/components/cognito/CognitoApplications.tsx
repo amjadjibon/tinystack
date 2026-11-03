@@ -133,7 +133,7 @@ export function CognitoClients({
 					<Button onClick={() => setMode("")}>Close secret</Button>
 				</SpaceBetween>
 			)}
-			{mode && mode !== "secret" && (
+			{!!mode && mode !== "secret" && (
 				<CognitoForm
 					title={`${mode === "create" ? "Create" : mode === "edit" ? "Edit" : "Delete"} app client`}
 					confirmation={mode === "delete" ? selected?.ClientName : undefined}
@@ -279,7 +279,7 @@ export function CognitoDomain({
 					</Button>
 				)}
 			</SpaceBetween>
-			{mode && (
+			{!!mode && (
 				<CognitoForm
 					title={`${mode === "create" ? "Create" : mode === "edit" ? "Edit" : "Delete"} domain`}
 					confirmation={mode === "delete" ? domain : undefined}

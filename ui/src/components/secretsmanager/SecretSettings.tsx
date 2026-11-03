@@ -110,7 +110,7 @@ export function SecretRotation({
 					{secretDate(secret.NextRotationDate)}
 				</Box>
 			</SpaceBetween>
-			{mode && (
+			{!!mode && (
 				<ActionDialog
 					title={
 						mode === "edit"
@@ -319,7 +319,7 @@ export function SecretPolicy({
 					</Box>
 				)}
 			</SpaceBetween>
-			{mode && (
+			{!!mode && (
 				<ActionDialog
 					title={
 						mode === "delete"

@@ -70,7 +70,7 @@ export function Cleanup({
 	};
 	return (
 		<SpaceBetween size="s">
-			{error && <Alert type="error">{error}</Alert>}
+			{!!error && <Alert type="error">{error}</Alert>}
 			<Button disabled={done} loading={busy} onClick={prepare}>
 				{done ? "Cleaned up" : "Clean up"}
 			</Button>

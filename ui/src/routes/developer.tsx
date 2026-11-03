@@ -89,7 +89,7 @@ function Developer() {
 			content={
 				<SpaceBetween size="l">
 					<Header variant="h1">Developer tools</Header>
-					{notice && (
+					{!!notice && (
 						<Flashbar
 							items={[
 								{

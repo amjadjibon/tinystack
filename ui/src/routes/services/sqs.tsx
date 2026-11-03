@@ -103,7 +103,7 @@ function SQSPage() {
 			]}
 			content={
 				<SpaceBetween size="l">
-					{notice && (
+					{!!notice && (
 						<Flashbar
 							items={[
 								{

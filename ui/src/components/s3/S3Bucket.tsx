@@ -343,7 +343,7 @@ function S3Objects({
 	};
 	return (
 		<SpaceBetween size="l">
-			{error && (
+			{!!error && (
 				<Alert type="error" header="Cannot complete S3 action">
 					{error}
 				</Alert>
@@ -504,7 +504,7 @@ function S3Objects({
 								}
 							/>
 							<Button onClick={() => find(search)}>Find</Button>
-							{filter && (
+							{!!filter && (
 								<Button
 									onClick={() => {
 										setSearch("");

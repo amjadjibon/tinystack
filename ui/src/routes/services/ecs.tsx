@@ -142,7 +142,7 @@ function Workspace({
 					},
 				]}
 			/>
-			{cluster && (
+			{!!cluster && (
 				<ClusterDetails
 					key={cluster}
 					scope={scope}
@@ -155,7 +155,7 @@ function Workspace({
 				scope={scope}
 				enabled={enabled}
 			/>
-			{dialog && (
+			{!!dialog && (
 				<ActionDialog
 					title={dialog}
 					submit={dialog}
@@ -327,7 +327,7 @@ function DefinitionList({
 					},
 				]}
 			/>
-			{dialog && (
+			{!!dialog && (
 				<ActionDialog
 					title={dialog}
 					submit={dialog === "View task definition" ? "Close" : dialog}
@@ -543,7 +543,7 @@ function ClusterDetails({
 					},
 				]}
 			/>
-			{dialog && (
+			{!!dialog && (
 				<ActionDialog
 					title={dialog}
 					submit={dialog}
@@ -703,7 +703,7 @@ function Tasks({
 					},
 				]}
 			/>
-			{task && (
+			{!!task && (
 				<ActionDialog
 					title="Stop task"
 					submit="Stop task"

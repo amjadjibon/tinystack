@@ -168,7 +168,7 @@ function Workspace({
 					/>
 				</>
 			)}
-			{dialog && (
+			{!!dialog && (
 				<ActionDialog
 					title={dialog}
 					submit={dialog === "Edit repository" ? "Save changes" : dialog}
@@ -477,7 +477,7 @@ function Policy({
 					Delete policy
 				</Action>
 			</Buttons>
-			{dialog && (
+			{!!dialog && (
 				<ActionDialog
 					title={`${dialog} policy`}
 					submit={dialog === "Delete" ? "Delete policy" : "Save policy"}

@@ -281,7 +281,7 @@ export function CostUsage({
 			{range.Start >= range.End && (
 				<Alert type="error">End must be after start.</Alert>
 			)}
-			{error && <Alert type="error">{error}</Alert>}
+			{!!error && <Alert type="error">{error}</Alert>}
 			{!loading &&
 				!error &&
 				(!keys.length ||

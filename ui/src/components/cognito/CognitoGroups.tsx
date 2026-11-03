@@ -154,7 +154,7 @@ export function CognitoGroups({
 					}
 				/>
 			)}
-			{selected && (
+			{!!selected && (
 				<GroupMembers
 					key={selected}
 					scope={scope}

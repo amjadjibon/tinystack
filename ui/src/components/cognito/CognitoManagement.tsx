@@ -264,7 +264,7 @@ export function PoolActions({
 					Delete pool
 				</Button>
 			)}
-			{mode && (
+			{!!mode && (
 				<CognitoForm
 					title={
 						mode === "create"
@@ -401,7 +401,7 @@ export function PoolSettings({
 						: []),
 				]}
 			/>
-			{mode && (
+			{!!mode && (
 				<CognitoForm
 					title={mode === "mfa" ? "Configure MFA" : "Add custom attribute"}
 					initial={

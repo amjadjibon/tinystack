@@ -77,12 +77,12 @@ export function SNSPublish({
 	return (
 		<Container header={<Header variant="h2">Publish message</Header>}>
 			<SpaceBetween size="l">
-				{error && (
+				{!!error && (
 					<Alert type="error" header="Publish failed">
 						{error}
 					</Alert>
 				)}
-				{result && (
+				{!!result && (
 					<Alert type="success" dismissible onDismiss={() => setResult("")}>
 						{result}
 					</Alert>

@@ -189,7 +189,7 @@ export function Invalidations({
 					</FormField>
 				</ActionDialog>
 			)}
-			{viewing && (
+			{!!viewing && (
 				<ViewInvalidation
 					scope={scope}
 					distribution={distribution}

@@ -184,7 +184,7 @@ export function LogsInsights({
 						>
 							Run query
 						</Button>
-						{id && (
+						{!!id && (
 							<Button
 								disabled={!enabled}
 								loading={busy}
@@ -196,7 +196,7 @@ export function LogsInsights({
 					</SpaceBetween>
 				</SpaceBetween>
 			</Container>
-			{id && (
+			{!!id && (
 				<KeyValuePairs
 					columns={3}
 					items={[

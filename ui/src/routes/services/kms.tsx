@@ -183,7 +183,7 @@ function KMSWorkspace({
 					/>
 				</>
 			)}
-			{action && (
+			{!!action && (
 				<KMSDialog
 					scope={scope}
 					action={action}
@@ -476,7 +476,7 @@ function KMSDetails({
 					},
 				]}
 			/>
-			{action && (
+			{!!action && (
 				<KMSDialog
 					scope={scope}
 					action={action}

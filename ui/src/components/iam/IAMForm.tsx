@@ -192,7 +192,7 @@ export function IAMActionDialog({
 			<SpaceBetween size="l">
 				<Box color="text-body-secondary">Account {account} · Global</Box>
 				{dialog.description && <Box>{dialog.description}</Box>}
-				{error && <Alert type="error">{error}</Alert>}
+				{!!error && <Alert type="error">{error}</Alert>}
 				<IAMFields
 					fields={dialog.fields ?? []}
 					values={values}

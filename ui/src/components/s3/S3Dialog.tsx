@@ -70,7 +70,7 @@ export function S3Dialog({
 			}
 		>
 			<SpaceBetween size="l">
-				{error && (
+				{!!error && (
 					<Alert type="error" header="Action failed">
 						{error}
 					</Alert>

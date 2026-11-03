@@ -70,7 +70,7 @@ export function DatabaseActions({
 			>
 				Actions
 			</ButtonDropdown>
-			{action && instance && (
+			{!!action && instance && (
 				<ActionDialog
 					title={`${action} ${id}`}
 					submit={

@@ -127,12 +127,12 @@ export function SQSMessages({
 	};
 	return (
 		<SpaceBetween size="l">
-			{error && (
+			{!!error && (
 				<Alert type="error" header="Message action failed">
 					{error}
 				</Alert>
 			)}
-			{result && (
+			{!!result && (
 				<Alert type="success" dismissible onDismiss={() => setResult("")}>
 					{result}
 				</Alert>

@@ -78,7 +78,7 @@ export function LambdaTest({
 						Invoking runs your deployed code and can change resources. Docker
 						must be available on the TinyStack host.
 					</Alert>
-					{error && (
+					{!!error && (
 						<Alert type="error" header="Invocation failed">
 							{error}
 						</Alert>

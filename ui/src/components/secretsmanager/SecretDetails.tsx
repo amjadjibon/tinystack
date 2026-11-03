@@ -274,7 +274,7 @@ export function SecretDetails({
 							},
 						]}
 					/>
-					{dialog && (
+					{!!dialog && (
 						<ActionDialog
 							title={
 								dialog === "metadata"

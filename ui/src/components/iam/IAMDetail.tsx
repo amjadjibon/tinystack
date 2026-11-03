@@ -183,7 +183,7 @@ export function IAMDetail({
 			}
 		>
 			<SpaceBetween size="l">
-				{notice && (
+				{!!notice && (
 					<Flashbar
 						items={[
 							{
