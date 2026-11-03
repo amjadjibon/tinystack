@@ -139,6 +139,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			"batch_runtime":       s.cfg.Batch.Jobs,
 			"kafka_runtime":       s.cfg.Kafka.Clusters,
 			"mq_runtime":          s.cfg.MQ.Brokers,
+			"codebuild_runtime":   s.cfg.CodeBuild.Builds,
 			"ecs_runtime":         s.cfg.ECS.Containers,
 			"elasticache_runtime": s.cfg.ElastiCache.Caches,
 			"memorydb_runtime":    s.cfg.MemoryDB.Clusters,

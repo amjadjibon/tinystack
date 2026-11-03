@@ -284,6 +284,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 	srv := server(t)
 	// listOperations maps each regional console service to a read operation it allows.
 	listOperations := map[string]string{
+		"codebuild":       "ListProjects",
 		"eventbridge":     "ListEventBuses",
 		"logs":            "DescribeLogGroups",
 		"cloudwatch":      "ListMetrics",

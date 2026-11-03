@@ -985,6 +985,7 @@ Persist build projects and run buildspec 0.2 commands in opt-in Docker workers w
 - CloudWatch Logs streaming with configurable status/group/stream prefix and build log location; NO_ARTIFACTS or S3 ZIP/NONE output with file patterns, base directory, discard-paths and artifact names.
 - Build state and completed-phase events sent to the default EventBridge bus; store-owned orphan cleanup, shutdown/reset container removal and failed interrupted build records.
 - CODEPIPELINE project source and artifact declarations can be executed by CodePipeline through an in-process S3 artifact bridge; direct StartBuild still requires an executable NO_SOURCE or S3 source.
+- Dedicated regional console for project creation, replacement configuration updates, tags and typed-name deletion; runtime notice, per-project and overall build history, start overrides, status/phase durations, inline CloudWatch output, stop and completed-build deletion with active-build polling.
 
 [Supported operations](codebuild.md#supported-operations) · [Limitations](codebuild.md#limitations-and-future-work)
 

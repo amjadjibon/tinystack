@@ -116,6 +116,10 @@ var consolePages = map[string]consolePage{
 	PutDashboard GetDashboard ListDashboards DeleteDashboards
 	TagResource UntagResource ListTagsForResource
 `)},
+	"codebuild": {operations: strings.Fields(`
+ CreateProject BatchGetProjects ListProjects UpdateProject DeleteProject
+ StartBuild BatchGetBuilds StopBuild ListBuilds ListBuildsForProject BatchDeleteBuilds
+`)},
 	// Cognito identity pools exposes pool, role, identity and tag management, plus the two calls the test panel makes for
 	// an unauthenticated identity. Token issue and login linking stay API-only.
 	"cognitoidentity": {operations: strings.Fields(`

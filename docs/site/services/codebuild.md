@@ -23,7 +23,7 @@ See the [implemented feature catalogue](catalogue.md#codebuild) for this service
 
 - No RetryBuild, batch builds, webhook execution, reports, report groups, automatic retries, cached builds, VPC networking, fleets, secondary sources/artifacts, registry credentials or managed runtime installation. Unsupported API members and buildspec sections fail explicitly.
 - GitHub source execution and CodeCommit git content are unavailable; project Git source metadata is retained. Only S3 zip objects are downloaded; S3 folder sources and S3 ARN buildspec references are not executed.
-- Build lists return storage key order with 100-record pages; DESCENDING ordering fails explicitly. No AWS timestamp sort, shared/cross-account builds or dedicated build console.
+- Build lists return storage key order with 100-record pages; DESCENDING ordering fails explicitly. No AWS timestamp sort, shared/cross-account builds.
 - Only LINUX_CONTAINER environments and bash or /bin/sh shells; the selected image must contain the shell. Compute classes remain metadata; no CPU/memory quotas, Docker socket mount or ECR login. Source and output use docker cp, including with remote daemons.
 - No S3 logs, KMS artifact encryption, service-role IAM evaluation or real AWS credentials. Container credentials are local account credentials for parse-mode identity; verify-mode container API calls require configured matching credentials.
 - Artifact shell expressions, symlink artifacts and colliding flattened names fail explicitly. Artifacts and source archives are processed in memory; no extra CodeBuild-specific size limit. Existing project metadata bounds remain local constraints.

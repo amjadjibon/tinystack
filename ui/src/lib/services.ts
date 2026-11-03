@@ -241,6 +241,7 @@ const catalog: Record<string, ServiceInfo> = {
 		title: "CodeBuild",
 		category: developerTools,
 		icon: "codebuild",
+		href: "/services/codebuild",
 	},
 	costandusagereportservice: {
 		title: "Cost and Usage Reports",

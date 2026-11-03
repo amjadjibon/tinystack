@@ -31,6 +31,7 @@ import { Route as ServicesCloudformationRouteImport } from './routes/services/cl
 import { Route as ServicesCloudfrontRouteImport } from './routes/services/cloudfront'
 import { Route as ServicesCloudtrailRouteImport } from './routes/services/cloudtrail'
 import { Route as ServicesCloudwatchRouteImport } from './routes/services/cloudwatch'
+import { Route as ServicesCodebuildRouteImport } from './routes/services/codebuild'
 import { Route as ServicesCognitoidentityRouteImport } from './routes/services/cognitoidentity'
 import { Route as ServicesCognitoidpRouteImport } from './routes/services/cognitoidp'
 import { Route as ServicesCostandusagereportserviceRouteImport } from './routes/services/costandusagereportservice'
@@ -53,8 +54,8 @@ import { Route as ServicesKmsRouteImport } from './routes/services/kms'
 import { Route as ServicesLambdaRouteImport } from './routes/services/lambda'
 import { Route as ServicesLogsRouteImport } from './routes/services/logs'
 import { Route as ServicesMemorydbRouteImport } from './routes/services/memorydb'
-import { Route as ServicesOpensearchRouteImport } from './routes/services/opensearch'
 import { Route as ServicesMqRouteImport } from './routes/services/mq'
+import { Route as ServicesOpensearchRouteImport } from './routes/services/opensearch'
 import { Route as ServicesPipesRouteImport } from './routes/services/pipes'
 import { Route as ServicesRdsRouteImport } from './routes/services/rds'
 import { Route as ServicesRoute53RouteImport } from './routes/services/route53'
@@ -181,6 +182,11 @@ const ServicesCloudwatchRoute = ServicesCloudwatchRouteImport.update({
   path: '/services/cloudwatch',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesCodebuildRoute = ServicesCodebuildRouteImport.update({
+  id: '/services/codebuild',
+  path: '/services/codebuild',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesCognitoidentityRoute = ServicesCognitoidentityRouteImport.update({
   id: '/services/cognitoidentity',
   path: '/services/cognitoidentity',
@@ -292,14 +298,14 @@ const ServicesMemorydbRoute = ServicesMemorydbRouteImport.update({
   path: '/services/memorydb',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ServicesOpensearchRoute = ServicesOpensearchRouteImport.update({
-  id: '/services/opensearch',
-  path: '/services/opensearch',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ServicesMqRoute = ServicesMqRouteImport.update({
   id: '/services/mq',
   path: '/services/mq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesOpensearchRoute = ServicesOpensearchRouteImport.update({
+  id: '/services/opensearch',
+  path: '/services/opensearch',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesPipesRoute = ServicesPipesRouteImport.update({
@@ -401,6 +407,7 @@ export interface FileRoutesByFullPath {
   '/services/cloudfront': typeof ServicesCloudfrontRoute
   '/services/cloudtrail': typeof ServicesCloudtrailRoute
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
+  '/services/codebuild': typeof ServicesCodebuildRoute
   '/services/cognitoidentity': typeof ServicesCognitoidentityRoute
   '/services/cognitoidp': typeof ServicesCognitoidpRoute
   '/services/costandusagereportservice': typeof ServicesCostandusagereportserviceRoute
@@ -423,8 +430,8 @@ export interface FileRoutesByFullPath {
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
   '/services/memorydb': typeof ServicesMemorydbRoute
-  '/services/opensearch': typeof ServicesOpensearchRoute
   '/services/mq': typeof ServicesMqRoute
+  '/services/opensearch': typeof ServicesOpensearchRoute
   '/services/pipes': typeof ServicesPipesRoute
   '/services/rds': typeof ServicesRdsRoute
   '/services/route53': typeof ServicesRoute53Route
@@ -464,6 +471,7 @@ export interface FileRoutesByTo {
   '/services/cloudfront': typeof ServicesCloudfrontRoute
   '/services/cloudtrail': typeof ServicesCloudtrailRoute
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
+  '/services/codebuild': typeof ServicesCodebuildRoute
   '/services/cognitoidentity': typeof ServicesCognitoidentityRoute
   '/services/cognitoidp': typeof ServicesCognitoidpRoute
   '/services/costandusagereportservice': typeof ServicesCostandusagereportserviceRoute
@@ -486,8 +494,8 @@ export interface FileRoutesByTo {
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
   '/services/memorydb': typeof ServicesMemorydbRoute
-  '/services/opensearch': typeof ServicesOpensearchRoute
   '/services/mq': typeof ServicesMqRoute
+  '/services/opensearch': typeof ServicesOpensearchRoute
   '/services/pipes': typeof ServicesPipesRoute
   '/services/rds': typeof ServicesRdsRoute
   '/services/route53': typeof ServicesRoute53Route
@@ -528,6 +536,7 @@ export interface FileRoutesById {
   '/services/cloudfront': typeof ServicesCloudfrontRoute
   '/services/cloudtrail': typeof ServicesCloudtrailRoute
   '/services/cloudwatch': typeof ServicesCloudwatchRoute
+  '/services/codebuild': typeof ServicesCodebuildRoute
   '/services/cognitoidentity': typeof ServicesCognitoidentityRoute
   '/services/cognitoidp': typeof ServicesCognitoidpRoute
   '/services/costandusagereportservice': typeof ServicesCostandusagereportserviceRoute
@@ -550,8 +559,8 @@ export interface FileRoutesById {
   '/services/lambda': typeof ServicesLambdaRoute
   '/services/logs': typeof ServicesLogsRoute
   '/services/memorydb': typeof ServicesMemorydbRoute
-  '/services/opensearch': typeof ServicesOpensearchRoute
   '/services/mq': typeof ServicesMqRoute
+  '/services/opensearch': typeof ServicesOpensearchRoute
   '/services/pipes': typeof ServicesPipesRoute
   '/services/rds': typeof ServicesRdsRoute
   '/services/route53': typeof ServicesRoute53Route
@@ -593,6 +602,7 @@ export interface FileRouteTypes {
     | '/services/cloudfront'
     | '/services/cloudtrail'
     | '/services/cloudwatch'
+    | '/services/codebuild'
     | '/services/cognitoidentity'
     | '/services/cognitoidp'
     | '/services/costandusagereportservice'
@@ -615,8 +625,8 @@ export interface FileRouteTypes {
     | '/services/lambda'
     | '/services/logs'
     | '/services/memorydb'
-    | '/services/opensearch'
     | '/services/mq'
+    | '/services/opensearch'
     | '/services/pipes'
     | '/services/rds'
     | '/services/route53'
@@ -656,6 +666,7 @@ export interface FileRouteTypes {
     | '/services/cloudfront'
     | '/services/cloudtrail'
     | '/services/cloudwatch'
+    | '/services/codebuild'
     | '/services/cognitoidentity'
     | '/services/cognitoidp'
     | '/services/costandusagereportservice'
@@ -678,8 +689,8 @@ export interface FileRouteTypes {
     | '/services/lambda'
     | '/services/logs'
     | '/services/memorydb'
-    | '/services/opensearch'
     | '/services/mq'
+    | '/services/opensearch'
     | '/services/pipes'
     | '/services/rds'
     | '/services/route53'
@@ -719,6 +730,7 @@ export interface FileRouteTypes {
     | '/services/cloudfront'
     | '/services/cloudtrail'
     | '/services/cloudwatch'
+    | '/services/codebuild'
     | '/services/cognitoidentity'
     | '/services/cognitoidp'
     | '/services/costandusagereportservice'
@@ -741,8 +753,8 @@ export interface FileRouteTypes {
     | '/services/lambda'
     | '/services/logs'
     | '/services/memorydb'
-    | '/services/opensearch'
     | '/services/mq'
+    | '/services/opensearch'
     | '/services/pipes'
     | '/services/rds'
     | '/services/route53'
@@ -783,6 +795,7 @@ export interface RootRouteChildren {
   ServicesCloudfrontRoute: typeof ServicesCloudfrontRoute
   ServicesCloudtrailRoute: typeof ServicesCloudtrailRoute
   ServicesCloudwatchRoute: typeof ServicesCloudwatchRoute
+  ServicesCodebuildRoute: typeof ServicesCodebuildRoute
   ServicesCognitoidentityRoute: typeof ServicesCognitoidentityRoute
   ServicesCognitoidpRoute: typeof ServicesCognitoidpRoute
   ServicesCostandusagereportserviceRoute: typeof ServicesCostandusagereportserviceRoute
@@ -805,8 +818,8 @@ export interface RootRouteChildren {
   ServicesLambdaRoute: typeof ServicesLambdaRoute
   ServicesLogsRoute: typeof ServicesLogsRoute
   ServicesMemorydbRoute: typeof ServicesMemorydbRoute
-  ServicesOpensearchRoute: typeof ServicesOpensearchRoute
   ServicesMqRoute: typeof ServicesMqRoute
+  ServicesOpensearchRoute: typeof ServicesOpensearchRoute
   ServicesPipesRoute: typeof ServicesPipesRoute
   ServicesRdsRoute: typeof ServicesRdsRoute
   ServicesRoute53Route: typeof ServicesRoute53Route
@@ -981,6 +994,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesCloudwatchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/codebuild': {
+      id: '/services/codebuild'
+      path: '/services/codebuild'
+      fullPath: '/services/codebuild'
+      preLoaderRoute: typeof ServicesCodebuildRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/cognitoidentity': {
       id: '/services/cognitoidentity'
       path: '/services/cognitoidentity'
@@ -1135,18 +1155,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesMemorydbRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/services/opensearch': {
-      id: '/services/opensearch'
-      path: '/services/opensearch'
-      fullPath: '/services/opensearch'
-      preLoaderRoute: typeof ServicesOpensearchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/services/mq': {
       id: '/services/mq'
       path: '/services/mq'
       fullPath: '/services/mq'
       preLoaderRoute: typeof ServicesMqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/opensearch': {
+      id: '/services/opensearch'
+      path: '/services/opensearch'
+      fullPath: '/services/opensearch'
+      preLoaderRoute: typeof ServicesOpensearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services/pipes': {
@@ -1279,6 +1299,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesCloudfrontRoute: ServicesCloudfrontRoute,
   ServicesCloudtrailRoute: ServicesCloudtrailRoute,
   ServicesCloudwatchRoute: ServicesCloudwatchRoute,
+  ServicesCodebuildRoute: ServicesCodebuildRoute,
   ServicesCognitoidentityRoute: ServicesCognitoidentityRoute,
   ServicesCognitoidpRoute: ServicesCognitoidpRoute,
   ServicesCostandusagereportserviceRoute:
@@ -1302,8 +1323,8 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesLambdaRoute: ServicesLambdaRoute,
   ServicesLogsRoute: ServicesLogsRoute,
   ServicesMemorydbRoute: ServicesMemorydbRoute,
-  ServicesOpensearchRoute: ServicesOpensearchRoute,
   ServicesMqRoute: ServicesMqRoute,
+  ServicesOpensearchRoute: ServicesOpensearchRoute,
   ServicesPipesRoute: ServicesPipesRoute,
   ServicesRdsRoute: ServicesRdsRoute,
   ServicesRoute53Route: ServicesRoute53Route,
