@@ -93,6 +93,7 @@ Manage provisioned MSK configuration, bootstrap brokers and nodes, with an optio
 **Execution:** Records by default; opt-in single-node Redpanda Docker runtime. **Selected operations:** 10.
 
 - Ten pinned Kafka REST JSON operations, including GetBootstrapBrokers and ListNodes alongside cluster, monitoring and tag APIs.
+- Dedicated MSK console with provisioned cluster creation, scoped network choices, monitoring updates, tags, typed-name deletion, runtime capability notice, transitional-state polling and copyable bootstrap endpoints and broker nodes.
 - Commercial account/Region/name/UUID cluster ARNs, scoped name uniqueness, creation timestamp, deeply retained broker/network/EBS/version/monitoring metadata and opaque optimistic configuration revisions.
 - Finite creation matrix: explicit Kafka 3.8.x/3.9.x and kafka.m5.large/xlarge, us-east-1/us-west-1/us-west-2, 2-3 scoped EC2 subnets in distinct AZs (exactly 2 in us-west-1), nodes evenly distributed, explicit security groups and EBS volume size.
 - Atomic monitoring CAS, optional delete CAS, tag merges/removals with MSK limits, scope/API/filter-bound deterministic list cursors that survive cursor deletion.

@@ -270,6 +270,10 @@ TagResource UntagResource GetTags
 	RemoveRoleFromInstanceProfile ListInstanceProfilesForRole
 	SimulatePrincipalPolicy SimulateCustomPolicy
 `), global: true},
+	"kafka": {operations: strings.Fields(`
+ CreateCluster DescribeCluster ListClusters DeleteCluster UpdateMonitoring
+ GetBootstrapBrokers ListNodes ListTagsForResource TagResource UntagResource
+`)},
 	"kinesis": {operations: strings.Fields(`
  ListStreams CreateStream DeleteStream DescribeStream ListShards UpdateShardCount
  IncreaseStreamRetentionPeriod DecreaseStreamRetentionPeriod StartStreamEncryption StopStreamEncryption

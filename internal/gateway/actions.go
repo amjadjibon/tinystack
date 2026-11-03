@@ -136,6 +136,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 			"pages":               pages,
 			"global_services":     global,
 			"eks_runtime":         s.cfg.EKS.Clusters,
+			"kafka_runtime":       s.cfg.Kafka.Clusters,
 			"ecs_runtime":         s.cfg.ECS.Containers,
 			"elasticache_runtime": s.cfg.ElastiCache.Caches,
 			"memorydb_runtime":    s.cfg.MemoryDB.Clusters,

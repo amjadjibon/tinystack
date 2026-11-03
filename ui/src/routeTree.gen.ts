@@ -46,6 +46,7 @@ import { Route as ServicesEventbridgeRouteImport } from './routes/services/event
 import { Route as ServicesFirehoseRouteImport } from './routes/services/firehose'
 import { Route as ServicesGlueRouteImport } from './routes/services/glue'
 import { Route as ServicesIamRouteImport } from './routes/services/iam'
+import { Route as ServicesKafkaRouteImport } from './routes/services/kafka'
 import { Route as ServicesKinesisRouteImport } from './routes/services/kinesis'
 import { Route as ServicesKmsRouteImport } from './routes/services/kms'
 import { Route as ServicesLambdaRouteImport } from './routes/services/lambda'
@@ -253,6 +254,11 @@ const ServicesIamRoute = ServicesIamRouteImport.update({
   path: '/services/iam',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesKafkaRoute = ServicesKafkaRouteImport.update({
+  id: '/services/kafka',
+  path: '/services/kafka',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesKinesisRoute = ServicesKinesisRouteImport.update({
   id: '/services/kinesis',
   path: '/services/kinesis',
@@ -392,6 +398,7 @@ export interface FileRoutesByFullPath {
   '/services/firehose': typeof ServicesFirehoseRoute
   '/services/glue': typeof ServicesGlueRoute
   '/services/iam': typeof ServicesIamRoute
+  '/services/kafka': typeof ServicesKafkaRoute
   '/services/kinesis': typeof ServicesKinesisRoute
   '/services/kms': typeof ServicesKmsRoute
   '/services/lambda': typeof ServicesLambdaRoute
@@ -451,6 +458,7 @@ export interface FileRoutesByTo {
   '/services/firehose': typeof ServicesFirehoseRoute
   '/services/glue': typeof ServicesGlueRoute
   '/services/iam': typeof ServicesIamRoute
+  '/services/kafka': typeof ServicesKafkaRoute
   '/services/kinesis': typeof ServicesKinesisRoute
   '/services/kms': typeof ServicesKmsRoute
   '/services/lambda': typeof ServicesLambdaRoute
@@ -511,6 +519,7 @@ export interface FileRoutesById {
   '/services/firehose': typeof ServicesFirehoseRoute
   '/services/glue': typeof ServicesGlueRoute
   '/services/iam': typeof ServicesIamRoute
+  '/services/kafka': typeof ServicesKafkaRoute
   '/services/kinesis': typeof ServicesKinesisRoute
   '/services/kms': typeof ServicesKmsRoute
   '/services/lambda': typeof ServicesLambdaRoute
@@ -572,6 +581,7 @@ export interface FileRouteTypes {
     | '/services/firehose'
     | '/services/glue'
     | '/services/iam'
+    | '/services/kafka'
     | '/services/kinesis'
     | '/services/kms'
     | '/services/lambda'
@@ -631,6 +641,7 @@ export interface FileRouteTypes {
     | '/services/firehose'
     | '/services/glue'
     | '/services/iam'
+    | '/services/kafka'
     | '/services/kinesis'
     | '/services/kms'
     | '/services/lambda'
@@ -690,6 +701,7 @@ export interface FileRouteTypes {
     | '/services/firehose'
     | '/services/glue'
     | '/services/iam'
+    | '/services/kafka'
     | '/services/kinesis'
     | '/services/kms'
     | '/services/lambda'
@@ -750,6 +762,7 @@ export interface RootRouteChildren {
   ServicesFirehoseRoute: typeof ServicesFirehoseRoute
   ServicesGlueRoute: typeof ServicesGlueRoute
   ServicesIamRoute: typeof ServicesIamRoute
+  ServicesKafkaRoute: typeof ServicesKafkaRoute
   ServicesKinesisRoute: typeof ServicesKinesisRoute
   ServicesKmsRoute: typeof ServicesKmsRoute
   ServicesLambdaRoute: typeof ServicesLambdaRoute
@@ -1034,6 +1047,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesIamRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/kafka': {
+      id: '/services/kafka'
+      path: '/services/kafka'
+      fullPath: '/services/kafka'
+      preLoaderRoute: typeof ServicesKafkaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/kinesis': {
       id: '/services/kinesis'
       path: '/services/kinesis'
@@ -1215,6 +1235,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesFirehoseRoute: ServicesFirehoseRoute,
   ServicesGlueRoute: ServicesGlueRoute,
   ServicesIamRoute: ServicesIamRoute,
+  ServicesKafkaRoute: ServicesKafkaRoute,
   ServicesKinesisRoute: ServicesKinesisRoute,
   ServicesKmsRoute: ServicesKmsRoute,
   ServicesLambdaRoute: ServicesLambdaRoute,

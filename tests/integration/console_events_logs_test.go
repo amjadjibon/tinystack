@@ -310,6 +310,7 @@ func TestConsoleRegionalActionsValidationAndSignatures(t *testing.T) {
 		"cognitoidentity": "ListIdentityPools",
 		"efs":             "DescribeFileSystems",
 		"eks":             "ListClusters",
+		"kafka":           "ListClusters",
 		"appconfig":       "ListApplications",
 		"appsync":         "ListGraphqlApis",
 	}
