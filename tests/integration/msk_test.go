@@ -13,6 +13,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -314,7 +315,6 @@ func TestMSKRawPinnedRESTProtocolAndUnsupportedFlags(t *testing.T) {
 	// Each excluded nested option fails even when its value looks inactive.
 	for _, value := range []any{false, nil, map[string]any{}} {
 		for _, member := range []string{
-			"configurationInfo",
 			"loggingInfo",
 			"openMonitoring",
 			"storageMode",
@@ -703,5 +703,332 @@ func TestMSKSDKScopedRealEC2ReferenceValidationAndDefaults(t *testing.T) {
 	after := mskDescribe(t, c, out.ClusterArn)
 	if !reflect.DeepEqual(b.BrokerNodeGroupInfo, after.BrokerNodeGroupInfo) {
 		t.Fatal("update rewrote retained network")
+	}
+}
+
+func TestMSKConfigurationsAndClusterUpdates(t *testing.T) {
+	s := server(t)
+	ctx := context.Background()
+	c := mskClient(s, "test", "us-east-1")
+	config, err := c.CreateConfiguration(
+		ctx,
+		&sdk.CreateConfigurationInput{
+			Name:             new("custom"),
+			KafkaVersions:    []string{"3.8.x", "3.9.x"},
+			ServerProperties: []byte("auto.create.topics.enable=true\n"),
+			Description:      new("first"),
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.CreateConfiguration(
+		ctx,
+		&sdk.CreateConfigurationInput{Name: new("custom"), ServerProperties: []byte("a=b")},
+	)
+	code(t, err, "ConflictException")
+	_, err = c.CreateConfiguration(
+		ctx,
+		&sdk.CreateConfigurationInput{Name: new("bad"), ServerProperties: []byte("invalid")},
+	)
+	code(t, err, "BadRequestException")
+	_, err = c.CreateConfiguration(ctx, &sdk.CreateConfigurationInput{
+		Name: new("bad_name"), ServerProperties: []byte("auto.create.topics.enable=true"),
+	})
+	code(t, err, "BadRequestException")
+	list, err := c.ListConfigurations(ctx, &sdk.ListConfigurationsInput{MaxResults: new(int32(1))})
+	if err != nil || len(list.Configurations) != 1 {
+		t.Fatal(list, err)
+	}
+	described, err := c.DescribeConfiguration(ctx, &sdk.DescribeConfigurationInput{Arn: config.Arn})
+	if err != nil || *described.Name != "custom" {
+		t.Fatal(described, err)
+	}
+	_, err = mskClient(
+		s,
+		"test",
+		"us-west-2",
+	).DescribeConfiguration(ctx, &sdk.DescribeConfigurationInput{Arn: config.Arn})
+	code(t, err, "NotFoundException")
+	updated, err := c.UpdateConfiguration(
+		ctx,
+		&sdk.UpdateConfigurationInput{
+			Arn:              config.Arn,
+			ServerProperties: []byte("auto.create.topics.enable=false\n"),
+			Description:      new("second"),
+		},
+	)
+	if err != nil || *updated.LatestRevision.Revision != 2 {
+		t.Fatal(updated, err)
+	}
+	revisions, err := c.ListConfigurationRevisions(
+		ctx,
+		&sdk.ListConfigurationRevisionsInput{Arn: config.Arn, MaxResults: new(int32(1))},
+	)
+	if err != nil || len(revisions.Revisions) != 1 || revisions.NextToken == nil {
+		t.Fatal(revisions, err)
+	}
+	next, err := c.ListConfigurationRevisions(
+		ctx,
+		&sdk.ListConfigurationRevisionsInput{
+			Arn:        config.Arn,
+			MaxResults: new(int32(1)),
+			NextToken:  revisions.NextToken,
+		},
+	)
+	if err != nil || *next.Revisions[0].Revision != 2 {
+		t.Fatal(next, err)
+	}
+	rev, err := c.DescribeConfigurationRevision(
+		ctx,
+		&sdk.DescribeConfigurationRevisionInput{Arn: config.Arn, Revision: new(int64(1))},
+	)
+	if err != nil || string(rev.ServerProperties) != "auto.create.topics.enable=true\n" {
+		t.Fatal(rev, err)
+	}
+	_, err = c.DescribeConfigurationRevision(
+		ctx,
+		&sdk.DescribeConfigurationRevisionInput{Arn: config.Arn, Revision: new(int64(3))},
+	)
+	code(t, err, "NotFoundException")
+	in := mskInput(t, s, "us-east-1")
+	in.KafkaVersion = new("3.8.x")
+	in.ConfigurationInfo = &types.ConfigurationInfo{Arn: config.Arn, Revision: new(int64(1))}
+	created, err := c.CreateCluster(ctx, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	arn := created.ClusterArn
+	r := mskDescribe(t, c, arn)
+	if *r.CurrentBrokerSoftwareInfo.ConfigurationRevision != 1 {
+		t.Fatal(r)
+	}
+	_, err = c.DeleteConfiguration(ctx, &sdk.DeleteConfigurationInput{Arn: config.Arn})
+	code(t, err, "BadRequestException")
+	_, err = c.UpdateBrokerCount(
+		ctx,
+		&sdk.UpdateBrokerCountInput{
+			ClusterArn:                arn,
+			CurrentVersion:            new("stale"),
+			TargetNumberOfBrokerNodes: new(int32(6)),
+		},
+	)
+	code(t, err, "BadRequestException")
+	for _, n := range []int32{2, 4, 5} {
+		_, err = c.UpdateBrokerCount(
+			ctx,
+			&sdk.UpdateBrokerCountInput{
+				ClusterArn:                arn,
+				CurrentVersion:            r.CurrentVersion,
+				TargetNumberOfBrokerNodes: new(n),
+			},
+		)
+		code(t, err, "BadRequestException")
+	}
+	count, err := c.UpdateBrokerCount(
+		ctx,
+		&sdk.UpdateBrokerCountInput{
+			ClusterArn:                arn,
+			CurrentVersion:            r.CurrentVersion,
+			TargetNumberOfBrokerNodes: new(int32(6)),
+		},
+	)
+	if err != nil || count.ClusterOperationArn == nil {
+		t.Fatal(count, err)
+	}
+	if mskDescribe(t, c, arn).State != types.ClusterStateUpdating {
+		t.Fatal("missing UPDATING")
+	}
+	pending := mskDescribe(t, c, arn)
+	_, err = c.UpdateBrokerCount(ctx, &sdk.UpdateBrokerCountInput{
+		ClusterArn: arn, CurrentVersion: pending.CurrentVersion, TargetNumberOfBrokerNodes: new(int32(8)),
+	})
+	code(t, err, "BadRequestException")
+
+	wait := func() *types.ClusterInfo {
+		t.Helper()
+		deadline := time.Now().Add(5 * time.Second)
+		for {
+			r = mskDescribe(t, c, arn)
+			if r.State == types.ClusterStateActive {
+				return r
+			}
+			if time.Now().After(deadline) {
+				t.Fatal("transition timeout")
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+	}
+	r = wait()
+	if *r.NumberOfBrokerNodes != 6 {
+		t.Fatal(r)
+	}
+	for _, b := range []types.BrokerEBSVolumeInfo{
+		{KafkaBrokerNodeId: new("1"), VolumeSizeGB: new(int32(300))},
+		{KafkaBrokerNodeId: new("ALL"), VolumeSizeGB: new(int32(200))},
+	} {
+		_, err = c.UpdateBrokerStorage(
+			ctx,
+			&sdk.UpdateBrokerStorageInput{
+				ClusterArn:                arn,
+				CurrentVersion:            r.CurrentVersion,
+				TargetBrokerEBSVolumeInfo: []types.BrokerEBSVolumeInfo{b},
+			},
+		)
+		code(t, err, "BadRequestException")
+	}
+	_, err = c.UpdateBrokerStorage(
+		ctx,
+		&sdk.UpdateBrokerStorageInput{
+			ClusterArn:     arn,
+			CurrentVersion: r.CurrentVersion,
+			TargetBrokerEBSVolumeInfo: []types.BrokerEBSVolumeInfo{
+				{KafkaBrokerNodeId: new("ALL"), VolumeSizeGB: new(int32(300))},
+			},
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r = wait()
+	if *r.BrokerNodeGroupInfo.StorageInfo.EbsStorageInfo.VolumeSize != 300 {
+		t.Fatal(r)
+	}
+	_, err = c.UpdateClusterConfiguration(
+		ctx,
+		&sdk.UpdateClusterConfigurationInput{
+			ClusterArn:        arn,
+			CurrentVersion:    r.CurrentVersion,
+			ConfigurationInfo: &types.ConfigurationInfo{Arn: config.Arn, Revision: new(int64(3))},
+		},
+	)
+	code(t, err, "BadRequestException")
+	_, err = c.UpdateClusterConfiguration(
+		ctx,
+		&sdk.UpdateClusterConfigurationInput{
+			ClusterArn:        arn,
+			CurrentVersion:    r.CurrentVersion,
+			ConfigurationInfo: &types.ConfigurationInfo{Arn: config.Arn, Revision: new(int64(2))},
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r = wait()
+	if *r.CurrentBrokerSoftwareInfo.ConfigurationRevision != 2 {
+		t.Fatal(r)
+	}
+	_, err = c.UpdateClusterKafkaVersion(
+		ctx,
+		&sdk.UpdateClusterKafkaVersionInput{
+			ClusterArn:         arn,
+			CurrentVersion:     r.CurrentVersion,
+			TargetKafkaVersion: new("3.9.x"),
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r = wait()
+	if *r.CurrentBrokerSoftwareInfo.KafkaVersion != "3.9.x" {
+		t.Fatal(r)
+	}
+	v2, err := c.DescribeClusterV2(ctx, &sdk.DescribeClusterV2Input{ClusterArn: arn})
+	if err != nil || v2.ClusterInfo.ClusterType != types.ClusterTypeProvisioned ||
+		*v2.ClusterInfo.Provisioned.NumberOfBrokerNodes != 6 {
+		t.Fatal(v2, err)
+	}
+	clusters, err := c.ListClustersV2(ctx, &sdk.ListClustersV2Input{ClusterTypeFilter: new("PROVISIONED")})
+	if err != nil || len(clusters.ClusterInfoList) != 1 {
+		t.Fatal(clusters, err)
+	}
+	empty, err := c.ListClustersV2(ctx, &sdk.ListClustersV2Input{ClusterTypeFilter: new("SERVERLESS")})
+	if err != nil || len(empty.ClusterInfoList) != 0 {
+		t.Fatal(empty, err)
+	}
+	_, err = c.DeleteCluster(ctx, &sdk.DeleteClusterInput{ClusterArn: arn, CurrentVersion: r.CurrentVersion})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.DeleteConfiguration(ctx, &sdk.DeleteConfigurationInput{Arn: config.Arn})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.DescribeConfiguration(ctx, &sdk.DescribeConfigurationInput{Arn: config.Arn})
+	code(t, err, "NotFoundException")
+}
+
+func TestMSKConfigurationCompatibilityAndPagination(t *testing.T) {
+	s := server(t)
+	ctx := context.Background()
+	c := mskClient(s, "test", "us-east-1")
+	var configuration *string
+	for _, name := range []string{"a", "b"} {
+		out, err := c.CreateConfiguration(ctx, &sdk.CreateConfigurationInput{
+			Name: new(
+				name,
+			),
+			KafkaVersions:    []string{"3.8.x"},
+			ServerProperties: []byte("auto.create.topics.enable=true"),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		configuration = out.Arn
+	}
+	page, err := c.ListConfigurations(ctx, &sdk.ListConfigurationsInput{MaxResults: new(int32(1))})
+	if err != nil || page.NextToken == nil {
+		t.Fatal(page, err)
+	}
+	rest, err := c.ListConfigurations(
+		ctx,
+		&sdk.ListConfigurationsInput{MaxResults: new(int32(1)), NextToken: page.NextToken},
+	)
+	if err != nil || len(rest.Configurations) != 1 || *rest.Configurations[0].Name != "b" {
+		t.Fatal(rest, err)
+	}
+	_, err = mskClient(
+		s,
+		"test",
+		"us-west-2",
+	).ListConfigurations(ctx, &sdk.ListConfigurationsInput{NextToken: page.NextToken})
+	code(t, err, "BadRequestException")
+	in := mskInput(t, s, "us-east-1")
+	in.ConfigurationInfo = &types.ConfigurationInfo{Arn: configuration, Revision: new(int64(1))}
+	_, err = c.CreateCluster(ctx, in)
+	code(t, err, "BadRequestException")
+	in.KafkaVersion = new("3.8.x")
+	created, err := c.CreateCluster(ctx, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := mskDescribe(t, c, created.ClusterArn)
+	_, err = c.UpdateClusterKafkaVersion(ctx, &sdk.UpdateClusterKafkaVersionInput{
+		ClusterArn: created.ClusterArn, CurrentVersion: r.CurrentVersion, TargetKafkaVersion: new("3.9.x"),
+	})
+	code(t, err, "BadRequestException")
+	if *mskDescribe(t, c, created.ClusterArn).CurrentVersion != *r.CurrentVersion {
+		t.Fatal("failed upgrade changed cluster")
+	}
+	in.ClusterName = new("second")
+	in.ConfigurationInfo = nil
+	_, err = c.CreateCluster(ctx, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	v2, err := c.ListClustersV2(ctx, &sdk.ListClustersV2Input{MaxResults: new(int32(1))})
+	if err != nil || v2.NextToken == nil {
+		t.Fatal(v2, err)
+	}
+	_, err = c.ListClusters(ctx, &sdk.ListClustersInput{NextToken: v2.NextToken})
+	code(t, err, "BadRequestException")
+	_, err = c.ListClustersV2(
+		ctx,
+		&sdk.ListClustersV2Input{NextToken: v2.NextToken, ClusterTypeFilter: new("PROVISIONED")},
+	)
+	code(t, err, "BadRequestException")
+	next, err := c.ListClustersV2(ctx, &sdk.ListClustersV2Input{NextToken: v2.NextToken})
+	if err != nil || len(next.ClusterInfoList) != 1 {
+		t.Fatal(next, err)
 	}
 }

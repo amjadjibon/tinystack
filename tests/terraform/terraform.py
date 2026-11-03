@@ -29,12 +29,17 @@ def main():
             with zipfile.ZipFile(packages[team], "w") as archive:
                 archive.writestr("app.py", f"TEAM = {team!r}\n\ndef handler(event, context):\n    return event\n")
         with socket.socket() as listener:
-            listener.bind(("127.0.0.1", 0))
+            while True:
+                try:
+                    listener.bind(("127.0.0.1", 4700))
+                    break
+                except OSError:
+                    time.sleep(0.2)
             port = listener.getsockname()[1]
         endpoint = f"http://127.0.0.1:{port}"
         # Verify signatures, so every call also checks the provider's SigV4 signing.
         config = work / "tinystack.yaml"
-        config.write_text("identity:\n  mode: verify\n  secret_keys:\n    test: test\n")
+        config.write_text("lambda:\n  executor: local\nidentity:\n  mode: verify\n  secret_keys:\n    test: test\n")
 
         def terraform(*args, team="core", code=0):
             command = ["terraform", args[0], "-no-color"]

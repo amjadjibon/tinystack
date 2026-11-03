@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"encoding/base64"
 	"net/http"
 	"testing"
 )
@@ -79,10 +80,36 @@ func TestConsoleKafkaLifecycle(t *testing.T) {
 	if tags["team"] != "core" || tags["env"] != nil {
 		t.Fatal(tags)
 	}
+	config := kafka("CreateConfiguration", map[string]any{
+		"Name":             "console-config",
+		"ServerProperties": base64.StdEncoding.EncodeToString([]byte("auto.create.topics.enable=true")),
+	})
+	configARN := config["Arn"]
+	if len(kafka("ListConfigurations", map[string]any{})["Configurations"].([]any)) != 1 {
+		t.Fatal("configuration not listed")
+	}
+	kafka("DescribeConfiguration", map[string]any{"Arn": configARN})
+	kafka("UpdateConfiguration", map[string]any{
+		"Arn":              configARN,
+		"ServerProperties": base64.StdEncoding.EncodeToString([]byte("auto.create.topics.enable=false")),
+	})
+	revisions := kafka("ListConfigurationRevisions", map[string]any{"Arn": configARN})
+	if len(revisions["Revisions"].([]any)) != 2 {
+		t.Fatal(revisions)
+	}
+	text := kafka("DescribeConfigurationRevision", map[string]any{"Arn": configARN, "Revision": 1})
+	if text["ServerProperties"] != base64.StdEncoding.EncodeToString([]byte("auto.create.topics.enable=true")) {
+		t.Fatal(text)
+	}
+	kafka("DeleteConfiguration", map[string]any{"Arn": configARN})
+	if len(kafka("ListClustersV2", map[string]any{})["ClusterInfoList"].([]any)) != 1 {
+		t.Fatal("V2 cluster missing")
+	}
+	kafka("DescribeClusterV2", input)
 	denied := consoleResponse(
 		t,
 		srv,
-		consoleLambdaRequest(t, srv, "kafka", "ListConfigurations", account, region, map[string]any{}),
+		consoleLambdaRequest(t, srv, "kafka", "ListClusterOperations", account, region, map[string]any{}),
 		http.StatusBadRequest,
 	)
 	if denied["code"] != "UnknownOperationException" {

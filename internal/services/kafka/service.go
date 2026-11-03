@@ -22,6 +22,8 @@ import (
 )
 
 const (
+	kafka38              = "3.8.x"
+	kafka39              = "3.9.x"
 	serviceName          = "kafka"
 	clusterKind          = "cluster"
 	clientTLS            = "TLS"
@@ -87,6 +89,17 @@ func read(tx storage.ReadTx, scope request.Scope, arn string) (*api.ClusterInfo,
 		return nil, missing()
 	}
 
+	if common.Value(r.State) == "UPDATING" {
+		deadline, found, err := storage.Read[time.Time](tx, transitionKey(scope, arn))
+		if err != nil {
+			return nil, err
+		}
+
+		if found && !time.Now().Before(*deadline) {
+			r.State = new(statusActive)
+		}
+	}
+
 	return r, nil
 }
 
@@ -131,6 +144,10 @@ func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterReques
 	}
 
 	if s.runtime != nil {
+		if in.ConfigurationInfo != nil {
+			return nil, invalid("ConfigurationInfo is unsupported in Docker mode")
+		}
+
 		if authErr := dockerAuthentication(r); authErr != nil {
 			return nil, authErr
 		}
@@ -147,6 +164,12 @@ func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterReques
 		for _, other := range rows {
 			if *other.ClusterName == *r.ClusterName {
 				return conflict("ClusterName already exists")
+			}
+		}
+
+		if in.ConfigurationInfo != nil {
+			if err := applyConfiguration(tx, scope, r, in.ConfigurationInfo); err != nil {
+				return err
 			}
 		}
 
@@ -237,6 +260,7 @@ func (s *Service) DeleteCluster(ctx context.Context, in *api.DeleteClusterReques
 
 		tx.Delete(scope.Key(serviceName, clusterKind, *r.ClusterName))
 		tx.Delete(runtimeKey(*r.ClusterArn))
+		tx.Delete(transitionKey(scope, *r.ClusterArn))
 		return nil
 	})
 	if e != nil {
@@ -255,7 +279,12 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				continue
 			}
 
-			r, _, err := storage.Read[api.ClusterInfo](tx, key)
+			stored, _, err := storage.Read[api.ClusterInfo](tx, key)
+			if err != nil {
+				return err
+			}
+
+			r, err := read(tx, request.Scope{AccountID: account, Region: region}, *stored.ClusterArn)
 			if err != nil {
 				return err
 			}

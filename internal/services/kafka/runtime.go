@@ -104,6 +104,10 @@ func (s *Service) UseRuntime(rt Runtime, logger *slog.Logger) error {
 }
 
 func dockerAuthentication(r *api.ClusterInfo) error {
+	if r.CurrentBrokerSoftwareInfo != nil && r.CurrentBrokerSoftwareInfo.ConfigurationArn != nil {
+		return invalid("Custom configurations are unsupported in Docker mode")
+	}
+
 	l := clusterListeners(r)
 	if l.iam || l.scram || l.mtls {
 		return invalid(

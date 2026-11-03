@@ -67,7 +67,7 @@ func validateCreate(in *api.CreateClusterRequest, scope request.Scope) error {
 		return invalid("ClusterName requires 1-64 letters, digits, hyphens or underscores locally")
 	}
 
-	if !slices.Contains([]string{"3.8.x", "3.9.x"}, common.Value(in.KafkaVersion)) {
+	if !slices.Contains([]string{kafka38, kafka39}, common.Value(in.KafkaVersion)) {
 		return invalid("KafkaVersion must be explicitly 3.8.x or 3.9.x (ZooKeeper metadata records)")
 	}
 

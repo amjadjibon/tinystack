@@ -126,3 +126,35 @@ func TestRuntimeCreationFailureAndAuthentication(t *testing.T) {
 	_, err := s.CreateCluster(local(), in)
 	wantError(t, err, "BadRequestException", 400)
 }
+
+func TestRuntimeRejectsUnappliedClusterMutations(t *testing.T) {
+	s := New(&memory.Store{}, netRecords())
+	s.runtime = &testRuntime{}
+	ctx := local()
+	_, err := s.UpdateBrokerCount(ctx, &api.UpdateBrokerCountRequest{})
+	if err == nil {
+		t.Fatal("Docker broker mutation must fail")
+	}
+
+	_, err = s.UpdateBrokerStorage(ctx, &api.UpdateBrokerStorageRequest{})
+	if err == nil {
+		t.Fatal("Docker storage mutation must fail")
+	}
+
+	_, err = s.UpdateClusterConfiguration(ctx, &api.UpdateClusterConfigurationRequest{})
+	if err == nil {
+		t.Fatal("Docker configuration mutation must fail")
+	}
+
+	_, err = s.UpdateClusterKafkaVersion(ctx, &api.UpdateClusterKafkaVersionRequest{})
+	if err == nil {
+		t.Fatal("Docker version mutation must fail")
+	}
+
+	in := input()
+	in.ConfigurationInfo = &api.ConfigurationInfo{Arn: new("custom"), Revision: new(int64(1))}
+	_, err = s.CreateCluster(ctx, in)
+	if err == nil {
+		t.Fatal("Docker configuration attachment must fail")
+	}
+}

@@ -287,6 +287,9 @@ TagResource UntagResource GetTags
 	SimulatePrincipalPolicy SimulateCustomPolicy
 `), global: true},
 	"kafka": {operations: strings.Fields(`
+		CreateConfiguration DescribeConfiguration DescribeConfigurationRevision ListConfigurations
+		ListConfigurationRevisions UpdateConfiguration DeleteConfiguration UpdateBrokerCount UpdateBrokerStorage
+		UpdateClusterConfiguration UpdateClusterKafkaVersion ListClustersV2 DescribeClusterV2
  CreateCluster DescribeCluster ListClusters DeleteCluster UpdateMonitoring
  GetBootstrapBrokers ListNodes ListTagsForResource TagResource UntagResource
 `)},

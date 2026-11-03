@@ -13,7 +13,7 @@ Manage provisioned MSK configuration, bootstrap brokers and nodes, with an optio
 | API version | `2018-11-14` |
 | Scope | Account and region |
 | Execution | Records by default; opt-in single-node Redpanda Docker runtime |
-| Selected operations | 10 of 64 in the pinned model |
+| Selected operations | 23 of 64 in the pinned model |
 
 ## Implemented behavior
 
@@ -21,11 +21,12 @@ See the [implemented feature catalogue](catalogue.md#amazon-msk) for this servic
 
 ## Limitations and future work
 
-- Records bootstrap DNS names are synthetic and do not resolve; Docker always runs and lists one broker regardless of requested count. KafkaVersion is metadata and does not select the Redpanda image (Kafka API compatible, not Apache Kafka); no ZooKeeper, DNS, cluster-operation ARNs or multi-node replication.
-- No serverless/V2, configurations/revisions, SCRAM secret associations, IAM or mTLS authentication, KMS at-rest encryption, logging/open monitoring, tiered storage, networking allocation or metrics delivery. Docker creation explicitly rejects IAM, SCRAM and mTLS; records mode retains authentication flags without enforcing credentials.
+- Records bootstrap DNS names are synthetic and do not resolve; Docker always runs and lists one broker regardless of requested count. KafkaVersion is metadata and does not select the Redpanda image (Kafka API compatible, not Apache Kafka); no ZooKeeper, DNS, cluster-operation history APIs or multi-node replication.
+- No serverless/CreateClusterV2, SCRAM secret associations, IAM or mTLS authentication, KMS at-rest encryption, logging/open monitoring, tiered storage, networking allocation or metrics delivery. Docker creation explicitly rejects IAM, SCRAM and mTLS; records mode retains authentication flags without enforcing credentials.
 - Finite versions/instances/Regions and explicit groups/storage are local boundaries; no changing latest version or default VPC/group/storage inference. NumberOfBrokerNodes follows the pinned 1-15 model, not larger current AWS quotas.
 - CloudFormation version/count/instance/storage mutations and explicit immutable-choice removals fail before writing; mutable optional monitoring removal restores DEFAULT. No Terraform runtime waiter.
 - See the [MSK guide](../guides/msk.md) for selected members and runtime lifecycle. Docker data volumes are external to state archives; ports may change on recreation; a competing host bind can fail startup. Memory-store volumes retained at shutdown require explicit cleanup because a new store has a new ownership identity.
+- Broker count/storage/configuration/Kafka version mutations and custom configuration attachments explicitly reject Docker mode; no container reconfiguration. Configuration text is retained as metadata, without full Kafka property validation; storage cooldown and optimization are not simulated.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -40,19 +41,32 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | Operation | HTTP binding |
 | --- | --- |
 | `CreateCluster` | `POST /v1/clusters` |
+| `CreateConfiguration` | `POST /v1/configurations` |
 | `DeleteCluster` | `DELETE /v1/clusters/{ClusterArn}` |
+| `DeleteConfiguration` | `DELETE /v1/configurations/{Arn}` |
 | `DescribeCluster` | `GET /v1/clusters/{ClusterArn}` |
+| `DescribeClusterV2` | `GET /api/v2/clusters/{ClusterArn}` |
+| `DescribeConfiguration` | `GET /v1/configurations/{Arn}` |
+| `DescribeConfigurationRevision` | `GET /v1/configurations/{Arn}/revisions/{Revision}` |
 | `GetBootstrapBrokers` | `GET /v1/clusters/{ClusterArn}/bootstrap-brokers` |
 | `ListClusters` | `GET /v1/clusters` |
+| `ListClustersV2` | `GET /api/v2/clusters` |
+| `ListConfigurationRevisions` | `GET /v1/configurations/{Arn}/revisions` |
+| `ListConfigurations` | `GET /v1/configurations` |
 | `ListNodes` | `GET /v1/clusters/{ClusterArn}/nodes` |
 | `ListTagsForResource` | `GET /v1/tags/{ResourceArn}` |
 | `TagResource` | `POST /v1/tags/{ResourceArn}` |
 | `UntagResource` | `DELETE /v1/tags/{ResourceArn}` |
+| `UpdateBrokerCount` | `PUT /v1/clusters/{ClusterArn}/nodes/count` |
+| `UpdateBrokerStorage` | `PUT /v1/clusters/{ClusterArn}/nodes/storage` |
+| `UpdateClusterConfiguration` | `PUT /v1/clusters/{ClusterArn}/configuration` |
+| `UpdateClusterKafkaVersion` | `PUT /v1/clusters/{ClusterArn}/version` |
+| `UpdateConfiguration` | `PUT /v1/configurations/{Arn}` |
 | `UpdateMonitoring` | `PUT /v1/clusters/{ClusterArn}/monitoring` |
 
 ## Operations not implemented
 
-??? info "54 modeled operations outside the implementation"
+??? info "41 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -60,22 +74,17 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `BatchDisassociateScramSecret`
     - `CreateChannel`
     - `CreateClusterV2`
-    - `CreateConfiguration`
     - `CreateReplicator`
     - `CreateTopic`
     - `CreateVpcConnection`
     - `DeleteChannel`
     - `DeleteClusterPolicy`
-    - `DeleteConfiguration`
     - `DeleteReplicator`
     - `DeleteTopic`
     - `DeleteVpcConnection`
     - `DescribeChannel`
     - `DescribeClusterOperation`
     - `DescribeClusterOperationV2`
-    - `DescribeClusterV2`
-    - `DescribeConfiguration`
-    - `DescribeConfigurationRevision`
     - `DescribeReplicator`
     - `DescribeTopic`
     - `DescribeTopicPartitions`
@@ -86,9 +95,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListClientVpcConnections`
     - `ListClusterOperations`
     - `ListClusterOperationsV2`
-    - `ListClustersV2`
-    - `ListConfigurationRevisions`
-    - `ListConfigurations`
     - `ListKafkaVersions`
     - `ListReplicators`
     - `ListScramSecrets`
@@ -97,13 +103,8 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `PutClusterPolicy`
     - `RebootBroker`
     - `RejectClientVpcConnection`
-    - `UpdateBrokerCount`
-    - `UpdateBrokerStorage`
     - `UpdateBrokerType`
     - `UpdateChannel`
-    - `UpdateClusterConfiguration`
-    - `UpdateClusterKafkaVersion`
-    - `UpdateConfiguration`
     - `UpdateConnectivity`
     - `UpdateRebalancing`
     - `UpdateReplicationInfo`
