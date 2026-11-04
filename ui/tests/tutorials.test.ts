@@ -67,13 +67,67 @@ const ctx: Context = {
 		key: "hello.txt",
 		topic: "tutorial-sns-1234",
 		queue: "tutorial-sqs-1234",
+		table: "tutorial-ddb-1234",
+		rule: "tutorial-rule-1234",
 	},
 };
 function fixture(kind: Check): Snapshot {
 	const s = emptySnapshot();
 	const c = ctx;
 	const n = c.names;
-	if (["bucket", "topic", "queue", "subscription"].includes(kind)) {
+	if (kind === "table")
+		s.resources.push({
+			service: "dynamodb",
+			type: "table",
+			account: c.account,
+			region: c.region,
+			name: n.table,
+			arn: arn("dynamodb", `table/${n.table}`, c),
+		});
+	else if (kind === "rule" || kind === "target")
+		s.resources.push({
+			service: "eventbridge",
+			type: "rule",
+			account: c.account,
+			region: c.region,
+			name: n.rule,
+			arn: arn("events", `rule/${n.rule}`, c),
+			details: {
+				Rule: { Name: n.rule, EventBusName: "default" },
+				Targets: [{ ID: "queue", ARN: arn("sqs", n.queue, c) }],
+			},
+		});
+	else if (kind === "event")
+		s.deliveries.push({
+			time: "",
+			via: "eventbridge",
+			source: arn("events", `rule/${n.rule}`, c),
+			target: arn("sqs", n.queue, c),
+			status: "delivered",
+			payload: "",
+			size: 0,
+		});
+	else if (kind === "item" || kind === "read")
+		s.requests.push({
+			time: "",
+			request_id: "",
+			method: "POST",
+			path: "/",
+			account: c.account,
+			region: c.region,
+			service: "dynamodb",
+			operation: kind === "item" ? "PutItem" : "Scan",
+			status: 200,
+			request_body: JSON.stringify({ TableName: n.table }),
+			response_body: JSON.stringify({
+				Items: [{ pk: { S: "hello" } }],
+				Count: 1,
+			}),
+			request_size: 0,
+			response_size: 0,
+			duration_ms: 0,
+		});
+	else if (["bucket", "topic", "queue", "subscription"].includes(kind)) {
 		const name =
 			kind === "bucket" ? n.bucket : kind === "queue" ? n.queue : n.topic;
 		const svc = kind === "bucket" ? "s3" : kind === "queue" ? "sqs" : "sns";
@@ -144,6 +198,12 @@ for (const kind of [
 	"subscription",
 	"delivery",
 	"receive",
+	"table",
+	"item",
+	"read",
+	"rule",
+	"target",
+	"event",
 ] as const) {
 	test(`${kind}: pass, absent, other account, Region and names`, () => {
 		const s = fixture(kind);
@@ -159,6 +219,8 @@ for (const kind of [
 					key: "other",
 					topic: "other",
 					queue: "other",
+					table: "other",
+					rule: "other",
 				},
 			}),
 			false,
@@ -225,4 +287,82 @@ test("copied step commands work in CloudShell without a host shell", () => {
 					/\n|\$\(|\$[A-Z]|\bexport\b|\bprintf\b|[<>|]/,
 				);
 			}
+});
+
+test("rules on other buses, missing targets and empty reads do not pass", () => {
+	const r = fixture("rule");
+	(
+		r.resources[0].details as { Rule: { EventBusName: string } }
+	).Rule.EventBusName = "orders";
+	assert.equal(check("rule", r, ctx), false);
+	const t = fixture("target");
+	(t.resources[0].details as { Targets: unknown[] }).Targets = [];
+	assert.equal(check("rule", t, ctx), true);
+	assert.equal(check("target", t, ctx), false);
+	const read = fixture("read");
+	read.requests[0].response_body = '{"Items":[],"Count":0}';
+	assert.equal(check("read", read, ctx), false);
+	read.requests[0].operation = "GetItem";
+	read.requests[0].request_body = JSON.stringify({
+		input: { TableName: ctx.names.table },
+	});
+	read.requests[0].response_body = JSON.stringify({
+		output: { Item: { pk: { S: "hello" } } },
+	});
+	assert.ok(check("read", read, ctx));
+});
+
+test("cleanup plans name only generated resources, in dependency order", async () => {
+	const calls: string[] = [];
+	const call = async <T>(
+		service: string,
+		operation: string,
+		input: Record<string, unknown>,
+	): Promise<T> => {
+		calls.push(`${service}:${operation}:${JSON.stringify(input)}`);
+		if (operation === "ListTargetsByRule")
+			return {
+				Targets: [{ Id: "queue", Arn: arn("sqs", ctx.names.queue, ctx) }],
+			} as T;
+		if (operation === "ListSubscriptionsByTopic")
+			return {
+				Subscriptions: [
+					{
+						SubscriptionArn: "sub-1",
+						Protocol: "sqs",
+						Endpoint: arn("sqs", ctx.names.queue, ctx),
+					},
+					{
+						SubscriptionArn: "sub-other",
+						Protocol: "sqs",
+						Endpoint: arn("sqs", "other", ctx),
+					},
+				],
+			} as T;
+		return {} as T;
+	};
+	const plans = Object.fromEntries(
+		await Promise.all(
+			tutorials.map(async (t) => [t.id, await t.cleanup(ctx, call)] as const),
+		),
+	);
+	calls.length = 0;
+	for (const step of plans["eventbridge-sqs-rule"]) await step.run();
+	assert.deepEqual(
+		calls.map((c) => c.split(":").slice(0, 2).join(":")),
+		["eventbridge:RemoveTargets", "eventbridge:DeleteRule", "sqs:DeleteQueue"],
+	);
+	assert.match(calls[1], new RegExp(ctx.names.rule));
+	assert.deepEqual(
+		plans["sns-sqs-fanout"].map((s) => s.label.split(" ")[0]),
+		["Subscription", "Topic", "Queue"],
+	);
+	assert.ok(
+		!plans["sns-sqs-fanout"].some((s) => s.label.includes("sub-other")),
+	);
+	calls.length = 0;
+	for (const step of plans["dynamodb-first-table"]) await step.run();
+	assert.deepEqual(calls, [
+		`dynamodb:DeleteTable:${JSON.stringify({ TableName: ctx.names.table })}`,
+	]);
 });

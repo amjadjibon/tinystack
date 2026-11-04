@@ -7,5 +7,11 @@ export const HOTSPOT = {
 	snsSubscribe: "sns.subscribe",
 	snsPublish: "sns.publish",
 	sqsReceive: "sqs.receive",
+	dynamoCreate: "dynamodb.create-table",
+	dynamoCreateItem: "dynamodb.create-item",
+	dynamoRun: "dynamodb.run",
+	eventsCreateRule: "eventbridge.create-rule",
+	eventsAddTarget: "eventbridge.add-target",
+	eventsSend: "eventbridge.send-event",
 } as const;
 export type HotspotId = (typeof HOTSPOT)[keyof typeof HOTSPOT];

@@ -6,6 +6,7 @@ import {
 	Container,
 	FormField,
 	Header,
+	Hotspot,
 	Input,
 	Link,
 	RadioGroup,
@@ -31,6 +32,7 @@ import {
 } from "#/lib/dynamodb";
 
 import { batchChunks } from "#/lib/dynamodbHelpers";
+import { HOTSPOT } from "#/tutorials/hotspots";
 
 export function DynamoItems({
 	scope,
@@ -341,14 +343,16 @@ export function DynamoItems({
 							)}
 						</SpaceBetween>
 					</fieldset>
-					<Button
-						variant="primary"
-						disabled={!enabled}
-						loading={busy}
-						onClick={run}
-					>
-						Run
-					</Button>
+					<Hotspot hotspotId={HOTSPOT.dynamoRun}>
+						<Button
+							variant="primary"
+							disabled={!enabled}
+							loading={busy}
+							onClick={run}
+						>
+							Run
+						</Button>
+					</Hotspot>
 				</SpaceBetween>
 			</Container>
 			{!!editingError && (
@@ -388,19 +392,21 @@ export function DynamoItems({
 								>
 									Delete selected
 								</Button>
-								<Button
-									variant="primary"
-									disabled={!enabled || !schema.length || busy || opening}
-									onClick={() => {
-										if (locked.current || openingLock.current) return;
-										setOriginal(undefined);
-										setText(JSON.stringify(newItem(table), null, 2));
-										setEditingError("");
-										setDialog("create");
-									}}
-								>
-									Create item
-								</Button>
+								<Hotspot hotspotId={HOTSPOT.dynamoCreateItem}>
+									<Button
+										variant="primary"
+										disabled={!enabled || !schema.length || busy || opening}
+										onClick={() => {
+											if (locked.current || openingLock.current) return;
+											setOriginal(undefined);
+											setText(JSON.stringify(newItem(table), null, 2));
+											setEditingError("");
+											setDialog("create");
+										}}
+									>
+										Create item
+									</Button>
+								</Hotspot>
 							</SpaceBetween>
 						}
 					>

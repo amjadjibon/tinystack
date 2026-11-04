@@ -8,6 +8,7 @@ import {
 	Flashbar,
 	FormField,
 	Header,
+	Hotspot,
 	Input,
 	KeyValuePairs,
 	Link,
@@ -44,6 +45,7 @@ import { useScope } from "#/lib/scope";
 import { tagList } from "#/lib/tags";
 import { useFollow } from "#/lib/useFollow";
 import { usePoll } from "#/lib/usePoll";
+import { HOTSPOT } from "#/tutorials/hotspots";
 export const Route = createFileRoute("/services/eventbridge")({
 	validateSearch: (s: Record<string, unknown>) => ({
 		account: String(s.account ?? ""),
@@ -217,12 +219,14 @@ function EventWorkspace({
 								<Header
 									variant="h1"
 									actions={
-										<Button
-											disabled={!enabled}
-											onClick={() => setDialog("publish")}
-										>
-											Send event
-										</Button>
+										<Hotspot hotspotId={HOTSPOT.eventsSend}>
+											<Button
+												disabled={!enabled}
+												onClick={() => setDialog("publish")}
+											>
+												Send event
+											</Button>
+										</Hotspot>
 									}
 								>
 									Rules

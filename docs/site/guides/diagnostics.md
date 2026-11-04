@@ -353,6 +353,6 @@ inventory rows), have no generic Delete action. Single-resource deletion only is
 supported. With console sign-in configured, administrative inventory endpoints may
 require an administrator session; the page reports that requirement explicitly.
 
-The console includes [interactive tutorials](console-tutorials.md) for S3 and SNS/SQS, with numbered controls,
+The console includes [interactive tutorials](console-tutorials.md) for S3, SNS/SQS, DynamoDB and EventBridge/SQS, with numbered controls,
 live completion checks, scoped saved progress, and confirmed cleanup. Open Tutorials in the top navigation or
 the Get started widget on console home.

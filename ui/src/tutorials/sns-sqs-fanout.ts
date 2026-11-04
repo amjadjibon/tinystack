@@ -1,3 +1,4 @@
+import { arn } from "./checks.ts";
 import { HOTSPOT } from "./hotspots.ts";
 import type { Tutorial } from "./types.ts";
 export const snsSqsFanout: Tutorial = {
@@ -10,7 +11,46 @@ export const snsSqsFanout: Tutorial = {
 	prerequisites:
 		"Requires SNS create/subscribe/publish and SQS create/receive/set-attributes permissions plus console reads. Cleanup requires SNS unsubscribe/delete-topic and SQS delete-queue. Under enforced authorization, allow sns.amazonaws.com sqs:SendMessage from this topic on the queue policy.",
 	learnMore: "https://amjadjibon.github.io/tinystack/guides/console-tutorials/",
-	cleanup: ["subscription", "topic", "queue"],
+	cleanup: async (c, call) => {
+		const topic = arn("sns", c.names.topic, c),
+			queue = arn("sqs", c.names.queue, c);
+		const subscriptions: string[] = [];
+		let token: string | undefined;
+		do {
+			const page: {
+				Subscriptions?: {
+					SubscriptionArn: string;
+					Protocol: string;
+					Endpoint: string;
+				}[];
+				NextToken?: string;
+			} = await call("sns", "ListSubscriptionsByTopic", {
+				TopicArn: topic,
+				...(token ? { NextToken: token } : {}),
+			});
+			for (const s of page.Subscriptions ?? [])
+				if (s.Protocol === "sqs" && s.Endpoint === queue)
+					subscriptions.push(s.SubscriptionArn);
+			token = page.NextToken;
+		} while (token);
+		return [
+			...subscriptions.map((id) => ({
+				label: `Subscription ${id}`,
+				run: () => call("sns", "Unsubscribe", { SubscriptionArn: id }),
+			})),
+			{
+				label: `Topic ${topic} (including all its subscriptions)`,
+				run: () => call("sns", "DeleteTopic", { TopicArn: topic }),
+			},
+			{
+				label: `Queue ${queue} and its messages`,
+				run: () =>
+					call("sqs", "DeleteQueue", {
+						QueueUrl: `/${c.account}/${c.names.queue}`,
+					}),
+			},
+		];
+	},
 	tasks: [
 		{
 			title: "Connect a topic and queue",

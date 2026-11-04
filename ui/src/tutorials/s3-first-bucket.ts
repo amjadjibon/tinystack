@@ -10,7 +10,16 @@ export const s3FirstBucket: Tutorial = {
 	prerequisites:
 		"Requires s3:CreateBucket, PutObject, GetObject and console listing permissions; cleanup requires DeleteObject and DeleteBucket. Use the generated names, keep versioning off, and upload a file named hello.txt.",
 	learnMore: "https://amjadjibon.github.io/tinystack/guides/console-tutorials/",
-	cleanup: ["object", "bucket"],
+	cleanup: async ({ names: n }, call) => [
+		{
+			label: `Object s3://${n.bucket}/${n.key}`,
+			run: () => call("s3", "DeleteObject", { Bucket: n.bucket, Key: n.key }),
+		},
+		{
+			label: `Bucket ${n.bucket} (must otherwise be empty)`,
+			run: () => call("s3", "DeleteBucket", { Bucket: n.bucket }),
+		},
+	],
 	tasks: [
 		{
 			title: "Store and retrieve a file",

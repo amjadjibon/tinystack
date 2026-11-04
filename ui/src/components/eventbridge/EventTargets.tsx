@@ -4,6 +4,7 @@ import {
 	Button,
 	FormField,
 	Header,
+	Hotspot,
 	Input,
 	Select,
 	SpaceBetween,
@@ -20,6 +21,7 @@ import {
 	type EventTarget,
 	eventCall,
 } from "#/lib/eventbridge";
+import { HOTSPOT } from "#/tutorials/hotspots";
 export function EventTargets({
 	scope,
 	targets,
@@ -70,13 +72,15 @@ export function EventTargets({
 						counter={`(${targets.length})`}
 						description="Up to five Lambda, SQS or SNS targets in the rule's account and Region."
 						actions={
-							<Button
-								variant="primary"
-								disabled={!enabled || targets.length >= 5}
-								onClick={() => open()}
-							>
-								Add target
-							</Button>
+							<Hotspot hotspotId={HOTSPOT.eventsAddTarget}>
+								<Button
+									variant="primary"
+									disabled={!enabled || targets.length >= 5}
+									onClick={() => open()}
+								>
+									Add target
+								</Button>
+							</Hotspot>
 						}
 					>
 						Targets

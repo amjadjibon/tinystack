@@ -60,6 +60,13 @@ export function fresh(id: string): Progress {
 	return {
 		step: 0,
 		completed: [],
-		names: { bucket: name, key: "hello.txt", topic: name, queue: name },
+		names: {
+			bucket: name,
+			key: "hello.txt",
+			topic: name,
+			queue: name,
+			table: name,
+			rule: name,
+		},
 	};
 }

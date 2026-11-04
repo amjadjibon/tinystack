@@ -3,6 +3,7 @@ import {
 	Box,
 	Button,
 	Header,
+	Hotspot,
 	Link,
 	Pagination,
 	SpaceBetween,
@@ -13,6 +14,7 @@ import { useState } from "react";
 import type { Resource } from "#/lib/api";
 import { type EventScope, eventHref, inventoryRule } from "#/lib/eventbridge";
 import { useFollow } from "#/lib/useFollow";
+import { HOTSPOT } from "#/tutorials/hotspots";
 import { EventRuleForm } from "./EventRuleForm";
 export function EventRuleList({
 	scope,
@@ -60,13 +62,15 @@ export function EventRuleList({
 						counter={`(${rows.length})`}
 						description={`Rules on ${scope.bus || "default"}.`}
 						actions={
-							<Button
-								variant="primary"
-								disabled={!enabled}
-								onClick={() => setCreating(true)}
-							>
-								Create rule
-							</Button>
+							<Hotspot hotspotId={HOTSPOT.eventsCreateRule}>
+								<Button
+									variant="primary"
+									disabled={!enabled}
+									onClick={() => setCreating(true)}
+								>
+									Create rule
+								</Button>
+							</Hotspot>
 						}
 					>
 						Rules

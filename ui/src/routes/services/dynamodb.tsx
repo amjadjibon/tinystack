@@ -7,6 +7,7 @@ import {
 	Flashbar,
 	FormField,
 	Header,
+	Hotspot,
 	Link,
 	Pagination,
 	Select,
@@ -28,6 +29,7 @@ import { type DynamoScope, dynamoHref, tableDetails } from "#/lib/dynamodb";
 import { validRegion } from "#/lib/s3";
 import { useScope } from "#/lib/scope";
 import { useFollow } from "#/lib/useFollow";
+import { HOTSPOT } from "#/tutorials/hotspots";
 
 export const Route = createFileRoute("/services/dynamodb")({
 	validateSearch: (search: Record<string, unknown>) => ({
@@ -278,9 +280,15 @@ function TableList({
 								ariaLabel="Refresh tables"
 								onClick={onRefresh}
 							/>
-							<Button variant="primary" disabled={!enabled} onClick={onCreate}>
-								Create table
-							</Button>
+							<Hotspot hotspotId={HOTSPOT.dynamoCreate}>
+								<Button
+									variant="primary"
+									disabled={!enabled}
+									onClick={onCreate}
+								>
+									Create table
+								</Button>
+							</Hotspot>
 						</SpaceBetween>
 					}
 				>

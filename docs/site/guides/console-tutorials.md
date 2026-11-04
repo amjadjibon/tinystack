@@ -81,6 +81,51 @@ Python, assignments, redirection, or command substitutions. Cleanup confirms exa
 its messages). Operations execute in order; a failure identifies the resource and server code/message. Retry
 continues unfinished operations.
 
+## Store and read items in DynamoDB
+
+1. Start the DynamoDB tutorial. Choose **Create table**, use the generated table name, and keep the partition key
+   `pk` of type String with on-demand capacity.
+2. Open the table, choose **Create item**, and save `{"pk": {"S": "hello"}, "message": {"S": "Hello TinyStack"}}`.
+   A successful `PutItem` to this table completes the step.
+3. Keep **Scan** selected and choose **Run**, or run a Query on `pk = :pk`. The step completes when a Scan, Query or
+   GetItem on this table returns at least one item; an empty result does not count.
+
+From a terminal, replace `TABLE` with the generated name:
+
+```sh
+aws-local dynamodb create-table --table-name "$TABLE" --attribute-definitions AttributeName=pk,AttributeType=S \
+  --key-schema AttributeName=pk,KeyType=HASH --billing-mode PAY_PER_REQUEST
+aws-local dynamodb put-item --table-name "$TABLE" --item '{"pk":{"S":"hello"},"message":{"S":"Hello TinyStack"}}'
+aws-local dynamodb get-item --table-name "$TABLE" --key '{"pk":{"S":"hello"}}'
+```
+
+Cleanup deletes the generated table and every item in it.
+
+## Route events to SQS with EventBridge
+
+1. Start the EventBridge tutorial. Create a **Standard** SQS queue with the generated name.
+2. Open EventBridge **Rules** on the `default` bus, choose **Create rule**, use the generated rule name, and keep the
+   event pattern `{"source":["my.app"]}`. A rule with that name on another bus does not count.
+3. Open the rule, choose **Add target**, and enter the queue ARN shown in the instructions. If authorization is
+   enforced, use the queue's **Permissions** tab to permit `events.amazonaws.com` to perform `sqs:SendMessage`,
+   restricted by `aws:SourceArn` to the rule ARN.
+4. Choose **Send event** and keep source `my.app`. The step waits for the rule's successful delivery to this queue,
+   not only for `PutEvents` to be accepted.
+5. Open the queue's **Send and receive messages** tab and choose **Poll for messages**. The body is the full event.
+
+From a terminal, replace `NAME` with the generated name and set `ACCOUNT` and `AWS_DEFAULT_REGION` to the selected
+scope (in CloudShell, run the drawer's expanded commands instead):
+
+```sh
+aws-local sqs create-queue --queue-name "$NAME"
+aws-local events put-rule --name "$NAME" --event-pattern '{"source":["my.app"]}'
+aws-local events put-targets --rule "$NAME" --targets "Id=queue,Arn=arn:aws:sqs:$AWS_DEFAULT_REGION:$ACCOUNT:$NAME"
+aws-local events put-events --entries '[{"Source":"my.app","DetailType":"Tutorial","Detail":"{}"}]'
+aws-local sqs receive-message --queue-url "/$ACCOUNT/$NAME"
+```
+
+Cleanup removes every target of the generated rule, then deletes the rule and the queue with its messages.
+
 ## Saved progress
 
 Progress, completed steps, generated names, and completion time are stored in this browser per tutorial,

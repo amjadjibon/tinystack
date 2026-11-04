@@ -7,8 +7,9 @@ import {
 import { useState } from "react";
 import { ActionDialog } from "#/components/ActionDialog";
 import { api } from "#/lib/api";
-import { arn, type Context } from "./checks";
-import type { Tutorial } from "./types";
+import type { ActionStep } from "#/lib/consoleActions";
+import type { Context } from "./checks";
+import type { Call, Tutorial } from "./types";
 export function Cleanup({
 	tutorial,
 	ctx,
@@ -16,52 +17,17 @@ export function Cleanup({
 	tutorial: Tutorial;
 	ctx: Context;
 }) {
-	const [rows, setRows] = useState<string[] | null>(null);
+	const [rows, setRows] = useState<ActionStep[] | null>(null);
 	const [error, setError] = useState("");
 	const [busy, setBusy] = useState(false);
 	const [done, setDone] = useState(false);
-	const n = ctx.names;
-	const labels =
-		tutorial.id === "s3-first-bucket"
-			? [
-					`Object s3://${n.bucket}/${n.key}`,
-					`Bucket ${n.bucket} (must otherwise be empty)`,
-				]
-			: [
-					`Topic ${arn("sns", n.topic, ctx)} (including all its subscriptions)`,
-					`Queue ${arn("sqs", n.queue, ctx)} and its messages`,
-				];
-	const call = <T,>(
-		service: string,
-		operation: string,
-		input: Record<string, unknown>,
-	) => api.action<T>(service, operation, ctx.account, input, ctx.region);
+	const call: Call = (service, operation, input) =>
+		api.action(service, operation, ctx.account, input, ctx.region);
 	const prepare = async () => {
 		setBusy(true);
 		setError("");
 		try {
-			const subscriptions: string[] = [];
-			if (tutorial.id === "sns-sqs-fanout") {
-				let token: string | undefined;
-				do {
-					const page: {
-						Subscriptions?: {
-							SubscriptionArn: string;
-							Protocol: string;
-							Endpoint: string;
-						}[];
-						NextToken?: string;
-					} = await call("sns", "ListSubscriptionsByTopic", {
-						TopicArn: arn("sns", n.topic, ctx),
-						...(token ? { NextToken: token } : {}),
-					});
-					for (const s of page.Subscriptions ?? [])
-						if (s.Protocol === "sqs" && s.Endpoint === arn("sqs", n.queue, ctx))
-							subscriptions.push(s.SubscriptionArn);
-					token = page.NextToken;
-				} while (token);
-			}
-			setRows(subscriptions);
+			setRows(await tutorial.cleanup(ctx, call));
 		} catch (e) {
 			setError(e instanceof Error ? e.message : String(e));
 		} finally {
@@ -84,54 +50,16 @@ export function Cleanup({
 						setRows(null);
 						setDone(true);
 					}}
-					plan={async () => {
-						if (tutorial.id === "s3-first-bucket")
-							return [
-								{
-									label: labels[0],
-									run: () =>
-										call("s3", "DeleteObject", {
-											Bucket: n.bucket,
-											Key: n.key,
-										}),
-								},
-								{
-									label: labels[1],
-									run: () => call("s3", "DeleteBucket", { Bucket: n.bucket }),
-								},
-							];
-						return [
-							...rows.map((id) => ({
-								label: `Subscription ${id}`,
-								run: () => call("sns", "Unsubscribe", { SubscriptionArn: id }),
-							})),
-							{
-								label: labels[0],
-								run: () =>
-									call("sns", "DeleteTopic", {
-										TopicArn: arn("sns", n.topic, ctx),
-									}),
-							},
-							{
-								label: labels[1],
-								run: () =>
-									call("sqs", "DeleteQueue", {
-										QueueUrl: `/${ctx.account}/${n.queue}`,
-									}),
-							},
-						];
-					}}
+					plan={async () => rows}
 				>
 					<Box>
 						Only these generated resources in account {ctx.account}, Region{" "}
 						{ctx.region} will be removed:
 					</Box>
 					<ul>
-						{[...rows.map((id) => `Subscription ${id}`), ...labels].map(
-							(label) => (
-								<li key={label}>{label}</li>
-							),
-						)}
+						{rows.map(({ label }) => (
+							<li key={label}>{label}</li>
+						))}
 					</ul>
 				</ActionDialog>
 			)}
