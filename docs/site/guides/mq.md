@@ -1,13 +1,13 @@
 # Amazon MQ brokers
 
-TinyStack stores broker creation/configuration metadata, initial usernames and tags. In the default
+TinyStack stores broker metadata, ActiveMQ users, configuration revisions and tags. In the default
 `mq.brokers: records` mode it does not provision brokers, containers, interfaces, endpoints or a messaging
 engine. Inventory reports `RecordsOnly: true` and `ExecutionReady: false`. No AMQP, MQTT, STOMP, OpenWire,
 RabbitMQ management API or web console runs. The [optional Docker runtime](#optional-docker-runtime) runs a
 real RabbitMQ or ActiveMQ broker.
 No broker state, broker instance, console URL, hostname, IP address, readiness or pending-runtime fields
 are synthesized. Logging/encryption/maintenance flags describe configuration; they do not deliver logs,
-encrypt broker data, evaluate KMS/IAM or schedule upgrades. Update and deletion affect records immediately.
+encrypt broker data, evaluate KMS/IAM or schedule upgrades. Most broker metadata updates and broker deletion affect records immediately; user and configuration-association changes apply on reboot.
 
 ## Operations and selected members
 
@@ -39,7 +39,7 @@ Names contain 1–50 ASCII letters/digits/hyphens/underscores and are unique wit
 IDs are stable `b-UUID` values. ARNs are commercial scoped
 `arn:aws:mq:REGION:ACCOUNT:broker:NAME:b-UUID`. Describe/Update/Delete accept only broker IDs, not names
 or ARNs. Tag APIs accept only exact broker ARNs. A well-formed foreign-scope ARN returns not found.
-No configuration ARN, shared broker access or alternate partition is selected.
+Configuration resources use scoped `c-UUID` IDs. Shared broker access and alternate partitions are not selected.
 
 Invalid selected configuration returns `BadRequestException`/400; duplicates and conflicting create-token
 reuse return `ConflictException`/409. Valid missing IDs and scoped missing ARNs return `NotFoundException`/404,
@@ -80,18 +80,15 @@ Only these nested configuration members are selected:
 | encryptionOptions | `useAwsOwnedKey` only. Omitted object defaults to true. A supplied object requires explicit true; false/empty fails. `kmsKeyId` is excluded even empty/null. No key is created or enforced |
 | logs | `general` boolean; ActiveMQ additionally `audit` boolean. Omitted creation flags default false. RabbitMQ rejects `audit` even false. Returned LogsSummary contains only flags, with no log group or pending fields |
 | maintenanceWindowStartTime | Required `dayOfWeek` (MONDAY through SUNDAY), `timeOfDay` (24-hour HH:MM); optional `timeZone`, default UTC. Locally only UTC is supported. Whole-object omission uses a deterministic local MONDAY/00:00/UTC default, not a claimed AWS-selected window |
-| users | `username`, `password` only; both required for each initial user. Console access, groups, replication-user, LDAP, OAuth and other authentication settings are excluded |
+| users | `username`, `password` required; ActiveMQ also accepts `consoleAccess` and up to 20 distinct `groups` (2–100 username-pattern characters). RabbitMQ rejects console/group fields. Replication-user, LDAP and OAuth are excluded |
 
 ActiveMQ accepts 1–250 distinct initial users; RabbitMQ requires exactly one administrator for this
 simple-authentication slice. Usernames contain 2–100 ASCII letters/digits and `- . _ ~`; RabbitMQ excludes
 tilde and the exact username `guest`. Passwords require 12–250 printable ASCII characters, at least
 four distinct characters, and exclude comma, colon and equals. The upper/printable boundary follows
-AWS's ActiveMQ quotas and is an explicit local restriction for RabbitMQ. Credentials are checked only
-on creation, then discarded. Broker records retain usernames; no password or authentication verifier
-is stored. There is no login/authentication engine. Do not place secrets in usernames, broker names or tags.
+AWS's ActiveMQ quotas and is an explicit local restriction for RabbitMQ. Records mode validates and discards passwords on creation and mutation. Broker records retain user metadata; no password or authentication verifier is stored. There is no records-mode login/authentication engine. Do not place secrets in usernames, broker names or tags.
 
-Configuration/user CRUD, RebootBroker, engine discovery APIs, storage settings, replication, resource
-sharing and advanced authentication are [future scope](../roadmap/services/mq-runtime.md). SIMPLE is
+Engine discovery APIs, storage settings, replication, resource sharing and advanced authentication are [future scope](../roadmap/services/mq-runtime.md). SIMPLE is
 implicit in this narrow creation slice; even explicit `authenticationStrategy=SIMPLE` is excluded.
 
 ## Network references
@@ -175,8 +172,7 @@ external keys count toward 50; disjoint 50-key replacement frees old owned keys 
 A later-resource failure restores the actual live configuration/tags captured before update, including
 external changes and creation metadata, rather than reconstructing the old template.
 
-Initial Users mutations in place are rejected, including password changes: no user CRUD or available
-write-only password is fabricated for rollback. Replacement can validate new supplied credentials.
+CloudFormation initial Users mutations in place are rejected, including password changes: no write-only password is fabricated for rollback. Replacement can validate new supplied credentials.
 MQ service descriptions, inventory, errors, resource events and rollback snapshots contain no passwords.
 Template-bearing CloudFormation diagnostics are redacted. GetTemplate removes literal MQ User Password
 properties; its returned template cannot recreate credentials without supplying them again.
@@ -239,3 +235,36 @@ This page describes the default `mq.brokers: records` mode. The opt-in
 runs RabbitMQ or ActiveMQ, retains private recovery credentials, publishes plain
 loopback protocol URLs, and implements readiness, reboot and durable-volume
 lifecycle. It returns one real instance even for multi-AZ deployment metadata.
+
+
+## Users and configuration revisions
+
+`CreateUser`, `DescribeUser`, `ListUsers`, `UpdateUser`, and `DeleteUser` manage ActiveMQ users.
+RabbitMQ rejects all five operations; use its management API instead. Records-mode mutations retain
+current console/group metadata and expose pending CREATE, UPDATE or DELETE changes through
+`DescribeUser.Pending` and `ListUsers.Users[].PendingChange`. `RebootBroker` applies these changes
+synchronously in records mode. Password-only updates also produce a pending UPDATE, without exposing
+or persisting the password. Initial users are already current.
+
+`CreateConfiguration`, `DescribeConfiguration`, `ListConfigurations`, `UpdateConfiguration`,
+`DescribeConfigurationRevision`, `ListConfigurationRevisions` and `DeleteConfiguration` manage scoped
+configuration records. Creation supplies engine, version and name and creates revision 1 with minimal
+engine-specific data. Updating requires nonempty base64 data (up to 1 MiB decoded), creates an immutable
+revision and accepts a description. ActiveMQ requires well-formed XML with a broker root; RabbitMQ
+requires Cuttlefish key/value lines or comments. Engine-specific AWS sanitization and schema validation
+are not emulated. Authentication strategy and configuration tags remain excluded explicitly.
+
+CreateBroker and UpdateBroker accept `Configuration: {Id, Revision}` referencing an existing revision
+with matching engine and version. Creation sets `Configurations.Current`; updates set Pending. Reboot
+moves the old current revision into History and promotes Pending to Current. Changes to a configuration
+alone never change an associated broker. Deletion rejects configurations referenced by current, pending
+or historical broker associations. The three new list APIs use 20-default, 5–100-bound pages and
+account/Region/operation/resource-bound tokens.
+
+Docker mode explicitly rejects user mutations and custom configuration creation, updates and broker
+associations. Recreate the broker with initial users to change its live credentials. Read operations
+continue to expose initial ActiveMQ users. No Docker commands are needed to test these rejection paths.
+
+The console includes per-broker users with pending-change indicators and reboot guidance, configurations
+with an XML/Cuttlefish revision editor and viewer, and configuration ID/revision selection on broker
+creation and update. Deletion requires typing the user or configuration name.

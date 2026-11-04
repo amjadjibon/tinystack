@@ -9,15 +9,17 @@ import { useState } from "react";
 import { ActionDialog } from "#/components/ActionDialog";
 import { Action, Choice, Field } from "#/components/containers/Controls";
 import { words } from "#/lib/consoleActions";
-import { mqCall } from "#/lib/mq";
+import { mqCall, mqList } from "#/lib/mq";
 import {
 	type Broker,
 	type BrokerForm,
 	brokerInput,
 	type InitialUser,
+	type MQConfiguration,
 	type MQScope,
 	versions,
 } from "#/lib/mqHelpers";
+import { usePoll } from "#/lib/usePoll";
 export function BrokerDialog({
 	scope,
 	docker,
@@ -33,6 +35,13 @@ export function BrokerDialog({
 }) {
 	const [f, setF] = useState<BrokerForm>({
 		name: b?.BrokerName ?? "",
+		configuration:
+			b?.Configurations?.Pending?.Id ?? b?.Configurations?.Current?.Id ?? "",
+		revision: String(
+			b?.Configurations?.Pending?.Revision ??
+				b?.Configurations?.Current?.Revision ??
+				1,
+		),
 		engine: b?.EngineType ?? "ACTIVEMQ",
 		version: b?.EngineVersion ?? "5.18",
 		instance: b?.HostInstanceType ?? "mq.m5.large",
@@ -46,6 +55,11 @@ export function BrokerDialog({
 		time: b?.MaintenanceWindowStartTime?.TimeOfDay ?? "00:00",
 		tags: "{}",
 	});
+	const configurations = usePoll(
+		() =>
+			mqList<MQConfiguration>(scope, "ListConfigurations", "Configurations"),
+		0,
+	);
 	const [users, setUsers] = useState<(InitialUser & { id: string })[]>([
 		{ id: crypto.randomUUID(), Username: "", Password: "" },
 	]);
@@ -115,6 +129,39 @@ export function BrokerDialog({
 					options={versions(f.engine, docker)}
 					onChange={(v) => set("version", v)}
 				/>
+				{!docker && (
+					<SpaceBetween size="m">
+						{!!configurations.error && (
+							<Alert type="error">{configurations.error}</Alert>
+						)}
+						<Choice
+							label={
+								b
+									? "Configuration ID (empty retains current)"
+									: "Configuration ID (optional)"
+							}
+							value={f.configuration ?? ""}
+							options={[
+								"",
+								...(configurations.data ?? [])
+									.filter(
+										(c) =>
+											c.EngineType === f.engine &&
+											c.EngineVersion === f.version,
+									)
+									.map((c) => c.Id),
+							]}
+							onChange={(v) => set("configuration", v)}
+						/>
+						{!!f.configuration && (
+							<Field
+								label="Configuration revision"
+								value={f.revision ?? "1"}
+								onChange={(v) => set("revision", v)}
+							/>
+						)}
+					</SpaceBetween>
+				)}
 				<Choice
 					label="Instance type"
 					value={f.instance}
@@ -208,9 +255,10 @@ export function BrokerDialog({
 							multiline
 						/>
 						<Alert>
-							Initial credentials cannot be retrieved later. User changes and
-							configuration management are unavailable. Private networking
-							references must already exist in this account and Region.
+							Initial credentials cannot be retrieved later. User changes
+							require reboot; Docker user mutations and custom configurations
+							are unsupported. Private networking references must already exist
+							in this account and Region.
 						</Alert>
 						{users.map((u, i) => (
 							<SpaceBetween key={u.id} size="s">
@@ -228,7 +276,7 @@ export function BrokerDialog({
 										}
 									/>
 								</FormField>
-								{docker && f.engine === "ACTIVEMQ" && (
+								{f.engine === "ACTIVEMQ" && (
 									<SpaceBetween size="s">
 										<Checkbox
 											checked={u.ConsoleAccess ?? false}

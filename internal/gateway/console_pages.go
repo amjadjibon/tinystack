@@ -330,6 +330,9 @@ TagResource UntagResource GetTags
 `)},
 	"mq": {operations: strings.Fields(`
  CreateBroker DescribeBroker ListBrokers UpdateBroker DeleteBroker RebootBroker CreateTags ListTags DeleteTags
+ CreateUser DescribeUser ListUsers UpdateUser DeleteUser
+ CreateConfiguration DescribeConfiguration ListConfigurations UpdateConfiguration DescribeConfigurationRevision
+ ListConfigurationRevisions DeleteConfiguration
 `)},
 	// OpenSearch exposes the domain and tag operations the page uses; the engine's search API is not reachable here.
 	"opensearch": {operations: strings.Fields(`

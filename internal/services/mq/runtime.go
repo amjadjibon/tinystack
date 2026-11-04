@@ -276,10 +276,6 @@ func (s *Service) Reset(ctx context.Context) {
 }
 
 func (s *Service) RebootBroker(ctx context.Context, in *api.RebootBrokerRequest) (*api.RebootBrokerResponse, error) {
-	if s.runtime == nil {
-		return nil, invalid("RebootBroker requires mq.brokers=docker")
-	}
-
 	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
@@ -291,10 +287,14 @@ func (s *Service) RebootBroker(ctx context.Context, in *api.RebootBrokerRequest)
 			return readErr
 		}
 
-		if common.Value(r.Broker.BrokerState) != brokerRunning {
+		if s.runtime != nil && common.Value(r.Broker.BrokerState) != brokerRunning {
 			return invalid("Only a RUNNING broker can reboot")
 		}
 
+		if s.runtime == nil {
+			applyPending(r)
+			return save(tx, scope, r)
+		}
 		r.Broker.BrokerState = new(brokerRebooting)
 		r.Restarted = false
 		r.Broker.BrokerInstances = nil

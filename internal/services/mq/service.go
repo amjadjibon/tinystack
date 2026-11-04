@@ -55,40 +55,25 @@ func New(store storage.Store, network Network) *Service {
 }
 
 // ProtectCredentials applies local credential redaction: the pinned MQ model does not
-// mark its Password member sensitive, although CreateBroker accepts credentials.
-// Runtime-only user members stay excluded in records mode before generated validation.
+// mark Password members sensitive. Creation and user mutations contain credentials.
 //
 //nolint:gocritic // Startup decoration preserves the generated value descriptor contract.
-func ProtectCredentials(d catalog.Service, s *Service) catalog.Service {
+func ProtectCredentials(d catalog.Service) catalog.Service {
 	op := d.Operations["CreateBroker"]
 	op.Sensitive = true
-	invoke := op.Invoke
-	op.Invoke = func(ctx context.Context, input any) (any, error) {
-		in := input.(*api.CreateBrokerRequest)
-		if s.runtime == nil {
-			for _, user := range in.Users {
-				if user.ConsoleAccess != nil || user.Groups != nil {
-					return nil, unsupportedUserFields()
-				}
-			}
-		}
-
-		return invoke(ctx, input)
-	}
 
 	d.Operations["CreateBroker"] = op
+	for _, name := range []string{"CreateUser", "UpdateUser"} {
+		u := d.Operations[name]
+		u.Sensitive = true
+		d.Operations[name] = u
+	}
 	return d
-}
-
-func unsupportedUserFields() error {
-	err := awserror.New("NotImplemented", "ConsoleAccess and Groups require Docker mode")
-	err.StatusCode = 501
-	return err
 }
 
 func invalid(message string) error { return awserror.New("BadRequestException", message) }
 func missing() error {
-	e := awserror.New("NotFoundException", "Broker does not exist in this account and Region")
+	e := awserror.New("NotFoundException", "Resource does not exist in this account and Region")
 	e.StatusCode = 404
 	return e
 }
@@ -100,6 +85,7 @@ func conflict(message string) error {
 }
 
 type record struct {
+	UserDetails []api.DescribeUserResponse
 	Broker      *api.DescribeBrokerResponse
 	Credentials []api.User `json:",omitempty"`
 	// InitialUsernames also retains RabbitMQ's initial user metadata, which its
@@ -178,30 +164,40 @@ func (s *Service) CreateBroker(ctx context.Context, in *api.CreateBrokerRequest)
 		r.InitialUsernames = append(r.InitialUsernames, *u.Username)
 		if *in.EngineType == activeMQ {
 			b.Users = append(b.Users, api.UserSummary{Username: u.Username})
+			r.UserDetails = append(
+				r.UserDetails,
+				api.DescribeUserResponse{
+					Username:      u.Username,
+					ConsoleAccess: new(common.Value(u.ConsoleAccess)),
+					Groups:        u.Groups,
+				},
+			)
 		}
 	}
 
 	if s.runtime != nil {
 		r.Credentials = *common.Clone(new(in.Users))
 		b.BrokerState = new(brokerCreating)
-	} else {
-		for _, u := range in.Users {
-			if u.ConsoleAccess != nil || u.Groups != nil {
-				return nil, unsupportedUserFields()
-			}
-		}
 	}
 
 	id := "b-" + uuid.NewV4().String()
 	b.BrokerId = new(id)
 	b.BrokerArn = new(fmt.Sprintf("arn:aws:mq:%s:%s:broker:%s:%s", scope.Region, scope.AccountID, *b.BrokerName, id))
 	b.Created = new(time.Now().UTC())
+	for i := range r.UserDetails {
+		r.UserDetails[i].BrokerId = b.BrokerId
+	}
 	salt := make([]byte, 32)
 	if _, e = rand.Read(salt); e != nil {
 		return nil, e
 	}
 	var out *api.CreateBrokerResponse
 	e = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		if in.Configuration != nil {
+			if err := s.selectConfiguration(tx, scope, b, in.Configuration, false); err != nil {
+				return err
+			}
+		}
 		// Idempotency is tested before live network references: replay does not create
 		// a second broker and remains valid if an EC2 reference was later removed.
 		if in.CreatorRequestId != nil {

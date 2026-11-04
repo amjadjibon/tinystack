@@ -9,6 +9,11 @@ export type Broker = {
 	DeploymentMode: string;
 	HostInstanceType: string;
 	BrokerState?: string;
+	Configurations?: {
+		Current?: { Id: string; Revision: number };
+		Pending?: { Id: string; Revision: number };
+		History?: { Id: string; Revision: number }[];
+	};
 	Created?: string;
 	PendingEngineVersion?: string;
 	PubliclyAccessible?: boolean;
@@ -43,6 +48,8 @@ export function versions(engine: string, docker: boolean) {
 }
 export type BrokerForm = {
 	name: string;
+	configuration?: string;
+	revision?: string;
 	engine: string;
 	version: string;
 	instance: string;
@@ -68,6 +75,13 @@ export function brokerInput(
 	users: InitialUser[],
 	broker?: Broker,
 ): Record<string, unknown> {
+	if (
+		f.configuration &&
+		(!/^c-[a-f0-9-]+$/.test(f.configuration) ||
+			!Number.isSafeInteger(Number(f.revision)) ||
+			Number(f.revision) < 1)
+	)
+		throw new Error("Select a configuration revision.");
 	if (!versions(f.engine, docker).includes(f.version))
 		throw new Error("Choose a supported engine version.");
 	if (!["mq.t3.micro", "mq.m5.large"].includes(f.instance))
@@ -107,7 +121,14 @@ export function brokerInput(
 				`Provide ${count} distinct subnets for this deployment mode.`,
 			);
 	}
+	const currentConfiguration =
+		broker?.Configurations?.Pending ?? broker?.Configurations?.Current;
 	const input: Record<string, unknown> = {
+		...(f.configuration &&
+		(currentConfiguration?.Id !== f.configuration ||
+			currentConfiguration?.Revision !== Number(f.revision))
+			? { Configuration: { Id: f.configuration, Revision: Number(f.revision) } }
+			: {}),
 		EngineVersion: f.version,
 		HostInstanceType: f.instance,
 		AutoMinorVersionUpgrade: true,
@@ -164,5 +185,72 @@ export function brokerInput(
 		EncryptionOptions: { UseAwsOwnedKey: true },
 		Tags: stringMap(f.tags, "Tags"),
 		Users: users,
+	};
+}
+
+export type MQUser = {
+	Username: string;
+	ConsoleAccess?: boolean;
+	Groups?: string[];
+	PendingChange?: string;
+	Pending?: {
+		PendingChange?: string;
+		ConsoleAccess?: boolean;
+		Groups?: string[];
+	};
+};
+export type MQConfiguration = {
+	Id: string;
+	Name: string;
+	EngineType: string;
+	EngineVersion: string;
+	Created?: string;
+	LatestRevision: { Revision: number; Description?: string };
+};
+export function configurationData(text: string) {
+	if (!text.trim()) throw new Error("Configuration data is required.");
+	return btoa(
+		Array.from(new TextEncoder().encode(text), (c) =>
+			String.fromCharCode(c),
+		).join(""),
+	);
+}
+export function decodeConfiguration(data: string) {
+	return new TextDecoder().decode(
+		Uint8Array.from(atob(data), (c) => c.charCodeAt(0)),
+	);
+}
+export function userInput(
+	username: string,
+	password: string,
+	groups: string,
+	consoleAccess: boolean,
+	update = false,
+) {
+	if (!/^[A-Za-z0-9_.~-]{2,100}$/.test(username))
+		throw new Error("Invalid username.");
+	if (
+		(!update || password) &&
+		(!/^[\x20-\x7e]{12,250}$/.test(password) ||
+			/[,:=]/.test(password) ||
+			new Set(password).size < 4)
+	)
+		throw new Error(
+			"Passwords require 12–250 printable characters, four unique characters and no comma, colon or equals.",
+		);
+	const groupList = words(groups);
+	if (
+		groupList.length > 20 ||
+		new Set(groupList).size !== groupList.length ||
+		groupList.some((g) => !/^[A-Za-z0-9_.~-]{2,100}$/.test(g))
+	)
+		throw new Error(
+			"Provide at most 20 distinct groups, each 2–100 valid characters.",
+		);
+	return {
+		Username: username,
+		...(password ? { Password: password } : {}),
+		Groups: groupList,
+		ConsoleAccess: consoleAccess,
 	};
 }

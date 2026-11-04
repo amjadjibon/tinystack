@@ -30,11 +30,27 @@ func TestMQPinnedIdentityRESTBindingsAndSelection(t *testing.T) {
 		method, uri string
 		status      int
 	}{
-		"RebootBroker":   {"POST", "/v1/brokers/{BrokerId}/reboot", 200},
-		"CreateBroker":   {"POST", "/v1/brokers", 200},
-		"DescribeBroker": {"GET", "/v1/brokers/{BrokerId}", 200},
-		"ListBrokers":    {"GET", "/v1/brokers", 200},
-		"UpdateBroker":   {"PUT", "/v1/brokers/{BrokerId}", 200},
+		"CreateUser":            {"POST", "/v1/brokers/{BrokerId}/users/{Username}", 200},
+		"DescribeUser":          {"GET", "/v1/brokers/{BrokerId}/users/{Username}", 200},
+		"ListUsers":             {"GET", "/v1/brokers/{BrokerId}/users", 200},
+		"UpdateUser":            {"PUT", "/v1/brokers/{BrokerId}/users/{Username}", 200},
+		"DeleteUser":            {"DELETE", "/v1/brokers/{BrokerId}/users/{Username}", 200},
+		"CreateConfiguration":   {"POST", "/v1/configurations", 200},
+		"DescribeConfiguration": {"GET", "/v1/configurations/{ConfigurationId}", 200},
+		"ListConfigurations":    {"GET", "/v1/configurations", 200},
+		"UpdateConfiguration":   {"PUT", "/v1/configurations/{ConfigurationId}", 200},
+		"DescribeConfigurationRevision": {
+			"GET",
+			"/v1/configurations/{ConfigurationId}/revisions/{ConfigurationRevision}",
+			200,
+		},
+		"ListConfigurationRevisions": {"GET", "/v1/configurations/{ConfigurationId}/revisions", 200},
+		"DeleteConfiguration":        {"DELETE", "/v1/configurations/{ConfigurationId}", 200},
+		"RebootBroker":               {"POST", "/v1/brokers/{BrokerId}/reboot", 200},
+		"CreateBroker":               {"POST", "/v1/brokers", 200},
+		"DescribeBroker":             {"GET", "/v1/brokers/{BrokerId}", 200},
+		"ListBrokers":                {"GET", "/v1/brokers", 200},
+		"UpdateBroker":               {"PUT", "/v1/brokers/{BrokerId}", 200},
 		"DeleteBroker": {
 			"DELETE",
 			"/v1/brokers/{BrokerId}",
@@ -44,7 +60,7 @@ func TestMQPinnedIdentityRESTBindingsAndSelection(t *testing.T) {
 		"ListTags":   {"GET", "/v1/tags/{ResourceArn}", 200},
 		"DeleteTags": {"DELETE", "/v1/tags/{ResourceArn}", 204},
 	}
-	if len(p["mq"].Operations) != 9 {
+	if len(p["mq"].Operations) != len(expected) {
 		t.Fatal("unexpected surface")
 	}
 	for _, op := range p["mq"].Operations {

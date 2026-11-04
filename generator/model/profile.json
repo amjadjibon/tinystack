@@ -26238,7 +26238,19 @@
       "CreateTags",
       "ListTags",
       "DeleteTags",
-      "RebootBroker"
+      "RebootBroker",
+      "CreateUser",
+      "DescribeUser",
+      "ListUsers",
+      "UpdateUser",
+      "DeleteUser",
+      "CreateConfiguration",
+      "DescribeConfiguration",
+      "ListConfigurations",
+      "UpdateConfiguration",
+      "DescribeConfigurationRevision",
+      "ListConfigurationRevisions",
+      "DeleteConfiguration"
     ],
     "shapes": {
       "RebootBrokerRequest": [
@@ -26263,7 +26275,8 @@
         "SecurityGroups",
         "SubnetIds",
         "Tags",
-        "Users"
+        "Users",
+        "Configuration"
       ],
       "CreateBrokerResponse": [
         "BrokerArn",
@@ -26292,7 +26305,8 @@
         "Created",
         "BrokerState",
         "BrokerInstances",
-        "PendingEngineVersion"
+        "PendingEngineVersion",
+        "Configurations"
       ],
       "UpdateBrokerRequest": [
         "BrokerId",
@@ -26301,7 +26315,8 @@
         "HostInstanceType",
         "Logs",
         "MaintenanceWindowStartTime",
-        "SecurityGroups"
+        "SecurityGroups",
+        "Configuration"
       ],
       "UpdateBrokerResponse": [
         "BrokerId",
@@ -26310,7 +26325,8 @@
         "HostInstanceType",
         "Logs",
         "MaintenanceWindowStartTime",
-        "SecurityGroups"
+        "SecurityGroups",
+        "Configuration"
       ],
       "DeleteBrokerRequest": [
         "BrokerId"
@@ -26357,7 +26373,8 @@
         "Groups"
       ],
       "UserSummary": [
-        "Username"
+        "Username",
+        "PendingChange"
       ],
       "EncryptionOptions": [
         "UseAwsOwnedKey"
@@ -26374,6 +26391,151 @@
         "DayOfWeek",
         "TimeOfDay",
         "TimeZone"
+      ],
+      "CreateUserRequest": [
+        "BrokerId",
+        "ConsoleAccess",
+        "Groups",
+        "Password",
+        "Username"
+      ],
+      "CreateUserResponse": [],
+      "DescribeUserRequest": [
+        "BrokerId",
+        "Username"
+      ],
+      "DescribeUserResponse": [
+        "BrokerId",
+        "ConsoleAccess",
+        "Groups",
+        "Pending",
+        "Username"
+      ],
+      "ListUsersRequest": [
+        "BrokerId",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListUsersResponse": [
+        "BrokerId",
+        "MaxResults",
+        "NextToken",
+        "Users"
+      ],
+      "UpdateUserRequest": [
+        "BrokerId",
+        "ConsoleAccess",
+        "Groups",
+        "Password",
+        "Username"
+      ],
+      "UpdateUserResponse": [],
+      "DeleteUserRequest": [
+        "BrokerId",
+        "Username"
+      ],
+      "DeleteUserResponse": [],
+      "CreateConfigurationRequest": [
+        "EngineType",
+        "EngineVersion",
+        "Name"
+      ],
+      "CreateConfigurationResponse": [
+        "Arn",
+        "Created",
+        "Id",
+        "LatestRevision",
+        "Name"
+      ],
+      "DescribeConfigurationRequest": [
+        "ConfigurationId"
+      ],
+      "DescribeConfigurationResponse": [
+        "Arn",
+        "Created",
+        "Description",
+        "EngineType",
+        "EngineVersion",
+        "Id",
+        "LatestRevision",
+        "Name"
+      ],
+      "ListConfigurationsRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListConfigurationsResponse": [
+        "Configurations",
+        "MaxResults",
+        "NextToken"
+      ],
+      "UpdateConfigurationRequest": [
+        "ConfigurationId",
+        "Data",
+        "Description"
+      ],
+      "UpdateConfigurationResponse": [
+        "Arn",
+        "Created",
+        "Id",
+        "LatestRevision",
+        "Name"
+      ],
+      "DescribeConfigurationRevisionRequest": [
+        "ConfigurationId",
+        "ConfigurationRevision"
+      ],
+      "DescribeConfigurationRevisionResponse": [
+        "ConfigurationId",
+        "Created",
+        "Data",
+        "Description"
+      ],
+      "ListConfigurationRevisionsRequest": [
+        "ConfigurationId",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListConfigurationRevisionsResponse": [
+        "ConfigurationId",
+        "MaxResults",
+        "NextToken",
+        "Revisions"
+      ],
+      "DeleteConfigurationRequest": [
+        "ConfigurationId"
+      ],
+      "DeleteConfigurationResponse": [
+        "ConfigurationId"
+      ],
+      "Configuration": [
+        "Arn",
+        "Created",
+        "Description",
+        "EngineType",
+        "EngineVersion",
+        "Id",
+        "LatestRevision",
+        "Name"
+      ],
+      "ConfigurationId": [
+        "Id",
+        "Revision"
+      ],
+      "ConfigurationRevision": [
+        "Created",
+        "Description",
+        "Revision"
+      ],
+      "Configurations": [
+        "Current",
+        "History",
+        "Pending"
+      ],
+      "UserPendingChanges": [
+        "ConsoleAccess",
+        "Groups",
+        "PendingChange"
       ]
     }
   },

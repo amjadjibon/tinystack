@@ -42,6 +42,7 @@ func applyUpdate(b *api.DescribeBrokerResponse, in *api.UpdateBrokerRequest) {
 func updateOutput(b *api.DescribeBrokerResponse) *api.UpdateBrokerResponse {
 	return common.Clone(&api.UpdateBrokerResponse{
 		BrokerId:                b.BrokerId,
+		Configuration:           pendingConfiguration(b),
 		AutoMinorVersionUpgrade: b.AutoMinorVersionUpgrade, EngineVersion: b.EngineVersion,
 		HostInstanceType: b.HostInstanceType, Logs: &api.Logs{General: b.Logs.General, Audit: b.Logs.Audit},
 		MaintenanceWindowStartTime: b.MaintenanceWindowStartTime, SecurityGroups: b.SecurityGroups,
@@ -95,6 +96,11 @@ func (s *Service) update(ctx context.Context, in *api.UpdateBrokerRequest, owned
 			b.Tags = restore.Tags
 		} else {
 			applyUpdate(b, in)
+			if in.Configuration != nil {
+				if err := s.selectConfiguration(tx, scope, b, in.Configuration, true); err != nil {
+					return err
+				}
+			}
 			if *before.EngineType == activeMQ && *before.EngineVersion == "5.19" && *b.EngineVersion == "5.18" {
 				return invalid("Engine version downgrades are unsupported")
 			}

@@ -13,13 +13,14 @@ import (
 )
 
 var (
-	namePattern     = regexp.MustCompile(`^[A-Za-z0-9_-]{1,50}$`)
-	idPattern       = regexp.MustCompile(`^b-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
-	usernamePattern = regexp.MustCompile(`^[A-Za-z0-9_.~\-]{2,100}$`)
-	tokenPattern    = regexp.MustCompile(`^[A-Za-z0-9_-]{1,128}$`)
-	timePattern     = regexp.MustCompile(`^(?:[01]\d|2[0-3]):[0-5]\d$`)
-	subnetPattern   = regexp.MustCompile(`^subnet-[0-9a-f]{8}(?:[0-9a-f]{9})?$`)
-	groupPattern    = regexp.MustCompile(`^sg-[0-9a-f]{8}(?:[0-9a-f]{9})?$`)
+	configurationNamePattern = regexp.MustCompile(`^[A-Za-z0-9_.~\-]{1,150}$`)
+	namePattern              = regexp.MustCompile(`^[A-Za-z0-9_-]{1,50}$`)
+	idPattern                = regexp.MustCompile(`^b-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+	usernamePattern          = regexp.MustCompile(`^[A-Za-z0-9_.~\-]{2,100}$`)
+	tokenPattern             = regexp.MustCompile(`^[A-Za-z0-9_-]{1,128}$`)
+	timePattern              = regexp.MustCompile(`^(?:[01]\d|2[0-3]):[0-5]\d$`)
+	subnetPattern            = regexp.MustCompile(`^subnet-[0-9a-f]{8}(?:[0-9a-f]{9})?$`)
+	groupPattern             = regexp.MustCompile(`^sg-[0-9a-f]{8}(?:[0-9a-f]{9})?$`)
 )
 
 func defaultWindow() *api.WeeklyStartTime {
@@ -131,24 +132,17 @@ func validateCreate(in *api.CreateBrokerRequest, runtime bool) error {
 			return invalid("RabbitMQ administrator does not support ConsoleAccess or Groups inputs")
 		}
 
+		if err := validateUser(common.Value(u.Username), u.Password, u.Groups); err != nil {
+			return err
+		}
 		name := common.Value(u.Username)
 		if !usernamePattern.MatchString(name) || seen[name] ||
 			common.Value(in.EngineType) == rabbitMQ && (name == "guest" || strings.Contains(name, "~")) {
 			return invalid("Invalid or duplicate initial username")
 		}
 		seen[name] = true
-		pw := common.Value(u.Password)
-		unique := map[byte]bool{}
-		for i := range len(pw) {
-			if pw[i] < 32 || pw[i] > 126 {
-				return invalid("Initial password requires printable ASCII characters")
-			}
-			unique[pw[i]] = true
-		}
-		if len(pw) < 12 || len(pw) > 250 || len(unique) < 4 || strings.ContainsAny(pw, ",:=") {
-			return invalid(
-				"Initial password requires 12-250 printable characters, four unique characters, and excludes comma/colon/equals",
-			)
+		if u.Password == nil {
+			return invalid("Initial password is required")
 		}
 	}
 	b := &api.DescribeBrokerResponse{

@@ -80,7 +80,7 @@ export function Details({
 			))}
 			{b.EngineType === "ACTIVEMQ" && (
 				<Rows
-					title="Initial users"
+					title="Users"
 					items={b.Users ?? []}
 					emptyText="Users are supplied when creating a broker."
 					columns={[
@@ -88,10 +88,26 @@ export function Details({
 					]}
 				/>
 			)}
-			<Alert>
-				User create, update and delete, pending user changes, and configuration
-				revisions are not supported by this server.
-			</Alert>
+			<div>
+				Current configuration:{" "}
+				{b.Configurations?.Current
+					? `${b.Configurations.Current.Id} revision ${b.Configurations.Current.Revision}`
+					: "-"}
+			</div>
+			{!!b.Configurations?.Pending && (
+				<Alert>
+					Pending configuration: {b.Configurations.Pending.Id} revision{" "}
+					{b.Configurations.Pending.Revision}. Reboot to apply.
+				</Alert>
+			)}
+			{!!b.Configurations?.History?.length && (
+				<div>
+					Configuration history:{" "}
+					{b.Configurations.History.map(
+						(c) => `${c.Id} revision ${c.Revision}`,
+					).join(", ")}
+				</div>
+			)}
 		</SpaceBetween>
 	);
 }

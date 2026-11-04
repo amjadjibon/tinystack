@@ -60,11 +60,15 @@ func TestConsoleMQLifecycle(t *testing.T) {
 		t.Fatal(b)
 	}
 
-	consoleResponse(
-		t, srv, consoleLambdaRequest(t, srv, "mq", "RebootBroker", account, region, id), http.StatusBadRequest,
-	)
+	call("RebootBroker", id)
+	if len(call("ListUsers", id)["Users"].([]any)) != 1 {
+		t.Fatal("missing broker users")
+	}
 	denied := consoleResponse(
-		t, srv, consoleLambdaRequest(t, srv, "mq", "ListUsers", account, region, id), http.StatusBadRequest,
+		t,
+		srv,
+		consoleLambdaRequest(t, srv, "mq", "DescribeBrokerEngineTypes", account, region, id),
+		http.StatusBadRequest,
 	)
 	if denied["code"] != "UnknownOperationException" {
 		t.Fatal(denied)

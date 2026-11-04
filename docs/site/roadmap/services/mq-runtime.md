@@ -6,12 +6,12 @@ The scope below is a design candidate, without an assigned version or delivery d
 
 ## First useful slice
 
-Broker records and tags are implemented. Docker messaging, endpoints, readiness, reboot and cleanup are implemented; configuration/user APIs remain future work.
+Records-mode configuration revisions, broker associations and pending ActiveMQ users are implemented. Docker messaging remains available; Docker user mutations and custom configurations fail explicitly.
 
 ## Proposed scope
 
-- [ ] Configuration CRUD and broker associations
-- [ ] ActiveMQ user CRUD and readable console/group metadata
+- [x] Configuration CRUD and broker associations
+- [x] ActiveMQ user CRUD and readable console/group metadata
 - [ ] Engine/version/instance discovery extensions
 - [ ] Authentication, LDAP/OAuth, replication and resource sharing
 - [x] Real broker runtime, endpoints, readiness, reboot and cleanup

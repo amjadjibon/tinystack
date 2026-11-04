@@ -6,7 +6,9 @@ import { ConsoleLayout } from "#/components/Console";
 import { ConsoleTags } from "#/components/ConsoleTags";
 import { Action, Buttons, Rows } from "#/components/containers/Controls";
 import { BrokerDialog } from "#/components/mq/BrokerDialog";
+import { Configurations } from "#/components/mq/Configurations";
 import { Details } from "#/components/mq/Details";
+import { Users } from "#/components/mq/Users";
 import { isoTime } from "#/lib/format";
 import { mqCall, mqList } from "#/lib/mq";
 import { type Broker, type MQScope, mqHref, pending } from "#/lib/mqHelpers";
@@ -20,7 +22,9 @@ export const Route = createFileRoute("/services/mq")({
 		account: String(s.account ?? ""),
 		region: String(s.region ?? ""),
 		broker: String(s.broker ?? ""),
-		tab: s.tab === "tags" ? "tags" : "overview",
+		tab: ["tags", "users", "configurations"].includes(String(s.tab))
+			? String(s.tab)
+			: "overview",
 	}),
 	component: MQPage,
 });
@@ -42,6 +46,11 @@ function MQPage() {
 			activeHref={home}
 			navigationItems={[
 				{ type: "link", text: "Brokers", href: home },
+				{
+					type: "link",
+					text: "Configurations",
+					href: mqHref(scope, "", "configurations"),
+				},
 				{ type: "link", text: "All services", href: "/services" },
 			]}
 			breadcrumbs={[
@@ -133,7 +142,9 @@ function Workspace({
 	return (
 		<SpaceBetween size="m">
 			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
-			{!name ? (
+			{!name && tab === "configurations" ? (
+				<Configurations scope={scope} docker={docker} enabled={enabled} />
+			) : !name ? (
 				<Rows
 					title="Brokers"
 					items={poll.data ?? []}
@@ -190,7 +201,7 @@ function Workspace({
 							Edit broker
 						</Action>
 						<Action
-							disabled={!enabled || !docker || c.BrokerState !== "RUNNING"}
+							disabled={!enabled || (docker && c.BrokerState !== "RUNNING")}
 							onClick={() => setDialog("reboot")}
 						>
 							Reboot broker
@@ -208,6 +219,31 @@ function Workspace({
 							navigate({ href: mqHref(scope, name, detail.activeTabId) })
 						}
 						tabs={[
+							{
+								id: "users",
+								label: "Users",
+								content:
+									tab === "users" ? (
+										<Users
+											scope={scope}
+											broker={c}
+											docker={docker}
+											enabled={enabled}
+										/>
+									) : null,
+							},
+							{
+								id: "configurations",
+								label: "Configurations",
+								content:
+									tab === "configurations" ? (
+										<Configurations
+											scope={scope}
+											docker={docker}
+											enabled={enabled}
+										/>
+									) : null,
+							},
 							{
 								id: "overview",
 								label: "Overview",

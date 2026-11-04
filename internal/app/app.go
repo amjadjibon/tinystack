@@ -765,7 +765,7 @@ func build(
 		bedrockagentapi.Descriptor(agents),
 		bedrockagentruntimeapi.Descriptor(agentRuntime),
 		bedrockruntimeapi.Descriptor(inference),
-		mq.ProtectCredentials(mqapi.Descriptor(brokers), brokers),
+		mq.ProtectCredentials(mqapi.Descriptor(brokers)),
 		kafkaapi.Descriptor(kafkaClusters),
 		mwaaapi.Descriptor(airflowEnvironments),
 		codedeployapi.Descriptor(codeDeployRecords),

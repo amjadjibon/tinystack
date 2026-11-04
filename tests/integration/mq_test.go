@@ -290,10 +290,8 @@ func TestMQWirePinnedRoutesCaseNestedExclusionsAndErrors(t *testing.T) {
 		t.Fatal("rejected wire downgrade changed exact metadata", status)
 	}
 	for _, extra := range []string{
-		`"authenticationStrategy":"SIMPLE"`, `"configuration":null`, `"ldapServerMetadata":{}`,
+		`"authenticationStrategy":"SIMPLE"`, `"ldapServerMetadata":{}`,
 		`"storageType":""`, `"storageSize":0`, `"dataReplicationMode":"NONE"`, `"dataReplicationPrimaryBrokerArn":""`,
-		`"users":[{"username":"admin","password":"sample-valid-password","consoleAccess":false}]`,
-		`"users":[{"username":"admin","password":"sample-valid-password","groups":[]}]`,
 		`"users":[{"username":"admin","password":"sample-valid-password","replicationUser":null}]`,
 		`"encryptionOptions":{"useAwsOwnedKey":true,"kmsKeyId":""}`,
 		`"logs":{"general":false,"pending":null}`,
@@ -304,7 +302,7 @@ func TestMQWirePinnedRoutesCaseNestedExclusionsAndErrors(t *testing.T) {
 		}
 	}
 	for _, bad := range []string{
-		`{"authenticationStrategy":null}`, `{"configuration":{}}`, `{"ldapServerMetadata":null}`,
+		`{"authenticationStrategy":null}`, `{"ldapServerMetadata":null}`,
 		`{"resourceShareArns":[]}`, `{"dataReplicationMode":""}`, `{"storageSize":0}`, `{"brokerName":"changed"}`,
 		`{"logs":{"audit":false}}`, `{"logs":{"general":false,"generalLogGroup":""}}`,
 		`{"maintenanceWindowStartTime":{"dayOfWeek":"MONDAY","timeOfDay":"00:00","unexpected":null}}`,
@@ -354,7 +352,6 @@ func TestMQWirePinnedRoutesCaseNestedExclusionsAndErrors(t *testing.T) {
 		t.Fatal("tag removal")
 	}
 	for _, route := range []struct{ method, path string }{
-		{"POST", "/v1/brokers/" + id + "/reboot"},
 		{"PATCH", "/v1/brokers/" + id},
 		{"POST", "/v1/configurations"},
 		{"GET", "/v1/brokers/" + id + "/users"},
@@ -600,4 +597,364 @@ func TestMQSDKPrivateNetworkFalseFlagRetentionAndScope(t *testing.T) {
 	if !reflect.DeepEqual(mqMetadata(b), mqMetadata(mqBroker(t, c, created.BrokerId))) {
 		t.Fatal("invalid private update changed metadata")
 	}
+}
+
+func TestMQUsersAndConfigurations(t *testing.T) {
+	s := server(t)
+	ctx := context.Background()
+	c := mqClient(s, "test", "us-east-1")
+	config, err := c.CreateConfiguration(
+		ctx,
+		&sdk.CreateConfigurationInput{
+			Name:          new("custom.config~" + strings.Repeat("a", 100)),
+			EngineType:    types.EngineTypeActivemq,
+			EngineVersion: new("5.18"),
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	described, err := c.DescribeConfiguration(ctx, &sdk.DescribeConfigurationInput{ConfigurationId: config.Id})
+	if err != nil || *described.LatestRevision.Revision != 1 {
+		t.Fatal(described, err)
+	}
+	listed, err := c.ListConfigurations(ctx, &sdk.ListConfigurationsInput{})
+	if err != nil || len(listed.Configurations) != 1 {
+		t.Fatal(listed, err)
+	}
+	data := "PGJyb2tlciB4bWxucz0iaHR0cDovL2FjdGl2ZW1xLmFwYWNoZS5vcmcvc2NoZW1hL2NvcmUiLz4="
+	updated, err := c.UpdateConfiguration(
+		ctx,
+		&sdk.UpdateConfigurationInput{ConfigurationId: config.Id, Data: new(data), Description: new("custom XML")},
+	)
+	if err != nil || *updated.LatestRevision.Revision != 2 {
+		t.Fatal(updated, err)
+	}
+	rev, err := c.DescribeConfigurationRevision(
+		ctx,
+		&sdk.DescribeConfigurationRevisionInput{ConfigurationId: config.Id, ConfigurationRevision: new("2")},
+	)
+	if err != nil || *rev.Data != data {
+		t.Fatal(rev, err)
+	}
+	revisions, err := c.ListConfigurationRevisions(
+		ctx,
+		&sdk.ListConfigurationRevisionsInput{ConfigurationId: config.Id},
+	)
+	if err != nil || len(revisions.Revisions) != 2 {
+		t.Fatal(revisions, err)
+	}
+	_, err = c.UpdateConfiguration(ctx, &sdk.UpdateConfigurationInput{ConfigurationId: config.Id, Data: new("invalid")})
+	mqStatus(t, err, "BadRequestException", 400)
+	in := mqInput()
+	in.Configuration = &types.ConfigurationId{Id: config.Id, Revision: new(int32(1))}
+	b, err := c.CreateBroker(ctx, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.UpdateBroker(
+		ctx,
+		&sdk.UpdateBrokerInput{
+			BrokerId:      b.BrokerId,
+			Configuration: &types.ConfigurationId{Id: config.Id, Revision: new(int32(2))},
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := mqBroker(t, c, b.BrokerId)
+	if *before.Configurations.Current.Revision != 1 || *before.Configurations.Pending.Revision != 2 {
+		t.Fatal(before.Configurations)
+	}
+	_, err = c.CreateUser(
+		ctx,
+		&sdk.CreateUserInput{
+			BrokerId:      b.BrokerId,
+			Username:      new("second"),
+			Password:      new("valid-password-123"),
+			ConsoleAccess: new(true),
+			Groups:        []string{"admins"},
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	u, err := c.DescribeUser(ctx, &sdk.DescribeUserInput{BrokerId: b.BrokerId, Username: new("second")})
+	if err != nil || u.Pending == nil || u.Pending.PendingChange != types.ChangeTypeCreate || u.ConsoleAccess != nil {
+		t.Fatal(u, err)
+	}
+	users, err := c.ListUsers(ctx, &sdk.ListUsersInput{BrokerId: b.BrokerId})
+	if err != nil || len(users.Users) != 2 {
+		t.Fatal(users, err)
+	}
+	_, err = c.RebootBroker(ctx, &sdk.RebootBrokerInput{BrokerId: b.BrokerId})
+	if err != nil {
+		t.Fatal(err)
+	}
+	after := mqBroker(t, c, b.BrokerId)
+	if *after.Configurations.Current.Revision != 2 || after.Configurations.Pending != nil ||
+		len(after.Configurations.History) != 1 {
+		t.Fatal(after.Configurations)
+	}
+	u, err = c.DescribeUser(ctx, &sdk.DescribeUserInput{BrokerId: b.BrokerId, Username: new("second")})
+	if err != nil || u.Pending != nil || !*u.ConsoleAccess {
+		t.Fatal(u, err)
+	}
+	_, err = c.UpdateUser(
+		ctx,
+		&sdk.UpdateUserInput{
+			BrokerId:      b.BrokerId,
+			Username:      new("second"),
+			ConsoleAccess: new(false),
+			Groups:        []string{},
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	u, err = c.DescribeUser(ctx, &sdk.DescribeUserInput{BrokerId: b.BrokerId, Username: new("second")})
+	if err != nil || u.Pending.PendingChange != types.ChangeTypeUpdate || !*u.ConsoleAccess ||
+		*u.Pending.ConsoleAccess {
+		t.Fatal(u, err)
+	}
+	_, err = c.RebootBroker(ctx, &sdk.RebootBrokerInput{BrokerId: b.BrokerId})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.DeleteUser(ctx, &sdk.DeleteUserInput{BrokerId: b.BrokerId, Username: new("second")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	users, err = c.ListUsers(ctx, &sdk.ListUsersInput{BrokerId: b.BrokerId})
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, user := range users.Users {
+		if *user.Username == "second" {
+			found = user.PendingChange == types.ChangeTypeDelete
+		}
+	}
+	if !found {
+		t.Fatal(users)
+	}
+	_, err = c.RebootBroker(ctx, &sdk.RebootBrokerInput{BrokerId: b.BrokerId})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.DescribeUser(ctx, &sdk.DescribeUserInput{BrokerId: b.BrokerId, Username: new("second")})
+	mqStatus(t, err, "NotFoundException", 404)
+	for _, pw := range []string{
+		"short", "aaaaaaaaaaaa", "has:colon-password", "has,comma-password", "has=equals-password",
+	} {
+		_, err = c.CreateUser(
+			ctx,
+			&sdk.CreateUserInput{BrokerId: b.BrokerId, Username: new("invalid"), Password: new(pw)},
+		)
+		mqStatus(t, err, "BadRequestException", 400)
+	}
+	for _, other := range []*sdk.Client{mqClient(s, "team-b", "us-east-1"), mqClient(s, "test", "us-west-2")} {
+		_, err = other.DescribeConfiguration(ctx, &sdk.DescribeConfigurationInput{ConfigurationId: config.Id})
+		mqStatus(t, err, "NotFoundException", 404)
+		_, err = other.ListUsers(ctx, &sdk.ListUsersInput{BrokerId: b.BrokerId})
+		mqStatus(t, err, "NotFoundException", 404)
+	}
+	_, err = c.DeleteConfiguration(ctx, &sdk.DeleteConfigurationInput{ConfigurationId: config.Id})
+	mqStatus(t, err, "ConflictException", 409)
+	_, err = c.DeleteBroker(ctx, &sdk.DeleteBrokerInput{BrokerId: b.BrokerId})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.DeleteConfiguration(ctx, &sdk.DeleteConfigurationInput{ConfigurationId: config.Id})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.DescribeConfiguration(ctx, &sdk.DescribeConfigurationInput{ConfigurationId: config.Id})
+	mqStatus(t, err, "NotFoundException", 404)
+	rabbit := mqInput()
+	rabbit.BrokerName = new("rabbit-users")
+	rabbit.CreatorRequestId = nil
+	rabbit.EngineType = types.EngineTypeRabbitmq
+	rabbit.EngineVersion = new("3.13")
+	rabbit.Logs.Audit = nil
+	rb, err := c.CreateBroker(ctx, rabbit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.ListUsers(ctx, &sdk.ListUsersInput{BrokerId: rb.BrokerId})
+	mqStatus(t, err, "BadRequestException", 400)
+	_, err = c.DescribeUser(ctx, &sdk.DescribeUserInput{BrokerId: rb.BrokerId, Username: new("admin")})
+	mqStatus(t, err, "BadRequestException", 400)
+	_, err = c.CreateUser(
+		ctx,
+		&sdk.CreateUserInput{BrokerId: rb.BrokerId, Username: new("newuser"), Password: new("valid-password-123")},
+	)
+	mqStatus(t, err, "BadRequestException", 400)
+	_, err = c.UpdateUser(
+		ctx,
+		&sdk.UpdateUserInput{BrokerId: rb.BrokerId, Username: new("admin"), Password: new("valid-password-123")},
+	)
+	mqStatus(t, err, "BadRequestException", 400)
+	_, err = c.DeleteUser(ctx, &sdk.DeleteUserInput{BrokerId: rb.BrokerId, Username: new("admin")})
+	mqStatus(t, err, "BadRequestException", 400)
+}
+
+func TestMQUserAndConfigurationPagination(t *testing.T) {
+	s := server(t)
+	ctx := context.Background()
+	c := mqClient(s, "test", "us-east-1")
+	b, err := c.CreateBroker(ctx, mqInput())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range 6 {
+		_, err = c.CreateUser(
+			ctx,
+			&sdk.CreateUserInput{
+				BrokerId: b.BrokerId,
+				Username: new(fmt.Sprintf("user-%d", i)),
+				Password: new("valid-password-123"),
+			},
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = c.CreateConfiguration(
+			ctx,
+			&sdk.CreateConfigurationInput{
+				Name:          new(fmt.Sprintf("config-%d", i)),
+				EngineType:    types.EngineTypeActivemq,
+				EngineVersion: new("5.18"),
+			},
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	first, err := c.ListUsers(ctx, &sdk.ListUsersInput{BrokerId: b.BrokerId, MaxResults: new(int32(5))})
+	if err != nil || len(first.Users) != 5 || first.NextToken == nil {
+		t.Fatal(first, err)
+	}
+	last, err := c.ListUsers(ctx, &sdk.ListUsersInput{BrokerId: b.BrokerId, NextToken: first.NextToken})
+	if err != nil || len(last.Users) != 2 || last.NextToken != nil {
+		t.Fatal(last, err)
+	}
+	configs, err := c.ListConfigurations(ctx, &sdk.ListConfigurationsInput{MaxResults: new(int32(5))})
+	if err != nil || len(configs.Configurations) != 5 || configs.NextToken == nil {
+		t.Fatal(configs, err)
+	}
+	tail, err := c.ListConfigurations(ctx, &sdk.ListConfigurationsInput{NextToken: configs.NextToken})
+	if err != nil || len(tail.Configurations) != 1 || tail.NextToken != nil {
+		t.Fatal(tail, err)
+	}
+	_, err = c.ListConfigurations(ctx, &sdk.ListConfigurationsInput{NextToken: first.NextToken})
+	mqStatus(t, err, "BadRequestException", 400)
+	id := configs.Configurations[0].Id
+	for range 5 {
+		_, err = c.UpdateConfiguration(
+			ctx,
+			&sdk.UpdateConfigurationInput{ConfigurationId: id, Data: new("PGJyb2tlci8+")},
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	revisions, err := c.ListConfigurationRevisions(
+		ctx,
+		&sdk.ListConfigurationRevisionsInput{ConfigurationId: id, MaxResults: new(int32(5))},
+	)
+	if err != nil || len(revisions.Revisions) != 5 || revisions.NextToken == nil {
+		t.Fatal(revisions, err)
+	}
+	end, err := c.ListConfigurationRevisions(
+		ctx,
+		&sdk.ListConfigurationRevisionsInput{ConfigurationId: id, NextToken: revisions.NextToken},
+	)
+	if err != nil || len(end.Revisions) != 1 || end.NextToken != nil {
+		t.Fatal(end, err)
+	}
+}
+
+func TestMQConfigurationValidationAndRabbitData(t *testing.T) {
+	s := server(t)
+	ctx := context.Background()
+	c := mqClient(s, "test", "us-east-1")
+	config, err := c.CreateConfiguration(
+		ctx,
+		&sdk.CreateConfigurationInput{
+			Name:          new("rabbit.conf"),
+			EngineType:    types.EngineTypeRabbitmq,
+			EngineVersion: new("3.13"),
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data := "IyBSYWJiaXRNUQpjb25zdW1lcl90aW1lb3V0ID0gMTgwMDAwMAo="
+	_, err = c.UpdateConfiguration(ctx, &sdk.UpdateConfigurationInput{ConfigurationId: config.Id, Data: new(data)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := c.CreateBroker(ctx, mqInput())
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.UpdateBroker(
+		ctx,
+		&sdk.UpdateBrokerInput{
+			BrokerId:      b.BrokerId,
+			Configuration: &types.ConfigurationId{Id: config.Id, Revision: new(int32(1))},
+		},
+	)
+	mqStatus(t, err, "BadRequestException", 400)
+	active, err := c.CreateConfiguration(
+		ctx,
+		&sdk.CreateConfigurationInput{
+			Name:          new("xml"),
+			EngineType:    types.EngineTypeActivemq,
+			EngineVersion: new("5.18"),
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, data := range []string{"YmFk", "PGJyb2tlcj4=", "PG90aGVyLz4="} {
+		_, err = c.UpdateConfiguration(ctx, &sdk.UpdateConfigurationInput{ConfigurationId: active.Id, Data: new(data)})
+		mqStatus(t, err, "BadRequestException", 400)
+	}
+	_, err = c.UpdateBroker(
+		ctx,
+		&sdk.UpdateBrokerInput{
+			BrokerId:      b.BrokerId,
+			Configuration: &types.ConfigurationId{Id: active.Id, Revision: new(int32(2))},
+		},
+	)
+	mqStatus(t, err, "BadRequestException", 400)
+	_, err = c.DescribeConfigurationRevision(
+		ctx,
+		&sdk.DescribeConfigurationRevisionInput{ConfigurationId: active.Id, ConfigurationRevision: new("2")},
+	)
+	mqStatus(t, err, "NotFoundException", 404)
+	for _, name := range []string{"a", "has space", "has:colon"} {
+		_, err = c.CreateUser(
+			ctx,
+			&sdk.CreateUserInput{BrokerId: b.BrokerId, Username: new(name), Password: new("valid-password-123")},
+		)
+		mqStatus(t, err, "BadRequestException", 400)
+	}
+	_, err = c.CreateUser(
+		ctx,
+		&sdk.CreateUserInput{
+			BrokerId: b.BrokerId,
+			Username: new("newuser"),
+			Password: new("valid-password-123"),
+			Groups:   []string{"a"},
+		},
+	)
+	mqStatus(t, err, "BadRequestException", 400)
+	_, err = c.UpdateUser(
+		ctx,
+		&sdk.UpdateUserInput{BrokerId: b.BrokerId, Username: new("admin"), ReplicationUser: new(false)},
+	)
+	mqStatus(t, err, "NotImplemented", 501)
 }

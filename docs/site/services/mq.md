@@ -13,7 +13,7 @@ Store scoped broker configuration and tags, with opt-in local RabbitMQ and Activ
 | API version | `2017-11-27` |
 | Scope | Account and region |
 | Execution | Records by default; opt-in Docker RabbitMQ and ActiveMQ messaging |
-| Selected operations | 9 of 25 in the pinned model |
+| Selected operations | 21 of 25 in the pinned model |
 
 ## Implemented behavior
 
@@ -24,10 +24,11 @@ See the [implemented feature catalogue](catalogue.md#amazon-mq) for this service
 - Docker mode returns one actual BrokerInstances entry, including multi-AZ deployment metadata; no engine TLS, replication or failover. Protocol and console URLs use plain loopback ports.
 - No provisioning, ENIs, replication, IAM/KMS enforcement, log delivery or maintenance scheduling; records-mode metadata updates/deletes take effect immediately. Docker forward ActiveMQ upgrades and image aliases apply on reboot; RabbitMQ minor/major upgrades require recreation.
 - Finite versions/hosts/deployment and UTC-only maintenance windows; engineVersion is required explicitly rather than inventing a latest version. RabbitMQ micro is historical metadata compatibility only, unavailable for creation or m5 downgrade; CF compensation may restore captured legacy metadata. Public brokers exclude explicit networking; private brokers require explicit references and three subnets for RabbitMQ clusters locally.
-- User CRUD, configurations, advanced authentication/LDAP/OAuth/replication/storage/resource-sharing fields and discovery APIs are excluded, including false/null/empty inputs.
-- Records mode discards initial passwords; Docker mode retains credentials privately for recovery and supports ActiveMQ console/group creation metadata. User CRUD and replication flags remain excluded. RabbitMQ UserSummary is omitted.
+- Advanced authentication/LDAP/OAuth/replication/storage/resource-sharing fields and discovery APIs are excluded, including false/null/empty inputs.
+- Records mode discards initial passwords; Docker mode retains credentials privately for recovery and supports ActiveMQ console/group creation metadata. User mutations and custom configurations explicitly rejected in Docker mode; replication flags remain excluded. RabbitMQ UserSummary is omitted.
 - CloudFormation in-place user mutations and removal of explicit encryption options are rejected; original CF templates/properties retain literal inputs for replacement/rollback, while MQ descriptions, inventory, events, snapshots, diagnostics and literal MQ GetTemplate password properties are redacted.
 - Tokens stay reserved indefinitely locally, with conflicting reuse after deletion; no AWS token-expiry parity. No Terraform running-state waiter. The [MQ guide](../guides/mq.md) lists every selected field/default/error/boundary and executable lifecycle.
+- Configuration data receives structural XML/Cuttlefish validation only; AWS engine-specific schema validation and sanitization are not emulated. Configuration tags and authentication-strategy inputs remain explicitly excluded; configuration engine version is required locally.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -42,37 +43,37 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | Operation | HTTP binding |
 | --- | --- |
 | `CreateBroker` | `POST /v1/brokers` |
+| `CreateConfiguration` | `POST /v1/configurations` |
 | `CreateTags` | `POST /v1/tags/{ResourceArn}` |
+| `CreateUser` | `POST /v1/brokers/{BrokerId}/users/{Username}` |
 | `DeleteBroker` | `DELETE /v1/brokers/{BrokerId}` |
+| `DeleteConfiguration` | `DELETE /v1/configurations/{ConfigurationId}` |
 | `DeleteTags` | `DELETE /v1/tags/{ResourceArn}` |
+| `DeleteUser` | `DELETE /v1/brokers/{BrokerId}/users/{Username}` |
 | `DescribeBroker` | `GET /v1/brokers/{BrokerId}` |
+| `DescribeConfiguration` | `GET /v1/configurations/{ConfigurationId}` |
+| `DescribeConfigurationRevision` | `GET /v1/configurations/{ConfigurationId}/revisions/{ConfigurationRevision}` |
+| `DescribeUser` | `GET /v1/brokers/{BrokerId}/users/{Username}` |
 | `ListBrokers` | `GET /v1/brokers` |
+| `ListConfigurationRevisions` | `GET /v1/configurations/{ConfigurationId}/revisions` |
+| `ListConfigurations` | `GET /v1/configurations` |
 | `ListTags` | `GET /v1/tags/{ResourceArn}` |
+| `ListUsers` | `GET /v1/brokers/{BrokerId}/users` |
 | `RebootBroker` | `POST /v1/brokers/{BrokerId}/reboot` |
 | `UpdateBroker` | `PUT /v1/brokers/{BrokerId}` |
+| `UpdateConfiguration` | `PUT /v1/configurations/{ConfigurationId}` |
+| `UpdateUser` | `PUT /v1/brokers/{BrokerId}/users/{Username}` |
 
 ## Operations not implemented
 
-??? info "16 modeled operations outside the implementation"
+??? info "4 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
-    - `CreateConfiguration`
-    - `CreateUser`
-    - `DeleteConfiguration`
-    - `DeleteUser`
     - `DescribeBrokerEngineTypes`
     - `DescribeBrokerInstanceOptions`
-    - `DescribeConfiguration`
-    - `DescribeConfigurationRevision`
     - `DescribeSharedResources`
-    - `DescribeUser`
-    - `ListConfigurationRevisions`
-    - `ListConfigurations`
-    - `ListUsers`
     - `Promote`
-    - `UpdateConfiguration`
-    - `UpdateUser`
 
 ## Source and examples
 

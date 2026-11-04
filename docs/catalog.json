@@ -1820,7 +1820,7 @@
       "category": "Application Integration",
       "summary": "Store scoped broker configuration and tags, with opt-in local RabbitMQ and ActiveMQ Docker brokers.",
       "features": [
-        "Nine pinned REST JSON broker/tag APIs: CreateBroker, DescribeBroker, ListBrokers, UpdateBroker, DeleteBroker, CreateTags, ListTags, DeleteTags and RebootBroker",
+        "Twenty-one pinned REST JSON operations covering brokers, users, configurations, revisions and tags",
         "Stable commercial scoped broker IDs/ARNs and creation metadata; exact SQLite restart and offline fixture export/import, with shared reset of broker and idempotency records",
         "Records mode has finite ActiveMQ 5.18/5.19 micro/large and RabbitMQ 3.13 mq.m5.large creation combinations; engine-specific deployment and RabbitMQ micro-downgrade restrictions; validated write-only credentials; Docker mode retains private credentials for recovery",
         "Explicit private EC2 subnet/security-group metadata lookup with scoped existence, counts, one VPC and distinct Availability Zones; no network allocation",
@@ -1828,16 +1828,20 @@
         "Atomic merged tags, ARN-scoped tag APIs and Resource Groups Tagging API integration; deterministic 20-default/5-100-bound pages with scope/API-bound deletion-resilient cursors",
         "CloudFormation AWS::AmazonMQ::Broker Ref ID/GetAtt Arn, owned/external tags and configuration in one atomic update, live-state rollback and create-first replacement with collision preservation",
         "Dedicated regional console with broker creation, supported updates, typed-name deletion, Docker reboot, copyable live endpoints/web console URLs, initial ActiveMQ usernames and broker tags; runtime capability and transitional-state polling. Resource browser reports execution readiness, official AWS icon and actual Terraform mq endpoint key",
-        "Opt-in Docker RabbitMQ 3.13/4.0/4.1 and ActiveMQ 5.17/5.18/5.19 brokers: real messaging, console credentials, readiness, reboot, durable SQLite recovery, delete/reset and store-owned orphan cleanup"
+        "Opt-in Docker RabbitMQ 3.13/4.0/4.1 and ActiveMQ 5.17/5.18/5.19 brokers: real messaging, console credentials, readiness, reboot, durable SQLite recovery, delete/reset and store-owned orphan cleanup",
+        "ActiveMQ user CRUD with readable console/group metadata and CREATE/UPDATE/DELETE pending changes applied on records-mode reboot; passwords validated and never returned",
+        "Configuration CRUD, base64 ActiveMQ XML and RabbitMQ Cuttlefish data with immutable revisions; broker Current/Pending/History associations applied on reboot",
+        "Console users and configurations tabs, revision editor/viewer and broker configuration selection"
       ],
       "gaps": [
         "Docker mode returns one actual BrokerInstances entry, including multi-AZ deployment metadata; no engine TLS, replication or failover. Protocol and console URLs use plain loopback ports",
         "No provisioning, ENIs, replication, IAM/KMS enforcement, log delivery or maintenance scheduling; records-mode metadata updates/deletes take effect immediately. Docker forward ActiveMQ upgrades and image aliases apply on reboot; RabbitMQ minor/major upgrades require recreation",
         "Finite versions/hosts/deployment and UTC-only maintenance windows; engineVersion is required explicitly rather than inventing a latest version. RabbitMQ micro is historical metadata compatibility only, unavailable for creation or m5 downgrade; CF compensation may restore captured legacy metadata. Public brokers exclude explicit networking; private brokers require explicit references and three subnets for RabbitMQ clusters locally",
-        "User CRUD, configurations, advanced authentication/LDAP/OAuth/replication/storage/resource-sharing fields and discovery APIs are excluded, including false/null/empty inputs",
-        "Records mode discards initial passwords; Docker mode retains credentials privately for recovery and supports ActiveMQ console/group creation metadata. User CRUD and replication flags remain excluded. RabbitMQ UserSummary is omitted",
+        "Advanced authentication/LDAP/OAuth/replication/storage/resource-sharing fields and discovery APIs are excluded, including false/null/empty inputs",
+        "Records mode discards initial passwords; Docker mode retains credentials privately for recovery and supports ActiveMQ console/group creation metadata. User mutations and custom configurations explicitly rejected in Docker mode; replication flags remain excluded. RabbitMQ UserSummary is omitted",
         "CloudFormation in-place user mutations and removal of explicit encryption options are rejected; original CF templates/properties retain literal inputs for replacement/rollback, while MQ descriptions, inventory, events, snapshots, diagnostics and literal MQ GetTemplate password properties are redacted",
-        "Tokens stay reserved indefinitely locally, with conflicting reuse after deletion; no AWS token-expiry parity. No Terraform running-state waiter. The [MQ guide](../guides/mq.md) lists every selected field/default/error/boundary and executable lifecycle"
+        "Tokens stay reserved indefinitely locally, with conflicting reuse after deletion; no AWS token-expiry parity. No Terraform running-state waiter. The [MQ guide](../guides/mq.md) lists every selected field/default/error/boundary and executable lifecycle",
+        "Configuration data receives structural XML/Cuttlefish validation only; AWS engine-specific schema validation and sanitization are not emulated. Configuration tags and authentication-strategy inputs remain explicitly excluded; configuration engine version is required locally"
       ],
       "execution": "Records by default; opt-in Docker RabbitMQ and ActiveMQ messaging",
       "package": "mq"
@@ -3596,8 +3600,8 @@
     "mq-runtime": {
       "title": "Amazon MQ configuration, users and runtime",
       "state": "Future extensions",
-      "slice": "Broker records and tags are implemented. Docker messaging, endpoints, readiness, reboot and cleanup are implemented; configuration/user APIs remain future work.",
-      "features": "- [ ] Configuration CRUD and broker associations\n- [ ] ActiveMQ user CRUD and readable console/group metadata\n- [ ] Engine/version/instance discovery extensions\n- [ ] Authentication, LDAP/OAuth, replication and resource sharing\n- [x] Real broker runtime, endpoints, readiness, reboot and cleanup\n- [x] Messaging protocols and RabbitMQ management API"
+      "slice": "Records-mode configuration revisions, broker associations and pending ActiveMQ users are implemented. Docker messaging remains available; Docker user mutations and custom configurations fail explicitly.",
+      "features": "- [x] Configuration CRUD and broker associations\n- [x] ActiveMQ user CRUD and readable console/group metadata\n- [ ] Engine/version/instance discovery extensions\n- [ ] Authentication, LDAP/OAuth, replication and resource sharing\n- [x] Real broker runtime, endpoints, readiness, reboot and cleanup\n- [x] Messaging protocols and RabbitMQ management API"
     },
     "mwaa-runtime": {
       "title": "Amazon MWAA tokens and execution",

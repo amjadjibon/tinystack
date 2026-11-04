@@ -135,3 +135,47 @@ func TestDockerPendingVersionAndRebootState(t *testing.T) {
 		t.Fatalf("reboot state %+v", rebooting)
 	}
 }
+
+func TestDockerRejectsUserMutationsAndCustomConfigurations(t *testing.T) {
+	s := New(&memory.Store{}, nil)
+	s.runtime = &brokerRuntime{owner: "unit-test-store"}
+	ctx := localContext()
+	created, err := s.CreateBroker(ctx, brokerInput())
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = s.CreateUser(
+		ctx,
+		&api.CreateUserRequest{
+			BrokerId: created.BrokerId,
+			Username: new("second"),
+			Password: new("valid-password-123"),
+		},
+	)
+	wantError(t, err, "BadRequestException", 400)
+	_, err = s.UpdateUser(
+		ctx,
+		&api.UpdateUserRequest{BrokerId: created.BrokerId, Username: new("admin"), Password: new("valid-password-123")},
+	)
+	wantError(t, err, "BadRequestException", 400)
+	_, err = s.DeleteUser(ctx, &api.DeleteUserRequest{BrokerId: created.BrokerId, Username: new("admin")})
+	wantError(t, err, "BadRequestException", 400)
+	_, err = s.CreateConfiguration(
+		ctx,
+		&api.CreateConfigurationRequest{Name: new("custom"), EngineType: new(activeMQ), EngineVersion: new("5.18")},
+	)
+	wantError(t, err, "BadRequestException", 400)
+	_, err = s.UpdateConfiguration(
+		ctx,
+		&api.UpdateConfigurationRequest{ConfigurationId: new("c-missing"), Data: new("data")},
+	)
+	wantError(t, err, "BadRequestException", 400)
+	_, err = s.UpdateBroker(
+		ctx,
+		&api.UpdateBrokerRequest{
+			BrokerId:      created.BrokerId,
+			Configuration: &api.ConfigurationId{Id: new("c-missing"), Revision: new(int64(1))},
+		},
+	)
+	wantError(t, err, "BadRequestException", 400)
+}

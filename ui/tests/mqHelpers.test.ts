@@ -106,3 +106,61 @@ test("private networking and deployment combinations reject incomplete input", (
 	assert.deepEqual(input.SubnetIds, ["subnet-12345678"]);
 	assert.deepEqual(input.SecurityGroups, ["sg-12345678"]);
 });
+
+test("MQ configuration data preserves UTF-8 and rejects empty data", async () => {
+	const { configurationData, decodeConfiguration, userInput } = await import(
+		"../src/lib/mqHelpers.ts"
+	);
+	assert.equal(
+		decodeConfiguration(configurationData("<broker><!-- café --></broker>")),
+		"<broker><!-- café --></broker>",
+	);
+	assert.throws(() => configurationData(" "));
+	assert.throws(() => userInput("a", "valid-password-123", "", false));
+	for (const pw of [
+		"short",
+		"aaaaaaaaaaaa",
+		"has:colon-password",
+		"has,comma-password",
+		"has=equals-password",
+	])
+		assert.throws(() => userInput("admin", pw, "", false));
+	assert.deepEqual(userInput("admin", "", "admins users", true, true), {
+		Username: "admin",
+		Groups: ["admins", "users"],
+		ConsoleAccess: true,
+	});
+	assert.deepEqual(
+		brokerInput({ ...f, configuration: "c-1234", revision: "2" }, false, users)
+			.Configuration,
+		{ Id: "c-1234", Revision: 2 },
+	);
+	assert.throws(() =>
+		brokerInput({ ...f, configuration: "c-1234", revision: "0" }, false, users),
+	);
+});
+
+test("broker metadata edits retain unchanged configuration without scheduling a revision", () => {
+	const broker = {
+		BrokerId: "b-test",
+		Configurations: { Current: { Id: "c-1234", Revision: 2 } },
+	} as Broker;
+	assert.equal(
+		brokerInput(
+			{ ...f, configuration: "c-1234", revision: "2" },
+			false,
+			[],
+			broker,
+		).Configuration,
+		undefined,
+	);
+	assert.deepEqual(
+		brokerInput(
+			{ ...f, configuration: "c-1234", revision: "3" },
+			false,
+			[],
+			broker,
+		).Configuration,
+		{ Id: "c-1234", Revision: 3 },
+	);
+});
