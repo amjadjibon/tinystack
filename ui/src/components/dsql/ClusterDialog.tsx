@@ -41,10 +41,11 @@ export function ClusterDialog({
 			submit={cluster ? "Save changes" : "Create cluster"}
 			onClose={onClose}
 			onSaved={onSaved}
-			plan={async () => {
+			plan={async (token) => {
 				const input = cluster
 					? updateInput(cluster, f)
 					: createInput(f, scope.region);
+				input.clientToken = token;
 				return [{ label: op, run: () => dsqlCall(scope, op, input) }];
 			}}
 		>

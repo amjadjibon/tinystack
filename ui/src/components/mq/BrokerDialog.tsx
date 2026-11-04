@@ -74,13 +74,14 @@ export function BrokerDialog({
 			submit={title}
 			onClose={onClose}
 			onSaved={onSaved}
-			plan={async () => {
+			plan={async (token) => {
 				const input = brokerInput(
 					f,
 					docker,
 					users.map(({ id: _id, ...u }) => u),
 					b,
 				);
+				if (!b) input.CreatorRequestId = token;
 				return [
 					{
 						label: b ? "UpdateBroker" : "CreateBroker",

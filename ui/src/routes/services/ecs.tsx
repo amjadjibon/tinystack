@@ -550,7 +550,7 @@ function ClusterDetails({
 					confirmation={dialog === "Delete service" ? name : undefined}
 					onClose={() => setDialog("")}
 					onSaved={changed}
-					plan={async () => {
+					plan={async (token) => {
 						if (dialog === "Delete service")
 							return [
 								{
@@ -577,6 +577,9 @@ function ClusterDetails({
 												: "UpdateService",
 										{
 											taskDefinition: definition,
+											...(dialog === "Update service"
+												? {}
+												: { clientToken: token }),
 											...(dialog === "Run task"
 												? { count: n }
 												: {

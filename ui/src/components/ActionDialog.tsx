@@ -23,13 +23,15 @@ export function ActionDialog({
 	submit?: string;
 	confirmation?: string;
 	children: ReactNode;
-	plan: () => Promise<ActionStep[]>;
+	/** token is one idempotency token per open dialog; it stays the same across retries. */
+	plan: (token: string) => Promise<ActionStep[]>;
 	onClose: () => void;
 	onSaved: () => void;
 }) {
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
 	const [confirm, setConfirm] = useState("");
+	const [token] = useState(() => crypto.randomUUID());
 	const steps = useRef<ActionStep[] | null>(null);
 	const completed = useRef(new Set<number>());
 	const save = async () => {
@@ -37,7 +39,7 @@ export function ActionDialog({
 		setBusy(true);
 		setError("");
 		try {
-			steps.current ??= await plan();
+			steps.current ??= await plan(token);
 			for (const [i, step] of steps.current.entries()) {
 				if (completed.current.has(i)) continue;
 				try {

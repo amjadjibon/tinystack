@@ -69,7 +69,7 @@ export function ClusterDialog({
 			}
 			onClose={onClose}
 			onSaved={onSaved}
-			plan={async () => {
+			plan={async (token) => {
 				const op = cluster
 					? versionOnly
 						? "UpdateClusterVersion"
@@ -81,7 +81,7 @@ export function ClusterDialog({
 					? versionOnly
 						? [{ Name: cluster.Name, Version: f.version }]
 						: clusterConfigInputs(cluster, f)
-					: [clusterInput(f)];
+					: [{ ...clusterInput(f), clientRequestToken: token }];
 				return inputs.map((input) => ({
 					label: op,
 					run: () => eksCall(scope, op, input),

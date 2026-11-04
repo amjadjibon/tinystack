@@ -295,7 +295,7 @@ function ResourceDialog({
 			confirmation={op === "delete" ? name : undefined}
 			onClose={onClose}
 			onSaved={onSaved}
-			plan={async () => {
+			plan={async (token) => {
 				let input: Record<string, unknown> = {
 					ClusterName: cluster.Name,
 					[spec.name]: name,
@@ -309,6 +309,7 @@ function ResourceDialog({
 							kind === "access"
 								? f.name.trim()
 								: resourceName((kind === "addons" ? f.addon : f.name).trim()),
+						clientRequestToken: token,
 					};
 					if (kind === "nodegroups") {
 						if (!f.subnets.length)
