@@ -2,6 +2,7 @@ package codebuild
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -17,10 +18,10 @@ const (
 )
 
 type buildRecord struct {
-	Build    api.Build
 	Project  api.Project
 	Scope    request.Scope
 	Endpoint string
+	Build    api.Build
 }
 
 func indexKey(scope request.Scope, id string) string {
@@ -33,7 +34,8 @@ func (s *Service) StartBuild(ctx context.Context, in *api.StartBuildInput) (*api
 		return nil, err
 	}
 
-	if s.runtime == nil {
+	// Retry can queue a persisted build in records mode; only a configured runtime claims it.
+	if s.runtime == nil && ctx.Value(retryProjectKey{}) == nil {
 		return nil, invalid("StartBuild requires codebuild.builds: docker; records mode cannot execute builds")
 	}
 
@@ -46,8 +48,38 @@ func (s *Service) StartBuild(ctx context.Context, in *api.StartBuildInput) (*api
 		return nil, missing()
 	}
 
+	if in.IdempotencyToken != nil && (len(*in.IdempotencyToken) < 1 || len(*in.IdempotencyToken) > 64) {
+		return nil, invalid("idempotencyToken must contain 1-64 characters")
+	}
+	fingerprint, err := json.Marshal(struct {
+		Input *api.StartBuildInput
+		Retry any
+	}{in, ctx.Value(retryProjectKey{})})
+	if err != nil {
+		return nil, err
+	}
 	var result *api.Build
+	replay := false
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		tokenKind := "start-token"
+		if ctx.Value(retryProjectKey{}) != nil {
+			tokenKind = "retry-token"
+		}
+		tokenKey := meta.Key(serviceName, tokenKind, common.Value(in.IdempotencyToken))
+		if in.IdempotencyToken != nil {
+			token, found, e := storage.Read[buildToken](tx, tokenKey)
+			if e != nil {
+				return e
+			}
+			if found && stamp()-token.Created < 300 {
+				if token.Input != string(fingerprint) {
+					return invalid("idempotencyToken was used with different parameters")
+				}
+				result = common.Clone(&token.Build)
+				replay = true
+				return nil
+			}
+		}
 		p, ok, e := read(tx, meta.Scope, name)
 		if e != nil {
 			return e
@@ -58,6 +90,9 @@ func (s *Service) StartBuild(ctx context.Context, in *api.StartBuildInput) (*api
 		}
 
 		p = common.Clone(p)
+		if previous, ok := ctx.Value(retryProjectKey{}).(*retrySettings); ok {
+			p = common.Clone(&previous.Project)
+		}
 		if source, ok := ctx.Value(pipelineSourceKey{}).(string); ok {
 			if common.Value(p.Source.Type) != pipelineType {
 				return invalid("CodePipeline builds require a CODEPIPELINE project source")
@@ -128,9 +163,11 @@ func (s *Service) StartBuild(ctx context.Context, in *api.StartBuildInput) (*api
 		switch common.Value(p.Source.Type) {
 		case noSource, s3Type:
 		default:
-			return invalid(
-				"Build execution supports NO_SOURCE and S3 only; GitHub fetches and CodeCommit git content are unavailable",
-			)
+			if s.runtime != nil {
+				return invalid(
+					"Build execution supports NO_SOURCE and S3 only; GitHub fetches and CodeCommit git content are unavailable",
+				)
+			}
 		}
 
 		if strings.HasPrefix(common.Value(p.Source.Buildspec), "arn:") {
@@ -185,7 +222,7 @@ func (s *Service) StartBuild(ctx context.Context, in *api.StartBuildInput) (*api
 		b.Phases = []api.BuildPhase{
 			{
 				PhaseType:         new("SUBMITTED"),
-				PhaseStatus:       new("SUCCEEDED"),
+				PhaseStatus:       new(statusSucceeded),
 				StartTime:         b.StartTime,
 				EndTime:           b.StartTime,
 				DurationInSeconds: new(int64(0)),
@@ -222,13 +259,18 @@ func (s *Service) StartBuild(ctx context.Context, in *api.StartBuildInput) (*api
 		}
 
 		result = common.Clone(new(b))
+		if in.IdempotencyToken != nil {
+			return storage.Write(tx, tokenKey, buildToken{Input: string(fingerprint), Created: stamp(), Build: b})
+		}
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	s.emit(ctx, meta.Scope, result, false)
+	if !replay {
+		s.emit(ctx, meta.Scope, result, false)
+	}
 	return &api.StartBuildOutput{Build: result}, nil
 }
 
@@ -447,4 +489,57 @@ func (s *Service) StartPipelineBuild(
 	source string,
 ) (*api.StartBuildOutput, error) {
 	return s.StartBuild(context.WithValue(ctx, pipelineSourceKey{}, source), in)
+}
+
+type buildToken struct {
+	Input   string
+	Build   api.Build
+	Created float64
+}
+type (
+	retryProjectKey struct{}
+	retrySettings   struct {
+		Project api.Project
+		ID      string
+	}
+)
+
+func (s *Service) RetryBuild(ctx context.Context, in *api.RetryBuildInput) (*api.RetryBuildOutput, error) {
+	scope, err := request.RegionalScope(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var rec *buildRecord
+	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+		r, ok, e := storage.Read[buildRecord](
+			tx,
+			scope.Key(serviceName, buildKind, buildID(scope, common.Value(in.Id))),
+		)
+		if e != nil {
+			return e
+		}
+		if !ok {
+			return missing()
+		}
+		if !common.Value(r.Build.BuildComplete) {
+			return invalid("Cannot retry a build in progress")
+		}
+		rec = r
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	out, err := s.StartBuild(
+		context.WithValue(ctx, retryProjectKey{}, &retrySettings{Project: rec.Project, ID: common.Value(rec.Build.Id)}),
+		&api.StartBuildInput{
+			ProjectName:      rec.Build.ProjectName,
+			SourceVersion:    rec.Build.SourceVersion,
+			IdempotencyToken: in.IdempotencyToken,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &api.RetryBuildOutput{Build: out.Build}, nil
 }

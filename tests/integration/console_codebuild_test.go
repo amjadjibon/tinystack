@@ -110,7 +110,7 @@ func TestConsoleCodeBuildLifecycle(t *testing.T) {
 		consoleLambdaRequest(t, srv, "codebuild", "RetryBuild", account, region, map[string]any{}),
 		http.StatusBadRequest,
 	)
-	if denied["code"] != "UnknownOperationException" {
+	if denied["code"] != "ResourceNotFoundException" {
 		t.Fatal(denied)
 	}
 

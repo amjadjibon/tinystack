@@ -37,7 +37,7 @@ func TestCodeBuildPinnedJSONBindingsAndSelection(t *testing.T) {
 		}
 	}
 
-	if len(p["codebuild"].Operations) != 11 {
+	if len(p["codebuild"].Operations) != 21 {
 		t.Fatal("unexpected operation surface")
 	}
 	if len(p["codebuild"].Shapes["ProjectSource"]) != 4 || len(p["codebuild"].Shapes["ProjectEnvironment"]) != 5 {

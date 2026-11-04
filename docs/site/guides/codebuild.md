@@ -198,7 +198,7 @@ Sources: [pinned Smithy model](https://github.com/aws/aws-sdk-go-v2/blob/2ba0e39
 | ListBuildsForProject | projectName, sortOrder, nextToken |
 | BatchDeleteBuilds | ids |
 
-Other overrides fail explicitly. RetryBuild is not implemented. Build reads and StopBuild accept local
+Other overrides fail explicitly. RetryBuild starts a new build from the saved effective configuration, using five-minute idempotency tokens. Records mode can queue retry records from saved builds without executing commands; StopBuild can stop these records. Build reads and StopBuild accept local
 build IDs or ARNs. Lists use storage key order, 100-record pages and deletion-resilient cursors;
 ASCENDING or an omitted sortOrder selects this order. DESCENDING fails explicitly. Deleting an active
 build returns BUILD_IN_PROGRESS in buildsNotDeleted. Deleting history retains CloudWatch logs.
@@ -213,7 +213,7 @@ buildspec.yml; explicit relative paths and inline YAML are supported.
 
 Buildspec version 0.2 supports env.variables, env.parameter-store, env.secrets-manager, env.shell,
 install/pre_build/build/post_build commands, finally, on-failure ABORT/CONTINUE, and artifacts.
-Other fields (including reports, runtime-versions, run-as, cache, batch and retry policies) fail
+Other fields (including runtime-versions, run-as, cache, batch and retry policies) fail
 explicitly. The image must include /bin/sh (default) or bash when selected by env.shell. Commands run
 in a single shell, preserving exported variables and cd across phases. The first failed command skips
 remaining commands in that block; finally still runs. Failed install/pre_build goes to FINALIZING unless
@@ -261,5 +261,20 @@ in memory; there is no additional CodeBuild size quota. KMS encryption and S3 lo
 
 Build state and completed-phase events use source aws.codebuild on the default EventBridge bus with
 CodeBuild Build State Change and CodeBuild Build Phase Change detail types. Event publication is best
-effort after committing state. No dedicated build console, shared projects, reports, batch builds,
-Git checkout, secondary sources/artifacts or RetryBuild are implemented.
+effort after committing state. The dedicated console includes projects, builds, retries and report groups with report/test-case views. Shared projects, batch builds, Git checkout and secondary sources/artifacts are unsupported.
+
+
+## Test reports
+
+CreateReportGroup, UpdateReportGroup, DeleteReportGroup, BatchGetReportGroups and ListReportGroups
+manage scoped TEST groups with NO_EXPORT and replacement tags. DeleteReportGroup refuses nonempty groups
+unless deleteReports is true. ListReports, ListReportsForReportGroup, BatchGetReports and DescribeTestCases
+expose generated reports and test cases, including status and keyword filters and pagination.
+
+Buildspec `reports` entries support `files`, `base-directory`, `discard-paths` and `file-format`
+(JUNITXML by default, or CUCUMBERJSON). Files are read from the confined workspace after the runtime
+copies container output back. A group ARN selects an existing group; a name creates the group named
+`<project>-<name>`. Build records expose reportArns. Records mode does not execute builds or produce
+reports; the public AWS API allows report-group creation but has no public CreateReport operation.
+S3 exports, coverage reports, automatic discovery and expiry cleanup are unsupported.
+Webhooks remain unsupported because no GitHub or Bitbucket source provider is connected.

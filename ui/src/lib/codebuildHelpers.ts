@@ -163,3 +163,36 @@ export function projectInput(f: ReturnType<typeof projectForm>, p?: Project) {
 		LogsConfig: jsonObject(f.logs, "Logs configuration"),
 	};
 }
+
+export type ReportGroup = {
+	Arn: string;
+	Name: string;
+	Type: string;
+	Created?: number;
+	Tags?: Tag[];
+};
+export type Report = {
+	Arn: string;
+	Name: string;
+	Status: string;
+	Created?: number;
+	TestSummary?: { Total: number; StatusCounts: Record<string, number> };
+};
+export type TestCase = {
+	Name: string;
+	Status: string;
+	TestSuiteName?: string;
+	DurationInNanoSeconds?: number;
+	Message?: string;
+};
+export function reportGroupInput(name: string, tags: string, arn?: string) {
+	if (!arn && !/^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$/.test(name))
+		throw new Error(
+			"Report group name requires 2–128 letters, digits, hyphens or underscores.",
+		);
+	return {
+		...(arn ? { Arn: arn } : { Name: name, Type: "TEST" }),
+		ExportConfig: { ExportConfigType: "NO_EXPORT" },
+		Tags: tagList(stringMap(tags, "Tags")),
+	};
+}

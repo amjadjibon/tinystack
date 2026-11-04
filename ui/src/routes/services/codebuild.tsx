@@ -5,6 +5,7 @@ import { ActionDialog } from "#/components/ActionDialog";
 import { ConsoleLayout } from "#/components/Console";
 import { BuildDetails, ProjectDetails } from "#/components/codebuild/Details";
 import { ProjectDialog } from "#/components/codebuild/ProjectDialog";
+import { ReportGroups } from "#/components/codebuild/ReportGroups";
 import { StartDialog } from "#/components/codebuild/StartDialog";
 import { Action, Buttons, Rows } from "#/components/containers/Controls";
 import { builds, codebuildCall, deleteBuilds, projects } from "#/lib/codebuild";
@@ -20,7 +21,9 @@ export const Route = createFileRoute("/services/codebuild")({
 		region: String(s.region ?? ""),
 		project: String(s.project ?? ""),
 		build: String(s.build ?? ""),
-		tab: s.tab === "builds" ? "builds" : "projects",
+		tab: ["builds", "reports"].includes(String(s.tab))
+			? String(s.tab)
+			: "projects",
 	}),
 	component: CodeBuildPage,
 });
@@ -217,6 +220,12 @@ function Workspace({
 							</Action>
 							<Action onClick={poll.reload}>Refresh</Action>
 							<Action
+								disabled={!enabled || pending(b)}
+								onClick={() => setDialog("retry")}
+							>
+								Retry build
+							</Action>
+							<Action
 								disabled={!enabled || !pending(b)}
 								onClick={() => setDialog("stop")}
 							>
@@ -274,6 +283,11 @@ function Workspace({
 									content: <ProjectDetails project={p} />,
 								},
 								{ id: "builds", label: "Build history", content: buildRows },
+								{
+									id: "reports",
+									label: "Report groups",
+									content: <ReportGroups scope={scope} enabled={enabled} />,
+								},
 							]}
 						/>
 					</SpaceBetween>
@@ -345,6 +359,11 @@ function Workspace({
 							),
 						},
 						{ id: "builds", label: "Build history", content: buildRows },
+						{
+							id: "reports",
+							label: "Report groups",
+							content: <ReportGroups scope={scope} enabled={enabled} />,
+						},
 					]}
 				/>
 			)}
@@ -355,6 +374,24 @@ function Workspace({
 					onClose={() => setDialog("")}
 					onSaved={saved}
 				/>
+			)}
+			{dialog === "retry" && !!b && (
+				<ActionDialog
+					title="Retry build"
+					submit="Retry build"
+					onClose={() => setDialog("")}
+					onSaved={saved}
+					plan={async () => [
+						{
+							label: "RetryBuild",
+							run: () => codebuildCall(scope, "RetryBuild", { Id: b.Id }),
+						},
+					]}
+				>
+					<Alert>
+						Retry {b.Id} with its saved source version and configuration.
+					</Alert>
+				</ActionDialog>
 			)}
 			{dialog === "start" && !!p && (
 				<StartDialog

@@ -17,8 +17,11 @@ import (
 )
 
 const (
-	sortName  = "NAME"
-	ascending = "ASCENDING"
+	sortName     = "NAME"
+	sortCreated  = "CREATED_TIME"
+	sortModified = "LAST_MODIFIED_TIME"
+	descending   = "DESCENDING"
+	ascending    = "ASCENDING"
 )
 
 type cursor struct {
@@ -28,11 +31,11 @@ type cursor struct {
 
 func sortValue(p *api.Project, by string) cursor {
 	v := cursor{Name: *p.Name}
-	if by == "CREATED_TIME" {
+	if by == sortCreated {
 		v.Time = common.Value(p.Created)
 	}
 
-	if by == "LAST_MODIFIED_TIME" {
+	if by == sortModified {
 		v.Time = common.Value(p.LastModified)
 	}
 
@@ -55,12 +58,12 @@ func (s *Service) ListProjects(ctx context.Context, in *api.ListProjectsInput) (
 
 	by := common.Value(common.OrElse(in.SortBy, new(sortName)))
 	order := common.Value(common.OrElse(in.SortOrder, new(ascending)))
-	if by != sortName && by != "CREATED_TIME" && by != "LAST_MODIFIED_TIME" {
+	if by != sortName && by != sortCreated && by != sortModified {
 		return nil, invalid("Invalid SortBy")
 	}
 
 	direction := 1
-	if order == "DESCENDING" {
+	if order == descending {
 		direction = -1
 	} else if order != ascending {
 		return nil, invalid("Invalid SortOrder")

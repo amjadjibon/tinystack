@@ -42,7 +42,7 @@ func (r *shellRuntime) Run(ctx context.Context, spec *RunSpec, emit func(string)
 
 func TestBuildspecStrictParsing(t *testing.T) {
 	for _, value := range []string{
-		"version: 0.1", "version: 0.2\nreports: {}", "version: 0.2\ncache: {}",
+		"version: 0.1", "version: 0.2\nreports: {bad: {files: []}}", "version: 0.2\ncache: {}",
 		"version: 0.2\nenv:\n  shell: powershell", "version: 0.2\nphases:\n  build:\n    on-failure: RETRY",
 		"version: 0.2\nphases:\n  install:\n    runtime-versions: {nodejs: 20}",
 		"version: 0.2\nenv:\n  variables: {CODEBUILD_BUILD_ID: forged}",

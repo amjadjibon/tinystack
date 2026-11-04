@@ -16,7 +16,10 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-const statusFailed = "FAILED"
+const (
+	statusFailed    = "FAILED"
+	statusSucceeded = "SUCCEEDED"
+)
 
 // Runtime runs a build in one container until its script finishes or ctx is canceled.
 // Run removes its container before returning, including on cancellation.
@@ -225,7 +228,7 @@ func finishPhase(b *api.Build, status, message string) {
 }
 
 func transition(b *api.Build, next string) {
-	finishPhase(b, "SUCCEEDED", "")
+	finishPhase(b, statusSucceeded, "")
 	b.CurrentPhase = new(next)
 	b.Phases = append(b.Phases, api.BuildPhase{PhaseType: new(next), StartTime: new(stamp())})
 }
@@ -308,7 +311,7 @@ func (s *Service) execute(parent context.Context, key string, r *buildRecord) {
 		defer finishCancel()
 		_ = s.mutate(finishCtx, key, func(b *api.Build) {
 			if resultErr == nil {
-				finishPhase(b, "SUCCEEDED", "")
+				finishPhase(b, statusSucceeded, "")
 			}
 
 			complete(b, finalStatus, message)
@@ -367,7 +370,7 @@ func (s *Service) execute(parent context.Context, key string, r *buildRecord) {
 			case "START":
 				return s.mutate(ctx, key, func(b *api.Build) { transition(b, fields[2]) })
 			case "END":
-				status, message := "SUCCEEDED", ""
+				status, message := statusSucceeded, ""
 				if len(fields) != 4 || fields[3] != "0" {
 					status = statusFailed
 					message = "Buildspec command failed"
@@ -404,6 +407,10 @@ func (s *Service) execute(parent context.Context, key string, r *buildRecord) {
 		return
 	}
 
+	if reportErr := s.collectReports(ctx, key, r, spec, dir); reportErr != nil {
+		resultErr = reportErr
+		return
+	}
 	if skipArtifacts {
 		resultErr = s.mutate(ctx, key, func(b *api.Build) { transition(b, "FINALIZING") })
 		return
@@ -435,6 +442,6 @@ func (s *Service) execute(parent context.Context, key string, r *buildRecord) {
 	}
 
 	if !failed {
-		finalStatus = "SUCCEEDED"
+		finalStatus = statusSucceeded
 	}
 }

@@ -25447,7 +25447,17 @@
       "StopBuild",
       "ListBuilds",
       "ListBuildsForProject",
-      "BatchDeleteBuilds"
+      "BatchDeleteBuilds",
+      "RetryBuild",
+      "CreateReportGroup",
+      "UpdateReportGroup",
+      "DeleteReportGroup",
+      "BatchGetReportGroups",
+      "ListReportGroups",
+      "ListReports",
+      "ListReportsForReportGroup",
+      "BatchGetReports",
+      "DescribeTestCases"
     ],
     "shapes": {
       "CreateProjectInput": [
@@ -25559,7 +25569,8 @@
         "environmentVariablesOverride",
         "timeoutInMinutesOverride",
         "artifactsOverride",
-        "logsConfigOverride"
+        "logsConfigOverride",
+        "idempotencyToken"
       ],
       "BatchGetBuildsInput": [
         "ids"
@@ -25628,7 +25639,8 @@
         "queuedTimeoutInMinutes",
         "logs",
         "buildComplete",
-        "initiator"
+        "initiator",
+        "reportArns"
       ],
       "BuildPhase": [
         "phaseType",
@@ -25656,6 +25668,139 @@
       "BuildNotDeleted": [
         "id",
         "statusCode"
+      ],
+      "RetryBuildInput": [
+        "id",
+        "idempotencyToken"
+      ],
+      "RetryBuildOutput": [
+        "build"
+      ],
+      "CreateReportGroupInput": [
+        "name",
+        "type",
+        "exportConfig",
+        "tags"
+      ],
+      "CreateReportGroupOutput": [
+        "reportGroup"
+      ],
+      "UpdateReportGroupInput": [
+        "arn",
+        "exportConfig",
+        "tags"
+      ],
+      "UpdateReportGroupOutput": [
+        "reportGroup"
+      ],
+      "DeleteReportGroupInput": [
+        "arn",
+        "deleteReports"
+      ],
+      "DeleteReportGroupOutput": [],
+      "BatchGetReportGroupsInput": [
+        "reportGroupArns"
+      ],
+      "BatchGetReportGroupsOutput": [
+        "reportGroups",
+        "reportGroupsNotFound"
+      ],
+      "ListReportGroupsInput": [
+        "sortOrder",
+        "sortBy",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListReportGroupsOutput": [
+        "nextToken",
+        "reportGroups"
+      ],
+      "ListReportsInput": [
+        "sortOrder",
+        "nextToken",
+        "maxResults",
+        "filter"
+      ],
+      "ListReportsOutput": [
+        "nextToken",
+        "reports"
+      ],
+      "ListReportsForReportGroupInput": [
+        "reportGroupArn",
+        "nextToken",
+        "sortOrder",
+        "maxResults",
+        "filter"
+      ],
+      "ListReportsForReportGroupOutput": [
+        "nextToken",
+        "reports"
+      ],
+      "BatchGetReportsInput": [
+        "reportArns"
+      ],
+      "BatchGetReportsOutput": [
+        "reports",
+        "reportsNotFound"
+      ],
+      "DescribeTestCasesInput": [
+        "reportArn",
+        "nextToken",
+        "maxResults",
+        "filter"
+      ],
+      "DescribeTestCasesOutput": [
+        "nextToken",
+        "testCases"
+      ],
+      "ReportGroup": [
+        "arn",
+        "name",
+        "type",
+        "exportConfig",
+        "created",
+        "lastModified",
+        "tags",
+        "status"
+      ],
+      "ReportExportConfig": [
+        "exportConfigType"
+      ],
+      "Report": [
+        "arn",
+        "type",
+        "name",
+        "reportGroupArn",
+        "executionId",
+        "status",
+        "created",
+        "expired",
+        "exportConfig",
+        "truncated",
+        "testSummary"
+      ],
+      "TestCase": [
+        "reportArn",
+        "testRawDataPath",
+        "prefix",
+        "name",
+        "status",
+        "durationInNanoSeconds",
+        "message",
+        "expired",
+        "testSuiteName"
+      ],
+      "TestReportSummary": [
+        "total",
+        "statusCounts",
+        "durationInNanoSeconds"
+      ],
+      "ReportFilter": [
+        "status"
+      ],
+      "TestCaseFilter": [
+        "status",
+        "keyword"
       ]
     },
     "validation": {

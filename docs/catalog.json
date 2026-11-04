@@ -1804,17 +1804,21 @@
         "CloudWatch Logs streaming with configurable status/group/stream prefix and build log location; NO_ARTIFACTS or S3 ZIP/NONE output with file patterns, base directory, discard-paths and artifact names",
         "Build state and completed-phase events sent to the default EventBridge bus; store-owned orphan cleanup, shutdown/reset container removal and failed interrupted build records",
         "CODEPIPELINE project source and artifact declarations can be executed by CodePipeline through an in-process S3 artifact bridge; direct StartBuild still requires an executable NO_SOURCE or S3 source",
-        "Dedicated regional console for project creation, replacement configuration updates, tags and typed-name deletion; runtime notice, per-project and overall build history, start overrides, status/phase durations, inline CloudWatch output, stop and completed-build deletion with active-build polling"
+        "Dedicated regional console for project creation, replacement configuration updates, tags and typed-name deletion; runtime notice, per-project and overall build history, start overrides, status/phase durations, inline CloudWatch output, stop and completed-build deletion with active-build polling",
+        "RetryBuild reuses saved effective build configuration and the StartBuild queue path, with five-minute idempotency tokens and parameter mismatch rejection; records mode queues retry records without executing commands",
+        "TEST report-group CRUD with replacement tags, batch reads and paginated report and test-case queries; typed-name console deletion includes reports",
+        "Docker builds collect JUnit XML and Cucumber JSON from declared buildspec report paths after runtime file copy-back; test summaries, cases and build report ARNs persist for API and console views"
       ],
       "gaps": [
-        "No RetryBuild, batch builds, webhook execution, reports, report groups, automatic retries, cached builds, VPC networking, fleets, secondary sources/artifacts, registry credentials or managed runtime installation. Unsupported API members and buildspec sections fail explicitly",
+        "No batch builds, webhook execution (GitHub/Bitbucket provider integration is unavailable), automatic retries, cached builds, VPC networking, fleets, secondary sources/artifacts, registry credentials or managed runtime installation. Unsupported API members and buildspec sections fail explicitly",
         "GitHub source execution and CodeCommit git content are unavailable; project Git source metadata is retained. Only S3 zip objects are downloaded; S3 folder sources and S3 ARN buildspec references are not executed",
         "Build lists return storage key order with 100-record pages; DESCENDING ordering fails explicitly. No AWS timestamp sort, shared/cross-account builds",
         "Only LINUX_CONTAINER environments and bash or /bin/sh shells; the selected image must contain the shell. Compute classes remain metadata; no CPU/memory quotas, Docker socket mount or ECR login. Source and output use docker cp, including with remote daemons",
         "No S3 logs, KMS artifact encryption, service-role IAM evaluation or real AWS credentials. Container credentials are local account credentials for parse-mode identity; verify-mode container API calls require configured matching credentials",
         "Artifact shell expressions, symlink artifacts and colliding flattened names fail explicitly. Artifacts and source archives are processed in memory; no extra CodeBuild-specific size limit. Existing project metadata bounds remain local constraints",
         "Secret environment references support local names and optional JSON key/version selectors, not secret ARNs or binary secrets; missing values fail DOWNLOAD_SOURCE. Secrets are not automatically masked from user command output",
-        "UpdateProject nested configuration replaces objects with defaults; only projects appear in inventory. See the [CodeBuild guide](../guides/codebuild.md) for selected members and execution details"
+        "UpdateProject nested configuration replaces objects with defaults; only projects appear in inventory. See the [CodeBuild guide](../guides/codebuild.md) for selected members and execution details",
+        "Report groups support TEST and NO_EXPORT only; coverage reports, S3 report exports and report expiry cleanup are unsupported. Records mode never generates reports; AWS report-creation APIs are internal, so only report groups can be created through the public API."
       ],
       "execution": "Records by default; opt-in Docker builds",
       "package": "codebuild"

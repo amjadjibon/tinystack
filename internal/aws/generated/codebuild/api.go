@@ -147,6 +147,7 @@ type StartBuildInput struct {
 	TimeoutInMinutesOverride     *int64                `json:"timeoutInMinutesOverride,omitempty"`
 	ArtifactsOverride            *ProjectArtifacts     `json:"artifactsOverride,omitempty"`
 	LogsConfigOverride           *LogsConfig           `json:"logsConfigOverride,omitempty"`
+	IdempotencyToken             *string               `json:"idempotencyToken,omitempty"`
 }
 
 type PhaseContext struct {
@@ -196,6 +197,7 @@ type Build struct {
 	Logs                   *LogsLocation       `json:"logs,omitempty"`
 	BuildComplete          *bool               `json:"buildComplete,omitempty"`
 	Initiator              *string             `json:"initiator,omitempty"`
+	ReportArns             []string            `json:"reportArns,omitempty"`
 }
 
 type StartBuildOutput struct {
@@ -254,27 +256,194 @@ type BatchDeleteBuildsOutput struct {
 	BuildsNotDeleted []BuildNotDeleted `json:"buildsNotDeleted,omitempty"`
 }
 
+type RetryBuildInput struct {
+	Id               *string `json:"id,omitempty"`
+	IdempotencyToken *string `json:"idempotencyToken,omitempty"`
+}
+
+type RetryBuildOutput struct {
+	Build *Build `json:"build,omitempty"`
+}
+
+type ReportExportConfig struct {
+	ExportConfigType *string `json:"exportConfigType,omitempty"`
+}
+
+type CreateReportGroupInput struct {
+	Name         *string             `json:"name,omitempty"`
+	Type         *string             `json:"type,omitempty"`
+	ExportConfig *ReportExportConfig `json:"exportConfig,omitempty"`
+	Tags         []Tag               `json:"tags,omitempty"`
+}
+
+type ReportGroup struct {
+	Arn          *string             `json:"arn,omitempty"`
+	Name         *string             `json:"name,omitempty"`
+	Type         *string             `json:"type,omitempty"`
+	ExportConfig *ReportExportConfig `json:"exportConfig,omitempty"`
+	Created      *float64            `json:"created,omitempty"`
+	LastModified *float64            `json:"lastModified,omitempty"`
+	Tags         []Tag               `json:"tags,omitempty"`
+	Status       *string             `json:"status,omitempty"`
+}
+
+type CreateReportGroupOutput struct {
+	ReportGroup *ReportGroup `json:"reportGroup,omitempty"`
+}
+
+type UpdateReportGroupInput struct {
+	Arn          *string             `json:"arn,omitempty"`
+	ExportConfig *ReportExportConfig `json:"exportConfig,omitempty"`
+	Tags         []Tag               `json:"tags,omitempty"`
+}
+
+type UpdateReportGroupOutput struct {
+	ReportGroup *ReportGroup `json:"reportGroup,omitempty"`
+}
+
+type DeleteReportGroupInput struct {
+	Arn           *string `json:"arn,omitempty"`
+	DeleteReports *bool   `json:"deleteReports,omitempty"`
+}
+
+type DeleteReportGroupOutput struct {
+}
+
+type BatchGetReportGroupsInput struct {
+	ReportGroupArns []string `json:"reportGroupArns,omitempty"`
+}
+
+type BatchGetReportGroupsOutput struct {
+	ReportGroups         []ReportGroup `json:"reportGroups,omitempty"`
+	ReportGroupsNotFound []string      `json:"reportGroupsNotFound,omitempty"`
+}
+
+type ListReportGroupsInput struct {
+	SortOrder  *string `json:"sortOrder,omitempty"`
+	SortBy     *string `json:"sortBy,omitempty"`
+	NextToken  *string `json:"nextToken,omitempty"`
+	MaxResults *int64  `json:"maxResults,omitempty"`
+}
+
+type ListReportGroupsOutput struct {
+	NextToken    *string  `json:"nextToken,omitempty"`
+	ReportGroups []string `json:"reportGroups,omitempty"`
+}
+
+type ReportFilter struct {
+	Status *string `json:"status,omitempty"`
+}
+
+type ListReportsInput struct {
+	SortOrder  *string       `json:"sortOrder,omitempty"`
+	NextToken  *string       `json:"nextToken,omitempty"`
+	MaxResults *int64        `json:"maxResults,omitempty"`
+	Filter     *ReportFilter `json:"filter,omitempty"`
+}
+
+type ListReportsOutput struct {
+	NextToken *string  `json:"nextToken,omitempty"`
+	Reports   []string `json:"reports,omitempty"`
+}
+
+type ListReportsForReportGroupInput struct {
+	ReportGroupArn *string       `json:"reportGroupArn,omitempty"`
+	NextToken      *string       `json:"nextToken,omitempty"`
+	SortOrder      *string       `json:"sortOrder,omitempty"`
+	MaxResults     *int64        `json:"maxResults,omitempty"`
+	Filter         *ReportFilter `json:"filter,omitempty"`
+}
+
+type ListReportsForReportGroupOutput struct {
+	NextToken *string  `json:"nextToken,omitempty"`
+	Reports   []string `json:"reports,omitempty"`
+}
+
+type BatchGetReportsInput struct {
+	ReportArns []string `json:"reportArns,omitempty"`
+}
+
+type TestReportSummary struct {
+	Total                 *int64           `json:"total,omitempty"`
+	StatusCounts          map[string]int64 `json:"statusCounts,omitempty"`
+	DurationInNanoSeconds *int64           `json:"durationInNanoSeconds,omitempty"`
+}
+
+type Report struct {
+	Arn            *string             `json:"arn,omitempty"`
+	Type           *string             `json:"type,omitempty"`
+	Name           *string             `json:"name,omitempty"`
+	ReportGroupArn *string             `json:"reportGroupArn,omitempty"`
+	ExecutionId    *string             `json:"executionId,omitempty"`
+	Status         *string             `json:"status,omitempty"`
+	Created        *float64            `json:"created,omitempty"`
+	Expired        *float64            `json:"expired,omitempty"`
+	ExportConfig   *ReportExportConfig `json:"exportConfig,omitempty"`
+	Truncated      *bool               `json:"truncated,omitempty"`
+	TestSummary    *TestReportSummary  `json:"testSummary,omitempty"`
+}
+
+type BatchGetReportsOutput struct {
+	Reports         []Report `json:"reports,omitempty"`
+	ReportsNotFound []string `json:"reportsNotFound,omitempty"`
+}
+
+type TestCaseFilter struct {
+	Status  *string `json:"status,omitempty"`
+	Keyword *string `json:"keyword,omitempty"`
+}
+
+type DescribeTestCasesInput struct {
+	ReportArn  *string         `json:"reportArn,omitempty"`
+	NextToken  *string         `json:"nextToken,omitempty"`
+	MaxResults *int64          `json:"maxResults,omitempty"`
+	Filter     *TestCaseFilter `json:"filter,omitempty"`
+}
+
+type TestCase struct {
+	ReportArn             *string  `json:"reportArn,omitempty"`
+	TestRawDataPath       *string  `json:"testRawDataPath,omitempty"`
+	Prefix                *string  `json:"prefix,omitempty"`
+	Name                  *string  `json:"name,omitempty"`
+	Status                *string  `json:"status,omitempty"`
+	DurationInNanoSeconds *int64   `json:"durationInNanoSeconds,omitempty"`
+	Message               *string  `json:"message,omitempty"`
+	Expired               *float64 `json:"expired,omitempty"`
+	TestSuiteName         *string  `json:"testSuiteName,omitempty"`
+}
+
+type DescribeTestCasesOutput struct {
+	NextToken *string    `json:"nextToken,omitempty"`
+	TestCases []TestCase `json:"testCases,omitempty"`
+}
+
 var enum0 = []string{"DISABLED", "ENABLED"}
 
 var pattern0 = regexp.MustCompile("^[A-Za-z0-9][A-Za-z0-9\\-_]{1,149}$")
 
-var enum1 = []string{"PARAMETER_STORE", "PLAINTEXT", "SECRETS_MANAGER"}
+var enum1 = []string{"CODE_COVERAGE", "TEST"}
 
-var enum2 = []string{"ASCENDING", "DESCENDING"}
+var enum2 = []string{"PARAMETER_STORE", "PLAINTEXT", "SECRETS_MANAGER"}
 
-var enum3 = []string{"CREATED_TIME", "LAST_MODIFIED_TIME", "NAME"}
+var enum3 = []string{"ASCENDING", "DESCENDING"}
 
-var enum4 = []string{"CODEPIPELINE", "NO_ARTIFACTS", "S3"}
+var enum4 = []string{"CREATED_TIME", "LAST_MODIFIED_TIME", "NAME"}
 
-var enum5 = []string{"BUILD_ID", "NONE"}
+var enum5 = []string{"CODEPIPELINE", "NO_ARTIFACTS", "S3"}
 
-var enum6 = []string{"NONE", "ZIP"}
+var enum6 = []string{"BUILD_ID", "NONE"}
 
-var enum7 = []string{"ARM_CONTAINER", "ARM_EC2", "ARM_LAMBDA_CONTAINER", "LINUX_CONTAINER", "LINUX_EC2", "LINUX_GPU_CONTAINER", "LINUX_LAMBDA_CONTAINER", "MAC_ARM", "WINDOWS_CONTAINER", "WINDOWS_EC2", "WINDOWS_SERVER_2019_CONTAINER", "WINDOWS_SERVER_2022_CONTAINER"}
+var enum7 = []string{"NONE", "ZIP"}
 
-var enum8 = []string{"ATTRIBUTE_BASED_COMPUTE", "BUILD_GENERAL1_2XLARGE", "BUILD_GENERAL1_LARGE", "BUILD_GENERAL1_MEDIUM", "BUILD_GENERAL1_SMALL", "BUILD_GENERAL1_XLARGE", "BUILD_LAMBDA_10GB", "BUILD_LAMBDA_1GB", "BUILD_LAMBDA_2GB", "BUILD_LAMBDA_4GB", "BUILD_LAMBDA_8GB", "CUSTOM_INSTANCE_TYPE"}
+var enum8 = []string{"ARM_CONTAINER", "ARM_EC2", "ARM_LAMBDA_CONTAINER", "LINUX_CONTAINER", "LINUX_EC2", "LINUX_GPU_CONTAINER", "LINUX_LAMBDA_CONTAINER", "MAC_ARM", "WINDOWS_CONTAINER", "WINDOWS_EC2", "WINDOWS_SERVER_2019_CONTAINER", "WINDOWS_SERVER_2022_CONTAINER"}
 
-var enum9 = []string{"BITBUCKET", "CODECOMMIT", "CODEPIPELINE", "GITHUB", "GITHUB_ENTERPRISE", "GITLAB", "GITLAB_SELF_MANAGED", "NO_SOURCE", "S3"}
+var enum9 = []string{"ATTRIBUTE_BASED_COMPUTE", "BUILD_GENERAL1_2XLARGE", "BUILD_GENERAL1_LARGE", "BUILD_GENERAL1_MEDIUM", "BUILD_GENERAL1_SMALL", "BUILD_GENERAL1_XLARGE", "BUILD_LAMBDA_10GB", "BUILD_LAMBDA_1GB", "BUILD_LAMBDA_2GB", "BUILD_LAMBDA_4GB", "BUILD_LAMBDA_8GB", "CUSTOM_INSTANCE_TYPE"}
+
+var enum10 = []string{"BITBUCKET", "CODECOMMIT", "CODEPIPELINE", "GITHUB", "GITHUB_ENTERPRISE", "GITLAB", "GITLAB_SELF_MANAGED", "NO_SOURCE", "S3"}
+
+var enum11 = []string{"NO_EXPORT", "S3"}
+
+var enum12 = []string{"DELETING", "FAILED", "GENERATING", "INCOMPLETE", "SUCCEEDED"}
 
 var pattern1 = regexp.MustCompile("^([\\p{L}\\p{Z}\\p{N}_.:/=@+\\-]*)$")
 
@@ -322,6 +491,40 @@ func (v *BatchGetProjectsInput) Validate(path string) error {
 		}
 		for i0, e0 := range v.Names {
 			if err := validation.Length(validation.Index(path+"names", i0), utf8.RuneCountInString(e0), new(int64(1)), nil); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *BatchGetReportGroupsInput) Validate(path string) error {
+	if err := validation.Required(path+"reportGroupArns", v.ReportGroupArns != nil); err != nil {
+		return err
+	}
+	if v.ReportGroupArns != nil {
+		if err := validation.Length(path+"reportGroupArns", len(v.ReportGroupArns), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.ReportGroupArns {
+			if err := validation.Length(validation.Index(path+"reportGroupArns", i0), utf8.RuneCountInString(e0), new(int64(1)), nil); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *BatchGetReportsInput) Validate(path string) error {
+	if err := validation.Required(path+"reportArns", v.ReportArns != nil); err != nil {
+		return err
+	}
+	if v.ReportArns != nil {
+		if err := validation.Length(path+"reportArns", len(v.ReportArns), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.ReportArns {
+			if err := validation.Length(validation.Index(path+"reportArns", i0), utf8.RuneCountInString(e0), new(int64(1)), nil); err != nil {
 				return err
 			}
 		}
@@ -418,12 +621,79 @@ func (v *CreateProjectInput) Validate(path string) error {
 	return nil
 }
 
+func (v *CreateReportGroupInput) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.Name != nil {
+		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(2)), new(int64(128))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"type", v.Type != nil); err != nil {
+		return err
+	}
+	if v.Type != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum1); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"exportConfig", v.ExportConfig != nil); err != nil {
+		return err
+	}
+	if v.ExportConfig != nil {
+		if err := (*v.ExportConfig).Validate(path + "exportConfig" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		if err := validation.Length(path+"tags", len(v.Tags), new(int64(0)), new(int64(50))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (v *DeleteProjectInput) Validate(path string) error {
 	if err := validation.Required(path+"name", v.Name != nil); err != nil {
 		return err
 	}
 	if v.Name != nil {
 		if err := validation.Length(path+"name", utf8.RuneCountInString((*v.Name)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DeleteReportGroupInput) Validate(path string) error {
+	if err := validation.Required(path+"arn", v.Arn != nil); err != nil {
+		return err
+	}
+	if v.Arn != nil {
+		if err := validation.Length(path+"arn", utf8.RuneCountInString((*v.Arn)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *DescribeTestCasesInput) Validate(path string) error {
+	if err := validation.Required(path+"reportArn", v.ReportArn != nil); err != nil {
+		return err
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	if v.Filter != nil {
+		if err := (*v.Filter).Validate(path + "filter" + "."); err != nil {
 			return err
 		}
 	}
@@ -443,7 +713,7 @@ func (v *EnvironmentVariable) Validate(path string) error {
 		return err
 	}
 	if v.Type != nil {
-		if err := validation.Enum(path+"type", (*v.Type), enum1); err != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum2); err != nil {
 			return err
 		}
 	}
@@ -460,7 +730,7 @@ func (v *ListBuildsForProjectInput) Validate(path string) error {
 		}
 	}
 	if v.SortOrder != nil {
-		if err := validation.Enum(path+"sortOrder", (*v.SortOrder), enum2); err != nil {
+		if err := validation.Enum(path+"sortOrder", (*v.SortOrder), enum3); err != nil {
 			return err
 		}
 	}
@@ -469,7 +739,7 @@ func (v *ListBuildsForProjectInput) Validate(path string) error {
 
 func (v *ListBuildsInput) Validate(path string) error {
 	if v.SortOrder != nil {
-		if err := validation.Enum(path+"sortOrder", (*v.SortOrder), enum2); err != nil {
+		if err := validation.Enum(path+"sortOrder", (*v.SortOrder), enum3); err != nil {
 			return err
 		}
 	}
@@ -478,17 +748,77 @@ func (v *ListBuildsInput) Validate(path string) error {
 
 func (v *ListProjectsInput) Validate(path string) error {
 	if v.SortBy != nil {
-		if err := validation.Enum(path+"sortBy", (*v.SortBy), enum3); err != nil {
+		if err := validation.Enum(path+"sortBy", (*v.SortBy), enum4); err != nil {
 			return err
 		}
 	}
 	if v.SortOrder != nil {
-		if err := validation.Enum(path+"sortOrder", (*v.SortOrder), enum2); err != nil {
+		if err := validation.Enum(path+"sortOrder", (*v.SortOrder), enum3); err != nil {
 			return err
 		}
 	}
 	if v.NextToken != nil {
 		if err := validation.Length(path+"nextToken", utf8.RuneCountInString((*v.NextToken)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListReportGroupsInput) Validate(path string) error {
+	if v.SortOrder != nil {
+		if err := validation.Enum(path+"sortOrder", (*v.SortOrder), enum3); err != nil {
+			return err
+		}
+	}
+	if v.SortBy != nil {
+		if err := validation.Enum(path+"sortBy", (*v.SortBy), enum4); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListReportsForReportGroupInput) Validate(path string) error {
+	if err := validation.Required(path+"reportGroupArn", v.ReportGroupArn != nil); err != nil {
+		return err
+	}
+	if v.SortOrder != nil {
+		if err := validation.Enum(path+"sortOrder", (*v.SortOrder), enum3); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	if v.Filter != nil {
+		if err := (*v.Filter).Validate(path + "filter" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ListReportsInput) Validate(path string) error {
+	if v.SortOrder != nil {
+		if err := validation.Enum(path+"sortOrder", (*v.SortOrder), enum3); err != nil {
+			return err
+		}
+	}
+	if v.MaxResults != nil {
+		if err := validation.Range(path+"maxResults", float64((*v.MaxResults)), new(float64(1)), new(float64(100))); err != nil {
+			return err
+		}
+	}
+	if v.Filter != nil {
+		if err := (*v.Filter).Validate(path + "filter" + "."); err != nil {
 			return err
 		}
 	}
@@ -509,17 +839,17 @@ func (v *ProjectArtifacts) Validate(path string) error {
 		return err
 	}
 	if v.Type != nil {
-		if err := validation.Enum(path+"type", (*v.Type), enum4); err != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum5); err != nil {
 			return err
 		}
 	}
 	if v.NamespaceType != nil {
-		if err := validation.Enum(path+"namespaceType", (*v.NamespaceType), enum5); err != nil {
+		if err := validation.Enum(path+"namespaceType", (*v.NamespaceType), enum6); err != nil {
 			return err
 		}
 	}
 	if v.Packaging != nil {
-		if err := validation.Enum(path+"packaging", (*v.Packaging), enum6); err != nil {
+		if err := validation.Enum(path+"packaging", (*v.Packaging), enum7); err != nil {
 			return err
 		}
 	}
@@ -531,7 +861,7 @@ func (v *ProjectEnvironment) Validate(path string) error {
 		return err
 	}
 	if v.Type != nil {
-		if err := validation.Enum(path+"type", (*v.Type), enum7); err != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum8); err != nil {
 			return err
 		}
 	}
@@ -547,7 +877,7 @@ func (v *ProjectEnvironment) Validate(path string) error {
 		return err
 	}
 	if v.ComputeType != nil {
-		if err := validation.Enum(path+"computeType", (*v.ComputeType), enum8); err != nil {
+		if err := validation.Enum(path+"computeType", (*v.ComputeType), enum9); err != nil {
 			return err
 		}
 	}
@@ -566,12 +896,39 @@ func (v *ProjectSource) Validate(path string) error {
 		return err
 	}
 	if v.Type != nil {
-		if err := validation.Enum(path+"type", (*v.Type), enum9); err != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum10); err != nil {
 			return err
 		}
 	}
 	if v.GitCloneDepth != nil {
 		if err := validation.Range(path+"gitCloneDepth", float64((*v.GitCloneDepth)), new(float64(0)), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ReportExportConfig) Validate(path string) error {
+	if v.ExportConfigType != nil {
+		if err := validation.Enum(path+"exportConfigType", (*v.ExportConfigType), enum11); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *ReportFilter) Validate(path string) error {
+	if v.Status != nil {
+		if err := validation.Enum(path+"status", (*v.Status), enum12); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *RetryBuildInput) Validate(path string) error {
+	if v.Id != nil {
+		if err := validation.Length(path+"id", utf8.RuneCountInString((*v.Id)), new(int64(1)), nil); err != nil {
 			return err
 		}
 	}
@@ -649,6 +1006,10 @@ func (v *Tag) Validate(path string) error {
 	return nil
 }
 
+func (v *TestCaseFilter) Validate(path string) error {
+	return nil
+}
+
 func (v *UpdateProjectInput) Validate(path string) error {
 	if err := validation.Required(path+"name", v.Name != nil); err != nil {
 		return err
@@ -711,6 +1072,33 @@ func (v *UpdateProjectInput) Validate(path string) error {
 	return nil
 }
 
+func (v *UpdateReportGroupInput) Validate(path string) error {
+	if err := validation.Required(path+"arn", v.Arn != nil); err != nil {
+		return err
+	}
+	if v.Arn != nil {
+		if err := validation.Length(path+"arn", utf8.RuneCountInString((*v.Arn)), new(int64(1)), nil); err != nil {
+			return err
+		}
+	}
+	if v.ExportConfig != nil {
+		if err := (*v.ExportConfig).Validate(path + "exportConfig" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		if err := validation.Length(path+"tags", len(v.Tags), new(int64(0)), new(int64(50))); err != nil {
+			return err
+		}
+		for i0, e0 := range v.Tags {
+			if err := e0.Validate(validation.Index(path+"tags", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 type API interface {
 	CreateProject(context.Context, *CreateProjectInput) (*CreateProjectOutput, error)
 	BatchGetProjects(context.Context, *BatchGetProjectsInput) (*BatchGetProjectsOutput, error)
@@ -723,6 +1111,16 @@ type API interface {
 	ListBuilds(context.Context, *ListBuildsInput) (*ListBuildsOutput, error)
 	ListBuildsForProject(context.Context, *ListBuildsForProjectInput) (*ListBuildsForProjectOutput, error)
 	BatchDeleteBuilds(context.Context, *BatchDeleteBuildsInput) (*BatchDeleteBuildsOutput, error)
+	RetryBuild(context.Context, *RetryBuildInput) (*RetryBuildOutput, error)
+	CreateReportGroup(context.Context, *CreateReportGroupInput) (*CreateReportGroupOutput, error)
+	UpdateReportGroup(context.Context, *UpdateReportGroupInput) (*UpdateReportGroupOutput, error)
+	DeleteReportGroup(context.Context, *DeleteReportGroupInput) (*DeleteReportGroupOutput, error)
+	BatchGetReportGroups(context.Context, *BatchGetReportGroupsInput) (*BatchGetReportGroupsOutput, error)
+	ListReportGroups(context.Context, *ListReportGroupsInput) (*ListReportGroupsOutput, error)
+	ListReports(context.Context, *ListReportsInput) (*ListReportsOutput, error)
+	ListReportsForReportGroup(context.Context, *ListReportsForReportGroupInput) (*ListReportsForReportGroupOutput, error)
+	BatchGetReports(context.Context, *BatchGetReportsInput) (*BatchGetReportsOutput, error)
+	DescribeTestCases(context.Context, *DescribeTestCasesInput) (*DescribeTestCasesOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -803,6 +1201,76 @@ func Descriptor(api API) catalog.Service {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.BatchDeleteBuilds(ctx, in)
+		}},
+		"RetryBuild": {Name: "RetryBuild", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:RetryBuild", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.RetryBuild", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &RetryBuildInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*RetryBuildInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.RetryBuild(ctx, in)
+		}},
+		"CreateReportGroup": {Name: "CreateReportGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:CreateReportGroup", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.CreateReportGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateReportGroupInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*CreateReportGroupInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.CreateReportGroup(ctx, in)
+		}},
+		"UpdateReportGroup": {Name: "UpdateReportGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:UpdateReportGroup", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.UpdateReportGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateReportGroupInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*UpdateReportGroupInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.UpdateReportGroup(ctx, in)
+		}},
+		"DeleteReportGroup": {Name: "DeleteReportGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:DeleteReportGroup", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.DeleteReportGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteReportGroupInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*DeleteReportGroupInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.DeleteReportGroup(ctx, in)
+		}},
+		"BatchGetReportGroups": {Name: "BatchGetReportGroups", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:BatchGetReportGroups", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.BatchGetReportGroups", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchGetReportGroupsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*BatchGetReportGroupsInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.BatchGetReportGroups(ctx, in)
+		}},
+		"ListReportGroups": {Name: "ListReportGroups", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:ListReportGroups", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.ListReportGroups", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListReportGroupsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListReportGroupsInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.ListReportGroups(ctx, in)
+		}},
+		"ListReports": {Name: "ListReports", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:ListReports", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.ListReports", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListReportsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListReportsInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.ListReports(ctx, in)
+		}},
+		"ListReportsForReportGroup": {Name: "ListReportsForReportGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:ListReportsForReportGroup", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.ListReportsForReportGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListReportsForReportGroupInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListReportsForReportGroupInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.ListReportsForReportGroup(ctx, in)
+		}},
+		"BatchGetReports": {Name: "BatchGetReports", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:BatchGetReports", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.BatchGetReports", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchGetReportsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*BatchGetReportsInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.BatchGetReports(ctx, in)
+		}},
+		"DescribeTestCases": {Name: "DescribeTestCases", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:DescribeTestCases", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.DescribeTestCases", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeTestCasesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*DescribeTestCasesInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("InvalidInputException", err.Error())
+			}
+			return api.DescribeTestCases(ctx, in)
 		}},
 	}}
 }

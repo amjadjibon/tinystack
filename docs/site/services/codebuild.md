@@ -13,7 +13,7 @@ Persist build projects and run buildspec 0.2 commands in opt-in Docker workers w
 | API version | `2016-10-06` |
 | Scope | Account and region |
 | Execution | Records by default; opt-in Docker builds |
-| Selected operations | 11 of 59 in the pinned model |
+| Selected operations | 21 of 59 in the pinned model |
 
 ## Implemented behavior
 
@@ -21,7 +21,7 @@ See the [implemented feature catalogue](catalogue.md#codebuild) for this service
 
 ## Limitations and future work
 
-- No RetryBuild, batch builds, webhook execution, reports, report groups, automatic retries, cached builds, VPC networking, fleets, secondary sources/artifacts, registry credentials or managed runtime installation. Unsupported API members and buildspec sections fail explicitly.
+- No batch builds, webhook execution (GitHub/Bitbucket provider integration is unavailable), automatic retries, cached builds, VPC networking, fleets, secondary sources/artifacts, registry credentials or managed runtime installation. Unsupported API members and buildspec sections fail explicitly.
 - GitHub source execution and CodeCommit git content are unavailable; project Git source metadata is retained. Only S3 zip objects are downloaded; S3 folder sources and S3 ARN buildspec references are not executed.
 - Build lists return storage key order with 100-record pages; DESCENDING ordering fails explicitly. No AWS timestamp sort, shared/cross-account builds.
 - Only LINUX_CONTAINER environments and bash or /bin/sh shells; the selected image must contain the shell. Compute classes remain metadata; no CPU/memory quotas, Docker socket mount or ECR login. Source and output use docker cp, including with remote daemons.
@@ -29,6 +29,7 @@ See the [implemented feature catalogue](catalogue.md#codebuild) for this service
 - Artifact shell expressions, symlink artifacts and colliding flattened names fail explicitly. Artifacts and source archives are processed in memory; no extra CodeBuild-specific size limit. Existing project metadata bounds remain local constraints.
 - Secret environment references support local names and optional JSON key/version selectors, not secret ARNs or binary secrets; missing values fail DOWNLOAD_SOURCE. Secrets are not automatically masked from user command output.
 - UpdateProject nested configuration replaces objects with defaults; only projects appear in inventory. See the [CodeBuild guide](../guides/codebuild.md) for selected members and execution details.
+- Report groups support TEST and NO_EXPORT only; coverage reports, S3 report exports and report expiry cleanup are unsupported. Records mode never generates reports; AWS report-creation APIs are internal, so only report groups can be created through the public API.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -45,39 +46,44 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `BatchDeleteBuilds` | `POST /` |
 | `BatchGetBuilds` | `POST /` |
 | `BatchGetProjects` | `POST /` |
+| `BatchGetReportGroups` | `POST /` |
+| `BatchGetReports` | `POST /` |
 | `CreateProject` | `POST /` |
+| `CreateReportGroup` | `POST /` |
 | `DeleteProject` | `POST /` |
+| `DeleteReportGroup` | `POST /` |
+| `DescribeTestCases` | `POST /` |
 | `ListBuilds` | `POST /` |
 | `ListBuildsForProject` | `POST /` |
 | `ListProjects` | `POST /` |
+| `ListReportGroups` | `POST /` |
+| `ListReports` | `POST /` |
+| `ListReportsForReportGroup` | `POST /` |
+| `RetryBuild` | `POST /` |
 | `StartBuild` | `POST /` |
 | `StopBuild` | `POST /` |
 | `UpdateProject` | `POST /` |
+| `UpdateReportGroup` | `POST /` |
 
 ## Operations not implemented
 
-??? info "48 modeled operations outside the implementation"
+??? info "38 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
     - `BatchGetBuildBatches`
     - `BatchGetCommandExecutions`
     - `BatchGetFleets`
-    - `BatchGetReportGroups`
-    - `BatchGetReports`
     - `BatchGetSandboxes`
     - `CreateFleet`
-    - `CreateReportGroup`
     - `CreateWebhook`
     - `DeleteBuildBatch`
     - `DeleteFleet`
     - `DeleteReport`
-    - `DeleteReportGroup`
     - `DeleteResourcePolicy`
     - `DeleteSourceCredentials`
     - `DeleteWebhook`
     - `DescribeCodeCoverages`
-    - `DescribeTestCases`
     - `GetReportGroupTrend`
     - `GetResourcePolicy`
     - `ImportSourceCredentials`
@@ -87,16 +93,12 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListCommandExecutionsForSandbox`
     - `ListCuratedEnvironmentImages`
     - `ListFleets`
-    - `ListReportGroups`
-    - `ListReports`
-    - `ListReportsForReportGroup`
     - `ListSandboxes`
     - `ListSandboxesForProject`
     - `ListSharedProjects`
     - `ListSharedReportGroups`
     - `ListSourceCredentials`
     - `PutResourcePolicy`
-    - `RetryBuild`
     - `RetryBuildBatch`
     - `StartBuildBatch`
     - `StartCommandExecution`
@@ -106,7 +108,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `StopSandbox`
     - `UpdateFleet`
     - `UpdateProjectVisibility`
-    - `UpdateReportGroup`
     - `UpdateWebhook`
 
 ## Source and examples

@@ -118,7 +118,9 @@ var consolePages = map[string]consolePage{
 `)},
 	"codebuild": {operations: strings.Fields(`
  CreateProject BatchGetProjects ListProjects UpdateProject DeleteProject
- StartBuild BatchGetBuilds StopBuild ListBuilds ListBuildsForProject BatchDeleteBuilds
+ StartBuild BatchGetBuilds StopBuild ListBuilds ListBuildsForProject BatchDeleteBuilds RetryBuild
+ CreateReportGroup UpdateReportGroup DeleteReportGroup BatchGetReportGroups ListReportGroups
+ ListReports ListReportsForReportGroup BatchGetReports DescribeTestCases
 `)},
 	// Cognito identity pools exposes pool, role, identity and tag management, plus the two calls the test panel makes for
 	// an unauthenticated identity. Token issue and login linking stay API-only.

@@ -18,9 +18,10 @@ const (
 )
 
 type buildspec struct {
-	Phases    map[string]phaseSpec `yaml:"phases"`
-	Artifacts *artifactSpec        `yaml:"artifacts"`
-	Version   string               `yaml:"version"`
+	Reports   map[string]reportSpec `yaml:"reports"`
+	Phases    map[string]phaseSpec  `yaml:"phases"`
+	Artifacts *artifactSpec         `yaml:"artifacts"`
+	Version   string                `yaml:"version"`
 	Env       struct {
 		Variables  map[string]string `yaml:"variables"`
 		Parameters map[string]string `yaml:"parameter-store"`
@@ -42,7 +43,7 @@ type artifactSpec struct {
 	DiscardPaths  bool     `yaml:"discard-paths"`
 }
 
-// KnownFields rejects reports, runtime-versions, run-as, cache, batch and all other unimplemented sections.
+// KnownFields rejects runtime-versions, run-as, cache, batch and all other unimplemented sections.
 // https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html
 func parseBuildspec(data []byte) (*buildspec, error) {
 	var spec buildspec
@@ -103,6 +104,19 @@ func parseBuildspec(data []byte) (*buildspec, error) {
 		}
 	}
 
+	for name, r := range spec.Reports {
+		if name == "" || len(r.Files) == 0 {
+			return nil, fmt.Errorf("reports require a group name and files")
+		}
+		if r.FileFormat != "" && r.FileFormat != "JUNITXML" && r.FileFormat != "CUCUMBERJSON" {
+			return nil, fmt.Errorf("reports support JUNITXML and CUCUMBERJSON")
+		}
+		for _, p := range append(append([]string{}, r.Files...), r.BaseDirectory) {
+			if strings.HasPrefix(p, "/") || strings.Contains(p, "..") {
+				return nil, fmt.Errorf("report paths must stay in CODEBUILD_SRC_DIR")
+			}
+		}
+	}
 	return &spec, nil
 }
 
@@ -159,4 +173,11 @@ func (spec *buildspec) script(marker string) string {
 
 	b.WriteString("[ \"$CODEBUILD_BUILD_SUCCEEDING\" = 1 ]\n")
 	return b.String()
+}
+
+type reportSpec struct {
+	BaseDirectory string   `yaml:"base-directory"`
+	FileFormat    string   `yaml:"file-format"`
+	Files         []string `yaml:"files"`
+	DiscardPaths  bool     `yaml:"discard-paths"`
 }

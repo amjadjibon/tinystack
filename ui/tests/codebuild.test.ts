@@ -68,3 +68,20 @@ test("links encode identifiers and only retain scope and explicit navigation", (
 		false,
 	);
 });
+
+test("report group input validates names, uses shared tags and preserves the ARN for updates", async () => {
+	const { reportGroupInput } = await import("../src/lib/codebuildHelpers.ts");
+	assert.deepEqual(reportGroupInput("my-tests", '{"team":"console"}'), {
+		Name: "my-tests",
+		Type: "TEST",
+		ExportConfig: { ExportConfigType: "NO_EXPORT" },
+		Tags: [{ Key: "team", Value: "console" }],
+	});
+	assert.throws(() => reportGroupInput("x", "{}"), /name/);
+	assert.throws(() => reportGroupInput("tests", "[]"), /JSON/);
+	assert.deepEqual(reportGroupInput("ignored", "{}", "arn:group"), {
+		Arn: "arn:group",
+		ExportConfig: { ExportConfigType: "NO_EXPORT" },
+		Tags: [],
+	});
+});
