@@ -89,10 +89,14 @@ func substitute(command []string, parameters map[string]string) ([]string, error
 }
 
 func mergedContainer(scope request.Scope, d *api.ContainerProperties, o *api.ContainerOverrides,
-	params map[string]string,
+	params map[string]string, platform string,
 ) (*api.ContainerDetail, error) {
 	c := common.Clone(d)
 	if o != nil {
+		if platform == fargatePlatform && (o.Vcpus != nil || o.Memory != nil) {
+			return nil, invalid("Fargate overrides require resourceRequirements instead of vcpus/memory")
+		}
+
 		if o.Command != nil {
 			c.Command = slices.Clone(o.Command)
 		}
@@ -127,7 +131,7 @@ func mergedContainer(scope request.Scope, d *api.ContainerProperties, o *api.Con
 		}
 	}
 
-	if err := containerOK(scope, c); err != nil {
+	if err := containerOK(scope, c, platform); err != nil {
 		return nil, err
 	}
 
@@ -140,6 +144,8 @@ func mergedContainer(scope request.Scope, d *api.ContainerProperties, o *api.Con
 		Image: c.Image, Vcpus: c.Vcpus, Memory: c.Memory, Command: command,
 		JobRoleArn: c.JobRoleArn, ExecutionRoleArn: c.ExecutionRoleArn, Environment: c.Environment,
 		ResourceRequirements: c.ResourceRequirements, LogConfiguration: c.LogConfiguration,
+		NetworkConfiguration: c.NetworkConfiguration, FargatePlatformConfiguration: c.FargatePlatformConfiguration,
+		RuntimePlatform: c.RuntimePlatform,
 	}, nil
 }
 
@@ -187,13 +193,30 @@ func (s *Service) SubmitJob(ctx context.Context, in *api.SubmitJobRequest) (*api
 			return invalid("Job definition must be ACTIVE")
 		}
 
+		platform := d.Definition.PlatformCapabilities[0]
+		if platform == fargatePlatform && s.runtime != nil {
+			return invalid("Fargate execution is unsupported in Docker mode; use records mode")
+		}
+
+		for _, order := range q.Queue.ComputeEnvironmentOrder {
+			ce, readErr := read(tx, scope, kindCE, order.ComputeEnvironment)
+			if readErr != nil {
+				return readErr
+			}
+
+			fargate := ce.CE.ComputeResources != nil && isFargate(common.Value(ce.CE.ComputeResources.Type))
+			if fargate != (platform == fargatePlatform) {
+				return invalid("Job platform must match the queue compute environments")
+			}
+		}
+
 		params := maps.Clone(d.Definition.Parameters)
 		if params == nil {
 			params = map[string]string{}
 		}
 
 		maps.Copy(params, in.Parameters)
-		c, e := mergedContainer(scope, d.Definition.ContainerProperties, in.ContainerOverrides, params)
+		c, e := mergedContainer(scope, d.Definition.ContainerProperties, in.ContainerOverrides, params, platform)
 		if e != nil {
 			return e
 		}
@@ -254,7 +277,7 @@ func (s *Service) SubmitJob(ctx context.Context, in *api.SubmitJobRequest) (*api
 			Container:            c,
 			DependsOn:            deps,
 			Tags:                 maps.Clone(in.Tags),
-			PlatformCapabilities: []string{ec2Platform},
+			PlatformCapabilities: slices.Clone(d.Definition.PlatformCapabilities),
 			RetryStrategy: common.Clone(
 				common.OrElse(in.RetryStrategy, d.Definition.RetryStrategy),
 			),
@@ -294,6 +317,7 @@ func (s *Service) SubmitJob(ctx context.Context, in *api.SubmitJobRequest) (*api
 							api.JobDependency{JobId: new(fmt.Sprintf("%s:%d", id, i-1))},
 						)
 					}
+
 				case dependencyNToN:
 					child.Job.DependsOn = append(
 						child.Job.DependsOn,
@@ -461,6 +485,7 @@ func settle(tx storage.WriteTx, scope request.Scope) error {
 					if before != statusSucceeded {
 						r.Job.StoppedAt = new(time.Now().UnixMilli())
 					}
+
 				case counts[statusFailed]+counts[statusSucceeded] == size:
 					reason := "One or more child jobs failed"
 					if r.Cancelled {
@@ -470,6 +495,7 @@ func settle(tx storage.WriteTx, scope request.Scope) error {
 					if before != statusFailed {
 						failJob(r, reason)
 					}
+
 				default:
 					r.Job.Status = new(statusPending)
 				}
@@ -596,6 +622,7 @@ func (s *Service) ListJobs(ctx context.Context, in *api.ListJobsRequest) (*api.L
 						definition, _, _ := strings.Cut(lastName(common.Value(r.Job.JobDefinition)), ":")
 						match = wildcard(v, definition)
 					}
+
 				case "BEFORE_CREATED_AT":
 					n, _ := strconv.ParseInt(v, 10, 64)
 					match = common.Value(r.Job.CreatedAt) < n

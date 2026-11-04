@@ -116,6 +116,11 @@ export function Definitions({
 							cell: (d) => <Status value={d.Status} />,
 						},
 						{
+							id: "platform",
+							header: "Platform",
+							cell: (d) => d.PlatformCapabilities?.join(", ") || "EC2",
+						},
+						{
 							id: "image",
 							header: "Image",
 							cell: (d) => d.ContainerProperties?.Image ?? "-",
@@ -253,6 +258,13 @@ function Overview({ definition: d }: { definition: JobDefinition }) {
 					["Memory (MiB)", countText(need.memory)],
 					["Job role", c?.JobRoleArn],
 					["Execution role", c?.ExecutionRoleArn],
+					["Assign public IP", c?.NetworkConfiguration?.AssignPublicIp],
+					[
+						"Fargate platform version",
+						c?.FargatePlatformConfiguration?.PlatformVersion,
+					],
+					["CPU architecture", c?.RuntimePlatform?.CpuArchitecture],
+					["Operating system", c?.RuntimePlatform?.OperatingSystemFamily],
 					["Retry attempts", countText(d.RetryStrategy?.Attempts)],
 					["Timeout (seconds)", countText(d.Timeout?.AttemptDurationSeconds)],
 				]}

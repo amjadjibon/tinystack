@@ -58,6 +58,12 @@ export type ContainerProperties = {
 	Command?: string[];
 	JobRoleArn?: string;
 	ExecutionRoleArn?: string;
+	NetworkConfiguration?: { AssignPublicIp?: string };
+	FargatePlatformConfiguration?: { PlatformVersion?: string };
+	RuntimePlatform?: {
+		CpuArchitecture?: string;
+		OperatingSystemFamily?: string;
+	};
 	Environment?: Pair[];
 	ResourceRequirements?: Requirement[];
 	LogConfiguration?: { LogDriver?: string; Options?: Tags };
@@ -237,7 +243,11 @@ export const sortJobs = <T extends { CreatedAt?: number }>(list: T[]) =>
 
 // capacityText shows an environment's minimum, desired and maximum vCPUs.
 export const capacityText = (r?: ComputeResources) =>
-	r ? `${r.MinvCpus ?? 0} / ${r.DesiredvCpus ?? 0} / ${r.MaxvCpus ?? 0}` : "-";
+	r && isFargate(r.Type)
+		? `Max ${r.MaxvCpus ?? 0}`
+		: r
+			? `${r.MinvCpus ?? 0} / ${r.DesiredvCpus ?? 0} / ${r.MaxvCpus ?? 0}`
+			: "-";
 
 // environmentNames lists the names of a queue's environments in order of preference.
 export const environmentNames = (order?: EnvironmentOrder[]) =>
@@ -282,7 +292,11 @@ export function stringList(text: string, label: string) {
 	return value as string[];
 }
 
+export const computeTypes = ["EC2", "FARGATE", "FARGATE_SPOT"];
+export const isFargate = (type?: string) =>
+	type === "FARGATE" || type === "FARGATE_SPOT";
 export type EnvironmentForm = {
+	computeType: string;
 	name: string;
 	type: string;
 	serviceRole: string;
@@ -298,6 +312,7 @@ export type EnvironmentForm = {
 };
 export const emptyEnvironmentForm = (): EnvironmentForm => ({
 	name: "",
+	computeType: "EC2",
 	type: "MANAGED",
 	serviceRole: "",
 	strategy: "BEST_FIT_PROGRESSIVE",
@@ -325,7 +340,7 @@ function capacity(f: { min: string; desired: string; max: string }) {
 }
 
 // environmentInput builds CreateComputeEnvironment. The backend creates both
-// types ENABLED and supports EC2 capacity only.
+// types ENABLED and supports EC2 and Fargate capacity metadata.
 export function environmentInput(f: EnvironmentForm) {
 	const ComputeEnvironmentName = batchName(f.name, "Name");
 	if (!environmentTypes.includes(f.type))
@@ -342,6 +357,24 @@ export function environmentInput(f: EnvironmentForm) {
 	if (f.type === "UNMANAGED") {
 		if (!role)
 			throw new Error("Unmanaged environments require a service role.");
+		return input;
+	}
+	if (!computeTypes.includes(f.computeType))
+		throw new Error("Choose a compute type.");
+	if (isFargate(f.computeType)) {
+		if (
+			f.subnets.length < 1 ||
+			f.subnets.length > 16 ||
+			f.groups.length < 1 ||
+			f.groups.length > 5
+		)
+			throw new Error("Choose 1-16 subnets and 1-5 security groups.");
+		input.ComputeResources = {
+			Type: f.computeType,
+			MaxvCpus: integer(f.max.trim(), "Maximum vCPUs", 1, maxCount),
+			Subnets: f.subnets,
+			SecurityGroupIds: f.groups,
+		};
 		return input;
 	}
 	if (!strategies.includes(f.strategy))
@@ -385,7 +418,10 @@ export function environmentUpdate(
 	};
 	if (f.state !== c.State) input.State = f.state;
 	const r = c.ComputeResources;
-	if (r) {
+	if (r && isFargate(r.Type)) {
+		const MaxvCpus = integer(f.max.trim(), "Maximum vCPUs", 1, maxCount);
+		if (MaxvCpus !== r.MaxvCpus) input.ComputeResources = { MaxvCpus };
+	} else if (r) {
 		const next = capacity(f);
 		if (next.DesiredvCpus < (r.DesiredvCpus ?? 0))
 			throw new Error("Desired vCPUs cannot decrease.");
@@ -471,6 +507,12 @@ export function queueUpdate(
 }
 
 export type DefinitionForm = {
+	platform: string;
+	executionRole: string;
+	publicIp: string;
+	platformVersion: string;
+	architecture: string;
+	os: string;
 	name: string;
 	container: string;
 	parameters: string;
@@ -491,13 +533,29 @@ const containerTemplate: ContainerProperties = {
 };
 // definitionForm starts a form from a definition, which registers its next revision.
 export function definitionForm(from?: JobDefinition): DefinitionForm {
+	const container = { ...(from?.ContainerProperties ?? containerTemplate) };
+	if (from?.PlatformCapabilities?.[0] === "FARGATE") {
+		delete container.ExecutionRoleArn;
+		delete container.NetworkConfiguration;
+		delete container.FargatePlatformConfiguration;
+		delete container.RuntimePlatform;
+	}
 	return {
+		platform: from?.PlatformCapabilities?.[0] ?? "EC2",
+		executionRole: from?.ContainerProperties?.ExecutionRoleArn ?? "",
+		publicIp:
+			from?.ContainerProperties?.NetworkConfiguration?.AssignPublicIp ??
+			"DISABLED",
+		platformVersion:
+			from?.ContainerProperties?.FargatePlatformConfiguration
+				?.PlatformVersion ?? "LATEST",
+		architecture:
+			from?.ContainerProperties?.RuntimePlatform?.CpuArchitecture ?? "X86_64",
+		os:
+			from?.ContainerProperties?.RuntimePlatform?.OperatingSystemFamily ??
+			"LINUX",
 		name: from?.JobDefinitionName ?? "",
-		container: JSON.stringify(
-			from?.ContainerProperties ?? containerTemplate,
-			null,
-			2,
-		),
+		container: JSON.stringify(container, null, 2),
 		parameters: JSON.stringify(from?.Parameters ?? {}),
 		attempts: from?.RetryStrategy?.Attempts
 			? String(from.RetryStrategy.Attempts)
@@ -541,15 +599,45 @@ export function timeout(text: string) {
 }
 
 // definitionInput builds RegisterJobDefinition. The backend registers
-// container definitions on EC2 only.
+// container definitions on EC2 or Fargate.
 export function definitionInput(f: DefinitionForm) {
+	if (!["EC2", "FARGATE"].includes(f.platform))
+		throw new Error("Choose a platform.");
+	const properties = jsonObject(f.container, "Container properties");
+	if (f.platform === "FARGATE") {
+		if (!f.executionRole.trim())
+			throw new Error("Fargate requires an execution role ARN.");
+		// Reject duplicate sources so JSON options and unknown nested fields cannot be discarded.
+		for (const key of Object.keys(properties)) {
+			if (
+				[
+					"executionrolearn",
+					"networkconfiguration",
+					"fargateplatformconfiguration",
+					"runtimeplatform",
+				].includes(key.toLowerCase())
+			)
+				throw new Error(
+					"Set execution role and Fargate platform/network options in the fields above, and remove them from container JSON.",
+				);
+		}
+		Object.assign(properties, {
+			ExecutionRoleArn: f.executionRole.trim(),
+			NetworkConfiguration: { AssignPublicIp: f.publicIp },
+			FargatePlatformConfiguration: { PlatformVersion: f.platformVersion },
+			RuntimePlatform: {
+				CpuArchitecture: f.architecture,
+				OperatingSystemFamily: f.os,
+			},
+		});
+	}
 	const RetryStrategy = retryStrategy(f.attempts, f.rules),
 		Timeout = timeout(f.timeout);
 	return {
 		JobDefinitionName: batchName(f.name, "Name"),
 		Type: "container",
-		PlatformCapabilities: ["EC2"],
-		ContainerProperties: jsonObject(f.container, "Container properties"),
+		PlatformCapabilities: [f.platform],
+		ContainerProperties: properties,
 		...optionalMap("Parameters", stringMap(f.parameters, "Parameters")),
 		...optionalMap("Tags", stringMap(f.tags, "Tags")),
 		...(RetryStrategy ? { RetryStrategy } : {}),
@@ -612,7 +700,7 @@ function containerOverrides(f: SubmitForm, definition: JobDefinition) {
 	if (f.vcpus.trim() || f.memory.trim()) {
 		const current = resources(definition.ContainerProperties);
 		const vcpus = f.vcpus.trim()
-				? integer(f.vcpus.trim(), "vCPUs", 1, maxCount)
+				? vcpuInput(f.vcpus.trim(), definition.PlatformCapabilities?.[0])
 				: current.vcpus,
 			memory = f.memory.trim()
 				? integer(f.memory.trim(), "Memory (MiB)", 4, maxCount)
@@ -625,6 +713,13 @@ function containerOverrides(f: SubmitForm, definition: JobDefinition) {
 		];
 	}
 	return Object.keys(overrides).length ? overrides : undefined;
+}
+
+export function vcpuInput(value: string, platform?: string) {
+	if (platform !== "FARGATE") return integer(value, "vCPUs", 1, maxCount);
+	if (!["0.25", "0.5", "1", "2", "4", "8", "16", "32"].includes(value))
+		throw new Error("Choose a supported Fargate vCPU value.");
+	return Number(value);
 }
 
 // submitInput builds SubmitJob from the form and the active definitions.

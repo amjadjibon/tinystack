@@ -105,8 +105,8 @@ function BatchPage() {
 						}
 					>
 						{docker
-							? "Each job attempt runs in a local Docker container. A queue starts its jobs by priority, in each compute environment's order, while the environment has vCPUs to spare, and the page refreshes while jobs are in progress. Container output goes to CloudWatch Logs. No instances are provisioned: compute environments are metadata."
-							: "Compute environments, job queues, job definitions and jobs are stored as records. No container runs, so a submitted job becomes RUNNABLE (PENDING while it waits for another job) and stays there; it never starts, succeeds or fails on its own. Cancel or terminate it to fail it. Set batch.jobs to docker to run jobs in containers."}
+							? "Fargate submissions are explicitly rejected in Docker mode. Each EC2 job attempt runs in a local Docker container. A queue starts its jobs by priority, in each compute environment's order, while the environment has vCPUs to spare, and the page refreshes while jobs are in progress. Container output goes to CloudWatch Logs. No instances are provisioned: compute environments are metadata."
+							: "Compute environments, job queues, job definitions and jobs are stored as records. Environments and queues become VALID immediately because no infrastructure is provisioned. No container runs, so a submitted job becomes RUNNABLE (PENDING while it waits for another job) and stays there; it never starts, succeeds or fails on its own. Cancel or terminate it to fail it. Set batch.jobs to docker to run EC2 jobs in containers."}
 					</Alert>
 					<Section
 						key={`${account}/${region}/${enabled}/${section}`}

@@ -6,7 +6,7 @@ import {
 } from "@cloudscape-design/components";
 import { useRef, useState } from "react";
 import { ActionDialog } from "#/components/ActionDialog";
-import { Field } from "#/components/containers/Controls";
+import { Choice, Field } from "#/components/containers/Controls";
 import { Text } from "#/components/memorydb/Fields";
 import { batchCall } from "#/lib/batch";
 import {
@@ -93,9 +93,58 @@ export function DefinitionDialog({
 					onChange={(name) => set({ name })}
 				/>
 				<Alert>
-					Batch runs container jobs on the EC2 platform here. Registering a name
-					again adds the next revision.
+					Fargate requires an executionRoleArn and valid VCPU/MEMORY
+					resourceRequirements. Set platform options below; choose a valid
+					resource pair in the container JSON (for example 1 VCPU and 2048 MiB).
+					Docker mode executes EC2 jobs only. Registering a name again adds the
+					next revision.
 				</Alert>
+				<Choice
+					label="Platform"
+					value={f.platform}
+					options={["EC2", "FARGATE"]}
+					onChange={(platform) => set({ platform })}
+				/>
+				{f.platform === "FARGATE" && (
+					<SpaceBetween size="m">
+						<Field
+							label="Execution role ARN"
+							value={f.executionRole}
+							onChange={(executionRole) => set({ executionRole })}
+						/>
+						<Choice
+							label="Assign public IP"
+							value={f.publicIp}
+							options={["DISABLED", "ENABLED"]}
+							onChange={(publicIp) => set({ publicIp })}
+						/>
+						<Choice
+							label="Platform version"
+							value={f.platformVersion}
+							options={["LATEST", "1.4.0", "1.3.0", "1.0.0"]}
+							onChange={(platformVersion) => set({ platformVersion })}
+						/>
+						<Choice
+							label="CPU architecture"
+							value={f.architecture}
+							options={["X86_64", "ARM64"]}
+							onChange={(architecture) => set({ architecture })}
+						/>
+						<Choice
+							label="Operating system"
+							value={f.os}
+							options={[
+								"LINUX",
+								"WINDOWS_SERVER_2019_CORE",
+								"WINDOWS_SERVER_2019_FULL",
+								"WINDOWS_SERVER_2022_CORE",
+								"WINDOWS_SERVER_2022_FULL",
+							]}
+							onChange={(os) => set({ os })}
+						/>
+					</SpaceBetween>
+				)}
+
 				<Json
 					label="Container properties (JSON)"
 					description="Member names are not case sensitive: image or Image. Use Ref::name in the command for a parameter."

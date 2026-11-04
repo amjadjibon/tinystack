@@ -531,7 +531,7 @@ Store App Runner services, revisioned configurations, connections and VPC connec
 
 Persist Batch compute environments and queues; submit dependency-aware jobs with optional execution through the ECS Docker container runtime.
 
-**Execution:** Records by default; optional local Docker jobs via the ECS container runtime. **Selected operations:** 19.
+**Execution:** Records by default: environments and queues become VALID immediately; jobs remain RUNNABLE or PENDING behind dependencies until cancelled, terminated or failed by a dependency. Optional local Docker execution supports EC2 jobs only; Fargate execution is explicitly rejected.. **Selected operations:** 19.
 
 - 19 REST JSON operations: compute environment and queue CRUD, definition revisions, tags, SubmitJob, DescribeJobs, ListJobs, CancelJob and TerminateJob.
 - UNMANAGED and finite x86 MANAGED EC2 records must be created ENABLED (omitted state defaults to ENABLED); explicit DISABLED creation returns ClientException/400 without storing a record. Updates accept ENABLED/DISABLED; VALID describes local metadata, with no fabricated ECS cluster or runtime identifiers.
@@ -549,6 +549,9 @@ Persist Batch compute environments and queues; submit dependency-aware jobs with
 - Arrays of 2-10000 children, status summaries, SEQUENTIAL and N_TO_N dependencies and up to 20 ordinary dependencies; failed dependencies fail dependent jobs.
 - Batch Job State Change events through EventBridge; store-labeled orphan cleanup, reset/shutdown container removal and SQLite restart recovery that fails interrupted attempts and applies retry rules.
 - Dedicated account/Region-scoped console with sections for compute environments, job queues, job definitions and jobs, announcing the records or Docker runtime. Environments are created (managed EC2 capacity with vCPU bounds, instance types, instance profile, subnets and security groups, or unmanaged), edited (state and vCPU bounds) and deleted by typing their name. Queues take a priority, state and up to three environments in order. Definitions are registered from container-properties JSON with retry rules and a timeout, listed by name and revision with an Active, Inactive or All filter, registered again as the next revision and deregistered by typing name:revision. Jobs are submitted with parameters, command, environment, vCPU and memory overrides, retries, a timeout, an array size and dependencies, listed by queue and status, described with attempts, exit code, reason and a link to the CloudWatch Logs stream, and cancelled or terminated. Tags are edited on every resource. In Docker mode the page reloads while jobs are in progress; in records mode a job stays RUNNABLE until it is cancelled or terminated.
+- FARGATE and FARGATE_SPOT managed compute metadata with maximum vCPUs and scoped subnet/security groups; EC2-only fields are rejected. Queues cannot mix EC2 and Fargate environments.
+- FARGATE container definitions validate AWS VCPU/MEMORY combinations (including fractional CPUs), require executionRoleArn, and retain assignPublicIp, platformVersion and runtimePlatform through job descriptions. Submissions validate platform compatibility and resource overrides.
+- Console compute and definition dialogs offer Fargate platforms; lists and details display the platform and maximum capacity. Records environments and queues are immediately VALID because no infrastructure is provisioned.
 
 [Supported operations](batch.md#supported-operations) · [Limitations](batch.md#limitations-and-future-work)
 

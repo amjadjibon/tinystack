@@ -157,16 +157,32 @@ type LogConfiguration struct {
 	Options   map[string]string `json:"options,omitempty"`
 }
 
+type NetworkConfiguration struct {
+	AssignPublicIp *string `json:"assignPublicIp,omitempty"`
+}
+
+type FargatePlatformConfiguration struct {
+	PlatformVersion *string `json:"platformVersion,omitempty"`
+}
+
+type RuntimePlatform struct {
+	CpuArchitecture       *string `json:"cpuArchitecture,omitempty"`
+	OperatingSystemFamily *string `json:"operatingSystemFamily,omitempty"`
+}
+
 type ContainerProperties struct {
-	Image                *string               `json:"image,omitempty"`
-	Vcpus                *int64                `json:"vcpus,omitempty"`
-	Memory               *int64                `json:"memory,omitempty"`
-	Command              []string              `json:"command,omitempty"`
-	JobRoleArn           *string               `json:"jobRoleArn,omitempty"`
-	ExecutionRoleArn     *string               `json:"executionRoleArn,omitempty"`
-	Environment          []KeyValuePair        `json:"environment,omitempty"`
-	ResourceRequirements []ResourceRequirement `json:"resourceRequirements,omitempty"`
-	LogConfiguration     *LogConfiguration     `json:"logConfiguration,omitempty"`
+	Image                        *string                       `json:"image,omitempty"`
+	Vcpus                        *int64                        `json:"vcpus,omitempty"`
+	Memory                       *int64                        `json:"memory,omitempty"`
+	Command                      []string                      `json:"command,omitempty"`
+	JobRoleArn                   *string                       `json:"jobRoleArn,omitempty"`
+	ExecutionRoleArn             *string                       `json:"executionRoleArn,omitempty"`
+	Environment                  []KeyValuePair                `json:"environment,omitempty"`
+	ResourceRequirements         []ResourceRequirement         `json:"resourceRequirements,omitempty"`
+	LogConfiguration             *LogConfiguration             `json:"logConfiguration,omitempty"`
+	NetworkConfiguration         *NetworkConfiguration         `json:"networkConfiguration,omitempty"`
+	FargatePlatformConfiguration *FargatePlatformConfiguration `json:"fargatePlatformConfiguration,omitempty"`
+	RuntimePlatform              *RuntimePlatform              `json:"runtimePlatform,omitempty"`
 }
 
 type EvaluateOnExit struct {
@@ -315,19 +331,22 @@ type AttemptDetail struct {
 }
 
 type ContainerDetail struct {
-	Image                *string               `json:"image,omitempty"`
-	Vcpus                *int64                `json:"vcpus,omitempty"`
-	Memory               *int64                `json:"memory,omitempty"`
-	Command              []string              `json:"command,omitempty"`
-	JobRoleArn           *string               `json:"jobRoleArn,omitempty"`
-	ExecutionRoleArn     *string               `json:"executionRoleArn,omitempty"`
-	Environment          []KeyValuePair        `json:"environment,omitempty"`
-	ExitCode             *int64                `json:"exitCode,omitempty"`
-	Reason               *string               `json:"reason,omitempty"`
-	TaskArn              *string               `json:"taskArn,omitempty"`
-	LogStreamName        *string               `json:"logStreamName,omitempty"`
-	ResourceRequirements []ResourceRequirement `json:"resourceRequirements,omitempty"`
-	LogConfiguration     *LogConfiguration     `json:"logConfiguration,omitempty"`
+	Image                        *string                       `json:"image,omitempty"`
+	Vcpus                        *int64                        `json:"vcpus,omitempty"`
+	Memory                       *int64                        `json:"memory,omitempty"`
+	Command                      []string                      `json:"command,omitempty"`
+	JobRoleArn                   *string                       `json:"jobRoleArn,omitempty"`
+	ExecutionRoleArn             *string                       `json:"executionRoleArn,omitempty"`
+	Environment                  []KeyValuePair                `json:"environment,omitempty"`
+	ExitCode                     *int64                        `json:"exitCode,omitempty"`
+	Reason                       *string                       `json:"reason,omitempty"`
+	TaskArn                      *string                       `json:"taskArn,omitempty"`
+	LogStreamName                *string                       `json:"logStreamName,omitempty"`
+	ResourceRequirements         []ResourceRequirement         `json:"resourceRequirements,omitempty"`
+	LogConfiguration             *LogConfiguration             `json:"logConfiguration,omitempty"`
+	NetworkConfiguration         *NetworkConfiguration         `json:"networkConfiguration,omitempty"`
+	FargatePlatformConfiguration *FargatePlatformConfiguration `json:"fargatePlatformConfiguration,omitempty"`
+	RuntimePlatform              *RuntimePlatform              `json:"runtimePlatform,omitempty"`
 }
 
 type ArrayPropertiesDetail struct {
@@ -532,6 +551,21 @@ func (v *ContainerProperties) Validate(path string) error {
 			return err
 		}
 	}
+	if v.NetworkConfiguration != nil {
+		if err := (*v.NetworkConfiguration).Validate(path + "networkConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.FargatePlatformConfiguration != nil {
+		if err := (*v.FargatePlatformConfiguration).Validate(path + "fargatePlatformConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	if v.RuntimePlatform != nil {
+		if err := (*v.RuntimePlatform).Validate(path + "runtimePlatform" + "."); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -660,6 +694,10 @@ func (v *EvaluateOnExit) Validate(path string) error {
 	return nil
 }
 
+func (v *FargatePlatformConfiguration) Validate(path string) error {
+	return nil
+}
+
 func (v *JobDependency) Validate(path string) error {
 	if v.Type != nil {
 		if err := validation.Enum(path+"type", (*v.Type), enum5); err != nil {
@@ -710,6 +748,15 @@ func (v *LogConfiguration) Validate(path string) error {
 	}
 	if v.LogDriver != nil {
 		if err := validation.Enum(path+"logDriver", (*v.LogDriver), enum7); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *NetworkConfiguration) Validate(path string) error {
+	if v.AssignPublicIp != nil {
+		if err := validation.Enum(path+"assignPublicIp", (*v.AssignPublicIp), enum3); err != nil {
 			return err
 		}
 	}
@@ -789,6 +836,10 @@ func (v *RetryStrategy) Validate(path string) error {
 			}
 		}
 	}
+	return nil
+}
+
+func (v *RuntimePlatform) Validate(path string) error {
 	return nil
 }
 

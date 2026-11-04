@@ -233,6 +233,17 @@ func (s *Service) visitJobs(ctx context.Context) {
 				continue
 			}
 
+			if !terminal(st) && slices.Contains(r.Job.PlatformCapabilities, fargatePlatform) {
+				r.Job.Status = new(statusFailed)
+				r.Job.StatusReason = new("Fargate execution is unsupported in Docker mode; use records mode")
+				r.Job.StoppedAt = new(time.Now().UnixMilli())
+				if err := saveJob(tx, r); err != nil {
+					return err
+				}
+
+				continue
+			}
+
 			if st == statusRunnable && !r.Cancelled {
 				q := queues[common.Value(r.Job.JobQueue)]
 				if q == nil || common.Value(q.Queue.State) != enabled || common.Value(q.Queue.Status) != valid {
@@ -320,7 +331,7 @@ func jobCPU(c *api.ContainerDetail) int64 {
 
 func jobMemory(c *api.ContainerDetail) int64 {
 	for _, r := range c.ResourceRequirements {
-		if common.Value(r.Type) == "MEMORY" {
+		if common.Value(r.Type) == resourceMemory {
 			n, _ := strconv.ParseInt(common.Value(r.Value), 10, 64)
 			return n
 		}

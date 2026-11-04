@@ -25198,7 +25198,10 @@
         "executionRoleArn",
         "environment",
         "resourceRequirements",
-        "logConfiguration"
+        "logConfiguration",
+        "networkConfiguration",
+        "fargatePlatformConfiguration",
+        "runtimePlatform"
       ],
       "KeyValuePair": [
         "name",
@@ -25303,7 +25306,10 @@
         "taskArn",
         "logStreamName",
         "resourceRequirements",
-        "logConfiguration"
+        "logConfiguration",
+        "networkConfiguration",
+        "fargatePlatformConfiguration",
+        "runtimePlatform"
       ],
       "JobSummary": [
         "jobArn",
@@ -25413,6 +25419,16 @@
       "LogConfiguration": [
         "logDriver",
         "options"
+      ],
+      "NetworkConfiguration": [
+        "assignPublicIp"
+      ],
+      "FargatePlatformConfiguration": [
+        "platformVersion"
+      ],
+      "RuntimePlatform": [
+        "cpuArchitecture",
+        "operatingSystemFamily"
       ]
     },
     "validation": {

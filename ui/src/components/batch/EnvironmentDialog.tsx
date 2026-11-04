@@ -7,11 +7,13 @@ import { batchCall } from "#/lib/batch";
 import {
 	type BatchScope,
 	type ComputeEnvironment,
+	computeTypes,
 	type EnvironmentForm,
 	emptyEnvironmentForm,
 	environmentInput,
 	environmentTypes,
 	environmentUpdate,
+	isFargate,
 	states,
 	strategies,
 } from "#/lib/batchHelpers";
@@ -28,7 +30,7 @@ function CapacityFields({
 	onChange: (patch: Partial<Capacity>) => void;
 }) {
 	return (
-		<>
+		<SpaceBetween size="m">
 			<Field
 				label="Minimum vCPUs"
 				value={value.min}
@@ -44,7 +46,7 @@ function CapacityFields({
 				value={value.max}
 				onChange={(max) => onChange({ max })}
 			/>
-		</>
+		</SpaceBetween>
 	);
 }
 
@@ -103,26 +105,43 @@ export function CreateEnvironmentDialog({
 				{managed ? (
 					<SpaceBetween size="m">
 						<Alert>
-							Managed environments describe EC2 capacity. No instances start;
-							Docker mode runs jobs within the maximum vCPUs.
+							Compute environments are metadata. Docker mode executes EC2 jobs
+							only; Fargate submissions require records mode.
 						</Alert>
 						<Choice
-							label="Allocation strategy"
-							value={f.strategy}
-							options={strategies}
-							onChange={(strategy) => set({ strategy })}
+							label="Compute type"
+							value={f.computeType}
+							options={computeTypes}
+							onChange={(computeType) => set({ computeType })}
 						/>
-						<CapacityFields value={f} onChange={set} />
-						<Field
-							label="Instance types (comma separated)"
-							value={f.instances}
-							onChange={(instances) => set({ instances })}
-						/>
-						<Field
-							label="Instance profile"
-							value={f.instanceRole}
-							onChange={(instanceRole) => set({ instanceRole })}
-						/>
+						{isFargate(f.computeType) ? (
+							<Field
+								label="Maximum vCPUs"
+								value={f.max}
+								onChange={(max) => set({ max })}
+							/>
+						) : (
+							<SpaceBetween size="m">
+								{" "}
+								<Choice
+									label="Allocation strategy"
+									value={f.strategy}
+									options={strategies}
+									onChange={(strategy) => set({ strategy })}
+								/>
+								<CapacityFields value={f} onChange={set} />
+								<Field
+									label="Instance types (comma separated)"
+									value={f.instances}
+									onChange={(instances) => set({ instances })}
+								/>
+								<Field
+									label="Instance profile"
+									value={f.instanceRole}
+									onChange={(instanceRole) => set({ instanceRole })}
+								/>
+							</SpaceBetween>
+						)}
 						<PickMany
 							label="Subnets"
 							placeholder="Choose subnets"
@@ -203,13 +222,21 @@ export function EditEnvironmentDialog({
 				/>
 				{r ? (
 					<SpaceBetween size="m">
-						<CapacityFields
-							value={f}
-							onChange={(patch) => setF((v) => ({ ...v, ...patch }))}
-						/>
+						{isFargate(r.Type) ? (
+							<Field
+								label="Maximum vCPUs"
+								value={f.max}
+								onChange={(max) => setF((v) => ({ ...v, max }))}
+							/>
+						) : (
+							<CapacityFields
+								value={f}
+								onChange={(patch) => setF((v) => ({ ...v, ...patch }))}
+							/>
+						)}
 						<Alert>
-							Desired vCPUs can grow but not shrink, and must stay between the
-							minimum and maximum.
+							Fargate supports maximum vCPUs only. EC2 desired vCPUs can grow
+							but not shrink, within the minimum and maximum.
 						</Alert>
 					</SpaceBetween>
 				) : (

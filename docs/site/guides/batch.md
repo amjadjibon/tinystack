@@ -2,7 +2,7 @@
 
 AWS Batch stores compute environments, queues, definitions and jobs in the caller's account and Region.
 The default `batch.jobs: records` mode leaves jobs RUNNABLE without compute capacity. Set
-`batch.jobs: docker` to execute container jobs locally using the ECS Docker runtime implementation.
+`batch.jobs: docker` to execute EC2 container jobs locally using the ECS Docker runtime implementation.
 `VALID` describes local metadata; Batch does not provision EC2 instances or create an ECS cluster.
 
 ## Selected operations and members
@@ -45,11 +45,11 @@ Malformed wire values can use the shared `SerializationException` (400); unsuppo
 defaults to `ENABLED`, and explicit `ENABLED` is accepted. Explicit `DISABLED` creation returns
 `ClientException` (400) without storing a record. After creation, `UpdateComputeEnvironment`
 accepts both `ENABLED` and `DISABLED`. UNMANAGED requires a service role and forbids compute resources. MANAGED
-requires the following finite EC2 resource configuration:
+requires EC2, FARGATE or FARGATE_SPOT compute resources. EC2 uses the following finite configuration:
 
 | computeResources member | Rules |
 | --- | --- |
-| type | Required, EC2 only |
+| type | Required, EC2, FARGATE or FARGATE_SPOT |
 | allocationStrategy | BEST_FIT (default) or BEST_FIT_PROGRESSIVE |
 | minvCpus | Nonnegative integer; default 0 |
 | maxvCpus | Required positive integer |
@@ -67,7 +67,7 @@ EC2 hex-ID contract. No network records are seeded or changed by Batch.
 Capacity integers fit signed 32-bit values and require `minvCpus <= desiredvCpus <= maxvCpus`.
 Only these three capacity fields can be updated. Explicit desired capacity cannot decrease.
 Bounds-only updates retain desired capacity and fail if it would leave the bounds; no scheduler
-adjusts it. Other compute-resource updates, Spot/Fargate/EKS, ARM, launch templates, custom AMIs,
+adjusts it. Other compute-resource updates, EC2 Spot/EKS, launch templates, custom AMIs,
 instance tags, scaling policies and infrastructure-update configuration are excluded.
 
 Service roles accept IAM short names/paths or caller-account role ARNs at create; a managed
@@ -77,12 +77,17 @@ roles. IAM references are format/scope metadata; existence, trust and permission
 No `ecsClusterArn` is returned. Before deleting an environment, disable it and remove every queue
 association. A failed update or delete preserves all records.
 
+FARGATE and FARGATE_SPOT resources require only `type`, positive `maxvCpus`, scoped `subnets`
+and `securityGroupIds`. EC2-only allocation strategy, min/desired vCPUs, instance types and instance role
+are rejected. Only maximum vCPUs can be updated for Fargate; network constraints are shared with EC2.
+
 ## Queues and references
 
 Queues default to `ENABLED`. Priority and order are nonnegative signed 32-bit integers. Creation
 requires 1–3 compute environment associations; each order and normalized environment is unique.
 Orders are returned sorted numerically and environment references are stored as scoped ARNs.
-All supported environments are x86 EC2 metadata with `VALID` status; disabled valid environments
+Queues cannot mix EC2 and Fargate environments; FARGATE and FARGATE_SPOT can share a queue.
+All supported environments are metadata with `VALID` status; disabled valid environments
 can remain associated. Updates can replace the list, including an explicit empty list to remove
 all associations. Omitting the list preserves it. Queue deletion requires DISABLED state and removes
 its associations immediately. Existing jobs remain queryable; disabling a queue stops new submissions and scheduling.
@@ -93,17 +98,30 @@ to 100 distinct normalized references; unknown valid local identifiers produce n
 
 ## Definition revisions
 
-`type=container` and `platformCapabilities=["EC2"]` are the only supported values; the platform
+`type=container` supports `platformCapabilities=["EC2"]` or `["FARGATE"]`; the platform
 defaults to EC2. Every registration creates another revision of the name. A revision's ARN is
 `arn:aws:batch:REGION:ACCOUNT:job-definition/NAME:REVISION`. Registration is not idempotent.
 Revisions are serialized in one storage transaction and remain monotonic after deregistration,
 restart and fixture import; sequences are independent in each account and Region.
 
 Container properties are exactly `image`, `command`, `vcpus`, `memory`, `resourceRequirements`,
-`environment`, `jobRoleArn`, `executionRoleArn` and `logConfiguration`. Image requires 1–255 non-whitespace bytes.
+`environment`, `jobRoleArn`, `executionRoleArn`, `logConfiguration`, `networkConfiguration`,
+`fargatePlatformConfiguration` and `runtimePlatform`. The last three require FARGATE. Image requires 1–255 non-whitespace bytes.
 Use either positive integer `vcpus` and integer `memory >= 4` MiB, or one `VCPU` and one `MEMORY`
 resource requirement with canonical positive decimal integer string values. Mixing both forms,
 duplicate requirement types or GPU is rejected. Integers fit signed 32-bit values.
+
+Fargate requires `executionRoleArn` and VCPU/MEMORY resource requirements; legacy `vcpus`/`memory`
+are rejected. CPU values are 0.25, 0.5, 1, 2, 4, 8, 16 or 32 with the corresponding
+[AWS memory combinations](https://docs.aws.amazon.com/batch/latest/userguide/job_definition_parameters.html).
+`networkConfiguration.assignPublicIp` accepts ENABLED/DISABLED; `fargatePlatformConfiguration.platformVersion`
+accepts LATEST, 1.3.0/1.4.0 (Linux) or 1.0.0 (Windows). Runtime platform accepts X86_64 or ARM64 with
+LINUX, or X86_64 with WINDOWS_SERVER_2019_CORE/FULL or WINDOWS_SERVER_2022_CORE/FULL.
+ARM64 and 8+ vCPUs require Linux 1.4.0/LATEST; Windows requires at least one vCPU.
+These settings are validated metadata. Docker-mode Fargate submissions fail explicitly with ClientException;
+queued Fargate records fail without execution if the store is switched to Docker. Records-mode jobs remain
+RUNNABLE or PENDING behind dependencies. Environments and queues are immediately VALID in records mode,
+because no infrastructure is provisioned. Submission requires a platform matching the queue's environments.
 
 Environment names follow `[A-Za-z_][A-Za-z0-9_]*`, are unique, at most 256 bytes and cannot begin
 with `AWS_BATCH`; values are required strings of at most 4096 bytes. At most 100 environment and

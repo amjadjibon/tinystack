@@ -101,37 +101,49 @@ func (s *Service) computeOK(tx storage.ReadTx, scope request.Scope, c *api.Compu
 		return invalid("MANAGED environments require computeResources")
 	}
 
-	if common.Value(c.Type) != ec2Platform {
-		return invalid("Only EC2 managed metadata is supported")
+	fargate := isFargate(common.Value(c.Type))
+	if !fargate && common.Value(c.Type) != ec2Platform {
+		return invalid("Compute type must be EC2, FARGATE or FARGATE_SPOT")
 	}
 
-	if guardErr := capacityOK(c); guardErr != nil {
-		return guardErr
-	}
-
-	if a := common.Value(c.AllocationStrategy); a != "BEST_FIT" && a != "BEST_FIT_PROGRESSIVE" {
-		return invalid("Only BEST_FIT and BEST_FIT_PROGRESSIVE are supported")
-	}
-
-	if len(c.InstanceTypes) < 1 || len(c.InstanceTypes) > 100 {
-		return invalid("instanceTypes requires 1-100 unique supported x86 choices")
-	}
-
-	seen := map[string]bool{}
-	for _, v := range c.InstanceTypes {
-		if seen[v] || (!instancePattern.MatchString(v) && v != "optimal" && v != "default_x86_64") {
-			return invalid("Supported x86 instance choices: c5/m5/r5 families and sizes, optimal, default_x86_64")
+	if fargate {
+		if c.MinvCpus != nil || c.DesiredvCpus != nil || c.AllocationStrategy != nil ||
+			c.InstanceTypes != nil || c.InstanceRole != nil {
+			return invalid("Fargate does not support EC2 capacity, instance or allocation fields")
 		}
 
-		seen[v] = true
-	}
+		if err := integerOK(c.MaxvCpus, 1, "maxvCpus"); err != nil {
+			return err
+		}
+	} else {
+		if guardErr := capacityOK(c); guardErr != nil {
+			return guardErr
+		}
 
-	if c.InstanceRole == nil {
-		return invalid("EC2 instanceRole is required")
-	}
+		if a := common.Value(c.AllocationStrategy); a != "BEST_FIT" && a != "BEST_FIT_PROGRESSIVE" {
+			return invalid("Only BEST_FIT and BEST_FIT_PROGRESSIVE are supported")
+		}
 
-	if guardErr := roleOK(scope, c.InstanceRole, "instance-profile", true); guardErr != nil {
-		return guardErr
+		if len(c.InstanceTypes) < 1 || len(c.InstanceTypes) > 100 {
+			return invalid("instanceTypes requires 1-100 unique supported x86 choices")
+		}
+
+		seen := map[string]bool{}
+		for _, v := range c.InstanceTypes {
+			if seen[v] || (!instancePattern.MatchString(v) && v != "optimal" && v != "default_x86_64") {
+				return invalid("Supported x86 instance choices: c5/m5/r5 families and sizes, optimal, default_x86_64")
+			}
+
+			seen[v] = true
+		}
+
+		if c.InstanceRole == nil {
+			return invalid("EC2 instanceRole is required")
+		}
+
+		if guardErr := roleOK(scope, c.InstanceRole, "instance-profile", true); guardErr != nil {
+			return guardErr
+		}
 	}
 
 	if len(c.Subnets) < 1 || len(c.Subnets) > 16 || len(c.SecurityGroupIds) < 1 || len(c.SecurityGroupIds) > 5 {
@@ -143,7 +155,7 @@ func (s *Service) computeOK(tx storage.ReadTx, scope request.Scope, c *api.Compu
 	}
 
 	vpc := ""
-	seen = map[string]bool{}
+	seen := map[string]bool{}
 	for _, id := range c.Subnets {
 		if !subnetPattern.MatchString(id) || seen[id] {
 			return invalid("Invalid or duplicate subnet ID")
@@ -203,7 +215,7 @@ func stringsUnique(list []string, maximum int) error {
 	return nil
 }
 
-func containerOK(scope request.Scope, c *api.ContainerProperties) error {
+func containerOK(scope request.Scope, c *api.ContainerProperties, platform string) error {
 	if c == nil || c.Image == nil || len(*c.Image) < 1 || len(*c.Image) > 255 ||
 		strings.ContainsAny(*c.Image, " \t\r\n") {
 		return invalid("containerProperties.image requires 1-255 non-whitespace characters")
@@ -217,6 +229,11 @@ func containerOK(scope request.Scope, c *api.ContainerProperties) error {
 		return guardErr
 	}
 
+	fargate := platform == fargatePlatform
+	if err := platformOK(c, fargate); err != nil {
+		return err
+	}
+
 	cpu, mem := c.Vcpus, c.Memory
 	if len(c.ResourceRequirements) > 0 {
 		if cpu != nil || mem != nil {
@@ -226,11 +243,15 @@ func containerOK(scope request.Scope, c *api.ContainerProperties) error {
 		seen := map[string]bool{}
 		for _, r := range c.ResourceRequirements {
 			t := common.Value(r.Type)
-			if seen[t] || (t != resourceVCPU && t != "MEMORY") {
+			if seen[t] || (t != resourceVCPU && t != resourceMemory) {
 				return invalid("Only one VCPU and one MEMORY requirement are supported")
 			}
 
 			seen[t] = true
+			if fargate && t == resourceVCPU {
+				continue
+			}
+
 			n, err := strconv.ParseInt(common.Value(r.Value), 10, 32)
 			if err != nil || n < 1 || strconv.FormatInt(n, 10) != common.Value(r.Value) {
 				return invalid("Resource requirement values must be positive decimal integers")
@@ -244,12 +265,14 @@ func containerOK(scope request.Scope, c *api.ContainerProperties) error {
 		}
 	}
 
-	if guardErr := integerOK(cpu, 1, "vcpus/VCPU"); guardErr != nil {
-		return guardErr
-	}
+	if !fargate {
+		if guardErr := integerOK(cpu, 1, "vcpus/VCPU"); guardErr != nil {
+			return guardErr
+		}
 
-	if guardErr := integerOK(mem, 4, "memory/MEMORY"); guardErr != nil {
-		return guardErr
+		if guardErr := integerOK(mem, 4, "memory/MEMORY"); guardErr != nil {
+			return guardErr
+		}
 	}
 
 	if len(c.Environment) > 100 || len(c.Command) > 100 {

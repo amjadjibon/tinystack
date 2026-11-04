@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -20,7 +22,14 @@ import (
 	ec2sdk "github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi"
 
+	batchapi "github.com/amjadjibon/tinystack/internal/aws/generated/batch"
+	ec2api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
+	"github.com/amjadjibon/tinystack/internal/config"
+	"github.com/amjadjibon/tinystack/internal/gateway"
+	batchservice "github.com/amjadjibon/tinystack/internal/services/batch"
+	ec2service "github.com/amjadjibon/tinystack/internal/services/ec2"
 	"github.com/amjadjibon/tinystack/internal/storage/archive"
+	"github.com/amjadjibon/tinystack/internal/storage/memory"
 )
 
 func batchClient(s *httptest.Server, key, region string) *sdk.Client {
@@ -486,5 +495,387 @@ func TestBatchPersistenceFixtureImportAndReset(t *testing.T) {
 	}
 	if strings.Contains(string(raw), *jd.JobDefinitionArn) {
 		t.Fatal("reset retained inventory")
+	}
+}
+
+func fargateDefinition() *sdk.RegisterJobDefinitionInput {
+	in := batchDefinition()
+	in.JobDefinitionName = new("fargate")
+	in.PlatformCapabilities = []types.PlatformCapability{types.PlatformCapabilityFargate}
+	c := in.ContainerProperties
+	c.ResourceRequirements = []types.ResourceRequirement{
+		{Type: types.ResourceTypeVcpu, Value: new("0.25")},
+		{Type: types.ResourceTypeMemory, Value: new("512")},
+	}
+	c.NetworkConfiguration = &types.NetworkConfiguration{AssignPublicIp: types.AssignPublicIpEnabled}
+	c.FargatePlatformConfiguration = &types.FargatePlatformConfiguration{PlatformVersion: new("LATEST")}
+	c.RuntimePlatform = &types.RuntimePlatform{CpuArchitecture: new("ARM64"), OperatingSystemFamily: new("LINUX")}
+	return in
+}
+
+func TestBatchFargateSDK(t *testing.T) {
+	ctx := context.Background()
+	s := server(t)
+	c := batchClient(s, "test", "us-east-1")
+	ec2, _, _ := batchFixture(t, s)
+	envs, err := c.DescribeComputeEnvironments(ctx, &sdk.DescribeComputeEnvironmentsInput{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	network := envs.ComputeEnvironments[0].ComputeResources
+	names := []string{}
+	for _, typ := range []types.CRType{types.CRTypeFargate, types.CRTypeFargateSpot} {
+		in := &sdk.CreateComputeEnvironmentInput{
+			ComputeEnvironmentName: new(string(typ)),
+			Type:                   types.CETypeManaged,
+			ComputeResources: &types.ComputeResource{
+				Type:             typ,
+				MaxvCpus:         new(int32(8)),
+				Subnets:          network.Subnets,
+				SecurityGroupIds: network.SecurityGroupIds,
+			},
+		}
+		out, e := c.CreateComputeEnvironment(ctx, in)
+		if e != nil {
+			t.Fatal(e)
+		}
+		names = append(names, *out.ComputeEnvironmentName)
+		for _, mutate := range []func(*types.ComputeResource){
+			func(r *types.ComputeResource) { r.MinvCpus = new(int32(0)) },
+			func(r *types.ComputeResource) { r.DesiredvCpus = new(int32(0)) },
+			func(r *types.ComputeResource) { r.InstanceTypes = []string{"optimal"} },
+			func(r *types.ComputeResource) { r.InstanceRole = new("worker") },
+			func(r *types.ComputeResource) { r.AllocationStrategy = types.CRAllocationStrategyBestFit },
+			func(r *types.ComputeResource) { r.MaxvCpus = new(int32(0)) },
+			func(r *types.ComputeResource) { r.Subnets = []string{"subnet-12345678"} },
+			func(r *types.ComputeResource) { r.SecurityGroupIds = []string{"sg-12345678"} },
+		} {
+			bad := *in.ComputeResources
+			mutate(&bad)
+			_, e = c.CreateComputeEnvironment(
+				ctx,
+				&sdk.CreateComputeEnvironmentInput{
+					ComputeEnvironmentName: new("invalid"),
+					Type:                   types.CETypeManaged,
+					ComputeResources:       &bad,
+				},
+			)
+			code(t, e, "ClientException")
+		}
+		_, e = c.UpdateComputeEnvironment(
+			ctx,
+			&sdk.UpdateComputeEnvironmentInput{
+				ComputeEnvironment: out.ComputeEnvironmentArn,
+				ComputeResources:   &types.ComputeResourceUpdate{MaxvCpus: new(int32(16))},
+			},
+		)
+		if e != nil {
+			t.Fatal(e)
+		}
+
+		current, e := c.DescribeComputeEnvironments(
+			ctx,
+			&sdk.DescribeComputeEnvironmentsInput{ComputeEnvironments: []string{*out.ComputeEnvironmentArn}},
+		)
+		if e != nil {
+			t.Fatal(e)
+		}
+		ce := current.ComputeEnvironments[0]
+		r := ce.ComputeResources
+		if ce.Status != types.CEStatusValid || r.Type != typ || *r.MaxvCpus != 16 || r.MinvCpus != nil ||
+			r.DesiredvCpus != nil ||
+			r.AllocationStrategy != "" ||
+			r.InstanceTypes != nil ||
+			r.InstanceRole != nil {
+			t.Fatalf("Fargate capacity roundtrip: %+v", r)
+		}
+		for _, u := range []*types.ComputeResourceUpdate{
+			{MinvCpus: new(int32(0))},
+			{DesiredvCpus: new(int32(0))},
+			{MaxvCpus: new(int32(0))},
+		} {
+			_, e = c.UpdateComputeEnvironment(
+				ctx,
+				&sdk.UpdateComputeEnvironmentInput{ComputeEnvironment: out.ComputeEnvironmentArn, ComputeResources: u},
+			)
+			code(t, e, "ClientException")
+		}
+	}
+	order := []types.ComputeEnvironmentOrder{
+		{Order: new(int32(1)), ComputeEnvironment: new(names[0])},
+		{Order: new(int32(2)), ComputeEnvironment: new(names[1])},
+	}
+	q, err := c.CreateJobQueue(
+		ctx,
+		&sdk.CreateJobQueueInput{JobQueueName: new("fargate"), Priority: new(int32(1)), ComputeEnvironmentOrder: order},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mixed := append([]types.ComputeEnvironmentOrder{}, order...)
+	mixed[1].ComputeEnvironment = ec2.ComputeEnvironmentArn
+	_, err = c.CreateJobQueue(
+		ctx,
+		&sdk.CreateJobQueueInput{JobQueueName: new("mixed"), Priority: new(int32(1)), ComputeEnvironmentOrder: mixed},
+	)
+	code(t, err, "ClientException")
+	_, err = c.UpdateJobQueue(ctx, &sdk.UpdateJobQueueInput{JobQueue: q.JobQueueArn, ComputeEnvironmentOrder: mixed})
+	code(t, err, "ClientException")
+	defs := []struct{ cpu, memory string }{
+		{"0.25", "512"},
+		{"0.25", "1024"},
+		{"0.25", "2048"},
+		{"0.5", "4096"},
+		{"1", "8192"},
+		{"2", "16384"},
+		{"4", "30720"},
+		{"8", "61440"},
+		{"16", "122880"},
+		{"32", "61440"},
+		{"32", "122880"},
+		{"32", "249856"},
+	}
+	for _, pair := range defs {
+		d := fargateDefinition()
+		d.ContainerProperties.ResourceRequirements[0].Value = new(pair.cpu)
+		d.ContainerProperties.ResourceRequirements[1].Value = new(pair.memory)
+		if _, err = c.RegisterJobDefinition(ctx, d); err != nil {
+			t.Fatal(pair, err)
+		}
+	}
+
+	for _, size := range []struct {
+		cpu            string
+		min, max, step int
+	}{
+		{"0.5", 1024, 4096, 1024},
+		{"1", 2048, 8192, 1024},
+		{"2", 4096, 16384, 1024},
+		{"4", 8192, 30720, 1024},
+		{"8", 16384, 61440, 4096},
+		{"16", 32768, 122880, 8192},
+	} {
+		for memoryMiB := size.min; memoryMiB <= size.max; memoryMiB += size.step {
+			d := fargateDefinition()
+			d.ContainerProperties.ResourceRequirements[0].Value = new(size.cpu)
+			d.ContainerProperties.ResourceRequirements[1].Value = new(strconv.Itoa(memoryMiB))
+			if _, err = c.RegisterJobDefinition(ctx, d); err != nil {
+				t.Fatalf("CPU %s memory %d: %v", size.cpu, memoryMiB, err)
+			}
+		}
+		for _, memoryMiB := range []int{size.min - 1, size.max + 1, size.min + 1} {
+			d := fargateDefinition()
+			d.ContainerProperties.ResourceRequirements[0].Value = new(size.cpu)
+			d.ContainerProperties.ResourceRequirements[1].Value = new(strconv.Itoa(memoryMiB))
+			_, err = c.RegisterJobDefinition(ctx, d)
+			code(t, err, "ClientException")
+		}
+	}
+	for _, os := range []string{
+		"LINUX", "WINDOWS_SERVER_2019_CORE", "WINDOWS_SERVER_2019_FULL",
+		"WINDOWS_SERVER_2022_CORE", "WINDOWS_SERVER_2022_FULL",
+	} {
+		d := fargateDefinition()
+		d.ContainerProperties.RuntimePlatform = &types.RuntimePlatform{
+			CpuArchitecture:       new("X86_64"),
+			OperatingSystemFamily: new(os),
+		}
+		d.ContainerProperties.ResourceRequirements[0].Value = new("1")
+		d.ContainerProperties.ResourceRequirements[1].Value = new("2048")
+		if os != "LINUX" {
+			d.ContainerProperties.FargatePlatformConfiguration.PlatformVersion = new("1.0.0")
+		} else {
+			d.ContainerProperties.FargatePlatformConfiguration.PlatformVersion = new("1.3.0")
+		}
+		if _, err = c.RegisterJobDefinition(ctx, d); err != nil {
+			t.Fatal(os, err)
+		}
+	}
+	d := fargateDefinition()
+	registered, err := c.RegisterJobDefinition(ctx, d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	described, err := c.DescribeJobDefinitions(
+		ctx,
+		&sdk.DescribeJobDefinitionsInput{JobDefinitions: []string{*registered.JobDefinitionArn}},
+	)
+	if err != nil || !reflect.DeepEqual(described.JobDefinitions[0].ContainerProperties, d.ContainerProperties) {
+		t.Fatalf("Fargate roundtrip: %+v %v", described, err)
+	}
+	for _, mutate := range []func(*types.ContainerProperties){
+		func(c *types.ContainerProperties) { c.ExecutionRoleArn = nil },
+		func(c *types.ContainerProperties) {
+			//nolint:staticcheck // Verify that deprecated EC2-only CPU input is rejected for Fargate.
+			c.Vcpus = new(int32(1))
+		},
+		func(c *types.ContainerProperties) { c.ResourceRequirements[0].Value = new("0.75") },
+		func(c *types.ContainerProperties) { c.ResourceRequirements[1].Value = new("1536") },
+		func(c *types.ContainerProperties) { c.ResourceRequirements = c.ResourceRequirements[:1] },
+		func(c *types.ContainerProperties) {
+			c.ResourceRequirements = append(c.ResourceRequirements, c.ResourceRequirements[0])
+		},
+		func(c *types.ContainerProperties) { c.NetworkConfiguration.AssignPublicIp = "invalid" },
+		func(c *types.ContainerProperties) { c.FargatePlatformConfiguration.PlatformVersion = new("invalid") },
+		func(c *types.ContainerProperties) { c.FargatePlatformConfiguration.PlatformVersion = new("1.3.0") },
+		func(c *types.ContainerProperties) { c.FargatePlatformConfiguration.PlatformVersion = new("1.0.0") },
+		func(c *types.ContainerProperties) {
+			c.RuntimePlatform.CpuArchitecture = new("X86_64")
+			c.FargatePlatformConfiguration.PlatformVersion = new("1.3.0")
+			c.ResourceRequirements[0].Value = new("8")
+			c.ResourceRequirements[1].Value = new("16384")
+		},
+		func(c *types.ContainerProperties) { c.RuntimePlatform.CpuArchitecture = new("invalid") },
+		func(c *types.ContainerProperties) { c.RuntimePlatform.OperatingSystemFamily = new("invalid") },
+		func(c *types.ContainerProperties) {
+			c.RuntimePlatform.OperatingSystemFamily = new("WINDOWS_SERVER_2022_CORE")
+		},
+	} {
+		bad := fargateDefinition()
+		mutate(bad.ContainerProperties)
+		_, err = c.RegisterJobDefinition(ctx, bad)
+		code(t, err, "ClientException")
+	}
+
+	for _, platform := range [][]types.PlatformCapability{
+		{types.PlatformCapabilityEc2},
+		{types.PlatformCapabilityFargate, types.PlatformCapabilityEc2},
+		{"INVALID"},
+	} {
+		bad := fargateDefinition()
+		bad.PlatformCapabilities = platform
+		_, err = c.RegisterJobDefinition(ctx, bad)
+		code(t, err, "ClientException")
+	}
+	in := &sdk.SubmitJobInput{
+		JobName:       new("fargate"),
+		JobQueue:      q.JobQueueArn,
+		JobDefinition: registered.JobDefinitionArn,
+	}
+	job, err := c.SubmitJob(ctx, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := describeBatch(t, c, *job.JobId)
+	if got.Status != types.JobStatusRunnable || got.StartedAt != nil || len(got.Attempts) != 0 ||
+		!reflect.DeepEqual(got.PlatformCapabilities, d.PlatformCapabilities) ||
+		got.Container.RuntimePlatform == nil ||
+		got.Container.NetworkConfiguration.AssignPublicIp != types.AssignPublicIpEnabled {
+		t.Fatalf("records Fargate: %+v", got)
+	}
+	in.DependsOn = []types.JobDependency{{JobId: job.JobId}}
+	dependent, err := c.SubmitJob(ctx, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got = describeBatch(t, c, *dependent.JobId); got.Status != types.JobStatusPending {
+		t.Fatal(got.Status)
+	}
+	in.DependsOn = nil
+	in.ContainerOverrides = &types.ContainerOverrides{
+		ResourceRequirements: []types.ResourceRequirement{{Type: types.ResourceTypeMemory, Value: new("1536")}},
+	}
+	_, err = c.SubmitJob(ctx, in)
+	code(t, err, "ClientException")
+	//nolint:staticcheck // Verify deprecated CPU overrides are rejected even with resource requirements.
+	in.ContainerOverrides = &types.ContainerOverrides{
+		Vcpus:                new(int32(1)),
+		ResourceRequirements: []types.ResourceRequirement{{Type: types.ResourceTypeVcpu, Value: new("1")}},
+	}
+	_, err = c.SubmitJob(ctx, in)
+	code(t, err, "ClientException")
+	in.ContainerOverrides = nil
+	in.JobQueue = new("queue")
+	_, err = c.SubmitJob(ctx, in)
+	code(t, err, "ClientException")
+	in.JobQueue = q.JobQueueArn
+	in.JobDefinition = new("worker")
+	_, err = c.SubmitJob(ctx, in)
+	code(t, err, "ClientException")
+}
+
+// Attach an in-memory Runtime to exercise Docker-mode rejection without invoking Docker.
+func TestBatchFargateRuntimeRejectionSDK(t *testing.T) {
+	ctx := context.Background()
+	store := &memory.Store{}
+	network := ec2service.New(store)
+	service := batchservice.New(store, network)
+	rt := &containerRuntime{containers: map[string]*fakeContainer{}}
+	t.Cleanup(service.Stop)
+	h, err := gateway.New(
+		config.Default(),
+		slog.New(slog.NewTextHandler(io.Discard, nil)),
+		batchapi.Descriptor(service),
+		ec2api.Descriptor(network),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := httptest.NewServer(h)
+	t.Cleanup(s.Close)
+	batchFixture(t, s)
+	c := batchClient(s, "test", "us-east-1")
+	envs, err := c.DescribeComputeEnvironments(ctx, &sdk.DescribeComputeEnvironmentsInput{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := envs.ComputeEnvironments[0].ComputeResources
+	ce, err := c.CreateComputeEnvironment(
+		ctx,
+		&sdk.CreateComputeEnvironmentInput{
+			ComputeEnvironmentName: new("fg"),
+			Type:                   types.CETypeManaged,
+			ComputeResources: &types.ComputeResource{
+				Type:             types.CRTypeFargate,
+				MaxvCpus:         new(int32(4)),
+				Subnets:          n.Subnets,
+				SecurityGroupIds: n.SecurityGroupIds,
+			},
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	q, err := c.CreateJobQueue(
+		ctx,
+		&sdk.CreateJobQueueInput{
+			JobQueueName: new("fg"),
+			Priority:     new(int32(1)),
+			ComputeEnvironmentOrder: []types.ComputeEnvironmentOrder{
+				{Order: new(int32(1)), ComputeEnvironment: ce.ComputeEnvironmentArn},
+			},
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, err := c.RegisterJobDefinition(ctx, fargateDefinition())
+	if err != nil {
+		t.Fatal(err)
+	}
+	queued, err := c.SubmitJob(
+		ctx,
+		&sdk.SubmitJobInput{JobName: new("queued"), JobQueue: q.JobQueueArn, JobDefinition: d.JobDefinitionArn},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = service.UseRuntime(ctx, rt, nil); err != nil {
+		t.Fatal(err)
+	}
+	service.Start()
+	waitBatch(t, c, *queued.JobId, types.JobStatusFailed)
+	_, err = c.SubmitJob(
+		ctx,
+		&sdk.SubmitJobInput{JobName: new("fg"), JobQueue: q.JobQueueArn, JobDefinition: d.JobDefinitionArn},
+	)
+	code(t, err, "ClientException")
+	if !strings.Contains(err.Error(), "Fargate execution is unsupported") {
+		t.Fatal(err)
+	}
+	rt.mu.Lock()
+	defer rt.mu.Unlock()
+	if len(rt.containers) != 0 {
+		t.Fatal("Fargate invoked runtime")
 	}
 }

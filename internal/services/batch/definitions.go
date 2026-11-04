@@ -19,38 +19,48 @@ func (s *Service) RegisterJobDefinition(
 	if err := executionOptionsOK(in.RetryStrategy, in.Timeout); err != nil {
 		return nil, err
 	}
+
 	if guardErr := nameOK(in.JobDefinitionName); guardErr != nil {
 		return nil, guardErr
 	}
+
 	if common.Value(in.Type) != "container" {
 		return nil, invalid("Only container job definition metadata is supported")
 	}
+
 	if guardErr := tagsOK(in.Tags); guardErr != nil {
 		return nil, guardErr
 	}
+
 	if guardErr := parametersOK(in.Parameters); guardErr != nil {
 		return nil, guardErr
 	}
+
 	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if guardErr := containerOK(scope, in.ContainerProperties); guardErr != nil {
-		return nil, guardErr
-	}
+
 	platform := slices.Clone(in.PlatformCapabilities)
 	if platform == nil {
 		platform = []string{ec2Platform}
 	}
-	if len(platform) != 1 || platform[0] != ec2Platform {
-		return nil, invalid("Only the EC2 platform capability is supported")
+
+	if len(platform) != 1 || (platform[0] != ec2Platform && platform[0] != fargatePlatform) {
+		return nil, invalid("Platform capability must be EC2 or FARGATE")
 	}
+
+	if guardErr := containerOK(scope, in.ContainerProperties, platform[0]); guardErr != nil {
+		return nil, guardErr
+	}
+
 	var out *api.RegisterJobDefinitionResponse
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		all, e := rows(tx, scope, kindDefinition)
 		if e != nil {
 			return e
 		}
+
 		var revision int64 = 1
 		for _, r := range all {
 			if common.Value(r.Definition.JobDefinitionName) == *in.JobDefinitionName &&
@@ -58,14 +68,17 @@ func (s *Service) RegisterJobDefinition(
 				revision = *r.Definition.Revision + 1
 			}
 		}
+
 		if revision > maxInteger {
 			return invalid("Job definition revision limit reached")
 		}
+
 		r := &record{
 			ID:   fmt.Sprintf("%s:%d", *in.JobDefinitionName, revision),
 			Kind: kindDefinition,
 			Tags: maps.Clone(in.Tags),
 		}
+
 		r.ARN = arn(scope, r.Kind, r.ID)
 		r.Definition = &api.JobDefinition{
 			JobDefinitionName:    common.Clone(in.JobDefinitionName),
@@ -79,11 +92,13 @@ func (s *Service) RegisterJobDefinition(
 			RetryStrategy:        common.Clone(in.RetryStrategy),
 			Timeout:              common.Clone(in.Timeout),
 		}
+
 		out = &api.RegisterJobDefinitionResponse{
 			JobDefinitionName: common.Clone(in.JobDefinitionName),
 			JobDefinitionArn:  new(r.ARN),
 			Revision:          new(revision),
 		}
+
 		return save(tx, scope, r)
 	})
 	return out, err
@@ -97,11 +112,13 @@ func (s *Service) DeregisterJobDefinition(
 	if err != nil {
 		return nil, err
 	}
+
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		r, e := read(tx, scope, kindDefinition, in.JobDefinition)
 		if e != nil {
 			return e
 		}
+
 		r.Definition.Status = new(inactive)
 		return save(tx, scope, r)
 	})
@@ -116,28 +133,34 @@ func (s *Service) DescribeJobDefinitions(
 	if err != nil {
 		return nil, err
 	}
+
 	if len(in.JobDefinitions) > 0 &&
 		(in.JobDefinitionName != nil || in.Status != nil || in.MaxResults != nil || in.NextToken != nil) {
 		return nil, invalid("jobDefinitions cannot be combined with other parameters")
 	}
+
 	if in.JobDefinitionName != nil {
 		if guardErr := nameOK(in.JobDefinitionName); guardErr != nil {
 			return nil, guardErr
 		}
 	}
+
 	if in.Status != nil && *in.Status != active && *in.Status != inactive {
 		return nil, invalid("Status must be ACTIVE or INACTIVE")
 	}
+
 	refs, err := filters(scope, kindDefinition, in.JobDefinitions, 100)
 	if err != nil {
 		return nil, err
 	}
+
 	out := &api.DescribeJobDefinitionsResponse{JobDefinitions: []api.JobDefinition{}}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		all, e := rows(tx, scope, kindDefinition)
 		if e != nil {
 			return e
 		}
+
 		all = slices.DeleteFunc(all, func(r *record) bool {
 			return (len(refs) > 0 && !slices.Contains(refs, r.ID)) ||
 				(in.JobDefinitionName != nil && *r.Definition.JobDefinitionName != *in.JobDefinitionName) ||
@@ -150,9 +173,11 @@ func (s *Service) DescribeJobDefinitions(
 		if e != nil {
 			return e
 		}
+
 		for _, r := range all {
 			out.JobDefinitions = append(out.JobDefinitions, definitionOutput(r))
 		}
+
 		return nil
 	})
 	return out, err

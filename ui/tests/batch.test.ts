@@ -6,6 +6,7 @@ import {
 	batchName,
 	type ComputeEnvironment,
 	cancellable,
+	capacityText,
 	definitionForm,
 	definitionInput,
 	definitionKey,
@@ -16,6 +17,7 @@ import {
 	environmentInput,
 	environmentNames,
 	environmentUpdate,
+	isFargate,
 	type Job,
 	type JobDefinition,
 	type JobQueue,
@@ -33,6 +35,7 @@ import {
 	submitInput,
 	terminable,
 	timeout,
+	vcpuInput,
 } from "../src/lib/batchHelpers.ts";
 import { words } from "../src/lib/consoleActions.ts";
 import { unixMillis } from "../src/lib/format.ts";
@@ -686,5 +689,78 @@ test("millisecond timestamps use the viewer's locale and a dash when absent", ()
 	assert.equal(
 		unixMillis(1_700_000_000_123),
 		new Date(1_700_000_000_123).toLocaleString(),
+	);
+});
+
+test("Fargate forms omit EC2 fields and update maximum capacity only", () => {
+	const input = environmentInput(managed({ computeType: "FARGATE_SPOT" }));
+	assert.deepEqual(input.ComputeResources, {
+		Type: "FARGATE_SPOT",
+		MaxvCpus: 8,
+		Subnets: ["subnet-a"],
+		SecurityGroupIds: ["sg-a"],
+	});
+	assert.deepEqual(
+		environmentUpdate(
+			{
+				ComputeEnvironmentName: "fg",
+				ComputeEnvironmentArn: "arn",
+				State: "ENABLED",
+				ComputeResources: { Type: "FARGATE", MaxvCpus: 8 },
+			},
+			{ state: "ENABLED", min: "0", desired: "0", max: "16" },
+		),
+		{ ComputeEnvironment: "fg", ComputeResources: { MaxvCpus: 16 } },
+	);
+	const f = definitionForm({
+		...definition,
+		PlatformCapabilities: ["FARGATE"],
+		ContainerProperties: {
+			...definition.ContainerProperties,
+			ExecutionRoleArn: "arn:aws:iam::000000000000:role/exec",
+		},
+	});
+	assert.deepEqual(definitionInput(f).PlatformCapabilities, ["FARGATE"]);
+});
+
+test("Fargate CPU input accepts fractional values and shows maximum capacity", () => {
+	assert.equal(vcpuInput("0.25", "FARGATE"), 0.25);
+	assert.equal(vcpuInput("0.5", "FARGATE"), 0.5);
+	assert.throws(() => vcpuInput("0.75", "FARGATE"));
+	assert.throws(() => vcpuInput("0.5", "EC2"));
+	assert.equal(isFargate("FARGATE_SPOT"), true);
+	assert.equal(isFargate("EC2"), false);
+	assert.equal(capacityText({ Type: "FARGATE", MaxvCpus: 16 }), "Max 16");
+});
+
+test("Fargate definition fields preserve options and reject duplicate JSON sources", () => {
+	const from: JobDefinition = {
+		...definition,
+		PlatformCapabilities: ["FARGATE"],
+		ContainerProperties: {
+			...definition.ContainerProperties,
+			ExecutionRoleArn: "arn:aws:iam::000000000000:role/exec",
+			NetworkConfiguration: { AssignPublicIp: "ENABLED" },
+			RuntimePlatform: {
+				CpuArchitecture: "ARM64",
+				OperatingSystemFamily: "LINUX",
+			},
+			FargatePlatformConfiguration: { PlatformVersion: "1.4.0" },
+		},
+	};
+	const form = definitionForm(from);
+	assert.equal(form.publicIp, "ENABLED");
+	assert.equal(form.architecture, "ARM64");
+	const input = definitionInput(form);
+	assert.deepEqual(input.ContainerProperties, from.ContainerProperties);
+	assert.throws(() => definitionInput({ ...form, executionRole: "" }));
+	assert.throws(() =>
+		definitionInput({
+			...form,
+			container: JSON.stringify({
+				...from.ContainerProperties,
+				runtimePlatform: { unknown: true },
+			}),
+		}),
 	);
 });

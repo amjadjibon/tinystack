@@ -83,6 +83,11 @@ export function Environments({
 						},
 						{ id: "type", header: "Type", cell: (c) => c.Type ?? "-" },
 						{
+							id: "platform",
+							header: "Platform",
+							cell: (c) => c.ComputeResources?.Type ?? "-",
+						},
+						{
 							id: "state",
 							header: "State",
 							cell: (c) => <Status value={c.State} />,
@@ -204,6 +209,7 @@ function Overview({ environment: c }: { environment: ComputeEnvironment }) {
 				["Name", c.ComputeEnvironmentName],
 				["ARN", <Copy key="arn" text={c.ComputeEnvironmentArn} label="ARN" />],
 				["Type", c.Type],
+				["Platform", r?.Type],
 				["State", <Status key="state" value={c.State} />],
 				["Status", <Status key="status" value={c.Status} />],
 				["Status reason", c.StatusReason],
