@@ -36,7 +36,7 @@ export function Profiles({
 	);
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows<ProfileSummary>
 				title="Configuration profiles"
 				emptyText="Choose Create profile to add one."

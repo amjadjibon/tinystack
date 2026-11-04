@@ -143,7 +143,7 @@ export function RequestTest({
 						onChange={setBody}
 						rows={8}
 					/>
-					{error && (
+					{!!error && (
 						<Alert type="error" header="Request failed">
 							{error}
 						</Alert>

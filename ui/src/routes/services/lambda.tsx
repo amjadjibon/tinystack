@@ -116,7 +116,7 @@ function LambdaPage() {
 							]}
 						/>
 					)}
-					{(inventory.error || capabilities.error) && (
+					{!!(inventory.error || capabilities.error) && (
 						<Alert type="error" header="Cannot load Lambda">
 							{inventory.error || capabilities.error}
 						</Alert>

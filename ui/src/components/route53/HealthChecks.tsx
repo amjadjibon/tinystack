@@ -52,7 +52,7 @@ export function HealthChecks({
 	};
 	return (
 		<SpaceBetween size="m">
-			{checks.error && (
+			{!!checks.error && (
 				<Alert type="error" header="Cannot load health checks">
 					{checks.error}
 				</Alert>

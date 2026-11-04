@@ -153,7 +153,7 @@ export function ViewVersionDialog({
 			}
 		>
 			<SpaceBetween size="m">
-				{poll.error && <Alert type="error">{poll.error}</Alert>}
+				{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 				{!v && !poll.error && <Box>Loading version…</Box>}
 				{v && content && (
 					<SpaceBetween size="m">

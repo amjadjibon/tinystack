@@ -65,7 +65,7 @@ export function RecordTools({
 						stream.
 					</Alert>
 				)}
-				{result && <CodeBlock text={result} />}
+				{!!result && <CodeBlock text={result} />}
 			</Container>
 			{put && (
 				<ActionDialog
@@ -209,7 +209,7 @@ function RecordViewer({
 	return (
 		<Container header={<Header variant="h2">Records viewer</Header>}>
 			<SpaceBetween size="m">
-				{error && <Alert type="error">{error}</Alert>}
+				{!!error && <Alert type="error">{error}</Alert>}
 				<Choice
 					disabled={busy}
 					label="Shard"

@@ -135,7 +135,7 @@ export function AttributesDialog({
 			}}
 		>
 			<SpaceBetween size="s">
-				{attributes.error && <Alert type="error">{attributes.error}</Alert>}
+				{!!attributes.error && <Alert type="error">{attributes.error}</Alert>}
 				{attributes.loading && <Spinner />}
 				{original.map((a) => (
 					<FormField key={a.Key} label={a.Key}>
@@ -165,7 +165,7 @@ export function ResourceTags({
 	const tags = usePoll(() => describeTags(scope, arn), 0);
 	return (
 		<>
-			{tags.error && <Alert type="error">{tags.error}</Alert>}
+			{!!tags.error && <Alert type="error">{tags.error}</Alert>}
 			<ConsoleTags
 				tags={tags.data ?? {}}
 				enabled={enabled}

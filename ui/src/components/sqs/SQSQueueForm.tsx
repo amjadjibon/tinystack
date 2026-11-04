@@ -317,7 +317,7 @@ export function SQSQueueForm({
 										}
 									/>
 								</FormField>
-								{dlq && (
+								{!!dlq && (
 									<FormField
 										label="Maximum receives"
 										constraintText="1–1000 receives before a message is moved to the dead-letter queue"
@@ -347,7 +347,7 @@ export function SQSQueueForm({
 								</FormField>
 							</Container>
 						)}
-						{editing && attributes?.Policy && (
+						{editing && !!attributes?.Policy && (
 							<Alert type="info">
 								Edit the access policy on the Permissions tab.
 							</Alert>

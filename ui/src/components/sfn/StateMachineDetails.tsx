@@ -130,7 +130,7 @@ export function StateMachineDetails({
 			>
 				{scope.machine}
 			</Header>
-			{poll.error && (
+			{!!poll.error && (
 				<Alert type="error" header="Cannot load state machine">
 					{poll.error}
 				</Alert>
@@ -454,7 +454,7 @@ function ExecutionPage({ scope, status }: { scope: SfnScope; status: string }) {
 	}, true);
 	return (
 		<SpaceBetween size="l">
-			{page.error && (
+			{!!page.error && (
 				<Alert type="error" header="Cannot load executions">
 					{page.error}
 				</Alert>

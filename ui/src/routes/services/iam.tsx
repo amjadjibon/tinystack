@@ -160,7 +160,7 @@ function IAMPage() {
 							]}
 						/>
 					)}
-					{(inventory.error || capabilities.error) && (
+					{!!(inventory.error || capabilities.error) && (
 						<Alert type="error" header="Cannot load IAM">
 							{inventory.error || capabilities.error}
 						</Alert>

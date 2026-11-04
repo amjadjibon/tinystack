@@ -44,7 +44,7 @@ function ParameterValue({
 	);
 	return (
 		<SpaceBetween size="xs">
-			{error && <Alert type="error">{error}</Alert>}
+			{!!error && <Alert type="error">{error}</Alert>}
 			{value === undefined ? "••••••••" : <CodeBlock text={value} />}
 			<Button
 				disabled={!enabled}
@@ -124,7 +124,7 @@ export function ParameterDetails({
 	const parameter = poll.data?.parameter;
 	return (
 		<SpaceBetween size="l">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			{enabled && !poll.loading && !poll.error && !parameter && (
 				<Alert type="warning">
 					Parameter not found in the selected account and Region.

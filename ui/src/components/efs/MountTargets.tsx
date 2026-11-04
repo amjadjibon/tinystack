@@ -69,7 +69,7 @@ function CreateMountTargetDialog({
 			}}
 		>
 			<SpaceBetween size="m">
-				{options.error && <Alert type="error">{options.error}</Alert>}
+				{!!options.error && <Alert type="error">{options.error}</Alert>}
 				{options.data && subnets.length === 0 && (
 					<Alert type="warning">
 						No subnet is available. A file system has at most one mount target
@@ -94,7 +94,7 @@ function CreateMountTargetDialog({
 					onChange={(address) => setForm((f) => ({ ...f, address }))}
 					constraint="Optional. An unused IPv4 address in the subnet; TinyStack picks one when empty."
 				/>
-				{form.subnet && (
+				{!!form.subnet && (
 					<PickMany
 						label="Security groups"
 						values={form.groups}
@@ -144,7 +144,7 @@ function SecurityGroupsDialog({
 			}}
 		>
 			<SpaceBetween size="m">
-				{groups.error && <Alert type="error">{groups.error}</Alert>}
+				{!!groups.error && <Alert type="error">{groups.error}</Alert>}
 				<PickMany
 					label="Security groups"
 					values={selected}
@@ -191,7 +191,7 @@ export function MountTargets({
 	};
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows<MountTargetRow>
 				title="Mount targets"
 				emptyText="Choose Create mount target to add one."

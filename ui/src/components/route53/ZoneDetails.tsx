@@ -127,7 +127,7 @@ export function ZoneDetails({
 					</div>
 				</ColumnLayout>
 			</Container>
-			{records.error && (
+			{!!records.error && (
 				<Alert type="error" header="Cannot load record sets">
 					{records.error}
 				</Alert>

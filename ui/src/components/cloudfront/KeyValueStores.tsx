@@ -73,7 +73,7 @@ export function KeyValueStores({
 	};
 	return (
 		<SpaceBetween size="l">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows
 				title="Key value stores"
 				emptyText="Choose Create key value store to add one."
@@ -134,7 +134,7 @@ export function KeyValueStores({
 					},
 				]}
 			/>
-			{detail?.ARN && (
+			{!!detail?.ARN && (
 				<SpaceBetween size="l" key={detail.ARN}>
 					<Container header={<Header variant="h2">{detail.Name}</Header>}>
 						<Details

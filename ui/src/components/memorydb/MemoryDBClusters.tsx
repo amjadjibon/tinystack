@@ -119,7 +119,7 @@ export function MemoryDBClusters({
 			: engineOptions;
 	return (
 		<SpaceBetween size="l">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows
 				title="Clusters"
 				emptyText="Choose Create cluster to get started."

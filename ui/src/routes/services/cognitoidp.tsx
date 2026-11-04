@@ -101,15 +101,7 @@ function Workspace({
 					Connect a console session for this account to manage user pools.
 				</Alert>
 			)}
-			{!scope.id && (
-				<PoolActions
-					scope={scope}
-					pool={pool}
-					enabled={enabled}
-					onChanged={pools.reload}
-				/>
-			)}
-			{pools.error && <Alert type="error">{pools.error}</Alert>}
+			{!!pools.error && <Alert type="error">{pools.error}</Alert>}
 			{scope.id ? (
 				<SpaceBetween size="l">
 					<Header
@@ -184,6 +176,15 @@ function Workspace({
 			) : (
 				<ResourceTable
 					title="Cognito user pools"
+					defaultHidden={["type", "region", "account"]}
+					headerActions={
+						<PoolActions
+							scope={scope}
+							pool={pool}
+							enabled={enabled}
+							onChanged={pools.reload}
+						/>
+					}
 					emptyText="Choose Create user pool, or use the AWS CLI or an SDK."
 					loading={pools.loading}
 					onRefresh={pools.reload}
@@ -200,6 +201,7 @@ function Workspace({
 						{
 							id: "id",
 							header: "Pool ID",
+							width: 220,
 							cell: (r) => (
 								<Link
 									href={cognitoHref({ ...scope, id: String(r.details?.Id) })}
@@ -221,6 +223,7 @@ function Workspace({
 						{
 							id: "users",
 							header: "Estimated users",
+							width: 160,
 							cell: (r) => String(r.details?.EstimatedNumberOfUsers ?? "—"),
 						},
 						{

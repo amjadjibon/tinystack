@@ -58,7 +58,7 @@ function TemplateBody({ scope, stage }: { scope: CfnScope; stage: string }) {
 					onClick={poll.reload}
 				/>
 			</Box>
-			{poll.error && (
+			{!!poll.error && (
 				<Alert type="error" header="Cannot load the template">
 					{poll.error}
 				</Alert>

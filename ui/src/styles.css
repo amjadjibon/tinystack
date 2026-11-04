@@ -16,9 +16,14 @@
  --console-link: #3bb4ff;
 }
 
+/* Cloudscape styles its own components; plain elements (headings, paragraphs, labels) inherit these. */
 body {
  margin: 0;
  background: var(--console-page);
+ color: var(--console-text);
+ font-family: "Open Sans", "Helvetica Neue", Roboto, Arial, sans-serif;
+ font-size: 14px;
+ line-height: 20px;
 }
 
 /* Structured TopNavigation caps search at 340px; the console uses a wider search slot. */
@@ -73,6 +78,12 @@ body {
 .console-favorites a:focus-visible {
  outline: 2px solid #3bb4ff;
  outline-offset: 1px;
+}
+
+/* The dashboard sizes itself by the width it is given, not the viewport, so an open side navigation
+   or drawer drops it to fewer columns. */
+.console-dashboard-frame {
+ container-type: inline-size;
 }
 
 .console-dashboard {
@@ -181,13 +192,18 @@ body {
 }
 
 .dashboard-empty {
- padding: 36px 0;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ gap: 8px;
+ padding: 48px 16px;
+ text-align: center;
  color: var(--console-muted);
 }
 
 .dashboard-welcome-row {
  display: flex;
- align-items: center;
+ align-items: flex-start;
  gap: 16px;
  padding: 18px 0;
  border-bottom: 1px solid var(--console-border);
@@ -203,7 +219,8 @@ body {
 }
 
 .dashboard-welcome-row p {
- margin: 8px 0 0;
+ margin: 4px 0 0;
+ color: var(--console-muted);
 }
 
 .dashboard-health-row {
@@ -242,13 +259,12 @@ body {
  padding-left: 24px;
 }
 
-.dashboard-resource-links {
- display: flex;
- flex-wrap: wrap;
- gap: 16px;
+.dashboard-count {
+ color: var(--console-muted);
+ font-variant-numeric: tabular-nums;
 }
 
-@media (min-width: 1800px) {
+@container (min-width: 1400px) {
  .dashboard-widget-recent,
  .dashboard-widget-welcome,
  .dashboard-widget-health {
@@ -256,13 +272,13 @@ body {
  }
 }
 
-@media (max-width: 1180px) {
+@container (max-width: 900px) {
  .console-dashboard {
   grid-template-columns: repeat(2, minmax(0, 1fr));
  }
 }
 
-@media (max-width: 680px) {
+@container (max-width: 600px) {
  .console-dashboard {
   grid-template-columns: minmax(0, 1fr);
   gap: 16px;
@@ -277,6 +293,9 @@ body {
  .dashboard-widget-health {
   min-height: 0;
  }
+}
+
+@media (max-width: 680px) {
  .console-favorites {
   padding-inline: 12px;
  }

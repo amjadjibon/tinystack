@@ -222,7 +222,7 @@ export function LambdaFunction({
 			}
 		>
 			<SpaceBetween size="l">
-				{details.error && (
+				{!!details.error && (
 					<Alert type="error" header="Cannot load function">
 						{details.error}
 					</Alert>

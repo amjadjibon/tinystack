@@ -88,7 +88,7 @@ export function ExecutionResult({ execution }: { execution: Execution }) {
 					]}
 				/>
 			</Container>
-			{(execution.Error || execution.Cause) && (
+			{!!(execution.Error || execution.Cause) && (
 				<Alert type="error" header={execution.Error ?? "Execution stopped"}>
 					<CodeBlock text={execution.Cause ?? ""} />
 				</Alert>
@@ -155,7 +155,7 @@ export function ExecutionDetails({
 			>
 				{scope.execution}
 			</Header>
-			{poll.error && (
+			{!!poll.error && (
 				<Alert type="error" header="Cannot load execution">
 					{poll.error}
 				</Alert>
@@ -274,7 +274,7 @@ function ExecutionHistory({
 	const [selected, setSelected] = useState<HistoryEvent>();
 	return (
 		<SpaceBetween size="l">
-			{page.error && (
+			{!!page.error && (
 				<Alert type="error" header="Cannot load execution history">
 					{page.error}
 				</Alert>

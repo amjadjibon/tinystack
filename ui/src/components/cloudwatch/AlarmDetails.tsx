@@ -150,7 +150,7 @@ export function AlarmDetails({
 			}
 		>
 			<SpaceBetween size="l">
-				{poll.error && <Alert type="error">{poll.error}</Alert>}
+				{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 				<Container header={<Header variant="h2">Alarm overview</Header>}>
 					<KeyValuePairs
 						columns={3}
@@ -508,7 +508,7 @@ function HistoryPages({
 	}, []);
 	return (
 		<SpaceBetween size="m">
-			{error && <Alert type="error">{error}</Alert>}
+			{!!error && <Alert type="error">{error}</Alert>}
 			<Table
 				items={items}
 				loading={busy}
@@ -550,7 +550,7 @@ function HistoryPages({
 				]}
 				empty={<Box>No matching alarm history.</Box>}
 			/>
-			{token && (
+			{!!token && (
 				<Button disabled={busy} onClick={() => void load(token)}>
 					Load older history
 				</Button>

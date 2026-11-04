@@ -52,7 +52,7 @@ export function PipesTable({
 	};
 	return (
 		<SpaceBetween size="m">
-			{(error || poll.error) && (
+			{!!(error || poll.error) && (
 				<Alert type="error">{error || poll.error}</Alert>
 			)}
 			<Rows
@@ -128,7 +128,7 @@ export function PipesTable({
 					},
 				]}
 			/>
-			{viewing && (
+			{!!viewing && (
 				<PipeDetails
 					key={viewing}
 					scope={scope}

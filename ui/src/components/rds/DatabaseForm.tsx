@@ -123,7 +123,7 @@ export function DatabaseForm({
 		>
 			<SpaceBetween size="l">
 				<Alert type="info">{runtimeNote}</Alert>
-				{groups.error && <Alert type="error">{groups.error}</Alert>}
+				{!!groups.error && <Alert type="error">{groups.error}</Alert>}
 				<FormField label="Engine">
 					<Cards
 						items={engines}

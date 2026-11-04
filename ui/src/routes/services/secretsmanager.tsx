@@ -72,7 +72,7 @@ function SecretsManagerPage() {
 			]}
 			content={
 				<SpaceBetween size="l">
-					{(capabilities.error || inventory.error) && (
+					{!!(capabilities.error || inventory.error) && (
 						<Alert type="error">{capabilities.error || inventory.error}</Alert>
 					)}
 					{capabilities.data?.requires_signature && !canWrite && (
@@ -220,7 +220,7 @@ function SecretList({
 		});
 	return (
 		<SpaceBetween size="m">
-			{poll.error && (
+			{!!poll.error && (
 				<Alert type="error" header="Cannot load secrets">
 					{poll.error}
 				</Alert>

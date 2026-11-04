@@ -70,6 +70,15 @@ function Home() {
 			r.account === account &&
 			(!r.region || r.region === "global" || r.region === region),
 	);
+	// topServices lists the services holding the most resources, most first.
+	const topServices = Object.entries(
+		resources.reduce<Record<string, number>>((counts, r) => {
+			counts[r.service] = (counts[r.service] ?? 0) + 1;
+			return counts;
+		}, {}),
+	)
+		.sort(([a, x], [b, y]) => y - x || a.localeCompare(b))
+		.slice(0, 5);
 	const errors = requests.data?.filter((r) => r.status >= 400).length;
 	const welcomeLinks = [
 		{
@@ -128,200 +137,209 @@ function Home() {
 						</Header>
 					}
 				>
-					<div className="console-dashboard">
-						{visible.includes("tutorials") && (
-							<Widget
-								id="tutorials"
-								wide
-								action={
-									<Button href="/tutorials" onFollow={follow}>
-										All tutorials
-									</Button>
-								}
-							>
-								<TutorialList />
-							</Widget>
-						)}
-						{visible.includes("recent") && (
-							<Widget
-								id="recent"
-								wide
-								action={
-									<Button href="/services" onFollow={follow}>
-										All services
-									</Button>
-								}
-							>
-								{recent.length ? (
-									<ul className="dashboard-service-list">
-										{recent.map((name) => (
-											<li key={name}>
-												<ServiceIcon name={name} size="large" />
-												<Link
-													href={`/services/${name}`}
-													onFollow={follow}
-													variant="primary"
-												>
-													{service(name).title}
-												</Link>
-											</li>
+					<div className="console-dashboard-frame">
+						<div className="console-dashboard">
+							{visible.includes("tutorials") && (
+								<Widget
+									id="tutorials"
+									wide
+									action={
+										<Button href="/tutorials" onFollow={follow}>
+											All tutorials
+										</Button>
+									}
+								>
+									<TutorialList />
+								</Widget>
+							)}
+							{visible.includes("recent") && (
+								<Widget
+									id="recent"
+									wide
+									action={
+										<Button href="/services" onFollow={follow}>
+											All services
+										</Button>
+									}
+								>
+									{recent.length ? (
+										<ul className="dashboard-service-list">
+											{recent.map((name) => (
+												<li key={name}>
+													<ServiceIcon name={name} size="large" />
+													<Link
+														href={`/services/${name}`}
+														onFollow={follow}
+														variant="primary"
+													>
+														{service(name).title}
+													</Link>
+												</li>
+											))}
+										</ul>
+									) : (
+										<div className="dashboard-empty">
+											<Icon name="history" size="large" />
+											<Box variant="p">
+												Your recently visited services appear here.
+											</Box>
+											<Link href="/services" onFollow={follow}>
+												Explore all services
+											</Link>
+										</div>
+									)}
+								</Widget>
+							)}
+							{visible.includes("welcome") && (
+								<Widget id="welcome">
+									<div className="dashboard-welcome">
+										{welcomeLinks.map((item) => (
+											<div key={item.href} className="dashboard-welcome-row">
+												<span className="dashboard-welcome-icon">
+													<Icon name={item.icon} size="large" />
+												</span>
+												<div>
+													<Link
+														href={item.href}
+														onFollow={follow}
+														variant="primary"
+													>
+														{item.title}
+													</Link>
+													<p>{item.text}</p>
+												</div>
+											</div>
 										))}
-									</ul>
-								) : (
-									<div className="dashboard-empty">
-										<Icon name="history" size="large" />
-										<Box variant="p">
-											Your recently visited services appear here.
-										</Box>
-										<Link href="/services" onFollow={follow}>
-											Explore all services
-										</Link>
 									</div>
-								)}
-							</Widget>
-						)}
-						{visible.includes("welcome") && (
-							<Widget id="welcome">
-								<div className="dashboard-welcome">
-									{welcomeLinks.map((item) => (
-										<div key={item.href} className="dashboard-welcome-row">
-											<span className="dashboard-welcome-icon">
-												<Icon name={item.icon} size="large" />
-											</span>
+								</Widget>
+							)}
+							{visible.includes("health") && (
+								<Widget
+									id="health"
+									footer={
+										<Link href="/metrics" onFollow={follow} variant="primary">
+											View metrics
+										</Link>
+									}
+								>
+									<div className="dashboard-health-row">
+										<span>Server status</span>
+										<StatusIndicator
+											type={
+												health.data
+													? "success"
+													: health.error
+														? "error"
+														: "loading"
+											}
+										>
+											{health.data
+												? "Running"
+												: health.error
+													? "Unreachable"
+													: "Connecting"}
+										</StatusIndicator>
+									</div>
+									<div className="dashboard-health-row">
+										<span>Available services</span>
+										<strong className="dashboard-number">
+											{health.data?.services.length ?? "—"}
+										</strong>
+									</div>
+									<div className="dashboard-health-row">
+										<span>Request errors</span>
+										<strong className="dashboard-number">
+											{errors ?? "—"}
+										</strong>
+										<small>In the retained request log</small>
+									</div>
+									<div className="dashboard-health-row">
+										<span>Storage</span>
+										<strong>{health.data?.storage ?? "—"}</strong>
+									</div>
+								</Widget>
+							)}
+							{visible.includes("resources") && (
+								<Widget
+									id="resources"
+									wide
+									action={
+										<Button href="/resources" onFollow={follow}>
+											View resources
+										</Button>
+									}
+								>
+									<p className="dashboard-description">
+										Resources in account {account || "…"} · {region || "…"},
+										including global services.
+									</p>
+									{inventory.error ? (
+										<Alert type="error">{inventory.error}</Alert>
+									) : (
+										<div className="dashboard-resource-counts">
 											<div>
-												<Link
-													href={item.href}
-													onFollow={follow}
-													variant="primary"
-												>
-													{item.title}
-												</Link>
-												<p>{item.text}</p>
+												<span>Total resources</span>
+												<strong className="dashboard-number">
+													{inventory.data ? resources.length : "—"}
+												</strong>
+											</div>
+											<div>
+												<span>Services with resources</span>
+												<strong className="dashboard-number">
+													{inventory.data
+														? new Set(resources.map((r) => r.service)).size
+														: "—"}
+												</strong>
 											</div>
 										</div>
-									))}
-								</div>
-							</Widget>
-						)}
-						{visible.includes("health") && (
-							<Widget
-								id="health"
-								footer={
-									<Link href="/metrics" onFollow={follow} variant="primary">
-										View metrics
-									</Link>
-								}
-							>
-								<div className="dashboard-health-row">
-									<span>Server status</span>
-									<StatusIndicator
-										type={
-											health.data
-												? "success"
-												: health.error
-													? "error"
-													: "loading"
-										}
-									>
-										{health.data
-											? "Running"
-											: health.error
-												? "Unreachable"
-												: "Connecting"}
-									</StatusIndicator>
-								</div>
-								<div className="dashboard-health-row">
-									<span>Available services</span>
-									<strong className="dashboard-number">
-										{health.data?.services.length ?? "—"}
-									</strong>
-								</div>
-								<div className="dashboard-health-row">
-									<span>Request errors</span>
-									<strong className="dashboard-number">{errors ?? "—"}</strong>
-									<small>In the retained request log</small>
-								</div>
-								<div className="dashboard-health-row">
-									<span>Storage</span>
-									<strong>{health.data?.storage ?? "—"}</strong>
-								</div>
-							</Widget>
-						)}
-						{visible.includes("resources") && (
-							<Widget
-								id="resources"
-								wide
-								action={
-									<Button href="/resources" onFollow={follow}>
-										View resources
-									</Button>
-								}
-							>
-								<p className="dashboard-description">
-									Resources in account {account || "…"} · {region || "…"},
-									including global services.
-								</p>
-								{inventory.error ? (
-									<Alert type="error">{inventory.error}</Alert>
-								) : (
-									<div className="dashboard-resource-counts">
-										<div>
-											<span>Total resources</span>
-											<strong className="dashboard-number">
-												{inventory.data ? resources.length : "—"}
-											</strong>
-										</div>
-										<div>
-											<span>Services with resources</span>
-											<strong className="dashboard-number">
-												{inventory.data
-													? new Set(resources.map((r) => r.service)).size
-													: "—"}
-											</strong>
-										</div>
-									</div>
-								)}
-								<div className="dashboard-resource-links">
-									<Link href="/services/iam" onFollow={follow}>
-										Identity and Access Management
-									</Link>
-									<Link href="/services/s3" onFollow={follow}>
-										Amazon S3
-									</Link>
-								</div>
-							</Widget>
-						)}
-						{visible.includes("requests") && (
-							<Widget
-								id="requests"
-								wide
-								action={
-									<Button href="/requests" onFollow={follow}>
-										View all requests
-									</Button>
-								}
-							>
-								{requests.error ? (
-									<Alert type="error">{requests.error}</Alert>
-								) : !requests.data?.length ? (
-									<Box color="text-body-secondary">
-										API requests appear here when you use TinyStack.
-									</Box>
-								) : (
-									<ul className="dashboard-request-list">
-										{requests.data.slice(0, 5).map((r) => (
-											<li key={r.request_id}>
-												{r.service && (
-													<ServiceIcon name={r.service} size="small" />
-												)}
-												<span>{r.operation || `${r.method} ${r.path}`}</span>
-												<RequestStatus status={r.status} />
-											</li>
-										))}
-									</ul>
-								)}
-							</Widget>
-						)}
+									)}
+									{topServices.length > 0 && (
+										<ul className="dashboard-request-list">
+											{topServices.map(([name, count]) => (
+												<li key={name}>
+													<ServiceIcon name={name} size="small" />
+													<Link href={`/services/${name}`} onFollow={follow}>
+														{service(name).title}
+													</Link>
+													<span className="dashboard-count">{count}</span>
+												</li>
+											))}
+										</ul>
+									)}
+								</Widget>
+							)}
+							{visible.includes("requests") && (
+								<Widget
+									id="requests"
+									wide
+									action={
+										<Button href="/requests" onFollow={follow}>
+											View all requests
+										</Button>
+									}
+								>
+									{requests.error ? (
+										<Alert type="error">{requests.error}</Alert>
+									) : !requests.data?.length ? (
+										<Box color="text-body-secondary">
+											API requests appear here when you use TinyStack.
+										</Box>
+									) : (
+										<ul className="dashboard-request-list">
+											{requests.data.slice(0, 5).map((r) => (
+												<li key={r.request_id}>
+													{!!r.service && (
+														<ServiceIcon name={r.service} size="small" />
+													)}
+													<span>{r.operation || `${r.method} ${r.path}`}</span>
+													<RequestStatus status={r.status} />
+												</li>
+											))}
+										</ul>
+									)}
+								</Widget>
+							)}
+						</div>
 					</div>
 					{!visible.length && (
 						<Box textAlign="center" padding="xxl">
@@ -403,7 +421,7 @@ function Widget({
 				{action}
 			</div>
 			<div className="dashboard-widget-content">{children}</div>
-			{footer && <div className="dashboard-widget-footer">{footer}</div>}
+			{!!footer && <div className="dashboard-widget-footer">{footer}</div>}
 		</section>
 	);
 }

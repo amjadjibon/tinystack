@@ -198,7 +198,7 @@ export function DashboardDetails({
 			}
 		>
 			<SpaceBetween size="l">
-				{poll.error && <Alert type="error">{poll.error}</Alert>}
+				{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 				{!enabled && (
 					<Alert type="info">
 						Use signed CLI/SDK requests to read or manage dashboard bodies.

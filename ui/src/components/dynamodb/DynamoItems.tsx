@@ -230,7 +230,7 @@ export function DynamoItems({
 							CLI/SDK requests when this server requires signatures.
 						</Alert>
 					)}
-					{error && (
+					{!!error && (
 						<Alert type="error" header="Cannot read items">
 							{error}
 						</Alert>

@@ -70,7 +70,7 @@ function ViewInvalidation({
 			}
 		>
 			<SpaceBetween size="m">
-				{poll.error && <Alert type="error">{poll.error}</Alert>}
+				{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 				<Details
 					items={[
 						[
@@ -117,7 +117,7 @@ export function Invalidations({
 	);
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows
 				title="Invalidations"
 				emptyText="Choose Create invalidation to clear cached paths."

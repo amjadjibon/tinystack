@@ -91,7 +91,7 @@ export function SecretDetails({
 	);
 	return (
 		<SpaceBetween size="l">
-			{metadata.error && (
+			{!!metadata.error && (
 				<Alert type="error" header="Cannot load secret">
 					{metadata.error}
 				</Alert>
@@ -116,7 +116,7 @@ export function SecretDetails({
 										metadata.reload();
 									}}
 								/>
-								{secret.DeletedDate && (
+								{!!secret.DeletedDate && (
 									<Button
 										disabled={!manageable}
 										onClick={() => setDialog("restore")}
@@ -139,7 +139,7 @@ export function SecretDetails({
 					>
 						{secret.Name}
 					</Header>
-					{secret.DeletedDate && (
+					{!!secret.DeletedDate && (
 						<Alert type="warning" header="Secret scheduled for deletion">
 							Deletion date: {secretDate(secret.DeletedDate)}. Restore this
 							secret to retrieve values or edit its configuration.

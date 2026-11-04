@@ -200,7 +200,7 @@ export function ResourceDialog({
 										Create a VPC in the VPC console, then refresh this list.
 									</Alert>
 								)}
-								{vpcs.error && <Alert type="error">{vpcs.error}</Alert>}
+								{!!vpcs.error && <Alert type="error">{vpcs.error}</Alert>}
 							</SpaceBetween>
 						)}
 					</SpaceBetween>

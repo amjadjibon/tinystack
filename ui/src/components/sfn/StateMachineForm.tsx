@@ -197,7 +197,7 @@ export function StateMachineForm({
 				<Button loading={validating} onClick={validate}>
 					Validate definition
 				</Button>
-				{error && <Alert type="error">{error}</Alert>}
+				{!!error && <Alert type="error">{error}</Alert>}
 				{currentValidation && (
 					<Alert
 						type={currentValidation.Result === "OK" ? "success" : "error"}

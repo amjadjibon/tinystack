@@ -75,7 +75,7 @@ function ElastiCachePage() {
 			]}
 			content={
 				<SpaceBetween size="l">
-					{capabilities.error && (
+					{!!capabilities.error && (
 						<Alert type="error">{capabilities.error}</Alert>
 					)}
 					{capabilities.data?.requires_signature && !canWrite && (

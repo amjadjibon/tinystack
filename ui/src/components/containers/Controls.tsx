@@ -91,7 +91,7 @@ export function ContainerLayout({
 			breadcrumbs={[{ text: title, href }]}
 			content={
 				<SpaceBetween size="l">
-					{capabilities.error && (
+					{!!capabilities.error && (
 						<Alert type="error">{capabilities.error}</Alert>
 					)}
 					{capabilities.data && !capabilities.data.pages[service] && (

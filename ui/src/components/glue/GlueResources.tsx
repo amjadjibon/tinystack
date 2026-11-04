@@ -57,7 +57,7 @@ export function GlueResources({
 					: [];
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows
 				title={`${kind === "Partition" ? "Partitions" : `${kind}s`}`}
 				items={poll.data ?? []}

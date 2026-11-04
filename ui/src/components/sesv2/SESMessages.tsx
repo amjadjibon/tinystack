@@ -36,7 +36,7 @@ export function SESMessages({
 	const [selected, setSelected] = useState<MailMessage>();
 	return (
 		<SpaceBetween size="m">
-			{poll.error && (
+			{!!poll.error && (
 				<Alert type="error" header="Sent messages are unavailable">
 					{poll.error}
 				</Alert>

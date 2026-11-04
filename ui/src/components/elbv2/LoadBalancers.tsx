@@ -88,7 +88,7 @@ export function LoadBalancers({
 	const dialogTarget = target ?? detail;
 	return (
 		<SpaceBetween size="l">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows
 				title="Load balancers"
 				emptyText="Choose Create load balancer to get started."

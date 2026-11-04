@@ -205,7 +205,7 @@ export function SNSTopic({
 			}
 		>
 			<SpaceBetween size="l">
-				{(details.error || tags.error) && (
+				{!!(details.error || tags.error) && (
 					<Alert type="error" header="Cannot load topic">
 						{details.error || tags.error}
 					</Alert>

@@ -94,7 +94,7 @@ export function StartDeploymentDialog({
 					TinyStack completes a deployment at once, whatever its strategy. The
 					strategy's settings are recorded with the deployment.
 				</Alert>
-				{error && <Alert type="error">{error}</Alert>}
+				{!!error && <Alert type="error">{error}</Alert>}
 				<Pick
 					label="Configuration profile"
 					value={form.profile}
@@ -218,7 +218,7 @@ export function DeploymentDetails({
 			onDismiss={onClose}
 		>
 			<SpaceBetween size="m">
-				{poll.error && <Alert type="error">{poll.error}</Alert>}
+				{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 				{!d && !poll.error && <Box>Loading deployment…</Box>}
 				{d && (
 					<Details

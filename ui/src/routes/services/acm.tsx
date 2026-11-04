@@ -68,7 +68,7 @@ function ACMPage() {
 			]}
 			content={
 				<SpaceBetween size="l">
-					{capabilities.error && (
+					{!!capabilities.error && (
 						<Alert type="error">{capabilities.error}</Alert>
 					)}
 					{capabilities.data && !capabilities.data.pages.acm && (
@@ -202,7 +202,7 @@ function CertificateList({
 		});
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Table
 				{...collectionProps}
 				items={items}

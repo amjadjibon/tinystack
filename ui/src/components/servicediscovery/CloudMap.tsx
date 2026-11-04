@@ -43,7 +43,7 @@ export function CloudMap({
 	};
 	return (
 		<SpaceBetween size="l">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Alert type="info">
 				Cloud Map stores DNS configuration as records. Namespace and instance
 				operations complete immediately; their status appears below.
@@ -134,7 +134,7 @@ export function CloudMap({
 				enabled={enabled}
 				namespaceName={namespace?.Name ?? ""}
 			/>
-			{operation && (
+			{!!operation && (
 				<OperationStatus key={operation} scope={scope} id={operation} />
 			)}
 			{edit && (
@@ -246,7 +246,7 @@ function Tags({
 	);
 	return (
 		<>
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<ConsoleTags
 				tags={Object.fromEntries(
 					(poll.data?.Tags ?? []).map((t) => [t.Key, t.Value]),
@@ -315,7 +315,7 @@ function NamespaceServices({
 			<h2>{namespace.Name}</h2>
 			<p>{namespace.Description || "-"}</p>
 			<Tags scope={scope} arn={namespace.Arn} enabled={enabled} />
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows
 				title="Services"
 				items={poll.data ?? []}
@@ -490,7 +490,7 @@ function Instances({
 			<h3>{service.Name}</h3>
 			<p>{service.Description || "-"}</p>
 			<Tags scope={scope} arn={service.Arn} enabled={enabled} />
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows
 				title="Instances"
 				items={poll.data ?? []}

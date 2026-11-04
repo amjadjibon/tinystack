@@ -306,7 +306,7 @@ export function SecretPolicy({
 					Resource policies are stored as metadata; TinyStack does not evaluate
 					them for authorization.
 				</Box>
-				{policy.error && <Alert type="error">{policy.error}</Alert>}
+				{!!policy.error && <Alert type="error">{policy.error}</Alert>}
 				{!readable ? (
 					<Box>Use signed AWS CLI or SDK requests to read this policy.</Box>
 				) : policy.data?.ResourcePolicy ? (

@@ -307,6 +307,8 @@ export function ResourceTable({
 	renderActions,
 	extraColumns = [],
 	emptyText = "Create one with the AWS CLI or an SDK.",
+	headerActions,
+	defaultHidden = [],
 }: {
 	title: string;
 	resources: Resource[];
@@ -316,6 +318,10 @@ export function ResourceTable({
 	renderActions?: (resource: Resource) => ReactNode;
 	extraColumns?: TableProps.ColumnDefinition<Resource>[];
 	emptyText?: string;
+	/** headerActions are page-level actions, such as a create button, shown after Refresh. */
+	headerActions?: ReactNode;
+	/** defaultHidden lists column ids hidden until shown from the preferences, such as values a page fixes. */
+	defaultHidden?: string[];
 }) {
 	const follow = useFollow();
 	const [selected, setSelected] = useState<Resource[]>([]);
@@ -337,8 +343,15 @@ export function ResourceTable({
 			),
 			sortingField: "name",
 			isRowHeader: true,
+			width: 240,
 		},
-		{ id: "type", header: "Type", cell: (r) => r.type, sortingField: "type" },
+		{
+			id: "type",
+			header: "Type",
+			cell: (r) => r.type,
+			sortingField: "type",
+			width: 140,
+		},
 		...(showService
 			? [
 					{
@@ -346,6 +359,7 @@ export function ResourceTable({
 						header: "Service",
 						cell: (r: Resource) => <ServiceLabel name={r.service} />,
 						sortingField: "service",
+						width: 210,
 					},
 				]
 			: []),
@@ -354,17 +368,19 @@ export function ResourceTable({
 			header: "Region",
 			cell: (r) => r.region || "global",
 			sortingField: "region",
+			width: 120,
 		},
 		{
 			id: "account",
 			header: "Account",
 			cell: (r) => r.account,
 			sortingField: "account",
+			width: 150,
 		},
 		{
 			id: "arn",
 			header: "ARN",
-			width: 360,
+			width: 300,
 			cell: (r) =>
 				r.arn ? (
 					<CopyToClipboard
@@ -381,13 +397,17 @@ export function ResourceTable({
 			id: "tags",
 			header: "Tags",
 			cell: (r) => Object.keys(r.tags ?? {}).length,
+			width: 80,
 		},
 	];
 
 	const [preferences, setPreferences] =
 		useState<CollectionPreferencesProps.Preferences>({
 			pageSize: 20,
-			contentDisplay: columns.map((c) => ({ id: c.id ?? "", visible: true })),
+			contentDisplay: columns.map((c) => ({
+				id: c.id ?? "",
+				visible: !defaultHidden.includes(c.id ?? ""),
+			})),
 		});
 
 	const {
@@ -437,8 +457,9 @@ export function ResourceTable({
 			loading={loading}
 			loadingText="Loading resources"
 			items={items}
+			// Names repeat (every VPC has a "default" security group); ARNs do not.
 			trackBy={(r) =>
-				`${r.service}/${r.account}/${r.region}/${r.type}/${r.name}`
+				r.arn || `${r.service}/${r.account}/${r.region}/${r.type}/${r.name}`
 			}
 			columnDefinitions={columns}
 			columnDisplay={preferences.contentDisplay}
@@ -454,6 +475,7 @@ export function ResourceTable({
 								ariaLabel="Refresh"
 								onClick={onRefresh}
 							/>
+							{headerActions}
 						</SpaceBetween>
 					}
 				>

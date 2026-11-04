@@ -157,7 +157,7 @@ export function Ec2Details({
 										: "Edit settings"}
 							</Button>
 						)}
-						{kind.delete && (
+						{!!kind.delete && (
 							<Button
 								disabled={
 									!enabled ||
@@ -187,7 +187,7 @@ export function Ec2Details({
 			>
 				{scope.id}
 			</Header>
-			{poll.error && (
+			{!!poll.error && (
 				<Alert type="error" header="Cannot load resource">
 					{poll.error}
 				</Alert>
@@ -534,7 +534,7 @@ function InstanceStatus({
 				These status checks describe TinyStack instance records. They do not
 				measure a running VM.
 			</Alert>
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Ec2Table
 				title="Status checks"
 				items={poll.data ?? []}

@@ -18,6 +18,7 @@ import type { Resource } from "#/lib/api";
 import { type ActionStep, stringMap } from "#/lib/consoleActions";
 import {
 	capacity,
+	capacityMode,
 	type DynamoScope,
 	type DynamoTable,
 	dynamoCall,
@@ -210,7 +211,7 @@ export function DynamoSettings({
 	};
 	return (
 		<SpaceBetween size="l">
-			{(ttl.error || tags.error) && (
+			{!!(ttl.error || tags.error) && (
 				<Alert type="error">{ttl.error || tags.error}</Alert>
 			)}
 			<Container
@@ -236,7 +237,7 @@ export function DynamoSettings({
 					items={[
 						{
 							label: "Capacity mode",
-							value: table.BillingModeSummary?.BillingMode ?? "PROVISIONED",
+							value: capacityMode(table),
 						},
 						{
 							label: "Read units",

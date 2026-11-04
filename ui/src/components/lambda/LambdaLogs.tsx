@@ -118,7 +118,7 @@ export function LambdaLogs({
 							>
 								Refresh
 							</Button>
-							{next && (
+							{!!next && (
 								<Button
 									disabled={!enabled}
 									loading={busy}

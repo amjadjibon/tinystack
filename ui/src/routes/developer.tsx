@@ -103,7 +103,7 @@ function Developer() {
 					)}
 					<Container header={<Header variant="h2">Reset</Header>}>
 						<SpaceBetween size="m">
-							{(resetDenied || resetError) && (
+							{(resetDenied || !!resetError) && (
 								<Alert type="error">
 									{resetError || "administrator access required"}
 								</Alert>
@@ -164,7 +164,7 @@ function Developer() {
 						}
 					>
 						<SpaceBetween size="l">
-							{faults.error && <Alert type="error">{faults.error}</Alert>}
+							{!!faults.error && <Alert type="error">{faults.error}</Alert>}
 							{!faults.error?.includes("administrator access required") && (
 								<SpaceBetween size="l">
 									<Table
@@ -189,7 +189,14 @@ function Developer() {
 												] as const
 											).map((field) => ({
 												id: field,
-												header: field,
+												header: {
+													service: "Service",
+													operation: "Operation",
+													region: "Region",
+													account: "Account",
+													probability: "Probability",
+													latencyMs: "Latency (ms)",
+												}[field],
 												cell: (r: FaultRule) =>
 													String(
 														r[field] ??
@@ -270,7 +277,7 @@ function Developer() {
 									</SpaceBetween>
 								</SpaceBetween>
 							)}
-							{effects.error && <Alert type="error">{effects.error}</Alert>}
+							{!!effects.error && <Alert type="error">{effects.error}</Alert>}
 							{!effects.error?.includes("administrator access required") && (
 								<SpaceBetween size="s">
 									<FormField
@@ -321,7 +328,7 @@ function Developer() {
 						}
 					>
 						<SpaceBetween size="m">
-							{init.error && <Alert type="error">{init.error}</Alert>}
+							{!!init.error && <Alert type="error">{init.error}</Alert>}
 							{!init.error?.includes("administrator access required") && (
 								<SpaceBetween size="m">
 									{Object.entries(init.data?.stages ?? {}).map(
@@ -372,7 +379,16 @@ function Developer() {
 												] as const
 											).map((field) => ({
 												id: field,
-												header: field,
+												header: {
+													stage: "Stage",
+													name: "Name",
+													path: "Path",
+													state: "State",
+													started_at: "Started",
+													finished_at: "Finished",
+													exit_code: "Exit code",
+													error: "Error",
+												}[field],
 												cell: (
 													s: NonNullable<typeof init.data>["scripts"][number],
 												) => String(s[field] ?? "—"),

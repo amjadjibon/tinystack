@@ -156,7 +156,7 @@ export function RecordDialog({
 						</FormField>
 					</SpaceBetween>
 				)}
-				{record?.SetIdentifier && (
+				{!!record?.SetIdentifier && (
 					<Alert type="info">
 						This record uses the routing policy identified by{" "}
 						<strong>{record.SetIdentifier}</strong>. Editing keeps the policy.

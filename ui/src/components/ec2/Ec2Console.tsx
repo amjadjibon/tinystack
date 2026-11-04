@@ -180,7 +180,7 @@ export function Ec2Console({
 						boot VMs, accept SSH connections, or execute user data. Network
 						settings are stored as records and do not create real networking.
 					</Alert>
-					{(inventory.error || capabilities.error) && (
+					{!!(inventory.error || capabilities.error) && (
 						<Alert type="error">{inventory.error || capabilities.error}</Alert>
 					)}
 					{capabilities.data?.requires_signature && !canWrite && (
@@ -303,12 +303,12 @@ function Workspace({
 	const items = scope.vpc ? all.filter((r) => parentVpc(r) === scope.vpc) : all;
 	return (
 		<SpaceBetween size="l">
-			{poll.error && (
+			{!!poll.error && (
 				<Alert type="error" header="Cannot load resources">
 					{poll.error}
 				</Alert>
 			)}
-			{scope.vpc && (
+			{!!scope.vpc && (
 				<Alert type="info">
 					Showing resources in{" "}
 					<Link
@@ -350,7 +350,7 @@ function Workspace({
 								onRefresh();
 							}}
 						/>
-						{kind.create && (
+						{!!kind.create && (
 							<Button
 								variant="primary"
 								disabled={!enabled}

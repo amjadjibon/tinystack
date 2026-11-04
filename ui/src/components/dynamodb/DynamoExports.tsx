@@ -30,7 +30,7 @@ export function DynamoExports({
 	const [error, setError] = useState("");
 	return (
 		<SpaceBetween size="m">
-			{(exports.error || error) && (
+			{!!(exports.error || error) && (
 				<Alert type="error">{exports.error || error}</Alert>
 			)}
 			<Alert>

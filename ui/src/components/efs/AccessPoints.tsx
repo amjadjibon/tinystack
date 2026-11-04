@@ -65,7 +65,7 @@ export function AccessPoints({
 		);
 	return (
 		<SpaceBetween size="l">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows<AccessPoint>
 				title="Access points"
 				emptyText="Choose Create access point to add one."

@@ -90,7 +90,7 @@ export function SESConfigSets({
 					},
 				]}
 			/>
-			{selected && (
+			{!!selected && (
 				<ConfigSetDetails
 					key={selected}
 					scope={scope}
@@ -216,7 +216,7 @@ function ConfigSetDetails({
 	};
 	return (
 		<SpaceBetween size="m">
-			{set.error && <Alert type="error">{set.error}</Alert>}
+			{!!set.error && <Alert type="error">{set.error}</Alert>}
 			<Facts
 				title={name}
 				actions={
@@ -349,7 +349,7 @@ function EventDestinations({
 		setForm({ ...form, ...change });
 	return (
 		<>
-			{error && <Alert type="error">{error}</Alert>}
+			{!!error && <Alert type="error">{error}</Alert>}
 			<Rows
 				title="Event destinations"
 				emptyText="Choose Add event destination to send events such as bounces to SNS, EventBridge or Firehose."

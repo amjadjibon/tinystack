@@ -120,7 +120,7 @@ export function TestSection({
 			}
 		>
 			<SpaceBetween size="m">
-				{blocked && <Alert type="warning">{blocked}</Alert>}
+				{!!blocked && <Alert type="warning">{blocked}</Alert>}
 				{!!error && (
 					<Alert type="error" header="Could not issue credentials">
 						{error}

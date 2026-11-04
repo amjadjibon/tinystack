@@ -118,7 +118,7 @@ export function CostPage({
 								? "Costs come from loaded cost data. Forecasts, anomaly evaluation and notification delivery are not implemented."
 								: "TinyStack stores report definitions. It does not calculate costs or deliver report files to S3."}
 					</Alert>
-					{(inventory.error || capabilities.error) && (
+					{!!(inventory.error || capabilities.error) && (
 						<Alert type="error" header="Cannot load definitions">
 							{inventory.error || capabilities.error}
 						</Alert>
@@ -305,7 +305,7 @@ function CostRecords({
 						variant="h1"
 						description={`Account-wide definitions for ${account}.`}
 						actions={
-							name &&
+							!!name &&
 							selected && (
 								<SpaceBetween direction="horizontal" size="xs">
 									<Button onClick={() => go()}>Back to list</Button>

@@ -41,7 +41,7 @@ export function IAMAccessKeys({
 	};
 	return (
 		<SpaceBetween size="l">
-			{keys.error && <Alert type="error">{keys.error}</Alert>}
+			{!!keys.error && <Alert type="error">{keys.error}</Alert>}
 			<Table
 				items={keys.data ?? []}
 				trackBy="AccessKeyId"

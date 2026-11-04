@@ -71,7 +71,7 @@ function Route53Page() {
 			]}
 			content={
 				<SpaceBetween size="l">
-					{(capabilities.error || inventory.error) && (
+					{!!(capabilities.error || inventory.error) && (
 						<Alert type="error">{capabilities.error || inventory.error}</Alert>
 					)}
 					{capabilities.data?.requires_signature && !canWrite && (
@@ -183,7 +183,7 @@ function ZoneWorkspace({
 	}
 	return (
 		<SpaceBetween size="m">
-			{zones.error && (
+			{!!zones.error && (
 				<Alert type="error" header="Cannot load hosted zones">
 					{zones.error}
 				</Alert>

@@ -130,7 +130,7 @@ export function SubnetGroups({
 					},
 				]}
 				detail={
-					selected?.ARN && (
+					!!selected?.ARN && (
 						<CacheTags scope={scope} arn={selected.ARN} enabled={enabled} />
 					)
 				}
@@ -364,7 +364,7 @@ export function ParameterGroups({
 									},
 								]}
 							/>
-							{selected.ARN && (
+							{!!selected.ARN && (
 								<CacheTags scope={scope} arn={selected.ARN} enabled={enabled} />
 							)}
 						</SpaceBetween>
@@ -522,7 +522,7 @@ export function CacheEvents({
 	);
 	return (
 		<DetailBox title="Events (last 14 days)">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Table
 				variant="embedded"
 				loading={poll.loading}

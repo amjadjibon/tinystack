@@ -36,7 +36,7 @@ function CloudMapPage() {
 			breadcrumbs={[{ text: "Cloud Map", href: home }]}
 			content={
 				<SpaceBetween size="l">
-					{(capabilities.error || inventory.error) && (
+					{!!(capabilities.error || inventory.error) && (
 						<Alert type="error">{capabilities.error || inventory.error}</Alert>
 					)}
 					{capabilities.data && !capabilities.data.pages.servicediscovery && (

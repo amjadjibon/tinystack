@@ -91,7 +91,7 @@ function ResourcePage() {
 						</Header>
 					}
 				>
-					{error && (
+					{!!error && (
 						<Alert
 							type="error"
 							header={

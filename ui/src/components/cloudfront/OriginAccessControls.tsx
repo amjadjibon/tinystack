@@ -103,7 +103,7 @@ export function OriginAccessControls({
 	};
 	return (
 		<SpaceBetween size="m">
-			{error && <Alert type="error">{error}</Alert>}
+			{!!error && <Alert type="error">{error}</Alert>}
 			<Rows
 				title="Origin access controls"
 				emptyText="Choose Create origin access control to add one."

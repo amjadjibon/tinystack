@@ -57,7 +57,7 @@ export function ApiDetails({
 					})),
 				]}
 			/>
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<SpaceBetween direction="horizontal" size="s">
 				<Button disabled={!enabled || !api} onClick={() => setEdit(true)}>
 					Edit API
@@ -221,7 +221,7 @@ function Resolvers({
 	const selected = type || String(poll.data?.[0]?.Name ?? "");
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Choice
 				label="Type"
 				value={selected}

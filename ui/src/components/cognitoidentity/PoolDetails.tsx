@@ -66,7 +66,7 @@ export function PoolDetails({
 	};
 	return (
 		<SpaceBetween size="l">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			{!enabled && (
 				<Alert type="info">
 					Connect a console session to load identity pool details.

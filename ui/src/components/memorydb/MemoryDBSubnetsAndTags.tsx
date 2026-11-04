@@ -120,7 +120,7 @@ export function MemoryDBSubnetGroups({
 					}}
 				>
 					<SpaceBetween size="m">
-						{subnets.error && <Alert type="error">{subnets.error}</Alert>}
+						{!!subnets.error && <Alert type="error">{subnets.error}</Alert>}
 						<Text
 							label="Subnet group name"
 							value={name}
@@ -237,7 +237,7 @@ export function MemoryDBTags({
 				options={options[kind]}
 				onChange={setArn}
 			/>
-			{arn && <TagView key={arn} scope={scope} arn={arn} enabled={enabled} />}
+			{!!arn && <TagView key={arn} scope={scope} arn={arn} enabled={enabled} />}
 		</SpaceBetween>
 	);
 }
@@ -262,7 +262,7 @@ function TagView({
 		tags = poll.data ?? {};
 	return (
 		<SpaceBetween size="m">
-			{error && <Alert type="error">{error}</Alert>}
+			{!!error && <Alert type="error">{error}</Alert>}
 			<ConsoleTags
 				tags={tags}
 				enabled={enabled}

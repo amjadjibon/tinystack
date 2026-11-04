@@ -56,7 +56,7 @@ export function ImportDialog({
 			}}
 		>
 			<SpaceBetween size="m">
-				{arn && (
+				{!!arn && (
 					<Box color="text-body-secondary">
 						Replaces the certificate body, chain and private key of {arn}. The
 						ARN and tags stay the same.

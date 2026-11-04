@@ -170,21 +170,21 @@ function ExportResult({ out, domain }: { out: Exported; domain: string }) {
 			}
 		>
 			<SpaceBetween size="m">
-				{out.Certificate && (
+				{!!out.Certificate && (
 					<PemSection
 						title="Exported certificate"
 						text={out.Certificate}
 						file={pemFileName(domain, "")}
 					/>
 				)}
-				{out.CertificateChain && (
+				{!!out.CertificateChain && (
 					<PemSection
 						title="Exported chain"
 						text={out.CertificateChain}
 						file={pemFileName(domain, "-chain")}
 					/>
 				)}
-				{key && (
+				{!!key && (
 					<SpaceBetween size="xs">
 						<Header
 							variant="h3"
@@ -278,7 +278,7 @@ export function CertificateDetails({
 	};
 	return (
 		<SpaceBetween size="l">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			{!enabled && (
 				<Alert type="info">
 					Connect a console session to load certificate details.
@@ -443,7 +443,7 @@ export function CertificateDetails({
 					]}
 				/>
 			)}
-			{poll.data?.pem?.Certificate && (
+			{!!poll.data?.pem?.Certificate && (
 				<Container header={<Header variant="h2">Certificate PEM</Header>}>
 					<SpaceBetween size="m">
 						<PemSection
@@ -451,7 +451,7 @@ export function CertificateDetails({
 							text={poll.data.pem.Certificate}
 							file={pemFileName(cert?.DomainName, "")}
 						/>
-						{poll.data.pem.CertificateChain && (
+						{!!poll.data.pem.CertificateChain && (
 							<PemSection
 								title="Certificate chain"
 								text={poll.data.pem.CertificateChain}

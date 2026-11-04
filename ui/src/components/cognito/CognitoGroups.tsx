@@ -129,7 +129,7 @@ export function CognitoGroups({
 					},
 				]}
 			/>
-			{error && !mode && <Alert type="error">{error}</Alert>}
+			{!!error && !mode && <Alert type="error">{error}</Alert>}
 			{editing && (
 				<CognitoForm
 					title={`Edit group ${editing.GroupName}`}
@@ -178,7 +178,7 @@ export function CognitoGroups({
 				}
 			>
 				<SpaceBetween size="m">
-					{error && <Alert type="error">{error}</Alert>}
+					{!!error && <Alert type="error">{error}</Alert>}
 					{mode === "create" ? (
 						<SpaceBetween size="m">
 							<Field label="Group name" value={name} onChange={setName} />

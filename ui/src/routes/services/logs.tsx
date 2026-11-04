@@ -146,7 +146,7 @@ function LogsWorkspace({
 			]}
 			content={
 				<SpaceBetween size="l">
-					{notice && (
+					{!!notice && (
 						<Flashbar
 							items={[
 								{
@@ -159,7 +159,7 @@ function LogsWorkspace({
 							]}
 						/>
 					)}
-					{(inventory.error || capabilities.error) && (
+					{!!(inventory.error || capabilities.error) && (
 						<Alert type="error">{inventory.error || capabilities.error}</Alert>
 					)}
 					{capabilities.data?.requires_signature && !canWrite && (

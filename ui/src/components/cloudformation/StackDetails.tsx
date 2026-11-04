@@ -89,7 +89,7 @@ export function StackDetails({
 	const deleted = stack.StackStatus === "DELETE_COMPLETE";
 	return (
 		<SpaceBetween size="l">
-			{stackPoll.error && (
+			{!!stackPoll.error && (
 				<Alert type="error" header="Cannot refresh the stack">
 					{stackPoll.error}
 				</Alert>

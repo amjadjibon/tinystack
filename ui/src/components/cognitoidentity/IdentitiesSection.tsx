@@ -53,7 +53,7 @@ function IdentityDetails({
 			onDismiss={onClose}
 		>
 			<SpaceBetween size="m">
-				{poll.error && <Alert type="error">{poll.error}</Alert>}
+				{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 				{!i && !poll.error && <Box>Loading identity…</Box>}
 				{i && (
 					<SpaceBetween size="m">
@@ -127,7 +127,7 @@ export function IdentitiesSection({
 	};
 	return (
 		<SpaceBetween size="s">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Table
 				{...collectionProps}
 				items={items}
@@ -200,7 +200,7 @@ export function IdentitiesSection({
 					},
 				]}
 			/>
-			{viewing && (
+			{!!viewing && (
 				<IdentityDetails
 					key={viewing}
 					scope={scope}

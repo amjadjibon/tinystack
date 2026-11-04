@@ -222,7 +222,7 @@ function GroupDetail({
 					</div>
 				</ColumnLayout>
 			</Container>
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			{isDefault ? (
 				<Alert type="info">
 					The default schedule group cannot be tagged or deleted.

@@ -32,9 +32,26 @@ export function ServiceIcon({
 // ServiceLabel is a service's icon next to its console name.
 export function ServiceLabel({ name }: { name: string }) {
 	return (
-		<span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+		<span
+			style={{
+				display: "inline-flex",
+				alignItems: "center",
+				gap: 8,
+				maxWidth: "100%",
+			}}
+		>
 			<ServiceIcon name={name} size="small" />
-			{service(name).title}
+			<span
+				style={{
+					minWidth: 0,
+					overflow: "hidden",
+					textOverflow: "ellipsis",
+					whiteSpace: "nowrap",
+				}}
+				title={service(name).title}
+			>
+				{service(name).title}
+			</span>
 		</span>
 	);
 }

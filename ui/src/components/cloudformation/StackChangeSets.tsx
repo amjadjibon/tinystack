@@ -66,7 +66,7 @@ export function StackChangeSets({
 	};
 	return (
 		<SpaceBetween size="m">
-			{poll.error && (
+			{!!poll.error && (
 				<Alert type="error" header="Cannot load change sets">
 					{poll.error}
 				</Alert>
@@ -158,7 +158,7 @@ export function StackChangeSets({
 					},
 				]}
 			/>
-			{viewing && (
+			{!!viewing && (
 				<ChangeSetView
 					key={viewing}
 					scope={scope}
@@ -221,7 +221,7 @@ function ChangeSetView({
 			}
 		>
 			<SpaceBetween size="m">
-				{poll.error && (
+				{!!poll.error && (
 					<Alert type="error" header="Cannot describe the change set">
 						{poll.error}
 					</Alert>

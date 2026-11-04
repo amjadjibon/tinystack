@@ -116,7 +116,7 @@ function S3Page() {
 							]}
 						/>
 					)}
-					{(inventory.error || capabilities.error) && (
+					{!!(inventory.error || capabilities.error) && (
 						<Alert type="error" header="Cannot load S3">
 							{inventory.error || capabilities.error}
 						</Alert>

@@ -37,7 +37,7 @@ export function AthenaWorkspace({
 	};
 	return (
 		<SpaceBetween size="m">
-			{groups.error && <Alert type="error">{groups.error}</Alert>}
+			{!!groups.error && <Alert type="error">{groups.error}</Alert>}
 			<Buttons>
 				<Action
 					disabled={!enabled}

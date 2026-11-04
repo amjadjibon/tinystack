@@ -119,7 +119,7 @@ export function LogsInsights({
 				}
 			>
 				<SpaceBetween size="l">
-					{error && <Alert type="error">{error}</Alert>}
+					{!!error && <Alert type="error">{error}</Alert>}
 					<fieldset
 						disabled={!enabled || busy}
 						style={{ border: 0, margin: 0, padding: 0 }}

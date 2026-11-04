@@ -94,7 +94,7 @@ export function SQSRedrive({
 					queues still support dead-letter delivery.
 				</Alert>
 			)}
-			{tasks.error && (
+			{!!tasks.error && (
 				<Alert type="error" header="Cannot load redrive tasks">
 					{tasks.error}
 				</Alert>

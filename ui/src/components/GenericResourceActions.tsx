@@ -23,7 +23,7 @@ export function GenericResourceActions({
 		capabilities.data?.resource_deletes[`${resource.service}/${resource.type}`];
 	return (
 		<SpaceBetween direction="horizontal" size="xs">
-			{resource.arn && (
+			{!!resource.arn && (
 				<CopyToClipboard
 					textToCopy={resource.arn}
 					copyButtonText="Copy ARN"
@@ -31,7 +31,7 @@ export function GenericResourceActions({
 					copyErrorText="ARN failed to copy"
 				/>
 			)}
-			{resource.arn &&
+			{!!resource.arn &&
 				capabilities.data?.taggable_services.includes(resource.service) && (
 					<ConsoleTags
 						compact

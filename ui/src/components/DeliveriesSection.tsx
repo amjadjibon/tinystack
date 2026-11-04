@@ -41,7 +41,7 @@ export function DeliveriesSection({
 	return (
 		<SpaceBetween size="l">
 			<Alert type="info">{info}</Alert>
-			{deliveries.error && (
+			{!!deliveries.error && (
 				<Alert type="error" header="Cannot load deliveries">
 					{deliveries.error}
 				</Alert>

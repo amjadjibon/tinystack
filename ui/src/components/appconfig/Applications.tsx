@@ -34,7 +34,7 @@ export function Applications({
 	);
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows<Application>
 				title="Applications"
 				emptyText="Choose Create application to add one."

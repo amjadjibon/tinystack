@@ -83,7 +83,7 @@ export function FetchConfig({
 			}
 		>
 			<SpaceBetween size="m">
-				{(environments.error || profiles.error) && (
+				{!!(environments.error || profiles.error) && (
 					<Alert type="error">{environments.error || profiles.error}</Alert>
 				)}
 				<Pick

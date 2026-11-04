@@ -50,7 +50,7 @@ export function DynamoBackups({
 	};
 	return (
 		<SpaceBetween size="l">
-			{(backups.error || pitr.error || error) && (
+			{!!(backups.error || pitr.error || error) && (
 				<Alert type="error">{backups.error || pitr.error || error}</Alert>
 			)}
 			<Container

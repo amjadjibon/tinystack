@@ -74,7 +74,7 @@ export function TrailDetails({
 				onDismiss={onClose}
 			>
 				<SpaceBetween size="m">
-					{poll.error && <Alert type="error">{poll.error}</Alert>}
+					{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 					{poll.data && (
 						<SpaceBetween size="m">
 							<Box>

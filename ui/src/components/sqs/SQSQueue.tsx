@@ -217,7 +217,7 @@ export function SQSQueue({
 			}
 		>
 			<SpaceBetween size="l">
-				{(details.error || tags.error || url.error) && (
+				{!!(details.error || tags.error || url.error) && (
 					<Alert type="error" header="Cannot load queue">
 						{details.error || tags.error || url.error}
 					</Alert>

@@ -128,7 +128,7 @@ export function SNSSubscription({
 			}
 		>
 			<SpaceBetween size="l">
-				{details.error && (
+				{!!details.error && (
 					<Alert type="error" header="Cannot load subscription">
 						{details.error}
 					</Alert>

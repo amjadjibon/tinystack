@@ -41,7 +41,7 @@ export function GlueConsole({
 									setTable(undefined);
 								}}
 							/>
-							{database && (
+							{!!database && (
 								<SpaceBetween size="m">
 									<Alert type="info">
 										Database: {database}{" "}
@@ -66,7 +66,7 @@ export function GlueConsole({
 									/>
 								</SpaceBetween>
 							)}
-							{database && table && (
+							{!!database && !!table && (
 								<SpaceBetween size="m">
 									<Alert type="info">
 										Table: {table}{" "}

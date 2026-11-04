@@ -66,7 +66,7 @@ export function SecretVersions({
 		.map((s) => ({ label: s, value: s }));
 	return (
 		<SpaceBetween size="m">
-			{versions.error && <Alert type="error">{versions.error}</Alert>}
+			{!!versions.error && <Alert type="error">{versions.error}</Alert>}
 			<Table
 				{...collectionProps}
 				items={items}
@@ -153,7 +153,7 @@ export function SecretVersions({
 					},
 				]}
 			/>
-			{mode && version && (
+			{!!mode && version && (
 				<ActionDialog
 					title={
 						mode === "remove"

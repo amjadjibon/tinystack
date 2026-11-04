@@ -41,8 +41,8 @@ export function Listeners({
 	};
 	return (
 		<SpaceBetween size="l">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
-			{policies.error && <Alert type="error">{policies.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!policies.error && <Alert type="error">{policies.error}</Alert>}
 			<Rows
 				title="Listeners"
 				emptyText="Choose Create listener to accept traffic on a protocol and port."

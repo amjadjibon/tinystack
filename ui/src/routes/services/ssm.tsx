@@ -12,7 +12,7 @@ import {
 	Table,
 } from "@cloudscape-design/components";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { ActionDialog } from "#/components/ActionDialog";
 import { ConsoleLayout } from "#/components/Console";
 import { ParameterDetails } from "#/components/ssm/ParameterDetails";
@@ -68,7 +68,7 @@ function SSMPage() {
 			]}
 			content={
 				<SpaceBetween size="l">
-					{capabilities.error && (
+					{!!capabilities.error && (
 						<Alert type="error">{capabilities.error}</Alert>
 					)}
 					{capabilities.data && !capabilities.data.pages.ssm && (
@@ -168,42 +168,42 @@ function ParameterList({
 			tier: "",
 		});
 	return (
-		<SpaceBetween size="m">
-			<SpaceBetween direction="horizontal" size="s">
-				<FormField label="Name prefix or path">
-					<Input
-						ariaLabel="Name prefix or path"
-						value={prefix}
-						onChange={({ detail }) => setPrefix(detail.value)}
+		<FilteredList
+			key={JSON.stringify(filter)}
+			{...{ scope, enabled, onCreate, onChanged, filter }}
+			filterBar={
+				<SpaceBetween direction="horizontal" size="s" alignItems="end">
+					<FormField label="Name prefix or path">
+						<Input
+							ariaLabel="Name prefix or path"
+							value={prefix}
+							onChange={({ detail }) => setPrefix(detail.value)}
+						/>
+					</FormField>
+					<Choice
+						label="Filter mode"
+						value={mode}
+						options={["prefix", "OneLevel", "Recursive"]}
+						onChange={setMode}
 					/>
-				</FormField>
-				<Choice
-					label="Filter mode"
-					value={mode}
-					options={["prefix", "OneLevel", "Recursive"]}
-					onChange={setMode}
-				/>
-				<Choice
-					label="Type"
-					value={type}
-					options={["", ...parameterTypes]}
-					onChange={setType}
-				/>
-				<Choice
-					label="Tier"
-					value={tier}
-					options={["", "Standard", "Advanced"]}
-					onChange={setTier}
-				/>
-				<Button onClick={() => setFilter({ prefix, mode, type, tier })}>
-					Apply filters
-				</Button>
-			</SpaceBetween>
-			<FilteredList
-				key={JSON.stringify(filter)}
-				{...{ scope, enabled, onCreate, onChanged, filter }}
-			/>
-		</SpaceBetween>
+					<Choice
+						label="Type"
+						value={type}
+						options={["", ...parameterTypes]}
+						onChange={setType}
+					/>
+					<Choice
+						label="Tier"
+						value={tier}
+						options={["", "Standard", "Advanced"]}
+						onChange={setTier}
+					/>
+					<Button onClick={() => setFilter({ prefix, mode, type, tier })}>
+						Apply filters
+					</Button>
+				</SpaceBetween>
+			}
+		/>
 	);
 }
 function FilteredList({
@@ -212,12 +212,15 @@ function FilteredList({
 	onCreate,
 	onChanged,
 	filter,
+	filterBar,
 }: {
 	scope: SSMScope;
 	enabled: boolean;
 	onCreate: () => void;
 	onChanged: () => void;
 	filter: { prefix: string; mode: string; type: string; tier: string };
+	/** filterBar holds the server-side filter controls, shown in the table's filter slot. */
+	filterBar: ReactNode;
 }) {
 	const [selected, setSelected] = useState<Parameter[]>([]),
 		[deleting, setDeleting] = useState(false);
@@ -247,7 +250,7 @@ function FilteredList({
 	);
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Table
 				{...collectionProps}
 				items={items}
@@ -263,6 +266,7 @@ function FilteredList({
 						filters.
 					</Box>
 				}
+				filter={filterBar}
 				pagination={<Pagination {...paginationProps} />}
 				header={
 					<Header

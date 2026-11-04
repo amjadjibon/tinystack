@@ -45,7 +45,7 @@ export function DynamoKinesis({
 	};
 	return (
 		<SpaceBetween size="m">
-			{destinations.error && <Alert type="error">{destinations.error}</Alert>}
+			{!!destinations.error && <Alert type="error">{destinations.error}</Alert>}
 			<Table
 				items={destinations.data ?? []}
 				loading={destinations.loading}

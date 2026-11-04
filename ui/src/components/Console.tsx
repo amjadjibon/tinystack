@@ -532,7 +532,7 @@ export function ConsoleLayout({
 					)
 				}
 				notifications={
-					error && (
+					!!error && (
 						<Flashbar
 							items={[
 								{

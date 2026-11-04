@@ -61,7 +61,7 @@ export function StackResources({
 				Describe all resources
 			</Button>
 			{!!detail && <CodeBlock text={detail} />}
-			{poll.error && (
+			{!!poll.error && (
 				<Alert type="error" header="Cannot load resources">
 					{poll.error}
 				</Alert>
@@ -180,7 +180,7 @@ export function NestedStacks({
 	);
 	return (
 		<SpaceBetween size="s">
-			{poll.error && (
+			{!!poll.error && (
 				<Alert type="error" header="Cannot load nested stacks">
 					{poll.error}
 				</Alert>

@@ -44,7 +44,7 @@ export function PoolList({
 	};
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows
 				title="Identity pools"
 				emptyText="Choose Create identity pool to add one."

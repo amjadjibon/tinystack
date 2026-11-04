@@ -19,7 +19,7 @@ export function ResourceTags({
 	const poll = usePoll(() => listTags(scope, arn), 0);
 	return (
 		<SpaceBetween size="s">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<ConsoleTags
 				tags={poll.data ?? {}}
 				enabled={enabled}

@@ -56,7 +56,7 @@ export function FileSystemDetails({
 	};
 	return (
 		<SpaceBetween size="l">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			{!enabled && (
 				<Alert type="info">
 					Connect a console session to load file system details.

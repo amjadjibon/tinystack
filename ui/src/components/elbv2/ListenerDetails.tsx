@@ -69,7 +69,7 @@ export function ListenerDetails({
 			<SpaceBetween size="l">
 				{secure && (
 					<SpaceBetween size="l">
-						{certs.error && <Alert type="error">{certs.error}</Alert>}
+						{!!certs.error && <Alert type="error">{certs.error}</Alert>}
 						<Rows
 							title="Certificates"
 							emptyText="Choose Add certificate to serve another certificate."

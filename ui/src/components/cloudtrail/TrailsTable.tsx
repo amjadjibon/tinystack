@@ -53,7 +53,7 @@ export function TrailsTable({
 	};
 	return (
 		<SpaceBetween size="m">
-			{(error || poll.error) && (
+			{!!(error || poll.error) && (
 				<Alert type="error">{error || poll.error}</Alert>
 			)}
 			<Rows
@@ -121,7 +121,7 @@ export function TrailsTable({
 					},
 				]}
 			/>
-			{viewing && (
+			{!!viewing && (
 				<TrailDetails
 					key={viewing}
 					scope={scope}

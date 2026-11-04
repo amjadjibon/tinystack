@@ -24,7 +24,7 @@ function ServicePage() {
 			breadcrumbs={[{ text: title, href: `/services/${name}` }]}
 			content={
 				<SpaceBetween size="l">
-					{error && (
+					{!!error && (
 						<Alert
 							type="error"
 							header={
@@ -39,6 +39,7 @@ function ServicePage() {
 					<ResourceTable
 						key={`${name}/${account}/${region}`}
 						title={title}
+						defaultHidden={["region", "account"]}
 						resources={(data ?? []).filter(
 							(r) =>
 								r.service === name &&

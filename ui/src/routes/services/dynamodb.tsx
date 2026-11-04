@@ -131,7 +131,7 @@ function DynamoPage() {
 							]}
 						/>
 					)}
-					{(inventory.error || capabilities.error) && (
+					{!!(inventory.error || capabilities.error) && (
 						<Alert type="error" header="Cannot load DynamoDB">
 							{inventory.error || capabilities.error}
 						</Alert>

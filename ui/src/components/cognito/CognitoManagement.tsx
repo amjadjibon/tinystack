@@ -172,7 +172,7 @@ export function CognitoForm({
 			}}
 		>
 			<SpaceBetween size="m">
-				{confirmation && (
+				{!!confirmation && (
 					<Alert type="warning">Permanently delete {confirmation}?</Alert>
 				)}
 				{fields.map((f) => {
@@ -254,12 +254,13 @@ export function PoolActions({
 	return (
 		<SpaceBetween direction="horizontal" size="s">
 			<Button
+				variant={scope.id ? "normal" : "primary"}
 				disabled={!enabled || (!!scope.id && !pool)}
 				onClick={() => setMode(scope.id ? "edit" : "create")}
 			>
 				{scope.id ? "Edit pool" : "Create user pool"}
 			</Button>
-			{scope.id && (
+			{!!scope.id && (
 				<Button disabled={!enabled || !pool} onClick={() => setMode("delete")}>
 					Delete pool
 				</Button>
@@ -359,7 +360,7 @@ export function PoolSettings({
 	const [mode, setMode] = useState("");
 	return (
 		<SpaceBetween size="l">
-			{mfa.error && <Alert type="error">{mfa.error}</Alert>}
+			{!!mfa.error && <Alert type="error">{mfa.error}</Alert>}
 			<div>MFA: {String(mfa.data?.MfaConfiguration ?? "OFF")}</div>
 			<SpaceBetween direction="horizontal" size="s">
 				<Button disabled={!enabled || !mfa.data} onClick={() => setMode("mfa")}>
@@ -369,7 +370,7 @@ export function PoolSettings({
 					Add custom attribute
 				</Button>
 			</SpaceBetween>
-			{tags.error && <Alert type="error">{tags.error}</Alert>}
+			{!!tags.error && <Alert type="error">{tags.error}</Alert>}
 			<ConsoleTags
 				tags={tags.data?.Tags ?? {}}
 				enabled={enabled && !!tags.data}

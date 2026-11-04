@@ -81,7 +81,7 @@ export function S3Dialog({
 				>
 					{children}
 				</fieldset>
-				{confirmation && (
+				{!!confirmation && (
 					<SpaceBetween size="xs">
 						<Box>
 							Type <strong>{confirmation}</strong> to confirm.
@@ -94,7 +94,7 @@ export function S3Dialog({
 						/>
 					</SpaceBetween>
 				)}
-				{locked && error && (
+				{locked && !!error && (
 					<Alert type="info">
 						Completed changes remain in place when you close this dialog.
 					</Alert>

@@ -233,7 +233,7 @@ export function CacheList<T>({
 	});
 	return (
 		<SpaceBetween size="l">
-			{error && <Alert type="error">{error}</Alert>}
+			{!!error && <Alert type="error">{error}</Alert>}
 			<Table
 				{...collectionProps}
 				items={rows}

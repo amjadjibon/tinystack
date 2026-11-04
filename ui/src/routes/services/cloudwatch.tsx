@@ -156,7 +156,7 @@ function WatchWorkspace({
 			]}
 			content={
 				<SpaceBetween size="l">
-					{notice && (
+					{!!notice && (
 						<Flashbar
 							items={[
 								{
@@ -169,7 +169,7 @@ function WatchWorkspace({
 							]}
 						/>
 					)}
-					{(inventory.error || capabilities.error) && (
+					{!!(inventory.error || capabilities.error) && (
 						<Alert type="error">{inventory.error || capabilities.error}</Alert>
 					)}
 					{capabilities.data?.requires_signature && !canWrite && (

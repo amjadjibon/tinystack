@@ -217,7 +217,7 @@ export default function CloudShellTerminal({
 
 	return (
 		<>
-			{banner && (
+			{!!banner && (
 				<div
 					role="alert"
 					style={{ padding: 12, background: "#fff3cd", color: "#664d03" }}

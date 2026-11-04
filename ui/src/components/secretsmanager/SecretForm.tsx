@@ -174,7 +174,7 @@ export function ValueEditor({
 					/>
 				</FormField>
 			)}
-			{error && <Alert type="error">{error}</Alert>}
+			{!!error && <Alert type="error">{error}</Alert>}
 		</SpaceBetween>
 	);
 }

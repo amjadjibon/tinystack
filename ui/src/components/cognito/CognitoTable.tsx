@@ -20,7 +20,7 @@ export function DataTable<T>({
 }) {
 	return (
 		<SpaceBetween size="s">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Table
 				items={poll.data ?? []}
 				loading={poll.loading}

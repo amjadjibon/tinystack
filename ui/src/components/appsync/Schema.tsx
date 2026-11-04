@@ -55,7 +55,7 @@ export function Schema({
 	});
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Alert type={poll.data?.status === "FAILED" ? "error" : "info"}>
 				{poll.data?.status || "No schema"} {poll.data?.details}
 			</Alert>

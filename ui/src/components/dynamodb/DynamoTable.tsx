@@ -13,6 +13,7 @@ import { useState } from "react";
 import { ActionDialog } from "#/components/ActionDialog";
 import type { Resource } from "#/lib/api";
 import {
+	capacityMode,
 	type DynamoScope,
 	type DynamoTable as TableDetails,
 	tableArn,
@@ -98,7 +99,7 @@ export function DynamoTable({
 			}
 		>
 			<SpaceBetween size="l">
-				{details.error && (
+				{!!details.error && (
 					<Alert type="error" header="Cannot load table">
 						{details.error}
 					</Alert>
@@ -132,7 +133,7 @@ export function DynamoTable({
 							},
 							{
 								label: "Capacity mode",
-								value: table.BillingModeSummary?.BillingMode ?? "PROVISIONED",
+								value: capacityMode(table),
 							},
 							{
 								label: "Table ARN",

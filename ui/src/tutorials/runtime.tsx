@@ -23,10 +23,9 @@ import {
 	useState,
 } from "react";
 import { CodeBlock } from "#/components/CodeBlock";
-import { ServiceIcon } from "#/components/ServiceIcon";
+import { ServiceIcon, ServiceLabel } from "#/components/ServiceIcon";
 import { useHealth } from "#/lib/health";
 import { useScope } from "#/lib/scope";
-import { service } from "#/lib/services";
 import { fetchSnapshot } from "#/lib/tutorials";
 import { usePoll } from "#/lib/usePoll";
 import { Cleanup } from "./Cleanup";
@@ -413,7 +412,7 @@ export function TutorialList() {
 					<ServiceIcon name={def.services[0]} size="large" />
 					<div>
 						<strong>{def.title}</strong>
-						<Box variant="small" color="text-body-secondary">
+						<Box variant="small" display="block" color="text-body-secondary">
 							{def.duration} · {status(t, def)}
 						</Box>
 					</div>
@@ -438,13 +437,10 @@ export function TutorialCards() {
 						id: "services",
 						header: "Services",
 						content: (def) => (
-							<SpaceBetween direction="horizontal" size="xs">
+							<SpaceBetween size="xxs">
 								{def.services.map((s) => (
-									<ServiceIcon key={s} name={s} size="small" />
+									<ServiceLabel key={s} name={s} />
 								))}
-								<span>
-									{def.services.map((s) => service(s).title).join(", ")}
-								</span>
 							</SpaceBetween>
 						),
 					},

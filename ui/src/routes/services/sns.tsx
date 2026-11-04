@@ -157,7 +157,7 @@ function SNSPage() {
 							]}
 						/>
 					)}
-					{(inventory.error || capabilities.error) && (
+					{!!(inventory.error || capabilities.error) && (
 						<Alert type="error" header="Cannot load SNS">
 							{inventory.error || capabilities.error}
 						</Alert>

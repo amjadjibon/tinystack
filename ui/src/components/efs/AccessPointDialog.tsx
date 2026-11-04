@@ -72,7 +72,7 @@ export function CreateAccessPointDialog({
 				</Alert>
 				{!fileSystem && (
 					<SpaceBetween size="s">
-						{fileSystems.error && (
+						{!!fileSystems.error && (
 							<Alert type="error">{fileSystems.error}</Alert>
 						)}
 						<Pick

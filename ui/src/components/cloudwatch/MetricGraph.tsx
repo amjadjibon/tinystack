@@ -148,7 +148,7 @@ export function MetricGraph({
 					</SpaceBetween>
 				</Box>
 			</ColumnLayout>
-			{error && <Alert type="error">{error}</Alert>}
+			{!!error && <Alert type="error">{error}</Alert>}
 			{result?.some((r) => r.StatusCode !== "Complete") && (
 				<Alert type="warning">
 					Some series are incomplete. Narrow the time range or increase the

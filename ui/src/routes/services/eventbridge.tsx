@@ -186,7 +186,7 @@ function EventWorkspace({
 							]}
 						/>
 					)}
-					{(inventory.error || capabilities.error) && (
+					{!!(inventory.error || capabilities.error) && (
 						<Alert type="error">{inventory.error || capabilities.error}</Alert>
 					)}
 					{capabilities.data?.requires_signature && !canWrite && (
@@ -497,7 +497,7 @@ function EventBusDetails({
 			}
 		>
 			<SpaceBetween size="l">
-				{(bus.error || tags.error) && (
+				{!!(bus.error || tags.error) && (
 					<Alert type="error">{bus.error || tags.error}</Alert>
 				)}
 				<Container header={<Header variant="h2">Event bus details</Header>}>

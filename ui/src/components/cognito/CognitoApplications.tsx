@@ -206,7 +206,7 @@ function ClientSecret({
 		[error, setError] = useState("");
 	return (
 		<SpaceBetween size="xs">
-			{error && <Alert type="error">{error}</Alert>}
+			{!!error && <Alert type="error">{error}</Alert>}
 			{secret !== undefined ? (
 				<SpaceBetween size="xs">
 					<CodeBlock text={secret || "No client secret"} />
@@ -273,7 +273,7 @@ export function CognitoDomain({
 				>
 					{domain ? "Edit domain" : "Create domain"}
 				</Button>
-				{domain && (
+				{!!domain && (
 					<Button disabled={!enabled} onClick={() => setMode("delete")}>
 						Delete domain
 					</Button>
@@ -347,7 +347,7 @@ export function CognitoDomain({
 					}}
 				/>
 			)}
-			{info.error && <Alert type="error">{info.error}</Alert>}
+			{!!info.error && <Alert type="error">{info.error}</Alert>}
 			{!domain ? (
 				<div>No domain configured.</div>
 			) : (

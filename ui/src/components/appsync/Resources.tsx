@@ -150,7 +150,7 @@ export function Resources({
 						];
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows
 				title={titles[kind]}
 				items={poll.data ?? []}

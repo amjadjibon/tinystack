@@ -1,4 +1,11 @@
-import { Alert, Button, SpaceBetween } from "@cloudscape-design/components";
+import {
+	Alert,
+	Box,
+	Button,
+	Container,
+	Header,
+	SpaceBetween,
+} from "@cloudscape-design/components";
 import { useState } from "react";
 import { Choice, Field, Rows } from "#/components/containers/Controls";
 import { errorText } from "#/lib/consoleActions";
@@ -52,56 +59,65 @@ export function Discover({
 		}
 	};
 	return (
-		<SpaceBetween size="m">
-			<h2>Discover instances</h2>
-			<Field label="Namespace name" value={namespace} onChange={setNamespace} />
-			<Field label="Service name" value={service} onChange={setService} />
-			<Pairs label="Query parameters" rows={query} onChange={setQuery} />
-			<Pairs
-				label="Optional parameters"
-				rows={optional}
-				onChange={setOptional}
-			/>
-			<Choice
-				label="Health status"
-				value={health}
-				options={["HEALTHY", "UNHEALTHY", "ALL", "HEALTHY_OR_ELSE_ALL"]}
-				onChange={setHealth}
-			/>
-			<Button
-				variant="primary"
-				disabled={!enabled}
-				loading={busy}
-				onClick={discover}
-			>
-				Discover instances
-			</Button>
-			{error && <Alert type="error">{error}</Alert>}
-			{result && (
-				<SpaceBetween size="m">
-					<p>Instances revision: {result.InstancesRevision ?? "-"}</p>
-					<Rows
-						title="Discovery results"
-						items={result.Instances ?? []}
-						emptyText="No matching instances."
-						columns={[
-							{ id: "id", header: "Instance ID", cell: (i) => i.InstanceId },
-							{
-								id: "namespace",
-								header: "Namespace",
-								cell: (i) => i.NamespaceName,
-							},
-							{ id: "service", header: "Service", cell: (i) => i.ServiceName },
-							{ id: "health", header: "Health", cell: (i) => i.HealthStatus },
-							{
-								id: "attributes",
-								header: "Attributes",
-								cell: (i) => JSON.stringify(i.Attributes),
-							},
-						]}
-					/>
-				</SpaceBetween>
-			)}
-		</SpaceBetween>
+		<Container header={<Header variant="h2">Discover instances</Header>}>
+			<SpaceBetween size="m">
+				<Field
+					label="Namespace name"
+					value={namespace}
+					onChange={setNamespace}
+				/>
+				<Field label="Service name" value={service} onChange={setService} />
+				<Pairs label="Query parameters" rows={query} onChange={setQuery} />
+				<Pairs
+					label="Optional parameters"
+					rows={optional}
+					onChange={setOptional}
+				/>
+				<Choice
+					label="Health status"
+					value={health}
+					options={["HEALTHY", "UNHEALTHY", "ALL", "HEALTHY_OR_ELSE_ALL"]}
+					onChange={setHealth}
+				/>
+				<Button
+					variant="primary"
+					disabled={!enabled}
+					loading={busy}
+					onClick={discover}
+				>
+					Discover instances
+				</Button>
+				{!!error && <Alert type="error">{error}</Alert>}
+				{result && (
+					<SpaceBetween size="m">
+						<Box>Instances revision: {result.InstancesRevision ?? "-"}</Box>
+						<Rows
+							title="Discovery results"
+							items={result.Instances ?? []}
+							emptyText="No matching instances."
+							columns={[
+								{ id: "id", header: "Instance ID", cell: (i) => i.InstanceId },
+								{
+									id: "namespace",
+									header: "Namespace",
+									cell: (i) => i.NamespaceName,
+								},
+								{
+									id: "service",
+									header: "Service",
+									cell: (i) => i.ServiceName,
+								},
+								{ id: "health", header: "Health", cell: (i) => i.HealthStatus },
+								{
+									id: "attributes",
+									header: "Attributes",
+									cell: (i) => JSON.stringify(i.Attributes),
+								},
+							]}
+						/>
+					</SpaceBetween>
+				)}
+			</SpaceBetween>
+		</Container>
 	);
 }

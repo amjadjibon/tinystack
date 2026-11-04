@@ -142,7 +142,7 @@ export function CognitoUsers({
 					},
 				]}
 			/>
-			{selected && (
+			{!!selected && (
 				<UserDetail
 					key={selected}
 					scope={scope}
@@ -173,7 +173,7 @@ export function CognitoUsers({
 				}
 			>
 				<SpaceBetween size="m">
-					{error && <Alert type="error">{error}</Alert>}
+					{!!error && <Alert type="error">{error}</Alert>}
 					<Field label="Username" value={username} onChange={setUsername} />
 					<Field label="Email (optional)" value={email} onChange={setEmail} />
 					<Field
@@ -250,7 +250,7 @@ function UserDetail({
 			}
 		>
 			<SpaceBetween size="m">
-				{(user.error || error) && (
+				{!!(user.error || error) && (
 					<Alert type="error">{user.error || error}</Alert>
 				)}
 				{user.loading ? (
@@ -436,7 +436,7 @@ function UserDetail({
 					}
 				>
 					<SpaceBetween size="m">
-						{error && <Alert type="error">{error}</Alert>}
+						{!!error && <Alert type="error">{error}</Alert>}
 						{mode === "delete" ? (
 							<div>Permanently delete {username} from this pool?</div>
 						) : mode === "attributes" ? (

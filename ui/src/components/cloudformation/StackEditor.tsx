@@ -235,7 +235,7 @@ function Editor({
 				<Button loading={loading} onClick={inspect}>
 					Validate and inspect template
 				</Button>
-				{error && <Alert type="error">{error}</Alert>}
+				{!!error && <Alert type="error">{error}</Alert>}
 				{summary && (
 					<SpaceBetween size="m">
 						{(summary.Parameters ?? []).map((p) => (
@@ -294,7 +294,7 @@ function Editor({
 								</SpaceBetween>
 							</FormField>
 						))}
-						{summary.CapabilitiesReason && (
+						{!!summary.CapabilitiesReason && (
 							<Alert>{summary.CapabilitiesReason}</Alert>
 						)}
 						{requiredCapabilities(summary).map((c) => (

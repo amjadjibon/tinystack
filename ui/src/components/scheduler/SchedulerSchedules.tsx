@@ -96,7 +96,7 @@ export function SchedulerSchedules({
 	};
 	return (
 		<SpaceBetween size="m">
-			{error && (
+			{!!error && (
 				<Alert type="error" dismissible onDismiss={() => setError("")}>
 					{error}
 				</Alert>

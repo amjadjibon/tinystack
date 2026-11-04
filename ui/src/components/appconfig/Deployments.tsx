@@ -67,7 +67,7 @@ export function Deployments({
 	};
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows<DeploymentSummary>
 				title="Deployments"
 				emptyText="Choose Start deployment to deploy a hosted configuration version."

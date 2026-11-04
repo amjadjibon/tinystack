@@ -87,12 +87,12 @@ export function SESSend({
 			}
 		>
 			<SpaceBetween size="m">
-				{error && (
+				{!!error && (
 					<Alert type="error" header="Send failed">
 						{error}
 					</Alert>
 				)}
-				{messageId && (
+				{!!messageId && (
 					<Alert type="success" header="Message accepted">
 						Message ID {messageId}
 					</Alert>

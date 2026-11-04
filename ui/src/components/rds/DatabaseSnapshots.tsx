@@ -153,7 +153,7 @@ function SnapshotList({
 				Snapshots preserve metadata in records mode. Cluster snapshots support
 				Aurora only. Cluster restore is not implemented.
 			</Alert>
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Table
 				items={poll.data ?? []}
 				loading={poll.loading}
@@ -252,7 +252,7 @@ function SnapshotList({
 					onChanged={changed}
 				/>
 			)}
-			{action && (
+			{!!action && (
 				<RDSOperationDialog
 					key={`${action}/${selected}`}
 					{...{ scope, fields, operation }}

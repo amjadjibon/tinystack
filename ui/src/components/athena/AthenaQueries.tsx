@@ -441,7 +441,7 @@ export function AthenaQueries({
 					]}
 				/>
 			)}
-			{dialog && (
+			{!!dialog && (
 				<ActionDialog
 					title={dialog === "create" ? "Save query" : "Delete saved query"}
 					submit={dialog === "create" ? "Save query" : "Delete"}

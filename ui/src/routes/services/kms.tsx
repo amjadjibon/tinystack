@@ -67,7 +67,7 @@ function KMSPage() {
 			]}
 			content={
 				<SpaceBetween size="l">
-					{(capabilities.error || inventory.error) && (
+					{!!(capabilities.error || inventory.error) && (
 						<Alert type="error">{capabilities.error || inventory.error}</Alert>
 					)}
 					{capabilities.data?.requires_signature && !canWrite && (
@@ -136,7 +136,7 @@ function KMSWorkspace({
 		})) ?? resources;
 	return (
 		<SpaceBetween size="l">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			{scope.key ? (
 				<KMSDetails
 					scope={scope}
@@ -147,41 +147,36 @@ function KMSWorkspace({
 					onChanged={changed}
 				/>
 			) : (
-				<SpaceBetween size="l">
-					<Header
-						actions={
-							<Button
-								variant="primary"
-								disabled={!enabled}
-								onClick={() => setAction("Create key")}
-							>
-								Create key
-							</Button>
-						}
-					>
-						Keys
-					</Header>
-					<ResourceTable
-						title="Keys"
-						resources={rows}
-						loading={poll.loading}
-						onRefresh={poll.reload}
-						emptyText="Create a key to encrypt data or manage signing and HMAC workflows."
-						extraColumns={[
-							{
-								id: "aliases",
-								header: "Aliases",
-								cell: (r) =>
-									poll.data?.aliases
-										.filter((a) => a.TargetKeyId === r.name)
-										.map((a) => a.AliasName)
-										.join(", ") ||
-									(r.details?.Aliases as string[] | undefined)?.join(", ") ||
-									"—",
-							},
-						]}
-					/>
-				</SpaceBetween>
+				<ResourceTable
+					title="Keys"
+					defaultHidden={["type", "region", "account"]}
+					headerActions={
+						<Button
+							variant="primary"
+							disabled={!enabled}
+							onClick={() => setAction("Create key")}
+						>
+							Create key
+						</Button>
+					}
+					resources={rows}
+					loading={poll.loading}
+					onRefresh={poll.reload}
+					emptyText="Create a key to encrypt data or manage signing and HMAC workflows."
+					extraColumns={[
+						{
+							id: "aliases",
+							header: "Aliases",
+							cell: (r) =>
+								poll.data?.aliases
+									.filter((a) => a.TargetKeyId === r.name)
+									.map((a) => a.AliasName)
+									.join(", ") ||
+								(r.details?.Aliases as string[] | undefined)?.join(", ") ||
+								"—",
+						},
+					]}
+				/>
 			)}
 			{!!action && (
 				<KMSDialog
@@ -261,7 +256,7 @@ function KMSDetails({
 	);
 	return (
 		<SpaceBetween size="l">
-			{(poll.error || settings.error) && (
+			{!!(poll.error || settings.error) && (
 				<Alert type="error">{poll.error || settings.error}</Alert>
 			)}
 			<Header
@@ -786,7 +781,7 @@ function KMSTester({
 	return (
 		<Container header={<Header>Encrypt / decrypt tester</Header>}>
 			<SpaceBetween size="m">
-				{error && <Alert type="error">{error}</Alert>}
+				{!!error && <Alert type="error">{error}</Alert>}
 				<Choice
 					label="Operation"
 					value={mode}
@@ -836,7 +831,7 @@ function KMSTester({
 				>
 					{mode}
 				</Button>
-				{result && (
+				{!!result && (
 					<FormField
 						label={
 							mode === "Encrypt" ? "Ciphertext (base64)" : "Plaintext (UTF-8)"

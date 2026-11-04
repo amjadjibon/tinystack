@@ -53,7 +53,7 @@ export function StackEvents({
 	});
 	return (
 		<SpaceBetween size="s">
-			{poll.error && (
+			{!!poll.error && (
 				<Alert type="error" header="Cannot load events">
 					{poll.error}
 				</Alert>

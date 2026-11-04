@@ -65,7 +65,7 @@ export function StreamingPage({
 			]}
 			content={
 				<SpaceBetween size="l">
-					{capabilities.error && (
+					{!!capabilities.error && (
 						<Alert type="error">{capabilities.error}</Alert>
 					)}
 					{capabilities.data && !capabilities.data.pages[service] && (
@@ -156,40 +156,34 @@ function Workspace({
 	const d = detail.data?.description;
 	return (
 		<SpaceBetween size="l">
-			{(list.error || detail.error || inventory.error) && (
+			{!!(list.error || detail.error || inventory.error) && (
 				<Alert type="error">
 					{list.error || detail.error || inventory.error}
 				</Alert>
 			)}
 			{!scope.stream ? (
-				<SpaceBetween size="l">
-					<Header
-						variant="h1"
-						actions={
-							<Button
-								variant="primary"
-								disabled={!enabled}
-								onClick={() => setDialog("create")}
-							>
-								{service === "kinesis"
-									? "Create stream"
-									: "Create delivery stream"}
-							</Button>
-						}
-					>
-						Streams
-					</Header>
-					<ResourceTable
-						title="Streams"
-						resources={resources}
-						loading={list.loading}
-						onRefresh={() => {
-							list.reload();
-							inventory.reload();
-						}}
-						emptyText="Create a stream to begin sending records in this account and Region."
-					/>
-				</SpaceBetween>
+				<ResourceTable
+					title={service === "kinesis" ? "Streams" : "Delivery streams"}
+					defaultHidden={["type", "region", "account"]}
+					headerActions={
+						<Button
+							variant="primary"
+							disabled={!enabled}
+							onClick={() => setDialog("create")}
+						>
+							{service === "kinesis"
+								? "Create stream"
+								: "Create delivery stream"}
+						</Button>
+					}
+					resources={resources}
+					loading={list.loading}
+					onRefresh={() => {
+						list.reload();
+						inventory.reload();
+					}}
+					emptyText="Create a stream to begin sending records in this account and Region."
+				/>
 			) : (
 				<SpaceBetween size="l">
 					<Header

@@ -85,7 +85,7 @@ export function DynamoPartiQL({
 					</Button>
 				</SpaceBetween>
 			</Container>
-			{error && <Alert type="error">{error}</Alert>}
+			{!!error && <Alert type="error">{error}</Alert>}
 			<Table
 				items={rows}
 				loading={busy}

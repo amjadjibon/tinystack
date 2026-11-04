@@ -100,7 +100,7 @@ export function SecretValuePanel({
 			}
 		>
 			<SpaceBetween size="m">
-				{versions.error && <Alert type="error">{versions.error}</Alert>}
+				{!!versions.error && <Alert type="error">{versions.error}</Alert>}
 				<Select
 					ariaLabel="Secret version"
 					options={options}
@@ -113,7 +113,7 @@ export function SecretValuePanel({
 						setVersion(detail.selectedOption.value ?? "");
 					}}
 				/>
-				{error && <Alert type="error">{error}</Alert>}
+				{!!error && <Alert type="error">{error}</Alert>}
 				{value ? (
 					<SpaceBetween size="m">
 						<Box>

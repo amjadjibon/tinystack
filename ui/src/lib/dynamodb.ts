@@ -85,6 +85,12 @@ export function tableCall<T = Record<string, unknown>>(
 ): Promise<T> {
 	return dynamoCall(scope, operation, { TableName: scope.table, ...input });
 }
+// capacityMode names a table's billing mode as the console does.
+export function capacityMode(table: DynamoTable) {
+	return table.BillingModeSummary?.BillingMode === "PAY_PER_REQUEST"
+		? "On-demand"
+		: "Provisioned";
+}
 export function tableArn(scope: DynamoScope) {
 	return `arn:aws:dynamodb:${scope.region}:${scope.account}:table/${scope.table}`;
 }

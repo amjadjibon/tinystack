@@ -94,7 +94,7 @@ function Workspace({
 		[name, setName] = useState("");
 	return (
 		<SpaceBetween size="l">
-			{clusters.error && <Alert type="error">{clusters.error}</Alert>}
+			{!!clusters.error && <Alert type="error">{clusters.error}</Alert>}
 			<Rows
 				title="Clusters"
 				emptyText="Choose Create cluster to get started."
@@ -259,7 +259,7 @@ function DefinitionList({
 	};
 	return (
 		<SpaceBetween size="m">
-			{(poll.error || error) && (
+			{!!(poll.error || error) && (
 				<Alert type="error">{poll.error || error}</Alert>
 			)}
 			<Rows
@@ -442,7 +442,7 @@ function ClusterDetails({
 	return (
 		<SpaceBetween size="m">
 			<Header>{cluster.split("/").at(-1)}</Header>
-			{definitions.error && <Alert type="error">{definitions.error}</Alert>}
+			{!!definitions.error && <Alert type="error">{definitions.error}</Alert>}
 			<Tabs
 				tabs={[
 					{
@@ -450,7 +450,9 @@ function ClusterDetails({
 						label: "Services",
 						content: (
 							<SpaceBetween size="m">
-								{services.error && <Alert type="error">{services.error}</Alert>}
+								{!!services.error && (
+									<Alert type="error">{services.error}</Alert>
+								)}
 								<Rows
 									title="Services"
 									emptyText="Choose Create service to run a task definition as a service."
@@ -665,7 +667,7 @@ function Tasks({
 		[reason, setReason] = useState("Stopped from console");
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows
 				title="Tasks"
 				emptyText="Choose Run task to create a task, or select another desired status."

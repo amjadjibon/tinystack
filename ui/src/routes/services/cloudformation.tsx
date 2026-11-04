@@ -71,7 +71,7 @@ function CloudFormationPage() {
 			]}
 			content={
 				<SpaceBetween size="l">
-					{capabilities.error && (
+					{!!capabilities.error && (
 						<Alert type="error">{capabilities.error}</Alert>
 					)}
 					{capabilities.data?.requires_signature && !canWrite && (
@@ -175,7 +175,7 @@ function StackList({
 	});
 	return (
 		<SpaceBetween size="l">
-			{poll.error && (
+			{!!poll.error && (
 				<Alert type="error" header="Cannot load stacks">
 					{poll.error}
 				</Alert>

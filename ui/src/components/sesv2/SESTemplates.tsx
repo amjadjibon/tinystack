@@ -69,7 +69,7 @@ export function SESTemplates({
 	};
 	return (
 		<SpaceBetween size="m">
-			{error && <Alert type="error">{error}</Alert>}
+			{!!error && <Alert type="error">{error}</Alert>}
 			<Rows
 				title="Templates"
 				emptyText="Choose Create template to store a reusable subject and body."
@@ -130,7 +130,7 @@ export function SESTemplates({
 					},
 				]}
 			/>
-			{selected && (
+			{!!selected && (
 				<TemplateDetails
 					key={`${selected}/${version}`}
 					scope={scope}
@@ -198,7 +198,7 @@ export function SESTemplates({
 					</Alert>
 				</ActionDialog>
 			)}
-			{rendering && (
+			{!!rendering && (
 				<TestRender
 					scope={scope}
 					name={rendering}
@@ -269,19 +269,19 @@ function TemplateDetails({
 		c = poll.data?.TemplateContent;
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Facts
 				title={name}
 				actions={<Action onClick={poll.reload}>Refresh</Action>}
 				facts={[["Subject", c?.Subject]]}
 			/>
-			{c?.Text && (
+			{!!c?.Text && (
 				<SpaceBetween size="xxs">
 					<Box variant="awsui-key-label">Text body</Box>
 					<CodeBlock text={c.Text} />
 				</SpaceBetween>
 			)}
-			{c?.Html && (
+			{!!c?.Html && (
 				<SpaceBetween size="xxs">
 					<Box variant="awsui-key-label">HTML body</Box>
 					<CodeBlock text={c.Html} />
@@ -345,7 +345,7 @@ function TestRender({
 			}
 		>
 			<SpaceBetween size="m">
-				{error && <Alert type="error">{error}</Alert>}
+				{!!error && <Alert type="error">{error}</Alert>}
 				<FormField
 					label="Template data (JSON)"
 					description="Values for the placeholders, as a JSON object."
@@ -357,7 +357,7 @@ function TestRender({
 						onChange={({ detail }) => setData(detail.value)}
 					/>
 				</FormField>
-				{output && <CodeBlock text={output} />}
+				{!!output && <CodeBlock text={output} />}
 			</SpaceBetween>
 		</Modal>
 	);

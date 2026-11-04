@@ -121,7 +121,7 @@ function StepFunctionsPage() {
 							]}
 						/>
 					)}
-					{(inventory.error || capabilities.error) && (
+					{!!(inventory.error || capabilities.error) && (
 						<Alert type="error" header="Cannot load Step Functions">
 							{inventory.error || capabilities.error}
 						</Alert>

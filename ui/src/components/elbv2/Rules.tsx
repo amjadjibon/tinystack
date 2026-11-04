@@ -42,7 +42,7 @@ export function Rules({
 	const editable = rules.filter((r) => !r.IsDefault);
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows
 				title="Rules"
 				emptyText="Choose Create rule to route requests by path, host, header, query string or source IP."

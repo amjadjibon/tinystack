@@ -42,7 +42,7 @@ export function Environments({
 	);
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows<Environment>
 				title="Environments"
 				emptyText="Choose Create environment to add one."

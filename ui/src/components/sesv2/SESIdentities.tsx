@@ -110,7 +110,7 @@ export function SESIdentities({
 					},
 				]}
 			/>
-			{selected && (
+			{!!selected && (
 				<IdentityDetails
 					key={selected}
 					scope={scope}
@@ -212,7 +212,7 @@ function IdentityDetails({
 		d = poll.data;
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Facts
 				title={name}
 				actions={

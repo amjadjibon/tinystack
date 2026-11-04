@@ -67,7 +67,7 @@ function Targets({
 	};
 	return (
 		<SpaceBetween size="m">
-			{health.error && <Alert type="error">{health.error}</Alert>}
+			{!!health.error && <Alert type="error">{health.error}</Alert>}
 			<Rows
 				title="Targets"
 				emptyText="Choose Register targets to add instances, IP addresses or a Lambda function."
@@ -174,8 +174,8 @@ export function TargetGroups({
 	const subject = target ?? detail;
 	return (
 		<SpaceBetween size="l">
-			{error && <Alert type="error">{error}</Alert>}
-			{instances.error && (
+			{!!error && <Alert type="error">{error}</Alert>}
+			{!!instances.error && (
 				<Alert type="warning">
 					Instances are not listed: {instances.error}
 				</Alert>

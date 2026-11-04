@@ -143,7 +143,7 @@ export function LogEvents({
 							requires signatures.
 						</Alert>
 					)}
-					{error && <Alert type="error">{error}</Alert>}
+					{!!error && <Alert type="error">{error}</Alert>}
 					<fieldset
 						disabled={!enabled || busy}
 						style={{ border: 0, padding: 0, margin: 0 }}
@@ -201,7 +201,7 @@ export function LogEvents({
 									onChange={({ detail }) => setLimit(detail.value)}
 								/>
 							</FormField>
-							{scope.stream && (
+							{!!scope.stream && (
 								<Checkbox
 									disabled={!!filter.trim()}
 									checked={latest}

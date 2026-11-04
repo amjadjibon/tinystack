@@ -96,7 +96,7 @@ function RDSPage() {
 			]}
 			content={
 				<SpaceBetween size="l">
-					{capabilities.error && (
+					{!!capabilities.error && (
 						<Alert type="error">{capabilities.error}</Alert>
 					)}
 					{capabilities.data?.requires_signature && !canWrite && (
@@ -199,7 +199,7 @@ function RDSWorkspace({
 		return <DatabaseGroups {...{ scope, enabled, onChanged }} />;
 	return (
 		<SpaceBetween size="l">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			{scope.database ? (
 				detail ? (
 					enabled ? (

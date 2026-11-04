@@ -44,7 +44,7 @@ export function Strategies({
 	};
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows<DeploymentStrategy>
 				title="Deployment strategies"
 				emptyText="Choose Create strategy to add one."

@@ -128,7 +128,7 @@ export function AthenaWorkgroups({
 					},
 				]}
 			/>
-			{view && (
+			{!!view && (
 				<WorkgroupDetail
 					key={view}
 					scope={scope}
@@ -303,8 +303,8 @@ function WorkgroupDetail({
 	);
 	return (
 		<SpaceBetween size="m">
-			{detail.error && <Alert type="error">{detail.error}</Alert>}
-			{tags.error && <Alert type="error">{tags.error}</Alert>}
+			{!!detail.error && <Alert type="error">{detail.error}</Alert>}
+			{!!tags.error && <Alert type="error">{tags.error}</Alert>}
 			<Rows
 				title={`Workgroup ${name}`}
 				emptyText="Load workgroup details."

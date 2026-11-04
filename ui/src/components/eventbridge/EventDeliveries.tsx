@@ -42,7 +42,7 @@ export function EventDeliveries({ scope }: { scope: EventScope }) {
 				delivery. History is bounded and resets on restart; payloads may be
 				truncated.
 			</Alert>
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Table
 				{...collection.collectionProps}
 				items={collection.items}

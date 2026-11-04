@@ -132,7 +132,7 @@ export function EventRuleDetails({
 			}
 		>
 			<SpaceBetween size="l">
-				{(rule.error || targets.error || tags.error) && (
+				{!!(rule.error || targets.error || tags.error) && (
 					<Alert type="error">
 						{rule.error || targets.error || tags.error}
 					</Alert>

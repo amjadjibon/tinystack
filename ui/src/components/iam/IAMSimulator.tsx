@@ -317,7 +317,7 @@ export function IAMSimulator({
 				Policy simulator
 			</Header>
 
-			{error && (
+			{!!error && (
 				<Alert
 					type="error"
 					header="Simulation failed"
@@ -361,7 +361,7 @@ export function IAMSimulator({
 								selected={principalArn ? [principalArn] : []}
 								onChange={(selected) => setPrincipalArn(selected[0] ?? "")}
 							/>
-							{principalArn && (
+							{!!principalArn && (
 								<Box variant="p" color="text-body-secondary">
 									Simulating: <strong>{principalArn}</strong>
 								</Box>
@@ -513,7 +513,7 @@ export function IAMSimulator({
 									}}
 								/>
 							</FormField>
-							{boundaryJson.trim() && (
+							{!!boundaryJson.trim() && (
 								<Button
 									onClick={() =>
 										setBoundaryJson(formatPolicyJson(boundaryJson))
@@ -543,7 +543,7 @@ export function IAMSimulator({
 									}}
 								/>
 							</FormField>
-							{resourcePolicyJson.trim() && (
+							{!!resourcePolicyJson.trim() && (
 								<Button
 									onClick={() =>
 										setResourcePolicyJson(formatPolicyJson(resourcePolicyJson))

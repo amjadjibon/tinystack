@@ -196,7 +196,7 @@ export function IAMDetail({
 						]}
 					/>
 				)}
-				{(error || live.error) && (
+				{!!(error || live.error) && (
 					<Alert type="error">{error || live.error}</Alert>
 				)}
 				<Container header={<Header variant="h2">Summary</Header>}>

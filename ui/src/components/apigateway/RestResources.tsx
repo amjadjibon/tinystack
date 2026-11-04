@@ -107,7 +107,7 @@ export function RestResources({
 				]}
 				empty={<Box>No resources.</Box>}
 			/>
-			{scope.resourceId && !resource && (
+			{!!scope.resourceId && !resource && (
 				<Alert type="error">
 					Resource not found. Choose a resource from the list.
 				</Alert>
@@ -173,7 +173,7 @@ export function RestResources({
 							]}
 							empty={<Box>No methods. Create a method and integration.</Box>}
 						/>
-						{scope.method && !method && (
+						{!!scope.method && !method && (
 							<Alert type="error">Method not found.</Alert>
 						)}
 						{method && (

@@ -106,7 +106,7 @@ export function IAMPolicyVersions({
 	};
 	return (
 		<SpaceBetween size="l">
-			{versions.error && <Alert type="error">{versions.error}</Alert>}
+			{!!versions.error && <Alert type="error">{versions.error}</Alert>}
 			<Table
 				items={versions.data ?? []}
 				trackBy="VersionId"

@@ -518,7 +518,7 @@ function S3Objects({
 									Clear filter
 								</Button>
 							)}
-							{prefix && (
+							{!!prefix && (
 								<Button onClick={() => onNavigate("")}>Bucket root</Button>
 							)}
 						</SpaceBetween>

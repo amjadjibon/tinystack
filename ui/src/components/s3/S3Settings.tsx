@@ -360,7 +360,7 @@ function S3Setting({
 								ariaLabel={`Refresh ${setting.title}`}
 								onClick={() => setGeneration((g) => g + 1)}
 							/>
-							{setting.remove && (
+							{!!setting.remove && (
 								<Button
 									disabled={!enabled || loading || !configured || !!error}
 									onClick={() => setDialog("delete")}

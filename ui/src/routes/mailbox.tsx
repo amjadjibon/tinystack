@@ -124,7 +124,7 @@ function Mailbox() {
 										: []),
 								]}
 							/>
-							{deliveries.error && (
+							{!!deliveries.error && (
 								<Alert type="error" header="Rich message details unavailable">
 									{deliveries.error}
 								</Alert>
@@ -143,12 +143,12 @@ function Mailbox() {
 									}
 								/>
 							</FormField>
-							{content.raw && (
+							{!!content.raw && (
 								<FormField label="Raw message">
 									<CodeBlock text={content.raw} />
 								</FormField>
 							)}
-							{content.html && (
+							{!!content.html && (
 								<SpaceBetween size="s">
 									<Toggle
 										checked={source}
@@ -210,7 +210,7 @@ function Mailbox() {
 					>
 						Mailbox
 					</Header>
-					<SpaceBetween direction="horizontal" size="m">
+					<SpaceBetween direction="horizontal" size="m" alignItems="end">
 						{(["channel", "service"] as const).map((field) => (
 							<FormField
 								key={field}
@@ -260,7 +260,7 @@ function Mailbox() {
 							Apply filters
 						</Button>
 					</SpaceBetween>
-					{messages.error && <Alert type="error">{messages.error}</Alert>}
+					{!!messages.error && <Alert type="error">{messages.error}</Alert>}
 					{!forbidden && (
 						<Table
 							{...collectionProps}

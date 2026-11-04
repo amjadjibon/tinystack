@@ -145,7 +145,7 @@ export function DatabaseClusters({
 				require skipping the final snapshot. Delete all members and disable
 				deletion protection before deleting a cluster.
 			</Alert>
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Table
 				items={poll.data ?? []}
 				loading={poll.loading}
@@ -298,7 +298,7 @@ export function DatabaseClusters({
 					/>
 				</SpaceBetween>
 			)}
-			{action && (
+			{!!action && (
 				<RDSOperationDialog
 					key={`${action}/${selected}`}
 					{...{ scope, fields, operation }}

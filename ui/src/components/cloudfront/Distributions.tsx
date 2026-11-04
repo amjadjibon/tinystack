@@ -38,7 +38,7 @@ export function Distributions({
 	);
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows<DistributionSummary>
 				title="Distributions"
 				emptyText="Choose Create distribution to add one."

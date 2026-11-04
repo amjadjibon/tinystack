@@ -20,7 +20,7 @@ export function StackExports({ scope }: { scope: CfnScope }) {
 		[error, setError] = useState("");
 	return (
 		<SpaceBetween size="s">
-			{(poll.error || error) && (
+			{!!(poll.error || error) && (
 				<Alert type="error">{poll.error || error}</Alert>
 			)}
 			<Table

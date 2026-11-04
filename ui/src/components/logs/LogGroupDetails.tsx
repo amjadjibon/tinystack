@@ -175,7 +175,7 @@ export function LogGroupDetails({
 			}
 		>
 			<SpaceBetween size="l">
-				{(overview.error || streams.error || tags.error) && (
+				{!!(overview.error || streams.error || tags.error) && (
 					<Alert type="error">
 						{overview.error || streams.error || tags.error}
 					</Alert>

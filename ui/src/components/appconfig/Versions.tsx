@@ -43,7 +43,7 @@ export function Versions({
 	};
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows<VersionSummary>
 				title="Hosted configuration versions"
 				emptyText="Choose Create version to add one."

@@ -76,7 +76,7 @@ export function DatabaseGroups({
 	);
 	return (
 		<SpaceBetween size="l">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			{!enabled && (
 				<Alert type="info">
 					Use the resource inventory and signed CLI or SDK requests for group

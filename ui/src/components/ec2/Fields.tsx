@@ -157,7 +157,7 @@ export function ChoiceStatus({
 			{loading && (
 				<Alert type="info">Loading resources in this account and Region…</Alert>
 			)}
-			{error && (
+			{!!error && (
 				<Alert type="error" header="Cannot load resource choices">
 					<SpaceBetween size="xs">
 						{error}

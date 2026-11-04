@@ -81,7 +81,7 @@ function Workspace({
 	};
 	return (
 		<SpaceBetween size="l">
-			{repos.error && <Alert type="error">{repos.error}</Alert>}
+			{!!repos.error && <Alert type="error">{repos.error}</Alert>}
 			<Rows
 				title="Repositories"
 				emptyText="Choose Create repository to get started."
@@ -304,7 +304,7 @@ function RepositoryDetails({
 					label: "Images",
 					content: (
 						<SpaceBetween size="m">
-							{images.error && <Alert type="error">{images.error}</Alert>}
+							{!!images.error && <Alert type="error">{images.error}</Alert>}
 							<Rows
 								title="Images"
 								emptyText="Push an image using the commands in the Push commands tab."
@@ -452,7 +452,7 @@ function Policy({
 					evaluate these policies.
 				</Alert>
 			)}
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<BoxCommands
 				text={
 					poll.data?.[key]
@@ -528,7 +528,7 @@ function Tags({ scope, repo }: { scope: ContainerScope; repo: Repository }) {
 		[text, setText] = useState("{}");
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows
 				title="Tags"
 				emptyText="Choose Edit tags to add repository tags."

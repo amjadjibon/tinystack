@@ -197,7 +197,7 @@ function Workspace({
 			]}
 			content={
 				<SpaceBetween size="l">
-					{notice && (
+					{!!notice && (
 						<Flashbar
 							items={[
 								{
@@ -210,7 +210,7 @@ function Workspace({
 							]}
 						/>
 					)}
-					{(inventory.error || capabilities.error) && (
+					{!!(inventory.error || capabilities.error) && (
 						<Alert type="error">{inventory.error || capabilities.error}</Alert>
 					)}
 					{capabilities.data?.requires_signature && !canWrite && (
@@ -389,7 +389,7 @@ function ApiWorkspace({
 			}
 		>
 			<SpaceBetween size="l">
-				{poll.error && <Alert type="error">{poll.error}</Alert>}
+				{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 				{!enabled ? (
 					<Container header={<Header>API inventory</Header>}>
 						<CodeBlock

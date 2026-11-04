@@ -55,7 +55,7 @@ export function PipeDetails({
 			onDismiss={onClose}
 		>
 			<SpaceBetween size="m">
-				{poll.error && <Alert type="error">{poll.error}</Alert>}
+				{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 				{!p && <Box>Loading pipe…</Box>}
 				{p && (
 					<SpaceBetween size="m">

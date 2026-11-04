@@ -191,7 +191,7 @@ export function EventRuleForm({
 				<Button disabled={!pattern.trim()} loading={testing} onClick={test}>
 					Test pattern
 				</Button>
-				{error && <Alert type="error">{error}</Alert>}
+				{!!error && <Alert type="error">{error}</Alert>}
 				{result !== undefined && (
 					<Alert type={result ? "success" : "info"}>
 						{result

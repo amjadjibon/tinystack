@@ -35,7 +35,7 @@ export function FileSystems({
 	);
 	return (
 		<SpaceBetween size="m">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Rows<FileSystem>
 				title="File systems"
 				emptyText="Choose Create file system to add one."

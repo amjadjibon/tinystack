@@ -76,7 +76,7 @@ export function Metrics({
 	});
 	return (
 		<SpaceBetween size="l">
-			{(poll.error || error) && (
+			{!!(poll.error || error) && (
 				<Alert type="error">{poll.error || error}</Alert>
 			)}
 			<Container header={<Header variant="h2">Graphed metrics</Header>}>

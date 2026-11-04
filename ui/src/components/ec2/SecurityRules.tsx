@@ -54,7 +54,7 @@ export function SecurityRules({
 	};
 	return (
 		<SpaceBetween size="l">
-			{poll.error && <Alert type="error">{poll.error}</Alert>}
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			{[false, true].map((egress) => (
 				<Ec2Table
 					key={String(egress)}

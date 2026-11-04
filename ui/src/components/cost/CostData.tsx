@@ -193,7 +193,7 @@ export function CostData() {
 					Costs guide and JSON schema
 				</a>
 			</ExpandableSection>
-			{deleting && (
+			{!!deleting && (
 				<Modal
 					visible
 					header="Delete cost fixture"

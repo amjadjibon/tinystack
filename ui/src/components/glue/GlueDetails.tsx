@@ -64,7 +64,7 @@ export function GlueDetails({
 			onDismiss={onClose}
 		>
 			<SpaceBetween size="m">
-				{poll.error && <Alert type="error">{poll.error}</Alert>}
+				{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 				{!p && <Box>Loading…</Box>}
 				{p && (
 					<SpaceBetween size="m">
