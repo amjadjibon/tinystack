@@ -10,6 +10,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/servicediscovery"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -76,12 +77,14 @@ func (s *Service) CreateService(ctx context.Context, in *api.CreateServiceReques
 
 	out := &api.CreateServiceResponse{}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		previous, txErr := replay(tx, scope, "CreateService", in.CreatorRequestId, in)
+		previous, replayed, txErr := idempotency.Replay[string](
+			tx, idempotency.Key(scope, serviceName, "CreateService", in.CreatorRequestId), in, duplicateRequest(),
+		)
 		if txErr != nil {
 			return txErr
 		}
 
-		if previous != "" {
+		if replayed {
 			r, readErr := read(tx, scope, kindService, previous)
 			if readErr != nil {
 				return readErr
@@ -151,7 +154,12 @@ func (s *Service) CreateService(ctx context.Context, in *api.CreateServiceReques
 			return checkErr
 		}
 
-		return remember(tx, scope, "CreateService", in.CreatorRequestId, in, id)
+		return idempotency.Remember(
+			tx,
+			idempotency.Key(scope, serviceName, "CreateService", in.CreatorRequestId),
+			in,
+			id,
+		)
 	})
 	return out, err
 }

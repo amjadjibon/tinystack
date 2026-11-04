@@ -409,6 +409,7 @@ Run one-time, rate, and cron schedules against implemented services.
 **Execution:** Local behavior. **Selected operations:** 12.
 
 - Schedule groups and schedule CRUD with time-zone handling.
+- ClientToken on schedule and group create, update and delete replays the original result and rejects a reused token with different parameters as ConflictException; tokens are kept until reset.
 - Background runner claims due schedules and invokes targets in-process.
 - Failed deliveries can reach a target SQS dead-letter queue.
 - With authorization on, each run (and the send to the dead-letter queue) assumes the target's role, whose trust policy must allow scheduler.amazonaws.com for the schedule's group (aws:SourceArn) and account, and is decided by the role's identity policies, boundary and the target's resource policy; enforce mode fails the run into the dead-letter path with the denial as ERROR_CODE and ERROR_MESSAGE, soft mode records the check.

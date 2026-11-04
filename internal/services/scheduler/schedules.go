@@ -11,6 +11,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/schedule"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -281,15 +282,25 @@ func (s *Service) CreateSchedule(ctx context.Context, in *api.CreateScheduleInpu
 	}
 
 	var arn string
+	token := idempotency.Key(m.Scope, service, "CreateSchedule", in.ClientToken)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		var replayed bool
+		arn, replayed, err = idempotency.Replay[string](tx, token, in, tokenReused())
+		if err != nil || replayed {
+			return err
+		}
+
 		groupName := cmpOr(common.Value(in.GroupName), defaultGroup)
 		if _, exists := tx.Get(m.Key(service, kindSchedule, groupName+"/"+*in.Name)); exists {
 			return awserror.New("ConflictException", "Schedule "+*in.Name+" already exists.")
 		}
 
-		var putErr error
-		arn, putErr = s.put(tx, m.Scope, &set, p, common.Unix(s.now()))
-		return putErr
+		arn, err = s.put(tx, m.Scope, &set, p, common.Unix(s.now()))
+		if err != nil {
+			return err
+		}
+
+		return idempotency.Remember(tx, token, in, arn)
 	})
 	if err != nil {
 		return nil, err
@@ -316,7 +327,14 @@ func (s *Service) UpdateSchedule(ctx context.Context, in *api.UpdateScheduleInpu
 	}
 
 	var arn string
+	token := idempotency.Key(m.Scope, service, "UpdateSchedule", in.ClientToken)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		var replayed bool
+		arn, replayed, err = idempotency.Replay[string](tx, token, in, tokenReused())
+		if err != nil || replayed {
+			return err
+		}
+
 		groupName := cmpOr(common.Value(in.GroupName), defaultGroup)
 		old, found, readErr := storage.Read[record](tx, m.Key(service, kindSchedule, groupName+"/"+*in.Name))
 		switch {
@@ -326,9 +344,12 @@ func (s *Service) UpdateSchedule(ctx context.Context, in *api.UpdateScheduleInpu
 			return notFound("Schedule " + *in.Name)
 		}
 
-		var putErr error
-		arn, putErr = s.put(tx, m.Scope, &set, p, common.Value(old.Schedule.CreationDate))
-		return putErr
+		arn, err = s.put(tx, m.Scope, &set, p, common.Value(old.Schedule.CreationDate))
+		if err != nil {
+			return err
+		}
+
+		return idempotency.Remember(tx, token, in, arn)
 	})
 	if err != nil {
 		return nil, err
@@ -371,7 +392,13 @@ func (s *Service) DeleteSchedule(ctx context.Context, in *api.DeleteScheduleInpu
 	}
 
 	groupName := cmpOr(common.Value(in.GroupName), defaultGroup)
+	token := idempotency.Key(m.Scope, service, "DeleteSchedule", in.ClientToken)
 	return &api.DeleteScheduleOutput{}, s.store.Update(ctx, func(tx storage.WriteTx) error {
+		_, replayed, replayErr := idempotency.Replay[struct{}](tx, token, in, tokenReused())
+		if replayErr != nil || replayed {
+			return replayErr
+		}
+
 		k := m.Key(service, kindSchedule, groupName+"/"+common.Value(in.Name))
 		if _, found := tx.Get(k); !found {
 			return notFound("Schedule " + common.Value(in.Name))
@@ -379,7 +406,7 @@ func (s *Service) DeleteSchedule(ctx context.Context, in *api.DeleteScheduleInpu
 
 		tx.Delete(k)
 		tx.Delete(indexKey(m.Scope, groupName, common.Value(in.Name)))
-		return nil
+		return idempotency.Remember(tx, token, in, struct{}{})
 	})
 }
 

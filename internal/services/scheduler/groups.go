@@ -11,6 +11,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/scheduler"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -47,17 +48,24 @@ func (s *Service) CreateScheduleGroup(
 	}
 
 	now := common.Unix(s.now())
+	token := idempotency.Key(m.Scope, service, "CreateScheduleGroup", in.ClientToken)
 	return &api.CreateScheduleGroupOutput{ScheduleGroupArn: new(groupARN(m.Scope, name))},
 		s.store.Update(ctx, func(tx storage.WriteTx) error {
+			_, replayed, replayErr := idempotency.Replay[struct{}](tx, token, in, tokenReused())
+			if replayErr != nil || replayed {
+				return replayErr
+			}
+
 			if _, exists := tx.Get(m.Key(service, kindGroup, name)); exists || name == defaultGroup {
 				return awserror.New("ConflictException", "Schedule group "+name+" already exists.")
 			}
 
-			return storage.Write(
-				tx,
-				m.Key(service, kindGroup, name),
-				group{Name: name, Created: now, Modified: now, Tags: tags},
-			)
+			g := group{Name: name, Created: now, Modified: now, Tags: tags}
+			if writeErr := storage.Write(tx, m.Key(service, kindGroup, name), g); writeErr != nil {
+				return writeErr
+			}
+
+			return idempotency.Remember(tx, token, in, struct{}{})
 		})
 }
 
@@ -107,7 +115,13 @@ func (s *Service) DeleteScheduleGroup(
 		return nil, validation("The default schedule group cannot be deleted.")
 	}
 
+	token := idempotency.Key(m.Scope, service, "DeleteScheduleGroup", in.ClientToken)
 	return &api.DeleteScheduleGroupOutput{}, s.store.Update(ctx, func(tx storage.WriteTx) error {
+		_, replayed, replayErr := idempotency.Replay[struct{}](tx, token, in, tokenReused())
+		if replayErr != nil || replayed {
+			return replayErr
+		}
+
 		if _, loadErr := loadGroup(tx, m.Scope, name); loadErr != nil {
 			return loadErr
 		}
@@ -118,7 +132,7 @@ func (s *Service) DeleteScheduleGroup(
 		}
 
 		tx.Delete(m.Key(service, kindGroup, name))
-		return nil
+		return idempotency.Remember(tx, token, in, struct{}{})
 	})
 }
 

@@ -12,6 +12,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/servicediscovery"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -46,6 +47,11 @@ var _ api.API = (*Service)(nil)
 
 func New(store storage.Store) *Service { return &Service{store: store} }
 func invalid(message string) error     { return awserror.New("InvalidInput", message) }
+
+func duplicateRequest() error {
+	return awserror.New("DuplicateRequest", "Token already used with different input")
+}
+
 func resourceARN(scope request.Scope, kind, id string) string {
 	return fmt.Sprintf("arn:aws:servicediscovery:%s:%s:%s/%s", scope.Region, scope.AccountID, kind, id)
 }
@@ -196,12 +202,14 @@ func (s *Service) createNamespace(
 	var op *string
 	input := map[string]any{"Name": name, "Description": description, "Type": typ, "Vpc": vpc, "Tags": ts}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		previous, txErr := replay(tx, scope, "CreateNamespace", token, input)
+		previous, replayed, txErr := idempotency.Replay[string](
+			tx, idempotency.Key(scope, serviceName, "CreateNamespace", token), input, duplicateRequest(),
+		)
 		if txErr != nil {
 			return txErr
 		}
 
-		if previous != "" {
+		if replayed {
 			op = new(previous)
 			return nil
 		}
@@ -245,7 +253,7 @@ func (s *Service) createNamespace(
 			return txErr
 		}
 
-		return remember(tx, scope, "CreateNamespace", token, input, *op)
+		return idempotency.Remember(tx, idempotency.Key(scope, serviceName, "CreateNamespace", token), input, *op)
 	})
 	return op, err
 }
@@ -345,12 +353,17 @@ func (s *Service) UpdateHttpNamespace(
 		kindNamespace,
 		common.Value(in.Id),
 		func(r *record, tx storage.WriteTx, scope request.Scope) error {
-			previous, txErr := replay(tx, scope, "UpdateHttpNamespace", in.UpdaterRequestId, in)
+			previous, replayed, txErr := idempotency.Replay[string](
+				tx,
+				idempotency.Key(scope, serviceName, "UpdateHttpNamespace", in.UpdaterRequestId),
+				in,
+				duplicateRequest(),
+			)
 			if txErr != nil {
 				return txErr
 			}
 
-			if previous != "" {
+			if replayed {
 				out.OperationId = new(previous)
 				return nil
 			}
@@ -367,7 +380,12 @@ func (s *Service) UpdateHttpNamespace(
 			if txErr != nil {
 				return txErr
 			}
-			return remember(tx, scope, "UpdateHttpNamespace", in.UpdaterRequestId, in, *out.OperationId)
+			return idempotency.Remember(
+				tx,
+				idempotency.Key(scope, serviceName, "UpdateHttpNamespace", in.UpdaterRequestId),
+				in,
+				*out.OperationId,
+			)
 		},
 	)
 	return out, err

@@ -9,6 +9,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/servicediscovery"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -44,12 +45,17 @@ func (s *Service) RegisterInstance(
 		kindService,
 		common.Value(in.ServiceId),
 		func(r *record, tx storage.WriteTx, scope request.Scope) error {
-			previous, txErr := replay(tx, scope, "RegisterInstance", in.CreatorRequestId, in)
+			previous, replayed, txErr := idempotency.Replay[string](
+				tx,
+				idempotency.Key(scope, serviceName, "RegisterInstance", in.CreatorRequestId),
+				in,
+				duplicateRequest(),
+			)
 			if txErr != nil {
 				return txErr
 			}
 
-			if previous != "" {
+			if replayed {
 				out.OperationId = new(previous)
 				return nil
 			}
@@ -72,7 +78,12 @@ func (s *Service) RegisterInstance(
 			if txErr != nil {
 				return txErr
 			}
-			return remember(tx, scope, "RegisterInstance", in.CreatorRequestId, in, *out.OperationId)
+			return idempotency.Remember(
+				tx,
+				idempotency.Key(scope, serviceName, "RegisterInstance", in.CreatorRequestId),
+				in,
+				*out.OperationId,
+			)
 		},
 	)
 	return out, err

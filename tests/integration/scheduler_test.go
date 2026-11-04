@@ -288,3 +288,85 @@ func TestSchedulerGroupsAndValidation(t *testing.T) {
 		t.Fatalf("schedule after group deletion: %v", err)
 	}
 }
+
+func TestSchedulerClientTokens(t *testing.T) {
+	c := schedulerClient(server(t))
+	ctx := context.Background()
+	off := &schedtypes.FlexibleTimeWindow{Mode: schedtypes.FlexibleTimeWindowModeOff}
+	target := &schedtypes.Target{
+		Arn: aws.String("arn:aws:sqs:us-east-1:000000000000:jobs"), RoleArn: aws.String(schedulerRole),
+	}
+	create := &schedules.CreateScheduleInput{
+		Name: aws.String("nightly"), ScheduleExpression: aws.String("rate(1 day)"), FlexibleTimeWindow: off,
+		Target: target, ClientToken: aws.String("create-1"),
+	}
+	first, err := c.CreateSchedule(ctx, create)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	again, err := c.CreateSchedule(ctx, create)
+	if err != nil {
+		t.Fatalf("retried create: %v", err)
+	}
+
+	if aws.ToString(again.ScheduleArn) != aws.ToString(first.ScheduleArn) {
+		t.Fatalf("retried create ARN = %q, want %q", aws.ToString(again.ScheduleArn), aws.ToString(first.ScheduleArn))
+	}
+
+	var conflict *schedtypes.ConflictException
+	_, err = c.CreateSchedule(ctx, &schedules.CreateScheduleInput{
+		Name: aws.String("weekly"), ScheduleExpression: aws.String("rate(7 days)"), FlexibleTimeWindow: off,
+		Target: target, ClientToken: aws.String("create-1"),
+	})
+	if !errors.As(err, &conflict) {
+		t.Fatalf("reused token with other parameters: %v", err)
+	}
+
+	_, err = c.CreateSchedule(ctx, &schedules.CreateScheduleInput{
+		Name: aws.String("nightly"), ScheduleExpression: aws.String("rate(1 day)"), FlexibleTimeWindow: off,
+		Target: target, ClientToken: aws.String("create-2"),
+	})
+	if !errors.As(err, &conflict) {
+		t.Fatalf("new token for an existing schedule: %v", err)
+	}
+
+	update := &schedules.UpdateScheduleInput{
+		Name: aws.String("nightly"), ScheduleExpression: aws.String("rate(2 days)"), FlexibleTimeWindow: off,
+		Target: target, ClientToken: aws.String("update-1"),
+	}
+	for range 2 {
+		if _, err = c.UpdateSchedule(ctx, update); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	remove := &schedules.DeleteScheduleInput{Name: aws.String("nightly"), ClientToken: aws.String("delete-1")}
+	for range 2 {
+		if _, err = c.DeleteSchedule(ctx, remove); err != nil {
+			t.Fatalf("delete with a repeated token: %v", err)
+		}
+	}
+
+	var missing *schedtypes.ResourceNotFoundException
+	_, err = c.DeleteSchedule(ctx, &schedules.DeleteScheduleInput{
+		Name: aws.String("nightly"), ClientToken: aws.String("delete-2"),
+	})
+	if !errors.As(err, &missing) {
+		t.Fatalf("delete with a new token after deletion: %v", err)
+	}
+
+	group := &schedules.CreateScheduleGroupInput{Name: aws.String("batch"), ClientToken: aws.String("group-1")}
+	for range 2 {
+		if _, err = c.CreateScheduleGroup(ctx, group); err != nil {
+			t.Fatalf("group create with a repeated token: %v", err)
+		}
+	}
+
+	removeGroup := &schedules.DeleteScheduleGroupInput{Name: aws.String("batch"), ClientToken: aws.String("group-2")}
+	for range 2 {
+		if _, err = c.DeleteScheduleGroup(ctx, removeGroup); err != nil {
+			t.Fatalf("group delete with a repeated token: %v", err)
+		}
+	}
+}

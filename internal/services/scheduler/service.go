@@ -4,6 +4,7 @@
 //
 //	<scope>/scheduler/group/<name>                       (the default group is implicit)
 //	<scope>/scheduler/schedule/<group>/<name>
+//	<scope>/scheduler/token/<action>-<hash>             (results kept for retries with the same ClientToken)
 //	aws/scheduler/index/<account>/<region>/<group>/<name> (the next run of each schedule that has one)
 //
 // The runner (started by New, stopped by Stop) reads the index every second,
@@ -105,6 +106,11 @@ func fromUnix(f float64) time.Time { return time.UnixMilli(int64(f * 1000)).UTC(
 
 func validation(format string, args ...any) error {
 	return awserror.Validation(format, args...)
+}
+
+// tokenReused rejects a client token sent again with different parameters.
+func tokenReused() error {
+	return awserror.New("ConflictException", "The client token was already used with different parameters.")
 }
 
 func notFound(what string) error {
