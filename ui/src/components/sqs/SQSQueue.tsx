@@ -31,6 +31,7 @@ import { SQSRedrive } from "./SQSRedrive";
 
 export function SQSQueue({
 	scope,
+	initialTab,
 	queues,
 	enabled,
 	resource,
@@ -38,6 +39,8 @@ export function SQSQueue({
 	onDeleted,
 }: {
 	scope: SQSScope;
+	/** initialTab opens a tab named in the URL (empty for the default). */
+	initialTab: string;
 	queues: Resource[];
 	enabled: boolean;
 	resource?: Resource;
@@ -77,7 +80,7 @@ export function SQSQueue({
 		"delete" | "purge" | "policy" | "allow" | "tags" | null
 	>(null);
 	const [text, setText] = useState("");
-	const [tab, setTab] = useState("configuration");
+	const [tab, setTab] = useState(initialTab || "configuration");
 	const attributes =
 		details.data?.Attributes ?? (resource?.details as QueueAttributes) ?? {};
 	const arn =

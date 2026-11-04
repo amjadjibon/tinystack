@@ -7,12 +7,13 @@ import {
 	Container,
 	CopyToClipboard,
 	Header,
+	Link,
 	SpaceBetween,
 	StatusIndicator,
 	TutorialPanel,
 	type TutorialPanelProps,
 } from "@cloudscape-design/components";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import {
 	createContext,
 	type ReactNode,
@@ -192,6 +193,40 @@ function StepContent({ step, ctx }: { step: Step; ctx: Context }) {
 }
 export function TutorialAnnotations({ children }: { children: ReactNode }) {
 	const t = useTutorials();
+	const step = t.step ? t.progress?.step : undefined;
+	const href = useRouterState({ select: (s) => s.location.href });
+	// Cloudscape places an annotation popover once, often before its hotspot has rendered below the fold or the page
+	// has finished loading, and re-measures only on window resize. Bring the open hotspot into view once per step and
+	// page, then re-measure on scrolls and layout shifts.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: a new step or page brings its hotspot into view again.
+	useEffect(() => {
+		if (step === undefined) return;
+		let frame = 0,
+			shown = false;
+		const remeasure = () => {
+			cancelAnimationFrame(frame);
+			frame = requestAnimationFrame(() => {
+				const marker = shown
+					? null
+					: document.querySelector(
+							'[class*="awsui_markerWrapper_"] button[aria-expanded="true"]',
+						);
+				if (marker) {
+					shown = true;
+					marker.scrollIntoView({ block: "center" });
+				}
+				window.dispatchEvent(new Event("resize"));
+			});
+		};
+		const layout = new ResizeObserver(remeasure);
+		layout.observe(document.body);
+		document.addEventListener("scroll", remeasure, true);
+		return () => {
+			cancelAnimationFrame(frame);
+			layout.disconnect();
+			document.removeEventListener("scroll", remeasure, true);
+		};
+	}, [step, href]);
 	// Cloudscape resets its internal position when currentTutorial changes. Present
 	// the current step, keeping our persisted absolute position authoritative.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: only persisted progress and scope determine this object.
@@ -214,13 +249,16 @@ export function TutorialAnnotations({ children }: { children: ReactNode }) {
 							},
 						],
 						completedScreenDescription: (
-							<>
-								You completed {t.tutorial.title}.{" "}
-								<Button href={t.tutorial.learnMore} target="_blank">
-									Learn more
-								</Button>
+							<SpaceBetween size="m">
+								<Box>
+									You completed {t.tutorial.title}. Clean up to delete the
+									resources it created.
+								</Box>
 								<Cleanup tutorial={t.tutorial} ctx={t.ctx} />
-							</>
+								<Link href={t.tutorial.learnMore} external>
+									Learn more
+								</Link>
+							</SpaceBetween>
 						),
 						learnMoreUrl: t.tutorial.learnMore,
 						// Names and scope determine expanded content; revision changes only on progress.
@@ -283,9 +321,11 @@ export function TutorialDrawer() {
 					feedbackLinkText: "Feedback",
 					dismissTutorialButtonText: "Close tutorial",
 					taskTitle: (i, title) => `${i + 1}. ${title}`,
-					stepTitle: (i, title) => `${i + 1}. ${title}`,
+					// The panel holds only the current step; number it within the whole tutorial.
+					stepTitle: (_, title) => `${(t.progress?.step ?? 0) + 1}. ${title}`,
 					labelExitTutorial: "Exit tutorial",
-					labelTotalSteps: (n) => `${n} steps`,
+					labelTotalSteps: () =>
+						`Step ${(t.progress?.step ?? 0) + 1} of ${t.steps.length}`,
 					labelLearnMoreExternalIcon: "Opens documentation",
 					labelsTaskStatus: {
 						pending: "Pending",

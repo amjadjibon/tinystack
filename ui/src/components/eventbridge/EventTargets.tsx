@@ -72,7 +72,11 @@ export function EventTargets({
 						counter={`(${targets.length})`}
 						description="Up to five Lambda, SQS or SNS targets in the rule's account and Region."
 						actions={
-							<Hotspot hotspotId={HOTSPOT.eventsAddTarget}>
+							<Hotspot
+								hotspotId={HOTSPOT.eventsAddTarget}
+								side="left"
+								direction="left"
+							>
 								<Button
 									variant="primary"
 									disabled={!enabled || targets.length >= 5}

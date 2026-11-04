@@ -83,7 +83,11 @@ export function S3ObjectDetail({
 							ariaLabel="Refresh object"
 							onClick={() => setGeneration((g) => g + 1)}
 						/>
-						<Hotspot hotspotId={HOTSPOT.s3Download}>
+						<Hotspot
+							hotspotId={HOTSPOT.s3Download}
+							side="left"
+							direction="left"
+						>
 							<Button
 								disabled={!enabled || !metadata}
 								loading={busy}

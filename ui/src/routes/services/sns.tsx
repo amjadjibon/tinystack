@@ -39,6 +39,7 @@ export const Route = createFileRoute("/services/sns")({
 		subscription: String(search.subscription ?? ""),
 		section: search.section === "subscriptions" ? "subscriptions" : "topics",
 		create: search.create === true || search.create === "true",
+		tab: search.tab === "publish" ? "publish" : "",
 	}),
 	component: SNSPage,
 });
@@ -88,7 +89,15 @@ function SNSPage() {
 		if (!mounted.current || current.current !== context) return;
 		return navigate({
 			to: "/services/sns",
-			search: { account, region, topic, subscription, section, create },
+			search: {
+				account,
+				region,
+				topic,
+				subscription,
+				section,
+				create,
+				tab: "",
+			},
 		});
 	};
 	const topicsHref = snsHref({ account, region });
@@ -199,8 +208,9 @@ function SNSPage() {
 						/>
 					) : search.topic ? (
 						<SNSTopic
-							key={`${account}/${region}/${search.topic}/${enabled}`}
+							key={`${account}/${region}/${search.topic}/${search.tab}/${enabled}`}
 							scope={scope}
+							initialTab={search.tab}
 							resource={topic}
 							resources={inventory.data ?? []}
 							enabled={enabled}
@@ -294,7 +304,11 @@ function TopicList({
 									ariaLabel="Refresh topics"
 									onClick={onRefresh}
 								/>
-								<Hotspot hotspotId={HOTSPOT.snsCreate}>
+								<Hotspot
+									hotspotId={HOTSPOT.snsCreate}
+									side="left"
+									direction="left"
+								>
 									<Button
 										variant="primary"
 										disabled={!enabled}

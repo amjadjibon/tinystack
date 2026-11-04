@@ -343,16 +343,18 @@ export function DynamoItems({
 							)}
 						</SpaceBetween>
 					</fieldset>
-					<Hotspot hotspotId={HOTSPOT.dynamoRun}>
-						<Button
-							variant="primary"
-							disabled={!enabled}
-							loading={busy}
-							onClick={run}
-						>
-							Run
-						</Button>
-					</Hotspot>
+					<Box display="inline-block">
+						<Hotspot hotspotId={HOTSPOT.dynamoRun} direction="right">
+							<Button
+								variant="primary"
+								disabled={!enabled}
+								loading={busy}
+								onClick={run}
+							>
+								Run
+							</Button>
+						</Hotspot>
+					</Box>
 				</SpaceBetween>
 			</Container>
 			{!!editingError && (
@@ -392,7 +394,11 @@ export function DynamoItems({
 								>
 									Delete selected
 								</Button>
-								<Hotspot hotspotId={HOTSPOT.dynamoCreateItem}>
+								<Hotspot
+									hotspotId={HOTSPOT.dynamoCreateItem}
+									side="left"
+									direction="left"
+								>
 									<Button
 										variant="primary"
 										disabled={!enabled || !schema.length || busy || opening}

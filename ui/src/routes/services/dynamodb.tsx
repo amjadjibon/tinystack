@@ -280,7 +280,11 @@ function TableList({
 								ariaLabel="Refresh tables"
 								onClick={onRefresh}
 							/>
-							<Hotspot hotspotId={HOTSPOT.dynamoCreate}>
+							<Hotspot
+								hotspotId={HOTSPOT.dynamoCreate}
+								side="left"
+								direction="left"
+							>
 								<Button
 									variant="primary"
 									disabled={!enabled}

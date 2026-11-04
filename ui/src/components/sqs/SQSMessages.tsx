@@ -250,16 +250,18 @@ export function SQSMessages({
 							/>
 						</FormField>
 					</SpaceBetween>
-					<Hotspot hotspotId={HOTSPOT.sqsReceive}>
-						<Button
-							variant="primary"
-							disabled={!enabled || !!busy}
-							loading={busy === "receive"}
-							onClick={receive}
-						>
-							Poll for messages
-						</Button>
-					</Hotspot>
+					<Box display="inline-block">
+						<Hotspot hotspotId={HOTSPOT.sqsReceive} direction="right">
+							<Button
+								variant="primary"
+								disabled={!enabled || !!busy}
+								loading={busy === "receive"}
+								onClick={receive}
+							>
+								Poll for messages
+							</Button>
+						</Hotspot>
+					</Box>
 				</SpaceBetween>
 			</Container>
 			<Table

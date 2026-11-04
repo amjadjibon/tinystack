@@ -29,6 +29,7 @@ import { EventRuleForm } from "./EventRuleForm";
 import { EventTargets } from "./EventTargets";
 export function EventRuleDetails({
 	scope,
+	initialTab,
 	resource,
 	resources,
 	enabled,
@@ -36,12 +37,15 @@ export function EventRuleDetails({
 	onDeleted,
 }: {
 	scope: EventScope;
+	/** initialTab opens a tab named in the URL (empty for the default). */
+	initialTab: string;
 	resource?: Resource;
 	resources: Resource[];
 	enabled: boolean;
 	onChanged: (message: string) => void;
 	onDeleted: () => void;
 }) {
+	const [tab, setTab] = useState(initialTab || "pattern");
 	const rule = usePoll(async () =>
 		enabled
 			? await eventCall<EventRule>(scope, "DescribeRule", {
@@ -147,6 +151,8 @@ export function EventRuleDetails({
 					/>
 				</Container>
 				<Tabs
+					activeTabId={tab}
+					onChange={({ detail }) => setTab(detail.activeTabId)}
 					tabs={[
 						{
 							id: "pattern",

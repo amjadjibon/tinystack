@@ -1,5 +1,6 @@
 import {
 	Alert,
+	Box,
 	Button,
 	Container,
 	FormField,
@@ -169,16 +170,18 @@ export function SNSPublish({
 						</FormField>
 					</SpaceBetween>
 				</fieldset>
-				<Hotspot hotspotId={HOTSPOT.snsPublish}>
-					<Button
-						variant="primary"
-						disabled={!enabled}
-						loading={busy}
-						onClick={publish}
-					>
-						Publish message
-					</Button>
-				</Hotspot>
+				<Box display="inline-block">
+					<Hotspot hotspotId={HOTSPOT.snsPublish} direction="right">
+						<Button
+							variant="primary"
+							disabled={!enabled}
+							loading={busy}
+							onClick={publish}
+						>
+							Publish message
+						</Button>
+					</Hotspot>
+				</Box>
 			</SpaceBetween>
 		</Container>
 	);

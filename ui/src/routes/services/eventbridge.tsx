@@ -53,6 +53,7 @@ export const Route = createFileRoute("/services/eventbridge")({
 		bus: String(s.bus ?? ""),
 		rule: String(s.rule ?? ""),
 		section: s.section === "rules" ? "rules" : "buses",
+		tab: s.tab === "targets" ? "targets" : "",
 	}),
 	component: EventPage,
 });
@@ -68,7 +69,7 @@ function EventPage() {
 		validRegion(context.region);
 	return (
 		<EventWorkspace
-			key={`${context.account}/${context.region}/${search.bus}/${search.rule}/${search.section}/${enabled}`}
+			key={`${context.account}/${context.region}/${search.bus}/${search.rule}/${search.section}/${search.tab}/${enabled}`}
 			scope={{
 				account: context.account,
 				region: context.region,
@@ -76,6 +77,7 @@ function EventPage() {
 				rule: search.rule,
 			}}
 			section={search.section}
+			tab={search.tab}
 			enabled={enabled}
 			notice={notice.scope === scopeId ? notice.message : ""}
 			setNotice={(message) => setNotice({ scope: scopeId, message })}
@@ -85,12 +87,14 @@ function EventPage() {
 function EventWorkspace({
 	scope,
 	section,
+	tab,
 	enabled,
 	notice,
 	setNotice,
 }: {
 	scope: EventScope;
 	section: string;
+	tab: string;
 	enabled: boolean;
 	notice: string;
 	setNotice: (message: string) => void;
@@ -169,7 +173,7 @@ function EventWorkspace({
 			]}
 			content={
 				<SpaceBetween size="l">
-					{notice && (
+					{!!notice && (
 						<Flashbar
 							items={[
 								{
@@ -199,6 +203,7 @@ function EventWorkspace({
 					{scope.rule ? (
 						<EventRuleDetails
 							scope={selected}
+							initialTab={tab}
 							resource={resources.find(
 								(r) =>
 									r.service === "eventbridge" &&
@@ -219,7 +224,11 @@ function EventWorkspace({
 								<Header
 									variant="h1"
 									actions={
-										<Hotspot hotspotId={HOTSPOT.eventsSend}>
+										<Hotspot
+											hotspotId={HOTSPOT.eventsSend}
+											side="left"
+											direction="left"
+										>
 											<Button
 												disabled={!enabled}
 												onClick={() => setDialog("publish")}

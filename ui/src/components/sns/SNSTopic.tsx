@@ -34,6 +34,7 @@ import { SNSSubscriptions } from "./SNSSubscriptions";
 
 export function SNSTopic({
 	scope,
+	initialTab,
 	resource,
 	resources,
 	enabled,
@@ -43,6 +44,8 @@ export function SNSTopic({
 	onDeleted,
 }: {
 	scope: SNSScope;
+	/** initialTab opens a tab named in the URL (empty for the default). */
+	initialTab: string;
 	resource?: Resource;
 	resources: Resource[];
 	enabled: boolean;
@@ -76,7 +79,7 @@ export function SNSTopic({
 				)
 			: (resource?.tags ?? {}),
 	);
-	const [tab, setTab] = useState("subscriptions");
+	const [tab, setTab] = useState(initialTab || "subscriptions");
 	const [dialog, setDialog] = useState<
 		"edit" | "delete" | "policy" | "tags" | "subscribe" | null
 	>(null);

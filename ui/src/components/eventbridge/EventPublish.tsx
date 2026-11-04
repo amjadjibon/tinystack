@@ -94,8 +94,8 @@ export function EventPublish({
 					Send to {scope.bus || "default"}. Matching enabled rules deliver this
 					event to their targets. Check delivery history for outcomes.
 				</Alert>
-				{error && <Alert type="error">{error}</Alert>}
-				{id && <Alert type="success">Event accepted. Event ID: {id}</Alert>}
+				{!!error && <Alert type="error">{error}</Alert>}
+				{!!id && <Alert type="success">Event accepted. Event ID: {id}</Alert>}
 				<fieldset disabled={busy} style={{ border: 0, margin: 0, padding: 0 }}>
 					<SpaceBetween size="l">
 						<FormField label="Event source">

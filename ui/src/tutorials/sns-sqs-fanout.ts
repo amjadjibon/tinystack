@@ -90,7 +90,7 @@ export const snsSqsFanout: Tutorial = {
 					command:
 						"aws-local sns publish --topic-arn arn:aws:sns:{region}:{account}:{topic} --message 'Hello TinyStack'",
 					hotspotId: HOTSPOT.snsPublish,
-					route: "/services/sns?topic={topic}",
+					route: "/services/sns?topic={topic}&tab=publish",
 					check: "delivery",
 				},
 				{
@@ -100,7 +100,7 @@ export const snsSqsFanout: Tutorial = {
 					command:
 						"aws-local sqs receive-message --queue-url /{account}/{queue}",
 					hotspotId: HOTSPOT.sqsReceive,
-					route: "/services/sqs?queue={queue}",
+					route: "/services/sqs?queue={queue}&tab=messages",
 					check: "receive",
 				},
 			],

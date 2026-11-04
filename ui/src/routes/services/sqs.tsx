@@ -35,6 +35,7 @@ export const Route = createFileRoute("/services/sqs")({
 		region: String(search.region ?? ""),
 		queue: String(search.queue ?? ""),
 		create: search.create === true || search.create === "true",
+		tab: search.tab === "messages" ? "messages" : "",
 	}),
 	component: SQSPage,
 });
@@ -77,7 +78,7 @@ function SQSPage() {
 		if (!mounted.current || current.current !== context) return;
 		return navigate({
 			to: "/services/sqs",
-			search: { account, region, queue, create },
+			search: { account, region, queue, create, tab: "" },
 		});
 	};
 	const listHref = sqsHref({ account, region });
@@ -149,8 +150,9 @@ function SQSPage() {
 						)
 					) : search.queue ? (
 						<SQSQueue
-							key={`${account}/${region}/${search.queue}/${enabled}`}
+							key={`${account}/${region}/${search.queue}/${search.tab}/${enabled}`}
 							scope={scope}
+							initialTab={search.tab}
 							queues={queues}
 							enabled={enabled}
 							resource={queues.find((q) => q.name === search.queue)}
@@ -241,7 +243,11 @@ function QueueList({
 								>
 									View details
 								</Button>
-								<Hotspot hotspotId={HOTSPOT.sqsCreate}>
+								<Hotspot
+									hotspotId={HOTSPOT.sqsCreate}
+									side="left"
+									direction="left"
+								>
 									<Button
 										variant="primary"
 										disabled={!enabled}

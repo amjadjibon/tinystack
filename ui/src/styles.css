@@ -281,3 +281,16 @@ body {
   padding-inline: 12px;
  }
 }
+
+/* Tutorial annotations sit above modals (z-index 7000); hide the open one while a modal is up so it cannot cover
+   the dialog the step asks the user to fill in. It returns when the modal closes. Cloudscape's own rules carry an
+   ID-level :not(#\9) boost, hence !important. */
+body[class*="awsui_modal-open_"] [class*="awsui_container_"]:has([class*="awsui_annotation_"]) {
+ display: none !important;
+}
+
+/* A left-side hotspot marker sits in the gap before its control, where header actions usually have a Refresh
+   button. Widen the gap while a marker shows so the marker does not cover that button. */
+[class*="awsui_wrapper_"]:has(> [class*="awsui_placement-left_"]:not(:empty)) {
+ margin-inline-start: 20px;
+}

@@ -31,7 +31,7 @@ export const eventbridgeSqsRule: Tutorial = {
 			...(ids.length
 				? [
 						{
-							label: `Targets ${ids.join(", ")} of rule ${n.rule}`,
+							label: `${ids.length > 1 ? "Targets" : "Target"} ${ids.join(", ")} on rule ${n.rule}`,
 							run: () =>
 								call("eventbridge", "RemoveTargets", {
 									Rule: n.rule,
@@ -81,7 +81,8 @@ export const eventbridgeSqsRule: Tutorial = {
 					command:
 						"aws-local events put-targets --rule {rule} --targets Id=queue,Arn=arn:aws:sqs:{region}:{account}:{queue}",
 					hotspotId: HOTSPOT.eventsAddTarget,
-					route: "/services/eventbridge?bus=default&rule={rule}&section=rules",
+					route:
+						"/services/eventbridge?bus=default&rule={rule}&section=rules&tab=targets",
 					check: "target",
 				},
 				{
@@ -101,7 +102,7 @@ export const eventbridgeSqsRule: Tutorial = {
 					command:
 						"aws-local sqs receive-message --queue-url /{account}/{queue}",
 					hotspotId: HOTSPOT.sqsReceive,
-					route: "/services/sqs?queue={queue}",
+					route: "/services/sqs?queue={queue}&tab=messages",
 					check: "receive",
 				},
 			],

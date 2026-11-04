@@ -62,7 +62,11 @@ export function EventRuleList({
 						counter={`(${rows.length})`}
 						description={`Rules on ${scope.bus || "default"}.`}
 						actions={
-							<Hotspot hotspotId={HOTSPOT.eventsCreateRule}>
+							<Hotspot
+								hotspotId={HOTSPOT.eventsCreateRule}
+								side="left"
+								direction="left"
+							>
 								<Button
 									variant="primary"
 									disabled={!enabled}

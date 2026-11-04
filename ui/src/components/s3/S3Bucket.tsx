@@ -473,7 +473,11 @@ function S3Objects({
 								>
 									Create folder
 								</Button>
-								<Hotspot hotspotId={HOTSPOT.s3Upload}>
+								<Hotspot
+									hotspotId={HOTSPOT.s3Upload}
+									side="left"
+									direction="left"
+								>
 									<Button
 										variant="primary"
 										disabled={!enabled || loading}

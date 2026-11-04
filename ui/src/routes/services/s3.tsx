@@ -326,7 +326,11 @@ function BucketList({
 								>
 									Delete
 								</Button>
-								<Hotspot hotspotId={HOTSPOT.s3Create}>
+								<Hotspot
+									hotspotId={HOTSPOT.s3Create}
+									side="left"
+									direction="left"
+								>
 									<Button
 										variant="primary"
 										disabled={!enabled}

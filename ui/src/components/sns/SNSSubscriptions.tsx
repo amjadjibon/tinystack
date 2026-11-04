@@ -51,7 +51,11 @@ export function SNSSubscriptions({
 								onClick={onRefresh}
 							/>
 							{onCreate && (
-								<Hotspot hotspotId={HOTSPOT.snsSubscribe}>
+								<Hotspot
+									hotspotId={HOTSPOT.snsSubscribe}
+									side="left"
+									direction="left"
+								>
 									<Button variant="primary" onClick={onCreate}>
 										Create subscription
 									</Button>

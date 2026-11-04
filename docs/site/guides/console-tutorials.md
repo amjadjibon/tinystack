@@ -3,8 +3,8 @@
 Open **Tutorials** in the top navigation, the **Get started** widget on console home (add it back with **Add widgets** if you removed it), or `/tutorials`.
 Choose an account and Region, then **Start**. Tutorials require their services to be registered; unavailable
 services disable Start. The drawer shows permissions, generated resource names, instructions, and copyable CLI
-commands. **Go there** opens the relevant service page and preserves account and Region. Numbered hotspots
-point to real console controls. **Next** and **Previous** in the drawer allow manual navigation. Drag the
+commands. **Go there** opens the relevant service page and tab and preserves account and Region. Numbered hotspots
+point to real console controls; the current one scrolls into view, and its popover hides while a dialog is open. **Next** and **Previous** in the drawer allow manual navigation. Drag the
 drawer edge to resize it; the console remembers the width.
 
 The current step checks live state every two seconds, including while the drawer is closed. Creating resources
