@@ -5,6 +5,7 @@ import {
 	Button,
 	Checkbox,
 	Header,
+	Hotspot,
 	Link,
 	Pagination,
 	SpaceBetween,
@@ -28,6 +29,7 @@ import {
 } from "#/lib/secretsmanager";
 import { useFollow } from "#/lib/useFollow";
 import { usePoll } from "#/lib/usePoll";
+import { HOTSPOT } from "#/tutorials/hotspots";
 export const Route = createFileRoute("/services/secretsmanager")({
 	validateSearch: (search: Record<string, unknown>) => ({
 		account: String(search.account ?? ""),
@@ -244,13 +246,15 @@ function SecretList({
 									ariaLabel="Refresh secrets"
 									onClick={poll.reload}
 								/>
-								<Button
-									variant="primary"
-									disabled={!enabled}
-									onClick={onCreate}
-								>
-									Store a new secret
-								</Button>
+								<Hotspot hotspotId={HOTSPOT.secretCreate}>
+									<Button
+										variant="primary"
+										disabled={!enabled}
+										onClick={onCreate}
+									>
+										Store a new secret
+									</Button>
+								</Hotspot>
 							</SpaceBetween>
 						}
 					>

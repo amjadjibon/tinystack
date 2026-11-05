@@ -50,6 +50,7 @@ export type Resource = {
 };
 
 export type RequestRecord = {
+	resource_identifier?: string;
 	authorization?: AuthorizationRecord;
 	time: string;
 	request_id: string;

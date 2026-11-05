@@ -5,6 +5,7 @@ import {
 	Button,
 	Flashbar,
 	Header,
+	Hotspot,
 	Link,
 	Pagination,
 	SpaceBetween,
@@ -25,6 +26,7 @@ import { functionConfig, type LambdaScope, lambdaHref } from "#/lib/lambda";
 import { validRegion } from "#/lib/s3";
 import { useScope } from "#/lib/scope";
 import { useFollow } from "#/lib/useFollow";
+import { HOTSPOT } from "#/tutorials/hotspots";
 
 export const Route = createFileRoute("/services/lambda")({
 	validateSearch: (search: Record<string, unknown>) => ({
@@ -241,9 +243,15 @@ function FunctionList({
 								ariaLabel="Refresh functions"
 								onClick={onRefresh}
 							/>
-							<Button variant="primary" disabled={!enabled} onClick={onCreate}>
-								Create function
-							</Button>
+							<Hotspot hotspotId={HOTSPOT.lambdaCreate}>
+								<Button
+									variant="primary"
+									disabled={!enabled}
+									onClick={onCreate}
+								>
+									Create function
+								</Button>
+							</Hotspot>
 						</SpaceBetween>
 					}
 				>

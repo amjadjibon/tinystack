@@ -4,6 +4,7 @@ import {
 	Container,
 	FormField,
 	Header,
+	Hotspot,
 	Input,
 	KeyValuePairs,
 	RadioGroup,
@@ -20,6 +21,7 @@ import {
 	functionCall,
 	type LambdaScope,
 } from "#/lib/lambda";
+import { HOTSPOT } from "#/tutorials/hotspots";
 
 type Invocation = {
 	StatusCode?: number;
@@ -137,14 +139,16 @@ export function LambdaTest({
 							</FormField>
 						</SpaceBetween>
 					</fieldset>
-					<Button
-						variant="primary"
-						disabled={!enabled}
-						loading={busy}
-						onClick={invoke}
-					>
-						Test
-					</Button>
+					<Hotspot hotspotId={HOTSPOT.lambdaTest}>
+						<Button
+							variant="primary"
+							disabled={!enabled}
+							loading={busy}
+							onClick={invoke}
+						>
+							Test
+						</Button>
+					</Hotspot>
 				</SpaceBetween>
 			</Container>
 			{result && (

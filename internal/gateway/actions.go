@@ -291,7 +291,7 @@ func (s *Server) serveConsoleActions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.meta.Service = in.Service
-	c.meta.Protocol = "console"
+	c.meta.Protocol = consoleProtocol
 	c.meta.Endpoint = s.consoleEndpoint(r)
 	caller := s.consoleCaller
 	if regional {

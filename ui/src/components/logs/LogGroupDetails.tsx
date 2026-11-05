@@ -7,6 +7,7 @@ import {
 	ContentLayout,
 	FormField,
 	Header,
+	Hotspot,
 	Input,
 	KeyValuePairs,
 	Link,
@@ -38,6 +39,7 @@ import {
 } from "#/lib/logs";
 import { useFollow } from "#/lib/useFollow";
 import { usePoll } from "#/lib/usePoll";
+import { HOTSPOT } from "#/tutorials/hotspots";
 import { LogEvents } from "./LogEvents";
 import { LogsInsights } from "./LogsInsights";
 export function LogGroupDetails({
@@ -124,11 +126,13 @@ export function LogGroupDetails({
 					variant="h1"
 					actions={
 						<SpaceBetween direction="horizontal" size="xs">
-							<Button
-								iconName="refresh"
-								ariaLabel="Refresh log group"
-								onClick={() => refresh("")}
-							/>
+							<Hotspot hotspotId={HOTSPOT.lambdaLogs}>
+								<Button
+									iconName="refresh"
+									ariaLabel="Refresh log group"
+									onClick={() => refresh("")}
+								/>
+							</Hotspot>
 							{scope.stream ? (
 								<SpaceBetween direction="horizontal" size="xs">
 									<Button

@@ -5,6 +5,7 @@ import {
 	Button,
 	FormField,
 	Header,
+	Hotspot,
 	Input,
 	Link,
 	Pagination,
@@ -33,6 +34,7 @@ import {
 import { parameterFilters } from "#/lib/ssmHelpers";
 import { useFollow } from "#/lib/useFollow";
 import { usePoll } from "#/lib/usePoll";
+import { HOTSPOT } from "#/tutorials/hotspots";
 export const Route = createFileRoute("/services/ssm")({
 	validateSearch: (s: Record<string, unknown>) => ({
 		account: String(s.account ?? ""),
@@ -281,13 +283,15 @@ function FilteredList({
 								>
 									Delete parameters
 								</Button>
-								<Button
-									variant="primary"
-									disabled={!enabled}
-									onClick={onCreate}
-								>
-									Create parameter
-								</Button>
+								<Hotspot hotspotId={HOTSPOT.parameterCreate}>
+									<Button
+										variant="primary"
+										disabled={!enabled}
+										onClick={onCreate}
+									>
+										Create parameter
+									</Button>
+								</Hotspot>
 							</SpaceBetween>
 						}
 					>

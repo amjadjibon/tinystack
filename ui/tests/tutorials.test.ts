@@ -366,3 +366,212 @@ test("cleanup plans name only generated resources, in dependency order", async (
 		`dynamodb:DeleteTable:${JSON.stringify({ TableName: ctx.names.table })}`,
 	]);
 });
+
+const runtimeContext: Context = {
+	account: ctx.account,
+	region: ctx.region,
+	names: {
+		function: "tutorial-function",
+		machine: "tutorial-machine",
+		execution: "tutorial-execution",
+		secret: "tutorial-secret",
+		parameter: "tutorial-parameter",
+	},
+};
+function runtimeFixture(kind: Check): Snapshot {
+	const s = emptySnapshot(),
+		c = runtimeContext,
+		n = c.names;
+	const svc =
+		kind === "function"
+			? "lambda"
+			: kind === "logStream"
+				? "logs"
+				: kind === "secret" || kind === "secretValue"
+					? "secretsmanager"
+					: kind === "parameter"
+						? "ssm"
+						: "sfn";
+	const name =
+		svc === "lambda"
+			? n.function
+			: svc === "logs"
+				? `/aws/lambda/${n.function}`
+				: svc === "secretsmanager"
+					? n.secret
+					: svc === "ssm"
+						? n.parameter
+						: n.machine;
+	if (
+		[
+			"function",
+			"logStream",
+			"stateMachine",
+			"executionStarted",
+			"executionSucceeded",
+			"secret",
+			"secretValue",
+			"parameter",
+		].includes(kind)
+	)
+		s.resources.push({
+			service: svc,
+			type:
+				svc === "lambda"
+					? "function"
+					: svc === "logs"
+						? "log-group"
+						: svc === "secretsmanager"
+							? "secret"
+							: svc === "ssm"
+								? "parameter"
+								: "state-machine",
+			name,
+			account: c.account,
+			region: c.region,
+			arn: arn(svc, `secret:${name}-abc123`, c),
+			details: {
+				Streams: ["stream"],
+				Executions: [{ Name: n.execution, Status: "SUCCEEDED" }],
+			},
+		});
+	const requests: Partial<Record<Check, [string, string, string]>> = {
+		invoke: ["lambda", "Invoke", n.function],
+		secretValue: [
+			"secretsmanager",
+			"GetSecretValue",
+			s.resources[0]?.arn ?? "",
+		],
+		parameterValue: ["ssm", "GetParameter", `${n.parameter}:1`],
+	};
+	const request = requests[kind];
+	if (request)
+		s.requests.push({
+			...fixture("item").requests[0],
+			service: request[0],
+			operation: request[1],
+			resource_identifier: request[2],
+			request_body: "(redacted: this operation carries sensitive values)",
+			response_body: "(redacted: this operation carries sensitive values)",
+		});
+	return s;
+}
+for (const kind of [
+	"function",
+	"invoke",
+	"logStream",
+	"stateMachine",
+	"executionStarted",
+	"executionSucceeded",
+	"secret",
+	"secretValue",
+	"parameter",
+	"parameterValue",
+] as const) {
+	test(`${kind}: scoped records pass; absent, failed and unrelated records fail`, () => {
+		const c = runtimeContext,
+			s = runtimeFixture(kind);
+		assert.ok(check(kind, s, c));
+		assert.equal(check(kind, emptySnapshot(), c), false);
+		assert.equal(check(kind, s, { ...c, account: "111111111111" }), false);
+		assert.equal(check(kind, s, { ...c, region: "eu-west-1" }), false);
+		assert.equal(
+			check(kind, s, {
+				...c,
+				names: Object.fromEntries(
+					Object.keys(c.names).map((k) => [k, "other"]),
+				),
+			}),
+			false,
+		);
+		for (const r of s.requests) r.status = 403;
+		if (s.requests.length) assert.equal(check(kind, s, c), false);
+	});
+}
+test("runtime state checks reject empty streams, wrong execution and non-success statuses", () => {
+	const s = runtimeFixture("logStream");
+	s.resources[0].details = { Streams: [] };
+	assert.equal(check("logStream", s, runtimeContext), false);
+	for (const Status of ["RUNNING", "FAILED", "TIMED_OUT", "ABORTED"]) {
+		const e = runtimeFixture("executionSucceeded");
+		e.resources[0].details = {
+			Executions: [{ Name: runtimeContext.names.execution, Status }],
+		};
+		assert.equal(check("executionSucceeded", e, runtimeContext), false);
+	}
+	const e = runtimeFixture("executionSucceeded");
+	e.resources[0].details = {
+		Executions: [{ Name: "other", Status: "SUCCEEDED" }],
+	};
+	assert.equal(check("executionSucceeded", e, runtimeContext), false);
+});
+test("redacted requests without safe identifiers cannot complete a resource-specific step", () => {
+	for (const kind of ["invoke", "secretValue", "parameterValue"] as const) {
+		const s = runtimeFixture(kind);
+		delete s.requests[0].resource_identifier;
+		assert.equal(check(kind, s, runtimeContext), false);
+		s.requests[0].resource_identifier = "other";
+		assert.equal(check(kind, s, runtimeContext), false);
+	}
+});
+test("runtime tutorial cleanup targets only generated names in order", async () => {
+	const expected: Record<string, [string, string, Record<string, unknown>][]> =
+		{
+			"lambda-first-function": [
+				[
+					"lambda",
+					"DeleteFunction",
+					{ FunctionName: runtimeContext.names.function },
+				],
+				[
+					"logs",
+					"DeleteLogGroup",
+					{ LogGroupName: `/aws/lambda/${runtimeContext.names.function}` },
+				],
+			],
+			"sfn-first-state-machine": [
+				[
+					"sfn",
+					"DeleteStateMachine",
+					{
+						StateMachineArn: arn(
+							"states",
+							`stateMachine:${runtimeContext.names.machine}`,
+							runtimeContext,
+						),
+					},
+				],
+			],
+			"secrets-and-parameters": [
+				[
+					"secretsmanager",
+					"DeleteSecret",
+					{
+						SecretId: runtimeContext.names.secret,
+						ForceDeleteWithoutRecovery: true,
+					},
+				],
+				["ssm", "DeleteParameter", { Name: runtimeContext.names.parameter }],
+			],
+		};
+	for (const [id, calls] of Object.entries(expected)) {
+		const actual: unknown[] = [];
+		const plan = await tutorials
+			.find((t) => t.id === id)
+			?.cleanup(
+				runtimeContext,
+				async <T>(s: string, o: string, i: Record<string, unknown>) => {
+					actual.push([s, o, i]);
+					return {} as T;
+				},
+			);
+		assert.ok(plan);
+		for (const row of plan) await row.run();
+		assert.deepEqual(actual, calls);
+	}
+});
+test("runtime tutorials receive generated names", () => {
+	const n = fresh("lambda-first-function").names;
+	for (const key of ["function", "machine", "execution", "secret", "parameter"])
+		assert.match(n[key], /^tutorial-lambda-first-function-[a-f0-9]{4}$/);
+});

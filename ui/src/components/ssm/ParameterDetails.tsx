@@ -5,6 +5,7 @@ import {
 	Container,
 	FormField,
 	Header,
+	Hotspot,
 	Input,
 	SpaceBetween,
 	Table,
@@ -21,6 +22,7 @@ import {
 	ssmTagPlan,
 } from "#/lib/ssm";
 import { usePoll } from "#/lib/usePoll";
+import { HOTSPOT } from "#/tutorials/hotspots";
 import { ParameterForm } from "./ParameterForm";
 
 function ParameterValue({
@@ -46,33 +48,35 @@ function ParameterValue({
 		<SpaceBetween size="xs">
 			{!!error && <Alert type="error">{error}</Alert>}
 			{value === undefined ? "••••••••" : <CodeBlock text={value} />}
-			<Button
-				disabled={!enabled}
-				loading={busy}
-				onClick={async () => {
-					const request = ++generation.current;
-					if (value !== undefined) {
-						setValue(undefined);
-						return;
-					}
-					setBusy(true);
-					setError("");
-					try {
-						const out = await ssmCall<{ Parameter: { Value: string } }>(
-							scope,
-							"GetParameter",
-							{ Name: `${scope.parameter}:${version}`, WithDecryption: true },
-						);
-						if (generation.current === request) setValue(out.Parameter.Value);
-					} catch (err) {
-						if (generation.current === request) setError(String(err));
-					} finally {
-						if (generation.current === request) setBusy(false);
-					}
-				}}
-			>
-				{value === undefined ? "Reveal value" : "Hide value"}
-			</Button>
+			<Hotspot hotspotId={HOTSPOT.parameterRead}>
+				<Button
+					disabled={!enabled}
+					loading={busy}
+					onClick={async () => {
+						const request = ++generation.current;
+						if (value !== undefined) {
+							setValue(undefined);
+							return;
+						}
+						setBusy(true);
+						setError("");
+						try {
+							const out = await ssmCall<{ Parameter: { Value: string } }>(
+								scope,
+								"GetParameter",
+								{ Name: `${scope.parameter}:${version}`, WithDecryption: true },
+							);
+							if (generation.current === request) setValue(out.Parameter.Value);
+						} catch (err) {
+							if (generation.current === request) setError(String(err));
+						} finally {
+							if (generation.current === request) setBusy(false);
+						}
+					}}
+				>
+					{value === undefined ? "Reveal value" : "Hide value"}
+				</Button>
+			</Hotspot>
 		</SpaceBetween>
 	);
 }

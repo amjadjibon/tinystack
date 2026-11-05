@@ -6,6 +6,7 @@ import {
 	Container,
 	FormField,
 	Header,
+	Hotspot,
 	Input,
 	KeyValuePairs,
 	Modal,
@@ -30,6 +31,7 @@ import {
 	useSfnPage,
 } from "#/lib/sfn";
 import { usePoll } from "#/lib/usePoll";
+import { HOTSPOT } from "#/tutorials/hotspots";
 
 export function ExecutionStatus({ status }: { status?: string }) {
 	return (
@@ -139,11 +141,13 @@ export function ExecutionDetails({
 				description="Inspect this Standard execution and its recorded state transitions."
 				actions={
 					<SpaceBetween direction="horizontal" size="xs">
-						<Button
-							iconName="refresh"
-							ariaLabel="Refresh execution"
-							onClick={poll.reload}
-						/>
+						<Hotspot hotspotId={HOTSPOT.sfnInspect}>
+							<Button
+								iconName="refresh"
+								ariaLabel="Refresh execution"
+								onClick={poll.reload}
+							/>
+						</Hotspot>
 						<Button
 							disabled={execution?.Status !== "RUNNING" || !!poll.error}
 							onClick={() => setStop(true)}

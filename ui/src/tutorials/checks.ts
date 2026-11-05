@@ -25,7 +25,17 @@ export type Check =
 	| "read"
 	| "rule"
 	| "target"
-	| "event";
+	| "event"
+	| "function"
+	| "invoke"
+	| "logStream"
+	| "stateMachine"
+	| "executionStarted"
+	| "executionSucceeded"
+	| "secret"
+	| "secretValue"
+	| "parameter"
+	| "parameterValue";
 export const sources: Record<Check, (keyof Snapshot)[]> = {
 	bucket: ["resources"],
 	object: ["requests"],
@@ -41,6 +51,16 @@ export const sources: Record<Check, (keyof Snapshot)[]> = {
 	rule: ["resources"],
 	target: ["resources"],
 	event: ["deliveries"],
+	function: ["resources"],
+	invoke: ["requests"],
+	logStream: ["resources"],
+	stateMachine: ["resources"],
+	executionStarted: ["resources"],
+	executionSucceeded: ["resources"],
+	secret: ["resources"],
+	secretValue: ["resources", "requests"],
+	parameter: ["resources"],
+	parameterValue: ["requests"],
 };
 export const emptySnapshot = (): Snapshot => ({
 	resources: [],
@@ -213,5 +233,62 @@ export function check(kind: Check, s: Snapshot, c: Context): boolean {
 					d.via === "eventbridge" &&
 					!d.error,
 			);
+		case "function":
+			return resource(s, c, "lambda", n.function)?.type === "function";
+		case "logStream": {
+			const r = resource(s, c, "logs", `/aws/lambda/${n.function}`);
+			return (
+				r?.type === "log-group" &&
+				Array.isArray(r.details?.Streams) &&
+				r.details.Streams.length > 0
+			);
+		}
+		case "stateMachine":
+			return resource(s, c, "sfn", n.machine)?.type === "state-machine";
+		case "executionSucceeded": {
+			const rows = resource(s, c, "sfn", n.machine)?.details?.Executions;
+			return (
+				Array.isArray(rows) &&
+				rows.some((e) => e.Name === n.execution && e.Status === "SUCCEEDED")
+			);
+		}
+		case "secret":
+			return resource(s, c, "secretsmanager", n.secret)?.type === "secret";
+		case "parameter":
+			return resource(s, c, "ssm", n.parameter)?.type === "parameter";
+		case "invoke":
+			return successful(
+				s,
+				c,
+				"lambda",
+				"Invoke",
+				(r) =>
+					r.resource_identifier === n.function ||
+					r.resource_identifier === arn("lambda", `function:${n.function}`, c),
+			);
+		case "executionStarted": {
+			const rows = resource(s, c, "sfn", n.machine)?.details?.Executions;
+			return Array.isArray(rows) && rows.some((e) => e.Name === n.execution);
+		}
+		case "secretValue":
+			return successful(s, c, "secretsmanager", "GetSecretValue", (r) => {
+				const id = r.resource_identifier;
+				return (
+					id === n.secret ||
+					(!!id && id === resource(s, c, "secretsmanager", n.secret)?.arn)
+				);
+			});
+		case "parameterValue":
+			return successful(s, c, "ssm", "GetParameter", (r) => {
+				const id = r.resource_identifier?.split(":").at(-1);
+				const target = r.resource_identifier;
+				return (
+					target === n.parameter ||
+					target === arn("ssm", `parameter/${n.parameter}`, c) ||
+					(!!target &&
+						/^\d+$/.test(id ?? "") &&
+						target.slice(0, target.lastIndexOf(":")) === n.parameter)
+				);
+			});
 	}
 }

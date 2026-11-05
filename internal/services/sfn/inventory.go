@@ -24,10 +24,22 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 					return err
 				}
 
+				executions := []map[string]string{}
+				for _, executionKey := range tx.Keys(scope.Prefix(service, kindExecution) + sm.Name + "/") {
+					execution, _, readErr := storage.Read[execution](tx, executionKey)
+					if readErr != nil {
+						return readErr
+					}
+					executions = append(
+						executions,
+						map[string]string{"Name": execution.Name, "Status": execution.Status},
+					)
+				}
+
 				out = append(out, catalog.Resource{
 					Type: "state-machine", Account: account, Region: region, Name: sm.Name,
 					ARN: arn(scope, arnStateMachine, sm.Name), Tags: sm.Tags,
-					Details: map[string]any{"Type": sm.Type, "RoleArn": sm.RoleArn},
+					Details: map[string]any{"Type": sm.Type, "RoleArn": sm.RoleArn, "Executions": executions},
 				})
 			case ok && strings.HasPrefix(rest, kindActivity+"/"):
 				a, _, err := storage.Read[activity](tx, key)

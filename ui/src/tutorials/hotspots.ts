@@ -13,5 +13,15 @@ export const HOTSPOT = {
 	eventsCreateRule: "eventbridge.create-rule",
 	eventsAddTarget: "eventbridge.add-target",
 	eventsSend: "eventbridge.send-event",
+	lambdaCreate: "lambda.create-function",
+	lambdaTest: "lambda.test",
+	lambdaLogs: "lambda.log-streams",
+	sfnCreate: "sfn.create-machine",
+	sfnStart: "sfn.start",
+	sfnInspect: "sfn.inspect",
+	secretCreate: "secretsmanager.create",
+	secretRead: "secretsmanager.read",
+	parameterCreate: "ssm.create",
+	parameterRead: "ssm.read",
 } as const;
 export type HotspotId = (typeof HOTSPOT)[keyof typeof HOTSPOT];

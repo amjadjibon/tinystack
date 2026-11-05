@@ -67,6 +67,11 @@ export function fresh(id: string): Progress {
 			queue: name,
 			table: name,
 			rule: name,
+			function: name,
+			machine: name,
+			execution: name,
+			secret: name,
+			parameter: name,
 		},
 	};
 }

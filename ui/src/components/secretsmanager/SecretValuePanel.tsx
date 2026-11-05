@@ -5,6 +5,7 @@ import {
 	Container,
 	CopyToClipboard,
 	Header,
+	Hotspot,
 	Select,
 	SpaceBetween,
 } from "@cloudscape-design/components";
@@ -21,6 +22,7 @@ import {
 	secretPages,
 } from "#/lib/secretsmanager";
 import { usePoll } from "#/lib/usePoll";
+import { HOTSPOT } from "#/tutorials/hotspots";
 import { SecretForm } from "./SecretForm";
 
 export function SecretValuePanel({
@@ -147,29 +149,32 @@ export function SecretValuePanel({
 							Secret values are hidden. Retrieve a value explicitly to display
 							it here.
 						</Box>
-						<Button
-							loading={busy}
-							disabled={!enabled}
-							onClick={async () => {
-								const request = ++generation.current;
-								setBusy(true);
-								setError("");
-								try {
-									const out = await secretCall<SecretValue>(
-										scope,
-										"GetSecretValue",
-										version ? { VersionId: version } : {},
-									);
-									if (generation.current === request) setValue(out);
-								} catch (err) {
-									if (generation.current === request) setError(errorText(err));
-								} finally {
-									if (generation.current === request) setBusy(false);
-								}
-							}}
-						>
-							Retrieve secret value
-						</Button>
+						<Hotspot hotspotId={HOTSPOT.secretRead}>
+							<Button
+								loading={busy}
+								disabled={!enabled}
+								onClick={async () => {
+									const request = ++generation.current;
+									setBusy(true);
+									setError("");
+									try {
+										const out = await secretCall<SecretValue>(
+											scope,
+											"GetSecretValue",
+											version ? { VersionId: version } : {},
+										);
+										if (generation.current === request) setValue(out);
+									} catch (err) {
+										if (generation.current === request)
+											setError(errorText(err));
+									} finally {
+										if (generation.current === request) setBusy(false);
+									}
+								}}
+							>
+								Retrieve secret value
+							</Button>
+						</Hotspot>
 						{busy && <Button onClick={clear}>Cancel retrieval</Button>}
 					</SpaceBetween>
 				)}

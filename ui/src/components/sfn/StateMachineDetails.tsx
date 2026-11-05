@@ -5,6 +5,7 @@ import {
 	Container,
 	FormField,
 	Header,
+	Hotspot,
 	Input,
 	KeyValuePairs,
 	Link,
@@ -36,6 +37,7 @@ import {
 } from "#/lib/sfn";
 import { useFollow } from "#/lib/useFollow";
 import { usePoll } from "#/lib/usePoll";
+import { HOTSPOT } from "#/tutorials/hotspots";
 import { ExecutionResult, ExecutionStatus } from "./ExecutionDetails";
 import { StateMachineForm } from "./StateMachineForm";
 
@@ -116,15 +118,17 @@ export function StateMachineDetails({
 						>
 							Delete
 						</Button>
-						<Button
-							variant="primary"
-							disabled={!enabled || !machine || !!poll.error}
-							onClick={() => setDialog("start")}
-						>
-							{kind === "EXPRESS"
-								? "Start synchronous execution"
-								: "Start execution"}
-						</Button>
+						<Hotspot hotspotId={HOTSPOT.sfnStart}>
+							<Button
+								variant="primary"
+								disabled={!enabled || !machine || !!poll.error}
+								onClick={() => setDialog("start")}
+							>
+								{kind === "EXPRESS"
+									? "Start synchronous execution"
+									: "Start execution"}
+							</Button>
+						</Hotspot>
 					</SpaceBetween>
 				}
 			>

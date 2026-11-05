@@ -5,6 +5,7 @@ import {
 	Button,
 	Flashbar,
 	Header,
+	Hotspot,
 	Link,
 	Pagination,
 	SpaceBetween,
@@ -22,6 +23,7 @@ import { validRegion } from "#/lib/s3";
 import { useScope } from "#/lib/scope";
 import { type SfnScope, sfnHref } from "#/lib/sfn";
 import { useFollow } from "#/lib/useFollow";
+import { HOTSPOT } from "#/tutorials/hotspots";
 
 export const Route = createFileRoute("/services/sfn")({
 	validateSearch: (search: Record<string, unknown>) => ({
@@ -254,9 +256,15 @@ function StateMachineList({
 								ariaLabel="Refresh state machines"
 								onClick={onRefresh}
 							/>
-							<Button variant="primary" disabled={!enabled} onClick={onCreate}>
-								Create state machine
-							</Button>
+							<Hotspot hotspotId={HOTSPOT.sfnCreate}>
+								<Button
+									variant="primary"
+									disabled={!enabled}
+									onClick={onCreate}
+								>
+									Create state machine
+								</Button>
+							</Hotspot>
 						</SpaceBetween>
 					}
 				>
