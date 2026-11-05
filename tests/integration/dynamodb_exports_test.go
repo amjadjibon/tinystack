@@ -50,11 +50,24 @@ func TestDynamoDBExports(t *testing.T) {
 	}
 
 	exported, err := c.ExportTableToPointInTime(ctx, &sdk.ExportTableToPointInTimeInput{
-		TableArn: tableARN, S3Bucket: aws.String("exports"), S3Prefix: aws.String("nightly"),
+		ClientToken: new("export-once"), TableArn: tableARN, S3Bucket: aws.String("exports"), S3Prefix: aws.String("nightly"),
 	})
 	if err != nil || exported.ExportDescription.ExportStatus != types.ExportStatusCompleted {
 		t.Fatalf("exported: %+v %v", exported, err)
 	}
+
+	repeated, replayErr := c.ExportTableToPointInTime(ctx, &sdk.ExportTableToPointInTimeInput{
+		ClientToken: new("export-once"), TableArn: tableARN, S3Bucket: new("exports"), S3Prefix: new("nightly"),
+	})
+	if replayErr != nil || aws.ToString(repeated.ExportDescription.ExportArn) !=
+		aws.ToString(exported.ExportDescription.ExportArn) {
+		t.Fatalf("export replay: %+v %v", repeated, replayErr)
+	}
+
+	_, mismatchErr := c.ExportTableToPointInTime(ctx, &sdk.ExportTableToPointInTimeInput{
+		ClientToken: new("export-once"), TableArn: tableARN, S3Bucket: new("exports"), S3Prefix: new("changed"),
+	})
+	code(t, mismatchErr, "ExportConflictException")
 
 	described, err := c.DescribeExport(ctx, &sdk.DescribeExportInput{
 		ExportArn: exported.ExportDescription.ExportArn,

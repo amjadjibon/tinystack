@@ -5,7 +5,6 @@
 //	<scope>/athena/namedquery/<ID>
 //	<scope>/athena/query/<ID>         (a query execution)
 //	<scope>/athena/result/<ID>        (its result set)
-//	<scope>/athena/token/<token>      (the execution or named query a ClientRequestToken made)
 //
 // Queries run to completion inside StartQueryExecution. A SELECT loads the
 // Glue tables it names (CSV, delimited text, and JSON objects in S3, with
@@ -37,7 +36,6 @@ const (
 	kindNamedQuery = "namedquery"
 	kindQuery      = "query"
 	kindResult     = "result"
-	kindToken      = "token"
 	primary        = "primary"
 	catalogName    = "AwsDataCatalog"
 	engineVersion  = "Athena engine version 3"

@@ -7,31 +7,9 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/athena"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
-
-// idempotent returns the ID a ClientRequestToken already made, or else makes
-// one with create and remembers it.
-func idempotent(tx storage.WriteTx, scope request.Scope, token *string, create func(id string) error) (
-	string, error,
-) {
-	if token != nil {
-		if id, ok := tx.Get(scope.Key(service, kindToken, *token)); ok {
-			return string(id), nil
-		}
-	}
-
-	id := uuid.NewV4().String()
-	if err := create(id); err != nil {
-		return "", err
-	}
-
-	if token != nil {
-		tx.Put(scope.Key(service, kindToken, *token), []byte(id))
-	}
-
-	return id, nil
-}
 
 func (s *Service) CreateNamedQuery(
 	ctx context.Context,
@@ -54,13 +32,26 @@ func (s *Service) CreateNamedQuery(
 		}
 
 		var err error
-		id, err = idempotent(tx, scope, in.ClientRequestToken, func(id string) error {
+		token := idempotency.Key(scope, service, "CreateNamedQuery", in.ClientRequestToken)
+		var found bool
+		id, found, err = idempotency.Replay[string](tx, token, in,
+			invalid("ClientRequestToken was used with different parameters."))
+		if err != nil || found {
+			return err
+		}
+
+		id = uuid.NewV4().String()
+		err = func() error {
 			return storage.Write(tx, scope.Key(service, kindNamedQuery, id), &api.NamedQuery{
 				Name: in.Name, Description: in.Description, Database: in.Database, QueryString: in.QueryString,
 				NamedQueryId: new(id), WorkGroup: new(group),
 			})
-		})
-		return err
+		}()
+		if err != nil {
+			return err
+		}
+
+		return idempotency.Remember(tx, token, in, id)
 	})
 	if err != nil {
 		return nil, err

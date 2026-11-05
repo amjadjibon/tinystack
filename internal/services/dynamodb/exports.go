@@ -19,6 +19,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -106,6 +107,7 @@ func (s *Service) ExportTableToPointInTime(
 	}
 
 	scope, name := tableScope(key)
+	token := idempotency.Key(scope, "dynamodb", "ExportTableToPointInTime/"+name, in.ClientToken)
 	var d *api.ExportDescription
 	var lines bytes.Buffer
 	count := int64(0)
@@ -121,8 +123,12 @@ func (s *Service) ExportTableToPointInTime(
 				"Point in time recovery is not enabled for table '"+name+"'")
 		}
 
-		if d, loadErr = findExport(tx, exportPrefix(scope)+name+"/", in); d != nil || loadErr != nil {
-			return loadErr
+		previous, found, replayErr := idempotency.Replay[*api.ExportDescription](tx, token, in,
+			awserror.New("ExportConflictException",
+				"An export with this ClientToken was requested with different parameters"))
+		if replayErr != nil || found {
+			d = previous
+			return replayErr
 		}
 
 		suffix := make([]byte, 4)
@@ -173,43 +179,17 @@ func (s *Service) ExportTableToPointInTime(
 	d.EndTime = new(float64(time.Now().UnixMilli()) / 1000)
 	_, id, _ := strings.Cut(common.Value(d.ExportArn), "/export/")
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		return write(tx, exportPrefix(scope)+name+"/"+id, d)
+		if e := write(tx, exportPrefix(scope)+name+"/"+id, d); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, token, in, d)
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return &api.ExportTableToPointInTimeOutput{ExportDescription: d}, nil
-}
-
-// findExport returns the export of a table, whose exports are under prefix,
-// that in's ClientToken started, or nil when there is none; the token must
-// not be reused for a different export.
-func findExport(
-	tx storage.ReadTx,
-	prefix string,
-	in *api.ExportTableToPointInTimeInput,
-) (*api.ExportDescription, error) {
-	if in.ClientToken == nil {
-		return nil, nil //nolint:nilnil // without a token, every request is a new export
-	}
-
-	for _, key := range tx.Keys(prefix) {
-		d, err := loadExport(tx, key)
-		if err != nil || common.Value(d.ClientToken) != *in.ClientToken {
-			continue
-		}
-
-		if common.Value(d.S3Bucket) != common.Value(in.S3Bucket) ||
-			common.Value(d.S3Prefix) != common.Value(in.S3Prefix) {
-			return nil, awserror.New("ExportConflictException",
-				"An export with this ClientToken was requested with different parameters")
-		}
-
-		return d, nil
-	}
-
-	return nil, nil //nolint:nilnil // the token started no export
 }
 
 // writeExport writes an export's objects to its bucket.

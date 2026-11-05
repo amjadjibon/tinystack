@@ -4,8 +4,6 @@ package emrserverless
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"slices"
@@ -270,48 +268,6 @@ func checkApplication(a *api.Application) error {
 	}
 
 	return nil
-}
-
-// tokenRecord keeps the exact original response even when the resource is later changed or removed.
-type tokenRecord[T any] struct {
-	Output T
-	Hash   string
-}
-
-func tokenKey(scope request.Scope, operation string, token *string) (string, error) {
-	v := common.Value(token)
-	if !clientTokenPattern.MatchString(v) {
-		return "", awserror.Validation("clientToken must contain 1 to 64 characters.")
-	}
-
-	return scope.Key(serviceName, "token", operation+"/"+fmt.Sprintf("%x", sha256.Sum256([]byte(v)))), nil
-}
-
-func requestHash(in any) (string, error) {
-	b, err := json.Marshal(in)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%x", sha256.Sum256(b)), nil
-}
-
-func replay[T any](tx storage.ReadTx, k, hash string) (output T, found bool, err error) {
-	var zero T
-	r, found, err := storage.Read[tokenRecord[T]](tx, k)
-	if err != nil {
-		return zero, false, err
-	}
-
-	if !found {
-		return zero, false, nil
-	}
-
-	if r.Hash != hash {
-		return zero, false, conflict("clientToken was already used with different parameters.")
-	}
-
-	return r.Output, true, nil
 }
 
 // applicationTransaction centralizes scoped application updates and timestamp changes.

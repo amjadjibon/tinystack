@@ -625,13 +625,27 @@ func TestCodePipelineExecutionVariablesAndPages(t *testing.T) {
 	started, err := c.StartPipelineExecution(
 		ctx,
 		&sdk.StartPipelineExecutionInput{
-			Name:      p.Name,
+			Name: p.Name, ClientRequestToken: new("variables-token"),
 			Variables: []types.PipelineVariable{{Name: new("environment"), Value: new("prod")}},
 		},
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	repeated, replayErr := c.StartPipelineExecution(ctx, &sdk.StartPipelineExecutionInput{
+		Name: p.Name, ClientRequestToken: new("variables-token"),
+		Variables: []types.PipelineVariable{{Name: new("environment"), Value: new("prod")}},
+	})
+	if replayErr != nil || aws.ToString(repeated.PipelineExecutionId) != aws.ToString(started.PipelineExecutionId) {
+		t.Fatalf("pipeline replay: %+v %v", repeated, replayErr)
+	}
+
+	_, mismatchErr := c.StartPipelineExecution(ctx, &sdk.StartPipelineExecutionInput{
+		Name: p.Name, ClientRequestToken: new("variables-token"),
+		Variables: []types.PipelineVariable{{Name: new("environment"), Value: new("dev")}},
+	})
+	code(t, mismatchErr, "ConflictException")
 
 	out, err := c.GetPipelineExecution(
 		ctx,

@@ -52,7 +52,7 @@ func (s *Service) PutClusterPolicy(
 	ctx context.Context,
 	in *api.PutClusterPolicyInput,
 ) (*api.PutClusterPolicyOutput, error) {
-	return mutate(ctx, s, "PutClusterPolicy", common.Value(in.Identifier), in.ClientToken, in,
+	return mutate(ctx, s, "PutClusterPolicy", in.ClientToken, in,
 		func(tx storage.WriteTx, scope request.Scope) (*api.PutClusterPolicyOutput, error) {
 			r, err := read(tx, scope, common.Value(in.Identifier))
 			if err != nil {
@@ -81,7 +81,7 @@ func (s *Service) DeleteClusterPolicy(
 	ctx context.Context,
 	in *api.DeleteClusterPolicyInput,
 ) (*api.DeleteClusterPolicyOutput, error) {
-	return mutate(ctx, s, "DeleteClusterPolicy", common.Value(in.Identifier), in.ClientToken, in,
+	return mutate(ctx, s, "DeleteClusterPolicy", in.ClientToken, in,
 		func(tx storage.WriteTx, scope request.Scope) (*api.DeleteClusterPolicyOutput, error) {
 			r, err := read(tx, scope, common.Value(in.Identifier))
 			if err != nil {

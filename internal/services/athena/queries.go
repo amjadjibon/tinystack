@@ -10,12 +10,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"uuid"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/athena"
 	glueapi "github.com/amjadjibon/tinystack/internal/aws/generated/glue"
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -99,7 +101,16 @@ func (s *Service) StartQueryExecution(
 			return err
 		}
 
-		id, err = idempotent(tx, scope, in.ClientRequestToken, func(id string) error {
+		token := idempotency.Key(scope, service, "StartQueryExecution", in.ClientRequestToken)
+		var found bool
+		id, found, err = idempotency.Replay[string](tx, token, in,
+			invalid("ClientRequestToken was used with different parameters."))
+		if err != nil || found {
+			return err
+		}
+
+		id = uuid.NewV4().String()
+		err = func() error {
 			e = &execution{
 				Enforced: common.Value(w.WorkGroup.Configuration.EnforceWorkGroupConfiguration),
 				Execution: api.QueryExecution{
@@ -119,8 +130,12 @@ func (s *Service) StartQueryExecution(
 			}
 
 			return storage.Write(tx, scope.Key(service, kindQuery, id), e)
-		})
-		return err
+		}()
+		if err != nil {
+			return err
+		}
+
+		return idempotency.Remember(tx, token, in, id)
 	})
 	if err != nil {
 		return nil, err

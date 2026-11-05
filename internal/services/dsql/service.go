@@ -3,10 +3,7 @@ package dsql
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/json"
 	"fmt"
-	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -17,6 +14,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/localtls"
 	"github.com/amjadjibon/tinystack/internal/services/background"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -56,11 +54,6 @@ type record struct {
 type work struct {
 	Scope request.Scope
 	ID    string
-}
-
-type replay struct {
-	Request  string
-	Response json.RawMessage
 }
 
 func New(store storage.Store) *Service {
@@ -157,7 +150,7 @@ func (s *Service) get(ctx context.Context, id *string) (*record, error) {
 }
 
 // mutate retains successful responses, including deletes, independently of resource lifetime.
-func mutate[T any](ctx context.Context, s *Service, op, id string, token *string, in any,
+func mutate[T any](ctx context.Context, s *Service, op string, token *string, in any,
 	fn func(storage.WriteTx, request.Scope) (*T, error),
 ) (*T, error) {
 	scope, err := request.RegionalScope(ctx)
@@ -165,37 +158,14 @@ func mutate[T any](ctx context.Context, s *Service, op, id string, token *string
 		return nil, err
 	}
 
-	fields := map[string]any{}
-	value := reflect.ValueOf(in).Elem()
-	for i := range value.NumField() {
-		fields[value.Type().Field(i).Name] = value.Field(i).Interface()
-	}
-
-	encoded, err := json.Marshal(fields)
-	if err != nil {
-		return nil, err
-	}
-
-	// Label/query members have json:"-"; include their values explicitly in the replay fingerprint.
-	fingerprint := fmt.Sprintf("%s:%s:%s", op, id, encoded)
-	digest := sha256.Sum256([]byte(common.Value(token)))
-	replayKey := scope.Key(serviceName, "token", op+"/"+fmt.Sprintf("%x", digest))
+	replayKey := idempotency.Key(scope, serviceName, op, token)
 	var out *T
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if common.Value(token) != "" {
-			old, found, e := storage.Read[replay](tx, replayKey)
-			if e != nil {
-				return e
-			}
-
-			if found {
-				if old.Request != fingerprint {
-					return conflict("Client token was already used with different parameters")
-				}
-
-				out = new(T)
-				return json.Unmarshal(old.Response, out)
-			}
+		previous, found, replayErr := idempotency.Replay[*T](tx, replayKey, in,
+			conflict("Client token was already used with different parameters"))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
 		}
 
 		var e error
@@ -204,16 +174,7 @@ func mutate[T any](ctx context.Context, s *Service, op, id string, token *string
 			return e
 		}
 
-		if common.Value(token) == "" {
-			return nil
-		}
-
-		response, e := json.Marshal(out)
-		if e != nil {
-			return e
-		}
-
-		return storage.Write(tx, replayKey, replay{Request: fingerprint, Response: response})
+		return idempotency.Remember(tx, replayKey, in, out)
 	})
 	return out, err
 }

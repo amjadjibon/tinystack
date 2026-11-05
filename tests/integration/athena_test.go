@@ -312,6 +312,12 @@ ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe' LOCATION 's3://lake/events
 		t.Fatalf("idempotent named query: %v %v", again, err)
 	}
 
+	_, mismatchErr := c.CreateNamedQuery(ctx, &athena.CreateNamedQueryInput{
+		Name: new("changed"), Database: new("lake"), QueryString: new("SELECT sum(amount) FROM sales"),
+		WorkGroup: new("analysts"), ClientRequestToken: new("totals-token-0000000000000000000000"),
+	})
+	code(t, mismatchErr, "InvalidRequestException")
+
 	groups, err := c.ListWorkGroups(ctx, &athena.ListWorkGroupsInput{})
 	if err != nil || len(groups.WorkGroups) != 2 {
 		t.Fatalf("%+v %v", groups, err)

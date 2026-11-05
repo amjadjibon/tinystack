@@ -19,7 +19,6 @@ func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterInput)
 		ctx,
 		s,
 		"CreateCluster",
-		"",
 		in.ClientToken,
 		in,
 		func(tx storage.WriteTx, scope request.Scope) (*api.CreateClusterOutput, error) {
@@ -115,7 +114,7 @@ func (s *Service) ListClusters(ctx context.Context, in *api.ListClustersInput) (
 }
 
 func (s *Service) UpdateCluster(ctx context.Context, in *api.UpdateClusterInput) (*api.UpdateClusterOutput, error) {
-	return mutate(ctx, s, "UpdateCluster", common.Value(in.Identifier), in.ClientToken, in,
+	return mutate(ctx, s, "UpdateCluster", in.ClientToken, in,
 		func(tx storage.WriteTx, scope request.Scope) (*api.UpdateClusterOutput, error) {
 			if in.KmsEncryptionKey != nil && *in.KmsEncryptionKey != "AWS_OWNED_KMS_KEY" {
 				return nil, invalid("Custom KMS encryption keys are unsupported")
@@ -177,7 +176,7 @@ func (s *Service) UpdateCluster(ctx context.Context, in *api.UpdateClusterInput)
 }
 
 func (s *Service) DeleteCluster(ctx context.Context, in *api.DeleteClusterInput) (*api.DeleteClusterOutput, error) {
-	return mutate(ctx, s, "DeleteCluster", common.Value(in.Identifier), in.ClientToken, in,
+	return mutate(ctx, s, "DeleteCluster", in.ClientToken, in,
 		func(tx storage.WriteTx, scope request.Scope) (*api.DeleteClusterOutput, error) {
 			r, err := read(tx, scope, common.Value(in.Identifier))
 			if err != nil {

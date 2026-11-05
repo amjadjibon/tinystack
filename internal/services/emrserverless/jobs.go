@@ -9,6 +9,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/emrserverless"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -48,15 +49,11 @@ func (s *Service) StartJobRun(ctx context.Context, in *api.StartJobRunRequest) (
 		return nil, err
 	}
 
-	tk, err := tokenKey(scope, "job/"+common.Value(in.ApplicationId), in.ClientToken)
-	if err != nil {
-		return nil, err
+	if !clientTokenPattern.MatchString(common.Value(in.ClientToken)) {
+		return nil, awserror.Validation("clientToken must contain 1 to 64 characters.")
 	}
 
-	hash, err := requestHash(in)
-	if err != nil {
-		return nil, err
-	}
+	tk := idempotency.Key(scope, serviceName, "job/"+common.Value(in.ApplicationId), in.ClientToken)
 
 	if !rolePattern.MatchString(common.Value(in.ExecutionRoleArn)) {
 		return nil, awserror.Validation("executionRoleArn must be an IAM role ARN.")
@@ -84,7 +81,8 @@ func (s *Service) StartJobRun(ctx context.Context, in *api.StartJobRunRequest) (
 
 	var out *api.StartJobRunResponse
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		previous, found, e := replay[api.StartJobRunResponse](tx, tk, hash)
+		previous, found, e := idempotency.Replay[api.StartJobRunResponse](tx, tk, in,
+			conflict("clientToken was already used with different parameters."))
 		if e != nil {
 			return e
 		}
@@ -141,7 +139,7 @@ func (s *Service) StartJobRun(ctx context.Context, in *api.StartJobRunRequest) (
 		}
 
 		out = &api.StartJobRunResponse{ApplicationId: a.ApplicationId, JobRunId: j.JobRunId, Arn: j.Arn}
-		return storage.Write(tx, tk, tokenRecord[api.StartJobRunResponse]{Hash: hash, Output: *out})
+		return idempotency.Remember(tx, tk, in, out)
 	})
 	return out, err
 }

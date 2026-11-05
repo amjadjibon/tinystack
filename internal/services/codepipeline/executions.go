@@ -10,6 +10,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/codepipeline"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -25,7 +26,6 @@ type executionRecord struct {
 	Revisions  map[string]api.SourceRevisionOverride
 	Actions    []actionRecord
 	Sources    []api.SourceRevision
-	Token      string
 	Scope      request.Scope
 	Execution  api.PipelineExecution
 	Pipeline   api.PipelineDeclaration
@@ -86,7 +86,6 @@ func (s *Service) start(
 		Artifacts: map[string]api.ArtifactDetail{},
 		Values:    map[string]string{"codepipeline.PipelineExecutionId": id},
 		Revisions: map[string]api.SourceRevisionOverride{},
-		Token:     common.Value(in.ClientRequestToken),
 	})
 
 	r.Execution = api.PipelineExecution{
@@ -183,16 +182,12 @@ func (s *Service) start(
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		rows, e := storage.Records[executionRecord](tx, scope.Prefix(serviceName, executionKind)+*in.Name+"/")
-		if e != nil {
+		token := idempotency.Key(scope, serviceName, "StartPipelineExecution/"+*in.Name, in.ClientRequestToken)
+		previous, found, e := idempotency.Replay[string](tx, token, in,
+			awserror.New("ConflictException", "ClientRequestToken was used with different parameters"))
+		if e != nil || found {
+			id = previous
 			return e
-		}
-
-		for _, old := range rows {
-			if r.Token != "" && old.Token == r.Token {
-				id = *old.Execution.PipelineExecutionId
-				return nil
-			}
 		}
 
 		created = true
@@ -201,7 +196,11 @@ func (s *Service) start(
 			return e
 		}
 
-		return storage.Write(tx, executionIndex+scope.AccountID+"/"+scope.Region+"/"+id, key)
+		if e := storage.Write(tx, executionIndex+scope.AccountID+"/"+scope.Region+"/"+id, key); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, token, in, id)
 	})
 	if err != nil {
 		return nil, err

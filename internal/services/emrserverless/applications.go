@@ -9,6 +9,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/emrserverless"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -21,15 +22,11 @@ func (s *Service) CreateApplication(
 		return nil, err
 	}
 
-	tk, err := tokenKey(scope, "create", in.ClientToken)
-	if err != nil {
-		return nil, err
+	if !clientTokenPattern.MatchString(common.Value(in.ClientToken)) {
+		return nil, awserror.Validation("clientToken must contain 1 to 64 characters.")
 	}
 
-	hash, err := requestHash(in)
-	if err != nil {
-		return nil, err
-	}
+	tk := idempotency.Key(scope, serviceName, "create", in.ClientToken)
 
 	id := common.RandomID(16)
 	a := api.Application{
@@ -76,7 +73,8 @@ func (s *Service) CreateApplication(
 
 	out := &api.CreateApplicationResponse{ApplicationId: a.ApplicationId, Name: a.Name, Arn: a.Arn}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		previous, found, e := replay[api.CreateApplicationResponse](tx, tk, hash)
+		previous, found, e := idempotency.Replay[api.CreateApplicationResponse](tx, tk, in,
+			conflict("clientToken was already used with different parameters."))
 		if e != nil {
 			return e
 		}
@@ -90,7 +88,7 @@ func (s *Service) CreateApplication(
 			return e
 		}
 
-		return storage.Write(tx, tk, tokenRecord[api.CreateApplicationResponse]{Hash: hash, Output: *out})
+		return idempotency.Remember(tx, tk, in, out)
 	})
 	return out, err
 }
@@ -126,19 +124,16 @@ func (s *Service) UpdateApplication(
 		return nil, err
 	}
 
-	tk, err := tokenKey(scope, "update/"+common.Value(in.ApplicationId), in.ClientToken)
-	if err != nil {
-		return nil, err
+	if !clientTokenPattern.MatchString(common.Value(in.ClientToken)) {
+		return nil, awserror.Validation("clientToken must contain 1 to 64 characters.")
 	}
 
-	hash, err := requestHash(in)
-	if err != nil {
-		return nil, err
-	}
+	tk := idempotency.Key(scope, serviceName, "update/"+common.Value(in.ApplicationId), in.ClientToken)
 
 	var out *api.UpdateApplicationResponse
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		previous, found, e := replay[api.UpdateApplicationResponse](tx, tk, hash)
+		previous, found, e := idempotency.Replay[api.UpdateApplicationResponse](tx, tk, in,
+			conflict("clientToken was already used with different parameters."))
 		if e != nil {
 			return e
 		}
@@ -195,7 +190,7 @@ func (s *Service) UpdateApplication(
 		}
 
 		out = &api.UpdateApplicationResponse{Application: a}
-		return storage.Write(tx, tk, tokenRecord[api.UpdateApplicationResponse]{Hash: hash, Output: *out})
+		return idempotency.Remember(tx, tk, in, out)
 	})
 	return out, err
 }
