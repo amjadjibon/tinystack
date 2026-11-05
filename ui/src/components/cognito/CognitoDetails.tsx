@@ -5,6 +5,7 @@ import {
 	Container,
 	FormField,
 	Header,
+	Hotspot,
 	Input,
 	Modal,
 	SpaceBetween,
@@ -28,6 +29,7 @@ import {
 import { errorText, stringMap } from "#/lib/consoleActions";
 import { mailbox } from "#/lib/mailbox";
 import { usePoll } from "#/lib/usePoll";
+import { HOTSPOT } from "#/tutorials/hotspots";
 import { DataTable } from "./CognitoTable";
 
 export function Field({
@@ -101,12 +103,14 @@ export function CognitoUsers({
 	}
 	return (
 		<SpaceBetween size="l">
-			<TextFilter
-				filteringText={query}
-				onChange={({ detail }) => setQuery(detail.filteringText)}
-				filteringAriaLabel="Search username, email or status"
-				filteringPlaceholder="Search username, email or status"
-			/>
+			<Hotspot hotspotId={HOTSPOT.cognitoUsers}>
+				<TextFilter
+					filteringText={query}
+					onChange={({ detail }) => setQuery(detail.filteringText)}
+					filteringAriaLabel="Search username, email or status"
+					filteringPlaceholder="Search username, email or status"
+				/>
+			</Hotspot>
 			<DataTable
 				title="Users"
 				poll={{
@@ -267,14 +271,16 @@ function UserDetail({
 					</SpaceBetween>
 				)}
 				<SpaceBetween direction="horizontal" size="xs">
-					<Button
-						disabled={!enabled || busy || !user.data}
-						onClick={() =>
-							run(() => cognitoCall(scope, "AdminConfirmSignUp", input))
-						}
-					>
-						Confirm
-					</Button>
+					<Hotspot hotspotId={HOTSPOT.cognitoConfirm}>
+						<Button
+							disabled={!enabled || busy || !user.data}
+							onClick={() =>
+								run(() => cognitoCall(scope, "AdminConfirmSignUp", input))
+							}
+						>
+							Confirm
+						</Button>
+					</Hotspot>
 					<Button
 						disabled={!enabled || busy || !user.data}
 						onClick={() =>

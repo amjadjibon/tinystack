@@ -1,5 +1,8 @@
+import { cloudformationFirstStack } from "./cloudformation-first-stack.ts";
+import { cognitoSignUp } from "./cognito-sign-up.ts";
 import { dynamodbFirstTable } from "./dynamodb-first-table.ts";
 import { eventbridgeSqsRule } from "./eventbridge-sqs-rule.ts";
+import { iamLeastPrivilege } from "./iam-least-privilege.ts";
 import { lambdaFirstFunction } from "./lambda-first-function.ts";
 import { s3FirstBucket } from "./s3-first-bucket.ts";
 import { secretsAndParameters } from "./secrets-and-parameters.ts";
@@ -13,4 +16,7 @@ export const tutorials = [
 	lambdaFirstFunction,
 	sfnFirstStateMachine,
 	secretsAndParameters,
+	iamLeastPrivilege,
+	cognitoSignUp,
+	cloudformationFirstStack,
 ];

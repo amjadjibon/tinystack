@@ -4,6 +4,7 @@ import {
 	Button,
 	FormField,
 	Header,
+	Hotspot,
 	Input,
 	KeyValuePairs,
 	Link,
@@ -31,6 +32,7 @@ import {
 import { useScope } from "#/lib/scope";
 import { useFollow } from "#/lib/useFollow";
 import { usePoll } from "#/lib/usePoll";
+import { HOTSPOT } from "#/tutorials/hotspots";
 
 export const Route = createFileRoute("/mailbox")({ component: Mailbox });
 function Mailbox() {
@@ -194,14 +196,16 @@ function Mailbox() {
 								>
 									Follow
 								</Toggle>
-								<Button
-									onClick={() => {
-										messages.reload();
-										deliveries.reload();
-									}}
-								>
-									Refresh
-								</Button>
+								<Hotspot hotspotId={HOTSPOT.mailboxRefresh}>
+									<Button
+										onClick={() => {
+											messages.reload();
+											deliveries.reload();
+										}}
+									>
+										Refresh
+									</Button>
+								</Hotspot>
 								<Button disabled={forbidden} onClick={() => setClear(true)}>
 									Clear mailbox
 								</Button>

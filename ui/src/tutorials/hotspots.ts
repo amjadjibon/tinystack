@@ -23,5 +23,17 @@ export const HOTSPOT = {
 	secretRead: "secretsmanager.read",
 	parameterCreate: "ssm.create",
 	parameterRead: "ssm.read",
+	iamCreate: "iam.create-role",
+	iamInline: "iam.inline-policy",
+	iamSimulate: "iam.simulate",
+	cognitoPool: "cognito.create-pool",
+	cognitoClient: "cognito.create-client",
+	cognitoUsers: "cognito.users",
+	cognitoConfirm: "cognito.confirm",
+	mailboxRefresh: "mailbox.refresh",
+	cfnCreate: "cloudformation.create",
+	cfnEvents: "cloudformation.events",
+	cfnOutputs: "cloudformation.outputs",
+	cfnUpdate: "cloudformation.update",
 } as const;
 export type HotspotId = (typeof HOTSPOT)[keyof typeof HOTSPOT];

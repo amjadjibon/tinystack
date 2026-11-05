@@ -3,6 +3,7 @@ import {
 	Button,
 	Checkbox,
 	FormField,
+	Hotspot,
 	Input,
 	SpaceBetween,
 	Textarea,
@@ -25,6 +26,7 @@ import {
 	templateInput,
 } from "#/lib/cloudformationHelpers";
 import { tagList } from "#/lib/tags";
+import { HOTSPOT } from "#/tutorials/hotspots";
 
 export function StackEditor({
 	scope,
@@ -40,9 +42,19 @@ export function StackEditor({
 	const [open, setOpen] = useState(false);
 	return (
 		<>
-			<Button disabled={disabled} onClick={() => setOpen(true)}>
-				{stack ? "Update stack" : "Create stack"}
-			</Button>
+			{stack ? (
+				<Hotspot hotspotId={HOTSPOT.cfnUpdate}>
+					<Button disabled={disabled} onClick={() => setOpen(true)}>
+						{stack ? "Update stack" : "Create stack"}
+					</Button>
+				</Hotspot>
+			) : (
+				<Hotspot hotspotId={HOTSPOT.cfnCreate}>
+					<Button disabled={disabled} onClick={() => setOpen(true)}>
+						{stack ? "Update stack" : "Create stack"}
+					</Button>
+				</Hotspot>
+			)}
 			{open && (
 				<Editor
 					scope={scope}

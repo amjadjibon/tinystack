@@ -1,6 +1,7 @@
 import {
 	Button,
 	Header,
+	Hotspot,
 	Link,
 	SpaceBetween,
 	Table,
@@ -20,6 +21,7 @@ import {
 	policyText,
 } from "#/lib/iam";
 import { useFollow } from "#/lib/useFollow";
+import { HOTSPOT } from "#/tutorials/hotspots";
 import type { IAMActions } from "./IAMForm";
 
 type PolicyRow = {
@@ -174,9 +176,11 @@ export function IAMPermissions({
 							>
 								Remove
 							</Button>
-							<Button disabled={!enabled} onClick={() => editInline()}>
-								Create inline policy
-							</Button>
+							<Hotspot hotspotId={HOTSPOT.iamInline}>
+								<Button disabled={!enabled} onClick={() => editInline()}>
+									Create inline policy
+								</Button>
+							</Hotspot>
 							<Button
 								disabled={!enabled || !available.length}
 								onClick={() => {

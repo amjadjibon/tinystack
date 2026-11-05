@@ -8,6 +8,7 @@ import {
 	ExpandableSection,
 	FormField,
 	Header,
+	Hotspot,
 	Input,
 	Pagination,
 	SegmentedControl,
@@ -34,6 +35,7 @@ import {
 	type SimulationEvaluationResult,
 	validatePolicyJson,
 } from "#/lib/simulator";
+import { HOTSPOT } from "#/tutorials/hotspots";
 import { IAMSelection } from "./IAMSelection";
 
 export function SimulationDecisionStatus({ decision }: { decision?: string }) {
@@ -305,13 +307,15 @@ export function IAMSimulator({
 				variant="h1"
 				description="Test and debug IAM policies, permissions boundaries, resource policies, and request conditions."
 				actions={
-					<Button
-						variant="primary"
-						loading={simulating}
-						onClick={runSimulation}
-					>
-						Run simulation
-					</Button>
+					<Hotspot hotspotId={HOTSPOT.iamSimulate}>
+						<Button
+							variant="primary"
+							loading={simulating}
+							onClick={runSimulation}
+						>
+							Run simulation
+						</Button>
+					</Hotspot>
 				}
 			>
 				Policy simulator

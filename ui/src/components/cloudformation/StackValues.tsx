@@ -1,9 +1,10 @@
-import { Box, Header, Table } from "@cloudscape-design/components";
+import { Box, Header, Hotspot, Table } from "@cloudscape-design/components";
 import {
 	noEchoValue,
 	type StackOutput,
 	type StackParameter,
 } from "#/lib/cloudformationHelpers";
+import { HOTSPOT } from "#/tutorials/hotspots";
 
 const empty = (text: string) => (
 	<Box textAlign="center" padding="l">
@@ -13,32 +14,34 @@ const empty = (text: string) => (
 
 export function StackOutputs({ outputs }: { outputs: StackOutput[] }) {
 	return (
-		<Table
-			items={outputs}
-			trackBy="OutputKey"
-			variant="embedded"
-			header={<Header counter={`(${outputs.length})`}>Outputs</Header>}
-			empty={empty("This stack has no outputs.")}
-			columnDefinitions={[
-				{
-					id: "key",
-					header: "Key",
-					isRowHeader: true,
-					cell: (o) => o.OutputKey,
-				},
-				{ id: "value", header: "Value", cell: (o) => o.OutputValue ?? "—" },
-				{
-					id: "description",
-					header: "Description",
-					cell: (o) => o.Description ?? "—",
-				},
-				{
-					id: "export",
-					header: "Export name",
-					cell: (o) => o.ExportName ?? "—",
-				},
-			]}
-		/>
+		<Hotspot hotspotId={HOTSPOT.cfnOutputs}>
+			<Table
+				items={outputs}
+				trackBy="OutputKey"
+				variant="embedded"
+				header={<Header counter={`(${outputs.length})`}>Outputs</Header>}
+				empty={empty("This stack has no outputs.")}
+				columnDefinitions={[
+					{
+						id: "key",
+						header: "Key",
+						isRowHeader: true,
+						cell: (o) => o.OutputKey,
+					},
+					{ id: "value", header: "Value", cell: (o) => o.OutputValue ?? "—" },
+					{
+						id: "description",
+						header: "Description",
+						cell: (o) => o.Description ?? "—",
+					},
+					{
+						id: "export",
+						header: "Export name",
+						cell: (o) => o.ExportName ?? "—",
+					},
+				]}
+			/>
+		</Hotspot>
 	);
 }
 

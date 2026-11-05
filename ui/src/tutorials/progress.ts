@@ -72,6 +72,13 @@ export function fresh(id: string): Progress {
 			execution: name,
 			secret: name,
 			parameter: name,
+			role: name,
+			policy: name,
+			pool: name,
+			client: name,
+			username: name,
+			email: `${name}@example.test`,
+			stack: name,
 		},
 	};
 }

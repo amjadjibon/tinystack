@@ -3,6 +3,7 @@ import {
 	Button,
 	Checkbox,
 	FormField,
+	Hotspot,
 	Input,
 	Multiselect,
 	Select,
@@ -26,6 +27,7 @@ import {
 	poolUpdateKeys,
 } from "#/lib/cognitoHelpers";
 import { usePoll } from "#/lib/usePoll";
+import { HOTSPOT } from "#/tutorials/hotspots";
 
 export const poolFields: CognitoField[] = [
 	{ key: "PoolName", label: "Pool name", required: true },
@@ -253,13 +255,15 @@ export function PoolActions({
 	const [mode, setMode] = useState("");
 	return (
 		<SpaceBetween direction="horizontal" size="s">
-			<Button
-				variant={scope.id ? "normal" : "primary"}
-				disabled={!enabled || (!!scope.id && !pool)}
-				onClick={() => setMode(scope.id ? "edit" : "create")}
-			>
-				{scope.id ? "Edit pool" : "Create user pool"}
-			</Button>
+			<Hotspot hotspotId={HOTSPOT.cognitoPool}>
+				<Button
+					variant={scope.id ? "normal" : "primary"}
+					disabled={!enabled || (!!scope.id && !pool)}
+					onClick={() => setMode(scope.id ? "edit" : "create")}
+				>
+					{scope.id ? "Edit pool" : "Create user pool"}
+				</Button>
+			</Hotspot>
 			{!!scope.id && (
 				<Button disabled={!enabled || !pool} onClick={() => setMode("delete")}>
 					Delete pool

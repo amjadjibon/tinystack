@@ -33,7 +33,10 @@ test("definitions and rendered hotspot registry are complete", () => {
 			assert.ok(task.steps.length);
 			for (const s of task.steps) {
 				assert.ok(
-					s.title && s.content && s.route.startsWith("/services/") && s.command,
+					s.title &&
+						s.content &&
+						(s.route.startsWith("/services/") || s.route === "/mailbox") &&
+						s.command,
 				);
 				assert.ok(Object.values(HOTSPOT).includes(s.hotspotId));
 				ids.add(s.hotspotId);
@@ -574,4 +577,304 @@ test("runtime tutorials receive generated names", () => {
 	const n = fresh("lambda-first-function").names;
 	for (const key of ["function", "machine", "execution", "secret", "parameter"])
 		assert.match(n[key], /^tutorial-lambda-first-function-[a-f0-9]{4}$/);
+});
+
+const t3ctx: Context = {
+	...ctx,
+	names: { ...ctx.names, ...fresh("t3-records").names },
+};
+function t3fixture(): Snapshot {
+	const c = t3ctx,
+		n = c.names,
+		s = emptySnapshot();
+	const poolArn = arn("cognito-idp", "userpool/us-east-1_pool", c);
+	s.resources.push(
+		{
+			service: "iam",
+			type: "role",
+			account: c.account,
+			region: "",
+			name: n.role,
+			arn: `arn:aws:iam::${c.account}:role/${n.role}`,
+			details: { InlinePolicies: [n.policy] },
+		},
+		{
+			service: "cognitoidp",
+			type: "user-pool",
+			account: c.account,
+			region: c.region,
+			name: n.pool,
+			arn: poolArn,
+			details: { Id: "us-east-1_pool", Clients: 1, Users: 1 },
+		},
+		{
+			service: "cloudformation",
+			type: "stack",
+			account: c.account,
+			region: c.region,
+			name: n.stack,
+			arn: arn("cloudformation", `stack/${n.stack}/id`, c),
+			details: { Status: "CREATE_COMPLETE" },
+		},
+	);
+	s.messages.push({
+		id: "mail",
+		time: "",
+		service: "cognito-idp",
+		channel: "email",
+		account: c.account,
+		region: c.region,
+		source: poolArn,
+		to: n.email,
+		subject: "Your verification code",
+		body: "Your verification code is 123456. ",
+	});
+	const request = (
+		service: string,
+		operation: string,
+		input: Record<string, unknown>,
+		output: Record<string, unknown>,
+	) =>
+		s.requests.push({
+			...fixture("read").requests[0],
+			service,
+			operation,
+			request_body: JSON.stringify({ input }),
+			response_body: JSON.stringify({ output }),
+		});
+	request(
+		"iam",
+		"PutRolePolicy",
+		{
+			RoleName: n.role,
+			PolicyName: n.policy,
+			PolicyDocument: JSON.stringify({
+				Version: "2012-10-17",
+				Statement: [
+					{
+						Effect: "Allow",
+						Action: "s3:GetObject",
+						Resource: `arn:aws:s3:::${n.bucket}/${n.key}`,
+					},
+				],
+			}),
+		},
+		{},
+	);
+	request(
+		"iam",
+		"SimulatePrincipalPolicy",
+		{ PolicySourceArn: `arn:aws:iam::${c.account}:role/${n.role}` },
+		{
+			EvaluationResults: [
+				{
+					EvalActionName: "s3:GetObject",
+					EvalResourceName: `arn:aws:s3:::${n.bucket}/${n.key}`,
+					EvalDecision: "allowed",
+				},
+				{
+					EvalActionName: "s3:DeleteObject",
+					EvalResourceName: `arn:aws:s3:::${n.bucket}/${n.key}`,
+					EvalDecision: "implicitDeny",
+				},
+			],
+		},
+	);
+	request(
+		"cloudformation",
+		"DescribeStacks",
+		{ StackName: s.resources[2].arn },
+		{
+			Stacks: [
+				{
+					StackName: n.stack,
+					Outputs: [
+						{
+							OutputKey: "QueueUrl",
+							OutputValue: `http://localhost:4702/${c.account}/${n.queue}`,
+						},
+					],
+				},
+			],
+		},
+	);
+	return s;
+}
+for (const kind of [
+	"iamRole",
+	"iamPolicy",
+	"iamSimulation",
+	"cognitoPool",
+	"cognitoClient",
+	"cognitoSignup",
+	"cognitoMail",
+	"cfnStack",
+	"cfnCreated",
+	"cfnOutputs",
+	"cfnUpdated",
+] as const) {
+	test(`${kind}: observed record shape, absent, wrong scope and generated names`, () => {
+		const s = t3fixture();
+		if (kind === "cfnUpdated")
+			s.resources[2].details = { Status: "UPDATE_COMPLETE" };
+		assert.ok(check(kind, s, t3ctx));
+		assert.equal(check(kind, emptySnapshot(), t3ctx), false);
+		assert.equal(check(kind, s, { ...t3ctx, account: "111111111111" }), false);
+		assert.equal(
+			check(kind, s, {
+				...t3ctx,
+				names: Object.fromEntries(
+					Object.keys(t3ctx.names).map((k) => [k, "other"]),
+				),
+			}),
+			false,
+		);
+		// IAM inventory and console calls are global; selected Region does not partition them.
+		assert.equal(
+			check(kind, s, { ...t3ctx, region: "eu-west-1" }),
+			["iamRole", "iamPolicy", "iamSimulation"].includes(kind),
+		);
+		if (kind === "iamRole") {
+			s.resources[0].region = t3ctx.region;
+			assert.equal(check(kind, s, t3ctx), false);
+		}
+		if (["iamPolicy", "iamSimulation", "cfnOutputs"].includes(kind)) {
+			for (const r of s.requests) r.status = 403;
+			assert.equal(check(kind, s, t3ctx), false);
+		}
+	});
+}
+test("redacted Cognito confirmation cannot complete from unrelated successes", () => {
+	const s = t3fixture();
+	for (const operation of ["SignUp", "ConfirmSignUp", "AdminGetUser"])
+		s.requests.push({
+			...fixture("read").requests[0],
+			service: "cognitoidp",
+			operation,
+			request_body: "(redacted: this operation carries sensitive values)",
+			response_body: "(redacted: this operation carries sensitive values)",
+		});
+	assert.equal(check("cognitoConfirmed", s, t3ctx), false);
+	const pool = s.resources[1];
+	pool.details = { Clients: 0, Users: 0 };
+	assert.equal(check("cognitoClient", s, t3ctx), false);
+	assert.equal(check("cognitoSignup", s, t3ctx), false);
+	s.messages[0].source = arn("cognito-idp", "userpool/another", t3ctx);
+	assert.equal(check("cognitoMail", s, t3ctx), false);
+});
+test("IAM simulation requires both decisions on the exact object and a narrow policy", () => {
+	const s = t3fixture();
+	s.requests[1].response_body = JSON.stringify({
+		output: {
+			EvaluationResults: [
+				{
+					EvalActionName: "s3:GetObject",
+					EvalResourceName: `arn:aws:s3:::${t3ctx.names.bucket}/${t3ctx.names.key}`,
+					EvalDecision: "allowed",
+				},
+			],
+		},
+	});
+	assert.equal(check("iamSimulation", s, t3ctx), false);
+	const input = JSON.parse(s.requests[0].request_body).input;
+	input.PolicyDocument = JSON.stringify({
+		Statement: [{ Effect: "Allow", Action: "*", Resource: "*" }],
+	});
+	s.requests[0].request_body = JSON.stringify({ input });
+	assert.equal(check("iamPolicy", s, t3ctx), false);
+});
+test("T3 cleanup deletes the generated inline policy before the role, and only its pool and stack", async () => {
+	const calls: {
+		service: string;
+		operation: string;
+		input: Record<string, unknown>;
+	}[] = [];
+	const call = async <T>(
+		service: string,
+		operation: string,
+		input: Record<string, unknown>,
+	): Promise<T> => {
+		calls.push({ service, operation, input });
+		if (operation === "ListUserPools")
+			return (
+				input.NextToken
+					? { UserPools: [{ Name: t3ctx.names.pool, Id: "generated-pool" }] }
+					: {
+							UserPools: [{ Name: "unrelated", Id: "other" }],
+							NextToken: "next",
+						}
+			) as T;
+		return {} as T;
+	};
+	for (const id of [
+		"iam-least-privilege",
+		"cognito-sign-up",
+		"cloudformation-first-stack",
+	]) {
+		const tutorial = tutorials.find((t) => t.id === id);
+		assert.ok(tutorial);
+		for (const step of await tutorial.cleanup(t3ctx, call)) await step.run();
+	}
+	assert.deepEqual(calls, [
+		{
+			service: "iam",
+			operation: "DeleteRolePolicy",
+			input: { RoleName: t3ctx.names.role, PolicyName: t3ctx.names.policy },
+		},
+		{
+			service: "iam",
+			operation: "DeleteRole",
+			input: { RoleName: t3ctx.names.role },
+		},
+		{
+			service: "cognitoidp",
+			operation: "ListUserPools",
+			input: { MaxResults: 60 },
+		},
+		{
+			service: "cognitoidp",
+			operation: "ListUserPools",
+			input: { MaxResults: 60, NextToken: "next" },
+		},
+		{
+			service: "cognitoidp",
+			operation: "DeleteUserPool",
+			input: { UserPoolId: "generated-pool" },
+		},
+		{
+			service: "cloudformation",
+			operation: "DeleteStack",
+			input: { StackName: t3ctx.names.stack },
+		},
+	]);
+});
+
+test("Query protocol IAM writes, simulation and CloudFormation outputs match wire records", () => {
+	const s = t3fixture(),
+		n = t3ctx.names;
+	const policy = JSON.parse(s.requests[0].request_body).input;
+	s.requests[0].request_body = new URLSearchParams(policy).toString();
+	assert.ok(check("iamPolicy", s, t3ctx));
+	s.requests[1].request_body = new URLSearchParams({
+		PolicySourceArn: `arn:aws:iam::${t3ctx.account}:role/${n.role}`,
+	}).toString();
+	const result = (action: string, decision: string) =>
+		`<member><EvalActionName>${action}</EvalActionName><EvalResourceName>arn:aws:s3:::${n.bucket}/${n.key}</EvalResourceName><EvalDecision>${decision}</EvalDecision></member>`;
+	s.requests[1].response_body = `<SimulatePrincipalPolicyResponse><EvaluationResults>${result("s3:GetObject", "allowed")}${result("s3:DeleteObject", "implicitDeny")}</EvaluationResults></SimulatePrincipalPolicyResponse>`;
+	assert.ok(check("iamSimulation", s, t3ctx));
+	s.requests[1].response_body = s.requests[1].response_body.replace(
+		"implicitDeny",
+		"allowed",
+	);
+	assert.equal(check("iamSimulation", s, t3ctx), false);
+	s.requests[2].request_body = new URLSearchParams({
+		StackName: n.stack,
+	}).toString();
+	s.requests[2].response_body = `<DescribeStacksResponse><Stacks><member><StackName>${n.stack}</StackName><Outputs><member><OutputKey>QueueUrl</OutputKey><OutputValue>http://localhost:4702/${t3ctx.account}/${n.queue}</OutputValue></member></Outputs></member></Stacks></DescribeStacksResponse>`;
+	assert.ok(check("cfnOutputs", s, t3ctx));
+	s.requests[2].response_body = s.requests[2].response_body.replace(
+		n.queue,
+		"other",
+	);
+	assert.equal(check("cfnOutputs", s, t3ctx), false);
 });

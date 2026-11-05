@@ -1,6 +1,7 @@
 import {
 	Alert,
 	Button,
+	Hotspot,
 	Link,
 	SpaceBetween,
 } from "@cloudscape-design/components";
@@ -16,6 +17,7 @@ import {
 import { clientUpdateKeys, editableSettings } from "#/lib/cognitoHelpers";
 import { errorText } from "#/lib/consoleActions";
 import { usePoll } from "#/lib/usePoll";
+import { HOTSPOT } from "#/tutorials/hotspots";
 import { CognitoForm, clientFields } from "./CognitoManagement";
 import { DataTable } from "./CognitoTable";
 export function CognitoClients({
@@ -49,15 +51,17 @@ export function CognitoClients({
 		<SpaceBetween size="l">
 			<DataTable
 				actions={
-					<Button
-						disabled={!enabled}
-						onClick={() => {
-							setSelected(undefined);
-							setMode("create");
-						}}
-					>
-						Create app client
-					</Button>
+					<Hotspot hotspotId={HOTSPOT.cognitoClient}>
+						<Button
+							disabled={!enabled}
+							onClick={() => {
+								setSelected(undefined);
+								setMode("create");
+							}}
+						>
+							Create app client
+						</Button>
+					</Hotspot>
 				}
 				title="App clients"
 				poll={clients}

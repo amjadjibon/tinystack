@@ -8,6 +8,7 @@ import {
 	ContentLayout,
 	Flashbar,
 	Header,
+	Hotspot,
 	KeyValuePairs,
 	Link,
 	Pagination,
@@ -33,6 +34,7 @@ import {
 } from "#/lib/iam";
 import { useScope } from "#/lib/scope";
 import { useFollow } from "#/lib/useFollow";
+import { HOTSPOT } from "#/tutorials/hotspots";
 
 type IAMSearch = {
 	section: IAMSection;
@@ -360,9 +362,15 @@ function IAMList({
 								ariaLabel="Refresh IAM resources"
 								onClick={onRefresh}
 							/>
-							<Button variant="primary" disabled={!enabled} onClick={onCreate}>
-								Create {iamLabels[kind].singular.toLowerCase()}
-							</Button>
+							<Hotspot hotspotId={HOTSPOT.iamCreate}>
+								<Button
+									variant="primary"
+									disabled={!enabled}
+									onClick={onCreate}
+								>
+									Create {iamLabels[kind].singular.toLowerCase()}
+								</Button>
+							</Hotspot>
 						</SpaceBetween>
 					}
 				>

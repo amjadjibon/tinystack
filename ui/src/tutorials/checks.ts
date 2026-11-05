@@ -35,7 +35,19 @@ export type Check =
 	| "secret"
 	| "secretValue"
 	| "parameter"
-	| "parameterValue";
+	| "parameterValue"
+	| "iamRole"
+	| "iamPolicy"
+	| "iamSimulation"
+	| "cognitoPool"
+	| "cognitoClient"
+	| "cognitoSignup"
+	| "cognitoMail"
+	| "cognitoConfirmed"
+	| "cfnStack"
+	| "cfnCreated"
+	| "cfnOutputs"
+	| "cfnUpdated";
 export const sources: Record<Check, (keyof Snapshot)[]> = {
 	bucket: ["resources"],
 	object: ["requests"],
@@ -61,6 +73,18 @@ export const sources: Record<Check, (keyof Snapshot)[]> = {
 	secretValue: ["resources", "requests"],
 	parameter: ["resources"],
 	parameterValue: ["requests"],
+	iamRole: ["resources"],
+	iamPolicy: ["resources", "requests"],
+	iamSimulation: ["requests"],
+	cognitoPool: ["resources"],
+	cognitoClient: ["resources"],
+	cognitoSignup: ["resources", "messages"],
+	cognitoMail: ["resources", "messages"],
+	cognitoConfirmed: [],
+	cfnStack: ["resources"],
+	cfnCreated: ["resources"],
+	cfnOutputs: ["resources", "requests"],
+	cfnUpdated: ["resources"],
 };
 export const emptySnapshot = (): Snapshot => ({
 	resources: [],
@@ -125,7 +149,7 @@ function successful(
 	return s.requests.some((r) => {
 		if (
 			r.account !== c.account ||
-			r.region !== c.region ||
+			(service !== "iam" && r.region !== c.region) ||
 			r.service !== service ||
 			r.operation !== operation ||
 			r.status < 200 ||
@@ -133,7 +157,9 @@ function successful(
 			r.error_code
 		)
 			return false;
-		const body = json(r.request_body);
+		const body = r.request_body.trimStart().startsWith("{")
+			? json(r.request_body)
+			: Object.fromEntries(new URLSearchParams(r.request_body));
 		const input =
 			body.input && typeof body.input === "object"
 				? (body.input as Record<string, unknown>)
@@ -147,6 +173,21 @@ function output(r: RequestRecord): Record<string, unknown> {
 	return body.output && typeof body.output === "object"
 		? (body.output as Record<string, unknown>)
 		: body;
+}
+/** IAM inventory is global; regional records never stand in for a global role. */
+function tutorialRole(s: Snapshot, c: Context) {
+	return s.resources.find(
+		(r) =>
+			r.service === "iam" &&
+			r.type === "role" &&
+			r.account === c.account &&
+			r.region === "" &&
+			r.name === c.names.role,
+	);
+}
+function tutorialPool(s: Snapshot, c: Context) {
+	const r = resource(s, c, "cognitoidp", c.names.pool);
+	return r?.type === "user-pool" ? r : undefined;
 }
 export function check(kind: Check, s: Snapshot, c: Context): boolean {
 	const n = c.names;
@@ -290,5 +331,147 @@ export function check(kind: Check, s: Snapshot, c: Context): boolean {
 						target.slice(0, target.lastIndexOf(":")) === n.parameter)
 				);
 			});
+		case "iamRole":
+			return !!tutorialRole(s, c);
+		case "iamPolicy": {
+			const policies = tutorialRole(s, c)?.details?.InlinePolicies;
+			return (
+				Array.isArray(policies) &&
+				policies.includes(n.policy) &&
+				successful(s, c, "iam", "PutRolePolicy", (_, i) => {
+					const doc = json(String(i.PolicyDocument ?? ""));
+					const statements = doc.Statement;
+					if (!Array.isArray(statements) || statements.length !== 1)
+						return false;
+					const st = statements[0];
+					return (
+						!!st &&
+						typeof st === "object" &&
+						i.RoleName === n.role &&
+						i.PolicyName === n.policy &&
+						st.Effect === "Allow" &&
+						st.Action === "s3:GetObject" &&
+						st.Resource === `arn:aws:s3:::${n.bucket}/${n.key}`
+					);
+				})
+			);
+		}
+		case "iamSimulation":
+			return successful(s, c, "iam", "SimulatePrincipalPolicy", (r, i) => {
+				if (i.PolicySourceArn !== `arn:aws:iam::${c.account}:role/${n.role}`)
+					return false;
+				const results = output(r).EvaluationResults;
+				if (!Array.isArray(results)) {
+					const rows = r.response_body.split("<EvalActionName>").slice(1);
+					const target = `arn:aws:s3:::${n.bucket}/${n.key}`;
+					return (
+						rows.some(
+							(row) =>
+								row.startsWith("s3:GetObject</EvalActionName>") &&
+								row.includes(
+									`<EvalResourceName>${target}</EvalResourceName>`,
+								) &&
+								row.includes("<EvalDecision>allowed</EvalDecision>"),
+						) &&
+						rows.some(
+							(row) =>
+								row.startsWith("s3:DeleteObject</EvalActionName>") &&
+								row.includes(
+									`<EvalResourceName>${target}</EvalResourceName>`,
+								) &&
+								row.includes("<EvalDecision>implicitDeny</EvalDecision>"),
+						)
+					);
+				}
+				const target = `arn:aws:s3:::${n.bucket}/${n.key}`;
+				return (
+					results.some(
+						(e) =>
+							e.EvalActionName === "s3:GetObject" &&
+							e.EvalResourceName === target &&
+							e.EvalDecision === "allowed",
+					) &&
+					results.some(
+						(e) =>
+							e.EvalActionName === "s3:DeleteObject" &&
+							e.EvalResourceName === target &&
+							e.EvalDecision === "implicitDeny",
+					)
+				);
+			});
+		case "cognitoPool":
+			return !!tutorialPool(s, c);
+		// Client creation is redacted; inventory exposes only the pool's client count.
+		case "cognitoClient":
+			return Number(tutorialPool(s, c)?.details?.Clients ?? 0) > 0;
+		case "cognitoSignup":
+		case "cognitoMail": {
+			const pool = tutorialPool(s, c);
+			return (
+				!!pool &&
+				(kind === "cognitoMail" || Number(pool.details?.Users ?? 0) > 0) &&
+				s.messages.some(
+					(m) =>
+						m.service === "cognito-idp" &&
+						m.channel === "email" &&
+						m.account === c.account &&
+						m.region === c.region &&
+						m.source === pool.arn &&
+						m.to === n.email &&
+						m.subject === "Your verification code" &&
+						/\b\d{6}\b/.test(m.body ?? ""),
+				)
+			);
+		}
+		// Confirmation status is not in inventory; every user-read and confirmation
+		// request is redacted. Fail closed: the instructions require manual Next.
+		case "cognitoConfirmed":
+			return false;
+		case "cfnStack":
+			return resource(s, c, "cloudformation", n.stack)?.type === "stack";
+		case "cfnCreated":
+			return (
+				resource(s, c, "cloudformation", n.stack)?.details?.Status ===
+				"CREATE_COMPLETE"
+			);
+		case "cfnUpdated":
+			return (
+				resource(s, c, "cloudformation", n.stack)?.details?.Status ===
+				"UPDATE_COMPLETE"
+			);
+		case "cfnOutputs": {
+			const stack = resource(s, c, "cloudformation", n.stack);
+			return (
+				!!stack &&
+				successful(s, c, "cloudformation", "DescribeStacks", (r, i) => {
+					if (i.StackName !== n.stack && i.StackName !== stack.arn)
+						return false;
+					const stacks = output(r).Stacks;
+					if (!Array.isArray(stacks)) {
+						const values = r.response_body.match(
+							/<OutputKey>QueueUrl<\/OutputKey>\s*<OutputValue>([^<]+)<\/OutputValue>/,
+						);
+						return (
+							r.response_body.includes(`<StackName>${n.stack}</StackName>`) &&
+							!!values?.[1].endsWith(`/${c.account}/${n.queue}`)
+						);
+					}
+
+					return (
+						Array.isArray(stacks) &&
+						stacks.some(
+							(st) =>
+								st.StackName === n.stack &&
+								Array.isArray(st.Outputs) &&
+								st.Outputs.some(
+									(o: { OutputKey?: string; OutputValue?: string }) =>
+										o.OutputKey === "QueueUrl" &&
+										o.OutputValue?.endsWith(`/${c.account}/${n.queue}`),
+								),
+						)
+					);
+				})
+			);
+		}
 	}
 }
