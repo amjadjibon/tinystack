@@ -290,7 +290,8 @@ func (s *Service) UpdateAddon(ctx context.Context, in *api.UpdateAddonRequest) (
 
 			a.Addon.ModifiedAt = common.SecondsMilli(s.now().UTC())
 			var mutationErr error
-			if out, mutationErr = s.record(tx, scope, c.Name, "", *a.Addon.AddonName, "AddonUpdate", params); mutationErr != nil {
+			out, mutationErr = s.record(tx, scope, c.Name, "", *a.Addon.AddonName, "AddonUpdate", params)
+			if mutationErr != nil {
 				return mutationErr
 			}
 

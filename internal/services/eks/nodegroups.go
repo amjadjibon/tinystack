@@ -452,7 +452,8 @@ func (s *Service) UpdateNodegroupConfig(
 			}
 
 			n.Group.ModifiedAt = common.SecondsMilli(s.now().UTC())
-			if out, mutationErr = s.record(tx, scope, c.Name, *n.Group.NodegroupName, "", "ConfigUpdate", params); mutationErr != nil {
+			out, mutationErr = s.record(tx, scope, c.Name, *n.Group.NodegroupName, "", "ConfigUpdate", params)
+			if mutationErr != nil {
 				return mutationErr
 			}
 
@@ -602,7 +603,8 @@ func (s *Service) UpdateNodegroupVersion(
 			g.ModifiedAt = common.SecondsMilli(s.now().UTC())
 			params := []api.UpdateParam{param("Version", version), param("ReleaseVersion", *g.ReleaseVersion)}
 			var mutationErr error
-			if out, mutationErr = s.record(tx, scope, c.Name, *g.NodegroupName, "", "VersionUpdate", params); mutationErr != nil {
+			out, mutationErr = s.record(tx, scope, c.Name, *g.NodegroupName, "", "VersionUpdate", params)
+			if mutationErr != nil {
 				return mutationErr
 			}
 
