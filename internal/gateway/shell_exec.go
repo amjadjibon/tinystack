@@ -16,13 +16,13 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 	"unicode/utf8"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/config"
+	"github.com/amjadjibon/tinystack/internal/services/hostprocess"
 )
 
 const (
@@ -232,8 +232,11 @@ func shellProcess(ctx context.Context, binary string, args, env []string, dir st
 	// #nosec G204 -- only the resolved AWS CLI/completer executes, without a shell, after console authentication.
 	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Env, cmd.Dir = env, dir
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.Cancel = func() error { return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL) }
+	hostprocess.Configure(cmd)
+	cmd.Cancel = func() error {
+		hostprocess.Kill(cmd)
+		return nil
+	}
 	cmd.WaitDelay = time.Second
 	// A nil Stdin is connected to the null device by os/exec.
 	return cmd
@@ -312,7 +315,7 @@ func (s *Server) runShell(w http.ResponseWriter, r *http.Request, c *call, in *s
 	}
 
 	if cmd.Process != nil {
-		_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+		hostprocess.Kill(cmd)
 	}
 
 	if stream.capped {
@@ -352,7 +355,7 @@ func (s *Server) completeShell(w http.ResponseWriter, r *http.Request, line, bin
 		}
 
 		if cmd.Process != nil {
-			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+			hostprocess.Kill(cmd)
 		}
 	}
 
