@@ -11,6 +11,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/mediaconvert"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -46,19 +47,32 @@ func (s *Service) CreateJob(ctx context.Context, in *api.CreateJobRequest) (*api
 			return err
 		}
 
-		if in.ClientRequestToken != nil {
-			prior, err := storage.Records[record](tx, scope.Prefix(serviceName, kindJob))
-			if err != nil {
-				return err
+		tokenKey := idempotency.Key(scope, serviceName, "CreateJob", in.ClientRequestToken)
+		if tokenKey != "" {
+			expiry, exists, expiryErr := storage.Read[time.Time](tx, tokenKey+"/expires")
+			if expiryErr != nil {
+				return expiryErr
 			}
 
-			for _, p := range prior {
-				if common.Value(p.Job.ClientRequestToken) == *in.ClientRequestToken &&
-					common.Unix(time.Now())-p.Created < 60 {
-					r = p
-					return nil
-				}
+			if exists && !time.Now().Before(*expiry) {
+				tx.Delete(tokenKey)
+				tx.Delete(tokenKey + "/expires")
 			}
+		}
+
+		previous, replayed, replayErr := idempotency.Replay[*record](
+			tx,
+			tokenKey,
+			in,
+			invalid("ClientRequestToken was already used with different parameters"),
+		)
+		if replayErr != nil {
+			return replayErr
+		}
+
+		if replayed {
+			r = previous
+			return nil
 		}
 
 		settings := common.Clone(in.Settings)
@@ -121,7 +135,17 @@ func (s *Service) CreateJob(ctx context.Context, in *api.CreateJobRequest) (*api
 		}
 
 		created = true
-		return storage.Write(tx, indexKey(scope, id), &jobIndex{Scope: scope, ID: id})
+		if writeErr := storage.Write(tx, indexKey(scope, id), &jobIndex{Scope: scope, ID: id}); writeErr != nil {
+			return writeErr
+		}
+
+		if tokenKey != "" {
+			if writeErr := storage.Write(tx, tokenKey+"/expires", time.Now().Add(time.Minute)); writeErr != nil {
+				return writeErr
+			}
+		}
+
+		return idempotency.Remember(tx, tokenKey, in, r)
 	})
 	if err != nil {
 		return nil, err

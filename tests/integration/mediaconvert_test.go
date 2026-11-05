@@ -455,6 +455,10 @@ func TestMediaConvertResourcesAndLists(t *testing.T) {
 	if *again.Job.Id != *job.Job.Id {
 		t.Fatal("idempotency")
 	}
+	changed := *input
+	changed.UserMetadata = map[string]string{"request": "changed"}
+	_, err = c.CreateJob(ctx, &changed)
+	mediaError(t, err, "BadRequestException")
 
 	_, err = c.DeleteQueue(ctx, &sdk.DeleteQueueInput{Name: new("alpha")})
 	mediaError(t, err, "BadRequestException")
