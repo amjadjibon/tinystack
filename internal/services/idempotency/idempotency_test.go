@@ -35,19 +35,19 @@ func TestReplayWindowAndFingerprint(t *testing.T) {
 	}
 
 	err = store.View(context.Background(), func(tx storage.ReadTx) error {
-		result, found, err := Replay[string](tx, live, input, mismatch)
-		if err != nil || !found || result != "original" {
-			t.Fatalf("replay: %q %v %v", result, found, err)
+		result, found, replayErr := Replay[string](tx, live, input, mismatch)
+		if replayErr != nil || !found || result != "original" {
+			t.Fatalf("replay: %q %v %v", result, found, replayErr)
 		}
 
-		_, found, err = Replay[string](tx, live, changed, mismatch)
-		if !errors.Is(err, mismatch) || found {
-			t.Fatalf("mismatch on json:\"-\" field: %v %v", found, err)
+		_, found, replayErr = Replay[string](tx, live, changed, mismatch)
+		if !errors.Is(replayErr, mismatch) || found {
+			t.Fatalf("mismatch on json:\"-\" field: %v %v", found, replayErr)
 		}
 
-		_, found, err = Replay[string](tx, expired, changed, mismatch)
-		if err != nil || found {
-			t.Fatalf("expired token: %v %v", found, err)
+		_, found, replayErr = Replay[string](tx, expired, changed, mismatch)
+		if replayErr != nil || found {
+			t.Fatalf("expired token: %v %v", found, replayErr)
 		}
 
 		return nil
