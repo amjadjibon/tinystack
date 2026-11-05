@@ -227,6 +227,7 @@ Query local S3 data through the Glue catalog using an in-memory SQLite SQL engin
 - CTAS to Parquet, JSON or TEXTFILE, WITH NO DATA, and INSERT INTO SELECT or VALUES.
 - Partitioned writes create Hive prefixes and Glue partitions; row update counts are retained.
 - Query results are retained and written to the configured S3 output location.
+- Supported client tokens replay the original committed response and reject reuse with different request parameters.
 
 [Supported operations](athena.md#supported-operations) · [Limitations](athena.md#limitations-and-future-work)
 
@@ -573,7 +574,7 @@ Model networking and instance lifecycle for SDK and infrastructure tests.
 - AWS-style EC2 and VPC consoles with scoped instance launch/start/stop/reboot/termination, AMIs, generated/imported key pairs with one-time private key display, IAM instance profiles, VPC DNS settings and subnet public IPv4 settings, security rules, route tables and subnet associations, gateways, Elastic IPs, NAT gateways, network ACL rules and associations, endpoint configuration, tags, and links between related resources.
 - Transit gateways with validated options and default-table selection, VPC attachments, transit gateway route tables, associations, VPC CIDR propagation, static and blackhole routes, and route table target support.
 - Customer gateways, virtual private gateways (VGWs), VPC gateway attachments, VGW VPN static-route propagation, and Site-to-Site VPN connections with automatic transit gateway attachment cleanup.
-- Launch template create, version create and modification client tokens replay the committed response and reject changed input.
+- Supported launch, networking and launch template client tokens replay the committed response and reject changed input.
 
 [Supported operations](ec2.md#supported-operations) · [Limitations](ec2.md#limitations-and-future-work)
 
@@ -661,6 +662,7 @@ Manage clusters, task definitions, tasks, and services with optional Docker exec
 - Container CPU, memory and memoryReservation plus overrides map to Docker limits; task CPU/memory budgets divide into per-container ceilings.
 - Stop and reset remove owned containers, namespace holders, task networks and task-scoped volumes, including interrupted startup.
 - Dedicated console for clusters, validated JSON task definition registration and revisions, services with desired counts and revision selection, task run/stop/status, and records-only versus Docker runtime visibility.
+- Supported client tokens replay the original committed response and reject reuse with different request parameters.
 
 [Supported operations](ecs.md#supported-operations) · [Limitations](ecs.md#limitations-and-future-work)
 
@@ -1029,6 +1031,7 @@ Run durable pipeline executions with CodeCommit and S3 sources, approvals, build
 - ECS standard deployments read imagedefinitions.json, register a new task-definition revision and update the service; Lambda invoke sends CodePipeline job events and waits for PutJobSuccessResult or PutJobFailureResult (20-minute no-response timeout).
 - CodeBuild actions run one input artifact and at most one output through the existing S3 Docker build engine, including environment overrides and namespace-variable resolution; records mode fails with an explicit codebuild.builds: docker summary.
 - Pipeline, stage and action state events are published to EventBridge; persisted approvals and Lambda jobs survive SQLite restart, while interrupted external steps fail with a retryable explanation rather than replaying side effects; reset clears execution records.
+- Supported client tokens replay the original committed response and reject reuse with different request parameters.
 
 [Supported operations](codepipeline.md#supported-operations) · [Limitations](codepipeline.md#limitations-and-future-work)
 
@@ -1176,7 +1179,7 @@ Invoke AgentCore agent runtimes in Docker containers, one per runtime session, a
 - A session's container is removed after idleRuntimeSessionTimeout idle seconds or maxLifetime seconds, by StopRuntimeSession, when its runtime, endpoint or version is deleted, on reset and on shutdown; containers an earlier run of the same store left behind are removed at startup.
 - Short-term memory events are real storage: CreateEvent with conversational, blob and JSON payloads, metadata, branches that fork from a root event and an idempotent client token; GetEvent, DeleteEvent, ListEvents (oldest first, includePayloads, metadata EQUALS_TO/EXISTS/NOT_EXISTS filters, branch filter with parent branches), ListActors and ListSessions, with pagination.
 - An event expires eventExpiryDuration days after it was created; a background sweeper deletes it with its token, and deleting a memory deletes its events. Events survive a SQLite restart.
-- StopRuntimeSession client tokens replay successful stops and reject changed input.
+- CreateEvent and StopRuntimeSession client tokens replay successful responses and reject changed input.
 
 [Supported operations](bedrockagentcore.md#supported-operations) · [Limitations](bedrockagentcore.md#limitations-and-future-work)
 
@@ -1191,6 +1194,7 @@ Manage local agents, immutable versions, aliases, action groups and vector knowl
 - TSTALIASID routes to DRAFT; aliases without explicit routing snapshot a PREPARED DRAFT and its action groups and associations into a numbered version.
 - Existing IAM roles, model/profile IDs, KMS keys, guardrails, Lambda functions, S3 schema objects and buckets, OpenSearch Serverless collections and RDS clusters are validated locally; OpenAPI 3 JSON/YAML schemas are checked.
 - CloudFormation Agent (inline action groups, knowledge bases, AutoPrepare and test alias tags), AgentAlias, KnowledgeBase and DataSource; Terraform agent, alias, action group and knowledge base; inventory and Resource Groups tagging.
+- Supported client tokens replay the original committed response and reject reuse with different request parameters.
 
 [Supported operations](bedrockagent.md#supported-operations) · [Limitations](bedrockagent.md#limitations-and-future-work)
 
