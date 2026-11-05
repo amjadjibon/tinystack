@@ -84,6 +84,11 @@
       "title": "Instance and container metadata",
       "summary": "EC2 IMDSv1/v2 under /_tinystack/imds and an optional dedicated /latest listener, with explicit instance selection and STS instance-profile credentials. Verify mode requires the dedicated listener for IMDS credentials. Docker ECS tasks receive host-reachable metadata v4 and task-role credential endpoints; tokens are removed when tasks stop.",
       "reference": "guides/metadata.md"
+    },
+    {
+      "title": "Lambda, workflow and configuration tutorials",
+      "summary": "Interactive Lambda/Python local-executor, Step Functions Pass/Choice, and Secrets Manager/Parameter Store tutorials with scoped checks and cleanup. Request records retain only allowlisted safe target identifiers while bodies remain redacted; state-machine inventory exposes execution names and statuses without input/output.",
+      "reference": "guides/console-tutorials.md"
     }
   ],
   "services": {

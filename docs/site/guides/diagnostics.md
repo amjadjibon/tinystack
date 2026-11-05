@@ -356,3 +356,17 @@ require an administrator session; the page reports that requirement explicitly.
 The console includes [interactive tutorials](console-tutorials.md) for S3, SNS/SQS, DynamoDB and EventBridge/SQS, with numbered controls,
 live completion checks, scoped saved progress, and confirmed cleanup. Open Tutorials in the top navigation or
 the Get started widget on console home.
+
+### Safe request target identifiers
+
+Request records may include `resource_identifier`, an optional string identifying the target of Lambda `Invoke`
+(`FunctionName` or its REST path label), Secrets Manager
+`GetSecretValue` (`SecretId`), or SSM `GetParameter` (`Name`, including a version selector).
+The request-log layer copies only these allowlisted identifier members, including console action envelopes.
+It never copies request values, secret strings, parameter values, function payloads, workflow input/output or
+response data into this field. Existing body redaction is unchanged. Missing, malformed or truncated JSON is
+omitted rather than guessed; CloudShell terminal records do not expose this metadata, while their AWS API requests do.
+Tutorials combine the identifier with service, operation, account, Region and successful HTTP status.
+
+Step Functions state-machine inventory details also include `Executions`, an array containing only execution
+`Name` and `Status`. Execution inputs and outputs remain available through the service API, not inventory.
