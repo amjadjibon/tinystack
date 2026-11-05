@@ -139,8 +139,7 @@ func (s *Service) CreateNatGateway(
 		}
 
 		for _, g := range all {
-			switch {
-			case !g.visible(now):
+			if !g.visible(now) {
 				tx.Delete(scope.Key("ec2", kindNATGateway, g.ID))
 			}
 		}

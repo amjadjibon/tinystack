@@ -45,11 +45,11 @@ func TestReplayWindowAndFingerprint(t *testing.T) {
 	}
 	err = store.View(context.Background(), func(tx storage.ReadTx) error {
 		input.ID = "second"
-		result, found, err := Replay[string](tx, key, input, mismatch, now.Add(24*time.Hour))
-		if err != nil || !found || result != "replacement" {
-			t.Fatalf("nonexpiring replacement: %q %v %v", result, found, err)
+		result, found, replayErr := Replay[string](tx, key, input, mismatch, now.Add(24*time.Hour))
+		if replayErr != nil || !found || result != "replacement" {
+			t.Fatalf("nonexpiring replacement: %q %v %v", result, found, replayErr)
 		}
-		return err
+		return replayErr
 	})
 	if err != nil {
 		t.Fatal(err)

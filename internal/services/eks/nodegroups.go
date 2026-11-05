@@ -446,14 +446,14 @@ func (s *Service) UpdateNodegroupConfig(
 		}
 
 		changeErr := func() error {
-			params, err := configure(&n.Group, in)
-			if err != nil {
-				return err
+			params, mutationErr := configure(&n.Group, in)
+			if mutationErr != nil {
+				return mutationErr
 			}
 
 			n.Group.ModifiedAt = common.SecondsMilli(s.now().UTC())
-			if out, err = s.record(tx, scope, c.Name, *n.Group.NodegroupName, "", "ConfigUpdate", params); err != nil {
-				return err
+			if out, mutationErr = s.record(tx, scope, c.Name, *n.Group.NodegroupName, "", "ConfigUpdate", params); mutationErr != nil {
+				return mutationErr
 			}
 
 			return storage.Write(tx, nodegroupKey(scope, c.Name, *n.Group.NodegroupName), n)
@@ -601,9 +601,9 @@ func (s *Service) UpdateNodegroupVersion(
 			g.ReleaseVersion = common.OrElse(in.ReleaseVersion, new(releaseVersion(version)))
 			g.ModifiedAt = common.SecondsMilli(s.now().UTC())
 			params := []api.UpdateParam{param("Version", version), param("ReleaseVersion", *g.ReleaseVersion)}
-			var err error
-			if out, err = s.record(tx, scope, c.Name, *g.NodegroupName, "", "VersionUpdate", params); err != nil {
-				return err
+			var mutationErr error
+			if out, mutationErr = s.record(tx, scope, c.Name, *g.NodegroupName, "", "VersionUpdate", params); mutationErr != nil {
+				return mutationErr
 			}
 
 			return storage.Write(tx, nodegroupKey(scope, c.Name, *g.NodegroupName), n)

@@ -312,8 +312,8 @@ func (s *Service) UpdateAccessEntry(
 		}
 
 		changeErr := func() error {
-			if err := checkGroups(*e.Entry.Type, in.KubernetesGroups, in.Username); err != nil {
-				return err
+			if mutationErr := checkGroups(*e.Entry.Type, in.KubernetesGroups, in.Username); mutationErr != nil {
+				return mutationErr
 			}
 
 			if in.KubernetesGroups != nil {

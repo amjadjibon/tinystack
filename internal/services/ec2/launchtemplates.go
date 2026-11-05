@@ -336,7 +336,8 @@ func (s *Service) CreateLaunchTemplateVersion(
 
 			t.Latest++
 			t.Versions = append(t.Versions, templateVersion{
-				Number: t.Latest, Description: common.Value(in.VersionDescription), CreatedAt: s.now().UTC(), Data: data,
+				Number: t.Latest, Description: common.Value(in.VersionDescription),
+				CreatedAt: s.now().UTC(), Data: data,
 			})
 			out = versionOutput(t, &t.Versions[len(t.Versions)-1])
 			return storage.Write(tx, scope.Key("ec2", kindLaunchTemplate, t.ID), t)

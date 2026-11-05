@@ -264,9 +264,9 @@ func (s *Service) UpdateAddon(ctx context.Context, in *api.UpdateAddonRequest) (
 		changeErr := func() error {
 			var params []api.UpdateParam
 			if in.AddonVersion != nil {
-				version, err := checkAddonVersion(findAddon(*a.Addon.AddonName), c, in.AddonVersion)
-				if err != nil {
-					return err
+				version, versionErr := checkAddonVersion(findAddon(*a.Addon.AddonName), c, in.AddonVersion)
+				if versionErr != nil {
+					return versionErr
 				}
 
 				a.Addon.AddonVersion = new(version)
@@ -289,9 +289,9 @@ func (s *Service) UpdateAddon(ctx context.Context, in *api.UpdateAddonRequest) (
 			}
 
 			a.Addon.ModifiedAt = common.SecondsMilli(s.now().UTC())
-			var err error
-			if out, err = s.record(tx, scope, c.Name, "", *a.Addon.AddonName, "AddonUpdate", params); err != nil {
-				return err
+			var mutationErr error
+			if out, mutationErr = s.record(tx, scope, c.Name, "", *a.Addon.AddonName, "AddonUpdate", params); mutationErr != nil {
+				return mutationErr
 			}
 
 			return storage.Write(tx, addonKey(scope, c.Name, *a.Addon.AddonName), a)

@@ -50,7 +50,9 @@ func TestDynamoDBExports(t *testing.T) {
 	}
 
 	exported, err := c.ExportTableToPointInTime(ctx, &sdk.ExportTableToPointInTimeInput{
-		ClientToken: new("export-once"), TableArn: tableARN, S3Bucket: aws.String("exports"), S3Prefix: aws.String("nightly"),
+		ClientToken: new(
+			"export-once",
+		), TableArn: tableARN, S3Bucket: aws.String("exports"), S3Prefix: aws.String("nightly"),
 	})
 	if err != nil || exported.ExportDescription.ExportStatus != types.ExportStatusCompleted {
 		t.Fatalf("exported: %+v %v", exported, err)
