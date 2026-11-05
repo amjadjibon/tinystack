@@ -226,6 +226,12 @@ func TestAgentCoreEvents(t *testing.T) {
 		t.Fatalf("token: %+v %+v %v", retried, bobs, err)
 	}
 
+	_, mismatchErr := c.CreateEvent(ctx, &data.CreateEventInput{
+		MemoryId: &id, ActorId: new("bob"), SessionId: new("chat"), EventTimestamp: new(at(5)),
+		Payload: []datatypes.PayloadType{text(datatypes.RoleUser, "changed")}, ClientToken: token1,
+	})
+	code(t, mismatchErr, "ValidationException")
+
 	// Actors with a slash in their ID are kept apart from the path that stores them.
 	createEvent(t, c, id, "team/carol:1", "standup", at(6), &data.CreateEventInput{
 		Payload: []datatypes.PayloadType{text(datatypes.RoleUser, "morning")},
@@ -379,7 +385,7 @@ func eventKeys(t *testing.T, store storage.Store) []string {
 		for _, key := range tx.Keys("") {
 			if strings.Contains(key, "/bedrockagentcore/event/") ||
 				strings.HasPrefix(key, "aws/bedrockagentcore/expiry/") ||
-				strings.Contains(key, "/bedrockagentcore/event-token/") {
+				strings.Contains(key, "/bedrockagentcore/token/") {
 				keys = append(keys, key)
 			}
 		}
@@ -502,7 +508,8 @@ func TestAgentCoreEventsSQLiteRestart(t *testing.T) {
 	admin := agentCoreControl(s, "us-east-1")
 	kept := agentCoreMemory(t, admin, "durable_memory", 7)
 	c := agentCoreData(s)
-	event := createEvent(t, c, *kept.Id, "alice", "chat", time.Now(), &data.CreateEventInput{
+	at := time.Now()
+	event := createEvent(t, c, *kept.Id, "alice", "chat", at, &data.CreateEventInput{
 		Payload: []datatypes.PayloadType{text(datatypes.RoleUser, "remember")}, ClientToken: new("durable"),
 	})
 
@@ -518,7 +525,7 @@ func TestAgentCoreEventsSQLiteRestart(t *testing.T) {
 		t.Fatalf("restarted event: %+v %v", got, err)
 	}
 
-	retried := createEvent(t, c, *kept.Id, "alice", "chat", time.Now(), &data.CreateEventInput{
+	retried := createEvent(t, c, *kept.Id, "alice", "chat", at, &data.CreateEventInput{
 		Payload: []datatypes.PayloadType{text(datatypes.RoleUser, "remember")}, ClientToken: new("durable"),
 	})
 	if *retried.EventId != *event.EventId {

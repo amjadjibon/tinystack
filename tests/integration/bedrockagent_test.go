@@ -70,19 +70,18 @@ func agentStatus(t *testing.T, c *sdk.Client, id *string, want agenttypes.AgentS
 func preparedAgent(t *testing.T, s *httptest.Server) (control *sdk.Client, inference *runtime.Client, agentID *string) {
 	t.Helper()
 	c, r := agentClients(s)
-	out, err := c.CreateAgent(
-		context.Background(),
-		&sdk.CreateAgentInput{
-			AgentName:            new("assistant"),
-			AgentResourceRoleArn: agentRole(t, s),
-			FoundationModel:      new(bedrockClaude),
-			Instruction:          new("Follow the supplied fixture and return only its configured response."),
-			MemoryConfiguration: &agenttypes.MemoryConfiguration{
-				EnabledMemoryTypes: []agenttypes.MemoryType{agenttypes.MemoryTypeSessionSummary},
-				StorageDays:        new(int32(7)),
-			},
+	input := &sdk.CreateAgentInput{
+		ClientToken:          new("0123456789012345678901234567890123456789"),
+		AgentName:            new("assistant"),
+		AgentResourceRoleArn: agentRole(t, s),
+		FoundationModel:      new(bedrockClaude),
+		Instruction:          new("Follow the supplied fixture and return only its configured response."),
+		MemoryConfiguration: &agenttypes.MemoryConfiguration{
+			EnabledMemoryTypes: []agenttypes.MemoryType{agenttypes.MemoryTypeSessionSummary},
+			StorageDays:        new(int32(7)),
 		},
-	)
+	}
+	out, err := c.CreateAgent(context.Background(), input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,18 +93,14 @@ func preparedAgent(t *testing.T, s *httptest.Server) (control *sdk.Client, infer
 	}
 
 	id := out.Agent.AgentId
-	replay, replayErr := c.CreateAgent(
-		context.Background(),
-		&sdk.CreateAgentInput{
-			AgentName:            new("assistant"),
-			AgentResourceRoleArn: out.Agent.AgentResourceRoleArn,
-			FoundationModel:      new(bedrockClaude),
-			ClientToken:          out.Agent.ClientToken,
-		},
-	)
+	replay, replayErr := c.CreateAgent(context.Background(), input)
 	if replayErr != nil || *replay.Agent.AgentId != *id {
 		t.Fatalf("idempotent create: %+v %v", replay, replayErr)
 	}
+
+	input.Description = new("changed")
+	_, mismatchErr := c.CreateAgent(context.Background(), input)
+	code(t, mismatchErr, "ConflictException")
 
 	agentStatus(t, c, id, agenttypes.AgentStatusCreating)
 	agentStatus(t, c, id, agenttypes.AgentStatusNotPrepared)

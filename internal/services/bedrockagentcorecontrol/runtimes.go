@@ -2,12 +2,12 @@ package bedrockagentcorecontrol
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockagentcorecontrol"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -26,14 +26,12 @@ type config struct {
 }
 
 type runtimeRecord struct {
-	Created     time.Time
-	Updated     time.Time
-	Due         time.Time
-	Tags        map[string]string
-	ID          string
-	Name        string
-	ClientToken string
-	Fingerprint string
+	Created time.Time
+	Updated time.Time
+	Due     time.Time
+	Tags    map[string]string
+	ID      string
+	Name    string
 	// AccessKey is the creator's, which signs the SDK calls the runtime's code makes back to TinyStack.
 	AccessKey string
 	Latest    int
@@ -228,12 +226,6 @@ func (s *Service) checkNetwork(tx storage.ReadTx, scope request.Scope, n *api.Ne
 	return nil
 }
 
-func fingerprint(v any) (string, error) {
-	b, err := json.Marshal(v)
-
-	return string(b), err
-}
-
 func (s *Service) CreateAgentRuntime(
 	ctx context.Context,
 	in *api.CreateAgentRuntimeRequest,
@@ -252,13 +244,6 @@ func (s *Service) CreateAgentRuntime(
 		return nil, err
 	}
 
-	fp := common.Clone(in)
-	fp.ClientToken = nil
-	sum, err := fingerprint(fp)
-	if err != nil {
-		return nil, err
-	}
-
 	c := settings{
 		Artifact: in.AgentRuntimeArtifact, RoleArn: in.RoleArn, Network: in.NetworkConfiguration,
 		Description: in.Description, Authorizer: in.AuthorizerConfiguration,
@@ -267,30 +252,20 @@ func (s *Service) CreateAgentRuntime(
 	}.config()
 	var out *api.CreateAgentRuntimeResponse
 	err = s.update(ctx, func(tx storage.WriteTx, scope request.Scope) error {
+		token := idempotency.Key(scope, serviceName, "CreateAgentRuntime", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.CreateAgentRuntimeResponse](tx, token, in,
+			conflict("Client token %s was already used with different parameters", common.Value(in.ClientToken)))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
 		existing, e := storage.Records[runtimeRecord](tx, scope.Prefix(serviceName, kindRuntime))
 		if e != nil {
 			return e
 		}
 
 		for _, r := range existing {
-			if in.ClientToken != nil && r.ClientToken == *in.ClientToken {
-				if r.Fingerprint != sum {
-					return conflict("Client token %s was already used with different parameters", *in.ClientToken)
-				}
-
-				v, readErr := readVersion(tx, scope, r.ID, 1)
-				if readErr != nil {
-					return readErr
-				}
-
-				out = &api.CreateAgentRuntimeResponse{
-					AgentRuntimeArn: new(runtimeARN(scope, r.ID)), AgentRuntimeId: new(r.ID),
-					AgentRuntimeVersion: version(1), CreatedAt: new(r.Created), Status: new(r.status(v)),
-				}
-
-				return nil
-			}
-
 			if r.Name == common.Value(in.AgentRuntimeName) {
 				return conflict("AgentRuntime %s already exists", r.Name)
 			}
@@ -305,11 +280,7 @@ func (s *Service) CreateAgentRuntime(
 		r := &runtimeRecord{
 			Created: now, Updated: now, Due: now.Add(transitionDelay), Tags: common.CloneTags(in.Tags),
 			ID: newID(common.Value(in.AgentRuntimeName)), Name: common.Value(in.AgentRuntimeName),
-			Fingerprint: sum, AccessKey: m.AccessKey, Latest: 1,
-		}
-
-		if in.ClientToken != nil {
-			r.ClientToken = *in.ClientToken
+			AccessKey: m.AccessKey, Latest: 1,
 		}
 
 		v := &versionRecord{Created: now, Updated: now, Config: c, Status: statusCreating, Number: 1}
@@ -333,7 +304,11 @@ func (s *Service) CreateAgentRuntime(
 			CreatedAt: new(now), Status: new(statusCreating),
 		}
 
-		return queue(tx, scope, kindRuntime, r.ID, runtimeKey(scope, r.ID), r)
+		if e := queue(tx, scope, kindRuntime, r.ID, runtimeKey(scope, r.ID), r); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, token, in, out)
 	})
 
 	return out, err
@@ -501,57 +476,72 @@ func (s *Service) UpdateAgentRuntime(
 	}.config()
 	var out *api.UpdateAgentRuntimeResponse
 	err := s.update(ctx, func(tx storage.WriteTx, scope request.Scope) error {
-		r, e := readRuntime(tx, scope, common.Value(in.AgentRuntimeId))
-		if e != nil {
-			return e
+		token := idempotency.Key(scope, serviceName, "UpdateAgentRuntime", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.UpdateAgentRuntimeResponse](tx, token, in,
+			conflict("Client token %s was already used with different parameters", common.Value(in.ClientToken)))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
 		}
 
-		latest, e := readVersion(tx, scope, r.ID, r.Latest)
-		if e != nil {
-			return e
+		changeErr := func() error {
+			r, e := readRuntime(tx, scope, common.Value(in.AgentRuntimeId))
+			if e != nil {
+				return e
+			}
+
+			latest, e := readVersion(tx, scope, r.ID, r.Latest)
+			if e != nil {
+				return e
+			}
+
+			if status := r.status(latest); status != statusReady {
+				return conflict("AgentRuntime %s is %s and can only be updated when it is READY", r.ID, status)
+			}
+
+			e = s.normalize(tx, scope, &c)
+			if e != nil {
+				return e
+			}
+
+			now := time.Now().UTC()
+			r.Latest++
+			r.Updated, r.Due = now, now.Add(transitionDelay)
+			v := &versionRecord{Created: now, Updated: now, Config: c, Status: statusUpdating, Number: r.Latest}
+			e = storage.Write(tx, versionKey(scope, r.ID, v.Number), v)
+			if e != nil {
+				return e
+			}
+
+			def, e := readEndpoint(tx, scope, r.ID, DefaultEndpoint)
+			if e != nil {
+				return e
+			}
+
+			def.Status, def.Target, def.Updated = statusUpdating, v.Number, now
+			e = storage.Write(tx, endpointKey(scope, r.ID, DefaultEndpoint), def)
+			if e != nil {
+				return e
+			}
+
+			out = &api.UpdateAgentRuntimeResponse{
+				AgentRuntimeArn: new(
+					runtimeARN(scope, r.ID),
+				),
+				AgentRuntimeId:      new(r.ID),
+				AgentRuntimeVersion: version(v.Number),
+				CreatedAt:           new(r.Created),
+				LastUpdatedAt:       new(now),
+				Status:              new(statusUpdating),
+			}
+
+			return queue(tx, scope, kindRuntime, r.ID, runtimeKey(scope, r.ID), r)
+		}()
+		if changeErr != nil {
+			return changeErr
 		}
 
-		if status := r.status(latest); status != statusReady {
-			return conflict("AgentRuntime %s is %s and can only be updated when it is READY", r.ID, status)
-		}
-
-		e = s.normalize(tx, scope, &c)
-		if e != nil {
-			return e
-		}
-
-		now := time.Now().UTC()
-		r.Latest++
-		r.Updated, r.Due = now, now.Add(transitionDelay)
-		v := &versionRecord{Created: now, Updated: now, Config: c, Status: statusUpdating, Number: r.Latest}
-		e = storage.Write(tx, versionKey(scope, r.ID, v.Number), v)
-		if e != nil {
-			return e
-		}
-
-		def, e := readEndpoint(tx, scope, r.ID, DefaultEndpoint)
-		if e != nil {
-			return e
-		}
-
-		def.Status, def.Target, def.Updated = statusUpdating, v.Number, now
-		e = storage.Write(tx, endpointKey(scope, r.ID, DefaultEndpoint), def)
-		if e != nil {
-			return e
-		}
-
-		out = &api.UpdateAgentRuntimeResponse{
-			AgentRuntimeArn: new(
-				runtimeARN(scope, r.ID),
-			),
-			AgentRuntimeId:      new(r.ID),
-			AgentRuntimeVersion: version(v.Number),
-			CreatedAt:           new(r.Created),
-			LastUpdatedAt:       new(now),
-			Status:              new(statusUpdating),
-		}
-
-		return queue(tx, scope, kindRuntime, r.ID, runtimeKey(scope, r.ID), r)
+		return idempotency.Remember(tx, token, in, out)
 	})
 
 	return out, err
@@ -568,26 +558,43 @@ func (s *Service) DeleteAgentRuntime(
 	deleted := 0
 	err := s.update(ctx, func(tx storage.WriteTx, sc request.Scope) error {
 		scope = sc
-		r, e := readRuntime(tx, scope, common.Value(in.AgentRuntimeId))
-		if e != nil {
-			return e
+
+		token := idempotency.Key(sc, serviceName, "DeleteAgentRuntime", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.DeleteAgentRuntimeResponse](tx, token, in,
+			conflict("Client token %s was already used with different parameters", common.Value(in.ClientToken)))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
 		}
 
-		out = &api.DeleteAgentRuntimeResponse{AgentRuntimeId: new(r.ID), Status: new(statusDeleting)}
-		if in.AgentRuntimeVersion != nil {
-			deleted, e = s.deleteVersion(tx, scope, r, *in.AgentRuntimeVersion)
-			out.AgentRuntimeVersion = in.AgentRuntimeVersion
+		changeErr := func() error {
+			scope = sc
+			r, e := readRuntime(tx, scope, common.Value(in.AgentRuntimeId))
+			if e != nil {
+				return e
+			}
 
-			return e
+			out = &api.DeleteAgentRuntimeResponse{AgentRuntimeId: new(r.ID), Status: new(statusDeleting)}
+			if in.AgentRuntimeVersion != nil {
+				deleted, e = s.deleteVersion(tx, scope, r, *in.AgentRuntimeVersion)
+				out.AgentRuntimeVersion = in.AgentRuntimeVersion
+
+				return e
+			}
+
+			if r.Deleting {
+				return nil
+			}
+
+			r.Deleting, r.Due = true, time.Now().UTC().Add(transitionDelay)
+
+			return queue(tx, scope, kindRuntime, r.ID, runtimeKey(scope, r.ID), r)
+		}()
+		if changeErr != nil {
+			return changeErr
 		}
 
-		if r.Deleting {
-			return nil
-		}
-
-		r.Deleting, r.Due = true, time.Now().UTC().Add(transitionDelay)
-
-		return queue(tx, scope, kindRuntime, r.ID, runtimeKey(scope, r.ID), r)
+		return idempotency.Remember(tx, token, in, out)
 	})
 	if err != nil || s.observer == nil {
 		return out, err

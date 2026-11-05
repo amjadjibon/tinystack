@@ -7,6 +7,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockagentcorecontrol"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -21,8 +22,6 @@ type endpointRecord struct {
 	Description *string
 	Name        string
 	ID          string
-	ClientToken string
-	Fingerprint string
 	Status      string
 	Live        int
 	Target      int
@@ -66,15 +65,16 @@ func (s *Service) CreateAgentRuntimeEndpoint(
 		return nil, invalid("%s", err.Error())
 	}
 
-	fp := common.Clone(in)
-	fp.ClientToken = nil
-	sum, err := fingerprint(fp)
-	if err != nil {
-		return nil, err
-	}
-
 	var out *api.CreateAgentRuntimeEndpointResponse
-	err = s.update(ctx, func(tx storage.WriteTx, scope request.Scope) error {
+	err := s.update(ctx, func(tx storage.WriteTx, scope request.Scope) error {
+		token := idempotency.Key(scope, serviceName, "CreateAgentRuntimeEndpoint", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.CreateAgentRuntimeEndpointResponse](tx, token, in,
+			conflict("Client token %s was already used with different parameters", common.Value(in.ClientToken)))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
 		r, e := readRuntime(tx, scope, common.Value(in.AgentRuntimeId))
 		if e != nil {
 			return e
@@ -91,16 +91,6 @@ func (s *Service) CreateAgentRuntimeEndpoint(
 
 		name := common.Value(in.Name)
 		for _, old := range existing {
-			if in.ClientToken != nil && old.ClientToken == *in.ClientToken {
-				if old.Fingerprint != sum {
-					return conflict("Client token %s was already used with different parameters", *in.ClientToken)
-				}
-
-				out = createdEndpoint(scope, r, old)
-
-				return nil
-			}
-
 			if old.Name == name {
 				return conflict("Endpoint %s of AgentRuntime %s already exists", name, r.ID)
 			}
@@ -120,17 +110,17 @@ func (s *Service) CreateAgentRuntimeEndpoint(
 		now := time.Now().UTC()
 		ep := &endpointRecord{
 			Created: now, Updated: now, Due: now.Add(transitionDelay), Tags: common.CloneTags(in.Tags),
-			Description: in.Description, Name: name, ID: newID(name), Fingerprint: sum, Status: statusCreating,
+			Description: in.Description, Name: name, ID: newID(name), Status: statusCreating,
 			Target: target,
-		}
-
-		if in.ClientToken != nil {
-			ep.ClientToken = *in.ClientToken
 		}
 
 		out = createdEndpoint(scope, r, ep)
 
-		return queue(tx, scope, kindEndpoint, r.ID+"/"+name, endpointKey(scope, r.ID, name), ep)
+		if e := queue(tx, scope, kindEndpoint, r.ID+"/"+name, endpointKey(scope, r.ID, name), ep); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, token, in, out)
 	})
 
 	return out, err
@@ -239,49 +229,64 @@ func (s *Service) UpdateAgentRuntimeEndpoint(
 
 	var out *api.UpdateAgentRuntimeEndpointResponse
 	err := s.update(ctx, func(tx storage.WriteTx, scope request.Scope) error {
-		r, e := readRuntime(tx, scope, common.Value(in.AgentRuntimeId))
-		if e != nil {
-			return e
+		token := idempotency.Key(scope, serviceName, "UpdateAgentRuntimeEndpoint", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.UpdateAgentRuntimeEndpointResponse](tx, token, in,
+			conflict("Client token %s was already used with different parameters", common.Value(in.ClientToken)))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
 		}
 
-		ep, e := readEndpoint(tx, scope, r.ID, common.Value(in.EndpointName))
-		if e != nil {
-			return e
-		}
-
-		if status := ep.status(r); status != statusReady {
-			return conflict("Endpoint %s is %s and can only be updated when it is READY", ep.Name, status)
-		}
-
-		if in.AgentRuntimeVersion != nil {
-			if ep.Target, e = parseVersion(*in.AgentRuntimeVersion); e != nil {
+		changeErr := func() error {
+			r, e := readRuntime(tx, scope, common.Value(in.AgentRuntimeId))
+			if e != nil {
 				return e
 			}
 
-			if _, e = readVersion(tx, scope, r.ID, ep.Target); e != nil {
+			ep, e := readEndpoint(tx, scope, r.ID, common.Value(in.EndpointName))
+			if e != nil {
 				return e
 			}
+
+			if status := ep.status(r); status != statusReady {
+				return conflict("Endpoint %s is %s and can only be updated when it is READY", ep.Name, status)
+			}
+
+			if in.AgentRuntimeVersion != nil {
+				if ep.Target, e = parseVersion(*in.AgentRuntimeVersion); e != nil {
+					return e
+				}
+
+				if _, e = readVersion(tx, scope, r.ID, ep.Target); e != nil {
+					return e
+				}
+			}
+
+			if in.Description != nil {
+				ep.Description = in.Description
+			}
+
+			now := time.Now().UTC()
+			ep.Status, ep.Updated, ep.Due = statusUpdating, now, now.Add(transitionDelay)
+			out = &api.UpdateAgentRuntimeEndpointResponse{
+				AgentRuntimeArn: new(
+					runtimeARN(scope, r.ID),
+				),
+				AgentRuntimeEndpointArn: new(endpointARN(scope, r.ID, ep.Name)),
+				CreatedAt:               new(ep.Created),
+				LastUpdatedAt:           new(now),
+				LiveVersion:             versionPtr(ep.Live),
+				Status:                  new(statusUpdating),
+				TargetVersion:           versionPtr(ep.Target),
+			}
+
+			return queue(tx, scope, kindEndpoint, r.ID+"/"+ep.Name, endpointKey(scope, r.ID, ep.Name), ep)
+		}()
+		if changeErr != nil {
+			return changeErr
 		}
 
-		if in.Description != nil {
-			ep.Description = in.Description
-		}
-
-		now := time.Now().UTC()
-		ep.Status, ep.Updated, ep.Due = statusUpdating, now, now.Add(transitionDelay)
-		out = &api.UpdateAgentRuntimeEndpointResponse{
-			AgentRuntimeArn: new(
-				runtimeARN(scope, r.ID),
-			),
-			AgentRuntimeEndpointArn: new(endpointARN(scope, r.ID, ep.Name)),
-			CreatedAt:               new(ep.Created),
-			LastUpdatedAt:           new(now),
-			LiveVersion:             versionPtr(ep.Live),
-			Status:                  new(statusUpdating),
-			TargetVersion:           versionPtr(ep.Target),
-		}
-
-		return queue(tx, scope, kindEndpoint, r.ID+"/"+ep.Name, endpointKey(scope, r.ID, ep.Name), ep)
+		return idempotency.Remember(tx, token, in, out)
 	})
 
 	return out, err
@@ -299,27 +304,44 @@ func (s *Service) DeleteAgentRuntimeEndpoint(
 	var scope request.Scope
 	err := s.update(ctx, func(tx storage.WriteTx, sc request.Scope) error {
 		scope = sc
-		r, e := readRuntime(tx, scope, common.Value(in.AgentRuntimeId))
-		if e != nil {
-			return e
+
+		token := idempotency.Key(sc, serviceName, "DeleteAgentRuntimeEndpoint", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.DeleteAgentRuntimeEndpointResponse](tx, token, in,
+			conflict("Client token %s was already used with different parameters", common.Value(in.ClientToken)))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
 		}
 
-		ep, e := readEndpoint(tx, scope, r.ID, common.Value(in.EndpointName))
-		if e != nil {
-			return e
+		changeErr := func() error {
+			scope = sc
+			r, e := readRuntime(tx, scope, common.Value(in.AgentRuntimeId))
+			if e != nil {
+				return e
+			}
+
+			ep, e := readEndpoint(tx, scope, r.ID, common.Value(in.EndpointName))
+			if e != nil {
+				return e
+			}
+
+			out = &api.DeleteAgentRuntimeEndpointResponse{
+				AgentRuntimeId: new(r.ID), EndpointName: new(ep.Name), Status: new(statusDeleting),
+			}
+
+			if ep.Status == statusDeleting {
+				return nil
+			}
+
+			ep.Status, ep.Due = statusDeleting, time.Now().UTC().Add(transitionDelay)
+
+			return queue(tx, scope, kindEndpoint, r.ID+"/"+ep.Name, endpointKey(scope, r.ID, ep.Name), ep)
+		}()
+		if changeErr != nil {
+			return changeErr
 		}
 
-		out = &api.DeleteAgentRuntimeEndpointResponse{
-			AgentRuntimeId: new(r.ID), EndpointName: new(ep.Name), Status: new(statusDeleting),
-		}
-
-		if ep.Status == statusDeleting {
-			return nil
-		}
-
-		ep.Status, ep.Due = statusDeleting, time.Now().UTC().Add(transitionDelay)
-
-		return queue(tx, scope, kindEndpoint, r.ID+"/"+ep.Name, endpointKey(scope, r.ID, ep.Name), ep)
+		return idempotency.Remember(tx, token, in, out)
 	})
 	if err == nil && s.observer != nil {
 		s.observer.EndpointDeleted(ctx, scope, common.Value(out.AgentRuntimeId), common.Value(out.EndpointName))

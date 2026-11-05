@@ -200,6 +200,7 @@ func TestAgentCoreRuntimeLifecycle(t *testing.T) {
 
 	// Update creates version 2, takes the runtime through UPDATING and moves the DEFAULT endpoint.
 	update := &sdk.UpdateAgentRuntimeInput{
+		ClientToken:    new(agentTokenOther),
 		AgentRuntimeId: made.AgentRuntimeId, AgentRuntimeArtifact: container(agentImage + ".v2"), RoleArn: new(role),
 		LifecycleConfiguration: &types.LifecycleConfiguration{
 			IdleRuntimeSessionTimeout: new(int32(120)), MaxLifetime: new(int32(3600)),
@@ -212,8 +213,15 @@ func TestAgentCoreRuntimeLifecycle(t *testing.T) {
 		t.Fatalf("update: %+v %v", updated, err)
 	}
 
+	retriedUpdate, replayErr := c.UpdateAgentRuntime(ctx, update)
+	if replayErr != nil || aws.ToString(retriedUpdate.AgentRuntimeVersion) != "2" {
+		t.Fatalf("update replay: %+v %v", retriedUpdate, replayErr)
+	}
+
+	update.Description = new("changed")
 	_, err = c.UpdateAgentRuntime(ctx, update)
 	wantAccessAnalyzerError(t, err, "ConflictException")
+
 	moving, err := c.GetAgentRuntimeEndpoint(ctx, &sdk.GetAgentRuntimeEndpointInput{
 		AgentRuntimeId: made.AgentRuntimeId, EndpointName: new("DEFAULT"),
 	})

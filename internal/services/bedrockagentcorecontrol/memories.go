@@ -9,6 +9,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockagentcorecontrol"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -26,8 +27,6 @@ type memoryRecord struct {
 	Description   *string
 	ID            string
 	Name          string
-	ClientToken   string
-	Fingerprint   string
 	EncryptionKey string
 	ExecutionRole string
 	Status        string
@@ -108,31 +107,22 @@ func (s *Service) CreateMemory(ctx context.Context, in *api.CreateMemoryInput) (
 		return nil, err
 	}
 
-	fp := common.Clone(in)
-	fp.ClientToken = nil
-	sum, err := fingerprint(fp)
-	if err != nil {
-		return nil, err
-	}
-
 	var out *api.CreateMemoryOutput
 	err = s.update(ctx, func(tx storage.WriteTx, scope request.Scope) error {
+		token := idempotency.Key(scope, serviceName, "CreateMemory", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.CreateMemoryOutput](tx, token, in,
+			conflict("Client token %s was already used with different parameters", common.Value(in.ClientToken)))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
 		existing, e := storage.Records[memoryRecord](tx, scope.Prefix(serviceName, kindMemory))
 		if e != nil {
 			return e
 		}
 
 		for _, old := range existing {
-			if in.ClientToken != nil && old.ClientToken == *in.ClientToken {
-				if old.Fingerprint != sum {
-					return conflict("Client token %s was already used with different parameters", *in.ClientToken)
-				}
-
-				out = &api.CreateMemoryOutput{Memory: old.output(scope)}
-
-				return nil
-			}
-
 			if old.Name == common.Value(in.Name) {
 				return conflict("Memory %s already exists", old.Name)
 			}
@@ -142,18 +132,18 @@ func (s *Service) CreateMemory(ctx context.Context, in *api.CreateMemoryInput) (
 		m := &memoryRecord{
 			Created: now, Updated: now, Due: now.Add(transitionDelay), Tags: common.CloneTags(in.Tags),
 			Description: in.Description, ID: newID(common.Value(in.Name)), Name: common.Value(in.Name),
-			Fingerprint: sum, EncryptionKey: common.Value(in.EncryptionKeyArn),
+			EncryptionKey: common.Value(in.EncryptionKeyArn),
 			ExecutionRole: common.Value(in.MemoryExecutionRoleArn), Status: statusCreating,
 			ExpiryDays: common.Value(in.EventExpiryDuration),
 		}
 
-		if in.ClientToken != nil {
-			m.ClientToken = *in.ClientToken
-		}
-
 		out = &api.CreateMemoryOutput{Memory: m.output(scope)}
 
-		return queue(tx, scope, kindMemory, m.ID, memoryKey(scope, m.ID), m)
+		if e := queue(tx, scope, kindMemory, m.ID, memoryKey(scope, m.ID), m); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, token, in, out)
 	})
 
 	return out, err
@@ -223,32 +213,47 @@ func (s *Service) UpdateMemory(ctx context.Context, in *api.UpdateMemoryInput) (
 
 	var out *api.UpdateMemoryOutput
 	err = s.update(ctx, func(tx storage.WriteTx, scope request.Scope) error {
-		m, e := readMemory(tx, scope, common.Value(in.MemoryId))
-		if e != nil {
-			return e
+		token := idempotency.Key(scope, serviceName, "UpdateMemory", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.UpdateMemoryOutput](tx, token, in,
+			conflict("Client token %s was already used with different parameters", common.Value(in.ClientToken)))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
 		}
 
-		if m.Status != statusActive {
-			return conflict("Memory %s is %s and can only be updated when it is ACTIVE", m.ID, m.Status)
+		changeErr := func() error {
+			m, e := readMemory(tx, scope, common.Value(in.MemoryId))
+			if e != nil {
+				return e
+			}
+
+			if m.Status != statusActive {
+				return conflict("Memory %s is %s and can only be updated when it is ACTIVE", m.ID, m.Status)
+			}
+
+			if in.Description != nil {
+				m.Description = in.Description
+			}
+
+			if in.EventExpiryDuration != nil {
+				m.ExpiryDays = *in.EventExpiryDuration
+			}
+
+			if in.MemoryExecutionRoleArn != nil {
+				m.ExecutionRole = *in.MemoryExecutionRoleArn
+			}
+
+			now := time.Now().UTC()
+			m.Status, m.Updated, m.Due = statusUpdating, now, now.Add(transitionDelay)
+			out = &api.UpdateMemoryOutput{Memory: m.output(scope)}
+
+			return queue(tx, scope, kindMemory, m.ID, memoryKey(scope, m.ID), m)
+		}()
+		if changeErr != nil {
+			return changeErr
 		}
 
-		if in.Description != nil {
-			m.Description = in.Description
-		}
-
-		if in.EventExpiryDuration != nil {
-			m.ExpiryDays = *in.EventExpiryDuration
-		}
-
-		if in.MemoryExecutionRoleArn != nil {
-			m.ExecutionRole = *in.MemoryExecutionRoleArn
-		}
-
-		now := time.Now().UTC()
-		m.Status, m.Updated, m.Due = statusUpdating, now, now.Add(transitionDelay)
-		out = &api.UpdateMemoryOutput{Memory: m.output(scope)}
-
-		return queue(tx, scope, kindMemory, m.ID, memoryKey(scope, m.ID), m)
+		return idempotency.Remember(tx, token, in, out)
 	})
 
 	return out, err
@@ -259,19 +264,36 @@ func (s *Service) DeleteMemory(ctx context.Context, in *api.DeleteMemoryInput) (
 	var scope request.Scope
 	err := s.update(ctx, func(tx storage.WriteTx, sc request.Scope) error {
 		scope = sc
-		m, e := readMemory(tx, scope, common.Value(in.MemoryId))
-		if e != nil {
-			return e
+
+		token := idempotency.Key(sc, serviceName, "DeleteMemory", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.DeleteMemoryOutput](tx, token, in,
+			conflict("Client token %s was already used with different parameters", common.Value(in.ClientToken)))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
 		}
 
-		out = &api.DeleteMemoryOutput{MemoryId: new(m.ID), Status: new(statusDeleting)}
-		if m.Status == statusDeleting {
-			return nil
+		changeErr := func() error {
+			scope = sc
+			m, e := readMemory(tx, scope, common.Value(in.MemoryId))
+			if e != nil {
+				return e
+			}
+
+			out = &api.DeleteMemoryOutput{MemoryId: new(m.ID), Status: new(statusDeleting)}
+			if m.Status == statusDeleting {
+				return nil
+			}
+
+			m.Status, m.Due = statusDeleting, time.Now().UTC().Add(transitionDelay)
+
+			return queue(tx, scope, kindMemory, m.ID, memoryKey(scope, m.ID), m)
+		}()
+		if changeErr != nil {
+			return changeErr
 		}
 
-		m.Status, m.Due = statusDeleting, time.Now().UTC().Add(transitionDelay)
-
-		return queue(tx, scope, kindMemory, m.ID, memoryKey(scope, m.ID), m)
+		return idempotency.Remember(tx, token, in, out)
 	})
 	if err == nil && s.observer != nil {
 		s.observer.MemoryDeleted(ctx, scope, common.Value(out.MemoryId))

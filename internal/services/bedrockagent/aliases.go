@@ -8,6 +8,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockagent"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -98,21 +99,12 @@ func (s *Service) CreateAgentAlias(
 		kindAgent,
 		common.Value(in.AgentId),
 		func(tx storage.WriteTx, scope request.Scope, r *record) error {
-			if in.ClientToken != nil {
-				aliases, readErr := storage.Records[record](
-					tx,
-					scope.Prefix(serviceName, kindAlias)+common.Value(in.AgentId)+"/",
-				)
-				if readErr != nil {
-					return readErr
-				}
-
-				for _, existing := range aliases {
-					if common.Value(existing.Alias.ClientToken) == *in.ClientToken {
-						alias = existing.Alias
-						return nil
-					}
-				}
+			token := idempotency.Key(scope, serviceName, "CreateAgentAlias", in.ClientToken)
+			previous, found, replayErr := idempotency.Replay[*api.AgentAlias](tx, token, in,
+				conflict("ClientToken was used with different parameters."))
+			if replayErr != nil || found {
+				alias = previous
+				return replayErr
 			}
 
 			routes, e := snapshot(tx, scope, r, in.RoutingConfiguration)
@@ -138,11 +130,15 @@ func (s *Service) CreateAgentAlias(
 				UpdatedAt:            new(now),
 			}
 
-			return storage.Write(
+			if e := storage.Write(
 				tx,
 				scope.Key(serviceName, kindAlias, common.Value(in.AgentId)+"/"+id),
 				&record{Alias: alias, Tags: in.Tags},
-			)
+			); e != nil {
+				return e
+			}
+
+			return idempotency.Remember(tx, token, in, alias)
 		},
 	)
 	if err != nil {

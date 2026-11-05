@@ -2,8 +2,6 @@ package bedrockagentcore
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"net/url"
 	"slices"
@@ -14,6 +12,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/bedrockagentcorecontrol"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -38,17 +37,6 @@ func sessionPrefix(scope request.Scope, memory, actor, session string) string {
 	return eventPrefix(scope, memory) + url.PathEscape(actor) + "/" + session + "/"
 }
 
-func tokenPrefix(scope request.Scope, memory string) string {
-	return scope.Prefix(serviceName, kindToken) + memory + "/"
-}
-
-func tokenKey(scope request.Scope, memory, token string) string {
-	digest := sha256.Sum256([]byte(token))
-
-	return tokenPrefix(scope, memory) + hex.EncodeToString(digest[:])
-}
-
-// expiryKey orders the events by expiry time, zero-padded so that the keys sort by it.
 func expiryKey(expires time.Time, eventKey string) string {
 	return fmt.Sprintf("%s%020d/%s", expiryIndex, expires.UnixMilli(), eventKey)
 }
@@ -161,19 +149,12 @@ func (s *Service) CreateEvent(ctx context.Context, in *api.CreateEventInput) (*a
 			return err
 		}
 
-		if in.ClientToken != nil {
-			if key, found := tx.Get(tokenKey(scope, memory, *in.ClientToken)); found {
-				old, _, e := storage.Read[eventRecord](tx, string(key))
-				if e != nil {
-					return e
-				}
-
-				if old != nil {
-					out = &api.CreateEventOutput{Event: &old.Event}
-
-					return nil
-				}
-			}
+		token := idempotency.Key(scope, serviceName, "CreateEvent/"+memory, in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.CreateEventOutput](tx, token, in,
+			invalid("clientToken was used with different parameters"))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
 		}
 
 		session := common.Value(in.SessionId)
@@ -209,15 +190,16 @@ func (s *Service) CreateEvent(ctx context.Context, in *api.CreateEventInput) (*a
 		}
 
 		key := sessionPrefix(scope, memory, actor, session) + id
-		if in.ClientToken != nil {
-			rec.Token = tokenKey(scope, memory, *in.ClientToken)
-			tx.Put(rec.Token, []byte(key))
-		}
+		rec.Token = token
 
 		tx.Put(expiryKey(rec.Expires, key), []byte(key))
 		out = &api.CreateEventOutput{Event: &rec.Event}
 
-		return storage.Write(tx, key, rec)
+		if err := storage.Write(tx, key, rec); err != nil {
+			return err
+		}
+
+		return idempotency.Remember(tx, token, in, out)
 	})
 
 	return out, err

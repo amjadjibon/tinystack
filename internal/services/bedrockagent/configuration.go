@@ -8,6 +8,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockagent"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -59,28 +60,12 @@ func (s *Service) CreateAgentActionGroup(
 	value.ParentActionSignature = in.ParentActionGroupSignature
 	value.ActionGroupState = common.OrElse(in.ActionGroupState, new(stateEnabled))
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if in.ClientToken != nil {
-			records, readErr := storage.Records[record](
-				tx,
-				scope.Prefix(
-					serviceName,
-					kindActionGroup,
-				)+common.Value(
-					in.AgentId,
-				)+"/"+common.Value(
-					in.AgentVersion,
-				)+"/",
-			)
-			if readErr != nil {
-				return readErr
-			}
-
-			for _, r := range records {
-				if r.Token == *in.ClientToken {
-					value = r.Group
-					return nil
-				}
-			}
+		token := idempotency.Key(scope, serviceName, "CreateAgentActionGroup", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.AgentActionGroup](tx, token, in,
+			conflict("ClientToken was used with different parameters."))
+		if replayErr != nil || found {
+			value = previous
+			return replayErr
 		}
 
 		key := scope.Key(
@@ -92,7 +77,11 @@ func (s *Service) CreateAgentActionGroup(
 			return conflict("Resource already exists.")
 		}
 
-		return storage.Write(tx, key, &record{Token: common.Value(in.ClientToken), Group: value})
+		if e := storage.Write(tx, key, &record{Group: value}); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, token, in, value)
 	})
 	if err != nil {
 		return nil, err
@@ -287,18 +276,12 @@ func (s *Service) CreateKnowledgeBase(
 	value.KnowledgeBaseArn = new(arn(scope, kindKnowledgeBase, id))
 	value.Status = new("ACTIVE")
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if in.ClientToken != nil {
-			records, readErr := storage.Records[record](tx, scope.Prefix(serviceName, kindKnowledgeBase)+"")
-			if readErr != nil {
-				return readErr
-			}
-
-			for _, r := range records {
-				if r.Token == *in.ClientToken {
-					value = r.KnowledgeBase
-					return nil
-				}
-			}
+		token := idempotency.Key(scope, serviceName, "CreateKnowledgeBase", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.KnowledgeBase](tx, token, in,
+			conflict("ClientToken was used with different parameters."))
+		if replayErr != nil || found {
+			value = previous
+			return replayErr
 		}
 
 		key := scope.Key(serviceName, kindKnowledgeBase, id)
@@ -306,7 +289,11 @@ func (s *Service) CreateKnowledgeBase(
 			return conflict("Resource already exists.")
 		}
 
-		return storage.Write(tx, key, &record{Token: common.Value(in.ClientToken), KnowledgeBase: value, Tags: in.Tags})
+		if e := storage.Write(tx, key, &record{KnowledgeBase: value, Tags: in.Tags}); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, token, in, value)
 	})
 	if err != nil {
 		return nil, err
@@ -476,21 +463,12 @@ func (s *Service) CreateDataSource(
 	value.Status = new("AVAILABLE")
 	value.DataDeletionPolicy = common.OrElse(in.DataDeletionPolicy, new("DELETE"))
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if in.ClientToken != nil {
-			records, readErr := storage.Records[record](
-				tx,
-				scope.Prefix(serviceName, kindDataSource)+common.Value(in.KnowledgeBaseId)+"/",
-			)
-			if readErr != nil {
-				return readErr
-			}
-
-			for _, r := range records {
-				if r.Token == *in.ClientToken {
-					value = r.DataSource
-					return nil
-				}
-			}
+		token := idempotency.Key(scope, serviceName, "CreateDataSource", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.DataSource](tx, token, in,
+			conflict("ClientToken was used with different parameters."))
+		if replayErr != nil || found {
+			value = previous
+			return replayErr
 		}
 
 		key := scope.Key(serviceName, kindDataSource, common.Value(in.KnowledgeBaseId)+"/"+id)
@@ -498,7 +476,11 @@ func (s *Service) CreateDataSource(
 			return conflict("Resource already exists.")
 		}
 
-		return storage.Write(tx, key, &record{Token: common.Value(in.ClientToken), DataSource: value})
+		if e := storage.Write(tx, key, &record{DataSource: value}); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, token, in, value)
 	})
 	if err != nil {
 		return nil, err

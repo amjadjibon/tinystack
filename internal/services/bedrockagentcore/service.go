@@ -34,7 +34,6 @@ import (
 const (
 	serviceName = "bedrockagentcore"
 	kindEvent   = "event"
-	kindToken   = "event-token"
 	expiryIndex = "aws/bedrockagentcore/expiry/"
 	ownerKey    = "aws/bedrockagentcore/runtime-owner"
 
@@ -194,12 +193,9 @@ func (s *Service) MemoryDeleted(ctx context.Context, scope request.Scope, memory
 
 			if found {
 				tx.Delete(expiryKey(rec.Expires, key))
+				tx.Delete(rec.Token)
 			}
 
-			tx.Delete(key)
-		}
-
-		for _, key := range tx.Keys(tokenPrefix(scope, memoryID)) {
 			tx.Delete(key)
 		}
 

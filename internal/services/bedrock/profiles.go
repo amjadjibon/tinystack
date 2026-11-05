@@ -8,14 +8,13 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/bedrock"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
 type inferenceProfile struct {
-	Detail  api.GetInferenceProfileResponse
-	Request *api.CreateInferenceProfileRequest
-	Tags    map[string]string
-	Token   string
+	Detail api.GetInferenceProfileResponse
+	Tags   map[string]string
 }
 
 func systemProfiles(scope request.Scope) []api.GetInferenceProfileResponse {
@@ -193,25 +192,21 @@ func (s *Service) CreateInferenceProfile(
 		InferenceProfileId: new(id), InferenceProfileArn: new(resourceARN(scope, applicationProfileKind, id)),
 		Status: new("ACTIVE"), Type: new("APPLICATION"), CreatedAt: new(now), UpdatedAt: new(now),
 		Models: []api.InferenceProfileModel{{ModelArn: summary(model, scope.Region).ModelArn}},
-	}, Tags: tags, Token: common.Value(in.ClientRequestToken), Request: in}
+	}, Tags: tags}
+	token := idempotency.Key(scope, serviceName, "CreateInferenceProfile", in.ClientRequestToken)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		records, e := storage.Records[inferenceProfile](tx, scope.Prefix(serviceName, "profile"))
-		if e != nil {
+		previous, found, e := idempotency.Replay[inferenceProfile](tx, token, in,
+			invalid("clientRequestToken was used with different parameters."))
+		if e != nil || found {
+			row = previous
 			return e
 		}
 
-		for _, existing := range records {
-			if row.Token != "" && row.Token == existing.Token {
-				if !sameJSON(in, existing.Request) {
-					return invalid("clientRequestToken was used with different parameters.")
-				}
-
-				row = *existing
-				return nil
-			}
+		if e := storage.Write(tx, scope.Key(serviceName, "profile", id), row); e != nil {
+			return e
 		}
 
-		return storage.Write(tx, scope.Key(serviceName, "profile", id), row)
+		return idempotency.Remember(tx, token, in, row)
 	})
 	return &api.CreateInferenceProfileResponse{
 		InferenceProfileArn: row.Detail.InferenceProfileArn,

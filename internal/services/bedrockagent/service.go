@@ -41,7 +41,6 @@ type record struct {
 	DataSource    *api.DataSource         `json:"dataSource,omitempty"`
 	Association   *api.AgentKnowledgeBase `json:"association,omitempty"`
 	Tags          map[string]string       `json:"tags,omitempty"`
-	Token         string                  `json:"token,omitempty"`
 	NextVersion   int                     `json:"nextVersion,omitempty"`
 }
 

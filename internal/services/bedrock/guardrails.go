@@ -1,36 +1,22 @@
 package bedrock
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"strconv"
 	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/bedrock"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
 type guardrail struct {
-	Detail        api.GetGuardrailResponse
-	Tags          map[string]string
-	Create        *api.CreateGuardrailRequest
-	VersionTokens map[string]versionRequest
-	Versions      []api.GetGuardrailResponse
-	NextVersion   int
-}
-
-type versionRequest struct {
-	Description *string
-	Version     string
-}
-
-func sameJSON(a, b any) bool {
-	left, _ := json.Marshal(a)
-	right, _ := json.Marshal(b)
-	return bytes.Equal(left, right)
+	Detail      api.GetGuardrailResponse
+	Tags        map[string]string
+	Versions    []api.GetGuardrailResponse
+	NextVersion int
 }
 
 func wordPolicy(config *api.GuardrailWordPolicyConfig) (*api.GuardrailWordPolicy, error) {
@@ -126,30 +112,32 @@ func (s *Service) CreateGuardrail(
 		WordPolicy:              policy,
 		BlockedInputMessaging:   in.BlockedInputMessaging,
 		BlockedOutputsMessaging: in.BlockedOutputsMessaging,
-	}, Tags: tags, Create: in, VersionTokens: map[string]versionRequest{}, NextVersion: 1}
+	}, Tags: tags, NextVersion: 1}
+	token := idempotency.Key(scope, serviceName, "CreateGuardrail", in.ClientRequestToken)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		previous, found, e := idempotency.Replay[guardrail](tx, token, in,
+			invalid("clientRequestToken was used with different parameters."))
+		if e != nil || found {
+			row = previous
+			return e
+		}
+
 		records, e := storage.Records[guardrail](tx, scope.Prefix(serviceName, guardrailKind))
 		if e != nil {
 			return e
 		}
 
 		for _, existing := range records {
-			if common.Value(in.ClientRequestToken) != "" &&
-				common.Value(in.ClientRequestToken) == common.Value(existing.Create.ClientRequestToken) {
-				if !sameJSON(in, existing.Create) {
-					return invalid("clientRequestToken was used with different parameters.")
-				}
-
-				row = *existing
-				return nil
-			}
-
 			if *existing.Detail.Name == *in.Name {
 				return invalid("A guardrail with this name already exists.")
 			}
 		}
 
-		return storage.Write(tx, scope.Key(serviceName, guardrailKind, id), row)
+		if e := storage.Write(tx, scope.Key(serviceName, guardrailKind, id), row); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, token, in, row)
 	})
 	return &api.CreateGuardrailResponse{
 		GuardrailId:  row.Detail.GuardrailId,
@@ -241,36 +229,50 @@ func (s *Service) CreateGuardrailVersion(
 	ctx context.Context,
 	in *api.CreateGuardrailVersionRequest,
 ) (*api.CreateGuardrailVersionResponse, error) {
-	version := ""
-	row, err := s.changeGuardrail(ctx, in.GuardrailIdentifier, func(row *guardrail) error {
-		token := common.Value(in.ClientRequestToken)
-		if old, ok := row.VersionTokens[token]; token != "" && ok {
-			if !sameJSON(old.Description, in.Description) {
-				return invalid("clientRequestToken was used with different parameters.")
-			}
+	scope, err := request.RegionalScope(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-			version = old.Version
-			return nil
+	id, err := resourceID(scope, guardrailKind, common.Value(in.GuardrailIdentifier))
+	if err != nil {
+		return nil, err
+	}
+
+	token := idempotency.Key(scope, serviceName, "CreateGuardrailVersion/"+id, in.ClientRequestToken)
+	var out *api.CreateGuardrailVersionResponse
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		previous, found, e := idempotency.Replay[*api.CreateGuardrailVersionResponse](tx, token, in,
+			invalid("clientRequestToken was used with different parameters."))
+		if e != nil || found {
+			out = previous
+			return e
 		}
 
-		version = strconv.Itoa(row.NextVersion)
+		row, found, e := storage.Read[guardrail](tx, scope.Key(serviceName, guardrailKind, id))
+		if e != nil {
+			return e
+		}
+
+		if !found {
+			return missing()
+		}
+
+		version := strconv.Itoa(row.NextVersion)
 		row.NextVersion++
 		snapshot := *common.Clone(&row.Detail)
 		snapshot.Version = new(version)
 		snapshot.Description = in.Description
 		snapshot.CreatedAt = new(time.Now().UTC())
 		row.Versions = append(row.Versions, snapshot)
-		if token != "" {
-			row.VersionTokens[token] = versionRequest{Description: in.Description, Version: version}
+		if e := storage.Write(tx, scope.Key(serviceName, guardrailKind, id), row); e != nil {
+			return e
 		}
 
-		return nil
+		out = &api.CreateGuardrailVersionResponse{GuardrailId: row.Detail.GuardrailId, Version: new(version)}
+		return idempotency.Remember(tx, token, in, out)
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &api.CreateGuardrailVersionResponse{GuardrailId: row.Detail.GuardrailId, Version: new(version)}, nil
+	return out, err
 }
 
 // DeleteGuardrail deletes a numbered version or the whole guardrail if no version is given.

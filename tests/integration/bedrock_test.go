@@ -178,6 +178,7 @@ func TestBedrockGuardrailsLogging(t *testing.T) {
 	c, r := bedrockClients(s, "test", "us-east-1")
 	ctx := context.Background()
 	create := &sdk.CreateGuardrailInput{
+		ClientRequestToken:      new("0123456789012345678901234567890123456789"),
 		Name:                    new("local-policy"),
 		BlockedInputMessaging:   new("blocked input"),
 		BlockedOutputsMessaging: new("blocked output"),
@@ -191,6 +192,15 @@ func TestBedrockGuardrailsLogging(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	repeated, replayErr := c.CreateGuardrail(ctx, create)
+	if replayErr != nil || aws.ToString(repeated.GuardrailId) != aws.ToString(g.GuardrailId) {
+		t.Fatalf("guardrail replay: %+v %v", repeated, replayErr)
+	}
+
+	create.Description = new("changed")
+	_, mismatchErr := c.CreateGuardrail(ctx, create)
+	code(t, mismatchErr, "ValidationException")
 
 	version, err := c.CreateGuardrailVersion(
 		ctx,

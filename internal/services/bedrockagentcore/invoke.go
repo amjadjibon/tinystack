@@ -17,6 +17,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/bedrockagentcorecontrol"
 	"github.com/amjadjibon/tinystack/internal/services/dockercli"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -471,6 +472,19 @@ func (s *Service) StopRuntimeSession(
 		return nil, err
 	}
 
+	token := idempotency.Key(scope, serviceName, "StopRuntimeSession", in.ClientToken)
+	var previous *api.StopRuntimeSessionResponse
+	var replayed bool
+	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+		var replayErr error
+		previous, replayed, replayErr = idempotency.Replay[*api.StopRuntimeSessionResponse](tx, token, in,
+			invalid("clientToken was used with different parameters"))
+		return replayErr
+	})
+	if err != nil || replayed {
+		return previous, err
+	}
+
 	id := common.Value(in.RuntimeSessionId)
 	found := false
 	s.removeSessions(ctx, func(sess *session) bool {
@@ -484,5 +498,9 @@ func (s *Service) StopRuntimeSession(
 		return nil, notFound("Session %s of AgentRuntime %s does not exist", id, t.RuntimeID)
 	}
 
-	return &api.StopRuntimeSessionResponse{RuntimeSessionId: new(id), StatusCode: new(int64(http.StatusOK))}, nil
+	out := &api.StopRuntimeSessionResponse{RuntimeSessionId: new(id), StatusCode: new(int64(http.StatusOK))}
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		return idempotency.Remember(tx, token, in, out)
+	})
+	return out, err
 }

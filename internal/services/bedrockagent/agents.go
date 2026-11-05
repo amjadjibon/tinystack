@@ -8,6 +8,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/bedrockagent"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -64,17 +65,20 @@ func (s *Service) CreateAgent(ctx context.Context, in *api.CreateAgentRequest) (
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		token := idempotency.Key(scope, serviceName, "CreateAgent", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.Agent](tx, token, in,
+			conflict("ClientToken was used with different parameters."))
+		if replayErr != nil || found {
+			value = previous
+			return replayErr
+		}
+
 		rows, e := storage.Records[record](tx, scope.Prefix(serviceName, kindAgent))
 		if e != nil {
 			return e
 		}
 
 		for _, r := range rows {
-			if in.ClientToken != nil && common.Value(r.Agent.ClientToken) == *in.ClientToken {
-				value = common.Clone(r.Agent)
-				return nil
-			}
-
 			if common.Value(r.Agent.AgentName) == common.Value(in.AgentName) {
 				return conflict("Agent name already exists.")
 			}
@@ -103,7 +107,11 @@ func (s *Service) CreateAgent(ctx context.Context, in *api.CreateAgentRequest) (
 			RoutingConfiguration: []api.AgentAliasRoutingConfigurationListItem{{AgentVersion: new(versionDraft)}},
 		}
 
-		return storage.Write(tx, scope.Key(serviceName, kindAlias, id+"/TSTALIASID"), &record{Alias: test})
+		if e := storage.Write(tx, scope.Key(serviceName, kindAlias, id+"/TSTALIASID"), &record{Alias: test}); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, token, in, value)
 	})
 	if err != nil {
 		return nil, err
