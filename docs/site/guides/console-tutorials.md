@@ -249,7 +249,7 @@ Additional permissions or dependencies make role deletion fail explicitly.
 4. Open `/mailbox`, choose **Refresh**, and inspect the verification email sent to the generated `@example.test`
    address from this pool. Copy its six-digit code.
 5. Run the drawer's `confirm-sign-up` command in CloudShell. Open the pool's user details and verify
-   `CONFIRMED`, then choose **Next** manually. The highlighted **Confirm** button is the nearest console action,
+   `CONFIRMED`; the step completes when `ConfirmSignUp` succeeds for the generated username. The highlighted **Confirm** button is the nearest console action,
    but uses `AdminConfirmSignUp` without checking an email code; use the CLI for code verification.
 
 CloudShell commands require manually replacing `POOL_ID`, `CLIENT_ID`, and `CODE` with the returned values.
@@ -268,8 +268,8 @@ aws-local cognito-idp admin-get-user --user-pool-id "$POOL_ID" --username "$NAME
 Diagnostic limits are explicit: client creation and user operations have redacted request/response bodies.
 The client step checks this pool's client count, so another client in the generated pool also counts. The sign-up
 step uses its user count and an exact pool/account/Region/destination verification email as evidence, rather than
-claiming to identify a redacted SignUp call. The mailbox step checks that same captured mail. User confirmation
-cannot be proved from these endpoints and never auto-advances. Cleanup finds only the generated pool by exact
+claiming to identify a redacted SignUp call. The mailbox step checks that same captured mail. The confirmation
+step matches a successful `ConfirmSignUp` whose recorded `resource_identifier` is the generated username. Cleanup finds only the generated pool by exact
 name and deletes it, including its clients and users. Captured diagnostic mail remains in the mailbox.
 
 ## Deploy a CloudFormation stack

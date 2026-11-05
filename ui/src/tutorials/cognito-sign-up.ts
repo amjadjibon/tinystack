@@ -8,7 +8,7 @@ export const cognitoSignUp: Tutorial = {
 	services: ["cognitoidp"],
 	duration: "10 min",
 	prerequisites:
-		"Requires Cognito pool/client creation, SignUp, ConfirmSignUp and console reads; cleanup requires ListUserPools and DeleteUserPool. Sign-up and code confirmation use CloudShell because the console offers administrative user operations. Replace POOL_ID, CLIENT_ID and CODE manually. Client checks use the pool client count; sign-up uses user count plus verification mail. Confirmation requires manual Next because diagnostic user records are redacted.",
+		"Requires Cognito pool/client creation, SignUp, ConfirmSignUp and console reads; cleanup requires ListUserPools and DeleteUserPool. Sign-up and code confirmation use CloudShell because the console offers administrative user operations. Replace POOL_ID, CLIENT_ID and CODE manually. Client checks use the pool client count; sign-up uses user count plus verification mail. Confirmation completes on a successful ConfirmSignUp for the generated username.",
 	learnMore: "https://amjadjibon.github.io/tinystack/guides/console-tutorials/",
 	cleanup: async (c, call) => {
 		const ids: string[] = [];
@@ -76,7 +76,7 @@ export const cognitoSignUp: Tutorial = {
 				{
 					title: "Confirm with the code",
 					content:
-						"Run the command in CloudShell with CLIENT_ID and CODE replaced. Reopen {pool}, Users, and your user to verify CONFIRMED. The highlighted Confirm button performs AdminConfirmSignUp without a code; use CloudShell for this exercise. Choose Next manually after verification: user status and confirmation requests are redacted from diagnostics, so this check cannot auto-advance.",
+						"Run the command in CloudShell with CLIENT_ID and CODE replaced. Reopen {pool}, Users, and your user to verify CONFIRMED. The highlighted Confirm button performs AdminConfirmSignUp without a code; use CloudShell for this exercise. The step completes when ConfirmSignUp succeeds for {username}; the request log records only the username, never the code or password.",
 					command:
 						"aws-local cognito-idp confirm-sign-up --client-id CLIENT_ID --username {username} --confirmation-code CODE",
 					hotspotId: HOTSPOT.cognitoConfirm,

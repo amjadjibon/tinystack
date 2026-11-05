@@ -17,6 +17,7 @@ import (
 
 func TestRequestIdentifierKeepsBodiesRedacted(t *testing.T) {
 	for _, tc := range []struct{ service, operation, member, target string }{
+		{"cognitoidp", "ConfirmSignUp", "Username", "tutorial-user"},
 		{"lambda", "Invoke", "FunctionName", "tutorial-function"},
 		{"secretsmanager", "GetSecretValue", "SecretId", "tutorial-secret"},
 		{"ssm", "GetParameter", "Name", "tutorial-parameter:1"},
@@ -24,11 +25,13 @@ func TestRequestIdentifierKeepsBodiesRedacted(t *testing.T) {
 		for _, protocol := range []string{"console", catalog.AWSJSON11} {
 			t.Run(tc.service+"/"+protocol, func(t *testing.T) {
 				input := map[string]any{
-					tc.member:      tc.target,
-					"Value":        "parameter-value",
-					"SecretString": "secret-value",
-					"Payload":      "function-payload",
-					"Input":        "workflow-input",
+					tc.member:          tc.target,
+					"Value":            "parameter-value",
+					"SecretString":     "secret-value",
+					"Payload":          "function-payload",
+					"Input":            "workflow-input",
+					"Password":         "user-password",
+					"ConfirmationCode": "confirmation-code",
 				}
 				var envelope any = input
 				path := "/"
@@ -75,6 +78,7 @@ func TestRequestIdentifierKeepsBodiesRedacted(t *testing.T) {
 				}
 				privateValues := []string{
 					"secret-value", "parameter-value", "function-payload", "workflow-input", "workflow-output",
+					"user-password", "confirmation-code",
 				}
 				for _, secret := range privateValues {
 					if strings.Contains(string(encoded), secret) {

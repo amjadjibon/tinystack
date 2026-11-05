@@ -80,7 +80,7 @@ export const sources: Record<Check, (keyof Snapshot)[]> = {
 	cognitoClient: ["resources"],
 	cognitoSignup: ["resources", "messages"],
 	cognitoMail: ["resources", "messages"],
-	cognitoConfirmed: [],
+	cognitoConfirmed: ["requests"],
 	cfnStack: ["resources"],
 	cfnCreated: ["resources"],
 	cfnOutputs: ["resources", "requests"],
@@ -423,10 +423,15 @@ export function check(kind: Check, s: Snapshot, c: Context): boolean {
 				)
 			);
 		}
-		// Confirmation status is not in inventory; every user-read and confirmation
-		// request is redacted. Fail closed: the instructions require manual Next.
+		// Bodies stay redacted; the request log keeps only ConfirmSignUp's Username.
 		case "cognitoConfirmed":
-			return false;
+			return successful(
+				s,
+				c,
+				"cognitoidp",
+				"ConfirmSignUp",
+				(r) => r.resource_identifier === n.username,
+			);
 		case "cfnStack":
 			return resource(s, c, "cloudformation", n.stack)?.type === "stack";
 		case "cfnCreated":

@@ -744,7 +744,7 @@ for (const kind of [
 		}
 	});
 }
-test("redacted Cognito confirmation cannot complete from unrelated successes", () => {
+test("Cognito confirmation needs a successful ConfirmSignUp for the generated user", () => {
 	const s = t3fixture();
 	for (const operation of ["SignUp", "ConfirmSignUp", "AdminGetUser"])
 		s.requests.push({
@@ -754,6 +754,17 @@ test("redacted Cognito confirmation cannot complete from unrelated successes", (
 			request_body: "(redacted: this operation carries sensitive values)",
 			response_body: "(redacted: this operation carries sensitive values)",
 		});
+	assert.equal(check("cognitoConfirmed", s, t3ctx), false);
+	const confirm = s.requests[s.requests.length - 2];
+	confirm.resource_identifier = "another-user";
+	assert.equal(check("cognitoConfirmed", s, t3ctx), false);
+	confirm.resource_identifier = t3ctx.names.username;
+	assert.equal(check("cognitoConfirmed", s, t3ctx), true);
+	assert.equal(
+		check("cognitoConfirmed", s, { ...t3ctx, region: "eu-west-1" }),
+		false,
+	);
+	confirm.status = 400;
 	assert.equal(check("cognitoConfirmed", s, t3ctx), false);
 	const pool = s.resources[1];
 	pool.details = { Clients: 0, Users: 0 };

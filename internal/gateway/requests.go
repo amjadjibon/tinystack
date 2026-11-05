@@ -106,6 +106,7 @@ func (w *capturingWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter
 // It never reads response data or value/payload members; sensitive bodies stay redacted.
 func requestResourceIdentifier(r *http.Request, c *call, body string) string {
 	member := map[string]string{
+		"cognitoidp/ConfirmSignUp":      "Username",
 		"lambda/Invoke":                 "FunctionName",
 		"secretsmanager/GetSecretValue": "SecretId",
 		"ssm/GetParameter":              "Name",
