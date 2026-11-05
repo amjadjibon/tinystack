@@ -22,7 +22,6 @@ const (
 	serviceName         = "ram"
 	shareKind           = "resource-share"
 	associationKind     = "association"
-	tokenKind           = "client-token"
 	featureSet          = "STANDARD"
 	statusActive        = "ACTIVE"
 	statusDeleted       = "DELETED"
@@ -42,12 +41,6 @@ type (
 
 	associationRecord struct {
 		Association *api.ResourceShareAssociation
-	}
-
-	// tokenRecord remembers which share a CreateResourceShare clientToken produced.
-	tokenRecord struct {
-		ShareID string
-		Name    string
 	}
 )
 

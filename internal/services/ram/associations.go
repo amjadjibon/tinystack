@@ -9,6 +9,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ram"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -51,7 +52,23 @@ func (s *Service) AssociateResourceShare(
 	var associations []api.ResourceShareAssociation
 	now := common.Seconds(time.Now().UTC())
 
+	tokenKey := idempotency.Key(scope, serviceName, "AssociateResourceShare", in.ClientToken)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		previous, replayed, replayErr := idempotency.Replay[[]api.ResourceShareAssociation](
+			tx,
+			tokenKey,
+			in,
+			idempotentMismatch(),
+		)
+		if replayErr != nil {
+			return replayErr
+		}
+
+		if replayed {
+			associations = previous
+			return nil
+		}
+
 		rec, found, readErr := storage.Read[resourceShareRecord](tx, shareKey)
 		if readErr != nil {
 			return readErr
@@ -136,7 +153,7 @@ func (s *Service) AssociateResourceShare(
 			associations = append(associations, assoc)
 		}
 
-		return nil
+		return idempotency.Remember(tx, tokenKey, in, associations)
 	})
 	if err != nil {
 		return nil, err
@@ -175,7 +192,23 @@ func (s *Service) DisassociateResourceShare(
 	var associations []api.ResourceShareAssociation
 	now := common.Seconds(time.Now().UTC())
 
+	tokenKey := idempotency.Key(scope, serviceName, "DisassociateResourceShare", in.ClientToken)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		previous, replayed, replayErr := idempotency.Replay[[]api.ResourceShareAssociation](
+			tx,
+			tokenKey,
+			in,
+			idempotentMismatch(),
+		)
+		if replayErr != nil {
+			return replayErr
+		}
+
+		if replayed {
+			associations = previous
+			return nil
+		}
+
 		rec, found, readErr := storage.Read[resourceShareRecord](tx, shareKey)
 		if readErr != nil {
 			return readErr
@@ -251,7 +284,7 @@ func (s *Service) DisassociateResourceShare(
 			associations = append(associations, assoc)
 		}
 
-		return nil
+		return idempotency.Remember(tx, tokenKey, in, associations)
 	})
 	if err != nil {
 		return nil, err

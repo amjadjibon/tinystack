@@ -10,6 +10,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ram"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -85,44 +86,16 @@ func (s *Service) CreateResourceShare(
 	}
 
 	shareKey := scope.Key(serviceName, shareKind, id)
-	var tokenKey string
-	if in.ClientToken != nil && *in.ClientToken != "" {
-		tokenKey = scope.Key(serviceName, tokenKind, *in.ClientToken)
-	}
-
+	tokenKey := idempotency.Key(scope, serviceName, "CreateResourceShare", in.ClientToken)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if tokenKey != "" {
-			prior, found, readErr := storage.Read[tokenRecord](tx, tokenKey)
-			if readErr != nil {
-				return readErr
-			}
+		previous, found, replayErr := idempotency.Replay[*api.ResourceShare](tx, tokenKey, in, idempotentMismatch())
+		if replayErr != nil {
+			return replayErr
+		}
 
-			// A retried request with the same token returns the share the first request created.
-			if found {
-				if prior.Name != *in.Name {
-					return idempotentMismatch()
-				}
-
-				existing, ok, e := storage.Read[resourceShareRecord](
-					tx,
-					scope.Key(serviceName, shareKind, prior.ShareID),
-				)
-				if e != nil {
-					return e
-				}
-
-				if !ok {
-					return idempotentMismatch()
-				}
-
-				share = existing.Share
-				share.Tags = tagList(existing.Tags)
-				return nil
-			}
-
-			if wErr := storage.Write(tx, tokenKey, tokenRecord{ShareID: id, Name: *in.Name}); wErr != nil {
-				return wErr
-			}
+		if found {
+			share = previous
+			return nil
 		}
 
 		if wErr := storage.Write(tx, shareKey, rec); wErr != nil {
@@ -165,7 +138,7 @@ func (s *Service) CreateResourceShare(
 			}
 		}
 
-		return nil
+		return idempotency.Remember(tx, tokenKey, in, share)
 	})
 	if err != nil {
 		return nil, err
@@ -306,7 +279,18 @@ func (s *Service) UpdateResourceShare(
 	shareKey := scope.Key(serviceName, shareKind, id)
 
 	var updatedShare *api.ResourceShare
+	tokenKey := idempotency.Key(scope, serviceName, "UpdateResourceShare", in.ClientToken)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		previous, replayed, replayErr := idempotency.Replay[*api.ResourceShare](tx, tokenKey, in, idempotentMismatch())
+		if replayErr != nil {
+			return replayErr
+		}
+
+		if replayed {
+			updatedShare = previous
+			return nil
+		}
+
 		rec, found, readErr := storage.Read[resourceShareRecord](tx, shareKey)
 		if readErr != nil {
 			return readErr
@@ -375,7 +359,7 @@ func (s *Service) UpdateResourceShare(
 
 		updatedShare = &candidate
 		updatedShare.Tags = tagList(rec.Tags)
-		return nil
+		return idempotency.Remember(tx, tokenKey, in, updatedShare)
 	})
 	if err != nil {
 		return nil, err
@@ -407,7 +391,17 @@ func (s *Service) DeleteResourceShare(
 
 	shareKey := scope.Key(serviceName, shareKind, id)
 
+	tokenKey := idempotency.Key(scope, serviceName, "DeleteResourceShare", in.ClientToken)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		_, replayed, replayErr := idempotency.Replay[struct{}](tx, tokenKey, in, idempotentMismatch())
+		if replayErr != nil {
+			return replayErr
+		}
+
+		if replayed {
+			return nil
+		}
+
 		rec, found, readErr := storage.Read[resourceShareRecord](tx, shareKey)
 		if readErr != nil {
 			return readErr
@@ -441,7 +435,7 @@ func (s *Service) DeleteResourceShare(
 			}
 		}
 
-		return nil
+		return idempotency.Remember(tx, tokenKey, in, struct{}{})
 	})
 	if err != nil {
 		return nil, err
