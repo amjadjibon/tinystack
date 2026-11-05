@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
@@ -14,8 +15,9 @@ import (
 )
 
 type entry struct {
-	Input  string
-	Result json.RawMessage
+	ExpiresAt time.Time `json:",omitempty"`
+	Input     string
+	Result    json.RawMessage
 }
 
 // Key returns where a token's result is kept, or "" when the request carries no token.
@@ -28,8 +30,10 @@ func Key(scope request.Scope, service, action string, token *string) string {
 }
 
 // Replay returns the result remembered under key. found is false for an empty key or an unused token; a token reused
-// with different input fails with mismatch.
-func Replay[T any](tx storage.ReadTx, key string, input any, mismatch error) (result T, found bool, err error) {
+// with different input fails with mismatch. Expired entries are unused; now optionally supplies the check time.
+func Replay[T any](
+	tx storage.ReadTx, key string, input any, mismatch error, now ...time.Time,
+) (result T, found bool, err error) {
 	if key == "" {
 		return result, false, nil
 	}
@@ -37,6 +41,15 @@ func Replay[T any](tx storage.ReadTx, key string, input any, mismatch error) (re
 	previous, found, err := storage.Read[entry](tx, key)
 	if err != nil || !found {
 		return result, false, err
+	}
+
+	current := time.Now()
+	if len(now) > 0 {
+		current = now[0]
+	}
+
+	if !previous.ExpiresAt.IsZero() && !current.Before(previous.ExpiresAt) {
+		return result, false, nil
 	}
 
 	fingerprint, err := fingerprint(input)
@@ -53,7 +66,8 @@ func Replay[T any](tx storage.ReadTx, key string, input any, mismatch error) (re
 }
 
 // Remember keeps result under key for later retries; it does nothing for an empty key.
-func Remember(tx storage.WriteTx, key string, input, result any) error {
+// expiresAt optionally limits the replay window; without it the result does not expire.
+func Remember(tx storage.WriteTx, key string, input, result any, expiresAt ...time.Time) error {
 	if key == "" {
 		return nil
 	}
@@ -68,7 +82,12 @@ func Remember(tx storage.WriteTx, key string, input, result any) error {
 		return err
 	}
 
-	return storage.Write(tx, key, entry{Input: fingerprint, Result: data})
+	record := entry{Input: fingerprint, Result: data}
+	if len(expiresAt) > 0 {
+		record.ExpiresAt = expiresAt[0]
+	}
+
+	return storage.Write(tx, key, record)
 }
 
 // fingerprint encodes a struct by Go field name, so label and query members tagged json:"-" still count.

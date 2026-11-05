@@ -2,13 +2,14 @@ package codebuild
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/codebuild"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -51,13 +52,10 @@ func (s *Service) StartBuild(ctx context.Context, in *api.StartBuildInput) (*api
 	if in.IdempotencyToken != nil && (len(*in.IdempotencyToken) < 1 || len(*in.IdempotencyToken) > 64) {
 		return nil, invalid("idempotencyToken must contain 1-64 characters")
 	}
-	fingerprint, err := json.Marshal(struct {
+	fingerprint := struct {
 		Input *api.StartBuildInput
 		Retry any
-	}{in, ctx.Value(retryProjectKey{})})
-	if err != nil {
-		return nil, err
-	}
+	}{in, ctx.Value(retryProjectKey{})}
 	var result *api.Build
 	replay := false
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -65,21 +63,14 @@ func (s *Service) StartBuild(ctx context.Context, in *api.StartBuildInput) (*api
 		if ctx.Value(retryProjectKey{}) != nil {
 			tokenKind = "retry-token"
 		}
-		tokenKey := meta.Key(serviceName, tokenKind, common.Value(in.IdempotencyToken))
-		if in.IdempotencyToken != nil {
-			token, found, e := storage.Read[buildToken](tx, tokenKey)
-			if e != nil {
-				return e
-			}
-			if found && stamp()-token.Created < 300 {
-				if token.Input != string(fingerprint) {
-					return invalid("idempotencyToken was used with different parameters")
-				}
-				result = common.Clone(&token.Build)
-				replay = true
-				return nil
-			}
+		tokenKey := idempotency.Key(meta.Scope, serviceName, tokenKind, in.IdempotencyToken)
+		previous, found, replayErr := idempotency.Replay[*api.Build](tx, tokenKey, fingerprint,
+			invalid("idempotencyToken was used with different parameters"))
+		if replayErr != nil || found {
+			result, replay = previous, found
+			return replayErr
 		}
+
 		p, ok, e := read(tx, meta.Scope, name)
 		if e != nil {
 			return e
@@ -259,10 +250,7 @@ func (s *Service) StartBuild(ctx context.Context, in *api.StartBuildInput) (*api
 		}
 
 		result = common.Clone(new(b))
-		if in.IdempotencyToken != nil {
-			return storage.Write(tx, tokenKey, buildToken{Input: string(fingerprint), Created: stamp(), Build: b})
-		}
-		return nil
+		return idempotency.Remember(tx, tokenKey, fingerprint, result, time.Now().Add(5*time.Minute))
 	})
 	if err != nil {
 		return nil, err
@@ -491,11 +479,6 @@ func (s *Service) StartPipelineBuild(
 	return s.StartBuild(context.WithValue(ctx, pipelineSourceKey{}, source), in)
 }
 
-type buildToken struct {
-	Input   string
-	Build   api.Build
-	Created float64
-}
 type (
 	retryProjectKey struct{}
 	retrySettings   struct {
