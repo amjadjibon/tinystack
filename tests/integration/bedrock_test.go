@@ -202,6 +202,11 @@ func TestBedrockGuardrailsLogging(t *testing.T) {
 	_, mismatchErr := c.CreateGuardrail(ctx, create)
 	code(t, mismatchErr, "ValidationException")
 
+	guardrails, listErr := c.ListGuardrails(ctx, &sdk.ListGuardrailsInput{})
+	if listErr != nil || len(guardrails.Guardrails) != 1 {
+		t.Fatalf("duplicate guardrail: %+v %v", guardrails, listErr)
+	}
+
 	version, err := c.CreateGuardrailVersion(
 		ctx,
 		&sdk.CreateGuardrailVersionInput{GuardrailIdentifier: g.GuardrailId, Description: new("snapshot")},

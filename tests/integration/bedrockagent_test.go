@@ -98,6 +98,11 @@ func preparedAgent(t *testing.T, s *httptest.Server) (control *sdk.Client, infer
 		t.Fatalf("idempotent create: %+v %v", replay, replayErr)
 	}
 
+	agents, listErr := c.ListAgents(context.Background(), &sdk.ListAgentsInput{})
+	if listErr != nil || len(agents.AgentSummaries) != 1 {
+		t.Fatalf("duplicate agent: %+v %v", agents, listErr)
+	}
+
 	input.Description = new("changed")
 	_, mismatchErr := c.CreateAgent(context.Background(), input)
 	code(t, mismatchErr, "ConflictException")

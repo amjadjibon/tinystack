@@ -953,6 +953,11 @@ func TestCodeBuildRetryRecordsSDK(t *testing.T) {
 		t.Fatal(replay, err)
 	}
 
+	builds, listErr := c.ListBuildsForProject(ctx, &sdk.ListBuildsForProjectInput{ProjectName: new("records-retry")})
+	if listErr != nil || len(builds.Ids) != 2 {
+		t.Fatalf("duplicate build: %+v %v", builds, listErr)
+	}
+
 	_, err = c.StopBuild(ctx, &sdk.StopBuildInput{Id: build.Build.Id})
 	if err != nil {
 		t.Fatal(err)

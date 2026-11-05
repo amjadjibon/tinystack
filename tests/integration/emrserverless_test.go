@@ -69,6 +69,11 @@ func TestEMRServerlessSDKLifecycle(t *testing.T) {
 		t.Fatal(repeat, err)
 	}
 
+	applications, listErr := c.ListApplications(ctx, &sdk.ListApplicationsInput{})
+	if listErr != nil || len(applications.Applications) != 1 {
+		t.Fatalf("duplicate application: %+v %v", applications, listErr)
+	}
+
 	create.Name = new("changed")
 	_, err = c.CreateApplication(ctx, create)
 	wantEMRError(t, err, "ConflictException")

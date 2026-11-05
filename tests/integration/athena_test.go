@@ -318,6 +318,11 @@ ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe' LOCATION 's3://lake/events
 	})
 	code(t, mismatchErr, "InvalidRequestException")
 
+	queries, listErr := c.ListNamedQueries(ctx, &athena.ListNamedQueriesInput{WorkGroup: new("analysts")})
+	if listErr != nil || len(queries.NamedQueryIds) != 1 {
+		t.Fatalf("duplicate named query: %+v %v", queries, listErr)
+	}
+
 	groups, err := c.ListWorkGroups(ctx, &athena.ListWorkGroupsInput{})
 	if err != nil || len(groups.WorkGroups) != 2 {
 		t.Fatalf("%+v %v", groups, err)
