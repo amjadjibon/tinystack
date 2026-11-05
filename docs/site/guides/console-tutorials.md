@@ -126,18 +126,6 @@ aws-local sqs receive-message --queue-url "/$ACCOUNT/$NAME"
 
 Cleanup removes every target of the generated rule, then deletes the rule and the queue with its messages.
 
-## Saved progress
-
-Progress, completed steps, generated names, and completion time are stored in this browser per tutorial,
-account, and Region. Return to `/tutorials` and choose **Resume** after a reload. Switch back to the original
-scope to resume its progress. **Restart** replaces that tutorial's progress with fresh names; it does not delete
-previous resources. Clean up before restarting when possible. A successful reset from **Developer tools** clears
-all tutorial progress in this browser. Browser storage restrictions limit persistence to the current session.
-
-After completion the drawer shows a summary, Learn more, and cleanup. Other names can be used with manual
-Next, but cleanup targets only the names generated for that tutorial. Resetting through a separate CLI or another
-browser does not clear this browser's saved tutorial progress.
-
 ## Create and test a Lambda function
 
 Start **Create and test a Lambda function** from `/tutorials` or the Tutorials drawer.
@@ -226,3 +214,96 @@ Creation checks match inventory names. Read checks match a successful request's 
 remain redacted in the request inspector. Console parameter reads include a version selector.
 Cleanup permanently deletes the generated secret, then the generated parameter and all their versions.
 Requires Secrets Manager create/get/delete, SSM put/get/delete, and console listing permissions.
+
+## Grant least privilege with IAM
+
+1. Start **Grant least privilege with IAM** from Tutorials. In IAM **Roles**, choose **Create role**, keep the
+   Lambda service trust, skip permissions, and use the generated role name.
+2. Open the role's permissions and choose **Create inline policy**. Use the generated policy name and the
+   drawer's JSON: allow only `s3:GetObject` on the generated bucket's `hello.txt` ARN. No bucket is created.
+3. Open **Policy simulator**, select Principal mode and the generated role, enter `s3:GetObject,s3:DeleteObject`
+   and the exact object ARN, then **Run simulation**. The read must be allowed and the delete implicitly denied.
+
+For CloudShell, copy each expanded `aws-local` command from the drawer in order. In an external terminal,
+replace `NAME` with the generated name and set account credentials and Region as described above:
+
+```sh
+aws-local iam create-role --role-name "$NAME" --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+aws-local iam put-role-policy --role-name "$NAME" --policy-name "$NAME" --policy-document "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::$NAME/hello.txt\"}]}"
+aws-local iam simulate-principal-policy --policy-source-arn "arn:aws:iam::$ACCOUNT:role/$NAME" \
+  --action-names s3:GetObject s3:DeleteObject --resource-arns "arn:aws:s3:::$NAME/hello.txt"
+```
+
+IAM inventory is global: the role exists across Regions within this account. IAM console calls also use global scope; their request
+records match the account and generated role regardless of the selected Region. Cleanup deletes only the generated inline policy, then the role.
+Additional permissions or dependencies make role deletion fail explicitly.
+
+## Sign up a user with Cognito
+
+1. Start **Sign up a user with Cognito**. Choose **Create user pool**, use the generated name, and set
+   **Auto-verified attributes** to `email`. Leave deletion protection off. Copy the pool ID.
+2. Open the pool's **App clients** tab and choose **Create app client**, using the generated name and leaving
+   the client secret disabled. Copy the client ID.
+3. Open the **Users** tab. Self-service SignUp has no console form: use the drawer's CloudShell command.
+   **Create user** is an administrative operation and does not perform this exercise's sign-up flow.
+4. Open `/mailbox`, choose **Refresh**, and inspect the verification email sent to the generated `@example.test`
+   address from this pool. Copy its six-digit code.
+5. Run the drawer's `confirm-sign-up` command in CloudShell. Open the pool's user details and verify
+   `CONFIRMED`, then choose **Next** manually. The highlighted **Confirm** button is the nearest console action,
+   but uses `AdminConfirmSignUp` without checking an email code; use the CLI for code verification.
+
+CloudShell commands require manually replacing `POOL_ID`, `CLIENT_ID`, and `CODE` with the returned values.
+For an external terminal, replace `NAME` with the generated name and run one command at a time:
+
+```sh
+aws-local cognito-idp create-user-pool --pool-name "$NAME" --auto-verified-attributes email
+aws-local cognito-idp create-user-pool-client --user-pool-id "$POOL_ID" --client-name "$NAME" --no-generate-secret
+aws-local cognito-idp sign-up --client-id "$CLIENT_ID" --username "$NAME" --password 'Tutorial123!' \
+  --user-attributes "Name=email,Value=$NAME@example.test"
+# Read CODE from the console mailbox; it is captured locally, not sent externally.
+aws-local cognito-idp confirm-sign-up --client-id "$CLIENT_ID" --username "$NAME" --confirmation-code "$CODE"
+aws-local cognito-idp admin-get-user --user-pool-id "$POOL_ID" --username "$NAME"
+```
+
+Diagnostic limits are explicit: client creation and user operations have redacted request/response bodies.
+The client step checks this pool's client count, so another client in the generated pool also counts. The sign-up
+step uses its user count and an exact pool/account/Region/destination verification email as evidence, rather than
+claiming to identify a redacted SignUp call. The mailbox step checks that same captured mail. User confirmation
+cannot be proved from these endpoints and never auto-advances. Cleanup finds only the generated pool by exact
+name and deletes it, including its clients and users. Captured diagnostic mail remains in the mailbox.
+
+## Deploy a CloudFormation stack
+
+1. Start **Deploy a CloudFormation stack** and choose **Create stack**. Use the generated stack name and paste
+   the drawer's small JSON template into the editor. Validate and create directly, with termination protection off.
+2. Open the stack's **Events** tab and refresh until `CREATE_COMPLETE`. The template creates one SQS queue.
+3. Select **Outputs** to inspect `QueueUrl`, populated by `Ref` on the queue. The live check reads the matching
+   `DescribeStacks` response loaded by the detail page; it does not require a separate output API.
+4. Choose **Update stack**, keep the previous template, validate, add tag `tutorial=updated`, and submit directly
+   with **Create change set** off. Follow Events to `UPDATE_COMPLETE`.
+
+Use the expanded drawer commands individually in CloudShell. In an external terminal replace `NAME` with the
+single generated name used for both stack and queue:
+
+```sh
+aws-local cloudformation create-stack --stack-name "$NAME" --template-body "{\"Resources\":{\"Queue\":{\"Type\":\"AWS::SQS::Queue\",\"Properties\":{\"QueueName\":\"$NAME\"}}},\"Outputs\":{\"QueueUrl\":{\"Value\":{\"Ref\":\"Queue\"}}}}"
+aws-local cloudformation describe-stack-events --stack-name "$NAME"
+aws-local cloudformation describe-stacks --stack-name "$NAME"
+aws-local cloudformation update-stack --stack-name "$NAME" --use-previous-template --tags Key=tutorial,Value=updated
+aws-local cloudformation describe-stacks --stack-name "$NAME"
+```
+
+Cleanup calls `DeleteStack` only on the generated stack. CloudFormation deletes its managed queue in dependency
+order. Do not add unrelated resources to the tutorial stack or enable termination protection before cleanup.
+
+## Saved progress
+
+Progress, completed steps, generated names, and completion time are stored in this browser per tutorial,
+account, and Region. Return to `/tutorials` and choose **Resume** after a reload. Switch back to the original
+scope to resume its progress. **Restart** replaces that tutorial's progress with fresh names; it does not delete
+previous resources. Clean up before restarting when possible. A successful reset from **Developer tools** clears
+all tutorial progress in this browser. Browser storage restrictions limit persistence to the current session.
+
+After completion the drawer shows a summary, Learn more, and cleanup. Other names can be used with manual
+Next, but cleanup targets only the names generated for that tutorial. Resetting through a separate CLI or another
+browser does not clear this browser's saved tutorial progress.
