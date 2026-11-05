@@ -26,7 +26,7 @@ See the [implemented feature catalogue](catalogue.md#amazon-timestream-query) fo
 - PrepareQuery, complex result types, joins, subqueries, CTEs, window functions, set operations, arithmetic and functions outside the documented scalar subset fail explicitly; schema is inferred from currently retained records.
 - Queries complete synchronously; CancelQuery invalidates unread pages of completed queries rather than interrupting an executing engine.
 - Scheduled work claims are committed before execution and missed runs are skipped; a process crash during a run is recorded as a failed invocation on restart, preserving any already committed target writes; SNS delivery failures are recorded without retry.
-- MaxRows pagination is enforced but the AWS 1 MB response-byte limit is not emulated; a single-page result is not kept, but a paginated one stays stored until reset, even after its tokens expire; expired tokens cannot be read; IAM principal-level pagination isolation is limited to account and Region.
+- MaxRows pagination is enforced but the AWS 1 MB response-byte limit is not emulated; single-page results with a client token are retained for replay, and paginated results stay stored until reset, even after its tokens expire; expired tokens cannot be read; IAM principal-level pagination isolation is limited to account and Region.
 - Scheduled error reports use SSE-S3 only; no query insights or prepared-query metadata.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)

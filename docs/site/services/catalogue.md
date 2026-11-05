@@ -729,6 +729,7 @@ Run scalar Timestream SQL over durable time-series points and execute scheduled 
 
 **Execution:** In-process SQL and scheduled execution. **Selected operations:** 14.
 
+- ClientToken retries replay query results and explicit scheduled-query invocation claims and reject changed parameters.
 - Fourteen of 15 pinned operations, including Query, CancelQuery and ExecuteScheduledQuery, with generated request validation and SDK v2 coverage.
 - Gateway routes unique Timestream_20181101 operations to their owning service, TagResource/UntagResource/ListTagsForResource by the :scheduled-query/ ARN prefix, and DescribeEndpoints to Timestream Write.
 - CreateScheduledQuery, DescribeScheduledQuery, ListScheduledQueries, UpdateScheduledQuery (ENABLED and DISABLED) and DeleteScheduledQuery, with ClientToken idempotency and ConflictException on mismatched replay or duplicate name.
@@ -1671,6 +1672,7 @@ Manage queues, custom presets and job templates and exercise a durable local job
 
 **Execution:** Local behavior. **Selected operations:** 24.
 
+- CreateJob client tokens replay the committed job for 60 seconds and reject changed parameters with BadRequestException.
 - Queue, preset and job-template CRUD, tags, category and partial-input filters and indexed name/creation-date pagination with ascending/descending order.
 - Per-account/Region Default queue; ON_DEMAND pricing, pause/resume, priority/concurrency scheduling and active-job deletion checks.
 - Create/Get/List/Search/Cancel jobs with existing local IAM roles, queues, templates and preset references; one-minute client-token idempotency.
@@ -2013,6 +2015,7 @@ Store resource shares and resource/principal associations as configuration recor
 
 **Execution:** Configuration records only. **Selected operations:** 9.
 
+- ClientToken retries replay create, update, delete and association results and reject changed parameters.
 - Nine pinned REST JSON resource share, association, and tag operations with AWS SDK v2 integration.
 - Deterministic resource share lifecycle with unique ARNs, names, allowExternalPrincipals controls, and scoped storage.
 - Deterministic resource and principal associations with status ASSOCIATED and DISASSOCIATED.

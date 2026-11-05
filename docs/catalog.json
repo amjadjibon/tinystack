@@ -145,6 +145,7 @@
       "category": "Media Services",
       "summary": "Manage queues, custom presets and job templates and exercise a durable local job lifecycle without transcoding.",
       "features": [
+        "CreateJob client tokens replay the committed job for 60 seconds and reject changed parameters with BadRequestException",
         "Queue, preset and job-template CRUD, tags, category and partial-input filters and indexed name/creation-date pagination with ascending/descending order",
         "Per-account/Region Default queue; ON_DEMAND pricing, pause/resume, priority/concurrency scheduling and active-job deletion checks",
         "Create/Get/List/Search/Cancel jobs with existing local IAM roles, queues, templates and preset references; one-minute client-token idempotency",
@@ -2156,6 +2157,7 @@
       "execution": "Configuration records only",
       "package": "ram",
       "features": [
+        "ClientToken retries replay create, update, delete and association results and reject changed parameters",
         "Nine pinned REST JSON resource share, association, and tag operations with AWS SDK v2 integration",
         "Deterministic resource share lifecycle with unique ARNs, names, allowExternalPrincipals controls, and scoped storage",
         "Deterministic resource and principal associations with status ASSOCIATED and DISASSOCIATED",
@@ -3548,6 +3550,7 @@
       "scope": "Account and Region",
       "summary": "Run scalar Timestream SQL over durable time-series points and execute scheduled rollups with SNS notifications and S3 failure reports.",
       "features": [
+        "ClientToken retries replay query results and explicit scheduled-query invocation claims and reject changed parameters",
         "Fourteen of 15 pinned operations, including Query, CancelQuery and ExecuteScheduledQuery, with generated request validation and SDK v2 coverage",
         "Gateway routes unique Timestream_20181101 operations to their owning service, TagResource/UntagResource/ListTagsForResource by the :scheduled-query/ ARN prefix, and DescribeEndpoints to Timestream Write",
         "CreateScheduledQuery, DescribeScheduledQuery, ListScheduledQueries, UpdateScheduledQuery (ENABLED and DISABLED) and DeleteScheduledQuery, with ClientToken idempotency and ConflictException on mismatched replay or duplicate name",
@@ -3567,7 +3570,7 @@
         "PrepareQuery, complex result types, joins, subqueries, CTEs, window functions, set operations, arithmetic and functions outside the documented scalar subset fail explicitly; schema is inferred from currently retained records",
         "Queries complete synchronously; CancelQuery invalidates unread pages of completed queries rather than interrupting an executing engine",
         "Scheduled work claims are committed before execution and missed runs are skipped; a process crash during a run is recorded as a failed invocation on restart, preserving any already committed target writes; SNS delivery failures are recorded without retry",
-        "MaxRows pagination is enforced but the AWS 1 MB response-byte limit is not emulated; a single-page result is not kept, but a paginated one stays stored until reset, even after its tokens expire; expired tokens cannot be read; IAM principal-level pagination isolation is limited to account and Region",
+        "MaxRows pagination is enforced but the AWS 1 MB response-byte limit is not emulated; single-page results with a client token are retained for replay, and paginated results stay stored until reset, even after its tokens expire; expired tokens cannot be read; IAM principal-level pagination isolation is limited to account and Region",
         "Scheduled error reports use SSE-S3 only; no query insights or prepared-query metadata"
       ],
       "execution": "In-process SQL and scheduled execution",
