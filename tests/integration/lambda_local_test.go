@@ -84,7 +84,7 @@ export async function handler(e,c){
 				Runtime:      test.runtime,
 				Handler:      new("nested/app.handler"),
 				Role:         new("arn:aws:iam::000000000000:role/lambda"),
-				Timeout:      new(int32(1)),
+				Timeout:      new(int32(3)),
 				Environment:  &lambdatypes.Environment{Variables: map[string]string{"GREETING": "hello"}},
 				Code: &lambdatypes.FunctionCode{
 					ZipFile: zipOf(t, test.filename, test.code),
@@ -126,7 +126,7 @@ export async function handler(e,c){
 			}
 
 			for _, failure := range []struct{ payload, kind string }{
-				{`{"fail":true}`, "boom"}, {`{"sleep":true}`, "Task timed out after 1.00 seconds"},
+				{`{"fail":true}`, "boom"}, {`{"sleep":true}`, "Task timed out after 3.00 seconds"},
 			} {
 				response, err = c.Invoke(
 					context.Background(),

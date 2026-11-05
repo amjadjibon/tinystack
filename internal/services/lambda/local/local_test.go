@@ -275,27 +275,39 @@ func TestConcurrentAndRelease(t *testing.T) {
 // A slow cold start of one function must not hold up other functions.
 func TestColdStartDoesNotBlock(t *testing.T) {
 	fn := pythonFunction(t, "def handler(e,c):\n return 1")
-	// Under a loaded -race run, reaching the probe can take longer than the default invocation timeout.
-	fn.Timeout = 10 * time.Second
 	if _, err := exec.LookPath("node"); err != nil {
 		t.Skip("node is absent")
 	}
 
-	// The version probe is part of the first cold start; this interpreter answers it slowly.
-	slow := filepath.Join(t.TempDir(), "python3")
-	marker := filepath.Join(t.TempDir(), "probing")
-	script := "#!/bin/sh\nif [ \"$1\" = --version ]; then touch \"" + marker + "\"; sleep 2; fi\nexec python3 \"$@\"\n"
+	// The version probe is part of the first cold start; this interpreter holds it until the test releases it,
+	// so the check depends on ordering, not on how fast a loaded machine starts the other function.
+	dir := t.TempDir()
+	slow := filepath.Join(dir, "python3")
+	marker, release, probed := filepath.Join(
+		dir,
+		"probing",
+	), filepath.Join(
+		dir,
+		"release",
+	), filepath.Join(
+		dir,
+		"probed",
+	)
+	script := "#!/bin/sh\nif [ \"$1\" = --version ]; then touch \"" + marker + "\"\n" +
+		"for _ in $(seq 600); do [ -e \"" + release + "\" ] && break; sleep 0.05; done\n" +
+		"touch \"" + probed + "\"; fi\nexec python3 \"$@\"\n"
 	if err := os.WriteFile(slow, []byte(script), 0o700); err != nil {
 		t.Fatal(err)
 	}
 
 	r := New(Options{Python: slow, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 	t.Cleanup(r.Close)
-	// Under a loaded -race run, starting the probe alone can outlast the default timeout.
-	r.probeTimeout = 10 * time.Second
+	// The held probe and a loaded -race run both need far more than the default timeouts.
+	r.probeTimeout = 60 * time.Second
+	fn.Timeout = 60 * time.Second
 	fast := &lambda.Function{
 		ARN: "fast", Name: "fast", Version: "$LATEST", Region: "us-east-1", Runtime: "nodejs22.x",
-		Handler: "app.handler", PackageType: "Zip", Revision: "one", Timeout: 2 * time.Second, MemorySize: 128,
+		Handler: "app.handler", PackageType: "Zip", Revision: "one", Timeout: 30 * time.Second, MemorySize: 128,
 		Code: packageOf(t, map[string]string{"app.js": "exports.handler=async()=>1;"}),
 	}
 
@@ -321,13 +333,20 @@ func TestColdStartDoesNotBlock(t *testing.T) {
 		}
 	}
 
-	begin := time.Now()
 	if result := invoke(t, r, fast); result.Error {
 		t.Fatalf("fast function: %s", result.Payload)
 	}
 
-	if elapsed := time.Since(begin); elapsed > 1500*time.Millisecond {
-		t.Fatalf("fast function waited %v for another function's cold start", elapsed)
+	if _, err := os.Stat(probed); err == nil {
+		t.Fatal("fast function waited for another function's cold start")
+	}
+
+	if err := os.WriteFile(release, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if outcome := <-ended; !strings.Contains(outcome, "error <nil>") {
+		t.Fatalf("slow function: %s", outcome)
 	}
 }
 
