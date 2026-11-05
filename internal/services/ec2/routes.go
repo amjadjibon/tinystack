@@ -12,6 +12,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -33,7 +34,6 @@ type routeTable struct {
 	Tags            map[string]string `json:",omitempty"`
 	ID              string
 	VPCID           string
-	ClientToken     string             `json:",omitempty"`
 	Associations    []routeAssociation `json:",omitempty"`
 	PropagatingVgws []string           `json:",omitempty"`
 	Routes          []route
@@ -404,33 +404,31 @@ func (s *Service) CreateRouteTable(
 	}
 
 	var out api.RouteTable
-	token := common.Value(in.ClientToken)
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
+		tokenKey := idempotency.Key(scope, "ec2", "CreateRouteTable", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[api.RouteTable](tx, tokenKey, in,
+			awserror.New("IdempotentParameterMismatch", "ClientToken parameters differ"))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
 		v, loadErr := loadVPC(tx, scope, common.Value(in.VpcId))
 		if loadErr != nil {
 			return loadErr
 		}
 
-		all, listErr := list[routeTable](tx, scope, kindRouteTable)
-		if listErr != nil {
-			return listErr
-		}
-
-		// A ClientToken already used returns the table it created.
-		at := slices.IndexFunc(all, func(rt *routeTable) bool { return token != "" && rt.ClientToken == token })
-		if at >= 0 {
-			out, err = routeTableOutput(tx, scope, all[at])
-			return err
-		}
-
 		rt := newRouteTable(v, tags)
-		rt.ClientToken = token
 		if writeErr := storage.Write(tx, scope.Key("ec2", kindRouteTable, rt.ID), rt); writeErr != nil {
 			return writeErr
 		}
 
 		out, err = routeTableOutput(tx, scope, rt)
-		return err
+		if err != nil {
+			return err
+		}
+
+		return idempotency.Remember(tx, tokenKey, in, out)
 	})
 	if err != nil {
 		return nil, err

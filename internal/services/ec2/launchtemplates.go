@@ -14,6 +14,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -264,12 +265,24 @@ func (s *Service) CreateLaunchTemplate(
 		},
 	}
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
+		token := idempotency.Key(scope, "ec2", "CreateLaunchTemplate", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*launchTemplate](tx, token, in,
+			awserror.New("IdempotentParameterMismatch", "ClientToken parameters differ"))
+		if replayErr != nil || found {
+			t = previous
+			return replayErr
+		}
+
 		if _, findErr := findTemplate(tx, scope, "", name); findErr == nil {
 			return awserror.New("InvalidLaunchTemplateName.AlreadyExistsException",
 				"Launch template name already in use.")
 		}
 
-		return storage.Write(tx, scope.Key("ec2", kindLaunchTemplate, t.ID), t)
+		if e := storage.Write(tx, scope.Key("ec2", kindLaunchTemplate, t.ID), t); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, token, in, t)
 	})
 	if err != nil {
 		return nil, err
@@ -288,36 +301,51 @@ func (s *Service) CreateLaunchTemplateVersion(
 
 	var out api.LaunchTemplateVersion
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		t, err := findTemplate(tx, scope, common.Value(in.LaunchTemplateId), common.Value(in.LaunchTemplateName))
-		if err != nil {
-			return err
+		token := idempotency.Key(scope, "ec2", "CreateLaunchTemplateVersion", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[api.LaunchTemplateVersion](tx, token, in,
+			awserror.New("IdempotentParameterMismatch", "ClientToken parameters differ"))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
 		}
 
-		if len(t.Versions) >= maxTemplateVersions {
-			return awserror.New("VersionLimitExceeded", "A launch template can have at most 10000 versions.")
-		}
-
-		var base *api.ResponseLaunchTemplateData
-		if in.SourceVersion != nil {
-			source, versionErr := t.version(*in.SourceVersion)
-			if versionErr != nil {
-				return versionErr
+		changeErr := func() error {
+			t, err := findTemplate(tx, scope, common.Value(in.LaunchTemplateId), common.Value(in.LaunchTemplateName))
+			if err != nil {
+				return err
 			}
 
-			base = source.Data
+			if len(t.Versions) >= maxTemplateVersions {
+				return awserror.New("VersionLimitExceeded", "A launch template can have at most 10000 versions.")
+			}
+
+			var base *api.ResponseLaunchTemplateData
+			if in.SourceVersion != nil {
+				source, versionErr := t.version(*in.SourceVersion)
+				if versionErr != nil {
+					return versionErr
+				}
+
+				base = source.Data
+			}
+
+			data, err := templateData(in.LaunchTemplateData, base)
+			if err != nil {
+				return err
+			}
+
+			t.Latest++
+			t.Versions = append(t.Versions, templateVersion{
+				Number: t.Latest, Description: common.Value(in.VersionDescription), CreatedAt: s.now().UTC(), Data: data,
+			})
+			out = versionOutput(t, &t.Versions[len(t.Versions)-1])
+			return storage.Write(tx, scope.Key("ec2", kindLaunchTemplate, t.ID), t)
+		}()
+		if changeErr != nil {
+			return changeErr
 		}
 
-		data, err := templateData(in.LaunchTemplateData, base)
-		if err != nil {
-			return err
-		}
-
-		t.Latest++
-		t.Versions = append(t.Versions, templateVersion{
-			Number: t.Latest, Description: common.Value(in.VersionDescription), CreatedAt: s.now().UTC(), Data: data,
-		})
-		out = versionOutput(t, &t.Versions[len(t.Versions)-1])
-		return storage.Write(tx, scope.Key("ec2", kindLaunchTemplate, t.ID), t)
+		return idempotency.Remember(tx, token, in, out)
 	})
 	if err != nil {
 		return nil, err
@@ -457,22 +485,37 @@ func (s *Service) ModifyLaunchTemplate(
 ) (*api.ModifyLaunchTemplateResult, error) {
 	var out *api.LaunchTemplate
 	err := s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		t, err := findTemplate(tx, scope, common.Value(in.LaunchTemplateId), common.Value(in.LaunchTemplateName))
-		if err != nil {
-			return err
+		token := idempotency.Key(scope, "ec2", "ModifyLaunchTemplate", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.LaunchTemplate](tx, token, in,
+			awserror.New("IdempotentParameterMismatch", "ClientToken parameters differ"))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
 		}
 
-		if in.DefaultVersion != nil {
-			v, versionErr := t.version(*in.DefaultVersion)
-			if versionErr != nil {
-				return versionErr
+		changeErr := func() error {
+			t, err := findTemplate(tx, scope, common.Value(in.LaunchTemplateId), common.Value(in.LaunchTemplateName))
+			if err != nil {
+				return err
 			}
 
-			t.Default = v.Number
+			if in.DefaultVersion != nil {
+				v, versionErr := t.version(*in.DefaultVersion)
+				if versionErr != nil {
+					return versionErr
+				}
+
+				t.Default = v.Number
+			}
+
+			out = templateOutput(t)
+			return storage.Write(tx, scope.Key("ec2", kindLaunchTemplate, t.ID), t)
+		}()
+		if changeErr != nil {
+			return changeErr
 		}
 
-		out = templateOutput(t)
-		return storage.Write(tx, scope.Key("ec2", kindLaunchTemplate, t.ID), t)
+		return idempotency.Remember(tx, token, in, out)
 	})
 	if err != nil {
 		return nil, err

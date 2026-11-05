@@ -79,17 +79,28 @@ func TestEKSClusters(t *testing.T) {
 	c := eksClient(s, "us-east-1")
 	vpc, subnets := defaultSubnets(ctx, t, s)
 
-	out, err := c.CreateCluster(ctx, &eks.CreateClusterInput{
-		Name: aws.String("apps"), RoleArn: aws.String(clusterRole),
+	input := &eks.CreateClusterInput{
+		ClientRequestToken: new("cluster-once"),
+		Name:               aws.String("apps"), RoleArn: aws.String(clusterRole),
 		ResourcesVpcConfig: &ekstypes.VpcConfigRequest{SubnetIds: subnets[:2], EndpointPrivateAccess: aws.Bool(true)},
 		Logging: &ekstypes.Logging{ClusterLogging: []ekstypes.LogSetup{
 			{Types: []ekstypes.LogType{ekstypes.LogTypeAudit, ekstypes.LogTypeApi}, Enabled: aws.Bool(true)},
 		}},
 		Tags: map[string]string{"team": "platform"},
-	})
+	}
+	out, err := c.CreateCluster(ctx, input)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	repeated, replayErr := c.CreateCluster(ctx, input)
+	if replayErr != nil || aws.ToString(repeated.Cluster.Arn) != aws.ToString(out.Cluster.Arn) {
+		t.Fatalf("cluster replay: %+v %v", repeated, replayErr)
+	}
+
+	input.Version = new("1.33")
+	_, mismatchErr := c.CreateCluster(ctx, input)
+	code(t, mismatchErr, "InvalidParameterException")
 
 	cl := out.Cluster
 	if aws.ToString(cl.Arn) != "arn:aws:eks:us-east-1:000000000000:cluster/apps" ||
@@ -155,14 +166,25 @@ func TestEKSClusters(t *testing.T) {
 
 	t.Run("updates", func(t *testing.T) {
 		name := aws.String("apps")
-		updated, err := c.UpdateClusterConfig(ctx, &eks.UpdateClusterConfigInput{
-			Name: name, Logging: &ekstypes.Logging{ClusterLogging: []ekstypes.LogSetup{
+		updateInput := &eks.UpdateClusterConfigInput{
+			ClientRequestToken: new("logging-once"),
+			Name:               name, Logging: &ekstypes.Logging{ClusterLogging: []ekstypes.LogSetup{
 				{Types: []ekstypes.LogType{ekstypes.LogTypeAudit}, Enabled: aws.Bool(false)},
 			}},
-		})
+		}
+		updated, err := c.UpdateClusterConfig(ctx, updateInput)
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		repeatedUpdate, replayErr := c.UpdateClusterConfig(ctx, updateInput)
+		if replayErr != nil || aws.ToString(repeatedUpdate.Update.Id) != aws.ToString(updated.Update.Id) {
+			t.Fatalf("update replay: %+v %v", repeatedUpdate, replayErr)
+		}
+
+		updateInput.ZonalShiftConfig = &ekstypes.ZonalShiftConfigRequest{Enabled: new(true)}
+		_, mismatchErr := c.UpdateClusterConfig(ctx, updateInput)
+		code(t, mismatchErr, "InvalidParameterException")
 
 		u := updated.Update
 		if u.Status != ekstypes.UpdateStatusSuccessful || u.Type != ekstypes.UpdateTypeLoggingUpdate {

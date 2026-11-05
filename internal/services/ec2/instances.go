@@ -15,6 +15,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -669,6 +670,14 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 	now, token := s.now().UTC(), common.Value(in.ClientToken)
 	var out *api.Reservation
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
+		tokenKey := idempotency.Key(scope, "ec2", "RunInstances", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.Reservation](tx, tokenKey, in,
+			awserror.New("IdempotentParameterMismatch", "ClientToken parameters differ"))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
 		all, listErr := list[instance](tx, scope, kindInstance)
 		if listErr != nil {
 			return listErr
@@ -680,28 +689,9 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 			case !i.visible(now):
 				tx.Delete(scope.Key("ec2", kindInstance, i.ID))
 				tx.Delete("aws/ec2/instances/" + i.ID)
-			case token != "" && i.ClientToken == token:
-				if out == nil {
-					out = reservation(scope, i.Reservation, nil)
-				}
-
-				item := instanceOutput(scope, i, i.State)
-				if fillInstanceInterfacesErr := fillInstanceInterfaces(
-					tx,
-					scope,
-					&item,
-				); fillInstanceInterfacesErr != nil {
-					return fillInstanceInterfacesErr
-				}
-
-				out.Instances = append(out.Instances, item)
 			case i.active():
 				active = append(active, i)
 			}
-		}
-
-		if out != nil {
-			return nil
 		}
 
 		count := min(l.max, int64(maxInstances-len(active)))
@@ -804,7 +794,7 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 			out.Instances = append(out.Instances, item)
 		}
 
-		return nil
+		return idempotency.Remember(tx, tokenKey, in, out)
 	})
 	if err != nil {
 		return nil, err

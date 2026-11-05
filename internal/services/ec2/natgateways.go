@@ -10,6 +10,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -37,7 +38,6 @@ type natGateway struct {
 	AddressID    string `json:",omitempty"`
 	PublicIP     string `json:",omitempty"`
 	Association  string `json:",omitempty"`
-	ClientToken  string `json:",omitempty"`
 	State        string
 }
 
@@ -122,9 +122,17 @@ func (s *Service) CreateNatGateway(
 		return nil, err
 	}
 
-	now, token := s.now().UTC(), common.Value(in.ClientToken)
+	now := s.now().UTC()
 	var out api.NatGateway
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
+		tokenKey := idempotency.Key(scope, "ec2", "CreateNatGateway", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[api.NatGateway](tx, tokenKey, in,
+			awserror.New("IdempotentParameterMismatch", "ClientToken parameters differ"))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
 		all, listErr := list[natGateway](tx, scope, kindNATGateway)
 		if listErr != nil {
 			return listErr
@@ -134,9 +142,6 @@ func (s *Service) CreateNatGateway(
 			switch {
 			case !g.visible(now):
 				tx.Delete(scope.Key("ec2", kindNATGateway, g.ID))
-			case token != "" && g.ClientToken == token:
-				out = natGatewayOutput(g, g.State)
-				return nil
 			}
 		}
 
@@ -163,7 +168,7 @@ func (s *Service) CreateNatGateway(
 
 		g := &natGateway{
 			ID: newID("nat"), SubnetID: sn.ID, VPCID: sn.VPCID, Connectivity: connectivity, PrivateIP: ip,
-			InterfaceID: newID("eni"), ClientToken: token, State: stateAvailable, Created: now, Tags: tags,
+			InterfaceID: newID("eni"), State: stateAvailable, Created: now, Tags: tags,
 		}
 		if connectivity == connectivityPublic {
 			gateway, gatewayErr := vpcGateway(tx, scope, sn.VPCID)
@@ -182,7 +187,11 @@ func (s *Service) CreateNatGateway(
 		}
 
 		out = natGatewayOutput(g, statePending)
-		return storage.Write(tx, scope.Key("ec2", kindNATGateway, g.ID), g)
+		if e := storage.Write(tx, scope.Key("ec2", kindNATGateway, g.ID), g); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, tokenKey, in, out)
 	})
 	if err != nil {
 		return nil, err

@@ -331,14 +331,15 @@ func TestECSServicesAndTasks(t *testing.T) {
 		_, err = c.RunTask(ctx, &ecs.RunTaskInput{TaskDefinition: aws.String("web"), NetworkConfiguration: awsvpc()})
 		code(t, err, "ClusterNotFoundException")
 
-		run, err := c.RunTask(ctx, &ecs.RunTaskInput{
+		runInput := &ecs.RunTaskInput{
 			Cluster: cluster, TaskDefinition: aws.String("web"), LaunchType: ecstypes.LaunchTypeFargate,
 			Count: aws.Int32(2), NetworkConfiguration: awsvpc(), StartedBy: aws.String("tester"),
 			ClientToken: aws.String("once"),
 			Overrides: &ecstypes.TaskOverride{ContainerOverrides: []ecstypes.ContainerOverride{
 				{Name: aws.String("web"), Command: []string{"serve"}},
 			}},
-		})
+		}
+		run, err := c.RunTask(ctx, runInput)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -353,14 +354,15 @@ func TestECSServicesAndTasks(t *testing.T) {
 			t.Fatalf("task = %+v", task)
 		}
 
-		again, err := c.RunTask(ctx, &ecs.RunTaskInput{
-			Cluster: cluster, TaskDefinition: aws.String("web"), LaunchType: ecstypes.LaunchTypeFargate,
-			NetworkConfiguration: awsvpc(), ClientToken: aws.String("once"),
-		})
+		again, err := c.RunTask(ctx, runInput)
 		if err != nil || len(again.Tasks) != 2 || aws.ToString(again.Tasks[0].TaskArn) != aws.ToString(task.TaskArn) &&
 			aws.ToString(again.Tasks[1].TaskArn) != aws.ToString(task.TaskArn) {
 			t.Fatalf("repeated RunTask = %+v, %v", again, err)
 		}
+
+		runInput.Count = new(int32(1))
+		_, mismatchErr := c.RunTask(ctx, runInput)
+		code(t, mismatchErr, "InvalidParameterException")
 
 		_, err = c.RunTask(ctx, &ecs.RunTaskInput{
 			Cluster: cluster, TaskDefinition: aws.String("web"), LaunchType: ecstypes.LaunchTypeFargate,

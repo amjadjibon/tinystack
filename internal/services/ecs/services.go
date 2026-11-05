@@ -11,6 +11,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -38,7 +39,6 @@ type ecsService struct {
 	Scheduling     string
 	PropagateTags  string
 	Rebalancing    string
-	ClientToken    string
 	CreatedBy      string
 	Strategy       []api.CapacityProviderStrategyItem
 	Tags           []api.Tag
@@ -309,13 +309,18 @@ func (s *Service) CreateService(ctx context.Context, in *api.CreateServiceReques
 			return loadErr
 		}
 
+		token := idempotency.Key(scope, service, "CreateService/"+c.Name, in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[api.Service](tx, token, in,
+			invalidParameter("Creation of service was not idempotent."))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
 		svc.Cluster, svc.Created = c.Name, s.now().UTC()
 		existing, ok, readErr := storage.Read[ecsService](tx, serviceKey(scope, c.Name, svc.Name))
 		switch {
 		case readErr != nil:
-			return readErr
-		case ok && existing.Status != inactive && svc.ClientToken != "" && existing.ClientToken == svc.ClientToken:
-			out, readErr = existing.output(tx, scope, []string{fieldTags})
 			return readErr
 		case ok && existing.Status != inactive:
 			return invalidParameter("Creation of service was not idempotent.")
@@ -342,7 +347,11 @@ func (s *Service) CreateService(ctx context.Context, in *api.CreateServiceReques
 		}
 
 		out, readErr = svc.output(tx, scope, []string{fieldTags})
-		return readErr
+		if readErr != nil {
+			return readErr
+		}
+
+		return idempotency.Remember(tx, token, in, out)
 	})
 	if err != nil {
 		return nil, err
@@ -403,7 +412,6 @@ func newService(in *api.CreateServiceRequest) (*ecsService, error) {
 			in.EnableExecuteCommand,
 		),
 		Rebalancing: "DISABLED",
-		ClientToken: common.Value(in.ClientToken),
 	}
 	if in.SchedulingStrategy != nil {
 		svc.Scheduling = *in.SchedulingStrategy

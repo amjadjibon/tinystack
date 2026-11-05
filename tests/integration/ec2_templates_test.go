@@ -17,7 +17,8 @@ func TestEC2LaunchTemplates(t *testing.T) {
 	c := ec2Client(s, "test", "us-east-1")
 	ctx := context.Background()
 	image := latestImage(t, s)
-	created, err := c.CreateLaunchTemplate(ctx, &ec2.CreateLaunchTemplateInput{
+	input := &ec2.CreateLaunchTemplateInput{
+		ClientToken:        new("template-once"),
 		LaunchTemplateName: aws.String("web"), VersionDescription: aws.String("first"),
 		LaunchTemplateData: &ec2types.RequestLaunchTemplateData{
 			ImageId: image, InstanceType: ec2types.InstanceTypeT3Micro,
@@ -28,10 +29,21 @@ func TestEC2LaunchTemplates(t *testing.T) {
 		TagSpecifications: []ec2types.TagSpecification{{
 			ResourceType: ec2types.ResourceTypeLaunchTemplate, Tags: ec2Tags("team", "core"),
 		}},
-	})
+	}
+	created, err := c.CreateLaunchTemplate(ctx, input)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	repeated, replayErr := c.CreateLaunchTemplate(ctx, input)
+	if replayErr != nil || aws.ToString(repeated.LaunchTemplate.LaunchTemplateId) !=
+		aws.ToString(created.LaunchTemplate.LaunchTemplateId) {
+		t.Fatalf("template replay: %+v %v", repeated, replayErr)
+	}
+
+	input.VersionDescription = new("changed")
+	_, mismatchErr := c.CreateLaunchTemplate(ctx, input)
+	code(t, mismatchErr, "IdempotentParameterMismatch")
 
 	lt := created.LaunchTemplate
 	id := lt.LaunchTemplateId

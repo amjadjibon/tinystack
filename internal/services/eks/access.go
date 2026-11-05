@@ -12,6 +12,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -45,7 +46,6 @@ var (
 // policies, and its create token.
 type accessEntry struct {
 	Entry    api.AccessEntry
-	Token    string
 	Policies []api.AssociatedAccessPolicy
 }
 
@@ -160,26 +160,34 @@ func (s *Service) CreateAccessEntry(
 
 	var out *api.AccessEntry
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		token := idempotency.Key(scope, service, "CreateAccessEntry", in.ClientRequestToken)
+		previous, found, replayErr := idempotency.Replay[*api.AccessEntry](tx, token, in,
+			invalidParameter("ClientRequestToken was used with different parameters."))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
 		c, loadErr := apiCluster(tx, scope, in.ClusterName)
 		if loadErr != nil {
 			return loadErr
 		}
 
-		existing, ok, readErr := storage.Read[accessEntry](tx, entryKey(scope, c.Name, principal))
+		_, ok, readErr := storage.Read[accessEntry](tx, entryKey(scope, c.Name, principal))
 		switch {
 		case readErr != nil:
 			return readErr
-		case ok && common.Value(in.ClientRequestToken) != "" && existing.Token == *in.ClientRequestToken:
-			out = &existing.Entry
-			return nil
 		case ok:
 			return inUse("The specified access entry resource is already in use on this cluster.")
 		}
 
 		e := newEntry(scope, c, principal, kind, common.Value(in.Username), in.KubernetesGroups, in.Tags, s.now().UTC())
-		e.Token = common.Value(in.ClientRequestToken)
 		out = &e.Entry
-		return storage.Write(tx, entryKey(scope, c.Name, principal), e)
+		if e := storage.Write(tx, entryKey(scope, c.Name, principal), e); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, token, in, out)
 	})
 	if err != nil {
 		return nil, err
@@ -280,8 +288,31 @@ func (s *Service) UpdateAccessEntry(
 	in *api.UpdateAccessEntryRequest,
 ) (*api.UpdateAccessEntryResponse, error) {
 	var out *api.AccessEntry
-	err := s.changeEntry(ctx, in.ClusterName, in.PrincipalArn,
-		func(tx storage.WriteTx, scope request.Scope, c *cluster, e *accessEntry) error {
+	scope, err := request.RegionalScope(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		token := idempotency.Key(scope, service, "UpdateAccessEntry", in.ClientRequestToken)
+		previous, found, replayErr := idempotency.Replay[*api.AccessEntry](tx, token, in,
+			invalidParameter("ClientRequestToken was used with different parameters."))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
+		c, loadErr := apiCluster(tx, scope, in.ClusterName)
+		if loadErr != nil {
+			return loadErr
+		}
+
+		e, ok, readErr := storage.Read[accessEntry](tx, entryKey(scope, c.Name, common.Value(in.PrincipalArn)))
+		if readErr != nil || !ok {
+			return common.ErrorsOr(readErr, entryNotFound(common.Value(in.PrincipalArn)))
+		}
+
+		changeErr := func() error {
 			if err := checkGroups(*e.Entry.Type, in.KubernetesGroups, in.Username); err != nil {
 				return err
 			}
@@ -294,7 +325,13 @@ func (s *Service) UpdateAccessEntry(
 			e.Entry.ModifiedAt = common.SecondsMilli(s.now().UTC())
 			out = &e.Entry
 			return storage.Write(tx, entryKey(scope, c.Name, *e.Entry.PrincipalArn), e)
-		})
+		}()
+		if changeErr != nil {
+			return changeErr
+		}
+
+		return idempotency.Remember(tx, token, in, out)
+	})
 	if err != nil {
 		return nil, err
 	}

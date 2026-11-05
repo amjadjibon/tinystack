@@ -109,14 +109,15 @@ func TestEC2Instances(t *testing.T) {
 		code(t, err, errCode)
 	}
 
-	launched, err := c.RunInstances(ctx, &ec2.RunInstancesInput{
+	launchInput := &ec2.RunInstancesInput{
 		ImageId: image, InstanceType: ec2types.InstanceTypeT3Micro, MinCount: aws.Int32(2), MaxCount: aws.Int32(2),
 		KeyName: aws.String("deploy"), Placement: &ec2types.Placement{AvailabilityZone: aws.String("us-east-1b")},
 		ClientToken: aws.String("launch-web"),
 		TagSpecifications: []ec2types.TagSpecification{{
 			ResourceType: ec2types.ResourceTypeInstance, Tags: ec2Tags("Name", "web"),
 		}},
-	})
+	}
+	launched, err := c.RunInstances(ctx, launchInput)
 	if err != nil || len(launched.Instances) != 2 {
 		t.Fatalf("got %+v, %v", launched, err)
 	}
@@ -133,13 +134,15 @@ func TestEC2Instances(t *testing.T) {
 	ids := instanceIDs(launched.Instances)
 
 	// The same ClientToken returns the same instances.
-	again, err := c.RunInstances(ctx, &ec2.RunInstancesInput{
-		ImageId: image, MinCount: aws.Int32(2), MaxCount: aws.Int32(2), ClientToken: aws.String("launch-web"),
-	})
+	again, err := c.RunInstances(ctx, launchInput)
 	if err != nil || aws.ToString(again.ReservationId) != aws.ToString(launched.ReservationId) ||
 		len(again.Instances) != 2 {
 		t.Fatalf("got %+v, %v", again, err)
 	}
+
+	launchInput.MaxCount = new(int32(3))
+	_, mismatchErr := c.RunInstances(ctx, launchInput)
+	code(t, mismatchErr, "IdempotentParameterMismatch")
 
 	waiter := ec2.NewInstanceRunningWaiter(c)
 	if err = waiter.Wait(ctx, &ec2.DescribeInstancesInput{InstanceIds: ids}, 5*time.Second); err != nil {

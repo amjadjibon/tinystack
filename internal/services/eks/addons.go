@@ -8,6 +8,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -73,7 +74,6 @@ func findAddon(name string) *addonInfo {
 // addon is an add-on's record: its description and its create token.
 type addon struct {
 	Addon api.Addon
-	Token string
 }
 
 func addonKey(scope request.Scope, clusterName, name string) string {
@@ -118,18 +118,23 @@ func (s *Service) CreateAddon(ctx context.Context, in *api.CreateAddonRequest) (
 
 	var out *api.Addon
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		token := idempotency.Key(scope, service, "CreateAddon", in.ClientRequestToken)
+		previous, found, replayErr := idempotency.Replay[*api.Addon](tx, token, in,
+			invalidParameter("ClientRequestToken was used with different parameters."))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
 		c, loadErr := loadCluster(tx, scope, in.ClusterName)
 		if loadErr != nil {
 			return loadErr
 		}
 
-		existing, ok, readErr := storage.Read[addon](tx, addonKey(scope, c.Name, info.name))
+		_, ok, readErr := storage.Read[addon](tx, addonKey(scope, c.Name, info.name))
 		switch {
 		case readErr != nil:
 			return readErr
-		case ok && common.Value(in.ClientRequestToken) != "" && existing.Token == *in.ClientRequestToken:
-			out = &existing.Addon
-			return nil
 		case ok:
 			return inUse("Addon already exists.")
 		}
@@ -140,7 +145,7 @@ func (s *Service) CreateAddon(ctx context.Context, in *api.CreateAddonRequest) (
 		}
 
 		now := s.now().UTC()
-		a := &addon{Token: common.Value(in.ClientRequestToken), Addon: api.Addon{
+		a := &addon{Addon: api.Addon{
 			AddonName:    new(info.name),
 			ClusterName:  new(c.Name),
 			Status:       new(active),
@@ -158,7 +163,11 @@ func (s *Service) CreateAddon(ctx context.Context, in *api.CreateAddonRequest) (
 			ConfigurationValues:   in.ConfigurationValues,
 		}}
 		out = &a.Addon
-		return storage.Write(tx, addonKey(scope, c.Name, info.name), a)
+		if e := storage.Write(tx, addonKey(scope, c.Name, info.name), a); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, token, in, out)
 	})
 	if err != nil {
 		return nil, err
@@ -228,8 +237,31 @@ func (s *Service) UpdateAddon(ctx context.Context, in *api.UpdateAddonRequest) (
 	}
 
 	var out *api.Update
-	err := s.changeAddon(ctx, in.ClusterName, in.AddonName,
-		func(tx storage.WriteTx, scope request.Scope, c *cluster, a *addon) error {
+	scope, err := request.RegionalScope(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		token := idempotency.Key(scope, service, "UpdateAddon", in.ClientRequestToken)
+		previous, found, replayErr := idempotency.Replay[*api.Update](tx, token, in,
+			invalidParameter("ClientRequestToken was used with different parameters."))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
+		c, loadErr := loadCluster(tx, scope, in.ClusterName)
+		if loadErr != nil {
+			return loadErr
+		}
+
+		a, ok, readErr := storage.Read[addon](tx, addonKey(scope, c.Name, common.Value(in.AddonName)))
+		if readErr != nil || !ok {
+			return common.ErrorsOr(readErr, addonNotFound(common.Value(in.AddonName)))
+		}
+
+		changeErr := func() error {
 			var params []api.UpdateParam
 			if in.AddonVersion != nil {
 				version, err := checkAddonVersion(findAddon(*a.Addon.AddonName), c, in.AddonVersion)
@@ -263,7 +295,13 @@ func (s *Service) UpdateAddon(ctx context.Context, in *api.UpdateAddonRequest) (
 			}
 
 			return storage.Write(tx, addonKey(scope, c.Name, *a.Addon.AddonName), a)
-		})
+		}()
+		if changeErr != nil {
+			return changeErr
+		}
+
+		return idempotency.Remember(tx, token, in, out)
+	})
 	if err != nil {
 		return nil, err
 	}

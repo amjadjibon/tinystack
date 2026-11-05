@@ -14,6 +14,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -66,7 +67,6 @@ type vpcEndpoint struct {
 	Type          string
 	Policy        string
 	Label         string
-	ClientToken   string           `json:",omitempty"`
 	RouteTableIDs []string         `json:",omitempty"`
 	Subnets       []endpointSubnet `json:",omitempty"`
 	GroupIDs      []string         `json:",omitempty"`
@@ -323,7 +323,7 @@ func (r *endpointRequest) build(tx storage.WriteTx, scope request.Scope, now tim
 
 	ep := &vpcEndpoint{
 		ID: newID("vpce"), VPCID: v.ID, Service: r.service, Type: r.kind, Created: now, Tags: r.tags,
-		Policy: defaultEndpointPolicy, Label: newID("x")[2:10], ClientToken: common.Value(r.in.ClientToken),
+		Policy: defaultEndpointPolicy, Label: newID("x")[2:10],
 	}
 	if r.in.PolicyDocument != nil {
 		ep.Policy = *r.in.PolicyDocument
@@ -420,17 +420,12 @@ func (s *Service) CreateVpcEndpoint(
 	now := s.now().UTC()
 	var out api.VpcEndpoint
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		all, listErr := list[vpcEndpoint](tx, scope, kindVPCEndpoint)
-		if listErr != nil {
-			return listErr
-		}
-
-		token := common.Value(in.ClientToken)
-		if at := slices.IndexFunc(all, func(ep *vpcEndpoint) bool {
-			return token != "" && ep.ClientToken == token
-		}); at >= 0 {
-			out = endpointOutput(scope, all[at], endpointAvailable)
-			return nil
+		tokenKey := idempotency.Key(scope, "ec2", "CreateVpcEndpoint", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[api.VpcEndpoint](tx, tokenKey, in,
+			awserror.New("IdempotentParameterMismatch", "ClientToken parameters differ"))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
 		}
 
 		ep, buildErr := r.build(tx, scope, now)
@@ -445,7 +440,11 @@ func (s *Service) CreateVpcEndpoint(
 		}
 
 		out = endpointOutput(scope, ep, state)
-		return storage.Write(tx, scope.Key("ec2", kindVPCEndpoint, ep.ID), ep)
+		if e := storage.Write(tx, scope.Key("ec2", kindVPCEndpoint, ep.ID), ep); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, tokenKey, in, out)
 	})
 	if err != nil {
 		return nil, err

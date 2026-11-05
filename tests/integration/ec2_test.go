@@ -124,3 +124,33 @@ func TestEC2Authentication(t *testing.T) {
 	_, err := bad.DescribeRegions(ctx, &ec2.DescribeRegionsInput{})
 	code(t, err, "AuthFailure")
 }
+
+func TestEC2ClientTokenReplay(t *testing.T) {
+	s := server(t)
+	c := ec2Client(s, "test", "us-east-1")
+	ctx := context.Background()
+	vpc, err := c.CreateVpc(ctx, &ec2.CreateVpcInput{CidrBlock: new("10.90.0.0/16")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	input := &ec2.CreateRouteTableInput{VpcId: vpc.Vpc.VpcId, ClientToken: new("route-once")}
+	first, err := c.CreateRouteTable(ctx, input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	repeated, err := c.CreateRouteTable(ctx, input)
+	if err != nil || aws.ToString(first.RouteTable.RouteTableId) != aws.ToString(repeated.RouteTable.RouteTableId) {
+		t.Fatalf("route replay: %+v %v", repeated, err)
+	}
+	other, err := c.CreateVpc(ctx, &ec2.CreateVpcInput{CidrBlock: new("10.91.0.0/16")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	input.VpcId = other.Vpc.VpcId
+	_, err = c.CreateRouteTable(ctx, input)
+	code(t, err, "IdempotentParameterMismatch")
+	listed, err := c.DescribeRouteTables(ctx, &ec2.DescribeRouteTablesInput{})
+	if err != nil || len(listed.RouteTables) != 4 {
+		t.Fatalf("duplicate route table: %+v %v", listed, err)
+	}
+}

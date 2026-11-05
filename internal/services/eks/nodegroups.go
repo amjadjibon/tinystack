@@ -11,6 +11,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -34,7 +35,6 @@ var (
 // nodegroup is a node group's record: its description and its create token.
 type nodegroup struct {
 	Group api.Nodegroup
-	Token string
 }
 
 func nodegroupKey(scope request.Scope, clusterName, name string) string {
@@ -124,6 +124,14 @@ func (s *Service) CreateNodegroup(
 
 	var out *api.Nodegroup
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		token := idempotency.Key(scope, service, "CreateNodegroup", in.ClientRequestToken)
+		previous, found, replayErr := idempotency.Replay[*api.Nodegroup](tx, token, in,
+			invalidParameter("ClientRequestToken was used with different parameters."))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
 		c, loadErr := loadCluster(tx, scope, in.ClusterName)
 		if loadErr != nil {
 			return loadErr
@@ -133,13 +141,10 @@ func (s *Service) CreateNodegroup(
 			return invalidParameter("Subnets must be in the cluster's VPC %s.", common.Value(c.Vpc.VpcId))
 		}
 
-		existing, ok, readErr := storage.Read[nodegroup](tx, nodegroupKey(scope, c.Name, *in.NodegroupName))
+		_, ok, readErr := storage.Read[nodegroup](tx, nodegroupKey(scope, c.Name, *in.NodegroupName))
 		switch {
 		case readErr != nil:
 			return readErr
-		case ok && common.Value(in.ClientRequestToken) != "" && existing.Token == *in.ClientRequestToken:
-			out = &existing.Group
-			return nil
 		case ok:
 			return inUse("NodeGroup already exists with name %s and cluster name %s", *in.NodegroupName, c.Name)
 		}
@@ -150,7 +155,11 @@ func (s *Service) CreateNodegroup(
 		}
 
 		out = &n.Group
-		return storage.Write(tx, nodegroupKey(scope, c.Name, *in.NodegroupName), n)
+		if e := storage.Write(tx, nodegroupKey(scope, c.Name, *in.NodegroupName), n); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, token, in, out)
 	})
 	if err != nil {
 		return nil, err
@@ -277,7 +286,7 @@ func (s *Service) newNodegroup(scope request.Scope, c *cluster, in *api.CreateNo
 		g.Resources.RemoteAccessSecurityGroup = new("sg-" + hexID(17))
 	}
 
-	return &nodegroup{Group: g, Token: common.Value(in.ClientRequestToken)}, nil
+	return &nodegroup{Group: g}, nil
 }
 
 func orEmptyMap(m map[string]string) map[string]string {
@@ -412,8 +421,31 @@ func (s *Service) UpdateNodegroupConfig(
 	in *api.UpdateNodegroupConfigRequest,
 ) (*api.UpdateNodegroupConfigResponse, error) {
 	var out *api.Update
-	err := s.changeNodegroup(ctx, in.ClusterName, in.NodegroupName,
-		func(tx storage.WriteTx, scope request.Scope, c *cluster, n *nodegroup) error {
+	scope, err := request.RegionalScope(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		token := idempotency.Key(scope, service, "UpdateNodegroupConfig", in.ClientRequestToken)
+		previous, found, replayErr := idempotency.Replay[*api.Update](tx, token, in,
+			invalidParameter("ClientRequestToken was used with different parameters."))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
+		c, loadErr := loadCluster(tx, scope, in.ClusterName)
+		if loadErr != nil {
+			return loadErr
+		}
+
+		n, loadErr := loadNodegroup(tx, scope, c, in.NodegroupName)
+		if loadErr != nil {
+			return loadErr
+		}
+
+		changeErr := func() error {
 			params, err := configure(&n.Group, in)
 			if err != nil {
 				return err
@@ -425,7 +457,13 @@ func (s *Service) UpdateNodegroupConfig(
 			}
 
 			return storage.Write(tx, nodegroupKey(scope, c.Name, *n.Group.NodegroupName), n)
-		})
+		}()
+		if changeErr != nil {
+			return changeErr
+		}
+
+		return idempotency.Remember(tx, token, in, out)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -519,8 +557,31 @@ func (s *Service) UpdateNodegroupVersion(
 	in *api.UpdateNodegroupVersionRequest,
 ) (*api.UpdateNodegroupVersionResponse, error) {
 	var out *api.Update
-	err := s.changeNodegroup(ctx, in.ClusterName, in.NodegroupName,
-		func(tx storage.WriteTx, scope request.Scope, c *cluster, n *nodegroup) error {
+	scope, err := request.RegionalScope(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		token := idempotency.Key(scope, service, "UpdateNodegroupVersion", in.ClientRequestToken)
+		previous, found, replayErr := idempotency.Replay[*api.Update](tx, token, in,
+			invalidParameter("ClientRequestToken was used with different parameters."))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
+		c, loadErr := loadCluster(tx, scope, in.ClusterName)
+		if loadErr != nil {
+			return loadErr
+		}
+
+		n, loadErr := loadNodegroup(tx, scope, c, in.NodegroupName)
+		if loadErr != nil {
+			return loadErr
+		}
+
+		changeErr := func() error {
 			g := &n.Group
 			version := common.Value(common.OrElse(in.Version, &c.Version))
 			if i := versionIndex(version); i < 0 || i > versionIndex(c.Version) {
@@ -546,7 +607,13 @@ func (s *Service) UpdateNodegroupVersion(
 			}
 
 			return storage.Write(tx, nodegroupKey(scope, c.Name, *g.NodegroupName), n)
-		})
+		}()
+		if changeErr != nil {
+			return changeErr
+		}
+
+		return idempotency.Remember(tx, token, in, out)
+	})
 	if err != nil {
 		return nil, err
 	}

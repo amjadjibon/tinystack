@@ -21,6 +21,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -229,13 +230,18 @@ func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterReques
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		existing, ok, readErr := storage.Read[cluster](tx, clusterKey(scope, c.Name))
+		token := idempotency.Key(scope, service, "CreateCluster", in.ClientRequestToken)
+		previous, found, replayErr := idempotency.Replay[*cluster](tx, token, in,
+			invalidParameter("ClientRequestToken was used with different parameters."))
+		if replayErr != nil || found {
+			c = previous
+			return replayErr
+		}
+
+		_, ok, readErr := storage.Read[cluster](tx, clusterKey(scope, c.Name))
 		switch {
 		case readErr != nil:
 			return readErr
-		case ok && c.Token != "" && existing.Token == c.Token:
-			c = existing
-			return nil
 		case ok:
 			return inUse("Cluster already exists with name: %s", c.Name)
 		}
@@ -258,7 +264,11 @@ func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterReques
 			}
 		}
 
-		return storage.Write(tx, clusterKey(scope, c.Name), c)
+		if e := storage.Write(tx, clusterKey(scope, c.Name), c); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, token, in, c)
 	})
 	if err != nil {
 		return nil, err
@@ -698,21 +708,36 @@ func (s *Service) UpdateClusterConfig(
 
 	var out *api.Update
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		c, loadErr := loadCluster(tx, scope, in.Name)
-		if loadErr != nil {
-			return loadErr
+		token := idempotency.Key(scope, service, "UpdateClusterConfig", in.ClientRequestToken)
+		previous, found, replayErr := idempotency.Replay[*api.Update](tx, token, in,
+			invalidParameter("ClientRequestToken was used with different parameters."))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
 		}
 
-		params, applyErr := changes[0].apply(c)
-		if applyErr != nil {
-			return applyErr
+		changeErr := func() error {
+			c, loadErr := loadCluster(tx, scope, in.Name)
+			if loadErr != nil {
+				return loadErr
+			}
+
+			params, applyErr := changes[0].apply(c)
+			if applyErr != nil {
+				return applyErr
+			}
+
+			if out, applyErr = s.record(tx, scope, c.Name, "", "", changes[0].kind, params); applyErr != nil {
+				return applyErr
+			}
+
+			return storage.Write(tx, clusterKey(scope, c.Name), c)
+		}()
+		if changeErr != nil {
+			return changeErr
 		}
 
-		if out, applyErr = s.record(tx, scope, c.Name, "", "", changes[0].kind, params); applyErr != nil {
-			return applyErr
-		}
-
-		return storage.Write(tx, clusterKey(scope, c.Name), c)
+		return idempotency.Remember(tx, token, in, out)
 	})
 	if err != nil {
 		return nil, err
@@ -733,28 +758,43 @@ func (s *Service) UpdateClusterVersion(
 
 	var out *api.Update
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		c, loadErr := loadCluster(tx, scope, in.Name)
-		if loadErr != nil {
-			return loadErr
+		token := idempotency.Key(scope, service, "UpdateClusterVersion", in.ClientRequestToken)
+		previous, found, replayErr := idempotency.Replay[*api.Update](tx, token, in,
+			invalidParameter("ClientRequestToken was used with different parameters."))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
 		}
 
-		if s.runner != nil {
-			return invalidRequest("The Kubernetes API servers TinyStack runs keep the version they started with.")
+		changeErr := func() error {
+			c, loadErr := loadCluster(tx, scope, in.Name)
+			if loadErr != nil {
+				return loadErr
+			}
+
+			if s.runner != nil {
+				return invalidRequest("The Kubernetes API servers TinyStack runs keep the version they started with.")
+			}
+
+			if to := versionIndex(common.Value(in.Version)); to < 0 || to != versionIndex(c.Version)+1 {
+				return invalidParameter("Unsupported Kubernetes minor version update from %s to %s", c.Version,
+					common.Value(in.Version))
+			}
+
+			c.Version = *in.Version
+			params := []api.UpdateParam{param("Version", c.Version), param("PlatformVersion", platformVersion)}
+			var recordErr error
+			if out, recordErr = s.record(tx, scope, c.Name, "", "", "VersionUpdate", params); recordErr != nil {
+				return recordErr
+			}
+
+			return storage.Write(tx, clusterKey(scope, c.Name), c)
+		}()
+		if changeErr != nil {
+			return changeErr
 		}
 
-		if to := versionIndex(common.Value(in.Version)); to < 0 || to != versionIndex(c.Version)+1 {
-			return invalidParameter("Unsupported Kubernetes minor version update from %s to %s", c.Version,
-				common.Value(in.Version))
-		}
-
-		c.Version = *in.Version
-		params := []api.UpdateParam{param("Version", c.Version), param("PlatformVersion", platformVersion)}
-		var recordErr error
-		if out, recordErr = s.record(tx, scope, c.Name, "", "", "VersionUpdate", params); recordErr != nil {
-			return recordErr
-		}
-
-		return storage.Write(tx, clusterKey(scope, c.Name), c)
+		return idempotency.Remember(tx, token, in, out)
 	})
 	if err != nil {
 		return nil, err

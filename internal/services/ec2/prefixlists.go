@@ -11,22 +11,22 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
 const kindPrefixList = "prefix-list"
 
 type customerPrefixList struct {
-	Tags        map[string]string `json:",omitempty"`
-	ID          string
-	Name        string
-	Family      string
-	State       string
-	ClientToken string
-	Versions    map[int64][]api.PrefixListEntry
-	Entries     []api.PrefixListEntry
-	MaxEntries  int64
-	Version     int64
+	Tags       map[string]string `json:",omitempty"`
+	ID         string
+	Name       string
+	Family     string
+	State      string
+	Versions   map[int64][]api.PrefixListEntry
+	Entries    []api.PrefixListEntry
+	MaxEntries int64
+	Version    int64
 }
 
 func prefixNotFound(id string) error {
@@ -123,7 +123,6 @@ func (s *Service) CreateManagedPrefixList(ctx context.Context, in *api.CreateMan
 	pl := &customerPrefixList{
 		ID: newID("pl"), Name: common.Value(in.PrefixListName), Family: common.Value(in.AddressFamily),
 		MaxEntries: common.Value(in.MaxEntries), Version: 1, State: "create-complete", Tags: tags,
-		ClientToken: common.Value(in.ClientToken),
 	}
 
 	for _, entry := range in.Entries {
@@ -137,24 +136,20 @@ func (s *Service) CreateManagedPrefixList(ctx context.Context, in *api.CreateMan
 	pl.Versions = map[int64][]api.PrefixListEntry{pl.Version: slices.Clone(pl.Entries)}
 	var out api.ManagedPrefixList
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		all, recordsErr := storage.Records[customerPrefixList](tx, scope.Key("ec2", kindPrefixList, ""))
-		if recordsErr != nil {
-			return recordsErr
-		}
-
-		for _, existing := range all {
-			if pl.ClientToken != "" && pl.ClientToken == existing.ClientToken {
-				if pl.Name != existing.Name || pl.Family != existing.Family || pl.MaxEntries != existing.MaxEntries {
-					return awserror.New("IdempotentParameterMismatch", "ClientToken parameters differ")
-				}
-
-				out = prefixOutput(scope, existing)
-				return nil
-			}
+		tokenKey := idempotency.Key(scope, "ec2", "CreateManagedPrefixList", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[api.ManagedPrefixList](tx, tokenKey, in,
+			awserror.New("IdempotentParameterMismatch", "ClientToken parameters differ"))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
 		}
 
 		out = prefixOutput(scope, pl)
-		return storage.Write(tx, scope.Key("ec2", kindPrefixList, pl.ID), pl)
+		if e := storage.Write(tx, scope.Key("ec2", kindPrefixList, pl.ID), pl); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, tokenKey, in, out)
 	})
 	if err != nil {
 		return nil, err

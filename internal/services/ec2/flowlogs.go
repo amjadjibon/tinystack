@@ -13,6 +13,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -24,7 +25,6 @@ type flowLog struct {
 	VPCID         string
 	ResourceID    string
 	ResourceType  string
-	ClientToken   string
 	Created       time.Time
 	Configuration api.FlowLog
 }
@@ -247,16 +247,19 @@ func (s *Service) CreateFlowLogs(
 	}
 
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
+		tokenKey := idempotency.Key(scope, "ec2", "CreateFlowLogs", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.CreateFlowLogsResult](tx, tokenKey, in,
+			awserror.New("IdempotentParameterMismatch", "ClientToken parameters differ"))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
 		if common.Value(in.LogDestinationType) == "kinesis-data-firehose" {
 			parts := strings.Split(common.Value(in.LogDestination), ":")
 			if len(parts) > 4 && parts[4] != scope.AccountID && common.Value(in.DeliverLogsPermissionArn) == "" {
 				return invalidParameter("Cross-account Firehose delivery requires DeliverLogsPermissionArn")
 			}
-		}
-
-		all, recordsErr := storage.Records[flowLog](tx, scope.Key("ec2", kindFlowLog, ""))
-		if recordsErr != nil {
-			return recordsErr
 		}
 
 		for _, resourceID := range in.ResourceIds {
@@ -276,17 +279,9 @@ func (s *Service) CreateFlowLogs(
 				continue
 			}
 
-			existing := slices.IndexFunc(all, func(f *flowLog) bool {
-				return in.ClientToken != nil && f.ClientToken == *in.ClientToken && f.ResourceID == resourceID
-			})
-			if existing >= 0 {
-				out.FlowLogIds = append(out.FlowLogIds, all[existing].ID)
-				continue
-			}
-
 			f := &flowLog{
 				ID: newID("fl"), ResourceID: resourceID, ResourceType: common.Value(in.ResourceType), VPCID: vpcID,
-				Configuration: config, Created: s.now().UTC(), Tags: tags, ClientToken: common.Value(in.ClientToken),
+				Configuration: config, Created: s.now().UTC(), Tags: tags,
 			}
 
 			if writeErr := storage.Write(tx, scope.Key("ec2", kindFlowLog, f.ID), f); writeErr != nil {
@@ -296,7 +291,7 @@ func (s *Service) CreateFlowLogs(
 			out.FlowLogIds = append(out.FlowLogIds, f.ID)
 		}
 
-		return nil
+		return idempotency.Remember(tx, tokenKey, in, out)
 	})
 	if err != nil {
 		return nil, err

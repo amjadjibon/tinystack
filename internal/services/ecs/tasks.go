@@ -12,6 +12,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -53,7 +54,6 @@ type task struct {
 	Zone             string
 	// Service is the name of the service that started the task, if any.
 	Service        string
-	ClientToken    string
 	Containers     []api.Container
 	Tags           []api.Tag
 	Version        int64
@@ -152,7 +152,6 @@ type launch struct {
 	Group            string
 	StartedBy        string
 	Service          string
-	ClientToken      string
 	Strategy         []api.CapacityProviderStrategyItem
 	Tags             []api.Tag
 	ExecuteCommand   bool
@@ -288,7 +287,6 @@ func (s *Service) start(tx storage.WriteTx, scope request.Scope, c *cluster, def
 		Last:             running,
 		Zone:             scope.Region + "a",
 		Service:          l.Service,
-		ClientToken:      l.ClientToken,
 		Overrides:        l.Overrides,
 		Network:          l.Network,
 		Tags:             l.Tags,
@@ -476,18 +474,12 @@ func (s *Service) RunTask(ctx context.Context, in *api.RunTaskRequest) (*api.Run
 			return purgeErr
 		}
 
-		if reused, found, reuseErr := tokenTasks(
-			tx,
-			scope,
-			c.Name,
-			common.Value(in.ClientToken),
-		); reuseErr != nil ||
-			found {
-			for _, t := range reused {
-				out.Tasks = append(out.Tasks, t.output(scope, []string{fieldTags}))
-			}
-
-			return reuseErr
+		token := idempotency.Key(scope, service, "RunTask/"+c.Name, in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.RunTaskResponse](tx, token, in,
+			invalidParameter("ClientToken was used with different parameters."))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
 		}
 
 		def, defErr := activeDef(tx, scope, in.TaskDefinition)
@@ -505,7 +497,6 @@ func (s *Service) RunTask(ctx context.Context, in *api.RunTaskRequest) (*api.Run
 			Overrides:       in.Overrides,
 			Group:           common.Value(in.Group),
 			StartedBy:       common.Value(in.StartedBy),
-			ClientToken:     common.Value(in.ClientToken),
 			Tags:            in.Tags,
 			ExecuteCommand:  common.Value(in.EnableExecuteCommand),
 		}
@@ -534,29 +525,13 @@ func (s *Service) RunTask(ctx context.Context, in *api.RunTaskRequest) (*api.Run
 			out.Tasks = append(out.Tasks, t.output(scope, []string{fieldTags}))
 		}
 
-		return nil
+		return idempotency.Remember(tx, token, in, out)
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return out, nil
-}
-
-// tokenTasks returns the tasks RunTask started with a client token, which
-// repeating the call returns.
-func tokenTasks(tx storage.ReadTx, scope request.Scope, clusterName, token string) ([]*task, bool, error) {
-	if token == "" {
-		return nil, false, nil
-	}
-
-	tasks, err := storage.Records[task](tx, taskPrefix(scope, clusterName))
-	if err != nil {
-		return nil, false, err
-	}
-
-	tasks = slices.DeleteFunc(tasks, func(t *task) bool { return t.ClientToken != token })
-	return tasks, len(tasks) > 0, nil
 }
 
 // taskRef returns the ID of the task ref (an ID or an ARN) names.

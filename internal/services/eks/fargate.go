@@ -7,6 +7,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -14,7 +15,6 @@ import (
 // token.
 type fargateProfile struct {
 	Profile api.FargateProfile
-	Token   string
 }
 
 func fargateKey(scope request.Scope, clusterName, name string) string {
@@ -63,6 +63,14 @@ func (s *Service) CreateFargateProfile(
 
 	var out *api.FargateProfile
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		token := idempotency.Key(scope, service, "CreateFargateProfile", in.ClientRequestToken)
+		previous, found, replayErr := idempotency.Replay[*api.FargateProfile](tx, token, in,
+			invalidParameter("ClientRequestToken was used with different parameters."))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
 		c, loadErr := loadCluster(tx, scope, in.ClusterName)
 		if loadErr != nil {
 			return loadErr
@@ -73,18 +81,15 @@ func (s *Service) CreateFargateProfile(
 		}
 
 		name := *in.FargateProfileName
-		existing, ok, readErr := storage.Read[fargateProfile](tx, fargateKey(scope, c.Name, name))
+		_, ok, readErr := storage.Read[fargateProfile](tx, fargateKey(scope, c.Name, name))
 		switch {
 		case readErr != nil:
 			return readErr
-		case ok && common.Value(in.ClientRequestToken) != "" && existing.Token == *in.ClientRequestToken:
-			out = &existing.Profile
-			return nil
 		case ok:
 			return inUse("A Fargate Profile already exists with this name in this cluster.")
 		}
 
-		p := &fargateProfile{Token: common.Value(in.ClientRequestToken), Profile: api.FargateProfile{
+		p := &fargateProfile{Profile: api.FargateProfile{
 			FargateProfileName: new(name),
 			FargateProfileArn:  new(arn(scope, "fargateprofile/"+c.Name+"/"+name+"/"+uuid.NewV4().String())),
 			ClusterName: new(
@@ -99,7 +104,11 @@ func (s *Service) CreateFargateProfile(
 			Health:              &api.FargateProfileHealth{Issues: []api.FargateProfileIssue{}},
 		}}
 		out = &p.Profile
-		return storage.Write(tx, fargateKey(scope, c.Name, name), p)
+		if e := storage.Write(tx, fargateKey(scope, c.Name, name), p); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, token, in, out)
 	})
 	if err != nil {
 		return nil, err

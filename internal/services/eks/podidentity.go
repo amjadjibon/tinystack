@@ -8,14 +8,13 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-// association is a pod identity association's record: its description and
-// its create token.
+// association is a pod identity association's stored description.
 type association struct {
 	Association api.PodIdentityAssociation
-	Token       string
 }
 
 func associationKey(scope request.Scope, clusterName, id string) string {
@@ -58,6 +57,14 @@ func (s *Service) CreatePodIdentityAssociation(
 
 	var out *api.PodIdentityAssociation
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		token := idempotency.Key(scope, service, "CreatePodIdentityAssociation", in.ClientRequestToken)
+		previous, found, replayErr := idempotency.Replay[*api.PodIdentityAssociation](tx, token, in,
+			invalidParameter("ClientRequestToken was used with different parameters."))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
 		c, loadErr := loadCluster(tx, scope, in.ClusterName)
 		if loadErr != nil {
 			return loadErr
@@ -74,17 +81,12 @@ func (s *Service) CreatePodIdentityAssociation(
 				continue
 			}
 
-			if common.Value(in.ClientRequestToken) != "" && a.Token == *in.ClientRequestToken {
-				out = &a.Association
-				return nil
-			}
-
 			return inUse("Association already exists: %s", *a.Association.AssociationId)
 		}
 
 		now := s.now().UTC()
 		id := "a-" + hexID(17)
-		a := &association{Token: common.Value(in.ClientRequestToken), Association: api.PodIdentityAssociation{
+		a := &association{Association: api.PodIdentityAssociation{
 			ClusterName: new(c.Name), Namespace: in.Namespace, ServiceAccount: in.ServiceAccount, RoleArn: in.RoleArn,
 			AssociationArn: new(arn(scope, "podidentityassociation/"+c.Name+"/"+id)), AssociationId: new(id),
 			Tags: common.CloneTags(in.Tags), CreatedAt: common.SecondsMilli(now), ModifiedAt: common.SecondsMilli(now),
@@ -92,7 +94,11 @@ func (s *Service) CreatePodIdentityAssociation(
 			ExternalId: externalID(in.TargetRoleArn),
 		}}
 		out = &a.Association
-		return storage.Write(tx, associationKey(scope, c.Name, id), a)
+		if e := storage.Write(tx, associationKey(scope, c.Name, id), a); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, token, in, out)
 	})
 	if err != nil {
 		return nil, err
@@ -204,8 +210,31 @@ func (s *Service) UpdatePodIdentityAssociation(
 	}
 
 	var out *api.PodIdentityAssociation
-	err := s.changeAssociation(ctx, in.ClusterName, in.AssociationId,
-		func(tx storage.WriteTx, scope request.Scope, a *association) error {
+	scope, err := request.RegionalScope(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		token := idempotency.Key(scope, service, "UpdatePodIdentityAssociation", in.ClientRequestToken)
+		previous, found, replayErr := idempotency.Replay[*api.PodIdentityAssociation](tx, token, in,
+			invalidParameter("ClientRequestToken was used with different parameters."))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
+		c, loadErr := loadCluster(tx, scope, in.ClusterName)
+		if loadErr != nil {
+			return loadErr
+		}
+
+		a, ok, readErr := storage.Read[association](tx, associationKey(scope, c.Name, common.Value(in.AssociationId)))
+		if readErr != nil || !ok {
+			return common.ErrorsOr(readErr, notFound("Association does not exist: %s", common.Value(in.AssociationId)))
+		}
+
+		changeErr := func() error {
 			p := &a.Association
 			p.RoleArn = common.OrElse(in.RoleArn, p.RoleArn)
 			p.DisableSessionTags = common.OrElse(in.DisableSessionTags, p.DisableSessionTags)
@@ -217,7 +246,13 @@ func (s *Service) UpdatePodIdentityAssociation(
 			p.ModifiedAt = common.SecondsMilli(s.now().UTC())
 			out = p
 			return storage.Write(tx, associationKey(scope, *p.ClusterName, *p.AssociationId), a)
-		})
+		}()
+		if changeErr != nil {
+			return changeErr
+		}
+
+		return idempotency.Remember(tx, token, in, out)
+	})
 	if err != nil {
 		return nil, err
 	}

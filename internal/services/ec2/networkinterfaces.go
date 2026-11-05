@@ -12,6 +12,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -25,7 +26,6 @@ type networkInterface struct {
 	Zone              string
 	Description       string
 	Kind              string
-	ClientToken       string
 	Attachment        *api.NetworkInterfaceAttachment
 	PrivateIPs        []string
 	IPv6              []string
@@ -252,20 +252,12 @@ func (s *Service) CreateNetworkInterface(ctx context.Context, in *api.CreateNetw
 
 	var out api.NetworkInterface
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
-		all, recordsErr := storage.Records[networkInterface](tx, scope.Key("ec2", kindNetworkInterface, ""))
-		if recordsErr != nil {
-			return recordsErr
-		}
-
-		for _, ni := range all {
-			if in.ClientToken != nil && ni.ClientToken == *in.ClientToken {
-				if ni.SubnetID != common.Value(in.SubnetId) {
-					return awserror.New("IdempotentParameterMismatch", "Subnet differs")
-				}
-
-				out, recordsErr = eniOutput(tx, scope, ni)
-				return recordsErr
-			}
+		tokenKey := idempotency.Key(scope, "ec2", "CreateNetworkInterface", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[api.NetworkInterface](tx, tokenKey, in,
+			awserror.New("IdempotentParameterMismatch", "Subnet differs"))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
 		}
 
 		sn, ok, recordsErr := storage.Read[subnet](tx, scope.Key("ec2", kindSubnet, common.Value(in.SubnetId)))
@@ -287,7 +279,6 @@ func (s *Service) CreateNetworkInterface(ctx context.Context, in *api.CreateNetw
 			Kind:        kind,
 			Description: common.Value(in.Description),
 			GroupIDs:    groups,
-			ClientToken: common.Value(in.ClientToken),
 		}
 
 		instances, recordsErr := storage.Records[instance](tx, scope.Key("ec2", kindInstance, ""))
@@ -359,7 +350,11 @@ func (s *Service) CreateNetworkInterface(ctx context.Context, in *api.CreateNetw
 			return recordsErr
 		}
 
-		return storage.Write(tx, scope.Key("ec2", kindNetworkInterface, ni.ID), ni)
+		if e := storage.Write(tx, scope.Key("ec2", kindNetworkInterface, ni.ID), ni); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, tokenKey, in, out)
 	})
 	if err != nil {
 		return nil, err

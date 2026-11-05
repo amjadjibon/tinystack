@@ -9,16 +9,16 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
 const kindEgressGateway = "egress-only-internet-gateway"
 
 type egressGateway struct {
-	Tags        map[string]string `json:",omitempty"`
-	ID          string
-	VPCID       string
-	ClientToken string
+	Tags  map[string]string `json:",omitempty"`
+	ID    string
+	VPCID string
 }
 
 func egressNotFound(id string) error {
@@ -49,6 +49,14 @@ func (s *Service) CreateEgressOnlyInternetGateway(ctx context.Context, in *api.C
 
 	var out api.EgressOnlyInternetGateway
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
+		tokenKey := idempotency.Key(scope, "ec2", "CreateEgressOnlyInternetGateway", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[api.EgressOnlyInternetGateway](tx, tokenKey, in,
+			awserror.New("IdempotentParameterMismatch", "ClientToken parameters differ"))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
 		v, loadVPCErr := loadVPC(tx, scope, common.Value(in.VpcId))
 		if loadVPCErr != nil {
 			return loadVPCErr
@@ -60,23 +68,18 @@ func (s *Service) CreateEgressOnlyInternetGateway(ctx context.Context, in *api.C
 		}
 
 		for _, g := range all {
-			if in.ClientToken != nil && g.ClientToken == *in.ClientToken {
-				if g.VPCID != v.ID {
-					return awserror.New("IdempotentParameterMismatch", "ClientToken parameters differ")
-				}
-
-				out = egressOutput(g)
-				return nil
-			}
-
 			if g.VPCID == v.ID {
 				return invalidParameter("VPC already has an egress-only gateway")
 			}
 		}
 
-		g := &egressGateway{ID: newID("eigw"), VPCID: v.ID, Tags: tags, ClientToken: common.Value(in.ClientToken)}
+		g := &egressGateway{ID: newID("eigw"), VPCID: v.ID, Tags: tags}
 		out = egressOutput(g)
-		return storage.Write(tx, scope.Key("ec2", kindEgressGateway, g.ID), g)
+		if e := storage.Write(tx, scope.Key("ec2", kindEgressGateway, g.ID), g); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, tokenKey, in, out)
 	})
 	if err != nil {
 		return nil, err

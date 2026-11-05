@@ -12,6 +12,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -30,7 +31,6 @@ type networkACL struct {
 	Tags         map[string]string `json:",omitempty"`
 	ID           string
 	VPCID        string
-	ClientToken  string           `json:",omitempty"`
 	Associations []aclAssociation `json:",omitempty"`
 	Entries      []aclEntry
 	Default      bool
@@ -211,29 +211,28 @@ func (s *Service) CreateNetworkAcl(
 	}
 
 	var out api.NetworkAcl
-	token := common.Value(in.ClientToken)
 	err = s.update(ctx, in.DryRun, func(tx storage.WriteTx, scope request.Scope) error {
+		tokenKey := idempotency.Key(scope, "ec2", "CreateNetworkAcl", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[api.NetworkAcl](tx, tokenKey, in,
+			awserror.New("IdempotentParameterMismatch", "ClientToken parameters differ"))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
+		}
+
 		v, loadErr := loadVPC(tx, scope, common.Value(in.VpcId))
 		if loadErr != nil {
 			return loadErr
 		}
 
-		all, listErr := list[networkACL](tx, scope, kindNetworkACL)
-		if listErr != nil {
-			return listErr
-		}
-
-		// A ClientToken already used returns the ACL it created.
-		at := slices.IndexFunc(all, func(acl *networkACL) bool { return token != "" && acl.ClientToken == token })
-		if at >= 0 {
-			out = aclOutput(scope, all[at])
-			return nil
-		}
-
 		acl := newACL(v.ID, false)
-		acl.Tags, acl.ClientToken = tags, token
+		acl.Tags = tags
 		out = aclOutput(scope, acl)
-		return storage.Write(tx, scope.Key("ec2", kindNetworkACL, acl.ID), acl)
+		if e := storage.Write(tx, scope.Key("ec2", kindNetworkACL, acl.ID), acl); e != nil {
+			return e
+		}
+
+		return idempotency.Remember(tx, tokenKey, in, out)
 	})
 	if err != nil {
 		return nil, err

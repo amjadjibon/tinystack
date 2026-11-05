@@ -8,6 +8,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/eks"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -18,10 +19,9 @@ const (
 )
 
 // identityProvider is an OIDC identity provider config's record: its
-// description and its associate token.
+// description.
 type identityProvider struct {
 	Config api.OidcIdentityProviderConfig
-	Token  string
 }
 
 func identityProviderKey(scope request.Scope, clusterName, name string) string {
@@ -82,43 +82,58 @@ func (s *Service) AssociateIdentityProviderConfig(
 
 	out := &api.AssociateIdentityProviderConfigResponse{}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		c, loadErr := loadCluster(tx, scope, in.ClusterName)
-		if loadErr != nil {
-			return loadErr
+		token := idempotency.Key(scope, service, "AssociateIdentityProviderConfig", in.ClientRequestToken)
+		previous, found, replayErr := idempotency.Replay[*api.AssociateIdentityProviderConfigResponse](tx, token, in,
+			invalidParameter("ClientRequestToken was used with different parameters."))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
 		}
 
-		existing, readErr := storage.Records[identityProvider](
-			tx,
-			scope.Prefix(service, kindIdentityProvider)+c.Name+"/",
-		)
-		if readErr != nil {
-			return readErr
+		changeErr := func() error {
+			c, loadErr := loadCluster(tx, scope, in.ClusterName)
+			if loadErr != nil {
+				return loadErr
+			}
+
+			existing, readErr := storage.Records[identityProvider](
+				tx,
+				scope.Prefix(service, kindIdentityProvider)+c.Name+"/",
+			)
+			if readErr != nil {
+				return readErr
+			}
+
+			if len(existing) > 0 {
+				return inUse("Identity provider config %s is already associated with cluster %s.",
+					*existing[0].Config.IdentityProviderConfigName, c.Name)
+			}
+
+			o := in.Oidc
+			name := *o.IdentityProviderConfigName
+			p := &identityProvider{Config: api.OidcIdentityProviderConfig{
+				IdentityProviderConfigName: o.IdentityProviderConfigName, ClusterName: new(c.Name),
+				IdentityProviderConfigArn: new(arn(scope, "identityproviderconfig/"+c.Name+"/"+typeOIDC+"/"+name+"/"+
+					uuid.NewV4().String())),
+				IssuerUrl: o.IssuerUrl, ClientId: o.ClientId, UsernameClaim: o.UsernameClaim,
+				UsernamePrefix: o.UsernamePrefix, GroupsClaim: o.GroupsClaim, GroupsPrefix: o.GroupsPrefix,
+				RequiredClaims: o.RequiredClaims, Tags: common.CloneTags(in.Tags), Status: new("ACTIVE"),
+			}}
+
+			update, recordErr := s.record(tx, scope, c.Name, "", "", "AssociateIdentityProviderConfig",
+				[]api.UpdateParam{configParam(name)})
+			if recordErr != nil {
+				return recordErr
+			}
+
+			out.Update, out.Tags = update, p.Config.Tags
+			return storage.Write(tx, identityProviderKey(scope, c.Name, name), p)
+		}()
+		if changeErr != nil {
+			return changeErr
 		}
 
-		if len(existing) > 0 {
-			return inUse("Identity provider config %s is already associated with cluster %s.",
-				*existing[0].Config.IdentityProviderConfigName, c.Name)
-		}
-
-		o := in.Oidc
-		name := *o.IdentityProviderConfigName
-		p := &identityProvider{Token: common.Value(in.ClientRequestToken), Config: api.OidcIdentityProviderConfig{
-			IdentityProviderConfigName: o.IdentityProviderConfigName, ClusterName: new(c.Name),
-			IdentityProviderConfigArn: new(arn(scope, "identityproviderconfig/"+c.Name+"/"+typeOIDC+"/"+name+"/"+
-				uuid.NewV4().String())),
-			IssuerUrl: o.IssuerUrl, ClientId: o.ClientId, UsernameClaim: o.UsernameClaim,
-			UsernamePrefix: o.UsernamePrefix, GroupsClaim: o.GroupsClaim, GroupsPrefix: o.GroupsPrefix,
-			RequiredClaims: o.RequiredClaims, Tags: common.CloneTags(in.Tags), Status: new("ACTIVE"),
-		}}
-
-		update, recordErr := s.record(tx, scope, c.Name, "", "", "AssociateIdentityProviderConfig",
-			[]api.UpdateParam{configParam(name)})
-		if recordErr != nil {
-			return recordErr
-		}
-
-		out.Update, out.Tags = update, p.Config.Tags
-		return storage.Write(tx, identityProviderKey(scope, c.Name, name), p)
+		return idempotency.Remember(tx, token, in, out)
 	})
 	if err != nil {
 		return nil, err
@@ -229,21 +244,36 @@ func (s *Service) DisassociateIdentityProviderConfig(
 
 	out := &api.DisassociateIdentityProviderConfigResponse{}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		c, p, findErr := findIdentityProvider(tx, scope, in.ClusterName, in.IdentityProviderConfig)
-		if findErr != nil {
-			return findErr
+		token := idempotency.Key(scope, service, "DisassociateIdentityProviderConfig", in.ClientRequestToken)
+		previous, found, replayErr := idempotency.Replay[*api.DisassociateIdentityProviderConfigResponse](tx, token, in,
+			invalidParameter("ClientRequestToken was used with different parameters."))
+		if replayErr != nil || found {
+			out = previous
+			return replayErr
 		}
 
-		name := *p.Config.IdentityProviderConfigName
-		update, recordErr := s.record(tx, scope, c.Name, "", "", "DisassociateIdentityProviderConfig",
-			[]api.UpdateParam{configParam(name)})
-		if recordErr != nil {
-			return recordErr
+		changeErr := func() error {
+			c, p, findErr := findIdentityProvider(tx, scope, in.ClusterName, in.IdentityProviderConfig)
+			if findErr != nil {
+				return findErr
+			}
+
+			name := *p.Config.IdentityProviderConfigName
+			update, recordErr := s.record(tx, scope, c.Name, "", "", "DisassociateIdentityProviderConfig",
+				[]api.UpdateParam{configParam(name)})
+			if recordErr != nil {
+				return recordErr
+			}
+
+			out.Update = update
+			tx.Delete(identityProviderKey(scope, c.Name, name))
+			return nil
+		}()
+		if changeErr != nil {
+			return changeErr
 		}
 
-		out.Update = update
-		tx.Delete(identityProviderKey(scope, c.Name, name))
-		return nil
+		return idempotency.Remember(tx, token, in, out)
 	})
 	if err != nil {
 		return nil, err
