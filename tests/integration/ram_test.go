@@ -250,6 +250,12 @@ func TestRamTokenReplay(t *testing.T) {
 	if foreignErr != nil || *foreign.ResourceShare.ResourceShareArn == *first.ResourceShare.ResourceShareArn {
 		t.Fatalf("token scope: %+v %v", foreign, foreignErr)
 	}
+	west := ramClient(srv, "test", "us-west-2")
+	regional, regionalErr := west.CreateResourceShare(ctx, in)
+	if regionalErr != nil || *regional.ResourceShare.ResourceShareArn == *first.ResourceShare.ResourceShareArn {
+		t.Fatalf("region token scope: %+v %v", regional, regionalErr)
+	}
+
 	in.Name = new("changed")
 	_, err = c.CreateResourceShare(ctx, in)
 	wantAccessAnalyzerError(t, err, "IdempotentParameterMismatchException")
