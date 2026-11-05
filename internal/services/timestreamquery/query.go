@@ -8,6 +8,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/timestreamquery"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -58,7 +59,26 @@ func (s *Service) Query(ctx context.Context, in *api.QueryRequest) (*api.QueryRe
 	}
 
 	var out *api.QueryResponse
+	tokenKey := ""
+	if in.NextToken == nil {
+		tokenKey = idempotency.Key(scope, serviceName, "Query", in.ClientToken)
+	}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		previous, replayed, replayErr := idempotency.Replay[*api.QueryResponse](
+			tx,
+			tokenKey,
+			in,
+			invalid("ClientToken was already used with different parameters."),
+		)
+		if replayErr != nil {
+			return replayErr
+		}
+
+		if replayed {
+			out = previous
+			return nil
+		}
+
 		k := key(scope, "query", id)
 		if record == nil {
 			var found bool
@@ -106,11 +126,15 @@ func (s *Service) Query(ctx context.Context, in *api.QueryRequest) (*api.QueryRe
 
 			out.NextToken = new(token)
 		} else if in.NextToken == nil {
-			// A result that fits one page has no token to read it again.
-			return nil
+			// A result that fits one page needs only its replay entry.
+			return idempotency.Remember(tx, tokenKey, in, out)
 		}
 
-		return storage.Write(tx, k, record)
+		if writeErr := storage.Write(tx, k, record); writeErr != nil {
+			return writeErr
+		}
+
+		return idempotency.Remember(tx, tokenKey, in, out)
 	})
 	return out, err
 }

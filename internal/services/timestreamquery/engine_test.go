@@ -155,7 +155,7 @@ func TestScheduledClaimsSkipMissedRuns(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err = svc.claim(ctx, scope, r.Name, now, true); err == nil {
+	if _, err = svc.claim(ctx, scope, r.Name, now, true, nil); err == nil {
 		t.Fatal("claimed a missed run twice")
 	}
 }

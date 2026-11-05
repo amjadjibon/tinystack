@@ -2,12 +2,12 @@ package timestreamquery
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/timestreamquery"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/schedule"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -31,8 +31,6 @@ type scheduledQueryRecord struct {
 	QueryString                    string
 	State                          string
 	ScheduledQueryExecutionRoleArn string
-	ClientToken                    string
-	Fingerprint                    string
 	FailedRuns                     []api.ScheduledQueryRunSummary
 	Running                        bool
 }
@@ -104,15 +102,6 @@ func (r *scheduledQueryRecord) summary(scope request.Scope, now time.Time) api.S
 	}
 }
 
-func requestFingerprint(in *api.CreateScheduledQueryRequest, tags map[string]string) (string, error) {
-	copyReq := *in
-	copyReq.ClientToken = nil
-	copyReq.Tags = tagList(tags)
-	// #nosec G117 -- ClientToken is an idempotency identifier cleared above, not a credential.
-	raw, err := json.Marshal(copyReq)
-	return string(raw), err
-}
-
 func (s *Service) validateCreateReferences(
 	ctx context.Context,
 	scope request.Scope,
@@ -181,31 +170,34 @@ func (s *Service) CreateScheduledQuery(
 	}
 
 	name := *in.Name
-	token := common.Value(in.ClientToken)
-	fp, err := requestFingerprint(in, tags)
-	if err != nil {
-		return nil, err
-	}
-
+	tokenKey := idempotency.Key(scope, serviceName, "CreateScheduledQuery", in.ClientToken)
 	var arn string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if token != "" {
-			prefix := key(scope, kindScheduledQuery, "")
-			for _, k := range tx.Keys(prefix) {
-				existing, _, e := storage.Read[scheduledQueryRecord](tx, k)
-				if e != nil {
-					return e
-				}
-
-				if existing.ClientToken == token && now.Sub(existing.Created) < clientTokenTTL {
-					if existing.Fingerprint != fp {
-						return fault("ConflictException", "ClientToken already used with different parameters.")
-					}
-
-					arn = scheduledQueryARN(scope, existing.Name)
-					return nil
-				}
+		if tokenKey != "" {
+			expiry, exists, expiryErr := storage.Read[time.Time](tx, tokenKey+"/expires")
+			if expiryErr != nil {
+				return expiryErr
 			}
+
+			if exists && !time.Now().Before(*expiry) {
+				tx.Delete(tokenKey)
+				tx.Delete(tokenKey + "/expires")
+			}
+		}
+
+		previous, replayed, replayErr := idempotency.Replay[string](
+			tx,
+			tokenKey,
+			in,
+			fault("ConflictException", "ClientToken already used with different parameters."),
+		)
+		if replayErr != nil {
+			return replayErr
+		}
+
+		if replayed {
+			arn = previous
+			return nil
 		}
 
 		k := key(scope, kindScheduledQuery, name)
@@ -229,8 +221,6 @@ func (s *Service) CreateScheduledQuery(
 			ScheduledQueryExecutionRoleArn: *in.ScheduledQueryExecutionRoleArn,
 			KmsKeyId:                       common.Clone(in.KmsKeyId),
 			ErrorReportConfiguration:       common.Clone(in.ErrorReportConfiguration),
-			ClientToken:                    token,
-			Fingerprint:                    fp,
 			Created:                        now,
 			Enabled:                        now,
 		}
@@ -240,7 +230,21 @@ func (s *Service) CreateScheduledQuery(
 			return writeErr
 		}
 
-		return storage.Write(tx, scheduledIndex(scope, name), scheduledIndexRecord{Scope: scope, Name: name})
+		if writeErr := storage.Write(
+			tx,
+			scheduledIndex(scope, name),
+			scheduledIndexRecord{Scope: scope, Name: name},
+		); writeErr != nil {
+			return writeErr
+		}
+
+		if tokenKey != "" {
+			if writeErr := storage.Write(tx, tokenKey+"/expires", now.Add(clientTokenTTL)); writeErr != nil {
+				return writeErr
+			}
+		}
+
+		return idempotency.Remember(tx, tokenKey, in, arn)
 	})
 	if err != nil {
 		return nil, err

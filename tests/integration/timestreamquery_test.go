@@ -438,6 +438,7 @@ func TestTimestreamQuerySDKLifecycle(t *testing.T) {
 			ARN     string         `json:"arn"`
 		} `json:"resources"`
 	}
+
 	if status := internal(t, s, http.MethodGet, "/_tinystack/resources", &inv); status != http.StatusOK {
 		t.Fatalf("inventory status %d", status)
 	}
@@ -534,6 +535,7 @@ func TestTimestreamQueryCloudFormation(t *testing.T) {
 				{"Key": "team", "Value": team},
 			},
 		}
+
 		if name != "" {
 			props["ScheduledQueryName"] = name
 		}
@@ -678,4 +680,42 @@ func TestTimestreamQuerySQLiteRestart(t *testing.T) {
 	if err != nil || len(tags.Tags) != 2 {
 		t.Fatalf("persisted tags: %+v %v", tags, err)
 	}
+}
+
+func TestTimestreamQueryTokenReplay(t *testing.T) {
+	ctx := context.Background()
+	s := server(t)
+	c := timestreamQueryClient(s, "test", "us-east-1")
+	in := &sdk.QueryInput{QueryString: new("SELECT 1"), ClientToken: new(strings.Repeat("a", 32))}
+	first, err := c.Query(ctx, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	replay, err := c.Query(ctx, in)
+	if err != nil || *first.QueryId != *replay.QueryId {
+		t.Fatalf("query replay: %+v %v", replay, err)
+	}
+	in.QueryString = new("SELECT 2")
+	_, err = c.Query(ctx, in)
+	wantTimestreamError(t, err, "ValidationException")
+	env := timestreamQuerySetup(t, s)
+	created, err := c.CreateScheduledQuery(ctx, env.createInput("explicit-once", "explicit-create"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	invocation := &sdk.ExecuteScheduledQueryInput{
+		ScheduledQueryArn: created.Arn,
+		InvocationTime:    new(time.Now().UTC()),
+		ClientToken:       new(strings.Repeat("b", 32)),
+	}
+	if _, err = c.ExecuteScheduledQuery(ctx, invocation); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = c.ExecuteScheduledQuery(ctx, invocation); err != nil {
+		t.Fatal(err)
+	}
+	changed := *invocation
+	changed.InvocationTime = new(invocation.InvocationTime.Add(time.Minute))
+	_, err = c.ExecuteScheduledQuery(ctx, &changed)
+	wantTimestreamError(t, err, "ValidationException")
 }

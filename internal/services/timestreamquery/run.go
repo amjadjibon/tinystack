@@ -14,6 +14,7 @@ import (
 	writeapi "github.com/amjadjibon/tinystack/internal/aws/generated/timestreamwrite"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/schedule"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -190,12 +191,15 @@ func (s *Service) ExecuteScheduledQuery(
 	}
 
 	at := time.Unix(0, int64(common.Value(in.InvocationTime)*float64(time.Second))).UTC()
-	r, err := s.claim(ctx, scope, name, at, false)
+	r, err := s.claim(ctx, scope, name, at, false, in)
 	if err != nil {
 		return nil, err
 	}
 
-	s.run(ctx, scope, r, at, false)
+	if r != nil {
+		s.run(ctx, scope, r, at, false)
+	}
+
 	return &api.ExecuteScheduledQueryOutput{}, nil
 }
 
@@ -205,9 +209,25 @@ func (s *Service) claim(
 	name string,
 	at time.Time,
 	scheduled bool,
+	input *api.ExecuteScheduledQueryRequest,
 ) (*scheduledQueryRecord, error) {
 	var r *scheduledQueryRecord
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
+		tokenKey := ""
+		if input != nil {
+			tokenKey = idempotency.Key(scope, serviceName, "ExecuteScheduledQuery", input.ClientToken)
+		}
+
+		_, replayed, replayErr := idempotency.Replay[struct{}](
+			tx,
+			tokenKey,
+			input,
+			invalid("ClientToken was already used with different parameters."),
+		)
+		if replayErr != nil || replayed {
+			return replayErr
+		}
+
 		k := key(scope, kindScheduledQuery, name)
 		var found bool
 		var err error
@@ -248,7 +268,11 @@ func (s *Service) claim(
 		}
 
 		r.Running = true
-		return storage.Write(tx, k, r)
+		if writeErr := storage.Write(tx, k, r); writeErr != nil {
+			return writeErr
+		}
+
+		return idempotency.Remember(tx, tokenKey, input, struct{}{})
 	})
 	return r, err
 }
@@ -276,7 +300,7 @@ func (s *Service) tick(ctx context.Context) {
 	for _, c := range candidates {
 		now := time.Now().UTC()
 		runCtx := request.WithMetadata(ctx, request.Metadata{Scope: c.Scope})
-		r, e := s.claim(runCtx, c.Scope, c.Name, now, true)
+		r, e := s.claim(runCtx, c.Scope, c.Name, now, true, nil)
 		if e == nil {
 			s.run(runCtx, c.Scope, r, r.Claimed, true)
 		}
