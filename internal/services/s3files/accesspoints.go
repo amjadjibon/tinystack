@@ -8,6 +8,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3files"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -39,17 +40,14 @@ func (s *Service) CreateAccessPoint(
 
 	var out *api.GetAccessPointResponse
 	err = s.update(ctx, func(tx storage.WriteTx, scope request.Scope) error {
-		existing, e := storage.Records[accessPoint](tx, scope.Prefix(serviceName, kindAP))
-		if e != nil {
-			return e
+		key := idempotency.Key(scope, serviceName, "CreateAccessPoint", new(token))
+		previous, found, replayErr := idempotency.Replay[*api.GetAccessPointResponse](tx, key, struct{}{}, nil)
+		if replayErr != nil {
+			return replayErr
 		}
 
-		for _, r := range existing {
-			if r.ClientToken != token {
-				continue
-			}
-
-			out = apResponse(scope, r)
+		if found {
+			out = previous
 			return nil
 		}
 
@@ -75,7 +73,11 @@ func (s *Service) CreateAccessPoint(
 
 		out = apResponse(scope, r)
 
-		return queue(tx, scope, kindAP, r.ID, r)
+		if writeErr := queue(tx, scope, kindAP, r.ID, r); writeErr != nil {
+			return writeErr
+		}
+
+		return idempotency.Remember(tx, key, struct{}{}, out)
 	})
 	if err != nil {
 		return nil, err

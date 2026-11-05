@@ -5,7 +5,6 @@ package resourceexplorer2
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"slices"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/resourceexplorer2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -28,11 +28,9 @@ func New(store storage.Store) *Service         { return &Service{store: store} }
 func (s *Service) UseCaller(c *catalog.Caller) { s.caller = c }
 
 type record struct {
-	Index            *api.GetIndexOutput   `json:"index,omitempty"`
-	View             *api.View             `json:"view,omitempty"`
-	Tags             map[string]string     `json:"tags,omitempty"`
-	CreateIndexInput *api.CreateIndexInput `json:"createIndexInput,omitempty"`
-	CreateViewInput  *api.CreateViewInput  `json:"createViewInput,omitempty"`
+	Index *api.GetIndexOutput `json:"index,omitempty"`
+	View  *api.View           `json:"view,omitempty"`
+	Tags  map[string]string   `json:"tags,omitempty"`
 }
 
 func arn(scope request.Scope, kind, name string) string {
@@ -103,31 +101,35 @@ func (s *Service) CreateIndex(ctx context.Context, in *api.CreateIndexInput) (*a
 			CreatedAt:     new(now),
 			LastUpdatedAt: new(now),
 		},
-		Tags:             common.CloneTags(in.Tags),
-		CreateIndexInput: in,
+		Tags: common.CloneTags(in.Tags),
 	}
 
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
-		existing, ok, err := storage.Read[record](tx, indexKey(scope))
+		key := idempotency.Key(scope, serviceName, "CreateIndex", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[record](tx, key, in, conflict())
+		if replayErr != nil {
+			return replayErr
+		}
+
+		if found {
+			r = previous
+			return nil
+		}
+
+		_, ok, err := storage.Read[record](tx, indexKey(scope))
 		if err != nil {
 			return err
 		}
 
 		if ok {
-			if in.ClientToken != nil && existing.CreateIndexInput != nil &&
-				common.Value(existing.CreateIndexInput.ClientToken) == *in.ClientToken {
-				if !reflect.DeepEqual(existing.CreateIndexInput, common.Clone(in)) {
-					return conflict()
-				}
-
-				r = *existing
-				return nil
-			}
-
 			return conflict()
 		}
 
-		return storage.Write(tx, indexKey(scope), r)
+		if writeErr := storage.Write(tx, indexKey(scope), r); writeErr != nil {
+			return writeErr
+		}
+
+		return idempotency.Remember(tx, key, in, r)
 	})
 	return &api.CreateIndexOutput{Arn: r.Index.Arn, State: r.Index.State, CreatedAt: r.Index.CreatedAt}, err
 }

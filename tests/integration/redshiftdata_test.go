@@ -99,6 +99,10 @@ func TestRedshiftDataOperations(t *testing.T) {
 		t.Fatal(replay, err)
 	}
 
+	changed := *in
+	changed.Sql = new("select 2")
+	_, err = c.ExecuteStatement(ctx, &changed)
+	wantAccessAnalyzerError(t, err, "ValidationException")
 	waitRedshiftStatement(t, c, out.Id, types.StatusStringFinished)
 	result, err := c.GetStatementResult(ctx, &sdk.GetStatementResultInput{Id: out.Id})
 	if err != nil || len(result.Records) != 1 {

@@ -3,15 +3,14 @@ package fis
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/fis"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -53,46 +52,31 @@ func (s *Service) CreateExperimentTemplate(
 	t.Arn = new(resourceARN(scope, kindTemplate, id))
 	t.CreationTime = common.SecondsMilli(time.Now())
 	t.LastUpdateTime = t.CreationTime
-	r := &record{Template: t, Token: common.Value(in.ClientToken), Request: fmt.Sprintf("%x", sha256.Sum256(data))}
+	r := &record{Template: t}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		previous, found, replayErr := replay(tx, scope, kindTemplate, r.Token, r.Request)
+		key := idempotency.Key(scope, serviceName, kindTemplate, in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.ExperimentTemplate](
+			tx,
+			key,
+			in,
+			awserror.Validation("clientToken was already used with different parameters"),
+		)
 		if replayErr != nil {
 			return replayErr
 		}
 
 		if found {
-			t = previous.Template
+			t = previous
 			return nil
 		}
 
-		return storage.Write(tx, scope.Key(serviceName, kindTemplate, id), r)
+		if writeErr := storage.Write(tx, scope.Key(serviceName, kindTemplate, id), r); writeErr != nil {
+			return writeErr
+		}
+
+		return idempotency.Remember(tx, key, in, t)
 	})
 	return &api.CreateExperimentTemplateResponse{ExperimentTemplate: t}, err
-}
-
-func replay(tx storage.ReadTx, scope request.Scope, kind, token, fingerprint string) (*record, bool, error) {
-	if token == "" {
-		return nil, false, nil
-	}
-
-	items, err := storage.Records[record](tx, scope.Prefix(serviceName, kind))
-	if err != nil {
-		return nil, false, err
-	}
-
-	for _, r := range items {
-		if r.Token != token {
-			continue
-		}
-
-		if r.Request != fingerprint {
-			return nil, false, awserror.Validation("clientToken was already used with different parameters")
-		}
-
-		return r, true, nil
-	}
-
-	return nil, false, nil
 }
 
 // GetExperimentTemplate returns the stored template.

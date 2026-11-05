@@ -2,7 +2,6 @@ package s3files
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"slices"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3files"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -197,28 +197,26 @@ func (s *Service) CreateFileSystem(
 	}
 
 	token := newToken(in.ClientToken)
-	fingerprint, err := fingerprintOf(in.Bucket, in.Prefix, in.KmsKeyId, in.RoleArn, tags)
-	if err != nil {
-		return nil, err
-	}
+	input := struct {
+		Bucket, Prefix, KMSKeyID, RoleARN *string
+		Tags                              map[string]string
+	}{in.Bucket, in.Prefix, in.KmsKeyId, in.RoleArn, tags}
 
 	var out *api.GetFileSystemResponse
 	err = s.update(ctx, func(tx storage.WriteTx, scope request.Scope) error {
-		existing, e := storage.Records[fileSystem](tx, scope.Prefix(serviceName, kindFS))
-		if e != nil {
-			return e
+		key := idempotency.Key(scope, serviceName, "CreateFileSystem", new(token))
+		previous, found, replayErr := idempotency.Replay[*api.GetFileSystemResponse](
+			tx,
+			key,
+			input,
+			conflict("Client token %s was already used with different parameters", token),
+		)
+		if replayErr != nil {
+			return replayErr
 		}
 
-		for _, r := range existing {
-			if r.ClientToken != token {
-				continue
-			}
-
-			if r.Fingerprint != fingerprint {
-				return conflict("Client token %s was already used with different parameters", token)
-			}
-
-			out = fsResponse(scope, r)
+		if found {
+			out = previous
 			return nil
 		}
 
@@ -227,7 +225,6 @@ func (s *Service) CreateFileSystem(
 			Bucket:      common.Value(in.Bucket),
 			Prefix:      common.Value(in.Prefix),
 			ClientToken: token,
-			Fingerprint: fingerprint,
 			KMSKeyID:    common.Value(in.KmsKeyId),
 			RoleARN:     common.Value(in.RoleArn),
 			Tags:        tags,
@@ -238,23 +235,17 @@ func (s *Service) CreateFileSystem(
 
 		out = fsResponse(scope, r)
 
-		return queue(tx, scope, kindFS, r.ID, r)
+		if writeErr := queue(tx, scope, kindFS, r.ID, r); writeErr != nil {
+			return writeErr
+		}
+
+		return idempotency.Remember(tx, key, input, out)
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return new(api.CreateFileSystemResponse(*out)), nil
-}
-
-// fingerprintOf summarizes the parameters an idempotent create must repeat.
-func fingerprintOf(parts ...any) (string, error) {
-	encoded, err := json.Marshal(parts)
-	if err != nil {
-		return "", err
-	}
-
-	return string(encoded), nil
 }
 
 func (s *Service) GetFileSystem(ctx context.Context, in *api.GetFileSystemRequest) (*api.GetFileSystemResponse, error) {

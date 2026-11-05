@@ -32,11 +32,20 @@ func TestResourceExplorerInventory(t *testing.T) {
 	wantAccessAnalyzerError(t, err, "ResourceNotFoundException")
 	_, err = c.CreateView(ctx, &sdk.CreateViewInput{ViewName: new("missing-index")})
 	wantAccessAnalyzerError(t, err, "ResourceNotFoundException")
-	index, err := c.CreateIndex(ctx, &sdk.CreateIndexInput{Tags: map[string]string{"team": "core"}})
+	indexInput := &sdk.CreateIndexInput{ClientToken: new("index-token"), Tags: map[string]string{"team": "core"}}
+	index, err := c.CreateIndex(ctx, indexInput)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	replay, err := c.CreateIndex(ctx, indexInput)
+	if err != nil || *replay.Arn != *index.Arn {
+		t.Fatalf("replay: %+v %v", replay, err)
+	}
+
+	indexInput.Tags = map[string]string{"team": "changed"}
+	_, err = c.CreateIndex(ctx, indexInput)
+	wantAccessAnalyzerError(t, err, "ConflictException")
 	_, err = c.CreateIndex(ctx, &sdk.CreateIndexInput{})
 	wantAccessAnalyzerError(t, err, "ConflictException")
 	got, err := c.GetIndex(ctx, &sdk.GetIndexInput{})

@@ -8,6 +8,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -59,16 +60,30 @@ func (s *Service) RedriveExecution(
 	var r *run
 	var def *machine
 	again := false
+	var replayDate float64
+	tokenKey := idempotency.Key(m.Scope, service, "RedriveExecution", in.ClientToken)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		date, replayed, replayErr := idempotency.Replay[float64](
+			tx,
+			tokenKey,
+			in,
+			awserror.New(
+				"ExecutionNotRedrivable",
+				"Execution not redrivable: ClientToken was used with different parameters.",
+			),
+		)
+		if replayErr != nil {
+			return replayErr
+		}
+
+		if replayed {
+			replayDate, again = date, true
+			return nil
+		}
+
 		e, loadErr := loadExecution(tx, &m, in.ExecutionArn)
 		if loadErr != nil {
 			return loadErr
-		}
-
-		// The same client token returns the redrive it started.
-		if in.ClientToken != nil && *in.ClientToken == e.RedriveToken && e.Status == statusRunning {
-			r, again = &run{exec: e}, true
-			return nil
 		}
 
 		if reason := e.redrivable(now); reason != "" {
@@ -84,15 +99,24 @@ func (s *Service) RedriveExecution(
 		ran.Definition = e.Definition
 		def, _ = parseDefinition(e.Definition)
 		e.Status, e.Error, e.Cause, e.Stop = statusRunning, "", "", 0
-		e.Redrives, e.RedriveDate, e.RedriveToken = e.Redrives+1, common.Unix(now), common.Value(in.ClientToken)
+		e.Redrives, e.RedriveDate = e.Redrives+1, common.Unix(now)
 		r = &run{
 			s: s, machine: &ran, exec: e, scope: m.Scope, started: time.Unix(0, int64(e.Start*float64(time.Second))),
 			record: true, lastEvent: e.Events, redrive: true,
 		}
-		return storage.Write(tx, executionKey(m.Scope, e.StateMachine, e.Name), e)
+
+		if writeErr := storage.Write(tx, executionKey(m.Scope, e.StateMachine, e.Name), e); writeErr != nil {
+			return writeErr
+		}
+
+		return idempotency.Remember(tx, tokenKey, in, e.RedriveDate)
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if again {
+		return &api.RedriveExecutionOutput{RedriveDate: new(replayDate)}, nil
 	}
 
 	if !again {

@@ -6,7 +6,6 @@
 //	<scope>/iotwireless/gatewayeui/<GatewayEui>    the wireless gateway with that GatewayEui
 //	<scope>/iotwireless/thing/<name>               the device or gateway associated with an IoT thing
 //	<scope>/iotwireless/certificate/<id>           the gateway associated with an IoT certificate
-//	<scope>/iotwireless/token/<kind>/<token>       the resource a ClientRequestToken made
 //	<scope>/iotwireless/message/<device>/<seq>     a device's queued downlink messages
 //	<scope>/iotwireless/groupmessage/<group>/<seq> a multicast group's queued downlink messages
 //	<scope>/iotwireless/loglevel/...               log levels, stored only
@@ -43,7 +42,6 @@ const (
 	kindGatewayEui     = "gatewayeui"
 	kindThing          = "thing"
 	kindCertificate    = "certificate"
-	kindToken          = "token"
 	kindMessage        = "message"
 	kindGroupMessage   = "groupmessage"
 	kindResourceLog    = "resourcelog"

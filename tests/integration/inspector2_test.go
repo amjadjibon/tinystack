@@ -454,3 +454,22 @@ func TestInspector2CloudFormation(t *testing.T) {
 		t.Fatalf("stack deletion: %+v %v", filters, err)
 	}
 }
+
+func TestInspector2TokenReplay(t *testing.T) {
+	ctx := context.Background()
+	c := inspector2Client(server(t))
+	in := &sdk.EnableInput{ClientToken: new("token"), ResourceTypes: []types.ResourceScanType{"EC2"}}
+	first, err := c.Enable(ctx, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	replay, err := c.Enable(ctx, in)
+	if err != nil || len(replay.Accounts) != 1 || *replay.Accounts[0].AccountId != *first.Accounts[0].AccountId {
+		t.Fatalf("replay: %+v %v", replay, err)
+	}
+
+	in.ResourceTypes = []types.ResourceScanType{"ECR"}
+	_, err = c.Enable(ctx, in)
+	wantAccessAnalyzerError(t, err, "ValidationException")
+}

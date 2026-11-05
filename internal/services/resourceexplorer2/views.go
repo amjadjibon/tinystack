@@ -2,12 +2,12 @@ package resourceexplorer2
 
 import (
 	"context"
-	"reflect"
 	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/resourceexplorer2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -55,6 +55,17 @@ func (s *Service) CreateView(ctx context.Context, in *api.CreateViewInput) (*api
 	}
 
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
+		tokenKey := idempotency.Key(scope, serviceName, "CreateView", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.View](tx, tokenKey, in, conflict())
+		if replayErr != nil {
+			return replayErr
+		}
+
+		if found {
+			v = previous
+			return nil
+		}
+
 		if _, err := loadIndex(tx, scope); err != nil {
 			return err
 		}
@@ -65,26 +76,20 @@ func (s *Service) CreateView(ctx context.Context, in *api.CreateViewInput) (*api
 		}
 
 		for _, r := range records {
-			if in.ClientToken != nil && r.CreateViewInput != nil &&
-				common.Value(r.CreateViewInput.ClientToken) == *in.ClientToken {
-				if !reflect.DeepEqual(r.CreateViewInput, common.Clone(in)) {
-					return conflict()
-				}
-
-				v = r.View
-				return nil
-			}
-
 			if common.Value(r.View.ViewName) == common.Value(in.ViewName) {
 				return conflict()
 			}
 		}
 
-		return storage.Write(
+		if writeErr := storage.Write(
 			tx,
 			scope.Key(serviceName, "view", *v.ViewArn),
-			record{View: v, Tags: common.CloneTags(in.Tags), CreateViewInput: in},
-		)
+			record{View: v, Tags: common.CloneTags(in.Tags)},
+		); writeErr != nil {
+			return writeErr
+		}
+
+		return idempotency.Remember(tx, tokenKey, in, v)
 	})
 	return &api.CreateViewOutput{View: v}, err
 }

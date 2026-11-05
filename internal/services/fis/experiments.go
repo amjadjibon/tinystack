@@ -2,15 +2,13 @@ package fis
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/fis"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -32,22 +30,21 @@ func (s *Service) StartExperiment(
 		return nil, awserror.Validation("%s", err)
 	}
 
-	// #nosec G117 -- clientToken is an idempotency identifier, not a credential.
-	data, err := json.Marshal(in)
-	if err != nil {
-		return nil, err
-	}
-
-	fingerprint := fmt.Sprintf("%x", sha256.Sum256(data))
 	var e *api.Experiment
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		prior, found, replayErr := replay(tx, scope, kindExperiment, common.Value(in.ClientToken), fingerprint)
+		key := idempotency.Key(scope, serviceName, kindExperiment, in.ClientToken)
+		prior, found, replayErr := idempotency.Replay[*api.Experiment](
+			tx,
+			key,
+			in,
+			awserror.Validation("clientToken was already used with different parameters"),
+		)
 		if replayErr != nil {
 			return replayErr
 		}
 
 		if found {
-			e = prior.Experiment
+			e = prior
 			return nil
 		}
 
@@ -112,9 +109,15 @@ func (s *Service) StartExperiment(
 			return writeErr
 		}
 
-		return storage.Write(tx, scope.Key(serviceName, kindExperiment, id), &record{
-			Experiment: e, Token: common.Value(in.ClientToken), Request: fingerprint,
-		})
+		if writeErr := storage.Write(
+			tx,
+			scope.Key(serviceName, kindExperiment, id),
+			&record{Experiment: e},
+		); writeErr != nil {
+			return writeErr
+		}
+
+		return idempotency.Remember(tx, key, in, e)
 	})
 	return &api.StartExperimentResponse{Experiment: e}, err
 }

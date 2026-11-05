@@ -5,7 +5,6 @@ package globalaccelerator
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/ec2"
 	"github.com/amjadjibon/tinystack/internal/services/elbv2"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -49,8 +49,6 @@ type record struct {
 	ARN           string
 	Kind          string
 	Parent        string
-	Token         string
-	Request       string
 	Slot          int
 }
 
@@ -128,7 +126,7 @@ func (s *Service) change(ctx context.Context, arn *string, kind string,
 	return r, err
 }
 
-func (s *Service) insert(ctx context.Context, r *record, input any,
+func (s *Service) insert(ctx context.Context, r *record, token *string, input any,
 	check func(storage.WriteTx, request.Scope, *record, []*record) error,
 ) (*record, error) {
 	scope, err := request.GlobalScope(ctx)
@@ -136,34 +134,37 @@ func (s *Service) insert(ctx context.Context, r *record, input any,
 		return nil, err
 	}
 
-	encoded, err := json.Marshal(input)
-	if err != nil {
-		return nil, err
-	}
-
-	r.Request = string(encoded)
+	key := idempotency.Key(scope, serviceName, r.Kind+"/"+r.Parent, token)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		all, e := storage.Records[record](tx, scope.Prefix(serviceName, r.Kind))
 		if e != nil {
 			return e
 		}
 
-		for _, old := range all {
-			if r.Token != "" && old.Token == r.Token && old.Parent == r.Parent {
-				if old.Request != r.Request {
-					return invalid("Idempotency token was used with different parameters")
-				}
+		previous, found, replayErr := idempotency.Replay[*record](
+			tx,
+			key,
+			input,
+			invalid("Idempotency token was used with different parameters"),
+		)
+		if replayErr != nil {
+			return replayErr
+		}
 
-				r = old
-				return nil
-			}
+		if found {
+			r = previous
+			return nil
 		}
 
 		if e := check(tx, scope, r, all); e != nil {
 			return e
 		}
 
-		return save(tx, scope, r)
+		if writeErr := save(tx, scope, r); writeErr != nil {
+			return writeErr
+		}
+
+		return idempotency.Remember(tx, key, input, r)
 	})
 	return r, err
 }

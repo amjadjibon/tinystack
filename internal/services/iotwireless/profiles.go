@@ -9,6 +9,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iotwireless"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -28,8 +29,14 @@ func (s *Service) createProfile(
 
 	var r *record
 	updateErr := s.update(ctx, func(tx storage.WriteTx, scope request.Scope) error {
-		existing, hash, err := replay(tx, scope, kind, token, in)
-		if err != nil || existing != nil {
+		key := idempotency.Key(scope, serviceName, kind, token)
+		existing, found, err := idempotency.Replay[*record](
+			tx,
+			key,
+			in,
+			conflict("The ClientRequestToken %s was used with different parameters", common.Value(token)),
+		)
+		if err != nil || found {
 			r = existing
 			return err
 		}
@@ -40,7 +47,7 @@ func (s *Service) createProfile(
 			return checkErr
 		}
 
-		return remember(tx, scope, token, hash, r)
+		return idempotency.Remember(tx, key, in, r)
 	})
 
 	return r, updateErr
@@ -61,6 +68,7 @@ func (s *Service) CreateDeviceProfile(
 		r.DeviceProfile = &api.GetDeviceProfileResponse{
 			Arn: new(r.Arn), Id: new(r.ID), Name: in.Name, LoRaWAN: in.LoRaWAN,
 		}
+
 		if in.Sidewalk != nil {
 			key := make([]byte, 32)
 			_, _ = rand.Read(key)

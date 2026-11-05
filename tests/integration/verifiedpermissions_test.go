@@ -260,3 +260,30 @@ func TestVerifiedPermissionsLifecycle(t *testing.T) {
 		t.Fatal("expected GetPolicyStore to fail after delete")
 	}
 }
+
+func TestVerifiedpermissionsTokenReplay(t *testing.T) {
+	ctx := context.Background()
+	c := verifiedPermissionsClient(server(t), "test", "us-east-1")
+	in := &sdk.CreatePolicyStoreInput{
+		ClientToken:        new("token"),
+		ValidationSettings: &types.ValidationSettings{Mode: types.ValidationModeOff},
+	}
+
+	first, err := c.CreatePolicyStore(ctx, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	replay, err := c.CreatePolicyStore(ctx, in)
+	if err != nil || *first.PolicyStoreId != *replay.PolicyStoreId {
+		t.Fatalf("replay: %+v %v", replay, err)
+	}
+
+	in.Description = new("changed")
+	_, err = c.CreatePolicyStore(ctx, in)
+	wantAccessAnalyzerError(t, err, "ConflictException")
+	rows, err := c.ListPolicyStores(ctx, &sdk.ListPolicyStoresInput{})
+	if err != nil || len(rows.PolicyStores) != 1 {
+		t.Fatalf("stores: %+v %v", rows, err)
+	}
+}

@@ -81,7 +81,6 @@ type fileSystem struct {
 	Bucket      string
 	Prefix      string
 	ClientToken string
-	Fingerprint string
 	KMSKeyID    string
 	RoleARN     string
 	State       string
@@ -238,8 +237,8 @@ func readAP(tx storage.ReadTx, scope request.Scope, ref string) (*accessPoint, e
 
 // queue stores r and indexes it for the worker to settle after transitionDelay.
 func queue(tx storage.WriteTx, scope request.Scope, kind, id string, r any) error {
-	if err := storage.Write(tx, scope.Key(serviceName, kind, id), r); err != nil {
-		return err
+	if writeErr := storage.Write(tx, scope.Key(serviceName, kind, id), r); writeErr != nil {
+		return writeErr
 	}
 
 	return storage.Write(tx, indexKey(scope, kind, id), work{Scope: scope, Kind: kind, ID: id})

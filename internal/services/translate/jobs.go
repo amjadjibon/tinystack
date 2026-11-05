@@ -13,6 +13,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/translate"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -20,8 +21,6 @@ const indexPrefix = "aws/translate/index/"
 
 type jobRecord struct {
 	Properties api.TextTranslationJobProperties
-	Digest     string
-	Token      string
 	Input      []string
 }
 
@@ -115,9 +114,7 @@ func (s *Service) StartTextTranslationJob(
 
 	id := common.RandomID(32, "0123456789abcdef")
 	r := jobRecord{
-		Digest: fingerprint(in),
-		Token:  common.Value(in.ClientToken),
-		Input:  objects,
+		Input: objects,
 		Properties: api.TextTranslationJobProperties{
 			JobId:               new(id),
 			JobName:             in.JobName,
@@ -145,27 +142,31 @@ func (s *Service) StartTextTranslationJob(
 			}
 		}
 
-		rows, e := storage.Records[jobRecord](tx, scope.Prefix(serviceName, "job"))
-		if e != nil {
-			return e
+		key := idempotency.Key(scope, serviceName, "StartTextTranslationJob", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[jobRecord](
+			tx,
+			key,
+			in,
+			invalid("ClientToken parameters changed"),
+		)
+		if replayErr != nil {
+			return replayErr
 		}
 
-		for _, old := range rows {
-			if r.Token != "" && old.Token == r.Token {
-				if old.Digest != r.Digest {
-					return invalid("ClientToken parameters changed")
-				}
-
-				r = *old
-				return nil
-			}
+		if found {
+			r = previous
+			return nil
 		}
 
 		if e := storage.Write(tx, scope.Key(serviceName, "job", id), r); e != nil {
 			return e
 		}
 
-		return queue(tx, scope, "job", id)
+		if writeErr := queue(tx, scope, "job", id); writeErr != nil {
+			return writeErr
+		}
+
+		return idempotency.Remember(tx, key, in, r)
 	})
 	return &api.StartTextTranslationJobResponse{JobId: r.Properties.JobId, JobStatus: r.Properties.JobStatus}, err
 }

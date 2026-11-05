@@ -56,8 +56,6 @@ func (s *Service) Stop() { s.workers.Stop() }
 type record struct {
 	Template   *api.ExperimentTemplate
 	Experiment *api.Experiment
-	Token      string
-	Request    string
 }
 
 type experimentIndex struct {

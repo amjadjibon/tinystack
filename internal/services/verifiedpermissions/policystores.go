@@ -9,6 +9,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/verifiedpermissions"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -62,40 +63,24 @@ func (s *Service) CreatePolicyStore(
 	var out *api.CreatePolicyStoreOutput
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		now := time.Now().UTC()
-		mode := *in.ValidationSettings.Mode
 
-		if in.ClientToken != nil && *in.ClientToken != "" {
-			tokenKey := scope.Key(serviceName, kindToken, *in.ClientToken)
-			tok, found, readErr := storage.Read[tokenRecord](tx, tokenKey)
-			if readErr != nil {
-				return readErr
-			}
+		tokenKey := idempotency.Key(scope, serviceName, "CreatePolicyStore", in.ClientToken)
+		previous, replayed, replayErr := idempotency.Replay[*api.CreatePolicyStoreOutput](
+			tx,
+			tokenKey,
+			in,
+			awserror.New(
+				"ConflictException",
+				"A resource with the same client token already exists with different attributes",
+			),
+		)
+		if replayErr != nil {
+			return replayErr
+		}
 
-			if found && tok != nil {
-				if tok.Mode == mode && common.Value(tok.Description) == common.Value(in.Description) {
-					storeKey := scope.Key(serviceName, kindPolicyStore, tok.PolicyStoreId)
-					rec, rFound, rErr := storage.Read[policyStoreRecord](tx, storeKey)
-					if rErr != nil {
-						return rErr
-					}
-
-					if rFound && rec != nil {
-						out = &api.CreatePolicyStoreOutput{
-							Arn:             new(rec.Arn),
-							CreatedDate:     new(rec.CreatedDate),
-							LastUpdatedDate: new(rec.LastUpdatedDate),
-							PolicyStoreId:   new(rec.PolicyStoreId),
-						}
-
-						return nil
-					}
-				}
-
-				return awserror.New(
-					"ConflictException",
-					"A resource with the same client token already exists with different attributes",
-				)
-			}
+		if replayed {
+			out = previous
+			return nil
 		}
 
 		id := common.RandomID(20, common.AlphabetAlphanumeric)
@@ -111,17 +96,6 @@ func (s *Service) CreatePolicyStore(
 			LastUpdatedDate:    now,
 		}
 
-		if in.ClientToken != nil && *in.ClientToken != "" {
-			tokenKey := scope.Key(serviceName, kindToken, *in.ClientToken)
-			if writeErr := storage.Write(tx, tokenKey, tokenRecord{
-				PolicyStoreId: id,
-				Description:   in.Description,
-				Mode:          mode,
-			}); writeErr != nil {
-				return writeErr
-			}
-		}
-
 		storeKey := scope.Key(serviceName, kindPolicyStore, id)
 		if writeErr := storage.Write(tx, storeKey, rec); writeErr != nil {
 			return writeErr
@@ -134,7 +108,7 @@ func (s *Service) CreatePolicyStore(
 			PolicyStoreId:   new(id),
 		}
 
-		return nil
+		return idempotency.Remember(tx, tokenKey, in, out)
 	})
 	if err != nil {
 		return nil, err
@@ -340,12 +314,6 @@ func (s *Service) DeletePolicyStore(
 		// Delete all policies belonging to this policy store
 		policyPrefix := scope.Prefix(serviceName, kindPolicy) + id + "/"
 		for _, k := range tx.Keys(policyPrefix) {
-			tx.Delete(k)
-		}
-
-		// Delete all policy client tokens
-		tokenPrefix := scope.Prefix(serviceName, kindPolicyToken) + id + "/"
-		for _, k := range tx.Keys(tokenPrefix) {
 			tx.Delete(k)
 		}
 

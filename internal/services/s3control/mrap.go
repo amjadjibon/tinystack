@@ -2,7 +2,6 @@ package s3control
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -11,6 +10,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3control"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -24,9 +24,9 @@ type mrapRecord struct {
 
 type operationRecord struct {
 	api.AsyncOperation
-	Scope             request.Scope
-	Due               time.Time
-	Name, Fingerprint string
+	Scope request.Scope
+	Due   time.Time
+	Name  string
 }
 
 func mrapScope(ctx context.Context, account *string) (request.Scope, error) {
@@ -58,25 +58,22 @@ func startOperation(
 	token, name, op string,
 	params *api.AsyncRequestParameters,
 ) (*string, error) {
-	body, err := json.Marshal(params)
-	if err != nil {
-		return nil, err
+	tokenKey := idempotency.Key(scope, serviceName, "MRAP", new(token))
+	input := struct {
+		Parameters *api.AsyncRequestParameters
+		Operation  string
+	}{params, op}
+	previous, found, replayErr := idempotency.Replay[*string](
+		tx,
+		tokenKey,
+		input,
+		controlError(400, "InvalidRequest", "ClientToken was used for a different request"),
+	)
+	if replayErr != nil || found {
+		return previous, replayErr
 	}
 
 	key := scope.Key(serviceName, "operation", token)
-	prior, found, err := storage.Read[operationRecord](tx, key)
-	if err != nil {
-		return nil, err
-	}
-
-	if found {
-		if prior.Fingerprint != string(body) || common.Value(prior.Operation) != op {
-			return nil, controlError(400, "InvalidRequest", "ClientToken was used for a different request")
-		}
-
-		return prior.RequestTokenARN, nil
-	}
-
 	arn := fmt.Sprintf("arn:aws:s3:us-west-2:%s:async-request/mrap/%s", scope.AccountID, token)
 	now := time.Now().UTC()
 	r := operationRecord{
@@ -87,17 +84,20 @@ func startOperation(
 			RequestParameters: params,
 			RequestStatus:     new("INPROGRESS"),
 		},
-		Scope:       scope,
-		Name:        name,
-		Fingerprint: string(body),
-		Due:         now.Add(200 * time.Millisecond),
+		Scope: scope,
+		Name:  name,
+		Due:   now.Add(200 * time.Millisecond),
 	}
 
-	if err := storage.Write(tx, key, r); err != nil {
-		return nil, err
+	if writeErr := storage.Write(tx, key, r); writeErr != nil {
+		return nil, writeErr
 	}
 
-	return new(arn), storage.Write(tx, "aws/s3control/operations/"+scope.AccountID+"/"+token, key)
+	if writeErr := storage.Write(tx, "aws/s3control/operations/"+scope.AccountID+"/"+token, key); writeErr != nil {
+		return nil, writeErr
+	}
+
+	return new(arn), idempotency.Remember(tx, tokenKey, input, new(arn))
 }
 
 func (s *Service) CreateMultiRegionAccessPoint(

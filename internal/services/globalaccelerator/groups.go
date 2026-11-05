@@ -92,36 +92,42 @@ func (s *Service) CreateEndpointGroup(
 	}
 
 	r := &record{
-		Kind:          kindEndpointGroup,
-		Parent:        common.Value(in.ListenerArn),
-		Token:         common.Value(in.IdempotencyToken),
+		Kind:   kindEndpointGroup,
+		Parent: common.Value(in.ListenerArn),
+
 		EndpointGroup: g,
 	}
 
-	r, err = s.insert(ctx, r, in, func(tx storage.WriteTx, scope request.Scope, r *record, all []*record) error {
-		listener, e := read(tx, scope, r.Parent, kindListener)
-		if e != nil {
-			return e
-		}
-
-		for _, old := range all {
-			if old.Parent == r.Parent &&
-				common.Value(old.EndpointGroup.EndpointGroupRegion) == common.Value(g.EndpointGroupRegion) {
-				return awserror.New(
-					"EndpointGroupAlreadyExistsException",
-					"One endpoint group per Region per listener is allowed",
-				)
+	r, err = s.insert(
+		ctx,
+		r,
+		in.IdempotencyToken,
+		in,
+		func(tx storage.WriteTx, scope request.Scope, r *record, all []*record) error {
+			listener, e := read(tx, scope, r.Parent, kindListener)
+			if e != nil {
+				return e
 			}
-		}
 
-		if g.HealthCheckPort == nil {
-			g.HealthCheckPort = listener.Listener.PortRanges[0].FromPort
-		}
+			for _, old := range all {
+				if old.Parent == r.Parent &&
+					common.Value(old.EndpointGroup.EndpointGroupRegion) == common.Value(g.EndpointGroupRegion) {
+					return awserror.New(
+						"EndpointGroupAlreadyExistsException",
+						"One endpoint group per Region per listener is allowed",
+					)
+				}
+			}
 
-		r.ARN = r.Parent + "/endpoint-group/" + common.RandomID(8, "0123456789abcdef")
-		g.EndpointGroupArn = new(r.ARN)
-		return checkGroup(tx, scope, r)
-	})
+			if g.HealthCheckPort == nil {
+				g.HealthCheckPort = listener.Listener.PortRanges[0].FromPort
+			}
+
+			r.ARN = r.Parent + "/endpoint-group/" + common.RandomID(8, "0123456789abcdef")
+			g.EndpointGroupArn = new(r.ARN)
+			return checkGroup(tx, scope, r)
+		},
+	)
 	if err != nil {
 		return nil, err
 	}

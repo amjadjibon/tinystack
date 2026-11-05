@@ -9,6 +9,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iotwireless"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -70,8 +71,17 @@ func (s *Service) CreateMulticastGroup(
 
 	var r *record
 	updateErr := s.update(ctx, func(tx storage.WriteTx, scope request.Scope) error {
-		existing, hash, err := replay(tx, scope, kindMulticast, in.ClientRequestToken, in)
-		if err != nil || existing != nil {
+		key := idempotency.Key(scope, serviceName, kindMulticast, in.ClientRequestToken)
+		existing, found, err := idempotency.Replay[*record](
+			tx,
+			key,
+			in,
+			conflict(
+				"The ClientRequestToken %s was used with different parameters",
+				common.Value(in.ClientRequestToken),
+			),
+		)
+		if err != nil || found {
 			r = existing
 			return err
 		}
@@ -91,11 +101,12 @@ func (s *Service) CreateMulticastGroup(
 				DefaultSessionParameters: in.LoRaWAN.DefaultSessionParameters,
 			},
 		}
+
 		if checkErr := storage.Write(tx, scope.Key(serviceName, r.Kind, r.ID), r); checkErr != nil {
 			return checkErr
 		}
 
-		return remember(tx, scope, in.ClientRequestToken, hash, r)
+		return idempotency.Remember(tx, key, in, r)
 	})
 	if updateErr != nil {
 		return nil, updateErr

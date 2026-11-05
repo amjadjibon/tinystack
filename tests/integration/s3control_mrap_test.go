@@ -69,6 +69,12 @@ func TestS3ControlMRAP(t *testing.T) {
 		t.Fatalf("idempotency %+v %v", again, err)
 	}
 
+	changed := *input
+	details := *input.Details
+	details.Name = new("changed")
+	changed.Details = &details
+	_, err = c.CreateMultiRegionAccessPoint(ctx, &changed)
+	wantAccessAnalyzerError(t, err, "InvalidRequest")
 	pending, err := c.DescribeMultiRegionAccessPointOperation(
 		ctx,
 		&s3control.DescribeMultiRegionAccessPointOperationInput{

@@ -3,12 +3,9 @@ package translate
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"encoding/csv"
-	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"io"
 	"strings"
 	"unicode/utf8"
@@ -16,6 +13,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/translate"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -27,12 +25,8 @@ type terminologyRecord struct {
 }
 
 type parallelRecord struct {
-	Tags         map[string]string
-	Properties   api.ParallelDataProperties
-	CreateToken  string
-	CreateDigest string
-	UpdateToken  string
-	UpdateDigest string
+	Tags       map[string]string
+	Properties api.ParallelDataProperties
 }
 
 // parseData validates actual delimited rows or TMX translation units; it never translates their contents.
@@ -376,11 +370,6 @@ func (s *Service) parallelInput(
 	return langs, count, int64(len(data)), err
 }
 
-func fingerprint(v any) string {
-	data, _ := json.Marshal(v)
-	return fmt.Sprintf("%x", sha256.Sum256(data))
-}
-
 func (s *Service) CreateParallelData(
 	ctx context.Context,
 	in *api.CreateParallelDataRequest,
@@ -406,7 +395,6 @@ func (s *Service) CreateParallelData(
 
 	name := common.Value(in.Name)
 	r := parallelRecord{
-		CreateToken: common.Value(in.ClientToken), CreateDigest: fingerprint(in),
 		Tags: tags,
 		Properties: api.ParallelDataProperties{
 			Name:                in.Name,
@@ -425,18 +413,29 @@ func (s *Service) CreateParallelData(
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		tokenKey := idempotency.Key(scope, serviceName, "CreateParallelData", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[parallelRecord](
+			tx,
+			tokenKey,
+			in,
+			invalid("parallel data already exists or ClientToken parameters changed"),
+		)
+		if replayErr != nil {
+			return replayErr
+		}
+
+		if found {
+			r = previous
+			return nil
+		}
+
 		key := scope.Key(serviceName, kindParallel, name)
-		old, exists, e := storage.Read[parallelRecord](tx, key)
+		_, exists, e := storage.Read[parallelRecord](tx, key)
 		if e != nil {
 			return e
 		}
 
 		if exists {
-			if old.CreateToken == r.CreateToken && old.CreateDigest == r.CreateDigest {
-				r = *old
-				return nil
-			}
-
 			return invalid("parallel data already exists or ClientToken parameters changed")
 		}
 
@@ -448,7 +447,11 @@ func (s *Service) CreateParallelData(
 			return e
 		}
 
-		return queue(tx, scope, kindParallel, name)
+		if writeErr := queue(tx, scope, kindParallel, name); writeErr != nil {
+			return writeErr
+		}
+
+		return idempotency.Remember(tx, tokenKey, in, r)
 	})
 	return &api.CreateParallelDataResponse{Name: in.Name, Status: r.Properties.Status}, err
 }
@@ -467,18 +470,25 @@ func (s *Service) UpdateParallelData(
 		return nil, err
 	}
 
+	var out *api.UpdateParallelDataResponse
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		r, e := read[parallelRecord](tx, scope, kindParallel, common.Value(in.Name))
 		if e != nil {
 			return e
 		}
 
-		token, digest := common.Value(in.ClientToken), fingerprint(in)
-		if r.UpdateToken == token {
-			if r.UpdateDigest != digest {
-				return invalid("ClientToken parameters changed")
-			}
-
+		tokenKey := idempotency.Key(scope, serviceName, "UpdateParallelData", in.ClientToken)
+		previous, found, replayErr := idempotency.Replay[*api.UpdateParallelDataResponse](
+			tx,
+			tokenKey,
+			in,
+			invalid("ClientToken parameters changed"),
+		)
+		if replayErr != nil {
+			return replayErr
+		}
+		if found {
+			out = previous
 			return nil
 		}
 
@@ -493,22 +503,23 @@ func (s *Service) UpdateParallelData(
 		r.Properties.TargetLanguageCodes = langs[1:]
 		r.Properties.ImportedRecordCount = new(count)
 		r.Properties.ImportedDataSize = new(size)
-		r.UpdateToken = token
-		r.UpdateDigest = digest
 		r.Properties.LatestUpdateAttemptStatus = new(statusUpdating)
 		r.Properties.LatestUpdateAttemptAt = new(now())
 		if e := storage.Write(tx, scope.Key(serviceName, kindParallel, common.Value(in.Name)), r); e != nil {
 			return e
 		}
 
-		return queue(tx, scope, kindParallel, common.Value(in.Name))
+		if writeErr := queue(tx, scope, kindParallel, common.Value(in.Name)); writeErr != nil {
+			return writeErr
+		}
+
+		out = &api.UpdateParallelDataResponse{
+			Name: in.Name, Status: new(statusActive), LatestUpdateAttemptStatus: new(statusUpdating),
+			LatestUpdateAttemptAt: r.Properties.LatestUpdateAttemptAt,
+		}
+		return idempotency.Remember(tx, tokenKey, in, out)
 	})
-	return &api.UpdateParallelDataResponse{
-		Name:                      in.Name,
-		Status:                    new(statusActive),
-		LatestUpdateAttemptStatus: new(statusUpdating),
-		LatestUpdateAttemptAt:     new(now()),
-	}, err
+	return out, err
 }
 
 func (s *Service) GetParallelData(

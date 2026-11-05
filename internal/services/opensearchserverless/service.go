@@ -3,9 +3,7 @@ package opensearchserverless
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
-	"fmt"
 	"path"
 	"regexp"
 	"slices"
@@ -16,6 +14,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/opensearchserverless"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -42,11 +41,6 @@ func conflict() error {
 	return awserror.New("ConflictException", "Resource already exists or policy version conflicts.")
 }
 
-type tokenRecord struct {
-	Hash   string
-	Output json.RawMessage
-}
-
 // transact atomically records idempotency results alongside the resource change.
 func transact[T any](ctx context.Context, s *Service, operation string, token *string, input any,
 	change func(storage.WriteTx, request.Scope) (*T, error),
@@ -56,55 +50,25 @@ func transact[T any](ctx context.Context, s *Service, operation string, token *s
 		return nil, err
 	}
 
-	raw, err := json.Marshal(input)
-	if err != nil {
-		return nil, err
+	if token != nil && (len(*token) < 1 || len(*token) > 512) {
+		return nil, awserror.Validation("Invalid clientToken.")
 	}
 
-	hash := fmt.Sprintf("%x", sha256.Sum256(raw))
-	key := ""
-	if token != nil {
-		if len(*token) < 1 || len(*token) > 512 {
-			return nil, awserror.Validation("Invalid clientToken.")
-		}
-
-		key = scope.Key(serviceName, "token", operation+"/"+fmt.Sprintf("%x", sha256.Sum256([]byte(*token))))
-	}
-
+	key := idempotency.Key(scope, serviceName, operation, token)
 	var out *T
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if key != "" {
-			r, found, e := storage.Read[tokenRecord](tx, key)
-			if e != nil {
-				return e
-			}
-
-			if found {
-				if r.Hash != hash {
-					return conflict()
-				}
-
-				out = new(T)
-				return json.Unmarshal(r.Output, out)
-			}
+		var found bool
+		out, found, err = idempotency.Replay[*T](tx, key, input, conflict())
+		if err != nil || found {
+			return err
 		}
 
-		var e error
-		out, e = change(tx, scope)
-		if e != nil {
-			return e
+		out, err = change(tx, scope)
+		if err != nil {
+			return err
 		}
 
-		if key == "" {
-			return nil
-		}
-
-		data, e := json.Marshal(out)
-		if e != nil {
-			return e
-		}
-
-		return storage.Write(tx, key, tokenRecord{Hash: hash, Output: data})
+		return idempotency.Remember(tx, key, input, out)
 	})
 	return out, err
 }

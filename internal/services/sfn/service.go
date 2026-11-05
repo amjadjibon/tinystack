@@ -149,8 +149,8 @@ func (s *Service) abortOrphans() error {
 					mr.Items.Running = 0
 					mr.Executions.Aborted += mr.Executions.Running
 					mr.Executions.Running = 0
-					if err := storage.Write(tx, key, mr); err != nil {
-						return err
+					if writeErr := storage.Write(tx, key, mr); writeErr != nil {
+						return writeErr
 					}
 				}
 
@@ -203,12 +203,11 @@ type stateMachine struct {
 // Definition is the definition the execution runs, which a redrive runs
 // again from Resume, where it stopped; VersionARN and AliasARN name the
 // version that ran and the alias that chose it, if it started from one; and
-// Redrives counts redrives, with RedriveDate and RedriveToken the last's.
+// Redrives counts redrives, with RedriveDate the last's.
 type execution struct {
 	Resume          *resumePoint `json:",omitempty"`
 	Endpoint        string
 	Cause           string `json:",omitempty"`
-	RedriveToken    string `json:",omitempty"`
 	Status          string
 	StateMachineARN string
 	Name            string

@@ -57,7 +57,7 @@ func (s *Service) CreateListener(
 	in *api.CreateListenerRequest,
 ) (*api.CreateListenerResponse, error) {
 	r := &record{
-		Kind: kindListener, Parent: common.Value(in.AcceleratorArn), Token: common.Value(in.IdempotencyToken),
+		Kind: kindListener, Parent: common.Value(in.AcceleratorArn),
 		Listener: &api.Listener{PortRanges: in.PortRanges, Protocol: in.Protocol, ClientAffinity: in.ClientAffinity},
 	}
 
@@ -65,15 +65,21 @@ func (s *Service) CreateListener(
 		r.Listener.ClientAffinity = new("NONE")
 	}
 
-	r, err := s.insert(ctx, r, in, func(tx storage.WriteTx, scope request.Scope, r *record, _ []*record) error {
-		if _, e := read(tx, scope, r.Parent, kindAccelerator); e != nil {
-			return e
-		}
+	r, err := s.insert(
+		ctx,
+		r,
+		in.IdempotencyToken,
+		in,
+		func(tx storage.WriteTx, scope request.Scope, r *record, _ []*record) error {
+			if _, e := read(tx, scope, r.Parent, kindAccelerator); e != nil {
+				return e
+			}
 
-		r.ARN = r.Parent + "/listener/" + common.RandomID(8, "0123456789abcdef")
-		r.Listener.ListenerArn = new(r.ARN)
-		return checkListener(tx, scope, r)
-	})
+			r.ARN = r.Parent + "/listener/" + common.RandomID(8, "0123456789abcdef")
+			r.Listener.ListenerArn = new(r.ARN)
+			return checkListener(tx, scope, r)
+		},
+	)
 	if err != nil {
 		return nil, err
 	}

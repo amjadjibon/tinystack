@@ -315,6 +315,7 @@ func wirelessUplink(t *testing.T, payload []byte, id string) {
 			}
 		}
 	}
+
 	wirelessOK(t, json.Unmarshal(payload, &got))
 	if got.WirelessDeviceId != id || got.PayloadData != base64.StdEncoding.EncodeToString([]byte("Test")) ||
 		got.WirelessMetadata.LoRaWAN.DevEui != "0011223344556677" || got.WirelessMetadata.LoRaWAN.FPort != 1 {
@@ -339,6 +340,7 @@ func wirelessTags(t *testing.T, c *sdk.Client, arns []*string) {
 				found = true
 			}
 		}
+
 		if !found {
 			t.Fatalf("tag missing for %s", *arn)
 		}
@@ -569,6 +571,7 @@ func TestWirelessPaginationErrorsAndSettings(t *testing.T) {
 		)
 		wirelessOK(t, err)
 	}
+
 	profiles, err := c.ListDeviceProfiles(ctx, &sdk.ListDeviceProfilesInput{MaxResults: 1})
 	wirelessOK(t, err)
 	more, err := c.ListDeviceProfiles(ctx, &sdk.ListDeviceProfilesInput{NextToken: profiles.NextToken})
@@ -802,6 +805,7 @@ func TestWirelessCloudFormation(t *testing.T) {
 			f.role,
 			value)
 	}
+
 	cf := cfnClient(s)
 	_, err = cf.CreateStack(
 		ctx,
@@ -859,6 +863,7 @@ func TestWirelessActivationsAndDevicePagination(t *testing.T) {
 		}},
 		{OtaaV1_1: &types.OtaaV1_1{JoinEui: new("0011223344556677"), AppKey: key, NwkKey: key}},
 	}
+
 	for i, radio := range radios {
 		radio.DevEui = new(fmt.Sprintf("aabbccddeeff00%02x", i))
 		radio.DeviceProfileId, radio.ServiceProfileId = f.profile, f.serviceProfile
@@ -866,6 +871,7 @@ func TestWirelessActivationsAndDevicePagination(t *testing.T) {
 			ClientRequestToken: new(fmt.Sprintf("repeat-%d", i)),
 			Type:               types.WirelessDeviceTypeLoRaWAN, DestinationName: new("mqtt"), LoRaWAN: radio,
 		}
+
 		made, err := c.CreateWirelessDevice(ctx, in)
 		wirelessOK(t, err)
 		again, err := c.CreateWirelessDevice(ctx, in)
@@ -874,6 +880,10 @@ func TestWirelessActivationsAndDevicePagination(t *testing.T) {
 			t.Fatal("idempotent create produced a new device")
 		}
 
+		changed := *in
+		changed.Name = new("changed request")
+		_, err = c.CreateWirelessDevice(ctx, &changed)
+		wantAccessAnalyzerError(t, err, "ConflictException")
 		got, err := c.GetWirelessDevice(ctx, &sdk.GetWirelessDeviceInput{
 			Identifier:     made.Id,
 			IdentifierType: types.WirelessDeviceIdTypeWirelessDeviceId,

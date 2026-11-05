@@ -24,8 +24,6 @@ const (
 	kindPolicyStore         = "policystore"
 	kindSchema              = "schema"
 	kindPolicy              = "policy"
-	kindToken               = "token"
-	kindPolicyToken         = "policytoken"
 	resourceTypePolicyStore = "POLICY_STORE"
 	resourceTypePolicy      = "POLICY"
 	resourceTypeSchema      = "SCHEMA"
@@ -72,18 +70,6 @@ type policyRecord struct {
 	PolicyType      string
 	Statement       string
 	Effect          string
-}
-
-type tokenRecord struct {
-	PolicyStoreId string
-	Description   *string
-	Mode          string
-}
-
-type policyTokenRecord struct {
-	Description *string
-	PolicyId    string
-	Statement   string
 }
 
 func notFound(resourceType, resourceID, message string) error {

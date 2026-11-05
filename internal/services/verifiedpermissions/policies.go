@@ -9,6 +9,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/verifiedpermissions"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -66,41 +67,23 @@ func (s *Service) CreatePolicy(
 
 		now := time.Now().UTC()
 
-		if in.ClientToken != nil && *in.ClientToken != "" {
-			tokenKey := scope.Key(serviceName, kindPolicyToken, storeID+"/"+*in.ClientToken)
-			tok, found, readErr := storage.Read[policyTokenRecord](tx, tokenKey)
-			if readErr != nil {
-				return readErr
-			}
+		tokenKey := idempotency.Key(scope, serviceName, "CreatePolicy/"+storeID, in.ClientToken)
+		previous, replayed, replayErr := idempotency.Replay[*api.CreatePolicyOutput](
+			tx,
+			tokenKey,
+			in,
+			awserror.New(
+				"ConflictException",
+				"A resource with the same client token already exists with different attributes",
+			),
+		)
+		if replayErr != nil {
+			return replayErr
+		}
 
-			if found && tok != nil {
-				if tok.Statement == statement &&
-					common.Value(tok.Description) == common.Value(in.Definition.Static.Description) {
-					polKey := scope.Key(serviceName, kindPolicy, storeID+"/"+tok.PolicyId)
-					existing, exFound, exErr := storage.Read[policyRecord](tx, polKey)
-					if exErr != nil {
-						return exErr
-					}
-
-					if exFound && existing != nil {
-						out = &api.CreatePolicyOutput{
-							CreatedDate:     new(existing.CreatedDate),
-							Effect:          new(existing.Effect),
-							LastUpdatedDate: new(existing.LastUpdatedDate),
-							PolicyId:        new(existing.PolicyId),
-							PolicyStoreId:   new(existing.PolicyStoreId),
-							PolicyType:      new(existing.PolicyType),
-						}
-
-						return nil
-					}
-				}
-
-				return awserror.New(
-					"ConflictException",
-					"A resource with the same client token already exists with different attributes",
-				)
-			}
+		if replayed {
+			out = previous
+			return nil
 		}
 
 		policyID := common.RandomID(20, common.AlphabetAlphanumeric)
@@ -113,17 +96,6 @@ func (s *Service) CreatePolicy(
 			Effect:          effect,
 			CreatedDate:     now,
 			LastUpdatedDate: now,
-		}
-
-		if in.ClientToken != nil && *in.ClientToken != "" {
-			tokenKey := scope.Key(serviceName, kindPolicyToken, storeID+"/"+*in.ClientToken)
-			if writeErr := storage.Write(tx, tokenKey, policyTokenRecord{
-				PolicyId:    policyID,
-				Statement:   statement,
-				Description: in.Definition.Static.Description,
-			}); writeErr != nil {
-				return writeErr
-			}
 		}
 
 		polKey := scope.Key(serviceName, kindPolicy, storeID+"/"+policyID)
@@ -140,7 +112,7 @@ func (s *Service) CreatePolicy(
 			PolicyType:      new(policyTypeStatic),
 		}
 
-		return nil
+		return idempotency.Remember(tx, tokenKey, in, out)
 	})
 	if err != nil {
 		return nil, err

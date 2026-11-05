@@ -4,14 +4,13 @@ package servicecatalog
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/servicecatalog"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -49,11 +48,6 @@ type constraint struct {
 	Parameters string
 }
 
-type tokenRecord struct {
-	Hash   string
-	Output json.RawMessage
-}
-
 func invalid(format string, args ...any) error {
 	return awserror.New("InvalidParametersException", fmt.Sprintf(format, args...))
 }
@@ -86,48 +80,26 @@ func transact[T any](ctx context.Context, s *Service, op string, token *string, 
 		return nil, err
 	}
 
-	raw, err := json.Marshal(input)
-	if err != nil {
-		return nil, err
-	}
-
-	hash := fmt.Sprintf("%x", sha256.Sum256(raw))
+	key := idempotency.Key(scope, serviceName, op, token)
 	var out *T
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		key := ""
-		if token != nil {
-			key = scope.Key(serviceName, "token", op+"/"+fmt.Sprintf("%x", sha256.Sum256([]byte(*token))))
-			r, ok, e := storage.Read[tokenRecord](tx, key)
-			if e != nil {
-				return e
-			}
-
-			if ok {
-				if r.Hash != hash {
-					return invalid("IdempotencyToken was already used with different parameters")
-				}
-
-				out = new(T)
-				return json.Unmarshal(r.Output, out)
-			}
+		var found bool
+		out, found, err = idempotency.Replay[*T](
+			tx,
+			key,
+			input,
+			invalid("IdempotencyToken was already used with different parameters"),
+		)
+		if err != nil || found {
+			return err
 		}
 
-		var e error
-		out, e = change(tx, scope)
-		if e != nil {
-			return e
+		out, err = change(tx, scope)
+		if err != nil {
+			return err
 		}
 
-		if key == "" {
-			return nil
-		}
-
-		data, e := json.Marshal(out)
-		if e != nil {
-			return e
-		}
-
-		return storage.Write(tx, key, tokenRecord{Hash: hash, Output: data})
+		return idempotency.Remember(tx, key, input, out)
 	})
 	return out, err
 }

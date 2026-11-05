@@ -265,11 +265,21 @@ func TestTranslateDataAndBatch(t *testing.T) {
 		SourceLanguageCode:  new("en"),
 		TargetLanguageCodes: []string{"fr"},
 	}
+
 	job, err := c.StartTextTranslationJob(ctx, jobInput)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	replay, err := c.StartTextTranslationJob(ctx, jobInput)
+	if err != nil || *replay.JobId != *job.JobId {
+		t.Fatalf("replay: %+v %v", replay, err)
+	}
+
+	changed := *jobInput
+	changed.JobName = new("changed")
+	_, err = c.StartTextTranslationJob(ctx, &changed)
+	wantAccessAnalyzerError(t, err, "InvalidRequestException")
 	var properties *types.TextTranslationJobProperties
 	pollML(t, func() bool {
 		out, e := c.DescribeTextTranslationJob(ctx, &sdk.DescribeTextTranslationJobInput{JobId: job.JobId})

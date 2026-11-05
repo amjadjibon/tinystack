@@ -8,6 +8,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iotwireless"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/services/iot"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -60,8 +61,17 @@ func (s *Service) CreateDestination(
 
 	var r *record
 	updateErr := s.update(ctx, func(tx storage.WriteTx, scope request.Scope) error {
-		existing, hash, err := replay(tx, scope, kindDestination, in.ClientRequestToken, in)
-		if err != nil || existing != nil {
+		key := idempotency.Key(scope, serviceName, kindDestination, in.ClientRequestToken)
+		existing, found, err := idempotency.Replay[*record](
+			tx,
+			key,
+			in,
+			conflict(
+				"The ClientRequestToken %s was used with different parameters",
+				common.Value(in.ClientRequestToken),
+			),
+		)
+		if err != nil || found {
 			r = existing
 			return err
 		}
@@ -80,11 +90,12 @@ func (s *Service) CreateDestination(
 			Arn: new(r.Arn), Name: in.Name, Expression: in.Expression, ExpressionType: in.ExpressionType,
 			Description: in.Description, RoleArn: in.RoleArn,
 		}
+
 		if checkErr := storage.Write(tx, scope.Key(serviceName, r.Kind, r.ID), r); checkErr != nil {
 			return checkErr
 		}
 
-		return remember(tx, scope, in.ClientRequestToken, hash, r)
+		return idempotency.Remember(tx, key, in, r)
 	})
 	if updateErr != nil {
 		return nil, updateErr

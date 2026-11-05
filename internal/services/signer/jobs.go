@@ -2,7 +2,6 @@ package signer
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/signer"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -17,11 +17,6 @@ type (
 	job struct {
 		Detail  api.DescribeSigningJobResponse
 		Request api.StartSigningJobRequest
-	}
-
-	jobToken struct {
-		ID    string
-		Input string
 	}
 )
 
@@ -81,27 +76,18 @@ func (s *Service) StartSigningJob(
 		return nil, invalid("Source bucket, key, version, destination bucket and ClientRequestToken are required.")
 	}
 
-	body, err := json.Marshal(in)
-	if err != nil {
-		return nil, err
-	}
-
-	tokenKey := scope.Key(serviceName, "token", *in.ClientRequestToken)
+	tokenKey := idempotency.Key(scope, serviceName, "StartSigningJob", in.ClientRequestToken)
 	id := common.RandomID(16)
 	var r *job
 	replay := false
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		token, ok, e := storage.Read[jobToken](tx, tokenKey)
-		if e != nil {
-			return e
+		previous, found, replayErr := idempotency.Replay[string](tx, tokenKey, in, conflict())
+		if replayErr != nil {
+			return replayErr
 		}
 
-		if ok {
-			if token.Input != string(body) {
-				return conflict()
-			}
-
-			id = token.ID
+		if found {
+			id = previous
 			replay = true
 			return nil
 		}
@@ -132,7 +118,7 @@ func (s *Service) StartSigningJob(
 			return e
 		}
 
-		return storage.Write(tx, tokenKey, jobToken{ID: id, Input: string(body)})
+		return idempotency.Remember(tx, tokenKey, in, id)
 	})
 	if err != nil {
 		return nil, err

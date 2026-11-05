@@ -9,6 +9,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iotwireless"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -68,8 +69,17 @@ func (s *Service) CreateFuotaTask(
 
 	var r *record
 	updateErr := s.update(ctx, func(tx storage.WriteTx, scope request.Scope) error {
-		existing, hash, err := replay(tx, scope, kindFuota, in.ClientRequestToken, in)
-		if err != nil || existing != nil {
+		key := idempotency.Key(scope, serviceName, kindFuota, in.ClientRequestToken)
+		existing, found, err := idempotency.Replay[*record](
+			tx,
+			key,
+			in,
+			conflict(
+				"The ClientRequestToken %s was used with different parameters",
+				common.Value(in.ClientRequestToken),
+			),
+		)
+		if err != nil || found {
 			r = existing
 			return err
 		}
@@ -90,6 +100,7 @@ func (s *Service) CreateFuotaTask(
 			FragmentIntervalMS:  in.FragmentIntervalMS,
 			Descriptor:          in.Descriptor,
 		}
+
 		if in.LoRaWAN != nil {
 			r.Fuota.LoRaWAN = &api.LoRaWANFuotaTaskGetInfo{RfRegion: in.LoRaWAN.RfRegion}
 		}
@@ -98,7 +109,7 @@ func (s *Service) CreateFuotaTask(
 			return checkErr
 		}
 
-		return remember(tx, scope, in.ClientRequestToken, hash, r)
+		return idempotency.Remember(tx, key, in, r)
 	})
 	if updateErr != nil {
 		return nil, updateErr
@@ -362,6 +373,7 @@ func (s *Service) ListMulticastGroupsByFuotaTask(
 		NextToken:          next,
 		MulticastGroupList: []api.MulticastGroupByFuotaTask{},
 	}
+
 	for _, id := range page {
 		out.MulticastGroupList = append(out.MulticastGroupList, api.MulticastGroupByFuotaTask{Id: new(id)})
 	}

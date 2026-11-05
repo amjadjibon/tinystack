@@ -8,6 +8,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iotwireless"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -34,8 +35,17 @@ func (s *Service) CreateWirelessGateway(
 
 	var r *record
 	updateErr := s.update(ctx, func(tx storage.WriteTx, scope request.Scope) error {
-		existing, hash, err := replay(tx, scope, kindGateway, in.ClientRequestToken, in)
-		if err != nil || existing != nil {
+		key := idempotency.Key(scope, serviceName, kindGateway, in.ClientRequestToken)
+		existing, found, err := idempotency.Replay[*record](
+			tx,
+			key,
+			in,
+			conflict(
+				"The ClientRequestToken %s was used with different parameters",
+				common.Value(in.ClientRequestToken),
+			),
+		)
+		if err != nil || found {
 			r = existing
 			return err
 		}
@@ -49,11 +59,12 @@ func (s *Service) CreateWirelessGateway(
 		r.Gateway = &api.GetWirelessGatewayResponse{
 			Arn: new(r.Arn), Id: new(r.ID), Name: in.Name, Description: in.Description, LoRaWAN: in.LoRaWAN,
 		}
+
 		if checkErr := storage.Write(tx, scope.Key(serviceName, r.Kind, r.ID), r); checkErr != nil {
 			return checkErr
 		}
 
-		return remember(tx, scope, in.ClientRequestToken, hash, r)
+		return idempotency.Remember(tx, key, in, r)
 	})
 	if updateErr != nil {
 		return nil, updateErr
@@ -138,6 +149,7 @@ func (s *Service) ListWirelessGateways(
 		item := api.WirelessGatewayStatistics{
 			Arn: g.Arn, Id: g.Id, Name: g.Name, Description: g.Description, LoRaWAN: g.LoRaWAN,
 		}
+
 		if r.LastUplink != "" {
 			item.LastUplinkReceivedAt = new(r.LastUplink)
 		}
@@ -327,6 +339,7 @@ func (s *Service) GetWirelessGatewayStatistics(
 		WirelessGatewayId: new(r.ID),
 		ConnectionStatus:  new(statusDisconnect),
 	}
+
 	if r.LastUplink != "" {
 		out.LastUplinkReceivedAt, out.ConnectionStatus = new(r.LastUplink), new(statusConnected)
 	}

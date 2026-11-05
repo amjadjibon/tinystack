@@ -2,13 +2,13 @@ package inspector2
 
 import (
 	"context"
-	"slices"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/inspector2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -64,11 +64,6 @@ func (r *accountRecord) account(id string) api.Account {
 	}}
 }
 
-type enableToken struct {
-	Types    []string
-	Accounts []api.Account
-}
-
 func (s *Service) setScanning(
 	ctx context.Context,
 	ids, types []string,
@@ -85,22 +80,23 @@ func (s *Service) setScanning(
 		return nil, err
 	}
 
+	input := struct{ IDs, Types []string }{ids, types}
 	var out []api.Account
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if token != nil {
-			previous, found, e := storage.Read[enableToken](tx, scope.Key(serviceName, "enable-token", *token))
-			if e != nil {
-				return e
-			}
+		key := idempotency.Key(scope, serviceName, "Enable", token)
+		previous, found, replayErr := idempotency.Replay[[]api.Account](
+			tx,
+			key,
+			input,
+			awserror.Validation("clientToken was used with different resourceTypes."),
+		)
+		if replayErr != nil {
+			return replayErr
+		}
 
-			if found {
-				if !slices.Equal(previous.Types, types) {
-					return awserror.Validation("clientToken was used with different resourceTypes.")
-				}
-
-				out = previous.Accounts
-				return nil
-			}
+		if found {
+			out = previous
+			return nil
 		}
 
 		r, e := loadAccount(tx, scope)
@@ -117,15 +113,8 @@ func (s *Service) setScanning(
 		}
 
 		out = []api.Account{r.account(scope.AccountID)}
-		if token != nil {
-			e = storage.Write(
-				tx,
-				scope.Key(serviceName, "enable-token", *token),
-				enableToken{Types: types, Accounts: out},
-			)
-			if e != nil {
-				return e
-			}
+		if writeErr := idempotency.Remember(tx, key, input, out); writeErr != nil {
+			return writeErr
 		}
 
 		return storage.Write(tx, scope.Key(serviceName, kindAccount, accountSettings), r)

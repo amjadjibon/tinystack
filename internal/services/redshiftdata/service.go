@@ -45,12 +45,6 @@ type work struct {
 	ID    string
 }
 
-type replay struct {
-	Expires     time.Time
-	Fingerprint string
-	ID          string
-}
-
 func New(store storage.Store, clusters *redshift.Service, serverless *redshiftserverless.Service) *Service {
 	s := &Service{store: store, clusters: clusters, serverless: serverless, workers: background.New()}
 
@@ -178,8 +172,8 @@ func (s *Service) advance(ctx context.Context) {
 				finish(r)
 			}
 
-			if err := save(tx, w.Scope, r); err != nil {
-				return err
+			if writeErr := save(tx, w.Scope, r); writeErr != nil {
+				return writeErr
 			}
 		}
 

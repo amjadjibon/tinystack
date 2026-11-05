@@ -2,9 +2,6 @@ package redshiftdata
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/json"
-	"fmt"
 	"strings"
 	"time"
 	"uuid"
@@ -12,6 +9,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/redshiftdata"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/idempotency"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -42,33 +40,39 @@ func (s *Service) execute(
 		}
 	}
 
-	fingerprint, err := json.Marshal(struct {
+	input := struct {
 		Input *api.ExecuteStatementInput
 		SQLs  []string
 		Batch bool
-	}{in, sqls, batch})
-	if err != nil {
-		return nil, err
-	}
-
-	digest := sha256.Sum256([]byte(common.Value(in.ClientToken)))
-	tokenKey := scope.Key(serviceName, "token", fmt.Sprintf("%x", digest))
+	}{in, sqls, batch}
+	tokenKey := idempotency.Key(scope, serviceName, "Execute", in.ClientToken)
 	var r *record
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if in.ClientToken != nil {
-			old, ok, e := storage.Read[replay](tx, tokenKey)
-			if e != nil {
-				return e
+		if tokenKey != "" {
+			expiry, exists, expiryErr := storage.Read[time.Time](tx, tokenKey+"/expires")
+			if expiryErr != nil {
+				return expiryErr
 			}
 
-			if ok && time.Now().Before(old.Expires) {
-				if old.Fingerprint != string(fingerprint) {
-					return invalid("ClientToken was already used with different input")
-				}
-
-				r, e = read(tx, scope, old.ID)
-				return e
+			if exists && !time.Now().Before(*expiry) {
+				tx.Delete(tokenKey)
+				tx.Delete(tokenKey + "/expires")
 			}
+		}
+
+		previous, replayed, replayErr := idempotency.Replay[*record](
+			tx,
+			tokenKey,
+			input,
+			invalid("ClientToken was already used with different input"),
+		)
+		if replayErr != nil {
+			return replayErr
+		}
+
+		if replayed {
+			r = previous
+			return nil
 		}
 
 		fixtures, e := storage.Records[Fixture](
@@ -148,15 +152,13 @@ func (s *Service) execute(
 			return e
 		}
 
-		if in.ClientToken != nil {
-			return storage.Write(
-				tx,
-				tokenKey,
-				replay{Fingerprint: string(fingerprint), ID: id, Expires: now.Add(8 * time.Hour)},
-			)
+		if tokenKey != "" {
+			if writeErr := storage.Write(tx, tokenKey+"/expires", now.Add(8*time.Hour)); writeErr != nil {
+				return writeErr
+			}
 		}
 
-		return nil
+		return idempotency.Remember(tx, tokenKey, input, r)
 	})
 	return r, err
 }

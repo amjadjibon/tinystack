@@ -152,6 +152,7 @@ func TestSignerProfiles(t *testing.T) {
 	if err != nil || len(tagged.FailedResourcesMap) != 0 {
 		t.Fatalf("shared tags: %#v %v", tagged, err)
 	}
+
 	tags, err = c.ListTagsForResource(ctx, &sdk.ListTagsForResourceInput{ResourceArn: put.Arn})
 	if err != nil || tags.Tags["shared"] != "yes" {
 		t.Fatalf("shared tag read: %#v %v", tags, err)
@@ -246,6 +247,7 @@ func TestSignerPermissionsAndPlatforms(t *testing.T) {
 	if err != nil || len(filtered.Platforms) != 1 {
 		t.Fatalf("platform filter: %#v %v", filtered, err)
 	}
+
 	_, err = c.ListSigningPlatforms(ctx, &sdk.ListSigningPlatformsInput{MaxResults: new(int32(26))})
 	signerError(t, err, "ValidationException")
 
@@ -375,6 +377,10 @@ func TestSignerJobs(t *testing.T) {
 		t.Fatalf("replay: %#v %v", replay, err)
 	}
 
+	changed := *input
+	changed.ProfileName = new("changed")
+	_, err = c.StartSigningJob(ctx, &changed)
+	wantAccessAnalyzerError(t, err, "ConflictException")
 	detail, err := c.DescribeSigningJob(ctx, &sdk.DescribeSigningJobInput{JobId: started.JobId})
 	if err != nil || detail.Status != types.SigningStatusSucceeded || detail.SignedObject == nil {
 		t.Fatalf("job: %#v %v", detail, err)

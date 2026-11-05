@@ -87,8 +87,8 @@ func (s *Service) CreateAccelerator(
 	}
 
 	r := &record{
-		Kind:       kindAccelerator,
-		Token:      common.Value(in.IdempotencyToken),
+		Kind: kindAccelerator,
+
 		Tags:       tags,
 		Attributes: &api.AcceleratorAttributes{FlowLogsEnabled: new(false)},
 		Accelerator: &api.Accelerator{
@@ -107,34 +107,40 @@ func (s *Service) CreateAccelerator(
 		r.Accelerator.Enabled = new(true)
 	}
 
-	r, err = s.insert(ctx, r, in, func(_ storage.WriteTx, scope request.Scope, r *record, all []*record) error {
-		used := map[int]bool{}
+	r, err = s.insert(
+		ctx,
+		r,
+		in.IdempotencyToken,
+		in,
+		func(_ storage.WriteTx, scope request.Scope, r *record, all []*record) error {
+			used := map[int]bool{}
 
-		for _, old := range all {
-			used[old.Slot] = true
-		}
+			for _, old := range all {
+				used[old.Slot] = true
+			}
 
-		r.Slot = 1
-		for r.Slot < 255 && used[r.Slot] {
-			r.Slot++
-		}
+			r.Slot = 1
+			for r.Slot < 255 && used[r.Slot] {
+				r.Slot++
+			}
 
-		if r.Slot == 255 {
-			return awserror.New("LimitExceededException", "TinyStack documentation IPv4 address pool is exhausted")
-		}
+			if r.Slot == 255 {
+				return awserror.New("LimitExceededException", "TinyStack documentation IPv4 address pool is exhausted")
+			}
 
-		id := common.RandomID(32, "0123456789abcdef")
-		id = fmt.Sprintf("%s-%s-%s-%s-%s", id[:8], id[8:12], id[12:16], id[16:20], id[20:])
-		r.ARN = "arn:aws:globalaccelerator::" + scope.AccountID + ":accelerator/" + id
-		a := r.Accelerator
-		a.AcceleratorArn = new(r.ARN)
-		hash := sha256.Sum256([]byte(r.ARN))
-		a.DnsName = new(fmt.Sprintf("a%x.awsglobalaccelerator.com", hash[:8]))
-		a.CreatedTime = common.SecondsMilli(time.Now())
-		a.LastModifiedTime = a.CreatedTime
-		configureIPs(r)
-		return nil
-	})
+			id := common.RandomID(32, "0123456789abcdef")
+			id = fmt.Sprintf("%s-%s-%s-%s-%s", id[:8], id[8:12], id[12:16], id[16:20], id[20:])
+			r.ARN = "arn:aws:globalaccelerator::" + scope.AccountID + ":accelerator/" + id
+			a := r.Accelerator
+			a.AcceleratorArn = new(r.ARN)
+			hash := sha256.Sum256([]byte(r.ARN))
+			a.DnsName = new(fmt.Sprintf("a%x.awsglobalaccelerator.com", hash[:8]))
+			a.CreatedTime = common.SecondsMilli(time.Now())
+			a.LastModifiedTime = a.CreatedTime
+			configureIPs(r)
+			return nil
+		},
+	)
 	if err != nil {
 		return nil, err
 	}

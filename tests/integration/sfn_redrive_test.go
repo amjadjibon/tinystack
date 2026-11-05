@@ -47,10 +47,21 @@ func TestStepFunctionsRedrive(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	redriven, err := c.RedriveExecution(ctx, &sfn.RedriveExecutionInput{ExecutionArn: exec})
+	redriveInput := &sfn.RedriveExecutionInput{ExecutionArn: exec, ClientToken: new("redrive-once")}
+	redriven, err := c.RedriveExecution(ctx, redriveInput)
 	if err != nil || redriven.RedriveDate == nil {
 		t.Fatalf("%+v %v", redriven, err)
 	}
+
+	replay, err := c.RedriveExecution(ctx, redriveInput)
+	if err != nil || !replay.RedriveDate.Equal(*redriven.RedriveDate) {
+		t.Fatalf("replay: %+v %v", replay, err)
+	}
+
+	changed := *redriveInput
+	changed.ExecutionArn = new(*exec + "-changed")
+	_, err = c.RedriveExecution(ctx, &changed)
+	wantAccessAnalyzerError(t, err, "ExecutionNotRedrivable")
 
 	done := finish(t, c, exec)
 	if done.Status != sfntypes.ExecutionStatusSucceeded ||
