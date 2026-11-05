@@ -573,6 +573,7 @@ Model networking and instance lifecycle for SDK and infrastructure tests.
 - AWS-style EC2 and VPC consoles with scoped instance launch/start/stop/reboot/termination, AMIs, generated/imported key pairs with one-time private key display, IAM instance profiles, VPC DNS settings and subnet public IPv4 settings, security rules, route tables and subnet associations, gateways, Elastic IPs, NAT gateways, network ACL rules and associations, endpoint configuration, tags, and links between related resources.
 - Transit gateways with validated options and default-table selection, VPC attachments, transit gateway route tables, associations, VPC CIDR propagation, static and blackhole routes, and route table target support.
 - Customer gateways, virtual private gateways (VGWs), VPC gateway attachments, VGW VPN static-route propagation, and Site-to-Site VPN connections with automatic transit gateway attachment cleanup.
+- Launch template create, version create and modification client tokens replay the committed response and reject changed input.
 
 [Supported operations](ec2.md#supported-operations) · [Limitations](ec2.md#limitations-and-future-work)
 
@@ -675,6 +676,7 @@ Manage Kubernetes cluster metadata and optionally start local k3s API servers.
 - Optional privileged k3s container per cluster with an HTTPS proxy.
 - EKS tokens map callers to the cluster account.
 - Disabled Auto Mode compute, block storage and load balancing configuration is accepted and returned by CreateCluster/DescribeCluster.
+- Supported client request tokens replay committed create and update responses, including identity provider associations and disassociations, and reject changed input.
 
 [Supported operations](eks.md#supported-operations) · [Limitations](eks.md#limitations-and-future-work)
 
@@ -1156,6 +1158,7 @@ Manage AgentCore agent runtimes with their versions and endpoints, and short-ter
 - Tags in the records of runtimes, endpoints and memories, storage-key-order pagination, inventory and Resource Groups Tagging API integration, and iam:PassRole checks for roleArn and memoryExecutionRoleArn.
 - CloudFormation AWS::BedrockAgentCore::Runtime, AWS::BedrockAgentCore::RuntimeEndpoint and AWS::BedrockAgentCore::Memory: Ref returns the ARN, an immutable name replaces the resource and every other property updates in place.
 - Terraform aws_bedrockagentcore_agent_runtime, aws_bedrockagentcore_agent_runtime_endpoint and aws_bedrockagentcore_memory: a description or environment change makes a new runtime version, and tags update in place.
+- Supported client tokens replay committed runtime, endpoint and memory create, update and delete responses and reject changed input.
 
 [Supported operations](bedrockagentcorecontrol.md#supported-operations) · [Limitations](bedrockagentcorecontrol.md#limitations-and-future-work)
 
@@ -1173,6 +1176,7 @@ Invoke AgentCore agent runtimes in Docker containers, one per runtime session, a
 - A session's container is removed after idleRuntimeSessionTimeout idle seconds or maxLifetime seconds, by StopRuntimeSession, when its runtime, endpoint or version is deleted, on reset and on shutdown; containers an earlier run of the same store left behind are removed at startup.
 - Short-term memory events are real storage: CreateEvent with conversational, blob and JSON payloads, metadata, branches that fork from a root event and an idempotent client token; GetEvent, DeleteEvent, ListEvents (oldest first, includePayloads, metadata EQUALS_TO/EXISTS/NOT_EXISTS filters, branch filter with parent branches), ListActors and ListSessions, with pagination.
 - An event expires eventExpiryDuration days after it was created; a background sweeper deletes it with its token, and deleting a memory deletes its events. Events survive a SQLite restart.
+- StopRuntimeSession client tokens replay successful stops and reject changed input.
 
 [Supported operations](bedrockagentcore.md#supported-operations) · [Limitations](bedrockagentcore.md#limitations-and-future-work)
 

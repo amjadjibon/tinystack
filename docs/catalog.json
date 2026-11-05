@@ -576,7 +576,8 @@
         "Resource inventory of taggable resources (not terminated instances or deleted NAT gateways), which the Resource Groups Tagging API finds and tags",
         "AWS-style EC2 and VPC consoles with scoped instance launch/start/stop/reboot/termination, AMIs, generated/imported key pairs with one-time private key display, IAM instance profiles, VPC DNS settings and subnet public IPv4 settings, security rules, route tables and subnet associations, gateways, Elastic IPs, NAT gateways, network ACL rules and associations, endpoint configuration, tags, and links between related resources",
         "Transit gateways with validated options and default-table selection, VPC attachments, transit gateway route tables, associations, VPC CIDR propagation, static and blackhole routes, and route table target support",
-        "Customer gateways, virtual private gateways (VGWs), VPC gateway attachments, VGW VPN static-route propagation, and Site-to-Site VPN connections with automatic transit gateway attachment cleanup"
+        "Customer gateways, virtual private gateways (VGWs), VPC gateway attachments, VGW VPN static-route propagation, and Site-to-Site VPN connections with automatic transit gateway attachment cleanup",
+        "Launch template create, version create and modification client tokens replay the committed response and reject changed input."
       ],
       "gaps": [
         "Instances are records; no virtual machines boot and no guest software runs",
@@ -670,7 +671,8 @@
         "Access entries, access policy associations, pod identity metadata and OIDC configuration",
         "Optional privileged k3s container per cluster with an HTTPS proxy",
         "EKS tokens map callers to the cluster account",
-        "Disabled Auto Mode compute, block storage and load balancing configuration is accepted and returned by CreateCluster/DescribeCluster"
+        "Disabled Auto Mode compute, block storage and load balancing configuration is accepted and returned by CreateCluster/DescribeCluster",
+        "Supported client request tokens replay committed create and update responses, including identity provider associations and disassociations, and reject changed input."
       ],
       "gaps": [
         "Records mode starts no Kubernetes API",
@@ -3418,7 +3420,8 @@
         "Memories keep short-term events for eventExpiryDuration days with an optional execution role and KMS key that exist in TinyStack; CREATING or UPDATING to ACTIVE, DELETING, unique names, client-token replay for creates",
         "Tags in the records of runtimes, endpoints and memories, storage-key-order pagination, inventory and Resource Groups Tagging API integration, and iam:PassRole checks for roleArn and memoryExecutionRoleArn",
         "CloudFormation AWS::BedrockAgentCore::Runtime, AWS::BedrockAgentCore::RuntimeEndpoint and AWS::BedrockAgentCore::Memory: Ref returns the ARN, an immutable name replaces the resource and every other property updates in place",
-        "Terraform aws_bedrockagentcore_agent_runtime, aws_bedrockagentcore_agent_runtime_endpoint and aws_bedrockagentcore_memory: a description or environment change makes a new runtime version, and tags update in place"
+        "Terraform aws_bedrockagentcore_agent_runtime, aws_bedrockagentcore_agent_runtime_endpoint and aws_bedrockagentcore_memory: a description or environment change makes a new runtime version, and tags update in place",
+        "Supported client tokens replay committed runtime, endpoint and memory create, update and delete responses and reject changed input."
       ],
       "gaps": [
         "Outside the profile: gateways, identity and credential providers, browsers, code interpreters, evaluations, policy engines, payments, registries, harnesses, datasets, A/B tests, capacity providers, configuration bundles, resource policies and workload identities",
@@ -3445,7 +3448,8 @@
         "Containers run with --platform linux/arm64 as AWS requires, with the runtime's environment variables over AWS_REGION, AWS_DEFAULT_REGION, AWS_ENDPOINT_URL (host.docker.internal and TinyStack's port) and the creating caller's access key and configured secret, as Lambda containers get them",
         "A session's container is removed after idleRuntimeSessionTimeout idle seconds or maxLifetime seconds, by StopRuntimeSession, when its runtime, endpoint or version is deleted, on reset and on shutdown; containers an earlier run of the same store left behind are removed at startup",
         "Short-term memory events are real storage: CreateEvent with conversational, blob and JSON payloads, metadata, branches that fork from a root event and an idempotent client token; GetEvent, DeleteEvent, ListEvents (oldest first, includePayloads, metadata EQUALS_TO/EXISTS/NOT_EXISTS filters, branch filter with parent branches), ListActors and ListSessions, with pagination",
-        "An event expires eventExpiryDuration days after it was created; a background sweeper deletes it with its token, and deleting a memory deletes its events. Events survive a SQLite restart"
+        "An event expires eventExpiryDuration days after it was created; a background sweeper deletes it with its token, and deleting a memory deletes its events. Events survive a SQLite restart",
+        "StopRuntimeSession client tokens replay successful stops and reject changed input."
       ],
       "gaps": [
         "Records mode (the default) cannot run an agent: InvokeAgentRuntime fails with ValidationException, the error shape CodeBuild's StartBuild uses, because no response would be an agent's. StopRuntimeSession then finds no session and answers ResourceNotFoundException",
