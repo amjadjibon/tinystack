@@ -33,7 +33,7 @@ func TestStartAndCancel(t *testing.T) {
 	go func() { done <- cmd.Execute() }()
 	client := &http.Client{Timeout: 100 * time.Millisecond}
 	ready := false
-	for range 100 {
+	for deadline := time.Now().Add(30 * time.Second); time.Now().Before(deadline); {
 		req, err := http.NewRequestWithContext(
 			ctx,
 			"GET",
