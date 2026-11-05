@@ -32,7 +32,7 @@ var (
 	taintEffects = []string{"NO_SCHEDULE", "NO_EXECUTE", "PREFER_NO_SCHEDULE"}
 )
 
-// nodegroup is a node group's record: its description and its create token.
+// nodegroup is a node group's record: its description.
 type nodegroup struct {
 	Group api.Nodegroup
 }

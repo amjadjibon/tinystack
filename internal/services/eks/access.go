@@ -42,8 +42,7 @@ var (
 		`^arn:aws[a-z-]*:iam::(\d{12}):root$`)
 )
 
-// accessEntry is an access entry's record: its description, its access
-// policies, and its create token.
+// accessEntry stores an access entry's description and access policies.
 type accessEntry struct {
 	Entry    api.AccessEntry
 	Policies []api.AssociatedAccessPolicy

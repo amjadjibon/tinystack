@@ -11,8 +11,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-// fargateProfile is a Fargate profile's record: its description and its create
-// token.
+// fargateProfile is a Fargate profile's stored description.
 type fargateProfile struct {
 	Profile api.FargateProfile
 }

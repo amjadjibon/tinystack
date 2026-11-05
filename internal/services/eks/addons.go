@@ -71,7 +71,7 @@ func findAddon(name string) *addonInfo {
 	return &addonCatalog[i]
 }
 
-// addon is an add-on's record: its description and its create token.
+// addon is an add-on's record: its description.
 type addon struct {
 	Addon api.Addon
 }
