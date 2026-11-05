@@ -48,18 +48,6 @@ func (s *Service) execute(
 	tokenKey := idempotency.Key(scope, serviceName, "Execute", in.ClientToken)
 	var r *record
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if tokenKey != "" {
-			expiry, exists, expiryErr := storage.Read[time.Time](tx, tokenKey+"/expires")
-			if expiryErr != nil {
-				return expiryErr
-			}
-
-			if exists && !time.Now().Before(*expiry) {
-				tx.Delete(tokenKey)
-				tx.Delete(tokenKey + "/expires")
-			}
-		}
-
 		previous, replayed, replayErr := idempotency.Replay[*record](
 			tx,
 			tokenKey,
@@ -152,13 +140,7 @@ func (s *Service) execute(
 			return e
 		}
 
-		if tokenKey != "" {
-			if writeErr := storage.Write(tx, tokenKey+"/expires", now.Add(8*time.Hour)); writeErr != nil {
-				return writeErr
-			}
-		}
-
-		return idempotency.Remember(tx, tokenKey, input, r)
+		return idempotency.Remember(tx, tokenKey, input, r, now.Add(8*time.Hour))
 	})
 	return r, err
 }
