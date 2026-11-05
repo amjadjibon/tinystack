@@ -140,6 +140,7 @@ func requireAgentCoreDocker(t *testing.T) {
 // ECR Public reference that names it.
 func agentCoreImage(t *testing.T) string {
 	t.Helper()
+	requireAgentCoreDocker(t)
 	dir := t.TempDir()
 	source := filepath.Join(dir, "main.go")
 	if err := os.WriteFile(source, []byte(agentSource), 0o600); err != nil {
