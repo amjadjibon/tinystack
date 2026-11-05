@@ -30,10 +30,8 @@ func Key(scope request.Scope, service, action string, token *string) string {
 }
 
 // Replay returns the result remembered under key. found is false for an empty key or an unused token; a token reused
-// with different input fails with mismatch. Expired entries are unused; now optionally supplies the check time.
-func Replay[T any](
-	tx storage.ReadTx, key string, input any, mismatch error, now ...time.Time,
-) (result T, found bool, err error) {
+// with different input fails with mismatch. An expired token counts as unused.
+func Replay[T any](tx storage.ReadTx, key string, input any, mismatch error) (result T, found bool, err error) {
 	if key == "" {
 		return result, false, nil
 	}
@@ -43,12 +41,7 @@ func Replay[T any](
 		return result, false, err
 	}
 
-	current := time.Now()
-	if len(now) > 0 {
-		current = now[0]
-	}
-
-	if !previous.ExpiresAt.IsZero() && !current.Before(previous.ExpiresAt) {
+	if !previous.ExpiresAt.IsZero() && !time.Now().Before(previous.ExpiresAt) {
 		return result, false, nil
 	}
 
