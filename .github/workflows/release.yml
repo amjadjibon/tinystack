@@ -89,6 +89,21 @@ jobs:
           prerelease=; [[ "$TAG" == *-* ]] && prerelease=--prerelease
           scripts/release-notes.sh "$TAG" > notes.md
           gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --verify-tag --notes-file notes.md $prerelease
+      # HOMEBREW_TAP_TOKEN is a fine-grained token with Contents write on amjadjibon/homebrew-tap only.
+      - name: Update the Homebrew formula
+        if: ${{ !contains(github.ref_name, '-') }}
+        env:
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          git clone --depth 1 "https://x-access-token:${TAP_TOKEN}@github.com/amjadjibon/homebrew-tap.git" tap
+          scripts/homebrew-formula.sh "$TAG" dist/checksums.txt > tap/Formula/tinystack.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/tinystack.rb
+          git diff --cached --quiet || git commit -m "tinystack ${TAG#v}"
+          git push origin HEAD:main
 
   image:
     name: ${{ matrix.target }} image

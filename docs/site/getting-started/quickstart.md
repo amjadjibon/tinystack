@@ -20,6 +20,13 @@ when the binary's directory is not writable. A running server keeps its old bina
 source take their version from `git describe` (`dev` without tags; `0.0.1-4-g<commit>` after a tag, `-dirty` with
 local edits) and update only with `--to`.
 
+With Homebrew on macOS or Linux, install from the tap and let Homebrew upgrade it (`brew upgrade tinystack`), since
+`tinystack update` would replace a file Homebrew manages:
+
+```sh
+brew install amjadjibon/tap/tinystack
+```
+
 Or run the image (`latest` or a version such as `0.0.1`; the `headless` and `0.0.1-headless` tags leave out the
 console):
 

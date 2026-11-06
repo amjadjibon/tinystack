@@ -34,6 +34,12 @@ tinystack start
 `tinystack update` upgrades the binary in place and `tinystack version` prints the installed one. Windows builds
 (amd64 and arm64) are on [Releases](https://github.com/amjadjibon/tinystack/releases).
 
+With Homebrew (macOS or Linux), upgrade with `brew upgrade tinystack` instead of `tinystack update`:
+
+```sh
+brew install amjadjibon/tap/tinystack
+```
+
 To build from source instead, use Go 1.27 or newer and [Task](https://taskfile.dev): `task build:headless` writes
 `bin/tinystack-headless`, and `task build` adds the console (needs Node.js and pnpm).
 
