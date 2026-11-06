@@ -74,7 +74,7 @@ type updater struct {
 }
 
 func (u *updater) run(ctx context.Context, exe, to string) error {
-	if to == "" && strings.HasSuffix(u.current, "-dev") {
+	if to == "" && developmentVersion.MatchString(u.current) {
 		return fmt.Errorf("tinystack %s is a development build; rebuild it from source, or pass --to to install a "+
 			"release over it", u.current)
 	}

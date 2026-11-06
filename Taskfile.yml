@@ -1,5 +1,15 @@
 version: '3'
 
+vars:
+  # The tag without its v on a tagged commit, `git describe` output (0.0.1-3-g<hash>[-dirty]) after it, else dev.
+  VERSION:
+    sh: git describe --tags --dirty --abbrev=12 2>/dev/null | sed 's/^v//' | grep . || echo dev
+  COMMIT:
+    sh: git rev-parse --short=12 HEAD 2>/dev/null || true
+  LDFLAGS: >-
+    -s -w -X github.com/amjadjibon/tinystack/internal/cmd.version={{.VERSION}}
+    -X github.com/amjadjibon/tinystack/internal/cmd.commit={{.COMMIT}}
+
 tasks:
   # ---------------------------------------------------------------------------
   # Overview and merge gates
@@ -45,13 +55,13 @@ tasks:
     desc: "Build bin/tinystack with the web console built in (needs Node.js and pnpm)"
     deps: [ui:build]
     cmds:
-      - go build -tags console -trimpath -ldflags="-s -w" -o bin/tinystack ./cmd/tinystack
+      - go build -tags console -trimpath -ldflags="{{.LDFLAGS}}" -o bin/tinystack ./cmd/tinystack
 
   # Same server without the console; use it when Node.js isn't installed.
   build:headless:
     desc: "Build bin/tinystack-headless without the web console (needs only Go)"
     cmds:
-      - go build -trimpath -ldflags="-s -w" -o bin/tinystack-headless ./cmd/tinystack
+      - go build -trimpath -ldflags="{{.LDFLAGS}}" -o bin/tinystack-headless ./cmd/tinystack
 
   # Uses .air.toml: starts with examples/tinystack.yaml and its seed script. Extra flags go after `--`.
   dev:

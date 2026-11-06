@@ -43,7 +43,7 @@ else
 fi
 
 if [ -x "$target" ]; then
-	current=$("$target" --version 2>/dev/null | awk '{print $NF}') || current=
+	current=$("$target" --version 2>/dev/null | awk '{print $3}') || current=
 	if [ "$current" = "$version" ]; then
 		echo "tinystack $version is already installed at $target"
 		exit 0

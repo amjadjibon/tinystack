@@ -24,18 +24,20 @@ COPY . .
 
 FROM source AS build-headless
 
-ARG TARGETOS TARGETARCH VERSION=0.1.0-dev
+ARG TARGETOS TARGETARCH VERSION=dev COMMIT
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -o /out/tinystack \
-    -ldflags="-s -w -X github.com/amjadjibon/tinystack/internal/cmd.version=${VERSION}" ./cmd/tinystack
+    -ldflags="-s -w -X github.com/amjadjibon/tinystack/internal/cmd.version=${VERSION} \
+    -X github.com/amjadjibon/tinystack/internal/cmd.commit=${COMMIT}" ./cmd/tinystack
 
 FROM source AS build
 
-ARG TARGETOS TARGETARCH VERSION=0.1.0-dev
+ARG TARGETOS TARGETARCH VERSION=dev COMMIT
 COPY --from=console /ui/dist/console ui/dist/console
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -tags console -trimpath -o /out/tinystack \
-    -ldflags="-s -w -X github.com/amjadjibon/tinystack/internal/cmd.version=${VERSION}" ./cmd/tinystack
+    -ldflags="-s -w -X github.com/amjadjibon/tinystack/internal/cmd.version=${VERSION} \
+    -X github.com/amjadjibon/tinystack/internal/cmd.commit=${COMMIT}" ./cmd/tinystack
 
 FROM alpine:3.22 AS runtime
 

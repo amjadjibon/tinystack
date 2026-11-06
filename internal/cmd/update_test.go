@@ -131,7 +131,9 @@ func TestUpdateKeepsTheBinaryWhenNothingChangesOrVerificationFails(t *testing.T)
 	}{
 		{name: "already latest", current: "0.0.2", sum: sha(data), want: "already installed", ok: true},
 		{name: "checksum mismatch", current: "0.0.1", sum: strings.Repeat("a", 64), want: "checksum mismatch"},
-		{name: "development build", current: "0.1.0-dev", sum: sha(data), want: "development build"},
+		{name: "unstamped build", current: "dev", sum: sha(data), want: "development build"},
+		{name: "build after a tag", current: "0.0.1-3-g1a2b3c4d5e6f", sum: sha(data), want: "development build"},
+		{name: "build with local edits", current: "0.0.2-dirty", sum: sha(data), want: "development build"},
 		{name: "missing release", current: "0.0.1", sum: sha(data), to: "9.9.9", want: "404"},
 	}
 

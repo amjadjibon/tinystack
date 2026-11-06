@@ -68,7 +68,8 @@ jobs:
             exe=tinystack; [ "$os" = windows ] && exe=tinystack.exe
             mkdir "dist/$name"
             CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -tags console -trimpath -o "dist/$name/$exe" \
-              -ldflags="-s -w -X github.com/amjadjibon/tinystack/internal/cmd.version=${TAG#v}" ./cmd/tinystack
+              -ldflags="-s -w -X github.com/amjadjibon/tinystack/internal/cmd.version=${TAG#v} \
+              -X github.com/amjadjibon/tinystack/internal/cmd.commit=${GITHUB_SHA::12}" ./cmd/tinystack
             cp LICENSE README.md "dist/$name/"
             if [ "$os" = windows ]; then
               (cd dist && zip -qr "$name.zip" "$name")
@@ -113,7 +114,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          echo "commit=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
       # latest (or headless) moves only for releases without a prerelease suffix.
       - id: meta
         uses: docker/metadata-action@v6
@@ -135,6 +138,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: VERSION=${{ steps.version.outputs.version }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+            COMMIT=${{ steps.version.outputs.commit }}
           cache-from: type=gha,scope=${{ matrix.target }}
           cache-to: type=gha,mode=max,scope=${{ matrix.target }}

@@ -15,16 +15,13 @@ func Execute() {
 	}
 }
 
-// version is replaced at release time with -ldflags "-X github.com/amjadjibon/tinystack/internal/cmd.version=1.2.3".
-var version = "0.1.0-dev"
-
 func newRootCommand() *cobra.Command {
 	root := &cobra.Command{
 		Use:           "tinystack",
 		Short:         "A lightweight local AWS emulator",
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Version:       version,
+		Version:       versionString(),
 	}
 
 	root.AddCommand(newStartCommand())
@@ -34,14 +31,4 @@ func newRootCommand() *cobra.Command {
 	root.AddCommand(newVersionCommand())
 	root.AddCommand(newUpdateCommand())
 	return root
-}
-
-func newVersionCommand() *cobra.Command {
-	return &cobra.Command{
-		Use: "version", Short: "Print the version", Args: cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			_, err := fmt.Fprintf(cmd.OutOrStdout(), "tinystack version %s\n", version)
-			return err
-		},
-	}
 }
