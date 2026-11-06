@@ -39,6 +39,31 @@ jobs:
           working-directory: tests/testcontainers
           args: --config ../../.golangci.yml
 
+  # Release archives include Windows and macOS; vet type-checks every package and its tests for both, with and
+  # without the console tag, so platform-specific code breaks here instead of in the release job.
+  platforms:
+    name: Go vet for Windows and macOS
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Stand in for the console bundle, which the console tag embeds
+        run: mkdir -p ui/dist/console && echo '<!doctype html>' > ui/dist/console/index.html
+      - name: Vet each platform with and without the console
+        run: |
+          for os in windows darwin; do
+            for tags in '' console; do
+              echo "::group::GOOS=$os tags=${tags:-none}"
+              GOOS=$os go vet -tags "$tags" ./...
+              echo "::endgroup::"
+            done
+          done
+
   console:
     name: Console Biome and TypeScript
     runs-on: ubuntu-latest
