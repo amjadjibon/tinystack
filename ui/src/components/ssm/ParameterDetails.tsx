@@ -47,7 +47,7 @@ function ParameterValue({
 	return (
 		<SpaceBetween size="xs">
 			{!!error && <Alert type="error">{error}</Alert>}
-			{value === undefined ? "••••••••" : <CodeBlock text={value} />}
+			{value === undefined ? <Box>••••••••</Box> : <CodeBlock text={value} />}
 			<Hotspot hotspotId={HOTSPOT.parameterRead}>
 				<Button
 					disabled={!enabled}
