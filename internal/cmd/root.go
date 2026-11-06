@@ -31,5 +31,17 @@ func newRootCommand() *cobra.Command {
 	root.AddCommand(newLoginCommand())
 	root.AddCommand(newStateCommand())
 	root.AddCommand(newCACommand())
+	root.AddCommand(newVersionCommand())
+	root.AddCommand(newUpdateCommand())
 	return root
+}
+
+func newVersionCommand() *cobra.Command {
+	return &cobra.Command{
+		Use: "version", Short: "Print the version", Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			_, err := fmt.Fprintf(cmd.OutOrStdout(), "tinystack version %s\n", version)
+			return err
+		},
+	}
 }

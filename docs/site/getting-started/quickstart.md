@@ -1,8 +1,32 @@
 # Run TinyStack locally
 
-## Build and start
+## Install and start
 
-From the repository root, with Go **1.27 or newer** and [Task](https://taskfile.dev):
+Install the latest release binary, console included, to `/usr/local/bin/tinystack` (Linux and macOS, amd64 or
+arm64). The script verifies the archive against the release's `checksums.txt` and uses `sudo` only when it cannot
+write the directory:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/amjadjibon/tinystack/main/install.sh | sh
+tinystack start
+```
+
+`TINYSTACK_VERSION=0.0.1` pins a release and `TINYSTACK_INSTALL_DIR` picks another directory. Windows archives are on
+[Releases](https://github.com/amjadjibon/tinystack/releases).
+
+`tinystack version` prints the installed version. `tinystack update` replaces the binary with the latest release
+after the same checksum check (`--to 0.0.1` installs a given one); run it with `sudo` when the binary's directory is
+not writable. A running server keeps its old binary until it restarts. Builds from source report a `-dev` version
+and update only with `--to`.
+
+Or run the image (`latest` or a version such as `0.0.1`; the `headless` and `0.0.1-headless` tags leave out the
+console):
+
+```sh
+docker run --rm -p 4566:4566 -p 4567:4567 ghcr.io/amjadjibon/tinystack
+```
+
+To build from source instead, from the repository root, with Go **1.27 or newer** and [Task](https://taskfile.dev):
 
 ```sh
 task build:headless

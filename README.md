@@ -30,8 +30,9 @@ curl -fsSL https://raw.githubusercontent.com/amjadjibon/tinystack/main/install.s
 tinystack start
 ```
 
-`TINYSTACK_VERSION=0.0.1` pins a release and `TINYSTACK_INSTALL_DIR` picks another directory. Windows builds (amd64
-and arm64) are on [Releases](https://github.com/amjadjibon/tinystack/releases).
+`TINYSTACK_VERSION=0.0.1` pins a release and `TINYSTACK_INSTALL_DIR` picks another directory. Later,
+`tinystack update` upgrades the binary in place and `tinystack version` prints the installed one. Windows builds
+(amd64 and arm64) are on [Releases](https://github.com/amjadjibon/tinystack/releases).
 
 To build from source instead, use Go 1.27 or newer and [Task](https://taskfile.dev): `task build:headless` writes
 `bin/tinystack-headless`, and `task build` adds the console (needs Node.js and pnpm).
