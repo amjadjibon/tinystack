@@ -28,7 +28,9 @@ Opt-in suites: `task test:docker` (real containers: Lambda, ECS, EKS, ElastiCach
 MQ, MSK, Batch, CodeBuild, AgentCore; 30m timeout), `task test:testcontainers` (Go module, local image build or
 `TINYSTACK_IMAGE`; also `:python`, `:java`, `:node`, `:dotnet`), `task test:terraform`, `task test:sam`,
 `task test:cdk`, `task smoke`. CI runs only on `v*` tags: `release.yml` calls the check workflows, then publishes
-binaries and images. No tag exists yet, so nothing is published.
+binaries (GitHub release), images (`ghcr.io/amjadjibon/tinystack`, plus `-headless` tags) and docs (GitHub Pages).
+Before 1.0 there is no backward compatibility: no legacy storage or config formats, deprecated aliases or migrations
+for older releases.
 Run: `./bin/tinystack start [--port 4566] [--console-port 4567] [--config examples/tinystack.yaml]`.
 Debug endpoints: `/_tinystack/health`, `requests`, `resources`, `deliveries`, `messages` (captured email/SMS),
 `metrics`, `faults` (fault injection), `costs/fixtures` (user-supplied costs), `init` (script status), `actions`
