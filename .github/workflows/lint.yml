@@ -1,7 +1,9 @@
 name: Lint
 
-# release.yml runs this before publishing a tag.
+# Runs on every push to main; release.yml also runs it before publishing a tag.
 on:
+  push:
+    branches: [main]
   workflow_call:
   workflow_dispatch:
 

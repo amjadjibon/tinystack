@@ -27,7 +27,8 @@ Single test: `go test -race ./tests/integration -run TestName`.
 Opt-in suites: `task test:docker` (real containers: Lambda, ECS, EKS, ElastiCache, MemoryDB, RDS, DSQL, OpenSearch,
 MQ, MSK, Batch, CodeBuild, AgentCore; 30m timeout), `task test:testcontainers` (Go module, local image build or
 `TINYSTACK_IMAGE`; also `:python`, `:java`, `:node`, `:dotnet`), `task test:terraform`, `task test:sam`,
-`task test:cdk`, `task smoke`. CI runs only on `v*` tags: `release.yml` calls the check workflows, then publishes
+`task test:cdk`, `task smoke`. Lint and unit CI run on pushes to `main`; `v*` tags run `release.yml`, which calls
+every check workflow (adding integration and docs), then publishes
 binaries (GitHub release), images (`ghcr.io/amjadjibon/tinystack`, plus `-headless` tags) and docs (GitHub Pages).
 Before 1.0 there is no backward compatibility: no legacy storage or config formats, deprecated aliases or migrations
 for older releases.
