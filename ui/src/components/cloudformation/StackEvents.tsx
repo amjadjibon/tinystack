@@ -4,7 +4,6 @@ import {
 	Box,
 	Button,
 	Header,
-	Hotspot,
 	Pagination,
 	SpaceBetween,
 	Table,
@@ -19,7 +18,6 @@ import {
 	type StackEvent,
 } from "#/lib/cloudformationHelpers";
 import { usePoll } from "#/lib/usePoll";
-import { HOTSPOT } from "#/tutorials/hotspots";
 import { StackStatus } from "./StackStatus";
 
 const maxPages = 10;
@@ -85,13 +83,11 @@ export function StackEvents({
 								>
 									Failed events only
 								</Toggle>
-								<Hotspot hotspotId={HOTSPOT.cfnEvents}>
-									<Button
-										iconName="refresh"
-										ariaLabel="Refresh events"
-										onClick={poll.reload}
-									/>
-								</Hotspot>
+								<Button
+									iconName="refresh"
+									ariaLabel="Refresh events"
+									onClick={poll.reload}
+								/>
 							</SpaceBetween>
 						}
 					>

@@ -42,10 +42,8 @@ export type Check =
 	| "cognitoPool"
 	| "cognitoClient"
 	| "cognitoSignup"
-	| "cognitoMail"
 	| "cognitoConfirmed"
 	| "cfnStack"
-	| "cfnCreated"
 	| "cfnOutputs"
 	| "cfnUpdated";
 export const sources: Record<Check, (keyof Snapshot)[]> = {
@@ -65,10 +63,10 @@ export const sources: Record<Check, (keyof Snapshot)[]> = {
 	event: ["deliveries"],
 	function: ["resources"],
 	invoke: ["requests"],
-	logStream: ["resources"],
+	logStream: ["resources", "requests"],
 	stateMachine: ["resources"],
 	executionStarted: ["resources"],
-	executionSucceeded: ["resources"],
+	executionSucceeded: ["resources", "requests"],
 	secret: ["resources"],
 	secretValue: ["resources", "requests"],
 	parameter: ["resources"],
@@ -79,10 +77,8 @@ export const sources: Record<Check, (keyof Snapshot)[]> = {
 	cognitoPool: ["resources"],
 	cognitoClient: ["resources"],
 	cognitoSignup: ["resources", "messages"],
-	cognitoMail: ["resources", "messages"],
 	cognitoConfirmed: ["requests"],
 	cfnStack: ["resources"],
-	cfnCreated: ["resources"],
 	cfnOutputs: ["resources", "requests"],
 	cfnUpdated: ["resources"],
 };
@@ -276,21 +272,40 @@ export function check(kind: Check, s: Snapshot, c: Context): boolean {
 			);
 		case "function":
 			return resource(s, c, "lambda", n.function)?.type === "function";
+		// Invoking writes the stream at once, so the step waits for someone to list the group's streams.
 		case "logStream": {
-			const r = resource(s, c, "logs", `/aws/lambda/${n.function}`);
+			const group = `/aws/lambda/${n.function}`;
+			const r = resource(s, c, "logs", group);
 			return (
 				r?.type === "log-group" &&
 				Array.isArray(r.details?.Streams) &&
-				r.details.Streams.length > 0
+				r.details.Streams.length > 0 &&
+				successful(
+					s,
+					c,
+					"logs",
+					"DescribeLogStreams",
+					(_, i) => (i.LogGroupName ?? i.logGroupName) === group,
+				)
 			);
 		}
 		case "stateMachine":
 			return resource(s, c, "sfn", n.machine)?.type === "state-machine";
+		// Pass and Choice states finish at once, so the step waits for someone to describe the execution; its
+		// body stays redacted and the request log keeps only the execution ARN.
 		case "executionSucceeded": {
 			const rows = resource(s, c, "sfn", n.machine)?.details?.Executions;
+			const target = arn("states", `execution:${n.machine}:${n.execution}`, c);
 			return (
 				Array.isArray(rows) &&
-				rows.some((e) => e.Name === n.execution && e.Status === "SUCCEEDED")
+				rows.some((e) => e.Name === n.execution && e.Status === "SUCCEEDED") &&
+				successful(
+					s,
+					c,
+					"sfn",
+					"DescribeExecution",
+					(r) => r.resource_identifier === target,
+				)
 			);
 		}
 		case "secret":
@@ -404,12 +419,11 @@ export function check(kind: Check, s: Snapshot, c: Context): boolean {
 		// Client creation is redacted; inventory exposes only the pool's client count.
 		case "cognitoClient":
 			return Number(tutorialPool(s, c)?.details?.Clients ?? 0) > 0;
-		case "cognitoSignup":
-		case "cognitoMail": {
+		case "cognitoSignup": {
 			const pool = tutorialPool(s, c);
 			return (
 				!!pool &&
-				(kind === "cognitoMail" || Number(pool.details?.Users ?? 0) > 0) &&
+				Number(pool.details?.Users ?? 0) > 0 &&
 				s.messages.some(
 					(m) =>
 						m.service === "cognito-idp" &&
@@ -434,11 +448,6 @@ export function check(kind: Check, s: Snapshot, c: Context): boolean {
 			);
 		case "cfnStack":
 			return resource(s, c, "cloudformation", n.stack)?.type === "stack";
-		case "cfnCreated":
-			return (
-				resource(s, c, "cloudformation", n.stack)?.details?.Status ===
-				"CREATE_COMPLETE"
-			);
 		case "cfnUpdated":
 			return (
 				resource(s, c, "cloudformation", n.stack)?.details?.Status ===

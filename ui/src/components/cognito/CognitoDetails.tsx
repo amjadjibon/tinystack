@@ -271,16 +271,14 @@ function UserDetail({
 					</SpaceBetween>
 				)}
 				<SpaceBetween direction="horizontal" size="xs">
-					<Hotspot hotspotId={HOTSPOT.cognitoConfirm}>
-						<Button
-							disabled={!enabled || busy || !user.data}
-							onClick={() =>
-								run(() => cognitoCall(scope, "AdminConfirmSignUp", input))
-							}
-						>
-							Confirm
-						</Button>
-					</Hotspot>
+					<Button
+						disabled={!enabled || busy || !user.data}
+						onClick={() =>
+							run(() => cognitoCall(scope, "AdminConfirmSignUp", input))
+						}
+					>
+						Confirm
+					</Button>
 					<Button
 						disabled={!enabled || busy || !user.data}
 						onClick={() =>

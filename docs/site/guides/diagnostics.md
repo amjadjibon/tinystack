@@ -361,8 +361,8 @@ the Get started widget on console home.
 
 Request records may include `resource_identifier`, an optional string identifying the target of Lambda `Invoke`
 (`FunctionName` or its REST path label), Secrets Manager
-`GetSecretValue` (`SecretId`), SSM `GetParameter` (`Name`, including a version selector), or Cognito
-`ConfirmSignUp` (`Username`).
+`GetSecretValue` (`SecretId`), SSM `GetParameter` (`Name`, including a version selector), Step Functions
+`DescribeExecution` (`ExecutionArn`), or Cognito `ConfirmSignUp` (`Username`).
 The request-log layer copies only these allowlisted identifier members, including console action envelopes.
 It never copies request values, passwords, confirmation codes, secret strings, parameter values, function payloads, workflow input/output or
 response data into this field. Existing body redaction is unchanged. Missing, malformed or truncated JSON is

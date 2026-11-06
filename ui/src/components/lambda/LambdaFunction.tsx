@@ -52,6 +52,7 @@ export function LambdaFunction({
 	onRefresh,
 	onChanged,
 	onDeleted,
+	initialTab,
 }: {
 	scope: LambdaScope;
 	resource?: Resource;
@@ -63,6 +64,7 @@ export function LambdaFunction({
 	onRefresh: () => void;
 	onChanged: (message: string) => void;
 	onDeleted: () => void;
+	initialTab: string;
 }) {
 	const follow = useFollow();
 	const details = usePoll<FunctionDetails>(async () =>
@@ -77,7 +79,7 @@ export function LambdaFunction({
 	const role = resources.find(
 		(r) => r.service === "iam" && r.type === "role" && r.arn === config.Role,
 	);
-	const [tab, setTab] = useState("code");
+	const [tab, setTab] = useState(initialTab || "code");
 	const [dialog, setDialog] = useState<
 		"code" | "configuration" | "tags" | "delete" | null
 	>(null);

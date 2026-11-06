@@ -29,10 +29,8 @@ export const HOTSPOT = {
 	cognitoPool: "cognito.create-pool",
 	cognitoClient: "cognito.create-client",
 	cognitoUsers: "cognito.users",
-	cognitoConfirm: "cognito.confirm",
 	mailboxRefresh: "mailbox.refresh",
 	cfnCreate: "cloudformation.create",
-	cfnEvents: "cloudformation.events",
 	cfnOutputs: "cloudformation.outputs",
 	cfnUpdate: "cloudformation.update",
 } as const;

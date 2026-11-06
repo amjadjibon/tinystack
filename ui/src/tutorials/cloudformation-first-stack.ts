@@ -31,19 +31,9 @@ export const cloudformationFirstStack: Tutorial = {
 					check: "cfnStack",
 				},
 				{
-					title: "Follow creation events",
+					title: "Check events and the queue output",
 					content:
-						"Open {stack} and its Events tab. Refresh events until the stack reaches CREATE_COMPLETE. CloudFormation creates the declared queue before completing the stack.",
-					command:
-						"aws-local cloudformation describe-stack-events --stack-name {stack}",
-					hotspotId: HOTSPOT.cfnEvents,
-					route: "/services/cloudformation?stack={stack}",
-					check: "cfnCreated",
-				},
-				{
-					title: "View the queue output",
-					content:
-						"Select Outputs and inspect QueueUrl. Outputs expose useful resource values; Ref on an SQS queue returns its URL. The check uses the DescribeStacks response that the detail page also loads.",
+						"Open {stack}. Its Events list shows the queue and then the stack reaching CREATE_COMPLETE; CloudFormation creates declared resources before it completes the stack. Then inspect the QueueUrl output: outputs expose useful resource values, and Ref on an SQS queue returns its URL. The check uses the DescribeStacks response that the detail page also loads.",
 					command:
 						"aws-local cloudformation describe-stacks --stack-name {stack}",
 					hotspotId: HOTSPOT.cfnOutputs,

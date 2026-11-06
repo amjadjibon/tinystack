@@ -446,6 +446,12 @@ function runtimeFixture(kind: Check): Snapshot {
 			s.resources[0]?.arn ?? "",
 		],
 		parameterValue: ["ssm", "GetParameter", `${n.parameter}:1`],
+		executionSucceeded: [
+			"sfn",
+			"DescribeExecution",
+			arn("states", `execution:${n.machine}:${n.execution}`, c),
+		],
+		logStream: ["logs", "DescribeLogStreams", ""],
 	};
 	const request = requests[kind];
 	if (request)
@@ -457,6 +463,9 @@ function runtimeFixture(kind: Check): Snapshot {
 			request_body: "(redacted: this operation carries sensitive values)",
 			response_body: "(redacted: this operation carries sensitive values)",
 		});
+	// DescribeLogStreams is not sensitive, so its wire body is logged as sent.
+	if (kind === "logStream")
+		s.requests[0].request_body = JSON.stringify({ logGroupName: name });
 	return s;
 }
 for (const kind of [
@@ -507,6 +516,24 @@ test("runtime state checks reject empty streams, wrong execution and non-success
 		Executions: [{ Name: "other", Status: "SUCCEEDED" }],
 	};
 	assert.equal(check("executionSucceeded", e, runtimeContext), false);
+});
+test("log and execution steps wait for someone to read them, from the CLI or the console", () => {
+	for (const kind of ["logStream", "executionSucceeded"] as const) {
+		const s = runtimeFixture(kind);
+		s.requests.length = 0;
+		assert.equal(check(kind, s, runtimeContext), false);
+	}
+	const s = runtimeFixture("logStream");
+	s.requests[0].request_body = JSON.stringify({
+		service: "logs",
+		operation: "DescribeLogStreams",
+		input: { LogGroupName: `/aws/lambda/${runtimeContext.names.function}` },
+	});
+	assert.equal(check("logStream", s, runtimeContext), true);
+	s.requests[0].request_body = JSON.stringify({
+		input: { LogGroupName: "/aws/lambda/other" },
+	});
+	assert.equal(check("logStream", s, runtimeContext), false);
 });
 test("redacted requests without safe identifiers cannot complete a resource-specific step", () => {
 	for (const kind of ["invoke", "secretValue", "parameterValue"] as const) {
@@ -707,9 +734,7 @@ for (const kind of [
 	"cognitoPool",
 	"cognitoClient",
 	"cognitoSignup",
-	"cognitoMail",
 	"cfnStack",
-	"cfnCreated",
 	"cfnOutputs",
 	"cfnUpdated",
 ] as const) {
@@ -770,8 +795,10 @@ test("Cognito confirmation needs a successful ConfirmSignUp for the generated us
 	pool.details = { Clients: 0, Users: 0 };
 	assert.equal(check("cognitoClient", s, t3ctx), false);
 	assert.equal(check("cognitoSignup", s, t3ctx), false);
+	pool.details = { Clients: 1, Users: 1 };
+	assert.equal(check("cognitoSignup", s, t3ctx), true);
 	s.messages[0].source = arn("cognito-idp", "userpool/another", t3ctx);
-	assert.equal(check("cognitoMail", s, t3ctx), false);
+	assert.equal(check("cognitoSignup", s, t3ctx), false);
 });
 test("IAM simulation requires both decisions on the exact object and a narrow policy", () => {
 	const s = t3fixture();

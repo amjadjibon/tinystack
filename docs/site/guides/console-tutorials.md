@@ -142,11 +142,12 @@ The local executor runs Python directly; the console's Docker notice applies to 
        return {"message": "Hello TinyStack"}
    ```
 
-2. Open the function's **Test** tab, keep **Synchronous**, leave the qualifier empty, enter `{}` and choose **Test**.
-   Inspect **Execution succeeded** and the response. The live check confirms a successful Invoke API request;
+2. **Go there** opens the function's **Test** tab. Keep **Synchronous**, leave the qualifier empty, enter `{}`
+   and choose **Test**. Inspect **Execution succeeded** and the response. The live check confirms a successful Invoke API request;
    API success alone does not exclude a handler error, so inspect the result too.
 3. Open **CloudWatch Logs**, select `/aws/lambda/GENERATED_FUNCTION`, refresh and open the stream. Inspect
-   `START`, `Hello TinyStack` and `END`. The check requires a stream in this function's log group.
+   `START`, `Hello TinyStack` and `END`. Invoking writes the stream at once, so the check also waits for its streams
+   to be listed: opening the log group in the console, or the `describe-log-streams` command, completes the step.
 
 For a CloudShell run, restart and copy each expanded `aws-local` command from the drawer when its step is active.
 The create command embeds the small handler ZIP as base64 and needs no shell commands or host file.
@@ -175,7 +176,9 @@ Start **Run a Step Functions workflow**. This workflow uses only Pass and Choice
 2. Open the machine, choose **Start execution**, replace the execution name with the drawer's generated name,
    keep input `{}` and confirm. The live check confirms that the named execution exists; completion is checked separately.
 3. Open that execution and **Refresh execution**. Confirm `SUCCEEDED` and output `{"message":"Hello TinyStack"}`.
-   **Execution history** shows each transition. The live state check matches the generated execution name and status.
+   **Execution history** shows each transition. Pass and Choice states finish at once, so the check waits for the
+   execution to be described as well as `SUCCEEDED`: opening it in the console, or `describe-execution`, completes the
+   step. The request log keeps only the execution ARN of that call, never its input or output.
 
 For CloudShell, restart and run the drawer's expanded commands one at a time. From an external terminal, save
 that definition as `/tmp/tutorial-workflow.json`, set `MACHINE`, `EXECUTION`, `ACCOUNT` and `AWS_DEFAULT_REGION`:
@@ -242,15 +245,15 @@ Additional permissions or dependencies make role deletion fail explicitly.
 
 1. Start **Sign up a user with Cognito**. Choose **Create user pool**, use the generated name, and set
    **Auto-verified attributes** to `email`. Leave deletion protection off. Copy the pool ID.
-2. Open the pool's **App clients** tab and choose **Create app client**, using the generated name and leaving
-   the client secret disabled. Copy the client ID.
-3. Open the **Users** tab. Self-service SignUp has no console form: use the drawer's CloudShell command.
+2. **Go there** opens the generated pool's **App clients** tab (the console finds the pool by name). Choose
+   **Create app client**, using the generated name and leaving the client secret disabled. Copy the client ID.
+3. On the **Users** tab: self-service SignUp has no console form, so use the drawer's CloudShell command.
    **Create user** is an administrative operation and does not perform this exercise's sign-up flow.
-4. Open `/mailbox`, choose **Refresh**, and inspect the verification email sent to the generated `@example.test`
-   address from this pool. Copy its six-digit code.
-5. Run the drawer's `confirm-sign-up` command in CloudShell. Open the pool's user details and verify
-   `CONFIRMED`; the step completes when `ConfirmSignUp` succeeds for the generated username. The highlighted **Confirm** button is the nearest console action,
-   but uses `AdminConfirmSignUp` without checking an email code; use the CLI for code verification.
+4. Open `/mailbox`, choose **Refresh**, and open the verification email sent to the generated `@example.test`
+   address from this pool. Copy its six-digit code and run the drawer's `confirm-sign-up` command in CloudShell.
+   Open the pool's user details and verify `CONFIRMED`; the step completes when `ConfirmSignUp` succeeds for the
+   generated username. The user page's **Confirm** button uses `AdminConfirmSignUp` without checking an email code;
+   use the CLI for code verification.
 
 CloudShell commands require manually replacing `POOL_ID`, `CLIENT_ID`, and `CODE` with the returned values.
 For an external terminal, replace `NAME` with the generated name and run one command at a time:
@@ -268,7 +271,8 @@ aws-local cognito-idp admin-get-user --user-pool-id "$POOL_ID" --username "$NAME
 Diagnostic limits are explicit: client creation and user operations have redacted request/response bodies.
 The client step checks this pool's client count, so another client in the generated pool also counts. The sign-up
 step uses its user count and an exact pool/account/Region/destination verification email as evidence, rather than
-claiming to identify a redacted SignUp call. The mailbox step checks that same captured mail. The confirmation
+claiming to identify a redacted SignUp call. Reading the mail happens within the confirmation step: sign-up already
+waits for that mail, so a separate mailbox step would complete as soon as it opened. The confirmation
 step matches a successful `ConfirmSignUp` whose recorded `resource_identifier` is the generated username. Cleanup finds only the generated pool by exact
 name and deletes it, including its clients and users. Captured diagnostic mail remains in the mailbox.
 
@@ -276,10 +280,11 @@ name and deletes it, including its clients and users. Captured diagnostic mail r
 
 1. Start **Deploy a CloudFormation stack** and choose **Create stack**. Use the generated stack name and paste
    the drawer's small JSON template into the editor. Validate and create directly, with termination protection off.
-2. Open the stack's **Events** tab and refresh until `CREATE_COMPLETE`. The template creates one SQS queue.
-3. Select **Outputs** to inspect `QueueUrl`, populated by `Ref` on the queue. The live check reads the matching
-   `DescribeStacks` response loaded by the detail page; it does not require a separate output API.
-4. Choose **Update stack**, keep the previous template, validate, add tag `tutorial=updated`, and submit directly
+2. Open the stack: its events show the SQS queue and then `CREATE_COMPLETE`, and **Outputs** shows `QueueUrl`,
+   populated by `Ref` on the queue. TinyStack creates the stack at once, so events and outputs are one step. The live
+   check reads the matching `DescribeStacks` response loaded by the detail page; it does not require a separate
+   output API.
+3. Choose **Update stack**, keep the previous template, validate, add tag `tutorial=updated`, and submit directly
    with **Create change set** off. Follow Events to `UPDATE_COMPLETE`.
 
 Use the expanded drawer commands individually in CloudShell. In an external terminal replace `NAME` with the

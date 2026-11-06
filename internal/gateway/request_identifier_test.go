@@ -20,6 +20,7 @@ func TestRequestIdentifierKeepsBodiesRedacted(t *testing.T) {
 		{"cognitoidp", "ConfirmSignUp", "Username", "tutorial-user"},
 		{"lambda", "Invoke", "FunctionName", "tutorial-function"},
 		{"secretsmanager", "GetSecretValue", "SecretId", "tutorial-secret"},
+		{"sfn", "DescribeExecution", "ExecutionArn", "arn:aws:states:us-east-1:000000000000:execution:m:e"},
 		{"ssm", "GetParameter", "Name", "tutorial-parameter:1"},
 	} {
 		for _, protocol := range []string{"console", catalog.AWSJSON11} {

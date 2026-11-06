@@ -31,7 +31,7 @@ export const lambdaFirstFunction: Tutorial = {
 					command:
 						"aws-local lambda invoke --function-name {function} --invocation-type RequestResponse --log-type Tail /tmp/tutorial-lambda-response.json",
 					hotspotId: HOTSPOT.lambdaTest,
-					route: "/services/lambda?function={function}",
+					route: "/services/lambda?function={function}&tab=test",
 					check: "invoke",
 				},
 				{

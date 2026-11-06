@@ -34,6 +34,8 @@ export const Route = createFileRoute("/services/lambda")({
 		region: String(search.region ?? ""),
 		function: String(search.function ?? ""),
 		create: search.create === true || search.create === "true",
+		// tab opens the function on a given tab, such as test for a tutorial step.
+		tab: String(search.tab ?? ""),
 	}),
 	component: LambdaPage,
 });
@@ -74,7 +76,7 @@ function LambdaPage() {
 		if (!mounted.current || current.current !== context) return;
 		return navigate({
 			to: "/services/lambda",
-			search: { account, region, function: functionName, create },
+			search: { account, region, function: functionName, create, tab: "" },
 		});
 	};
 	const listHref = lambdaHref({ account, region });
@@ -151,7 +153,8 @@ function LambdaPage() {
 						)
 					) : search.function ? (
 						<LambdaFunction
-							key={`${account}/${region}/${search.function}/${enabled}`}
+							key={`${account}/${region}/${search.function}/${search.tab}/${enabled}`}
+							initialTab={search.tab}
 							scope={scope}
 							resource={functions.find((f) => f.name === search.function)}
 							resources={inventory.data ?? []}

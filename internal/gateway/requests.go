@@ -109,6 +109,7 @@ func requestResourceIdentifier(r *http.Request, c *call, body string) string {
 		"cognitoidp/ConfirmSignUp":      "Username",
 		"lambda/Invoke":                 "FunctionName",
 		"secretsmanager/GetSecretValue": "SecretId",
+		"sfn/DescribeExecution":         "ExecutionArn",
 		"ssm/GetParameter":              "Name",
 	}[c.meta.Service+"/"+c.meta.Operation]
 	if member == "" || c.sensitive {

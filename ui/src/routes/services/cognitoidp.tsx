@@ -7,7 +7,7 @@ import {
 	Tabs,
 } from "@cloudscape-design/components";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ConsoleLayout } from "#/components/Console";
 import {
 	CognitoClients,
@@ -35,6 +35,9 @@ export const Route = createFileRoute("/services/cognitoidp")({
 		region: String(s.region ?? ""),
 		id: String(s.id ?? ""),
 		username: String(s.username ?? ""),
+		// pool opens a pool by name once the list has loaded; tab picks its first tab.
+		pool: String(s.pool ?? ""),
+		tab: String(s.tab ?? ""),
 	}),
 	component: CognitoPage,
 });
@@ -63,10 +66,12 @@ function CognitoPage() {
 			]}
 			content={
 				<Workspace
-					key={`${account}/${region}/${search.id}/${canWrite}`}
+					key={`${account}/${region}/${search.id}/${search.tab}/${canWrite}`}
 					scope={scope}
 					enabled={canWrite}
 					username={search.username}
+					poolName={search.pool}
+					initialTab={search.tab}
 				/>
 			}
 		/>
@@ -76,12 +81,17 @@ function Workspace({
 	scope,
 	enabled,
 	username,
+	poolName,
+	initialTab,
 }: {
 	scope: CognitoScope;
 	enabled: boolean;
 	username: string;
+	poolName: string;
+	initialTab: string;
 }) {
-	const [tab, setTab] = useState("users");
+	const [tab, setTab] = useState(initialTab || "users");
+	const navigate = Route.useNavigate();
 	const pools = usePoll(async () => {
 		if (!enabled) return [];
 		const list = await cognitoPages<Pool>(scope, "ListUserPools", "UserPools");
@@ -94,6 +104,17 @@ function Workspace({
 		);
 	});
 	const pool = pools.data?.find((p) => p.Id === scope.id);
+	const named =
+		scope.id || !poolName
+			? undefined
+			: pools.data?.find((p) => p.Name === poolName)?.Id;
+	useEffect(() => {
+		if (named)
+			navigate({
+				search: (prev) => ({ ...prev, id: named, pool: "" }),
+				replace: true,
+			});
+	}, [named, navigate]);
 	return (
 		<SpaceBetween size="l">
 			{!enabled && (

@@ -47,40 +47,31 @@ export const cognitoSignUp: Tutorial = {
 				{
 					title: "Create an app client",
 					content:
-						"Open {pool}, select App clients and Create app client. Name it {client} and leave Generate client secret off. Copy its ID as CLIENT_ID. Inventory reports the client count on this generated pool, not client names.",
+						"In {pool}, open App clients and choose Create app client. Name it {client} and leave Generate client secret off. Copy its ID as CLIENT_ID. Inventory reports the client count on this generated pool, not client names.",
 					command:
 						"aws-local cognito-idp create-user-pool-client --user-pool-id POOL_ID --client-name {client} --no-generate-secret",
 					hotspotId: HOTSPOT.cognitoClient,
-					route: "/services/cognitoidp",
+					route: "/services/cognitoidp?pool={pool}&tab=clients",
 					check: "cognitoClient",
 				},
 				{
 					title: "Sign up a user",
 					content:
-						"Open the pool Users tab. Its search control helps find users but Create user uses AdminCreateUser. For self-service sign-up, open CloudShell and run this command with CLIENT_ID replaced. Use username {username} and email {email}. The check waits for a user and a verification email in this pool.",
+						"The Users tab lists the pool's users, but Create user there uses AdminCreateUser. For self-service sign-up, open CloudShell and run this command with CLIENT_ID replaced. Use username {username} and email {email}. The check waits for a user and a verification email in this pool.",
 					command:
 						"aws-local cognito-idp sign-up --client-id CLIENT_ID --username {username} --password 'Tutorial123!' --user-attributes Name=email,Value={email}",
 					hotspotId: HOTSPOT.cognitoUsers,
-					route: "/services/cognitoidp",
+					route: "/services/cognitoidp?pool={pool}&tab=users",
 					check: "cognitoSignup",
 				},
 				{
-					title: "Read the verification email",
+					title: "Confirm with the emailed code",
 					content:
-						"Open Mailbox, choose Refresh, and open the verification email to {email} from your pool. Copy its six-digit code as CODE. The CLI below lists the user; the captured code is available in the mailbox, not in that response.",
-					command: "aws-local cognito-idp list-users --user-pool-id POOL_ID",
-					hotspotId: HOTSPOT.mailboxRefresh,
-					route: "/mailbox",
-					check: "cognitoMail",
-				},
-				{
-					title: "Confirm with the code",
-					content:
-						"Run the command in CloudShell with CLIENT_ID and CODE replaced. Reopen {pool}, Users, and your user to verify CONFIRMED. The highlighted Confirm button performs AdminConfirmSignUp without a code; use CloudShell for this exercise. The step completes when ConfirmSignUp succeeds for {username}; the request log records only the username, never the code or password.",
+						"Choose Refresh and open the verification email to {email} from your pool. Copy its six-digit code as CODE, then run the command in CloudShell with CLIENT_ID and CODE replaced. Reopen {pool}, Users, and your user to see CONFIRMED. The user page's Confirm button performs AdminConfirmSignUp without a code; this exercise uses the code. The step completes when ConfirmSignUp succeeds for {username}; the request log records only the username, never the code or password.",
 					command:
 						"aws-local cognito-idp confirm-sign-up --client-id CLIENT_ID --username {username} --confirmation-code CODE",
-					hotspotId: HOTSPOT.cognitoConfirm,
-					route: "/services/cognitoidp",
+					hotspotId: HOTSPOT.mailboxRefresh,
+					route: "/mailbox",
 					check: "cognitoConfirmed",
 				},
 			],
