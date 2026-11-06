@@ -4,7 +4,7 @@ export type Poll<T> = {
 	data: T | undefined;
 	error: string | undefined;
 	loading: boolean;
-	reload: () => void;
+	reload: () => Promise<void>;
 };
 
 // usePoll loads fetcher now and then every intervalMs (never when it is 0)

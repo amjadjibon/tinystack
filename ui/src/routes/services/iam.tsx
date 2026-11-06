@@ -88,6 +88,18 @@ function IAMPage() {
 	const selected = resources.find(
 		(r) => r.type === search.section && r.name === search.name,
 	);
+	// A resource created moments ago (from the CLI, say) may predate the last inventory poll: reload once before
+	// reporting it missing.
+	const [checked, setChecked] = useState("");
+	// biome-ignore lint/correctness/useExhaustiveDependencies: one reload per opened name, not per poll result.
+	useEffect(() => {
+		if (!search.name || selected) return;
+		let current = true;
+		inventory.reload().finally(() => current && setChecked(search.name));
+		return () => {
+			current = false;
+		};
+	}, [search.name]);
 	const title =
 		search.section === "overview"
 			? "IAM dashboard"
@@ -215,7 +227,7 @@ function IAMPage() {
 							<Container>
 								<EmptyState
 									title={
-										inventory.loading
+										inventory.loading || checked !== search.name
 											? "Loading IAM resource"
 											: "Resource not found"
 									}
