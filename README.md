@@ -10,27 +10,29 @@ CI. Point the AWS CLI, an SDK, Terraform, CDK, or SAM at `http://localhost:4566`
 - A web console on port 4567, with CloudShell, request, delivery, and metrics logs, single sign-on, and an MCP server
 - In-memory state by default, or SQLite persistence across restarts; starts in about 0.1 s
 
-**Documentation: [`docs/site`](docs/site/index.md)**. The first release publishes it at
-[amjadjibon.github.io/tinystack](https://amjadjibon.github.io/tinystack/).
+**Documentation: [amjadjibon.github.io/tinystack](https://amjadjibon.github.io/tinystack/)** (source in
+[`docs/site`](docs/site/index.md)).
 
 ## Quick start
 
-Build with Go 1.27 or newer and start the server:
+Run the image (`latest`, or a version such as `0.0.1`; the `headless` and `0.0.1-headless` tags leave out the
+console):
 
 ```sh
-task build:headless           # bin/tinystack-headless; `task build` adds the console (needs Node.js and pnpm)
-./bin/tinystack-headless start
+docker run --rm -p 4566:4566 -p 4567:4567 ghcr.io/amjadjibon/tinystack
 ```
 
-Or build and run the image (`--target headless` leaves out the console):
+Or download a binary for Linux, macOS, or Windows (amd64 or arm64) from
+[Releases](https://github.com/amjadjibon/tinystack/releases); it includes the console:
 
 ```sh
-docker build -t tinystack .
-docker run --rm -p 4566:4566 -p 4567:4567 tinystack
+curl -fsSL https://github.com/amjadjibon/tinystack/releases/download/v0.0.1/tinystack_0.0.1_linux_amd64.tar.gz | tar -xz
+./tinystack_0.0.1_linux_amd64/tinystack start
 ```
 
-Tagged releases will publish binaries on [Releases](https://github.com/amjadjibon/tinystack/releases) and the
-image as `ghcr.io/amjadjibon/tinystack`.
+`checksums.txt` on each release lists the SHA-256 of every archive. To build from source instead, use Go 1.27 or
+newer and [Task](https://taskfile.dev): `task build:headless` writes `bin/tinystack-headless`, and `task build` adds
+the console (needs Node.js and pnpm).
 
 Then use any AWS client with local credentials:
 
