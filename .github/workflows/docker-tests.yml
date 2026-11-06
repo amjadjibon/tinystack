@@ -1,0 +1,102 @@
+name: Docker runtime tests
+
+# The real-container suite (task test:docker). It pulls many images and takes long, so it runs weekly and on demand
+# rather than on every push or as a release gate.
+#
+# Each group gets its own runner: tests in one process run one after another, and a service's runtime removes any
+# container with its label that its own store does not know, so groups sharing a Docker daemon must not run at once.
+# Each runner pulls its images in the background while Go compiles; a test that needs an image still downloading
+# joins that pull. The image lists only speed things up: a missing or stale entry costs a pull, never a failure.
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TINYSTACK_DOCKER_TESTS: "1"
+
+jobs:
+  tests:
+    name: ${{ matrix.group }}
+    runs-on: ${{ matrix.runner || 'ubuntu-latest' }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: Runtime packages
+            packages: >-
+              ./internal/services/lambda/docker ./internal/services/ecs/docker ./internal/services/eks/k3s
+              ./internal/services/elasticache/docker
+            images: busybox rancher/k3s:v1.34.12-k3s1 redis:7.2-alpine
+          - group: RDS, DocumentDB and Neptune
+            run: TestRDSDocker
+            images: postgres:16 mongo:5.0 tinkerpop/gremlin-server:3.6.2 tinkerpop/gremlin-server:3.7.1
+          - group: RDS Data API
+            run: TestRDSDataDocker
+            images: postgres:16 mysql:8.0
+          - group: DSQL
+            run: TestDSQLDocker
+            images: postgres:16-alpine
+          - group: ElastiCache
+            run: TestElastiCacheDocker
+            images: redis:7.0-alpine
+          - group: MemoryDB
+            run: TestMemoryDBDocker
+            images: redis:6.2-alpine redis:7.0-alpine redis:7.2-alpine valkey/valkey:7.2-alpine
+          - group: OpenSearch
+            run: TestOpenSearchDocker
+            images: opensearchproject/opensearch:2.11.0 docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
+          - group: Amazon MQ
+            run: TestMQDocker
+            images: rabbitmq:3.13.7-management apache/activemq-classic:5.19.0
+          - group: MSK
+            run: TestMSKDocker
+            images: redpandadata/redpanda:v24.3.18
+          - group: Batch
+            run: TestBatchDocker
+            images: busybox:1.37.0
+          - group: CodeBuild
+            run: TestCodeBuildDocker
+            images: alpine:3.21
+          # AgentCore runs linux/arm64 containers, which an x86 runner could only emulate.
+          - group: Bedrock AgentCore
+            run: TestBedrockAgentCoreDocker
+            runner: ubuntu-24.04-arm
+          # Every other Docker test (ECS, Bedrock with Ollama, and any new one) runs here.
+          - group: Other
+            run: Docker
+            skip: Test(RDS|RDSData|DSQL|ElastiCache|MemoryDB|OpenSearch|MQ|MSK|Batch|CodeBuild|BedrockAgentCore)Docker
+            images: busybox ollama/ollama:0.40.13
+    steps:
+      - name: Prefetch images in the background
+        if: ${{ matrix.images }}
+        env:
+          IMAGES: ${{ matrix.images }}
+        run: |
+          # shellcheck disable=SC2086 # IMAGES is a space-separated list.
+          printf '%s\n' $IMAGES | xargs -P 8 -n 1 docker pull -q > "$RUNNER_TEMP/pull.log" 2>&1 &
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Test
+        env:
+          PACKAGES: ${{ matrix.packages || './tests/integration' }}
+          RUN: ${{ matrix.run || '.' }}
+          SKIP: ${{ matrix.skip }}
+        run: |
+          # shellcheck disable=SC2086 # PACKAGES is a space-separated list.
+          go test -race -count=1 -v -timeout 40m $PACKAGES -run "$RUN" ${SKIP:+-skip "$SKIP"}
+      - name: Show image pulls
+        if: ${{ always() && matrix.images }}
+        run: cat "$RUNNER_TEMP/pull.log"

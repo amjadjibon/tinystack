@@ -159,7 +159,7 @@ tasks:
     desc: "Test the Docker runtimes with real containers (Lambda, ECS, EKS, ElastiCache, MemoryDB, RDS, DSQL, OpenSearch, MQ, MSK, Batch, CodeBuild, AgentCore)"
     cmds:
       - TINYSTACK_DOCKER_TESTS=1 go test -race -count=1 ./internal/services/lambda/docker ./internal/services/ecs/docker ./internal/services/eks/k3s ./internal/services/elasticache/docker
-      - TINYSTACK_DOCKER_TESTS=1 go test -race -count=1 -timeout 30m ./tests/integration -run 'Test(DSQLDocker|RDS(Docker|DataDocker)|BatchDocker|MemoryDBDocker|ElastiCacheDocker|OpenSearchDocker|MQDocker|MSKDocker|CodeBuildDocker|BedrockAgentCoreDocker|BedrockOllamaDocker)'
+      - TINYSTACK_DOCKER_TESTS=1 go test -race -count=1 -timeout 30m ./tests/integration -run Docker
 
   # ---------------------------------------------------------------------------
   # Testcontainers modules (each is its own project; set TINYSTACK_IMAGE to skip the local image build)

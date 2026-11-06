@@ -27,8 +27,9 @@ Single test: `go test -race ./tests/integration -run TestName`.
 Opt-in suites: `task test:docker` (real containers: Lambda, ECS, EKS, ElastiCache, MemoryDB, RDS, DSQL, OpenSearch,
 MQ, MSK, Batch, CodeBuild, AgentCore; 30m timeout), `task test:testcontainers` (Go module, local image build or
 `TINYSTACK_IMAGE`; also `:python`, `:java`, `:node`, `:dotnet`), `task test:terraform`, `task test:sam`,
-`task test:cdk`, `task smoke`. Lint and unit CI run on pushes to `main`; `v*` tags run `release.yml`, which calls
-every check workflow (adding integration and docs), then publishes
+`task test:cdk`, `task smoke`. Lint and unit CI run on pushes to `main`; `docker-tests.yml` runs `test:docker`
+weekly and on demand, split across runners; `v*` tags run `release.yml`, which calls every check workflow (adding
+integration and docs), then publishes
 binaries (GitHub release), images (`ghcr.io/amjadjibon/tinystack`, plus `-headless` tags), docs (GitHub Pages) and
 the Homebrew formula (`scripts/homebrew-formula.sh`, pushed to `amjadjibon/homebrew-tap` with `HOMEBREW_TAP_TOKEN`).
 Release notes are grouped from conventional commit subjects since the previous tag (`scripts/release-notes.sh`), so
