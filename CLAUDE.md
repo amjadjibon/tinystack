@@ -30,6 +30,8 @@ MQ, MSK, Batch, CodeBuild, AgentCore; 30m timeout), `task test:testcontainers` (
 `task test:cdk`, `task smoke`. Lint and unit CI run on pushes to `main`; `v*` tags run `release.yml`, which calls
 every check workflow (adding integration and docs), then publishes
 binaries (GitHub release), images (`ghcr.io/amjadjibon/tinystack`, plus `-headless` tags) and docs (GitHub Pages).
+Release notes are grouped from conventional commit subjects since the previous tag (`scripts/release-notes.sh`), so
+write subjects as `type(scope): summary`.
 Before 1.0 there is no backward compatibility: no legacy storage or config formats, deprecated aliases or migrations
 for older releases.
 Run: `./bin/tinystack start [--port 4566] [--console-port 4567] [--config examples/tinystack.yaml]`.
