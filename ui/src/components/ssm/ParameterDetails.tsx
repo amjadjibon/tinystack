@@ -29,10 +29,13 @@ function ParameterValue({
 	scope,
 	version,
 	enabled,
+	hotspot = false,
 }: {
 	scope: SSMScope;
 	version: number;
 	enabled: boolean;
+	// hotspot marks the one Reveal button a tutorial step points at, not each history row.
+	hotspot?: boolean;
 }) {
 	const [value, setValue] = useState<string>(),
 		[error, setError] = useState(""),
@@ -44,39 +47,44 @@ function ParameterValue({
 		},
 		[],
 	);
+	const reveal = (
+		<Button
+			disabled={!enabled}
+			loading={busy}
+			onClick={async () => {
+				const request = ++generation.current;
+				if (value !== undefined) {
+					setValue(undefined);
+					return;
+				}
+				setBusy(true);
+				setError("");
+				try {
+					const out = await ssmCall<{ Parameter: { Value: string } }>(
+						scope,
+						"GetParameter",
+						{ Name: `${scope.parameter}:${version}`, WithDecryption: true },
+					);
+					if (generation.current === request) setValue(out.Parameter.Value);
+				} catch (err) {
+					if (generation.current === request) setError(String(err));
+				} finally {
+					if (generation.current === request) setBusy(false);
+				}
+			}}
+		>
+			{value === undefined ? "Reveal value" : "Hide value"}
+		</Button>
+	);
 	return (
 		<SpaceBetween size="xs">
 			{!!error && <Alert type="error">{error}</Alert>}
 			{value === undefined ? <Box>••••••••</Box> : <CodeBlock text={value} />}
-			<Hotspot hotspotId={HOTSPOT.parameterRead}>
-				<Button
-					disabled={!enabled}
-					loading={busy}
-					onClick={async () => {
-						const request = ++generation.current;
-						if (value !== undefined) {
-							setValue(undefined);
-							return;
-						}
-						setBusy(true);
-						setError("");
-						try {
-							const out = await ssmCall<{ Parameter: { Value: string } }>(
-								scope,
-								"GetParameter",
-								{ Name: `${scope.parameter}:${version}`, WithDecryption: true },
-							);
-							if (generation.current === request) setValue(out.Parameter.Value);
-						} catch (err) {
-							if (generation.current === request) setError(String(err));
-						} finally {
-							if (generation.current === request) setBusy(false);
-						}
-					}}
-				>
-					{value === undefined ? "Reveal value" : "Hide value"}
-				</Button>
-			</Hotspot>
+			{hotspot ? (
+				<Hotspot hotspotId={HOTSPOT.parameterRead}>{reveal}</Hotspot>
+			) : (
+				reveal
+			)}
 		</SpaceBetween>
 	);
 }
@@ -170,6 +178,7 @@ export function ParameterDetails({
 							scope={scope}
 							version={parameter.Version}
 							enabled={enabled}
+							hotspot
 						/>
 					</SpaceBetween>
 				</Container>
