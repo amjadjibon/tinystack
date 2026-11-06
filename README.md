@@ -22,17 +22,19 @@ console):
 docker run --rm -p 4566:4566 -p 4567:4567 ghcr.io/amjadjibon/tinystack
 ```
 
-Or download a binary for Linux, macOS, or Windows (amd64 or arm64) from
-[Releases](https://github.com/amjadjibon/tinystack/releases); it includes the console:
+Or install the latest binary, console included, to `/usr/local/bin/tinystack` on Linux or macOS. Rerun it to
+upgrade; it verifies the archive against the release's `checksums.txt`:
 
 ```sh
-curl -fsSL https://github.com/amjadjibon/tinystack/releases/download/v0.0.1/tinystack_0.0.1_linux_amd64.tar.gz | tar -xz
-./tinystack_0.0.1_linux_amd64/tinystack start
+curl -fsSL https://raw.githubusercontent.com/amjadjibon/tinystack/main/install.sh | sh
+tinystack start
 ```
 
-`checksums.txt` on each release lists the SHA-256 of every archive. To build from source instead, use Go 1.27 or
-newer and [Task](https://taskfile.dev): `task build:headless` writes `bin/tinystack-headless`, and `task build` adds
-the console (needs Node.js and pnpm).
+`TINYSTACK_VERSION=0.0.1` pins a release and `TINYSTACK_INSTALL_DIR` picks another directory. Windows builds (amd64
+and arm64) are on [Releases](https://github.com/amjadjibon/tinystack/releases).
+
+To build from source instead, use Go 1.27 or newer and [Task](https://taskfile.dev): `task build:headless` writes
+`bin/tinystack-headless`, and `task build` adds the console (needs Node.js and pnpm).
 
 Then use any AWS client with local credentials:
 
