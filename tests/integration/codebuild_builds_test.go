@@ -553,7 +553,7 @@ func TestCodeBuildDockerValidationAndMissingInputs(t *testing.T) {
 	}
 
 	for _, spec := range []string{
-		"version: 0.1\nphases: {}", "version: 0.2\nreports: {}",
+		"version: 0.1\nphases: {}", "version: 0.2\nreports:\n  unit:\n    files: []",
 		"version: 0.2\nphases:\n  build:\n    on-failure: RETRY",
 	} {
 		_, err := c.StartBuild(ctx, &sdk.StartBuildInput{ProjectName: in.Name, BuildspecOverride: new(spec)})

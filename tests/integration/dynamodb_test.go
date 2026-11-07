@@ -85,7 +85,7 @@ func serverStore(
 		}))
 	}
 
-	s = httptest.NewServer(tinystack.Gateway)
+	s = startServer(t, tinystack.Gateway)
 	return s, func() {
 		tinystack.Stop()
 		s.Close()

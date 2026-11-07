@@ -50,6 +50,25 @@ func mskDockerResources(ctx context.Context, t *testing.T, arn string) (containe
 	return containers, volumes
 }
 
+// awaitMSKDockerGone waits for a cluster's containers and volumes to go: a broker start in flight when the cluster
+// is deleted or reset finishes first, and the runtime visitor then removes what it started.
+func awaitMSKDockerGone(ctx context.Context, t *testing.T, arn, what string) {
+	t.Helper()
+	deadline := time.Now().Add(30 * time.Second)
+	for {
+		cs, vs := mskDockerResources(ctx, t, arn)
+		if len(cs) == 0 && len(vs) == 0 {
+			return
+		}
+
+		if time.Now().After(deadline) {
+			t.Fatalf("%s leaked containers %v volumes %v", what, cs, vs)
+		}
+
+		time.Sleep(200 * time.Millisecond)
+	}
+}
+
 func cleanupMSKDocker(ctx context.Context, t *testing.T, arn string) {
 	t.Helper()
 	ctx = context.WithoutCancel(ctx)
@@ -265,10 +284,7 @@ func TestMSKDockerLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cs, vs = mskDockerResources(ctx, t, arn)
-	if len(cs) != 0 || len(vs) != 0 {
-		t.Fatalf("delete leaked containers %v volumes %v", cs, vs)
-	}
+	awaitMSKDockerGone(ctx, t, arn, "delete")
 
 	// Reset uses the same cleanup path and the runtime remains usable after reset.
 	in = mskInput(t, s, "us-east-1")
@@ -290,10 +306,7 @@ func TestMSKDockerLifecycle(t *testing.T) {
 		t.Fatal(status)
 	}
 
-	cs, vs = mskDockerResources(ctx, t, resetARN)
-	if len(cs) != 0 || len(vs) != 0 {
-		t.Fatal("reset leaked Docker resources")
-	}
+	awaitMSKDockerGone(ctx, t, resetARN, "reset")
 
 	if !dockerExists(ctx, "volume", foreign) {
 		t.Fatal("reset removed another store's volume")
@@ -318,10 +331,7 @@ func TestMSKDockerLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cs, vs = mskDockerResources(ctx, t, tlsARN)
-	if len(cs) != 0 || len(vs) != 0 {
-		t.Fatal("TLS-only delete leaked resources")
-	}
+	awaitMSKDockerGone(ctx, t, tlsARN, "TLS-only delete")
 }
 
 func TestMSKDockerRejectsUnsupportedAuthentication(t *testing.T) {
