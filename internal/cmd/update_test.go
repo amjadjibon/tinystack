@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 )
 
@@ -175,5 +176,78 @@ func TestUpdateReadsWindowsZipArchives(t *testing.T) {
 		"tinystack_0.0.2_windows_amd64/"+binaryName("windows"))
 	if err != nil || string(got) != "windows binary" {
 		t.Fatalf("binary = %q (%v)", got, err)
+	}
+}
+
+func TestIsHomebrewInstall(t *testing.T) {
+	cases := []struct {
+		path string
+		want bool
+	}{
+		{"/opt/homebrew/Cellar/tinystack/0.0.1/bin/tinystack", true},
+		{"/usr/local/Cellar/tinystack/0.0.1/bin/tinystack", true},
+		{"/home/linuxbrew/.linuxbrew/Cellar/tinystack/0.0.1/bin/tinystack", true},
+		{"/custom/prefix/Cellar/tinystack/0.0.1/bin/tinystack", true},
+		{"/usr/local/bin/tinystack", false},
+		{"/custom/Cellar/tinystack-other/0.0.1/bin/tinystack", false},
+		{"/custom/NotCellar/tinystack/0.0.1/bin/tinystack", false},
+	}
+
+	for _, c := range cases {
+		t.Run(c.path, func(t *testing.T) {
+			if got := isHomebrewInstall(c.path); got != c.want {
+				t.Fatalf("isHomebrewInstall(%q) = %v, want %v", c.path, got, c.want)
+			}
+		})
+	}
+}
+
+func TestUpdateRefusesHomebrewBeforeRequestingARelease(t *testing.T) {
+	for _, symlink := range []bool{false, true} {
+		for _, to := range []string{"", "0.0.2"} {
+			t.Run(fmt.Sprintf("symlink=%v/to=%s", symlink, to), func(t *testing.T) {
+				prefix := t.TempDir()
+				exe := filepath.Join(prefix, "Cellar", "tinystack", "0.0.1", "bin", "tinystack")
+				if err := os.MkdirAll(filepath.Dir(exe), 0o750); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := os.WriteFile(exe, []byte("old binary"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+
+				target := exe
+				if symlink {
+					exe = filepath.Join(prefix, "tinystack")
+					if err := os.Symlink(target, exe); err != nil {
+						t.Fatal(err)
+					}
+				}
+
+				var requests atomic.Int32
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/releases/") {
+						requests.Add(1)
+					}
+
+					http.NotFound(w, r)
+				}))
+				t.Cleanup(server.Close)
+				var out bytes.Buffer
+				err := testUpdater(server, "0.0.1", &out).run(t.Context(), exe, to)
+				if err == nil || !strings.Contains(err.Error(), "brew upgrade tinystack") {
+					t.Fatalf("error = %v, want Homebrew upgrade instruction", err)
+				}
+
+				if got := requests.Load(); got != 0 {
+					t.Fatalf("made %d release requests, want none", got)
+				}
+
+				got, err := os.ReadFile(target) // #nosec G304 -- a test temp file.
+				if err != nil || string(got) != "old binary" {
+					t.Fatalf("binary = %q (%v), want it unchanged", got, err)
+				}
+			})
+		}
 	}
 }

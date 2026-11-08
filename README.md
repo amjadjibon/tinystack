@@ -34,7 +34,8 @@ tinystack start
 `tinystack update` upgrades the binary in place and `tinystack version` prints the installed one. Windows builds
 (amd64 and arm64) are on [Releases](https://github.com/amjadjibon/tinystack/releases).
 
-With Homebrew (macOS or Linux), upgrade with `brew upgrade tinystack` instead of `tinystack update`:
+With Homebrew (macOS or Linux), `tinystack update` refuses to modify the install; upgrade with
+`brew upgrade tinystack`:
 
 ```sh
 brew install amjadjibon/tap/tinystack

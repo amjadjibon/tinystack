@@ -42,11 +42,6 @@ func newUpdateCommand() *cobra.Command {
 				return err
 			}
 
-			exe, err = filepath.EvalSymlinks(exe)
-			if err != nil {
-				return err
-			}
-
 			u := &updater{
 				client:  &http.Client{Timeout: 5 * time.Minute},
 				repo:    releaseRepo,
@@ -73,7 +68,21 @@ type updater struct {
 	goarch  string
 }
 
+func isHomebrewInstall(exe string) bool {
+	return strings.Contains(filepath.ToSlash(filepath.Clean(exe)), "/Cellar/tinystack/")
+}
+
 func (u *updater) run(ctx context.Context, exe, to string) error {
+	resolved, resolveErr := filepath.EvalSymlinks(exe)
+	if resolveErr != nil {
+		return resolveErr
+	}
+
+	exe = resolved
+	if isHomebrewInstall(exe) {
+		return errors.New("this install is managed by Homebrew; run brew upgrade tinystack")
+	}
+
 	if to == "" && developmentVersion.MatchString(u.current) {
 		return fmt.Errorf("tinystack %s is a development build; rebuild it from source, or pass --to to install a "+
 			"release over it", u.current)

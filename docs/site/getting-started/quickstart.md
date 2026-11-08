@@ -21,7 +21,7 @@ source take their version from `git describe` (`dev` without tags; `0.0.1-4-g<co
 local edits) and update only with `--to`.
 
 With Homebrew on macOS or Linux, install from the tap and let Homebrew upgrade it (`brew upgrade tinystack`), since
-`tinystack update` would replace a file Homebrew manages:
+`tinystack update` refuses to modify Homebrew installs:
 
 ```sh
 brew install amjadjibon/tap/tinystack
