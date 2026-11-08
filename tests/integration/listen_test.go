@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"runtime"
+	"strconv"
 	"testing"
 )
 
@@ -25,5 +26,8 @@ func startServer(t *testing.T, handler http.Handler) *httptest.Server {
 	}
 
 	s.Start()
+	// Clients still call loopback, which TinyStack hands to containers as host.docker.internal; the listener's own
+	// address ([::]) is not reachable from a container.
+	s.URL = "http://" + net.JoinHostPort("127.0.0.1", strconv.Itoa(s.Listener.Addr().(*net.TCPAddr).Port))
 	return s
 }
