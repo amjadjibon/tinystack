@@ -12,6 +12,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/background"
+	"github.com/amjadjibon/tinystack/internal/services/dockercli"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -28,6 +29,7 @@ const (
 
 // Spec describes the container and volume of one domain.
 type Spec struct {
+	Owner    string
 	ARN      string
 	Name     string
 	Volume   string
@@ -45,7 +47,7 @@ type Started struct {
 // Runtime performs container I/O outside storage transactions.
 type Runtime interface {
 	// Resources lists the containers and volumes earlier runtimes left behind, with their domain ARNs.
-	Resources(ctx context.Context) ([]*Spec, error)
+	Resources(ctx context.Context, owner string) ([]*Spec, error)
 	// Ensure starts the domain's container, creating it and its volume if needed.
 	Ensure(ctx context.Context, spec *Spec) (Started, error)
 	// Probe reports whether the engine answers a cluster health request.
@@ -57,11 +59,11 @@ type Runtime interface {
 }
 
 // resourceSpec names the container and volume of the domain with the ARN; the names are stable across restarts.
-func resourceSpec(arn string) *Spec {
-	hash := sha256.Sum256([]byte(arn))
+func (s *Service) resourceSpec(arn string) *Spec {
+	hash := sha256.Sum256([]byte(s.owner + arn))
 	name := fmt.Sprintf("tinystack-opensearch-%x", hash[:16])
 
-	return &Spec{ARN: arn, Name: name, Volume: name + "-data"}
+	return &Spec{Owner: s.owner, ARN: arn, Name: name, Volume: name + "-data"}
 }
 
 func indexKey(scope request.Scope, name string) string {
@@ -85,7 +87,13 @@ func (r *domainRecord) ready() bool {
 // UseRuntime has every domain run in a container. Domains that already exist, such as those a persistent store
 // holds, start again against their volumes: the endpoints they published belong to the previous runtime.
 func (s *Service) UseRuntime(rt Runtime, logger *slog.Logger) error {
-	err := s.store.Update(context.Background(), func(tx storage.WriteTx) error {
+	owner, err := dockercli.RuntimeOwner(s.store, "aws/opensearch/runtime-owner")
+	if err != nil {
+		return err
+	}
+
+	s.owner = owner
+	err = s.store.Update(context.Background(), func(tx storage.WriteTx) error {
 		for _, key := range tx.Keys("") {
 			account, region, rest, ok := storage.Scoped(key, serviceName)
 			if !ok {
@@ -165,7 +173,7 @@ func (s *Service) Reset(ctx context.Context) {
 	})
 
 	for _, arn := range arns {
-		_ = s.runtime.Remove(ctx, resourceSpec(arn), true)
+		_ = s.runtime.Remove(ctx, s.resourceSpec(arn), true)
 	}
 
 	// Drop the index while holding the lock so the poller cannot recreate the containers.
@@ -228,7 +236,7 @@ func (s *Service) cleanOrphans(ctx context.Context) error {
 		known[resource.ARN] = true
 	}
 
-	specs, err := s.runtime.Resources(ctx)
+	specs, err := s.runtime.Resources(ctx, s.owner)
 	if err != nil {
 		return err
 	}
@@ -263,7 +271,7 @@ func (s *Service) advance(ctx context.Context, key string) error {
 		return err
 	}
 
-	resource := resourceSpec(domainARN(scope.Region, scope.AccountID, name))
+	resource := s.resourceSpec(domainARN(scope.Region, scope.AccountID, name))
 	if rec == nil || common.Value(rec.Status.Deleted) {
 		// DeleteDomain leaves the record until the container and volume are gone.
 		if err := s.runtime.Remove(ctx, resource, true); err != nil {
@@ -290,6 +298,7 @@ func (s *Service) advance(ctx context.Context, key string) error {
 		return s.fail(ctx, scope, name, resource, rec, err.Error())
 	}
 
+	spec.Owner = s.owner
 	spec.ARN, spec.Name, spec.Volume = resource.ARN, resource.Name, resource.Volume
 	ensureCtx, cancel := context.WithTimeout(ctx, ensureTimeout)
 	started, err := s.runtime.Ensure(ensureCtx, spec)

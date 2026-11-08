@@ -70,12 +70,21 @@ func TestEngineSpecContainer(t *testing.T) {
 
 func TestResourceSpecIsStable(t *testing.T) {
 	arn := domainARN("us-east-1", "000000000000", "logs")
-	a, b := resourceSpec(arn), resourceSpec(arn)
+	a, b := (&Service{}).resourceSpec(arn), (&Service{}).resourceSpec(arn)
 	if a.Name != b.Name || a.Volume != a.Name+"-data" || a.ARN != arn {
 		t.Fatalf("unstable names: %+v %+v", a, b)
 	}
 
-	if other := resourceSpec(domainARN("us-east-1", "000000000000", "logs2")); other.Name == a.Name {
+	if other := (&Service{}).resourceSpec(domainARN("us-east-1", "000000000000", "logs2")); other.Name == a.Name {
 		t.Fatal("distinct domains share a container name")
+	}
+}
+
+func TestResourceSpecOwnership(t *testing.T) {
+	arn := domainARN("us-east-1", "000000000000", "logs")
+	a := (&Service{owner: "first"}).resourceSpec(arn)
+	b := (&Service{owner: "second"}).resourceSpec(arn)
+	if a.Owner != "first" || a.Name == b.Name || a.Volume == b.Volume {
+		t.Fatal("stores share domain resources", a, b)
 	}
 }

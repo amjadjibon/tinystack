@@ -89,7 +89,7 @@ service, listeners, shutdown) → `internal/gateway.Server` → generated `catal
 - Container runtimes are optional, configured per service as `records` (default) or `docker`, and shell out to the
   docker CLI (`services/dockercli`) behind a `Runtime` interface in the service package (e.g. `rds/runtime.go`):
   Lambda, ECS, EKS (k3s), ElastiCache, MemoryDB (Valkey), RDS, DSQL, OpenSearch, MQ, MSK, Batch, CodeBuild and
-  AgentCore. Without them, resources are records only.
+  AgentCore. Cleanup removes only the owning store's resources. Without them, resources are records only.
 
 ## Adding an operation or service
 

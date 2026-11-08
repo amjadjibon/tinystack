@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/inithooks"
 	"github.com/amjadjibon/tinystack/internal/storage"
@@ -12,7 +13,7 @@ import (
 
 // Reset clears all state: the services' in-memory state and containers, which
 // need their records to find them, then every record in one transaction, then
-// the request and delivery logs. Background work keeps running and finds
+// the request and delivery logs. Store runtime identities survive reset. Background work keeps running and finds
 // nothing to do. Work in flight can still write a record back, and some state
 // is not cleared; see the documentation of the reset endpoint.
 func (a *App) Reset(ctx context.Context) error {
@@ -22,7 +23,17 @@ func (a *App) Reset(ctx context.Context) error {
 		reset(ctx)
 	}
 
-	if err := storage.Clear(ctx, a.store); err != nil {
+	if err := a.store.Update(ctx, func(tx storage.WriteTx) error {
+		for _, key := range tx.Keys("") {
+			if strings.HasPrefix(key, "aws/") && strings.HasSuffix(key, "/runtime-owner") {
+				continue
+			}
+
+			tx.Delete(key)
+		}
+
+		return nil
+	}); err != nil {
 		return err
 	}
 

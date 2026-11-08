@@ -44,6 +44,7 @@ type (
 		runtime     Runtime
 		logger      *slog.Logger
 		bg          *background.Group
+		owner       string
 		mu          sync.Mutex
 		orphansDone bool
 	}

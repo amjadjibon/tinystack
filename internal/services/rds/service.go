@@ -77,6 +77,7 @@ type Service struct {
 	runtime     Runtime
 	bg          *background.Group
 	dataClosed  func(string)
+	owner       string
 	mu          sync.Mutex
 	orphansDone bool
 }

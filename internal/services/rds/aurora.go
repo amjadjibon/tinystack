@@ -100,7 +100,7 @@ func (s *Service) clusterSpec(scope request.Scope, r *record) *Spec {
 	}
 
 	resourceARN := arn(scope, r.Kind, r.Name)
-	hash := sha256.Sum256([]byte(resourceARN))
+	hash := sha256.Sum256([]byte(s.owner + resourceARN))
 	name := fmt.Sprintf("tinystack-rds-%x", hash[:16])
 	database := common.Value(c.DatabaseName)
 	if database == "" {
@@ -108,6 +108,7 @@ func (s *Service) clusterSpec(scope request.Scope, r *record) *Spec {
 	}
 
 	spec := &Spec{
+		Owner:  s.owner,
 		ARN:    resourceARN,
 		Name:   name,
 		Volume: name + "-data",

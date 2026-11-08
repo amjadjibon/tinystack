@@ -151,8 +151,9 @@ func (r *Runtime) Running(ctx context.Context, id string) (bool, error) {
 	return strings.TrimSpace(out) == "true", nil
 }
 
-func (r *Runtime) ListLabeled(ctx context.Context, label string) (map[string]string, error) {
-	return dockercli.ListLabeled(ctx, label)
+func (r *Runtime) ListOwned(ctx context.Context, label, ownerLabel, owner string) (map[string]string, error) {
+	containers, _, err := dockercli.ListOwned(ctx, label, ownerLabel, owner)
+	return containers, err
 }
 
 func (r *Runtime) Remove(ctx context.Context, id string) {

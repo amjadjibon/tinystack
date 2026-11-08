@@ -38,7 +38,7 @@ import (
 func clusterDockerServer(t *testing.T, store storage.Store) (server *httptest.Server, stop func()) {
 	t.Helper()
 	service := rdssvc.New(store)
-	if err := service.UseRuntime(isolatedRDSRuntime{rdsdocker.New()}); err != nil {
+	if err := service.UseRuntime(rdsdocker.New()); err != nil {
 		t.Fatal(err)
 	}
 

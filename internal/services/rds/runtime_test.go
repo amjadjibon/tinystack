@@ -32,7 +32,16 @@ func (r *fakeRuntime) Copy(_ context.Context, source, target *Spec) error {
 	return r.copyErr
 }
 
-func (r *fakeRuntime) Resources(context.Context) ([]*Spec, error) { return r.orphans, nil }
+func (r *fakeRuntime) Resources(_ context.Context, owner string) ([]*Spec, error) {
+	var out []*Spec
+	for _, spec := range r.orphans {
+		if spec.Owner == "" || spec.Owner == owner {
+			out = append(out, spec)
+		}
+	}
+
+	return out, nil
+}
 
 func (r *fakeRuntime) Ensure(_ context.Context, spec *Spec) (Started, error) {
 	r.specs = append(r.specs, spec)
@@ -278,12 +287,14 @@ func TestRuntimeOrphanCleanup(t *testing.T) {
 	rt := &fakeRuntime{ready: true}
 	s := New(&memory.Store{})
 	s.runtime = rt
+	s.owner = "store"
 	ctx := runtimeContext()
 	runtimeCreate(t, s, "owned-db")
 	rt.orphans = []*Spec{
 		{ARN: "arn:aws:rds:us-east-1:000000000000:db:owned-db", Name: "existing-owned"},
-		{ARN: "arn:aws:rds:us-east-1:000000000000:db:missing", Name: "orphan-container"},
-		{ARN: "arn:aws:rds:us-east-1:000000000000:db:missing", Volume: "orphan-volume"},
+		{Owner: "store", ARN: "arn:aws:rds:us-east-1:000000000000:db:missing", Name: "orphan-container"},
+		{Owner: "store", ARN: "arn:aws:rds:us-east-1:000000000000:db:missing", Volume: "orphan-volume"},
+		{Owner: "foreign", ARN: "missing", Name: "foreign-container", Volume: "foreign-volume"},
 	}
 
 	s.visit(ctx)
@@ -366,5 +377,37 @@ func TestSnapshotRuntimeCopiesAndReset(t *testing.T) {
 		if !volumes[pair[1].Volume] {
 			t.Fatalf("reset missed owned volume: %s", pair[1].Volume)
 		}
+	}
+}
+
+func TestRuntimeOwnerIsolation(t *testing.T) {
+	store := memory.New(nil, nil)
+	first, recovered, foreign := New(store), New(store), New(memory.New(nil, nil))
+	for _, service := range []*Service{first, recovered, foreign} {
+		if err := service.UseRuntime(&fakeRuntime{}); err != nil {
+			t.Fatal(err)
+		}
+
+		service.Stop()
+	}
+
+	if first.owner == "" || first.owner != recovered.owner || first.owner == foreign.owner {
+		t.Fatal("runtime ownership did not persist or isolate stores")
+	}
+
+	runtimeCreate(t, first, "same-db")
+	scope := request.Scope{AccountID: "000000000000", Region: "us-east-1"}
+	var record *record
+	if err := store.View(context.Background(), func(tx storage.ReadTx) error {
+		var err error
+		record, err = readRecord(tx, scope, kindDB, "same-db")
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	a, b := first.spec(scope, record), foreign.spec(scope, record)
+	if a.Owner != first.owner || a.Name == b.Name || a.Volume == b.Volume {
+		t.Fatal("stores share database resources")
 	}
 }

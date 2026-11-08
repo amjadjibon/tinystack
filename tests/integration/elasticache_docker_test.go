@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/elasticache"
@@ -24,6 +25,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/gateway"
 	cache "github.com/amjadjibon/tinystack/internal/services/elasticache"
 	cachedocker "github.com/amjadjibon/tinystack/internal/services/elasticache/docker"
+	"github.com/amjadjibon/tinystack/internal/storage"
 	"github.com/amjadjibon/tinystack/internal/storage/memory"
 )
 
@@ -148,13 +150,15 @@ func (r *fakeCacheRuntime) Remove(_ context.Context, id string) {
 	delete(r.labeled, id)
 }
 
-func (r *fakeCacheRuntime) ListLabeled(_ context.Context, label string) (map[string]string, error) {
+func (r *fakeCacheRuntime) ListOwned(_ context.Context, label, ownerLabel, owner string) (map[string]string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	out := make(map[string]string, len(r.labeled))
 	for k, v := range r.labeled {
-		out[k] = v
+		if node := r.nodes[k]; node != nil && node.spec.Labels[ownerLabel] == owner {
+			out[k] = v
+		}
 	}
 	return out, nil
 }
@@ -469,4 +473,46 @@ func TestElastiCacheDockerLive(t *testing.T) {
 		})
 		return descErr != nil
 	})
+}
+
+func TestElastiCacheRuntimeOwnedOrphans(t *testing.T) {
+	store := memory.New(nil, nil)
+	ctx := context.Background()
+	if err := store.Update(ctx, func(tx storage.WriteTx) error {
+		return storage.Write(tx, "aws/elasticache/runtime-owner", "store")
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	rt := newFakeCacheRuntime()
+	for _, owner := range []string{"store", "foreign"} {
+		rt.nodes[owner] = &fakeCacheNode{spec: cache.NodeSpec{
+			Labels: map[string]string{"tinystack.elasticache.owner": owner},
+		}}
+		rt.labeled[owner] = "missing"
+	}
+
+	service := cache.New(store)
+	if err := service.UseRuntime(rt, slog.Default()); err != nil {
+		t.Fatal(err)
+	}
+
+	defer service.Stop()
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		rt.mu.Lock()
+		removed, foreign := rt.nodes["store"].removed, rt.nodes["foreign"].removed
+		rt.mu.Unlock()
+		if foreign {
+			t.Fatal("removed another store's container")
+		}
+
+		if removed {
+			return
+		}
+
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	t.Fatal("owned orphan was not removed")
 }

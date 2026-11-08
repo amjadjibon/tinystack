@@ -144,6 +144,7 @@ Manage OpenSearch and Elasticsearch domain configurations and tags, with an opti
 
 **Execution:** Records / optional Docker. **Selected operations:** 15.
 
+- Docker orphan cleanup is scoped to a persistent store owner; containers and volumes from other stores or older versions without ownership labels are left alone.
 - Fifteen pinned REST JSON domain, configuration, version discovery, upgrade and tag operations with AWS SDK v2 integration.
 - Deterministic domain lifecycle with unique names, cluster config, EBS options, encryption at rest, node-to-node encryption, endpoint options, and access policies.
 - Deterministic domain ARN (arn:aws:es:<region>:<account>:domain/<name>) and metadata endpoint (search-<name>-<random>.<region>.es.amazonaws.com).
@@ -800,6 +801,7 @@ Manage Redis, Valkey, and Memcached resources with an optional Docker cache runt
 
 **Execution:** Records / optional Docker. **Selected operations:** 32.
 
+- Docker orphan cleanup is scoped to a persistent store owner; containers and volumes from other stores or older versions without ownership labels are left alone.
 - Cache clusters, replication groups, serverless caches, subnet groups and parameter groups.
 - Single-shard replication groups with replica scaling, primary/reader endpoints, manual and test failover, and AUTH token updates.
 - Engine metadata, tags and lifecycle events.
@@ -830,6 +832,7 @@ Manage RDS instances, Aurora, DocumentDB and Neptune clusters with optional Dock
 
 **Execution:** Records / optional Docker. **Selected operations:** 32.
 
+- Docker orphan cleanup is scoped to a persistent store owner; containers and volumes from other stores or older versions without ownership labels are left alone.
 - Docker DocumentDB versions 3.6, 4.0 and 5.0 map exactly to official mongo:3.6, mongo:4.0 and mongo:5.0; an image that cannot be pulled or started marks the cluster failed, and no other major is substituted.
 - Docker DocumentDB root credentials initialize MongoDB; TCP and authenticated admin ping readiness use mongo for 3.6/4.0 and mongosh for 5.0; ModifyDBCluster changes the running root password. ManageMasterUserPassword reuses the Secrets Manager path in Docker mode; managed rotation and custom secret KMS keys are unsupported.
 - Docker Neptune 1.2.1.0 maps to tinkerpop/gremlin-server:3.6.2 and 1.3.2.0 to 3.7.1, matching AWS release compatibility; TCP plus HTTP Gremlin g.inject(1) readiness precedes availability; Gremlin HTTP and WebSocket queries use the shared loopback port without credentials.

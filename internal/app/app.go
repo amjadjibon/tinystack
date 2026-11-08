@@ -1031,7 +1031,9 @@ func build(
 	}
 
 	if cfg.ElastiCache.Caches == config.CachesDocker {
-		caches.UseRuntime(cachedocker.New(), logger)
+		if err = caches.UseRuntime(cachedocker.New(), logger); err != nil {
+			return nil, err
+		}
 	}
 
 	if cfg.MQ.Brokers == config.BrokersDocker {

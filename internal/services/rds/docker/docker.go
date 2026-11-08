@@ -35,13 +35,8 @@ type Runtime struct {
 func New() *Runtime { return &Runtime{specs: map[string]*rds.Spec{}} }
 
 // Resources finds containers and retained volumes left by earlier runtimes.
-func (r *Runtime) Resources(ctx context.Context) ([]*rds.Spec, error) {
-	containers, err := dockercli.ListLabeled(ctx, "tinystack.rds")
-	if err != nil {
-		return nil, err
-	}
-
-	volumes, err := dockercli.ListLabeledVolumes(ctx, "tinystack.rds")
+func (r *Runtime) Resources(ctx context.Context, owner string) ([]*rds.Spec, error) {
+	containers, volumes, err := dockercli.ListOwned(ctx, "tinystack.rds", "tinystack.rds.owner", owner)
 	if err != nil {
 		return nil, err
 	}
@@ -83,6 +78,7 @@ func (r *Runtime) Ensure(ctx context.Context, spec *rds.Spec) (rds.Started, erro
 			"create",
 			"--label",
 			"tinystack.rds="+spec.ARN,
+			"--label", "tinystack.rds.owner="+spec.Owner,
 			spec.Volume,
 		); err != nil {
 			return rds.Started{}, err
@@ -90,6 +86,7 @@ func (r *Runtime) Ensure(ctx context.Context, spec *rds.Spec) (rds.Started, erro
 
 		args := []string{
 			"run", "-d", "--name", spec.Name, "--label", "tinystack.rds=" + spec.ARN,
+			"--label", "tinystack.rds.owner=" + spec.Owner,
 			"-p", fmt.Sprintf("127.0.0.1::%d/tcp", spec.Port),
 		}
 

@@ -10,6 +10,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/services/background"
+	"github.com/amjadjibon/tinystack/internal/services/dockercli"
 	"github.com/amjadjibon/tinystack/internal/services/valkeydocker"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -27,7 +28,7 @@ type Runtime interface {
 	Start(context.Context, *NodeSpec) (Started, error)
 	Running(context.Context, string) (bool, error)
 	Remove(context.Context, string)
-	ListLabeled(context.Context, string) (map[string]string, error)
+	ListOwned(context.Context, string, string, string) (map[string]string, error)
 	Close()
 }
 
@@ -38,7 +39,13 @@ type NodeSpec = valkeydocker.NodeSpec
 type Started = valkeydocker.Started
 
 // UseRuntime enables container execution for cache clusters.
-func (s *Service) UseRuntime(rt Runtime, logger *slog.Logger) {
+func (s *Service) UseRuntime(rt Runtime, logger *slog.Logger) error {
+	owner, err := dockercli.RuntimeOwner(s.store, "aws/elasticache/runtime-owner")
+	if err != nil {
+		return err
+	}
+
+	s.owner = owner
 	s.runtime = rt
 	s.logger = logger
 	if s.bg == nil {
@@ -46,6 +53,7 @@ func (s *Service) UseRuntime(rt Runtime, logger *slog.Logger) {
 	}
 
 	s.bg.Every(tick, s.visit)
+	return nil
 }
 
 func indexClusterKey(scope request.Scope, id string) string {
@@ -115,7 +123,7 @@ func (s *Service) visit(ctx context.Context) {
 }
 
 func (s *Service) cleanOrphans(ctx context.Context) {
-	containers, err := s.runtime.ListLabeled(ctx, "tinystack.elasticache")
+	containers, err := s.runtime.ListOwned(ctx, "tinystack.elasticache", "tinystack.elasticache.owner", s.owner)
 	if err != nil || len(containers) == 0 {
 		return
 	}
@@ -252,7 +260,7 @@ func (s *Service) advanceCreatingCluster(
 	if record.ReplicationGroupID != "" {
 		network = fmt.Sprintf(
 			"tinystack-elasticache-%s-%s-%s",
-			scope.AccountID,
+			s.owner+"-"+scope.AccountID,
 			scope.Region,
 			record.ReplicationGroupID,
 		)
@@ -291,8 +299,9 @@ func (s *Service) advanceCreatingCluster(
 		if n.ContainerID == "" {
 			nodeSpec := &NodeSpec{
 				Labels: map[string]string{
-					"tinystack.elasticache": clusterARN(scope, clusterID),
-					"tinystack.node":        n.NodeID,
+					"tinystack.elasticache.owner": s.owner,
+					"tinystack.elasticache":       clusterARN(scope, clusterID),
+					"tinystack.node":              n.NodeID,
 				},
 				Image:   spec.Image,
 				Port:    containerPort,
@@ -547,8 +556,9 @@ func (s *Service) advanceCreatingServerless(
 	if n.ContainerID == "" {
 		started, sErr := s.runtime.Start(ctx, &NodeSpec{
 			Labels: map[string]string{
-				"tinystack.elasticache": serverlessCacheARN(scope, name),
-				"tinystack.node":        n.NodeID,
+				"tinystack.elasticache.owner": s.owner,
+				"tinystack.elasticache":       serverlessCacheARN(scope, name),
+				"tinystack.node":              n.NodeID,
 			},
 			Image: spec.Image,
 			Port:  spec.DefaultPort,

@@ -11,11 +11,13 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/background"
+	"github.com/amjadjibon/tinystack/internal/services/dockercli"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
 // Spec contains private runtime configuration for one database.
 type Spec struct {
+	Owner        string
 	ARN          string
 	Name         string
 	Volume       string
@@ -35,7 +37,7 @@ type Started struct {
 
 // Runtime performs container I/O outside storage transactions.
 type Runtime interface {
-	Resources(context.Context) ([]*Spec, error)
+	Resources(context.Context, string) ([]*Spec, error)
 	Copy(context.Context, *Spec, *Spec) error
 	Ensure(context.Context, *Spec) (Started, error)
 	Probe(context.Context, *Spec, Started) error
@@ -47,7 +49,7 @@ type Runtime interface {
 
 func (s *Service) spec(scope request.Scope, r *record) *Spec {
 	resourceARN := arn(scope, kindDB, r.Name)
-	hash := sha256.Sum256([]byte(resourceARN))
+	hash := sha256.Sum256([]byte(s.owner + resourceARN))
 	name := fmt.Sprintf("tinystack-rds-%x", hash[:16])
 	image, _, port, _ := Engine(common.Value(r.Instance.Engine), common.Value(r.Instance.EngineVersion))
 	database := common.Value(r.Instance.DBName)
@@ -57,7 +59,7 @@ func (s *Service) spec(scope request.Scope, r *record) *Spec {
 	}
 
 	return &Spec{
-		ARN: resourceARN, Name: name, Volume: name + "-data", Image: image, Port: port,
+		Owner: s.owner, ARN: resourceARN, Name: name, Volume: name + "-data", Image: image, Port: port,
 		Engine: common.Value(r.Instance.Engine), Username: common.Value(r.Instance.MasterUsername),
 		Password: r.Password, RootPassword: r.RootPassword, Database: database,
 	}
@@ -72,7 +74,7 @@ func (s *Service) dataSpec(scope request.Scope, r *record) *Spec {
 	spec := s.spec(scope, r)
 	if r.Kind == kindSnapshot {
 		spec.ARN = arn(scope, kindSnapshot, r.Name)
-		hash := sha256.Sum256([]byte(spec.ARN))
+		hash := sha256.Sum256([]byte(s.owner + spec.ARN))
 		spec.Name = ""
 		spec.Volume = fmt.Sprintf("tinystack-rds-snapshot-%x-data", hash[:16])
 	}
@@ -83,7 +85,13 @@ func (s *Service) dataSpec(scope request.Scope, r *record) *Spec {
 func (s *Service) UseRuntime(rt Runtime) error {
 	// Persisted endpoints belong to the previous runtime. Invalidate them before
 	// serving requests; the poller republishes availability after a fresh probe.
-	err := s.store.Update(context.Background(), func(tx storage.WriteTx) error {
+	owner, err := dockercli.RuntimeOwner(s.store, "aws/rds/runtime-owner")
+	if err != nil {
+		return err
+	}
+
+	s.owner = owner
+	err = s.store.Update(context.Background(), func(tx storage.WriteTx) error {
 		for _, key := range tx.Keys(indexPrefix) {
 			parts := strings.Split(strings.TrimPrefix(key, indexPrefix), "/")
 			if len(parts) != 3 {
@@ -117,9 +125,9 @@ func (s *Service) UseRuntime(rt Runtime) error {
 			}
 
 			scope := request.Scope{AccountID: parts[0], Region: parts[1]}
-			r, err := readRecord(tx, scope, kindCluster, parts[2])
-			if err != nil {
-				return err
+			r, readErr := readRecord(tx, scope, kindCluster, parts[2])
+			if readErr != nil {
+				return readErr
 			}
 
 			r.Container, r.ReadyAt = "", time.Time{}
@@ -128,8 +136,8 @@ func (s *Service) UseRuntime(rt Runtime) error {
 				r.Cluster.Status, r.Since = new(creating), time.Now().UTC()
 			}
 
-			if err := writeCluster(tx, scope, r); err != nil {
-				return err
+			if writeErr := writeCluster(tx, scope, r); writeErr != nil {
+				return writeErr
 			}
 		}
 
@@ -234,7 +242,7 @@ func (s *Service) visit(ctx context.Context) {
 			known[resource.ARN] = true
 		}
 
-		specs, err := s.runtime.Resources(ctx)
+		specs, err := s.runtime.Resources(ctx, s.owner)
 		if err != nil {
 			return
 		}

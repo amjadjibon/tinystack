@@ -14,6 +14,7 @@ import (
 
 func TestRunArgs(t *testing.T) {
 	args := runArgs(&opensearch.Spec{
+		Owner:    "store",
 		ARN:      "arn:aws:es:us-east-1:000000000000:domain/logs",
 		Name:     "tinystack-opensearch-abc",
 		Volume:   "tinystack-opensearch-abc-data",
@@ -25,6 +26,7 @@ func TestRunArgs(t *testing.T) {
 	want := []string{
 		"run", "-d", "--name", "tinystack-opensearch-abc",
 		"--label", "tinystack.opensearch=arn:aws:es:us-east-1:000000000000:domain/logs",
+		"--label", "tinystack.opensearch.owner=store",
 		"-p", "127.0.0.1::9200/tcp",
 		"-e", "discovery.type=single-node", "-e", "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m",
 		"-v", "tinystack-opensearch-abc-data:/usr/share/opensearch/data",

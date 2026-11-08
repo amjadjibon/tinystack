@@ -42,7 +42,7 @@ func newFakeEngines() *fakeEngines {
 	}
 }
 
-func (f *fakeEngines) Resources(context.Context) ([]*opensearch.Spec, error) { return nil, nil }
+func (f *fakeEngines) Resources(context.Context, string) ([]*opensearch.Spec, error) { return nil, nil }
 
 func (f *fakeEngines) Ensure(_ context.Context, spec *opensearch.Spec) (opensearch.Started, error) {
 	f.mu.Lock()

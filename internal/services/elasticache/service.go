@@ -48,6 +48,7 @@ type Service struct {
 	bg          *background.Group
 	busy        map[string]bool
 	now         func() time.Time
+	owner       string
 	mu          sync.Mutex
 	eventSeq    atomic.Uint64
 	orphansDone bool

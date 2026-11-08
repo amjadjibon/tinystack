@@ -30,11 +30,18 @@ type fakeRuntime struct {
 	closed  bool
 }
 
-func (r *fakeRuntime) Resources(context.Context) ([]*opensearch.Spec, error) {
+func (r *fakeRuntime) Resources(_ context.Context, owner string) ([]*opensearch.Spec, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	return r.orphans, nil
+	var out []*opensearch.Spec
+	for _, spec := range r.orphans {
+		if spec.Owner == "" || spec.Owner == owner {
+			out = append(out, spec)
+		}
+	}
+
+	return out, nil
 }
 
 func (r *fakeRuntime) Ensure(_ context.Context, spec *opensearch.Spec) (opensearch.Started, error) {
@@ -342,11 +349,19 @@ func TestDockerDomainOrphans(t *testing.T) {
 	ctx := testContext()
 	arn := "arn:aws:es:us-east-1:123456789012:domain/kept"
 	rt := &fakeRuntime{orphans: []*opensearch.Spec{
-		{Name: "stray-container", ARN: "arn:aws:es:us-east-1:123456789012:domain/gone"},
-		{Volume: "stray-volume", ARN: "arn:aws:es:us-east-1:123456789012:domain/gone"},
+		{Owner: "store", Name: "stray-container", ARN: "arn:aws:es:us-east-1:123456789012:domain/gone"},
+		{Owner: "store", Volume: "stray-volume", ARN: "arn:aws:es:us-east-1:123456789012:domain/gone"},
 		{Name: "live-container", Volume: "live-volume", ARN: arn},
+		{Owner: "foreign", Name: "foreign-container", ARN: "missing"},
 	}}
-	svc := dockerService(t, memory.New(nil, nil), rt)
+	store := memory.New(nil, nil)
+	if err := store.Update(ctx, func(tx storage.WriteTx) error {
+		return storage.Write(tx, "aws/opensearch/runtime-owner", "store")
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	svc := dockerService(t, store, rt)
 	if _, err := svc.CreateDomain(ctx, &api.CreateDomainRequest{DomainName: new("kept")}); err != nil {
 		t.Fatal(err)
 	}
@@ -359,7 +374,10 @@ func TestDockerDomainOrphans(t *testing.T) {
 		}
 	}
 
-	if slices.ContainsFunc(removed, func(r removal) bool { return r.name == "live-container" }) {
+	if slices.ContainsFunc(
+		removed,
+		func(r removal) bool { return r.name == "live-container" || r.name == "foreign-container" },
+	) {
 		t.Fatalf("the container of an existing domain was removed: %+v", removed)
 	}
 }

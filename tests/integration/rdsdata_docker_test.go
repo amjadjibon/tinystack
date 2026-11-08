@@ -31,11 +31,6 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage/memory"
 )
 
-// Discovery is intentionally empty: a test may clean up only its own resources.
-type isolatedRDSRuntime struct{ *rdsdocker.Runtime }
-
-func (isolatedRDSRuntime) Resources(context.Context) ([]*rdssvc.Spec, error) { return nil, nil }
-
 func auroraDockerServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	store := memory.New(nil, nil)
@@ -46,7 +41,7 @@ func auroraDockerServer(t *testing.T) *httptest.Server {
 	caller := catalog.NewCaller(services...)
 	clusters.UseCaller(caller)
 	data.UseCaller(caller)
-	if err := clusters.UseRuntime(isolatedRDSRuntime{rdsdocker.New()}); err != nil {
+	if err := clusters.UseRuntime(rdsdocker.New()); err != nil {
 		t.Fatal(err)
 	}
 

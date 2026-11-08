@@ -21,6 +21,7 @@ import (
 
 const (
 	label         = "tinystack.opensearch"
+	labelFlag     = "--label"
 	containerPort = 9200
 	removeTimeout = 30 * time.Second
 )
@@ -36,13 +37,8 @@ type Runtime struct {
 func New() *Runtime { return &Runtime{specs: map[string]*opensearch.Spec{}} }
 
 // Resources finds containers and retained volumes left by earlier runtimes.
-func (r *Runtime) Resources(ctx context.Context) ([]*opensearch.Spec, error) {
-	containers, err := dockercli.ListLabeled(ctx, label)
-	if err != nil {
-		return nil, err
-	}
-
-	volumes, err := dockercli.ListLabeledVolumes(ctx, label)
+func (r *Runtime) Resources(ctx context.Context, owner string) ([]*opensearch.Spec, error) {
+	containers, volumes, err := dockercli.ListOwned(ctx, label, "tinystack.opensearch.owner", owner)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +58,8 @@ func (r *Runtime) Resources(ctx context.Context) ([]*opensearch.Spec, error) {
 // runArgs builds the docker run command of a domain's container.
 func runArgs(spec *opensearch.Spec) []string {
 	args := []string{
-		"run", "-d", "--name", spec.Name, "--label", label + "=" + spec.ARN,
+		"run", "-d", "--name", spec.Name, labelFlag, label + "=" + spec.ARN,
+		labelFlag, "tinystack.opensearch.owner=" + spec.Owner,
 		"-p", fmt.Sprintf("127.0.0.1::%d/tcp", containerPort),
 	}
 
@@ -89,7 +86,10 @@ func (r *Runtime) Ensure(ctx context.Context, spec *opensearch.Spec) (opensearch
 	if err == nil {
 		_, err = dockercli.Run(ctx, nil, "start", spec.Name)
 	} else {
-		args := []string{"volume", "create", "--label", label + "=" + spec.ARN, spec.Volume}
+		args := []string{
+			"volume", "create", labelFlag, label + "=" + spec.ARN,
+			labelFlag, "tinystack.opensearch.owner=" + spec.Owner, spec.Volume,
+		}
 		if _, err = dockercli.Run(ctx, nil, args...); err != nil {
 			return opensearch.Started{}, err
 		}

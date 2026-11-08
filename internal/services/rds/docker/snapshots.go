@@ -34,6 +34,7 @@ func (r *Runtime) Copy(ctx context.Context, source, target *rds.Spec) (err error
 	}
 
 	if _, err = dockercli.Run(ctx, nil, "volume", "create", "--label", "tinystack.rds="+target.ARN,
+		"--label", "tinystack.rds.owner="+target.Owner,
 		target.Volume); err != nil {
 		return err
 	}
@@ -83,7 +84,8 @@ func (r *Runtime) Copy(ctx context.Context, source, target *rds.Spec) (err error
 	}
 
 	_, err = dockercli.Run(ctx, nil, "run", "--rm", "--name", helper, "--network", "none",
-		"--label", "tinystack.rds="+target.ARN, "-v", source.Volume+":/source:ro",
+		"--label", "tinystack.rds="+target.ARN,
+		"--label", "tinystack.rds.owner="+target.Owner, "-v", source.Volume+":/source:ro",
 		"-v", target.Volume+":/target", "--entrypoint", "sh", "--", source.Image,
 		"-c", "cp -a /source/. /target/ && sync")
 	return err
