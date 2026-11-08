@@ -87,7 +87,7 @@ func (r *domainRecord) ready() bool {
 // UseRuntime has every domain run in a container. Domains that already exist, such as those a persistent store
 // holds, start again against their volumes: the endpoints they published belong to the previous runtime.
 func (s *Service) UseRuntime(rt Runtime, logger *slog.Logger) error {
-	owner, err := dockercli.RuntimeOwner(s.store, "aws/opensearch/runtime-owner")
+	owner, err := dockercli.RuntimeOwner(context.Background(), s.store, "aws/opensearch/runtime-owner")
 	if err != nil {
 		return err
 	}

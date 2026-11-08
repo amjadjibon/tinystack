@@ -233,11 +233,6 @@ func (s *Service) CreateBroker(ctx context.Context, in *api.CreateBrokerRequest)
 		if networkErr := s.validateNetwork(tx, scope, b); networkErr != nil {
 			return networkErr
 		}
-		if s.runtime != nil {
-			if err := storage.Write(tx, "aws/mq/runtime-owner", s.runtime.owner); err != nil {
-				return err
-			}
-		}
 
 		if saveErr := save(tx, scope, r); saveErr != nil {
 			return saveErr

@@ -9,6 +9,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/memorydb"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/services/dockercli"
 	"github.com/amjadjibon/tinystack/internal/services/valkeydocker"
 	"github.com/amjadjibon/tinystack/internal/storage/memory"
 )
@@ -97,17 +98,17 @@ func TestRuntimeACLCommands(t *testing.T) {
 func TestStoreOwnershipIsStableAndIsolated(t *testing.T) {
 	first := New(memory.New(nil, nil), nil)
 	second := New(memory.New(nil, nil), nil)
-	a, err := first.runtimeOwner()
+	a, err := dockercli.RuntimeOwner(context.Background(), first.store, ownerKey)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	again, err := first.runtimeOwner()
+	again, err := dockercli.RuntimeOwner(context.Background(), first.store, ownerKey)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	b, err := second.runtimeOwner()
+	b, err := dockercli.RuntimeOwner(context.Background(), second.store, ownerKey)
 	if err != nil || a != again || a == b {
 		t.Fatal(a, again, b, err)
 	}

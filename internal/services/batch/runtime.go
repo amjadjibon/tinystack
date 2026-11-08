@@ -25,22 +25,13 @@ func (s *Service) UseCaller(c *catalog.Caller) { s.caller = c }
 // UseRuntime recovers interrupted attempts before accepting work. Runtime ownership
 // is independent of ECS tasks so resetting one service cannot remove the other's containers.
 func (s *Service) UseRuntime(ctx context.Context, rt ecs.Runtime, logs ecs.LogWriter) error {
-	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
-		owner, ok, e := storage.Read[string](tx, "aws/batch/runtime-owner")
-		if e != nil {
-			return e
-		}
+	owner, err := dockercli.RuntimeOwner(ctx, s.store, "aws/batch/runtime-owner")
+	if err != nil {
+		return err
+	}
 
-		if ok {
-			s.owner = *owner
-		} else {
-			s.owner = common.RandomID(32)
-		}
-
-		if e := storage.Write(tx, "aws/batch/runtime-owner", s.owner); e != nil {
-			return e
-		}
-
+	s.owner = owner
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		for _, k := range tx.Keys(jobIndex) {
 			key, ok, e := storage.Read[string](tx, k)
 			if e != nil {

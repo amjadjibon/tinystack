@@ -36,18 +36,13 @@ type brokerRuntime struct {
 // UseDocker enables local brokers and recovers persisted records against their volumes.
 func (s *Service) UseDocker(logger *slog.Logger) error {
 	rt := &brokerRuntime{logger: logger, bg: background.New()}
-	err := s.store.Update(context.Background(), func(tx storage.WriteTx) error {
-		owner, found, err := storage.Read[string](tx, "aws/mq/runtime-owner")
-		if err != nil {
-			return err
-		}
+	owner, err := dockercli.RuntimeOwner(context.Background(), s.store, "aws/mq/runtime-owner")
+	if err != nil {
+		return err
+	}
 
-		if found {
-			rt.owner = *owner
-		} else {
-			rt.owner = common.RandomID(32)
-		}
-
+	rt.owner = owner
+	err = s.store.Update(context.Background(), func(tx storage.WriteTx) error {
 		for _, key := range tx.Keys("") {
 			_, _, rest, ok := storage.Scoped(key, serviceName)
 			if !ok || !strings.HasPrefix(rest, brokerKind+"/") {
@@ -77,7 +72,7 @@ func (s *Service) UseDocker(logger *slog.Logger) error {
 			}
 		}
 
-		return storage.Write(tx, "aws/mq/runtime-owner", rt.owner)
+		return nil
 	})
 	if err != nil {
 		return err

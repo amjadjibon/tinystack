@@ -178,6 +178,7 @@ func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterReques
 		}
 
 		if s.runtime != nil {
+			// Reset preserves runtime-owner keys, but clears this service's store-owner key.
 			if err := storage.Write(tx, ownerKey, s.owner); err != nil {
 				return err
 			}

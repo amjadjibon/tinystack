@@ -63,7 +63,7 @@ type session struct {
 // when the request that starts a session did not say. Containers that an earlier run of this store left behind
 // are removed first.
 func (s *Service) UseRuntime(ctx context.Context, rt Runtime, endpoint string, logger *slog.Logger) error {
-	owner, err := s.persistOwner(ctx, common.RandomID(32))
+	owner, err := dockercli.RuntimeOwner(ctx, s.store, ownerKey)
 	if err != nil {
 		return err
 	}
@@ -76,27 +76,6 @@ func (s *Service) UseRuntime(ctx context.Context, rt Runtime, endpoint string, l
 	s.bg.Every(sweepInterval, s.expireSessions)
 
 	return nil
-}
-
-// persistOwner stores owner as the label of this store's containers unless the store already has one, and returns the
-// one it has. A reset clears it, so every session start stores it again.
-func (s *Service) persistOwner(ctx context.Context, owner string) (string, error) {
-	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
-		v, found, err := storage.Read[string](tx, ownerKey)
-		if err != nil {
-			return err
-		}
-
-		if found {
-			owner = *v
-
-			return nil
-		}
-
-		return storage.Write(tx, ownerKey, owner)
-	})
-
-	return owner, err
 }
 
 // runtimeRef returns the scope and ID of the runtime that agentRuntimeArn names: a full ARN, or an ID with the
@@ -242,15 +221,10 @@ func (s *Service) start(ctx context.Context, sess *session, t *bedrockagentcorec
 
 	startCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), startTimeout)
 	defer cancel()
-	var started Started
-	owner, err := s.persistOwner(startCtx, s.owner)
-	if err == nil {
-		started, err = s.runtime.Start(startCtx, &Spec{
-			Environment: env, Owner: owner, Session: t.RuntimeID + "/" + id, Image: t.Image, Probe: probe, Port: port,
-			StrictProbe: strict,
-		})
-	}
-
+	started, err := s.runtime.Start(startCtx, &Spec{
+		Environment: env, Owner: s.owner, Session: t.RuntimeID + "/" + id, Image: t.Image, Probe: probe, Port: port,
+		StrictProbe: strict,
+	})
 	if err != nil {
 		err = awserror.New("RuntimeClientError", fmt.Sprintf("The runtime container did not start: %s", err))
 	}

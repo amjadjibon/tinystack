@@ -29,21 +29,7 @@ type dockerRuntime struct {
 
 func (s *Service) UseDocker(ctx context.Context) error {
 	s.workers.Stop()
-	var owner string
-	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
-		old, found, err := storage.Read[string](tx, runtimeOwnerKey)
-		if err != nil {
-			return err
-		}
-
-		if found {
-			owner = *old
-			return nil
-		}
-
-		owner = common.RandomID(24)
-		return storage.Write(tx, runtimeOwnerKey, owner)
-	})
+	owner, err := dockercli.RuntimeOwner(ctx, s.store, runtimeOwnerKey)
 	if err != nil {
 		return err
 	}
@@ -234,10 +220,6 @@ func (s *Service) prepareBackend(ctx context.Context, job *work) bool {
 	var b *backend
 	var deletingBackend bool
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if err := storage.Write(tx, runtimeOwnerKey, s.runtime.owner); err != nil {
-			return err
-		}
-
 		r, err := read(tx, job.Scope, job.ID)
 		if err != nil {
 			return err

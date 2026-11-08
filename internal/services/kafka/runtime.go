@@ -10,8 +10,8 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/kafka"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
-	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/background"
+	"github.com/amjadjibon/tinystack/internal/services/dockercli"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -52,20 +52,13 @@ func resourceSpec(arn, owner string) *Spec {
 
 // UseRuntime recovers cluster records against their volumes and scopes orphan cleanup to this store.
 func (s *Service) UseRuntime(rt Runtime, logger *slog.Logger) error {
-	err := s.store.Update(context.Background(), func(tx storage.WriteTx) error {
-		owner, found, err := storage.Read[string](tx, ownerKey)
-		if err != nil {
-			return err
-		}
+	owner, err := dockercli.RuntimeOwner(context.Background(), s.store, ownerKey)
+	if err != nil {
+		return err
+	}
 
-		if !found {
-			owner = new(common.RandomID(32))
-			if err := storage.Write(tx, ownerKey, *owner); err != nil {
-				return err
-			}
-		}
-
-		s.owner = *owner
+	s.owner = owner
+	err = s.store.Update(context.Background(), func(tx storage.WriteTx) error {
 		for _, key := range tx.Keys("") {
 			_, _, rest, ok := storage.Scoped(key, serviceName)
 			if !ok || !strings.HasPrefix(rest, clusterKind+"/") {
@@ -82,12 +75,14 @@ func (s *Service) UseRuntime(rt Runtime, logger *slog.Logger) error {
 			}
 
 			r.State = new(statusCreating)
-			if err := storage.Write(tx, key, r); err != nil {
-				return err
+			if writeErr := storage.Write(tx, key, r); writeErr != nil {
+				return writeErr
 			}
 
-			if err := storage.Write(tx, runtimeKey(*r.ClusterArn), runtimeRecord{ARN: *r.ClusterArn}); err != nil {
-				return err
+			if writeErr := storage.Write(
+				tx, runtimeKey(*r.ClusterArn), runtimeRecord{ARN: *r.ClusterArn},
+			); writeErr != nil {
+				return writeErr
 			}
 		}
 

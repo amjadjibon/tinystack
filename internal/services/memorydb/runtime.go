@@ -15,6 +15,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/localtls"
 	"github.com/amjadjibon/tinystack/internal/services/background"
+	"github.com/amjadjibon/tinystack/internal/services/dockercli"
 	"github.com/amjadjibon/tinystack/internal/services/valkeydocker"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -36,7 +37,7 @@ type Runtime interface {
 
 // UseDocker enables persistent engine execution with the local certificate authority.
 func (s *Service) UseDocker(ca *localtls.Authority, logger *slog.Logger) error {
-	owner, err := s.runtimeOwner()
+	owner, err := dockercli.RuntimeOwner(context.Background(), s.store, ownerKey)
 	if err != nil {
 		return err
 	}
@@ -44,28 +45,9 @@ func (s *Service) UseDocker(ca *localtls.Authority, logger *slog.Logger) error {
 	return s.UseRuntime(valkeydocker.NewCluster(ca, owner), logger)
 }
 
-func (s *Service) runtimeOwner() (string, error) {
-	var owner string
-	err := s.store.Update(context.Background(), func(tx storage.WriteTx) error {
-		value, found, err := storage.Read[string](tx, ownerKey)
-		if err != nil {
-			return err
-		}
-
-		if found {
-			owner = *value
-			return nil
-		}
-
-		owner = common.RandomID(24)
-		return storage.Write(tx, ownerKey, owner)
-	})
-	return owner, err
-}
-
 // UseRuntime prepares recovery and starts the cluster reconciler.
 func (s *Service) UseRuntime(rt Runtime, logger *slog.Logger) error {
-	owner, err := s.runtimeOwner()
+	owner, err := dockercli.RuntimeOwner(context.Background(), s.store, ownerKey)
 	if err != nil {
 		return err
 	}
@@ -221,7 +203,7 @@ func (s *Service) Reset(ctx context.Context) {
 			tx.Delete(k)
 		}
 
-		// Keep the identity until app.Reset clears the rest of the store.
+		// Keep the identity across service and app resets.
 		return nil
 	})
 }

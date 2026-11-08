@@ -13,6 +13,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/background"
+	"github.com/amjadjibon/tinystack/internal/services/dockercli"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -43,30 +44,17 @@ func (s *Service) UseRuntime(
 	endpoint string,
 	logs func(context.Context, request.Scope, string, string, []string) error,
 ) error {
-	var owner string
-	if err := s.store.Update(ctx, func(tx storage.WriteTx) error {
-		v, ok, e := storage.Read[string](tx, "aws/codebuild/runtime-owner")
-		if e != nil {
-			return e
-		}
-
-		if ok {
-			owner = *v
-			return nil
-		}
-
-		owner = common.RandomID(32)
-		return storage.Write(tx, "aws/codebuild/runtime-owner", owner)
-	}); err != nil {
+	owner, err := dockercli.RuntimeOwner(ctx, s.store, "aws/codebuild/runtime-owner")
+	if err != nil {
 		return err
 	}
 
 	s.owner = owner
-	if err := rt.Clean(ctx, owner); err != nil {
-		return err
+	if cleanErr := rt.Clean(ctx, owner); cleanErr != nil {
+		return cleanErr
 	}
 
-	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		for _, index := range tx.Keys(buildIndex) {
 			key, ok, e := storage.Read[string](tx, index)
 			if e != nil {

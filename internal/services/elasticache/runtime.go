@@ -40,7 +40,7 @@ type Started = valkeydocker.Started
 
 // UseRuntime enables container execution for cache clusters.
 func (s *Service) UseRuntime(rt Runtime, logger *slog.Logger) error {
-	owner, err := dockercli.RuntimeOwner(s.store, "aws/elasticache/runtime-owner")
+	owner, err := dockercli.RuntimeOwner(context.Background(), s.store, "aws/elasticache/runtime-owner")
 	if err != nil {
 		return err
 	}

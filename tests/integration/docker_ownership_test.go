@@ -126,13 +126,20 @@ func dockerOwnedOrphans(t *testing.T, service string, configure func(*config.Con
 func TestDockerRuntimeOwnersSurviveReset(t *testing.T) {
 	ctx := context.Background()
 	store := memory.New(nil, nil)
-	key := "aws/rds/runtime-owner"
-	owner, err := dockercli.RuntimeOwner(store, key)
-	if err != nil {
-		t.Fatal(err)
+	owners := map[string]string{}
+	for _, service := range []string{
+		"rds", "opensearch", "elasticache", "mq", "batch", "codebuild", "memorydb", "bedrockagentcore", "dsql",
+	} {
+		key := "aws/" + service + "/runtime-owner"
+		owner, err := dockercli.RuntimeOwner(ctx, store, key)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		owners[key] = owner
 	}
 
-	if err = store.Update(ctx, func(tx storage.WriteTx) error {
+	if err := store.Update(ctx, func(tx storage.WriteTx) error {
 		return storage.Write(tx, "ordinary-record", true)
 	}); err != nil {
 		t.Fatal(err)
@@ -150,13 +157,21 @@ func TestDockerRuntimeOwnersSurviveReset(t *testing.T) {
 		t.Fatal(response.Status)
 	}
 
-	recovered, err := dockercli.RuntimeOwner(store, key)
-	if err != nil || recovered != owner {
-		t.Fatal("reset changed the runtime identity", recovered, err)
+	for key, owner := range owners {
+		if err = store.View(ctx, func(tx storage.ReadTx) error {
+			recovered, found, readErr := storage.Read[string](tx, key)
+			if readErr != nil || !found || *recovered != owner {
+				t.Fatal("reset changed the runtime identity", key, recovered, readErr)
+			}
+
+			return nil
+		}); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	if err = store.View(ctx, func(tx storage.ReadTx) error {
-		if len(tx.Keys("")) != 1 {
+		if len(tx.Keys("")) != len(owners) {
 			t.Fatal("reset retained ordinary records")
 		}
 

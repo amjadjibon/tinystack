@@ -169,12 +169,6 @@ func (s *Service) SubmitJob(ctx context.Context, in *api.SubmitJobRequest) (*api
 
 	var out *api.SubmitJobResponse
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if s.runtime != nil {
-			if e := storage.Write(tx, "aws/batch/runtime-owner", s.owner); e != nil {
-				return e
-			}
-		}
-
 		q, e := read(tx, scope, kindQueue, in.JobQueue)
 		if e != nil {
 			return e

@@ -85,7 +85,7 @@ func (s *Service) dataSpec(scope request.Scope, r *record) *Spec {
 func (s *Service) UseRuntime(rt Runtime) error {
 	// Persisted endpoints belong to the previous runtime. Invalidate them before
 	// serving requests; the poller republishes availability after a fresh probe.
-	owner, err := dockercli.RuntimeOwner(s.store, "aws/rds/runtime-owner")
+	owner, err := dockercli.RuntimeOwner(context.Background(), s.store, "aws/rds/runtime-owner")
 	if err != nil {
 		return err
 	}

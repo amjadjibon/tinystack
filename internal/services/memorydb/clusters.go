@@ -507,10 +507,6 @@ func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterReques
 
 		out = r.output(scope, az, false, statusAvailable)
 		if s.runtime != nil {
-			if e := storage.Write(tx, ownerKey, s.owner); e != nil {
-				return e
-			}
-
 			if e := storage.Write(tx, indexKey(scope, name), true); e != nil {
 				return e
 			}
