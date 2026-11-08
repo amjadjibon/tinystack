@@ -1,5 +1,5 @@
-// Package dockercli runs docker CLI commands for the runtimes that run Lambda
-// functions, ECS tasks, and EKS clusters in containers.
+// Package dockercli runs container CLI commands for the runtimes that run Lambda functions, ECS tasks, EKS
+// clusters and other resources in containers. The CLI is docker, or the Docker-compatible one DOCKER_ALIAS names.
 package dockercli
 
 import (
@@ -10,16 +10,28 @@ import (
 	"io"
 	"net"
 	"net/url"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 )
 
+// Command builds a container CLI command: docker, or the Docker-compatible CLI that DOCKER_ALIAS names (podman,
+// nerdctl), whose further words go before args (DOCKER_ALIAS="nerdctl --namespace k8s.io").
+func Command(ctx context.Context, args ...string) *exec.Cmd {
+	cli := strings.Fields(os.Getenv("DOCKER_ALIAS"))
+	if len(cli) == 0 {
+		cli = []string{"docker"}
+	}
+
+	// The CLI comes from the operator's environment, and callers build arguments without a shell.
+	return exec.CommandContext(ctx, cli[0], append(cli[1:], args...)...) // #nosec G204 G702
+}
+
 // Run runs one docker CLI command with stdin, if any, and returns its trimmed
 // standard output.
 func Run(ctx context.Context, stdin io.Reader, args ...string) (string, error) {
-	// #nosec G204 -- callers build arguments from validated configuration.
-	cmd := exec.CommandContext(ctx, "docker", args...)
+	cmd := Command(ctx, args...)
 	cmd.Stdin = stdin
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
@@ -98,8 +110,7 @@ func listLabeled(ctx context.Context, label string, command ...string) (map[stri
 func Stream(ctx context.Context, stdin io.Reader, emit func(string) error, args ...string) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	// #nosec G204 -- runtimes construct Docker arguments without a host shell.
-	cmd := exec.CommandContext(ctx, "docker", args...)
+	cmd := Command(ctx, args...)
 	cmd.Stdin = stdin
 	reader, writer := io.Pipe()
 	cmd.Stdout, cmd.Stderr = writer, writer

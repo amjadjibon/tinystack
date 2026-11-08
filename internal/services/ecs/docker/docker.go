@@ -10,7 +10,6 @@ import (
 	"context"
 	"fmt"
 	"maps"
-	"os/exec"
 	"slices"
 	"strconv"
 	"strings"
@@ -222,8 +221,7 @@ func (r *Runtime) Logs(ctx context.Context, id string, since time.Time) ([]ecs.L
 		args = append(args, "--since", since.Format(time.RFC3339Nano))
 	}
 
-	// #nosec G204 -- the container ID comes from docker run.
-	cmd := exec.CommandContext(ctx, "docker", append(args, id)...)
+	cmd := dockercli.Command(ctx, append(args, id)...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	if err := cmd.Run(); err != nil {

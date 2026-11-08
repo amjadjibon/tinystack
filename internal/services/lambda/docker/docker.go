@@ -21,7 +21,6 @@ import (
 	"io"
 	"math"
 	"net/http"
-	"os/exec"
 	"path"
 	"slices"
 	"strings"
@@ -488,8 +487,7 @@ func (c *container) logs(ctx context.Context) (lines []string, last time.Time, d
 		args = append(args, "--since", c.since.Format(time.RFC3339Nano))
 	}
 
-	// #nosec G204 -- the container ID comes from docker create.
-	cmd := exec.CommandContext(ctx, "docker", append(args, c.id)...)
+	cmd := dockercli.Command(ctx, append(args, c.id)...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	if cmd.Run() != nil {

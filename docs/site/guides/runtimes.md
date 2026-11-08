@@ -6,6 +6,17 @@ docker ps
 ```
 
 Run TinyStack where the Docker CLI can reach the daemon and returned loopback endpoints are usable.
+To use another Docker-compatible CLI, name it in `DOCKER_ALIAS`, with any arguments it needs; TinyStack runs it in
+place of `docker` for every runtime:
+
+```sh
+DOCKER_ALIAS=podman tinystack start
+DOCKER_ALIAS="nerdctl --namespace tinystack" tinystack start
+```
+
+The CLI must accept the Docker flags and output formats TinyStack uses, including `--label` filters, `--format`
+templates and `--add-host=host.docker.internal:host-gateway`; only the Docker CLI is tested.
+
 Lambda defaults to `lambda.executor: auto`: Docker when the CLI reaches a daemon, otherwise local Python/Node.
 Use `lambda.executor: docker` to force containers, or `local` for host execution. See
 [local Lambda configuration](../getting-started/configuration.md#lambda-without-docker) for prerequisites and limits.
