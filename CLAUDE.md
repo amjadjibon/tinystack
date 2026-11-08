@@ -31,7 +31,8 @@ MQ, MSK, Batch, CodeBuild, AgentCore; 30m timeout), `task test:testcontainers` (
 weekly and on demand, split across runners; `v*` tags run `release.yml`, which calls every check workflow (adding
 integration and docs), then publishes
 binaries (GitHub release), images (`ghcr.io/amjadjibon/tinystack`, plus `-headless` tags), docs (GitHub Pages) and
-the Homebrew formula (`scripts/homebrew-formula.sh`, pushed to `amjadjibon/homebrew-tap` with `HOMEBREW_TAP_TOKEN`).
+the Homebrew formula (`scripts/homebrew-formula.sh`, pushed to `amjadjibon/homebrew-tap` with `HOMEBREW_TAP_TOKEN`)
+in a separate job after binaries publish; a missing token warns and skips. Formula failures do not block images/docs.
 Release notes are grouped from conventional commit subjects since the previous tag (`scripts/release-notes.sh`), so
 write subjects as `type(scope): summary`.
 Before 1.0 there is no backward compatibility: no legacy storage or config formats, deprecated aliases or migrations

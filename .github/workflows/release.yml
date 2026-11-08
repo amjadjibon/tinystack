@@ -89,15 +89,33 @@ jobs:
           prerelease=; [[ "$TAG" == *-* ]] && prerelease=--prerelease
           scripts/release-notes.sh "$TAG" > notes.md
           gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --verify-tag --notes-file notes.md $prerelease
+
+  homebrew:
+    name: Homebrew formula
+    needs: binaries
+    if: ${{ !contains(github.ref_name, '-') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       # HOMEBREW_TAP_TOKEN is a fine-grained token with Contents write on amjadjibon/homebrew-tap only.
       - name: Update the Homebrew formula
-        if: ${{ !contains(github.ref_name, '-') }}
         env:
           TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.ref_name }}
         run: |
+          if [ -z "$TAP_TOKEN" ]; then
+            echo "::warning::Skipping the Homebrew formula update: HOMEBREW_TAP_TOKEN is not set"
+            exit 0
+          fi
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" -p checksums.txt
           git clone --depth 1 "https://x-access-token:${TAP_TOKEN}@github.com/amjadjibon/homebrew-tap.git" tap
-          scripts/homebrew-formula.sh "$TAG" dist/checksums.txt > tap/Formula/tinystack.rb
+          scripts/homebrew-formula.sh "$TAG" checksums.txt > tap/Formula/tinystack.rb
           cd tap
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
