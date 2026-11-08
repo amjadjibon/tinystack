@@ -40,7 +40,7 @@ type runtimeRecord struct {
 
 const (
 	runtimePrefix = "aws/kafka/runtime/"
-	ownerKey      = "aws/kafka/store-owner"
+	ownerKey      = "aws/kafka/runtime-owner"
 )
 
 func runtimeKey(arn string) string { return runtimePrefix + arn }
