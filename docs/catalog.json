@@ -267,7 +267,11 @@
         "With authorization on, notification destinations (SQS, SNS, Lambda) need their resource policy to allow s3.amazonaws.com for the bucket (aws:SourceArn, aws:SourceAccount); enforce mode fails PutBucketNotificationConfiguration with InvalidArgument, unless SkipDestinationValidation is set, and denies later deliveries, while soft mode records the denied check",
         "Object Lock at bucket creation or on a versioned bucket: GOVERNANCE and COMPLIANCE retention, legal hold and default bucket retention; deleting a locked version fails AccessDenied, COMPLIANCE retention cannot be shortened, and GOVERNANCE is bypassed with x-amz-bypass-governance-retention (s3:BypassGovernanceRetention when authorization is on)",
         "Browser POST uploads (multipart/form-data to the bucket): ${filename} keys, policy expiration and eq/starts-with/content-length-range conditions, every field covered by the policy, SigV4 policy signatures in verify mode, success_action_status 200/201/204 and success_action_redirect; the upload is authorized and stored as PutObject",
-        "CreateBucketConfiguration.Tags initializes the bucket tag set; S3 Control and S3 bucket tagging APIs share the same persistent tags"
+        "CreateBucketConfiguration.Tags initializes the bucket tag set; S3 Control and S3 bucket tagging APIs share the same persistent tags",
+        "UploadPartCopy streams whole objects or explicit inclusive byte ranges into multipart parts, with URL-encoded version sources, source ownership checks, ETag/date preconditions and part checksums",
+        "ListObjects v1 and v2 share prefix/delimiter pagination and URL encoding; v1 returns owners and delimiter-only NextMarker",
+        "GetObjectAttributes selects ETag, Checksum, StorageClass, ObjectSize and paginated ObjectParts from retained completed-part metadata, including version lookups and delete-marker errors",
+        "PutBucketLogging/GetBucketLogging store target bucket, prefix, grants and simple/partitioned key format; empty status disables configuration; targets must exist in the same account and region; CloudFormation AWS::S3::Bucket LoggingConfiguration maps to these settings"
       ],
       "gaps": [
         "Lifecycle rules do not expire or transition objects",
@@ -277,7 +281,9 @@
         "Generated in-process PutObject/UploadPart byte-slice shapes, in-process reads (e.g. Lambda runtime Object() helper), and console download and preview buffers still buffer bytes in memory",
         "Verify-mode SigV4 authentication spools upload payloads to temporary files only when verifying signed hexadecimal or empty payload hashes; UNSIGNED-PAYLOAD, supported unsigned-trailer forms (STREAMING-UNSIGNED-PAYLOAD-TRAILER), and usual presigned S3 uploads stream without that spool",
         "Signed aws-chunked payloads (STREAMING-AWS4-HMAC-SHA256-*) remain unsupported and return NotImplemented",
-        "Console uploads are limited to 1 MiB per file; object browsing and management in verify mode require an authenticated root console session; storage.s3_max_object_bytes defaults to 256 MiB and can be set up to 5 GiB for object PUTs, parts and completed multipart objects"
+        "Console uploads are limited to 1 MiB per file; object browsing and management in verify mode require an authenticated root console session; storage.s3_max_object_bytes defaults to 256 MiB and can be set up to 5 GiB for object PUTs, parts and completed multipart objects",
+        "Bucket logging is configuration only: access logs are not generated or delivered; target grants are stored metadata without ACL enforcement",
+        "GetObjectAttributes omits ObjectParts for nonmultipart objects and objects completed before part metadata was retained; SSE-C is unsupported and its request members are rejected"
       ],
       "execution": "Local behavior",
       "package": "s3"
@@ -1150,13 +1156,13 @@
         "Selected SAM resources and event transformations",
         "Resource operations run outside store transactions through the lenient caller",
         "AWS CDK CLI bootstrap and deploy: template Rules, Systems Manager parameter types, S3 bucket policies and bucket encryption, public access block and lifecycle settings, and the CDK change set options",
-        "Read-mostly console: stacks with status filter and deleted stacks, events with follow mode and highlighted failures, resources linked to service pages, outputs, parameters (NoEcho hidden), original and processed templates, change set view/execute/delete, nested stacks, and confirmed stack deletion with retained resources"
+        "Console stack and change-set creation/update, plus: stacks with status filter and deleted stacks, events with follow mode and highlighted failures, resources linked to service pages, outputs, parameters (NoEcho hidden), original and processed templates, change set view/execute/delete, nested stacks, and confirmed stack deletion with retained resources"
       ],
       "gaps": [
         "Only registered resource types and properties, plus provider-defined Custom::<Name> properties and attributes, are supported",
         "Nested stack NotificationARNs and custom resource ServiceToken changes are rejected; ServiceToken must name a Lambda function or SNS topic",
         "No stack sets, imports (ImportExistingResources is accepted but ignored) or drift detection",
-        "The console cannot create or update stacks or change sets, and offers no drift detection, continue update rollback or cancel update",
+        "The console offers no drift detection, continue update rollback or cancel update",
         "No macros/AWS::Include, policies with unsupported semantics or snapshot deletion behavior",
         "IAM capabilities are checked but permission policies and service roles are not evaluated",
         "AWS::IAM::Role accepts PermissionsBoundary only as an absent value; AWS::S3::Bucket AccessControl is limited to Private; EXPRESS deployment mode is rejected"
@@ -3603,7 +3609,7 @@
       "title": "CodeBuild advanced build execution",
       "state": "Future extensions",
       "slice": "Docker workers, build history, CloudWatch logs, S3 source/artifacts and buildspec 0.2 are implemented. Extend the remaining runtime features separately.",
-      "features": "- [ ] RetryBuild and automatic retry policies\n- [ ] Batch builds\n- [ ] Git source checkout and authentication\n- [ ] Webhooks, report groups and report generation\n- [ ] Cache, managed runtime installation and secondary sources/artifacts\n- [ ] Service-role credentials, KMS encryption and S3 logs",
+      "features": "- [x] RetryBuild using saved effective build configuration\n- [ ] Automatic retry policies\n- [ ] Batch builds\n- [ ] Git source checkout and authentication\n- [x] TEST/NO_EXPORT report groups\n- [ ] Webhooks and broader report generation\n- [ ] Cache, managed runtime installation and secondary sources/artifacts\n- [ ] Service-role credentials, KMS encryption and S3 logs",
       "integration": "Use the implemented worker lifecycle and transactional build records. See the [CodeBuild guide](../../guides/codebuild.md) for the delivered subset and explicit execution boundaries."
     },
     "lambda-core": {
@@ -3669,7 +3675,7 @@
       "title": "Amazon MSK configuration, security and runtime",
       "state": "Future extensions",
       "slice": "Provisioned records, bootstrap brokers, node listings and a single-node Redpanda Docker runtime are implemented. Advanced security, configurations and cluster mutations remain future extensions.",
-      "features": "- [x] `GetBootstrapBrokers`\n- [x] `ListNodes`\n- [ ] `CreateConfiguration`\n- [ ] `ListConfigurations`\n- [ ] `DescribeConfiguration`\n- [ ] `ListConfigurationRevisions`\n- [ ] `DescribeConfigurationRevision`\n- [ ] `BatchAssociateScramSecret`\n- [ ] `BatchDisassociateScramSecret`\n- [ ] `ListScramSecrets`\n- [ ] `UpdateClusterKafkaVersion`, `UpdateBrokerCount`, `UpdateBrokerType`, `UpdateBrokerStorage`\n- [ ] Serverless and V2 cluster APIs\n- [x] Single-node Redpanda broker, loopback endpoints, readiness and lifecycle cleanup\n- [ ] DNS, multi-node brokers and cluster-operation state\n- [x] Topics and producer/consumer data plane in Docker mode\n- [x] Unauthenticated plaintext/TLS/dual Docker listeners\n- [ ] SCRAM, IAM, mTLS, logging and open monitoring"
+      "features": "- [x] `GetBootstrapBrokers`\n- [x] `ListNodes`\n- [x] `CreateConfiguration` (configuration records)\n- [x] `ListConfigurations` (configuration records)\n- [x] `DescribeConfiguration` (configuration records)\n- [x] `ListConfigurationRevisions` (configuration records)\n- [x] `DescribeConfigurationRevision` (configuration records)\n- [ ] `BatchAssociateScramSecret`\n- [ ] `BatchDisassociateScramSecret`\n- [ ] `ListScramSecrets`\n- [ ] `UpdateClusterKafkaVersion`, `UpdateBrokerCount`, `UpdateBrokerType`, `UpdateBrokerStorage`\n- [ ] Serverless and V2 cluster APIs\n- [x] Single-node Redpanda broker, loopback endpoints, readiness and lifecycle cleanup\n- [ ] DNS, multi-node brokers and cluster-operation state\n- [x] Topics and producer/consumer data plane in Docker mode\n- [x] Unauthenticated plaintext/TLS/dual Docker listeners\n- [ ] SCRAM, IAM, mTLS, logging and open monitoring"
     },
     "applicationautoscaling-runtime": {
       "title": "Application Auto Scaling execution and advanced policies",

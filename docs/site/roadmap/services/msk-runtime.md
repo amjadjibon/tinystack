@@ -12,11 +12,11 @@ Provisioned records, bootstrap brokers, node listings and a single-node Redpanda
 
 - [x] `GetBootstrapBrokers`
 - [x] `ListNodes`
-- [ ] `CreateConfiguration`
-- [ ] `ListConfigurations`
-- [ ] `DescribeConfiguration`
-- [ ] `ListConfigurationRevisions`
-- [ ] `DescribeConfigurationRevision`
+- [x] `CreateConfiguration` (configuration records)
+- [x] `ListConfigurations` (configuration records)
+- [x] `DescribeConfiguration` (configuration records)
+- [x] `ListConfigurationRevisions` (configuration records)
+- [x] `DescribeConfigurationRevision` (configuration records)
 - [ ] `BatchAssociateScramSecret`
 - [ ] `BatchDisassociateScramSecret`
 - [ ] `ListScramSecrets`

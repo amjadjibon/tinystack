@@ -24,7 +24,7 @@ See the [implemented feature catalogue](catalogue.md#cloudformation) for this se
 - Only registered resource types and properties, plus provider-defined Custom::<Name> properties and attributes, are supported.
 - Nested stack NotificationARNs and custom resource ServiceToken changes are rejected; ServiceToken must name a Lambda function or SNS topic.
 - No stack sets, imports (ImportExistingResources is accepted but ignored) or drift detection.
-- The console cannot create or update stacks or change sets, and offers no drift detection, continue update rollback or cancel update.
+- The console offers no drift detection, continue update rollback or cancel update.
 - No macros/AWS::Include, policies with unsupported semantics or snapshot deletion behavior.
 - IAM capabilities are checked but permission policies and service roles are not evaluated.
 - AWS::IAM::Role accepts PermissionsBoundary only as an absent value; AWS::S3::Bucket AccessControl is limited to Private; EXPRESS deployment mode is rejected.

@@ -10,10 +10,12 @@ Docker workers, build history, CloudWatch logs, S3 source/artifacts and buildspe
 
 ## Proposed scope
 
-- [ ] RetryBuild and automatic retry policies
+- [x] RetryBuild using saved effective build configuration
+- [ ] Automatic retry policies
 - [ ] Batch builds
 - [ ] Git source checkout and authentication
-- [ ] Webhooks, report groups and report generation
+- [x] TEST/NO_EXPORT report groups
+- [ ] Webhooks and broader report generation
 - [ ] Cache, managed runtime installation and secondary sources/artifacts
 - [ ] Service-role credentials, KMS encryption and S3 logs
 
