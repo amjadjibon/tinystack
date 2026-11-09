@@ -6304,7 +6304,10 @@
       "EnableKinesisStreamingDestination",
       "DisableKinesisStreamingDestination",
       "DescribeKinesisStreamingDestination",
-      "UpdateKinesisStreamingDestination"
+      "UpdateKinesisStreamingDestination",
+      "PutResourcePolicy",
+      "GetResourcePolicy",
+      "DeleteResourcePolicy"
     ],
     "shapes": {
       "CreateTableInput": [
@@ -6914,6 +6917,29 @@
         "ReadUnitsPerSecond",
         "WriteUnitsPerSecond",
         "Status"
+      ],
+      "PutResourcePolicyInput": [
+        "ResourceArn",
+        "Policy",
+        "ExpectedRevisionId",
+        "ConfirmRemoveSelfResourceAccess"
+      ],
+      "PutResourcePolicyOutput": [
+        "RevisionId"
+      ],
+      "GetResourcePolicyInput": [
+        "ResourceArn"
+      ],
+      "GetResourcePolicyOutput": [
+        "Policy",
+        "RevisionId"
+      ],
+      "DeleteResourcePolicyInput": [
+        "ResourceArn",
+        "ExpectedRevisionId"
+      ],
+      "DeleteResourcePolicyOutput": [
+        "RevisionId"
       ]
     }
   },

@@ -793,6 +793,35 @@ type UpdateKinesisStreamingDestinationOutput struct {
 	UpdateKinesisStreamingConfiguration *UpdateKinesisStreamingConfiguration `json:"UpdateKinesisStreamingConfiguration,omitempty"`
 }
 
+type PutResourcePolicyInput struct {
+	ResourceArn                     *string `json:"ResourceArn,omitempty"`
+	Policy                          *string `json:"Policy,omitempty"`
+	ExpectedRevisionId              *string `json:"ExpectedRevisionId,omitempty"`
+	ConfirmRemoveSelfResourceAccess *bool   `json:"ConfirmRemoveSelfResourceAccess,omitempty"`
+}
+
+type PutResourcePolicyOutput struct {
+	RevisionId *string `json:"RevisionId,omitempty"`
+}
+
+type GetResourcePolicyInput struct {
+	ResourceArn *string `json:"ResourceArn,omitempty"`
+}
+
+type GetResourcePolicyOutput struct {
+	Policy     *string `json:"Policy,omitempty"`
+	RevisionId *string `json:"RevisionId,omitempty"`
+}
+
+type DeleteResourcePolicyInput struct {
+	ResourceArn        *string `json:"ResourceArn,omitempty"`
+	ExpectedRevisionId *string `json:"ExpectedRevisionId,omitempty"`
+}
+
+type DeleteResourcePolicyOutput struct {
+	RevisionId *string `json:"RevisionId,omitempty"`
+}
+
 type API interface {
 	CreateTable(context.Context, *CreateTableInput) (*CreateTableOutput, error)
 	DeleteTable(context.Context, *DeleteTableInput) (*DeleteTableOutput, error)
@@ -832,10 +861,13 @@ type API interface {
 	DisableKinesisStreamingDestination(context.Context, *KinesisStreamingDestinationInput) (*KinesisStreamingDestinationOutput, error)
 	DescribeKinesisStreamingDestination(context.Context, *DescribeKinesisStreamingDestinationInput) (*DescribeKinesisStreamingDestinationOutput, error)
 	UpdateKinesisStreamingDestination(context.Context, *UpdateKinesisStreamingDestinationInput) (*UpdateKinesisStreamingDestinationOutput, error)
+	PutResourcePolicy(context.Context, *PutResourcePolicyInput) (*PutResourcePolicyOutput, error)
+	GetResourcePolicy(context.Context, *GetResourcePolicyInput) (*GetResourcePolicyOutput, error)
+	DeleteResourcePolicy(context.Context, *DeleteResourcePolicyInput) (*DeleteResourcePolicyOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "dynamodb", SigningName: "dynamodb", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "dynamodb", TargetPrefix: "DynamoDB_20120810", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_0"}, Errors: map[string]catalog.ErrorBinding{"BackupInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "BackupNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConditionalCheckFailedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ContinuousBackupsUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "DuplicateItemException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExportConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExportNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "IdempotentParameterMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InternalServerError": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEndpointException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 421}, "InvalidExportTimeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidRestoreTimeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ItemCollectionSizeLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PointInTimeRecoveryUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ProvisionedThroughputExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ReplicatedWriteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RequestLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionCanceledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "TransactionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionInProgressException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "dynamodb", SigningName: "dynamodb", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "dynamodb", TargetPrefix: "DynamoDB_20120810", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_0"}, Errors: map[string]catalog.ErrorBinding{"BackupInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "BackupNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConditionalCheckFailedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ContinuousBackupsUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "DuplicateItemException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExportConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExportNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "IdempotentParameterMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InternalServerError": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEndpointException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 421}, "InvalidExportTimeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidRestoreTimeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ItemCollectionSizeLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PointInTimeRecoveryUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PolicyNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ProvisionedThroughputExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ReplicatedWriteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RequestLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionCanceledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "TransactionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionInProgressException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateTable": {Name: "CreateTable", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:CreateTable", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.CreateTable", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &CreateTableInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateTable(ctx, input.(*CreateTableInput))
 		}},
@@ -941,6 +973,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"UpdateKinesisStreamingDestination": {Name: "UpdateKinesisStreamingDestination", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:UpdateKinesisStreamingDestination", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.UpdateKinesisStreamingDestination", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &UpdateKinesisStreamingDestinationInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.UpdateKinesisStreamingDestination(ctx, input.(*UpdateKinesisStreamingDestinationInput))
+		}},
+		"PutResourcePolicy": {Name: "PutResourcePolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:PutResourcePolicy", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.PutResourcePolicy", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &PutResourcePolicyInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutResourcePolicy(ctx, input.(*PutResourcePolicyInput))
+		}},
+		"GetResourcePolicy": {Name: "GetResourcePolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:GetResourcePolicy", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.GetResourcePolicy", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &GetResourcePolicyInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetResourcePolicy(ctx, input.(*GetResourcePolicyInput))
+		}},
+		"DeleteResourcePolicy": {Name: "DeleteResourcePolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:DeleteResourcePolicy", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.DeleteResourcePolicy", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DeleteResourcePolicyInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteResourcePolicy(ctx, input.(*DeleteResourcePolicyInput))
 		}},
 	}}
 }

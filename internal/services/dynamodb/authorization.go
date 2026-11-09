@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -106,14 +107,19 @@ func (s *Service) AuthorizationResources(
 
 			_, tableName, _ := strings.Cut(arn, ":table/")
 			tableName, _, _ = strings.Cut(tableName, "/")
-			target := catalog.AuthorizationResource{ARN: arn, TagsKnown: true}
-			t, _, readErr := storage.Read[table](tx, m.AccountID+"/"+m.Region+"/dynamodb/"+tableName)
+			owner := strings.SplitN(arn, ":", 6)
+			if len(owner) != 6 {
+				return awserror.Validation("Invalid resource ARN")
+			}
+			target := catalog.AuthorizationResource{ARN: arn, OwnerAccount: owner[4], TagsKnown: true}
+			t, _, readErr := storage.Read[table](tx, owner[4]+"/"+m.Region+"/dynamodb/"+tableName)
 			if readErr != nil {
 				return readErr
 			}
 
 			if t != nil {
 				target.Tags = common.CloneTags(t.Tags)
+				target.Policy = t.ResourcePolicies[arn].Document
 			}
 
 			required := actions[name]
@@ -133,7 +139,8 @@ func (s *Service) AuthorizationResources(
 					out = append(
 						out,
 						catalog.AuthorizationResource{
-							ARN:       arn + "/index/" + index,
+							ARN:          arn + "/index/" + index,
+							OwnerAccount: target.OwnerAccount, Policy: target.Policy,
 							Action:    required.action,
 							Tags:      target.Tags,
 							TagsKnown: true,

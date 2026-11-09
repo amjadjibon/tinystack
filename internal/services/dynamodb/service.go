@@ -55,8 +55,9 @@ func (s *Service) Stop() { s.bg.Stop() }
 // key (itemRecord), and the description's item count and size are kept
 // current as items are written.
 type table struct {
-	Description api.TableDescription
-	Tags        map[string]string `json:",omitempty"`
+	ResourcePolicies map[string]resourcePolicy `json:",omitempty"`
+	Description      api.TableDescription
+	Tags             map[string]string `json:",omitempty"`
 	// TTL is the attribute that holds item expiry times while TTL is enabled.
 	TTL string `json:",omitempty"`
 	// Destinations are the table's Kinesis streaming destinations.
@@ -72,6 +73,10 @@ type table struct {
 var tableName = regexp.MustCompile(`^[A-Za-z0-9_.-]{3,255}$`)
 
 func tableKey(ctx context.Context, name *string) (string, error) {
+	if name != nil && strings.HasPrefix(*name, "arn:") {
+		return policyTableKey(ctx, *name)
+	}
+
 	if name == nil || !tableName.MatchString(*name) {
 		return "", awserror.Validation("TableName must be 3–255 characters using letters, digits, _, -, or .")
 	}

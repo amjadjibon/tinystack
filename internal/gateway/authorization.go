@@ -28,7 +28,7 @@ const (
 func resourceAuthorization(service string) bool {
 	return service == consoleS3 || service == consoleSQS || service == consoleSNS ||
 		service == authorizationKMS || service == authorizationLambda || service == authorizationSecrets ||
-		service == consoleEventBridge || service == authorizationKinesis || service == executeService
+		service == consoleEventBridge || service == authorizationKinesis || service == executeService || service == "dynamodb"
 }
 
 // PolicyLookup reads the current identity policy snapshot through IAM.

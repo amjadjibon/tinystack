@@ -2,6 +2,7 @@ package cloudformation
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 )
 
@@ -73,6 +74,7 @@ func init() {
 			"StreamSpecification",
 			propertyKinesisSpecification,
 			"TimeToLiveSpecification",
+			"ResourcePolicy",
 			memberTags,
 		},
 		attributes: []string{memberArn, memberStreamArn},
@@ -252,6 +254,11 @@ func createTable(ctx context.Context, c *client, p props) (physical string, attr
 		return "", nil, err
 	}
 
+	err = tableResourcePolicy(ctx, c, outText(out, "TableDescription", "TableArn"), props{}, p)
+	if err != nil {
+		return "", nil, err
+	}
+
 	err = timeToLive(ctx, c, name, props{}, p)
 	if err != nil {
 		return "", nil, err
@@ -307,6 +314,10 @@ func updateTable(ctx context.Context, c *client, r *resource, p props) (map[stri
 	}
 
 	if err := kinesisStream(ctx, c, r.Physical, old, p); err != nil {
+		return nil, err
+	}
+
+	if err := tableResourcePolicy(ctx, c, outText(attributes, memberArn), old, p); err != nil {
 		return nil, err
 	}
 
@@ -431,5 +442,27 @@ func putBucketPolicy(ctx context.Context, c *client, p props) error {
 	_, err := c.call(ctx, "s3", "PutBucketPolicy", map[string]any{
 		memberBucket: p.str(memberBucket), "Policy": p.document(memberPolicyDocument),
 	})
+	return err
+}
+
+func tableResourcePolicy(ctx context.Context, c *client, arn string, old, p props) error {
+	if !p.changed(old, "ResourcePolicy") {
+		return nil
+	}
+	params := map[string]any{memberResourceArn: arn}
+	op := "DeleteResourcePolicy"
+	if raw, ok := p["ResourcePolicy"]; ok {
+		spec, valid := raw.(map[string]any)
+		if !valid || len(spec) != 1 || spec["PolicyDocument"] == nil {
+			return validation("ResourcePolicy requires only PolicyDocument")
+		}
+		document, err := json.Marshal(spec["PolicyDocument"])
+		if err != nil {
+			return err
+		}
+		params["Policy"] = string(document)
+		op = "PutResourcePolicy"
+	}
+	_, err := c.call(ctx, "dynamodb", op, params)
 	return err
 }
