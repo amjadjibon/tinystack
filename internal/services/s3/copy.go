@@ -283,6 +283,7 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 			obj.Checksum = replacement
 		}
 
+		obj.Parts = nil
 		obj.LastModified = s.now().UnixMilli()
 		status, putErr := putCurrent(tx, target, *in.Key, &obj, body)
 		written = reported(status, &obj)

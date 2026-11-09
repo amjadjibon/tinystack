@@ -1234,6 +1234,56 @@ type ListObjectsOutput struct {
 	EncodingType   *string        `json:"EncodingType,omitempty" xml:"EncodingType,omitempty"`
 }
 
+type GetObjectAttributesRequest struct {
+	Bucket              *string  `json:"-" xml:"-"`
+	Key                 *string  `json:"-" xml:"-"`
+	VersionId           *string  `json:"-" xml:"-"`
+	MaxParts            *int64   `json:"-" xml:"-"`
+	PartNumberMarker    *string  `json:"-" xml:"-"`
+	ExpectedBucketOwner *string  `json:"-" xml:"-"`
+	ObjectAttributes    []string `json:"-" xml:"-"`
+}
+
+type Checksum struct {
+	ChecksumCRC32     *string `json:"ChecksumCRC32,omitempty" xml:"ChecksumCRC32,omitempty"`
+	ChecksumCRC32C    *string `json:"ChecksumCRC32C,omitempty" xml:"ChecksumCRC32C,omitempty"`
+	ChecksumCRC64NVME *string `json:"ChecksumCRC64NVME,omitempty" xml:"ChecksumCRC64NVME,omitempty"`
+	ChecksumSHA1      *string `json:"ChecksumSHA1,omitempty" xml:"ChecksumSHA1,omitempty"`
+	ChecksumSHA256    *string `json:"ChecksumSHA256,omitempty" xml:"ChecksumSHA256,omitempty"`
+	ChecksumType      *string `json:"ChecksumType,omitempty" xml:"ChecksumType,omitempty"`
+}
+
+type ObjectPart struct {
+	PartNumber        *int64  `json:"PartNumber,omitempty" xml:"PartNumber,omitempty"`
+	Size              *int64  `json:"Size,omitempty" xml:"Size,omitempty"`
+	ChecksumCRC32     *string `json:"ChecksumCRC32,omitempty" xml:"ChecksumCRC32,omitempty"`
+	ChecksumCRC32C    *string `json:"ChecksumCRC32C,omitempty" xml:"ChecksumCRC32C,omitempty"`
+	ChecksumCRC64NVME *string `json:"ChecksumCRC64NVME,omitempty" xml:"ChecksumCRC64NVME,omitempty"`
+	ChecksumSHA1      *string `json:"ChecksumSHA1,omitempty" xml:"ChecksumSHA1,omitempty"`
+	ChecksumSHA256    *string `json:"ChecksumSHA256,omitempty" xml:"ChecksumSHA256,omitempty"`
+}
+
+type GetObjectAttributesParts struct {
+	TotalPartsCount      *int64       `json:"TotalPartsCount,omitempty" xml:"PartsCount,omitempty"`
+	PartNumberMarker     *string      `json:"PartNumberMarker,omitempty" xml:"PartNumberMarker,omitempty"`
+	NextPartNumberMarker *string      `json:"NextPartNumberMarker,omitempty" xml:"NextPartNumberMarker,omitempty"`
+	MaxParts             *int64       `json:"MaxParts,omitempty" xml:"MaxParts,omitempty"`
+	IsTruncated          *bool        `json:"IsTruncated,omitempty" xml:"IsTruncated,omitempty"`
+	Parts                []ObjectPart `json:"Parts,omitempty" xml:"Part,omitempty"`
+}
+
+type GetObjectAttributesOutput struct {
+	XMLName      xml.Name                  `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ GetObjectAttributesResponse"`
+	DeleteMarker *bool                     `json:"-" xml:"-"`
+	LastModified *time.Time                `json:"-" xml:"-"`
+	VersionId    *string                   `json:"-" xml:"-"`
+	ETag         *string                   `json:"ETag,omitempty" xml:"ETag,omitempty"`
+	Checksum     *Checksum                 `json:"Checksum,omitempty" xml:"Checksum,omitempty"`
+	ObjectParts  *GetObjectAttributesParts `json:"ObjectParts,omitempty" xml:"ObjectParts,omitempty"`
+	StorageClass *string                   `json:"StorageClass,omitempty" xml:"StorageClass,omitempty"`
+	ObjectSize   *int64                    `json:"ObjectSize,omitempty" xml:"ObjectSize,omitempty"`
+}
+
 type API interface {
 	CreateBucket(context.Context, *CreateBucketRequest) (*CreateBucketOutput, error)
 	DeleteBucket(context.Context, *DeleteBucketRequest) (*DeleteBucketOutput, error)
@@ -1298,6 +1348,7 @@ type API interface {
 	GetObjectLegalHold(context.Context, *GetObjectLegalHoldRequest) (*GetObjectLegalHoldOutput, error)
 	UploadPartCopy(context.Context, *UploadPartCopyRequest) (*UploadPartCopyOutput, error)
 	ListObjects(context.Context, *ListObjectsRequest) (*ListObjectsOutput, error)
+	GetObjectAttributes(context.Context, *GetObjectAttributesRequest) (*GetObjectAttributesOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1490,6 +1541,9 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListObjects": {Name: "ListObjects", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:ListBucket", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "Delimiter": catalog.MemberBinding{Location: "query", Name: "delimiter", Format: ""}, "EncodingType": catalog.MemberBinding{Location: "query", Name: "encoding-type", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Marker": catalog.MemberBinding{Location: "query", Name: "marker", Format: ""}, "MaxKeys": catalog.MemberBinding{Location: "query", Name: "max-keys", Format: ""}, "OptionalObjectAttributes": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-optional-object-attributes", Format: ""}, "Prefix": catalog.MemberBinding{Location: "query", Name: "prefix", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}}, Output: map[string]catalog.MemberBinding{"CommonPrefixes": catalog.MemberBinding{Location: "document", Name: "CommonPrefixes", Format: ""}, "Contents": catalog.MemberBinding{Location: "document", Name: "Contents", Format: ""}, "Delimiter": catalog.MemberBinding{Location: "document", Name: "Delimiter", Format: ""}, "EncodingType": catalog.MemberBinding{Location: "document", Name: "EncodingType", Format: ""}, "IsTruncated": catalog.MemberBinding{Location: "document", Name: "IsTruncated", Format: ""}, "Marker": catalog.MemberBinding{Location: "document", Name: "Marker", Format: ""}, "MaxKeys": catalog.MemberBinding{Location: "document", Name: "MaxKeys", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "Name", Format: ""}, "NextMarker": catalog.MemberBinding{Location: "document", Name: "NextMarker", Format: ""}, "Prefix": catalog.MemberBinding{Location: "document", Name: "Prefix", Format: ""}}, Method: "GET", URI: "/{Bucket}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &ListObjectsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListObjects(ctx, input.(*ListObjectsRequest))
+		}},
+		"GetObjectAttributes": {Name: "GetObjectAttributes", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetObjectAttributes", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "MaxParts": catalog.MemberBinding{Location: "header", Name: "x-amz-max-parts", Format: ""}, "ObjectAttributes": catalog.MemberBinding{Location: "header", Name: "x-amz-object-attributes", Format: ""}, "PartNumberMarker": catalog.MemberBinding{Location: "header", Name: "x-amz-part-number-marker", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKey": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "VersionId": catalog.MemberBinding{Location: "query", Name: "versionId", Format: ""}}, Output: map[string]catalog.MemberBinding{"Checksum": catalog.MemberBinding{Location: "document", Name: "Checksum", Format: ""}, "DeleteMarker": catalog.MemberBinding{Location: "header", Name: "x-amz-delete-marker", Format: ""}, "ETag": catalog.MemberBinding{Location: "document", Name: "ETag", Format: ""}, "LastModified": catalog.MemberBinding{Location: "header", Name: "Last-Modified", Format: ""}, "ObjectParts": catalog.MemberBinding{Location: "document", Name: "ObjectParts", Format: ""}, "ObjectSize": catalog.MemberBinding{Location: "document", Name: "ObjectSize", Format: ""}, "StorageClass": catalog.MemberBinding{Location: "document", Name: "StorageClass", Format: ""}, "VersionId": catalog.MemberBinding{Location: "header", Name: "x-amz-version-id", Format: ""}}, Method: "GET", URI: "/{Bucket}/{Key+}?attributes", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetObjectAttributesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetObjectAttributes(ctx, input.(*GetObjectAttributesRequest))
 		}},
 	}}
 }

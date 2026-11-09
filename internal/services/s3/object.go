@@ -51,6 +51,7 @@ type object struct {
 	ObjectLockMode string `json:",omitempty"`
 	// ObjectLockLegalHoldStatus is the legal hold status: "ON" or "OFF".
 	ObjectLockLegalHoldStatus string           `json:",omitempty"`
+	Parts                     []api.ObjectPart `json:",omitempty"`
 	Size                      int64
 	LastModified              int64
 	// DeleteMarker marks a delete marker, which only a history record holds.

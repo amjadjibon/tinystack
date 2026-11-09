@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/csv"
 	"errors"
 	"fmt"
 	"io"
@@ -484,7 +485,20 @@ func Decode(
 		case locationLabel:
 			err = setScalar(f, labels[mb.Name], mb.Name)
 		case locationHeader:
-			if v := r.Header.Get(mb.Name); v != "" {
+			if v := strings.Join(r.Header.Values(mb.Name), ","); v != "" {
+				if f.Kind() == reflect.Slice && f.Type().Elem().Kind() == reflect.String {
+					reader := csv.NewReader(strings.NewReader(v))
+					reader.TrimLeadingSpace = true
+					values, parseErr := reader.Read()
+					if parseErr != nil {
+						err = invalid("Invalid header list %s", mb.Name)
+						return
+					}
+
+					f.Set(reflect.ValueOf(values))
+					return
+				}
+
 				err = setScalar(f, v, mb.Name)
 			}
 		case locationQuery:

@@ -86,3 +86,29 @@ func TestStringPayload(t *testing.T) {
 		t.Fatalf("%+v", resp)
 	}
 }
+
+func TestDecodeHeaderList(t *testing.T) {
+	var in struct{ Attributes []string }
+	b := &catalog.Binding{Input: map[string]catalog.MemberBinding{
+		"Attributes": {Location: locationHeader, Name: "x-attributes"},
+	}}
+	r := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
+	r.Header.Add("x-attributes", `ETag, "ObjectSize"`)
+	r.Header.Add("x-attributes", "Checksum")
+	if err := Decode(
+		r,
+		b,
+		nil,
+		nil,
+		&in,
+		nil,
+	); err != nil ||
+		strings.Join(in.Attributes, ",") != "ETag,ObjectSize,Checksum" {
+		t.Fatalf("header list: %+v %v", in, err)
+	}
+
+	r.Header.Set("x-attributes", `"unterminated`)
+	if err := Decode(r, b, nil, nil, &in, nil); err == nil {
+		t.Fatal("malformed list accepted")
+	}
+}

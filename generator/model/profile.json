@@ -18329,7 +18329,8 @@
       "PutObjectLegalHold",
       "GetObjectLegalHold",
       "UploadPartCopy",
-      "ListObjects"
+      "ListObjects",
+      "GetObjectAttributes"
     ],
     "shapes": {
       "CreateBucketRequest": [
@@ -19291,6 +19292,50 @@
         "MaxKeys",
         "CommonPrefixes",
         "EncodingType"
+      ],
+      "GetObjectAttributesRequest": [
+        "Bucket",
+        "Key",
+        "VersionId",
+        "MaxParts",
+        "PartNumberMarker",
+        "ExpectedBucketOwner",
+        "ObjectAttributes"
+      ],
+      "GetObjectAttributesOutput": [
+        "DeleteMarker",
+        "LastModified",
+        "VersionId",
+        "ETag",
+        "Checksum",
+        "ObjectParts",
+        "StorageClass",
+        "ObjectSize"
+      ],
+      "GetObjectAttributesParts": [
+        "TotalPartsCount",
+        "PartNumberMarker",
+        "NextPartNumberMarker",
+        "MaxParts",
+        "IsTruncated",
+        "Parts"
+      ],
+      "ObjectPart": [
+        "PartNumber",
+        "Size",
+        "ChecksumCRC32",
+        "ChecksumCRC32C",
+        "ChecksumCRC64NVME",
+        "ChecksumSHA1",
+        "ChecksumSHA256"
+      ],
+      "Checksum": [
+        "ChecksumCRC32",
+        "ChecksumCRC32C",
+        "ChecksumCRC64NVME",
+        "ChecksumSHA1",
+        "ChecksumSHA256",
+        "ChecksumType"
       ]
     }
   },

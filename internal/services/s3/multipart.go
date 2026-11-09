@@ -334,6 +334,7 @@ func (s *Service) CompleteMultipartUpload(
 	var bucket string
 	var refs [][]byte
 	var partSums []string
+	var completedParts []api.ObjectPart
 	var digests []byte
 	defer func() {
 		for _, ref := range refs {
@@ -383,6 +384,9 @@ func (s *Service) CompleteMultipartUpload(
 			}
 
 			partSums = append(partSums, p.Checksum)
+			attribute := api.ObjectPart{PartNumber: new(n), Size: new(p.Size)}
+			(&checksum{Algorithm: algorithm, Value: p.Checksum}).apply(&attribute)
+			completedParts = append(completedParts, attribute)
 			if i < len(in.MultipartUpload.Parts)-1 && p.Size < minMultipartPart {
 				return fail(400, "EntityTooSmall", "Every nonfinal part must be at least 5 MiB")
 			}
@@ -468,7 +472,7 @@ func (s *Service) CompleteMultipartUpload(
 		etag = fmt.Sprintf(`"%x-%d"`, finalSum, len(in.MultipartUpload.Parts))
 		obj := object{
 			ETag: etag, ContentType: u.ContentType, Metadata: u.Metadata,
-			Size: size, LastModified: s.now().UnixMilli(), Checksum: stored,
+			Parts: completedParts, Size: size, LastModified: s.now().UnixMilli(), Checksum: stored,
 			ObjectLockMode:            u.ObjectLockMode,
 			ObjectLockRetainUntilDate: u.ObjectLockRetainUntilDate,
 			ObjectLockLegalHoldStatus: u.ObjectLockLegalHoldStatus,
