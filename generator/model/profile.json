@@ -27820,6 +27820,7 @@
   },
   "xray": {
     "operations": [
+      "BatchGetTraces",
       "CreateGroup",
       "CreateSamplingRule",
       "DeleteGroup",
@@ -27827,7 +27828,13 @@
       "GetGroup",
       "GetGroups",
       "GetSamplingRules",
+      "GetSamplingTargets",
+      "GetServiceGraph",
+      "GetTraceGraph",
+      "GetTraceSummaries",
       "ListTagsForResource",
+      "PutTelemetryRecords",
+      "PutTraceSegments",
       "TagResource",
       "UntagResource",
       "UpdateGroup",
@@ -27969,6 +27976,173 @@
       ],
       "UpdateSamplingRuleResult": [
         "SamplingRuleRecord"
+      ],
+      "PutTraceSegmentsRequest": [
+        "TraceSegmentDocuments"
+      ],
+      "PutTraceSegmentsResult": [
+        "UnprocessedTraceSegments"
+      ],
+      "UnprocessedTraceSegment": [
+        "Id",
+        "ErrorCode",
+        "Message"
+      ],
+      "PutTelemetryRecordsRequest": [
+        "TelemetryRecords",
+        "EC2InstanceId",
+        "Hostname",
+        "ResourceARN"
+      ],
+      "TelemetryRecord": [
+        "Timestamp",
+        "SegmentsReceivedCount",
+        "SegmentsSentCount",
+        "SegmentsSpilloverCount",
+        "SegmentsRejectedCount",
+        "BackendConnectionErrors"
+      ],
+      "BackendConnectionErrors": [
+        "TimeoutCount",
+        "ConnectionRefusedCount",
+        "HTTPCode4XXCount",
+        "HTTPCode5XXCount",
+        "UnknownHostCount",
+        "OtherCount"
+      ],
+      "PutTelemetryRecordsResult": [],
+      "BatchGetTracesRequest": [
+        "TraceIds"
+      ],
+      "BatchGetTracesResult": [
+        "Traces",
+        "UnprocessedTraceIds"
+      ],
+      "Trace": [
+        "Id",
+        "Duration",
+        "LimitExceeded",
+        "Segments"
+      ],
+      "Segment": [
+        "Id",
+        "Document"
+      ],
+      "GetTraceSummariesRequest": [
+        "StartTime",
+        "EndTime",
+        "TimeRangeType",
+        "Sampling",
+        "FilterExpression",
+        "NextToken"
+      ],
+      "GetTraceSummariesResult": [
+        "TraceSummaries",
+        "ApproximateTime",
+        "TracesProcessedCount",
+        "NextToken"
+      ],
+      "TraceSummary": [
+        "Id",
+        "StartTime",
+        "Duration",
+        "ResponseTime",
+        "HasFault",
+        "HasError",
+        "HasThrottle",
+        "IsPartial",
+        "Http"
+      ],
+      "Http": [
+        "HttpURL",
+        "HttpStatus",
+        "HttpMethod",
+        "UserAgent",
+        "ClientIp"
+      ],
+      "GetTraceGraphRequest": [
+        "TraceIds"
+      ],
+      "GetTraceGraphResult": [
+        "Services"
+      ],
+      "Service": [
+        "ReferenceId",
+        "Name",
+        "Names",
+        "Root",
+        "AccountId",
+        "Type",
+        "StartTime",
+        "EndTime",
+        "Edges",
+        "SummaryStatistics"
+      ],
+      "Edge": [
+        "ReferenceId",
+        "StartTime",
+        "EndTime",
+        "SummaryStatistics"
+      ],
+      "EdgeStatistics": [
+        "OkCount",
+        "ErrorStatistics",
+        "FaultStatistics",
+        "TotalCount",
+        "TotalResponseTime"
+      ],
+      "ErrorStatistics": [
+        "ThrottleCount",
+        "OtherCount",
+        "TotalCount"
+      ],
+      "FaultStatistics": [
+        "OtherCount",
+        "TotalCount"
+      ],
+      "ServiceStatistics": [
+        "OkCount",
+        "ErrorStatistics",
+        "FaultStatistics",
+        "TotalCount",
+        "TotalResponseTime"
+      ],
+      "GetServiceGraphRequest": [
+        "StartTime",
+        "EndTime"
+      ],
+      "GetServiceGraphResult": [
+        "StartTime",
+        "EndTime",
+        "Services"
+      ],
+      "GetSamplingTargetsRequest": [
+        "SamplingStatisticsDocuments"
+      ],
+      "SamplingStatisticsDocument": [
+        "RuleName",
+        "ClientID",
+        "Timestamp",
+        "RequestCount",
+        "SampledCount",
+        "BorrowCount"
+      ],
+      "GetSamplingTargetsResult": [
+        "SamplingTargetDocuments",
+        "LastRuleModification",
+        "UnprocessedStatistics"
+      ],
+      "SamplingTargetDocument": [
+        "RuleName",
+        "FixedRate",
+        "ReservoirQuota",
+        "ReservoirQuotaTTL",
+        "Interval"
+      ],
+      "UnprocessedStatistics": [
+        "RuleName",
+        "ErrorCode",
+        "Message"
       ]
     }
   },

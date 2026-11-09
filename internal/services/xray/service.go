@@ -1,5 +1,4 @@
-// Package xray stores tracing groups and sampling rules. It does not ingest
-// trace segments, compute service graphs or generate telemetry insights.
+// Package xray stores tracing configuration and bounded trace records and computes local service graphs.
 package xray
 
 import (

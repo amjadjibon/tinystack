@@ -6,6 +6,27 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 )
 
+type BatchGetTracesRequest struct {
+	TraceIds []string `json:"TraceIds,omitempty"`
+}
+
+type Segment struct {
+	Id       *string `json:"Id,omitempty"`
+	Document *string `json:"Document,omitempty"`
+}
+
+type Trace struct {
+	Id            *string   `json:"Id,omitempty"`
+	Duration      *float64  `json:"Duration,omitempty"`
+	LimitExceeded *bool     `json:"LimitExceeded,omitempty"`
+	Segments      []Segment `json:"Segments,omitempty"`
+}
+
+type BatchGetTracesResult struct {
+	Traces              []Trace  `json:"Traces,omitempty"`
+	UnprocessedTraceIds []string `json:"UnprocessedTraceIds,omitempty"`
+}
+
 type InsightsConfiguration struct {
 	InsightsEnabled      *bool `json:"InsightsEnabled,omitempty"`
 	NotificationsEnabled *bool `json:"NotificationsEnabled,omitempty"`
@@ -116,6 +137,141 @@ type GetSamplingRulesResult struct {
 	NextToken           *string              `json:"NextToken,omitempty"`
 }
 
+type SamplingStatisticsDocument struct {
+	RuleName     *string  `json:"RuleName,omitempty"`
+	ClientID     *string  `json:"ClientID,omitempty"`
+	Timestamp    *float64 `json:"Timestamp,omitempty"`
+	RequestCount *int64   `json:"RequestCount,omitempty"`
+	SampledCount *int64   `json:"SampledCount,omitempty"`
+	BorrowCount  *int64   `json:"BorrowCount,omitempty"`
+}
+
+type GetSamplingTargetsRequest struct {
+	SamplingStatisticsDocuments []SamplingStatisticsDocument `json:"SamplingStatisticsDocuments,omitempty"`
+}
+
+type SamplingTargetDocument struct {
+	RuleName          *string  `json:"RuleName,omitempty"`
+	FixedRate         *float64 `json:"FixedRate,omitempty"`
+	ReservoirQuota    *int64   `json:"ReservoirQuota,omitempty"`
+	ReservoirQuotaTTL *float64 `json:"ReservoirQuotaTTL,omitempty"`
+	Interval          *int64   `json:"Interval,omitempty"`
+}
+
+type UnprocessedStatistics struct {
+	RuleName  *string `json:"RuleName,omitempty"`
+	ErrorCode *string `json:"ErrorCode,omitempty"`
+	Message   *string `json:"Message,omitempty"`
+}
+
+type GetSamplingTargetsResult struct {
+	SamplingTargetDocuments []SamplingTargetDocument `json:"SamplingTargetDocuments,omitempty"`
+	LastRuleModification    *float64                 `json:"LastRuleModification,omitempty"`
+	UnprocessedStatistics   []UnprocessedStatistics  `json:"UnprocessedStatistics,omitempty"`
+}
+
+type GetServiceGraphRequest struct {
+	StartTime *float64 `json:"StartTime,omitempty"`
+	EndTime   *float64 `json:"EndTime,omitempty"`
+}
+
+type ErrorStatistics struct {
+	ThrottleCount *int64 `json:"ThrottleCount,omitempty"`
+	OtherCount    *int64 `json:"OtherCount,omitempty"`
+	TotalCount    *int64 `json:"TotalCount,omitempty"`
+}
+
+type FaultStatistics struct {
+	OtherCount *int64 `json:"OtherCount,omitempty"`
+	TotalCount *int64 `json:"TotalCount,omitempty"`
+}
+
+type EdgeStatistics struct {
+	OkCount           *int64           `json:"OkCount,omitempty"`
+	ErrorStatistics   *ErrorStatistics `json:"ErrorStatistics,omitempty"`
+	FaultStatistics   *FaultStatistics `json:"FaultStatistics,omitempty"`
+	TotalCount        *int64           `json:"TotalCount,omitempty"`
+	TotalResponseTime *float64         `json:"TotalResponseTime,omitempty"`
+}
+
+type Edge struct {
+	ReferenceId       *int64          `json:"ReferenceId,omitempty"`
+	StartTime         *float64        `json:"StartTime,omitempty"`
+	EndTime           *float64        `json:"EndTime,omitempty"`
+	SummaryStatistics *EdgeStatistics `json:"SummaryStatistics,omitempty"`
+}
+
+type ServiceStatistics struct {
+	OkCount           *int64           `json:"OkCount,omitempty"`
+	ErrorStatistics   *ErrorStatistics `json:"ErrorStatistics,omitempty"`
+	FaultStatistics   *FaultStatistics `json:"FaultStatistics,omitempty"`
+	TotalCount        *int64           `json:"TotalCount,omitempty"`
+	TotalResponseTime *float64         `json:"TotalResponseTime,omitempty"`
+}
+
+type Service struct {
+	ReferenceId       *int64             `json:"ReferenceId,omitempty"`
+	Name              *string            `json:"Name,omitempty"`
+	Names             []string           `json:"Names,omitempty"`
+	Root              *bool              `json:"Root,omitempty"`
+	AccountId         *string            `json:"AccountId,omitempty"`
+	Type              *string            `json:"Type,omitempty"`
+	StartTime         *float64           `json:"StartTime,omitempty"`
+	EndTime           *float64           `json:"EndTime,omitempty"`
+	Edges             []Edge             `json:"Edges,omitempty"`
+	SummaryStatistics *ServiceStatistics `json:"SummaryStatistics,omitempty"`
+}
+
+type GetServiceGraphResult struct {
+	StartTime *float64  `json:"StartTime,omitempty"`
+	EndTime   *float64  `json:"EndTime,omitempty"`
+	Services  []Service `json:"Services,omitempty"`
+}
+
+type GetTraceGraphRequest struct {
+	TraceIds []string `json:"TraceIds,omitempty"`
+}
+
+type GetTraceGraphResult struct {
+	Services []Service `json:"Services,omitempty"`
+}
+
+type GetTraceSummariesRequest struct {
+	StartTime        *float64 `json:"StartTime,omitempty"`
+	EndTime          *float64 `json:"EndTime,omitempty"`
+	TimeRangeType    *string  `json:"TimeRangeType,omitempty"`
+	Sampling         *bool    `json:"Sampling,omitempty"`
+	FilterExpression *string  `json:"FilterExpression,omitempty"`
+	NextToken        *string  `json:"NextToken,omitempty"`
+}
+
+type Http struct {
+	HttpURL    *string `json:"HttpURL,omitempty"`
+	HttpStatus *int64  `json:"HttpStatus,omitempty"`
+	HttpMethod *string `json:"HttpMethod,omitempty"`
+	UserAgent  *string `json:"UserAgent,omitempty"`
+	ClientIp   *string `json:"ClientIp,omitempty"`
+}
+
+type TraceSummary struct {
+	Id           *string  `json:"Id,omitempty"`
+	StartTime    *float64 `json:"StartTime,omitempty"`
+	Duration     *float64 `json:"Duration,omitempty"`
+	ResponseTime *float64 `json:"ResponseTime,omitempty"`
+	HasFault     *bool    `json:"HasFault,omitempty"`
+	HasError     *bool    `json:"HasError,omitempty"`
+	HasThrottle  *bool    `json:"HasThrottle,omitempty"`
+	IsPartial    *bool    `json:"IsPartial,omitempty"`
+	Http         *Http    `json:"Http,omitempty"`
+}
+
+type GetTraceSummariesResult struct {
+	TraceSummaries       []TraceSummary `json:"TraceSummaries,omitempty"`
+	ApproximateTime      *float64       `json:"ApproximateTime,omitempty"`
+	TracesProcessedCount *int64         `json:"TracesProcessedCount,omitempty"`
+	NextToken            *string        `json:"NextToken,omitempty"`
+}
+
 type ListTagsForResourceRequest struct {
 	ResourceARN *string `json:"ResourceARN,omitempty"`
 	NextToken   *string `json:"NextToken,omitempty"`
@@ -124,6 +280,48 @@ type ListTagsForResourceRequest struct {
 type ListTagsForResourceResponse struct {
 	Tags      []Tag   `json:"Tags,omitempty"`
 	NextToken *string `json:"NextToken,omitempty"`
+}
+
+type BackendConnectionErrors struct {
+	TimeoutCount           *int64 `json:"TimeoutCount,omitempty"`
+	ConnectionRefusedCount *int64 `json:"ConnectionRefusedCount,omitempty"`
+	HTTPCode4XXCount       *int64 `json:"HTTPCode4XXCount,omitempty"`
+	HTTPCode5XXCount       *int64 `json:"HTTPCode5XXCount,omitempty"`
+	UnknownHostCount       *int64 `json:"UnknownHostCount,omitempty"`
+	OtherCount             *int64 `json:"OtherCount,omitempty"`
+}
+
+type TelemetryRecord struct {
+	Timestamp               *float64                 `json:"Timestamp,omitempty"`
+	SegmentsReceivedCount   *int64                   `json:"SegmentsReceivedCount,omitempty"`
+	SegmentsSentCount       *int64                   `json:"SegmentsSentCount,omitempty"`
+	SegmentsSpilloverCount  *int64                   `json:"SegmentsSpilloverCount,omitempty"`
+	SegmentsRejectedCount   *int64                   `json:"SegmentsRejectedCount,omitempty"`
+	BackendConnectionErrors *BackendConnectionErrors `json:"BackendConnectionErrors,omitempty"`
+}
+
+type PutTelemetryRecordsRequest struct {
+	TelemetryRecords []TelemetryRecord `json:"TelemetryRecords,omitempty"`
+	EC2InstanceId    *string           `json:"EC2InstanceId,omitempty"`
+	Hostname         *string           `json:"Hostname,omitempty"`
+	ResourceARN      *string           `json:"ResourceARN,omitempty"`
+}
+
+type PutTelemetryRecordsResult struct {
+}
+
+type PutTraceSegmentsRequest struct {
+	TraceSegmentDocuments []string `json:"TraceSegmentDocuments,omitempty"`
+}
+
+type UnprocessedTraceSegment struct {
+	Id        *string `json:"Id,omitempty"`
+	ErrorCode *string `json:"ErrorCode,omitempty"`
+	Message   *string `json:"Message,omitempty"`
+}
+
+type PutTraceSegmentsResult struct {
+	UnprocessedTraceSegments []UnprocessedTraceSegment `json:"UnprocessedTraceSegments,omitempty"`
 }
 
 type TagResourceRequest struct {
@@ -177,6 +375,7 @@ type UpdateSamplingRuleResult struct {
 }
 
 type API interface {
+	BatchGetTraces(context.Context, *BatchGetTracesRequest) (*BatchGetTracesResult, error)
 	CreateGroup(context.Context, *CreateGroupRequest) (*CreateGroupResult, error)
 	CreateSamplingRule(context.Context, *CreateSamplingRuleRequest) (*CreateSamplingRuleResult, error)
 	DeleteGroup(context.Context, *DeleteGroupRequest) (*DeleteGroupResult, error)
@@ -184,7 +383,13 @@ type API interface {
 	GetGroup(context.Context, *GetGroupRequest) (*GetGroupResult, error)
 	GetGroups(context.Context, *GetGroupsRequest) (*GetGroupsResult, error)
 	GetSamplingRules(context.Context, *GetSamplingRulesRequest) (*GetSamplingRulesResult, error)
+	GetSamplingTargets(context.Context, *GetSamplingTargetsRequest) (*GetSamplingTargetsResult, error)
+	GetServiceGraph(context.Context, *GetServiceGraphRequest) (*GetServiceGraphResult, error)
+	GetTraceGraph(context.Context, *GetTraceGraphRequest) (*GetTraceGraphResult, error)
+	GetTraceSummaries(context.Context, *GetTraceSummariesRequest) (*GetTraceSummariesResult, error)
 	ListTagsForResource(context.Context, *ListTagsForResourceRequest) (*ListTagsForResourceResponse, error)
+	PutTelemetryRecords(context.Context, *PutTelemetryRecordsRequest) (*PutTelemetryRecordsResult, error)
+	PutTraceSegments(context.Context, *PutTraceSegmentsRequest) (*PutTraceSegmentsResult, error)
 	TagResource(context.Context, *TagResourceRequest) (*TagResourceResponse, error)
 	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceResponse, error)
 	UpdateGroup(context.Context, *UpdateGroupRequest) (*UpdateGroupResult, error)
@@ -193,6 +398,9 @@ type API interface {
 
 func Descriptor(api API) catalog.Service {
 	return catalog.Service{Name: "xray", SigningName: "xray", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "xray", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"InvalidRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 404}, "RuleLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ThrottledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 429}, "TooManyTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+		"BatchGetTraces": {Name: "BatchGetTraces", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "xray:BatchGetTraces", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"TraceIds": catalog.MemberBinding{Location: "document", Name: "TraceIds", Format: ""}}, Output: map[string]catalog.MemberBinding{"Traces": catalog.MemberBinding{Location: "document", Name: "Traces", Format: ""}, "UnprocessedTraceIds": catalog.MemberBinding{Location: "document", Name: "UnprocessedTraceIds", Format: ""}}, Method: "POST", URI: "/Traces", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &BatchGetTracesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.BatchGetTraces(ctx, input.(*BatchGetTracesRequest))
+		}},
 		"CreateGroup": {Name: "CreateGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "xray:CreateGroup", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"FilterExpression": catalog.MemberBinding{Location: "document", Name: "FilterExpression", Format: ""}, "GroupName": catalog.MemberBinding{Location: "document", Name: "GroupName", Format: ""}, "InsightsConfiguration": catalog.MemberBinding{Location: "document", Name: "InsightsConfiguration", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Output: map[string]catalog.MemberBinding{"Group": catalog.MemberBinding{Location: "document", Name: "Group", Format: ""}}, Method: "POST", URI: "/CreateGroup", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateGroup(ctx, input.(*CreateGroupRequest))
 		}},
@@ -212,8 +420,26 @@ func Descriptor(api API) catalog.Service {
 		"GetSamplingRules": {Name: "GetSamplingRules", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "xray:GetSamplingRules", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}, "SamplingRuleRecords": catalog.MemberBinding{Location: "document", Name: "SamplingRuleRecords", Format: ""}}, Method: "POST", URI: "/GetSamplingRules", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetSamplingRulesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetSamplingRules(ctx, input.(*GetSamplingRulesRequest))
 		}},
+		"GetSamplingTargets": {Name: "GetSamplingTargets", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "xray:GetSamplingTargets", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"SamplingStatisticsDocuments": catalog.MemberBinding{Location: "document", Name: "SamplingStatisticsDocuments", Format: ""}}, Output: map[string]catalog.MemberBinding{"LastRuleModification": catalog.MemberBinding{Location: "document", Name: "LastRuleModification", Format: ""}, "SamplingTargetDocuments": catalog.MemberBinding{Location: "document", Name: "SamplingTargetDocuments", Format: ""}, "UnprocessedStatistics": catalog.MemberBinding{Location: "document", Name: "UnprocessedStatistics", Format: ""}}, Method: "POST", URI: "/SamplingTargets", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetSamplingTargetsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetSamplingTargets(ctx, input.(*GetSamplingTargetsRequest))
+		}},
+		"GetServiceGraph": {Name: "GetServiceGraph", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "xray:GetServiceGraph", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"EndTime": catalog.MemberBinding{Location: "document", Name: "EndTime", Format: ""}, "StartTime": catalog.MemberBinding{Location: "document", Name: "StartTime", Format: ""}}, Output: map[string]catalog.MemberBinding{"EndTime": catalog.MemberBinding{Location: "document", Name: "EndTime", Format: ""}, "Services": catalog.MemberBinding{Location: "document", Name: "Services", Format: ""}, "StartTime": catalog.MemberBinding{Location: "document", Name: "StartTime", Format: ""}}, Method: "POST", URI: "/ServiceGraph", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetServiceGraphRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetServiceGraph(ctx, input.(*GetServiceGraphRequest))
+		}},
+		"GetTraceGraph": {Name: "GetTraceGraph", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "xray:GetTraceGraph", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"TraceIds": catalog.MemberBinding{Location: "document", Name: "TraceIds", Format: ""}}, Output: map[string]catalog.MemberBinding{"Services": catalog.MemberBinding{Location: "document", Name: "Services", Format: ""}}, Method: "POST", URI: "/TraceGraph", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetTraceGraphRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetTraceGraph(ctx, input.(*GetTraceGraphRequest))
+		}},
+		"GetTraceSummaries": {Name: "GetTraceSummaries", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "xray:GetTraceSummaries", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"EndTime": catalog.MemberBinding{Location: "document", Name: "EndTime", Format: ""}, "FilterExpression": catalog.MemberBinding{Location: "document", Name: "FilterExpression", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}, "Sampling": catalog.MemberBinding{Location: "document", Name: "Sampling", Format: ""}, "StartTime": catalog.MemberBinding{Location: "document", Name: "StartTime", Format: ""}, "TimeRangeType": catalog.MemberBinding{Location: "document", Name: "TimeRangeType", Format: ""}}, Output: map[string]catalog.MemberBinding{"ApproximateTime": catalog.MemberBinding{Location: "document", Name: "ApproximateTime", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}, "TraceSummaries": catalog.MemberBinding{Location: "document", Name: "TraceSummaries", Format: ""}, "TracesProcessedCount": catalog.MemberBinding{Location: "document", Name: "TracesProcessedCount", Format: ""}}, Method: "POST", URI: "/TraceSummaries", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetTraceSummariesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetTraceSummaries(ctx, input.(*GetTraceSummariesRequest))
+		}},
 		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "xray:ListTagsForResource", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}, "ResourceARN": catalog.MemberBinding{Location: "document", Name: "ResourceARN", Format: ""}}, Output: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Method: "POST", URI: "/ListTagsForResource", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListTagsForResource(ctx, input.(*ListTagsForResourceRequest))
+		}},
+		"PutTelemetryRecords": {Name: "PutTelemetryRecords", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "xray:PutTelemetryRecords", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"EC2InstanceId": catalog.MemberBinding{Location: "document", Name: "EC2InstanceId", Format: ""}, "Hostname": catalog.MemberBinding{Location: "document", Name: "Hostname", Format: ""}, "ResourceARN": catalog.MemberBinding{Location: "document", Name: "ResourceARN", Format: ""}, "TelemetryRecords": catalog.MemberBinding{Location: "document", Name: "TelemetryRecords", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/TelemetryRecords", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &PutTelemetryRecordsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutTelemetryRecords(ctx, input.(*PutTelemetryRecordsRequest))
+		}},
+		"PutTraceSegments": {Name: "PutTraceSegments", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "xray:PutTraceSegments", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"TraceSegmentDocuments": catalog.MemberBinding{Location: "document", Name: "TraceSegmentDocuments", Format: ""}}, Output: map[string]catalog.MemberBinding{"UnprocessedTraceSegments": catalog.MemberBinding{Location: "document", Name: "UnprocessedTraceSegments", Format: ""}}, Method: "POST", URI: "/TraceSegments", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &PutTraceSegmentsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutTraceSegments(ctx, input.(*PutTraceSegmentsRequest))
 		}},
 		"TagResource": {Name: "TagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "xray:TagResource", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceARN": catalog.MemberBinding{Location: "document", Name: "ResourceARN", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/TagResource", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &TagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.TagResource(ctx, input.(*TagResourceRequest))

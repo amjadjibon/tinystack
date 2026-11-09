@@ -2073,21 +2073,28 @@
       "title": "AWS X-Ray",
       "category": "Developer Tools",
       "scope": "Account and Region",
-      "summary": "Store groups and sampling rules as configuration records without telemetry ingestion or trace analysis.",
-      "execution": "Configuration records only",
+      "summary": "Store trace segments, retrieve trace summaries and computed service graphs, and manage groups and sampling rules.",
+      "execution": "Trace and configuration records; local graph computation",
       "package": "xray",
       "features": [
-        "Twelve pinned REST JSON group, sampling rule, and tag operations with AWS SDK v2 integration",
+        "Nineteen pinned REST JSON operations with AWS SDK v2 integration",
         "Deterministic group lifecycle with unique names, filter expressions, insights configuration, and scoped ARNs",
         "Deterministic sampling rule lifecycle including the built-in Default rule at priority 10000, priority ordering, and custom rules",
         "Resource tagging on group and sampling rule ARNs with TagResource, UntagResource, ListTagsForResource, and RGTA support",
         "AWS::XRay::Group and AWS::XRay::SamplingRule CloudFormation resources with Ref and Fn::GetAtt returning GroupARN and RuleARN",
-        "RecordsOnly=true / ExecutionReady=false inventory, official AWS X-Ray icon and Terraform xray endpoint key"
+        "RecordsOnly=true / ExecutionReady=false inventory, official AWS X-Ray icon and Terraform xray endpoint key",
+        "PutTraceSegments validates each JSON document independently and reports UnprocessedTraceSegments; same segment ID replaces the previous document, including in-progress updates. Original JSON, nested subsegments, HTTP, AWS, annotations, metadata, flags, origin and user are retained",
+        "Traces are account/Region scoped, expire 30 days after their earliest segment start, and are pruned on ingestion and reads. Limit 10000 traces per scope with oldest-start eviction (ID breaks ties), 1 MiB per trace, 64 KiB per document and 50 documents per batch; starts over 5 minutes in the future are rejected",
+        "BatchGetTraces accepts up to 5 IDs and reports unknown IDs as UnprocessedTraceIds. Summaries require StartTime/EndTime and paginate 100 traces by ID. TraceId uses the ID timestamp; Event selects overlapping segment intervals. Sampling=true returns an exhaustive deterministic 100% sample",
+        "Filter subset: service(\"name\"), http.status = number, bare error/fault/throttle, annotation.key = string/number/boolean, responsetime > number, duration > number; AND/OR with AND precedence and parentheses. Predicates match any segment/subsegment; unsupported syntax returns InvalidRequestException naming the unsupported part",
+        "GetTraceGraph (up to 5 IDs) and GetServiceGraph (required time range) aggregate nodes by service name and type, downstream aws/remote subsegments and parent-linked segments, edge counts, completed response-time totals and error/fault/throttle counts",
+        "GetSamplingTargets returns stored fixed rates and full per-client reservoir sizes with a 10-second interval/TTL, latest rule modification and unprocessed unknown rules. This is deterministic local allocation, without distributed quota sharing",
+        "PutTelemetryRecords validates required timestamps and nonnegative counters and acknowledges without storing or computing metrics. Trace records are excluded from /_tinystack/resources; inventory remains groups and sampling rules only"
       ],
       "gaps": [
-        "Configuration records only; no telemetry ingestion, trace segments, trace graphs, service summaries, or analytics engine",
-        "Sampling targets and sampling statistics are excluded (GetSamplingTargets, GetSamplingStatisticSummaries)",
-        "Encryption configuration and resource policies are excluded (PutEncryptionConfig, PutResourcePolicy)",
+        "No UDP daemon on port 2000, new listener, Insights, encryption configuration, resource policies or external trace processing",
+        "Only the documented filter subset is implemented; no NOT, comparisons other than the listed = and > predicates, root-cause analytics, histograms, group-scoped graphs or advanced sampling strategies. Unsupported API members are rejected by the profile",
+        "Telemetry records are validated and discarded; GetSamplingStatisticSummaries, adaptive sampling, sampling boosts and distributed reservoir allocation are not implemented",
         "The built-in Default sampling rule cannot be deleted; deletion attempts reject with InvalidRequestException"
       ]
     },
