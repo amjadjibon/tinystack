@@ -61,6 +61,21 @@ func InputString(input any, name string) string {
 	return values[0]
 }
 
+// InputInt reads a named, top-level decoded integer member, or 0 when it is absent.
+func InputInt(input any, name string) int64 {
+	v := indirect(reflect.ValueOf(input))
+	if v.Kind() != reflect.Struct {
+		return 0
+	}
+
+	v = indirect(v.FieldByName(name))
+	if !v.CanInt() {
+		return 0
+	}
+
+	return v.Int()
+}
+
 // InputStrings reads a decoded string or string-list member.
 func InputStrings(input any, name string) []string {
 	v := indirect(reflect.ValueOf(input))

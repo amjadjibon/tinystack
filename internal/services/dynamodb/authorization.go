@@ -140,10 +140,11 @@ func (s *Service) AuthorizationResources(
 						out,
 						catalog.AuthorizationResource{
 							ARN:          arn + "/index/" + index,
-							OwnerAccount: target.OwnerAccount, Policy: target.Policy,
-							Action:    required.action,
-							Tags:      target.Tags,
-							TagsKnown: true,
+							OwnerAccount: target.OwnerAccount,
+							Policy:       target.Policy,
+							Action:       required.action,
+							Tags:         target.Tags,
+							TagsKnown:    true,
 						},
 					)
 				}

@@ -26,20 +26,7 @@ func (s *Service) AuthorizationResources(
 			return nil, resolveErr
 		}
 
-		var version int64
-		// Numeric input members are read through JSON for the authorization target.
-		data, marshalErr := json.Marshal(input)
-		if marshalErr != nil {
-			return nil, marshalErr
-		}
-
-		var fields struct{ VersionNumber int64 }
-		if decodeErr := json.Unmarshal(data, &fields); decodeErr != nil {
-			return nil, decodeErr
-		}
-
-		version = fields.VersionNumber
-		return s.layerAuthorization(ctx, scope, name, version, operation)
+		return s.layerAuthorization(ctx, scope, name, catalog.InputInt(input, "VersionNumber"), operation)
 	}
 
 	if operation == "GetLayerVersionByArn" {

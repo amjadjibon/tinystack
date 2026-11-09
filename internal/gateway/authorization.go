@@ -19,16 +19,18 @@ import (
 )
 
 const (
-	authorizationKMS     = "kms"
-	authorizationKinesis = "kinesis"
-	authorizationLambda  = "lambda"
-	authorizationSecrets = "secretsmanager"
+	authorizationDynamoDB = "dynamodb"
+	authorizationKMS      = "kms"
+	authorizationKinesis  = "kinesis"
+	authorizationLambda   = "lambda"
+	authorizationSecrets  = "secretsmanager"
 )
 
 func resourceAuthorization(service string) bool {
 	return service == consoleS3 || service == consoleSQS || service == consoleSNS ||
 		service == authorizationKMS || service == authorizationLambda || service == authorizationSecrets ||
-		service == consoleEventBridge || service == authorizationKinesis || service == executeService || service == "dynamodb"
+		service == consoleEventBridge || service == authorizationKinesis || service == executeService ||
+		service == authorizationDynamoDB
 }
 
 // PolicyLookup reads the current identity policy snapshot through IAM.

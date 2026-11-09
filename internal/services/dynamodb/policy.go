@@ -25,6 +25,7 @@ func policyTableKey(ctx context.Context, arn string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	if len(parts) != 6 || !strings.HasPrefix(arn, "arn:aws:dynamodb:") || parts[3] != m.Region ||
 		!strings.HasPrefix(parts[5], "table/") ||
 		len(parts[4]) != 12 {
@@ -35,6 +36,7 @@ func policyTableKey(ctx context.Context, arn string) (string, error) {
 	if !tableName.MatchString(name) {
 		return "", awserror.Validation("Invalid table ARN")
 	}
+
 	return parts[4] + "/" + parts[3] + "/dynamodb/" + name, nil
 }
 
@@ -60,29 +62,36 @@ func (s *Service) PutResourcePolicy(
 	if err != nil {
 		return nil, err
 	}
+
 	if len(doc) > 20*1024 {
 		return nil, awserror.Validation("Policy exceeds 20 KB")
 	}
+
 	if guardErr := policy.ValidateResource(doc); guardErr != nil {
 		return nil, awserror.Validation("%s", guardErr)
 	}
+
 	revision := fmt.Sprintf("%x", sha256.Sum256([]byte(doc)))
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		t, loadErr := load(tx, key)
 		if loadErr != nil {
 			return loadErr
 		}
+
 		p, findErr := tablePolicy(t, arn)
 		if findErr != nil {
 			return findErr
 		}
+
 		if in.ExpectedRevisionId != nil && *in.ExpectedRevisionId != p.Revision &&
 			(*in.ExpectedRevisionId != "NO_POLICY" || p.Document != "") {
 			return policyMissing()
 		}
+
 		if t.ResourcePolicies == nil {
 			t.ResourcePolicies = map[string]resourcePolicy{}
 		}
+
 		t.ResourcePolicies[arn] = resourcePolicy{Document: doc, Revision: revision}
 		return save(tx, key, t)
 	})
@@ -98,19 +107,23 @@ func (s *Service) GetResourcePolicy(
 	if err != nil {
 		return nil, err
 	}
+
 	out := &api.GetResourcePolicyOutput{}
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		t, loadErr := load(tx, key)
 		if loadErr != nil {
 			return loadErr
 		}
+
 		p, findErr := tablePolicy(t, arn)
 		if findErr != nil {
 			return findErr
 		}
+
 		if p.Document == "" {
 			return policyMissing()
 		}
+
 		out.Policy, out.RevisionId = new(p.Document), new(p.Revision)
 		return nil
 	})
@@ -126,22 +139,27 @@ func (s *Service) DeleteResourcePolicy(
 	if err != nil {
 		return nil, err
 	}
+
 	out := &api.DeleteResourcePolicyOutput{}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		t, loadErr := load(tx, key)
 		if loadErr != nil {
 			return loadErr
 		}
+
 		p, findErr := tablePolicy(t, arn)
 		if findErr != nil {
 			return findErr
 		}
+
 		if in.ExpectedRevisionId != nil && (p.Document == "" || *in.ExpectedRevisionId != p.Revision) {
 			return policyMissing()
 		}
+
 		if p.Document != "" {
 			out.RevisionId = new(p.Revision)
 		}
+
 		delete(t.ResourcePolicies, arn)
 		return save(tx, key, t)
 	})

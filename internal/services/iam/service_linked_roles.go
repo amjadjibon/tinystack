@@ -14,6 +14,30 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
+// serviceLinkedRoleNames maps service principals to their role-name suffixes, which each
+// service defines rather than following a casing rule.
+var serviceLinkedRoleNames = map[string]string{
+	"autoscaling.amazonaws.com":                 "AutoScaling",
+	"dsql.amazonaws.com":                        "AuroraDsql",
+	"ecs.amazonaws.com":                         "ECS",
+	"ecs.application-autoscaling.amazonaws.com": "ApplicationAutoScaling_ECSService",
+	"eks.amazonaws.com":                         "AmazonEKS",
+	"eks-fargate.amazonaws.com":                 "AmazonEKSForFargate",
+	"eks-nodegroup.amazonaws.com":               "AmazonEKSNodegroup",
+	"elasticache.amazonaws.com":                 "ElastiCache",
+	"elasticbeanstalk.amazonaws.com":            "ElasticBeanstalk",
+	"elasticloadbalancing.amazonaws.com":        "ElasticLoadBalancing",
+	"es.amazonaws.com":                          "AmazonElasticsearchService",
+	"kafka.amazonaws.com":                       "Kafka",
+	"memorydb.amazonaws.com":                    "MemoryDB",
+	"mq.amazonaws.com":                          "AmazonMQ",
+	"opensearchservice.amazonaws.com":           "AmazonOpenSearchService",
+	"rds.amazonaws.com":                         "RDS",
+	"replication.dynamodb.amazonaws.com":        "DynamoDBReplication",
+	"spot.amazonaws.com":                        "EC2Spot",
+	"spotfleet.amazonaws.com":                   "EC2SpotFleet",
+}
+
 func (s *Service) CreateServiceLinkedRole(
 	ctx context.Context,
 	in *api.CreateServiceLinkedRoleRequest,
@@ -23,17 +47,8 @@ func (s *Service) CreateServiceLinkedRole(
 		return nil, err
 	}
 
-	// AWS service role names are service-defined, rather than a title-casing rule.
-	names := map[string]string{
-		"autoscaling.amazonaws.com": "AutoScaling", "elasticbeanstalk.amazonaws.com": "ElasticBeanstalk",
-		"ecs.amazonaws.com": "ECS", "elasticloadbalancing.amazonaws.com": "ElasticLoadBalancing",
-		"rds.amazonaws.com": "RDS", "es.amazonaws.com": "AmazonElasticsearchService",
-		"opensearchservice.amazonaws.com": "AmazonOpenSearchService", "eks.amazonaws.com": "AmazonEKS",
-		"spot.amazonaws.com": "EC2Spot", "spotfleet.amazonaws.com": "EC2SpotFleet",
-	}
-
 	principal := common.Value(in.AWSServiceName)
-	service, ok := names[principal]
+	service, ok := serviceLinkedRoleNames[principal]
 	if !ok {
 		return nil, invalidInput("Unsupported AWS service principal: %s", principal)
 	}
