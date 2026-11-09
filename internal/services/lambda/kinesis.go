@@ -233,6 +233,7 @@ func (s *Service) pollShard(
 			EventSource: "aws:kinesis", EventVersion: recordVersion, EventID: sh.ID + ":" + r.SequenceNumber,
 			EventName: "aws:kinesis:record", AWSRegion: scope.Region, EventSourceARN: mp.EventSourceArn,
 		}
+
 		if keep(filters, all[i].document()) {
 			batch = append(batch, all[i])
 		}
@@ -273,8 +274,7 @@ func (s *Service) pollShard(
 			}
 		}
 
-		if split || common.Value(mp.MaximumRetryAttempts) < 0 ||
-			failures[sh.ID] <= common.Value(mp.MaximumRetryAttempts) {
+		if mp.retryBatch(failures[sh.ID], split) {
 			if processed > 0 {
 				mp.Cursors[sh.ID] = all[processed-1].Kinesis.SequenceNumber
 			}

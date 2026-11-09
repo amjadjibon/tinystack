@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 	"uuid"
 
@@ -30,14 +31,13 @@ const (
 	timestampMillis         = "2006-01-02T15:04:05.000Z"
 )
 
-// streamOptions sets a mapping's failure handling, which only stream
-// mappings have.
+// streamOptions sets the failure handling shared by stream and Kafka mappings.
 func streamOptions(destinations *api.DestinationConfig, bisect *bool, age *int64, mp *mapping) error {
 	if destinations == nil && bisect == nil && age == nil {
 		return nil
 	}
 
-	if mp.StartingPosition == "" || mp.brokerSource() {
+	if mp.StartingPosition == "" || brokerARN(mp.EventSourceArn, "mq") {
 		return invalid("DestinationConfig, BisectBatchOnFunctionError, and MaximumRecordAgeInSeconds are only " +
 			"valid for stream event sources")
 	}
@@ -49,8 +49,21 @@ func streamOptions(destinations *api.DestinationConfig, bisect *bool, age *int64
 
 		destination := common.Value(onFailure(destinations))
 		if service, ok := destinationService(destination); destination != "" &&
-			(!ok || service != serviceSQS && service != serviceSNS) {
-			return invalid("The OnFailure destination of a stream event source must be an SQS queue or SNS topic")
+			(!ok || service != serviceSQS && service != serviceSNS) &&
+			(!mp.brokerSource() || !validKafkaDestination(destination)) {
+			return invalid("Unsupported OnFailure destination for this event source")
+		}
+
+		if strings.HasPrefix(destination, "kafka://") {
+			if mp.ProvisionedPollerConfig == nil {
+				return invalid("Kafka topic destinations require ProvisionedPollerConfig")
+			}
+
+			for _, topic := range mp.Topics {
+				if topic == strings.TrimPrefix(destination, "kafka://") {
+					return invalid("Kafka destination must differ from source topic")
+				}
+			}
 		}
 
 		mp.OnFailure = destination
@@ -103,7 +116,7 @@ type batchInfo struct {
 // OnFailure destination, if it has one. field names the batch info, which
 // differs between DynamoDB and Kinesis streams.
 func (s *Service) discard(
-	ctx context.Context, scope request.Scope, mp *mapping, condition, field string, attempts int, info *batchInfo,
+	ctx context.Context, scope request.Scope, mp *mapping, condition, field string, attempts int, info any,
 ) {
 	if mp.OnFailure == "" {
 		return
@@ -123,13 +136,22 @@ func (s *Service) discard(
 		},
 		"version": recordVersion, "timestamp": s.now().UTC().Format(timestampMillis), field: info,
 	}
+
 	if condition == conditionRecordAge {
 		delete(record, "responseContext")
 	}
 
+	if info, ok := info.(*kafkaBatchInfo); ok && strings.Contains(mp.OnFailure, ":s3:::") {
+		record["payload"] = string(info.payload)
+	}
+
 	body, err := json.Marshal(record)
 	if err == nil {
-		err = s.deliver(ctx, mp.OnFailure, arn, condition, body, nil)
+		if info, ok := info.(*kafkaBatchInfo); ok && strings.HasPrefix(mp.OnFailure, "kafka://") {
+			err = sendKafkaFailure(ctx, mp, record, info)
+		} else {
+			err = s.deliver(ctx, mp.OnFailure, arn, condition, body, nil)
+		}
 	}
 
 	s.deliveries.Add(delivery.ViaLambdaDestination, arn, mp.OnFailure, body, err)
@@ -140,3 +162,13 @@ func (s *Service) discard(
 }
 
 func arrivalText(t time.Time) string { return t.UTC().Format(timestampMillis) }
+
+// retryBatch is shared by stream and Kafka pollers. Splitting does not consume a retry.
+func (mp *mapping) retryBatch(failures int64, split bool) bool {
+	limit := common.Value(mp.MaximumRetryAttempts)
+	if mp.brokerSource() && limit < 0 && mp.OnFailure != "" {
+		limit = 10
+	}
+
+	return split || limit < 0 || failures <= limit
+}

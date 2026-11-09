@@ -2,6 +2,8 @@ package integration_test
 
 import (
 	"context"
+	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -12,9 +14,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	mqtypes "github.com/aws/aws-sdk-go-v2/service/mq/types"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/kmsg"
+
+	"github.com/amjadjibon/tinystack/internal/services/lambda"
 )
 
 func TestLambdaKafkaMappingRoundTrip(t *testing.T) {
@@ -35,6 +40,7 @@ func TestLambdaKafkaMappingRoundTrip(t *testing.T) {
 		},
 		Enabled: new(false),
 	}
+
 	out, err := c.CreateEventSourceMapping(ctx, input)
 	if err != nil {
 		t.Fatal(err)
@@ -86,7 +92,7 @@ func TestLambdaKafkaMappingRoundTrip(t *testing.T) {
 	}
 
 	input.Topics = []string{"one", "two"}
-	if _, err := c.CreateEventSourceMapping(ctx, input); err == nil {
+	if _, createErr := c.CreateEventSourceMapping(ctx, input); createErr == nil {
 		t.Fatal("accepted multiple topics")
 	}
 
@@ -95,7 +101,7 @@ func TestLambdaKafkaMappingRoundTrip(t *testing.T) {
 		Type: types.SourceAccessTypeBasicAuth,
 		URI:  new("arn:aws:secretsmanager:us-east-1:000000000000:secret:missing"),
 	}}
-	if _, err := c.CreateEventSourceMapping(ctx, input); err == nil {
+	if _, createErr := c.CreateEventSourceMapping(ctx, input); createErr == nil {
 		t.Fatal("accepted missing secret")
 	}
 
@@ -149,6 +155,7 @@ func TestLambdaSelfManagedKafkaDataPath(t *testing.T) {
 			!strings.Contains(string(call.payload), `"orders-0"`) {
 			t.Fatalf("payload: %s", call.payload)
 		}
+
 	case <-ctx.Done():
 		t.Fatal("Kafka invocation timed out")
 	}
@@ -214,16 +221,22 @@ func TestLambdaManagedBrokerMappings(t *testing.T) {
 	}
 
 	created, err := c.CreateEventSourceMapping(ctx, &sdklambda.CreateEventSourceMappingInput{
-		FunctionName:     new("managed-brokers"),
-		EventSourceArn:   cluster.ClusterArn,
-		Topics:           []string{"orders"},
-		StartingPosition: types.EventSourcePositionLatest,
+		FunctionName:            new("managed-brokers"),
+		EventSourceArn:          cluster.ClusterArn,
+		MaximumRetryAttempts:    new(int32(1)),
+		ProvisionedPollerConfig: &types.ProvisionedPollerConfig{},
+		Topics:                  []string{"orders"},
+		StartingPosition:        types.EventSourcePositionLatest,
 		AmazonManagedKafkaEventSourceConfig: &types.AmazonManagedKafkaEventSourceConfig{
 			ConsumerGroupId: new("managed"),
 		},
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	if *created.MaximumRetryAttempts != 1 || *created.ProvisionedPollerConfig.MinimumPollers != 1 {
+		t.Fatalf("MSK options: %+v", created)
 	}
 
 	awaitBrokerProblem(t, ctx, c, created.UUID)
@@ -338,5 +351,260 @@ func TestCloudFormationKafkaMapping(t *testing.T) {
 		mappings.EventSourceMappings[0].SelfManagedKafkaEventSourceConfig == nil ||
 		*mappings.EventSourceMappings[0].SelfManagedKafkaEventSourceConfig.ConsumerGroupId != "cfn-orders" {
 		t.Fatalf("mapping: %+v", mappings)
+	}
+}
+
+// kafkaFailureRuntime fails offset 1, either as a function error or a partial response.
+type kafkaFailureRuntime struct {
+	batches chan []int64
+	mode    string
+}
+
+func (r *kafkaFailureRuntime) Invoke(_ context.Context, _ *lambda.Function, payload []byte) (lambda.Result, error) {
+	var event struct {
+		Records map[string][]struct {
+			Offset int64 `json:"offset"`
+		} `json:"records"`
+	}
+
+	if err := json.Unmarshal(payload, &event); err != nil {
+		return lambda.Result{}, err
+	}
+
+	var offsets []int64
+	bad := false
+	for _, records := range event.Records {
+		for _, record := range records {
+			offsets = append(offsets, record.Offset)
+			bad = bad || record.Offset == 1
+		}
+	}
+
+	r.batches <- offsets
+	if bad && r.mode == "partial" {
+		return lambda.Result{
+			Payload: []byte(`{"batchItemFailures":[{"itemIdentifier":{"partition":"orders-0","offset":1}}]}`),
+		}, nil
+	}
+
+	return lambda.Result{Payload: []byte(`{}`), Error: bad}, nil
+}
+
+func (*kafkaFailureRuntime) Release(string) {}
+func (*kafkaFailureRuntime) Close()         {}
+
+func TestLambdaKafkaFailureHandling(t *testing.T) {
+	for _, mode := range []string{"retry", "partial", "bisect"} {
+		t.Run(mode, func(t *testing.T) {
+			cluster, err := kfake.NewCluster(kfake.NumBrokers(1), kfake.SeedTopics(1, "orders"))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			defer cluster.Close()
+			runtime := &kafkaFailureRuntime{mode: mode, batches: make(chan []int64, 32)}
+			s := serverWith(t, runtime)
+			c := lambdaClient(s, "test")
+			q := sqsClient(s, "test")
+			queue := createQueue(t, q, "kafka-failures", nil)
+			createFunction(t, c, "kafka-failures", "app.fail")
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			producer, err := kgo.NewClient(kgo.SeedBrokers(cluster.ListenAddrs()...))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			defer producer.Close()
+			for range 4 {
+				if produceErr := producer.ProduceSync(ctx, &kgo.Record{Topic: "orders", Value: []byte("event")}).
+					FirstErr(); produceErr != nil {
+					t.Fatal(produceErr)
+				}
+			}
+
+			input := &sdklambda.CreateEventSourceMappingInput{
+				FunctionName: new("kafka-failures"), Topics: []string{"orders"},
+				StartingPosition: types.EventSourcePositionTrimHorizon,
+				SelfManagedEventSource: &types.SelfManagedEventSource{Endpoints: map[string][]string{
+					"KAFKA_BOOTSTRAP_SERVERS": cluster.ListenAddrs(),
+				}},
+				BatchSize: new(int32(4)), MaximumBatchingWindowInSeconds: new(int32(1)),
+				MaximumRetryAttempts: new(int32(2)), MaximumRecordAgeInSeconds: new(int32(3600)),
+				DestinationConfig: &types.DestinationConfig{OnFailure: &types.OnFailure{
+					Destination: new("arn:aws:sqs:us-east-1:000000000000:kafka-failures"),
+				}},
+			}
+
+			if _, createErr := c.CreateEventSourceMapping(ctx, input); createErr == nil {
+				t.Fatal("accepted retries without provisioned mode")
+			}
+
+			input.ProvisionedPollerConfig = &types.ProvisionedPollerConfig{
+				MinimumPollers: new(int32(1)),
+				MaximumPollers: new(int32(2)),
+			}
+
+			input.BisectBatchOnFunctionError = new(mode == "bisect")
+			if mode == "partial" {
+				input.FunctionResponseTypes = []types.FunctionResponseType{
+					types.FunctionResponseTypeReportBatchItemFailures,
+				}
+			}
+
+			created, err := c.CreateEventSourceMapping(ctx, input)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if *created.MaximumRetryAttempts != 2 || *created.MaximumRecordAgeInSeconds != 3600 ||
+				*created.ProvisionedPollerConfig.MaximumPollers != 2 {
+				t.Fatalf("create options: %+v", created)
+			}
+
+			ticker := time.NewTicker(10 * time.Millisecond)
+			defer ticker.Stop()
+			var message string
+			for message == "" {
+				out, receiveErr := q.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: new(queue)})
+				if receiveErr != nil {
+					t.Fatal(receiveErr)
+				}
+
+				if len(out.Messages) > 0 {
+					message = *out.Messages[0].Body
+					break
+				}
+
+				select {
+				case <-ctx.Done():
+					t.Fatal("no failure destination record")
+				case <-ticker.C:
+				}
+			}
+
+			var record struct {
+				Info struct {
+					RecordsInfo map[string]any `json:"recordsInfo"`
+					BatchSize   int            `json:"batchSize"`
+				} `json:"KafkaBatchInfo"`
+				RequestContext struct {
+					Count int `json:"approximateInvokeCount"`
+				} `json:"requestContext"`
+			}
+
+			if decodeErr := json.Unmarshal([]byte(message), &record); decodeErr != nil {
+				t.Fatal(decodeErr)
+			}
+
+			if record.RequestContext.Count != 3 || len(record.Info.RecordsInfo) != 1 {
+				t.Fatalf("failure record: %s", message)
+			}
+
+			expected := [][]int64{{0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}}
+			if mode == "partial" {
+				expected = [][]int64{{0, 1, 2, 3}, {1}, {1}}
+			}
+
+			if mode == "bisect" {
+				expected = [][]int64{{0, 1, 2, 3}, {0, 1}, {0}, {1}, {1}, {1}, {2, 3}}
+			}
+
+			for _, want := range expected {
+				select {
+				case got := <-runtime.batches:
+					if !slices.Equal(got, want) {
+						t.Fatalf("batch %v, want %v", got, want)
+					}
+
+				case <-ctx.Done():
+					t.Fatal("missing invocation")
+				}
+			}
+
+			awaitKafkaOffset(t, ctx, producer, *created.UUID, 4)
+			if produceErr := producer.ProduceSync(ctx, &kgo.Record{Topic: "orders", Value: []byte("later")}).
+				FirstErr(); produceErr != nil {
+				t.Fatal(produceErr)
+			}
+
+			select {
+			case got := <-runtime.batches:
+				if !slices.Equal(got, []int64{4}) {
+					t.Fatalf("later batch: %v", got)
+				}
+
+			case <-ctx.Done():
+				t.Fatal("partition blocked after discard")
+			}
+
+			awaitKafkaOffset(t, ctx, producer, *created.UUID, 5)
+			updated, err := c.UpdateEventSourceMapping(ctx, &sdklambda.UpdateEventSourceMappingInput{
+				UUID:                       created.UUID,
+				Enabled:                    new(false),
+				MaximumRetryAttempts:       new(int32(0)),
+				MaximumRecordAgeInSeconds:  new(int32(-1)),
+				BisectBatchOnFunctionError: new(true),
+				FunctionResponseTypes: []types.FunctionResponseType{
+					types.FunctionResponseTypeReportBatchItemFailures,
+				},
+				ProvisionedPollerConfig: &types.ProvisionedPollerConfig{MaximumPollers: new(int32(3))},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := c.GetEventSourceMapping(ctx, &sdklambda.GetEventSourceMappingInput{UUID: created.UUID})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if *updated.MaximumRetryAttempts != 0 || *got.MaximumRecordAgeInSeconds != -1 ||
+				!*got.BisectBatchOnFunctionError || len(got.FunctionResponseTypes) != 1 ||
+				*got.ProvisionedPollerConfig.MaximumPollers != 3 || *got.ProvisionedPollerConfig.MinimumPollers != 1 {
+				t.Fatalf("update/get: %+v", got)
+			}
+
+			for _, retries := range []int32{-2, 10001} {
+				if _, err := c.UpdateEventSourceMapping(ctx, &sdklambda.UpdateEventSourceMappingInput{
+					UUID: created.UUID, MaximumRetryAttempts: new(retries),
+				}); err == nil {
+					t.Fatalf("accepted retries %d", retries)
+				}
+			}
+		})
+	}
+}
+
+func awaitKafkaOffset(t *testing.T, ctx context.Context, client *kgo.Client, group string, want int64) {
+	t.Helper()
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		response, err := client.Request(ctx, &kmsg.OffsetFetchRequest{
+			Group: group, Topics: []kmsg.OffsetFetchRequestTopic{{Topic: "orders", Partitions: []int32{0}}},
+			Groups: []kmsg.OffsetFetchRequestGroup{{Group: group, Topics: []kmsg.OffsetFetchRequestGroupTopic{
+				{Topic: "orders", Partitions: []int32{0}},
+			}}},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		fetched := response.(*kmsg.OffsetFetchResponse)
+		if len(fetched.Topics) == 1 && fetched.Topics[0].Partitions[0].Offset == want {
+			return
+		}
+
+		if len(fetched.Groups) == 1 && len(fetched.Groups[0].Topics) == 1 &&
+			fetched.Groups[0].Topics[0].Partitions[0].Offset == want {
+			return
+		}
+
+		select {
+		case <-ctx.Done():
+			t.Fatalf("offset %d not committed", want)
+		case <-ticker.C:
+		}
 	}
 }

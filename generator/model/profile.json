@@ -17170,7 +17170,8 @@
         "SourceAccessConfigurations",
         "SelfManagedEventSource",
         "AmazonManagedKafkaEventSourceConfig",
-        "SelfManagedKafkaEventSourceConfig"
+        "SelfManagedKafkaEventSourceConfig",
+        "ProvisionedPollerConfig"
       ],
       "EventSourceMappingConfiguration": [
         "UUID",
@@ -17194,7 +17195,8 @@
         "SourceAccessConfigurations",
         "SelfManagedEventSource",
         "AmazonManagedKafkaEventSourceConfig",
-        "SelfManagedKafkaEventSourceConfig"
+        "SelfManagedKafkaEventSourceConfig",
+        "ProvisionedPollerConfig"
       ],
       "GetEventSourceMappingRequest": [
         "UUID"
@@ -17583,7 +17585,8 @@
         "MaximumRecordAgeInSeconds",
         "SourceAccessConfigurations",
         "AmazonManagedKafkaEventSourceConfig",
-        "SelfManagedKafkaEventSourceConfig"
+        "SelfManagedKafkaEventSourceConfig",
+        "ProvisionedPollerConfig"
       ],
       "PutFunctionEventInvokeConfigRequest": [
         "FunctionName",
@@ -17683,6 +17686,10 @@
       ],
       "SelfManagedKafkaEventSourceConfig": [
         "ConsumerGroupId"
+      ],
+      "ProvisionedPollerConfig": [
+        "MinimumPollers",
+        "MaximumPollers"
       ]
     }
   },

@@ -2,6 +2,7 @@ package lambda
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -459,6 +460,7 @@ func (s *Service) sendResult(
 		Version:        recordVersion,
 		Timestamp:      s.now().UTC().Format("2006-01-02T15:04:05.000Z"),
 	}
+
 	record.RequestContext.RequestID = id
 	record.RequestContext.FunctionArn = arn
 	record.RequestContext.Condition = r.condition
@@ -526,7 +528,15 @@ func (s *Service) deliver(
 	}
 
 	parts := strings.Split(destination, ":")
+	if len(parts) == 6 && parts[2] == "s3" {
+		service = "s3"
+	}
+
 	scope := request.Scope{AccountID: parts[4], Region: parts[3]}
+	if service == "s3" {
+		scope = fnScope
+	}
+
 	call := func(c *catalog.DeliveryRole) (map[string]any, error) {
 		callCtx := request.WithMetadata(
 			ctx,
@@ -537,7 +547,12 @@ func (s *Service) deliver(
 			return nil, err
 		}
 
-		return s.authorizer.Call(callCtx, s.caller, d)
+		caller := s.caller
+		if service == "s3" {
+			caller = caller.Base64Blobs()
+		}
+
+		return s.authorizer.Call(callCtx, caller, d)
 	}
 
 	var err error
@@ -546,6 +561,12 @@ func (s *Service) deliver(
 		url, _ := sqs.QueueURL(destination)
 		_, err = call(&catalog.DeliveryRole{Service: service, Operation: "SendMessage", Params: map[string]any{
 			"QueueUrl": url, "MessageBody": string(body), "MessageAttributes": attributes,
+		}})
+	case "s3":
+		_, err = call(&catalog.DeliveryRole{Service: "s3", Operation: "PutObject", Params: map[string]any{
+			"Bucket": parts[5],
+			"Key":    "aws/lambda/" + name + "/" + time.Now().UTC().Format("2006/01/02/") + uuid.NewV4().String(),
+			"Body":   base64.StdEncoding.EncodeToString(body),
 		}})
 	case serviceSNS:
 		_, err = call(&catalog.DeliveryRole{Service: service, Operation: "Publish", Params: map[string]any{
@@ -588,6 +609,7 @@ func putEventsFailure(out any) error {
 			ErrorMessage string
 		}
 	}
+
 	if unmarshalErr := json.Unmarshal(data, &response); unmarshalErr != nil {
 		return unmarshalErr
 	}

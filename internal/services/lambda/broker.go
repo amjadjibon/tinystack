@@ -70,6 +70,12 @@ func (s *Service) configureBroker(ctx context.Context, scope request.Scope,
 	}
 
 	mq := brokerARN(mp.EventSourceArn, "mq")
+	if mq && (in.MaximumRetryAttempts != nil || in.FunctionResponseTypes != nil ||
+		in.DestinationConfig != nil || in.BisectBatchOnFunctionError != nil || in.MaximumRecordAgeInSeconds != nil ||
+		in.ProvisionedPollerConfig != nil) {
+		return invalid("MQ does not support retry controls or destinations; use broker-side dead-lettering")
+	}
+
 	if mq {
 		if len(mp.Queues) != 1 || mp.Queues[0] == "" || in.StartingPosition != nil || in.FilterCriteria != nil {
 			return invalid(
@@ -125,8 +131,16 @@ func (s *Service) configureBroker(ctx context.Context, scope request.Scope,
 		return invalid("ConsumerGroupId must not be empty")
 	}
 
-	if in.MaximumRetryAttempts != nil || mp.ReportFailures {
-		return invalid("Kafka and MQ do not support MaximumRetryAttempts or FunctionResponseTypes in TinyStack")
+	if !mq {
+		mp.MaximumRetryAttempts = new(int64(-1))
+		if in.MaximumRetryAttempts != nil {
+			mp.MaximumRetryAttempts = in.MaximumRetryAttempts
+		}
+
+		if err := kafkaProvisioned(mp, in.ProvisionedPollerConfig, in.MaximumRetryAttempts != nil ||
+			in.BisectBatchOnFunctionError != nil || in.MaximumRecordAgeInSeconds != nil || mp.ReportFailures); err != nil {
+			return err
+		}
 	}
 
 	if err := validateAccess(mp); err != nil {
@@ -175,6 +189,10 @@ func updateBrokerFields(in *api.UpdateEventSourceMappingRequest, mp *mapping) er
 	}
 
 	if !mp.brokerSource() {
+		if in.ProvisionedPollerConfig != nil {
+			return invalid("ProvisionedPollerConfig is only supported for Kafka")
+		}
+
 		if in.SourceAccessConfigurations != nil {
 			return invalid("SourceAccessConfigurations requires Kafka or MQ")
 		}
@@ -182,10 +200,19 @@ func updateBrokerFields(in *api.UpdateEventSourceMappingRequest, mp *mapping) er
 		return nil
 	}
 
-	if in.MaximumRetryAttempts != nil || in.DestinationConfig != nil || in.BisectBatchOnFunctionError != nil ||
-		in.MaximumRecordAgeInSeconds != nil || len(in.FunctionResponseTypes) > 0 ||
-		(brokerARN(mp.EventSourceArn, "mq") && in.FilterCriteria != nil) {
-		return invalid("Unsupported Kafka or MQ mapping options")
+	if brokerARN(mp.EventSourceArn, "mq") &&
+		(in.MaximumRetryAttempts != nil || in.DestinationConfig != nil || in.BisectBatchOnFunctionError != nil ||
+			in.MaximumRecordAgeInSeconds != nil || len(in.FunctionResponseTypes) > 0 ||
+			in.FilterCriteria != nil || in.ProvisionedPollerConfig != nil) {
+		return invalid("MQ does not support retry controls or destinations; use broker-side dead-lettering")
+	}
+
+	if !brokerARN(mp.EventSourceArn, "mq") {
+		if err := kafkaProvisioned(mp, in.ProvisionedPollerConfig, in.MaximumRetryAttempts != nil ||
+			in.BisectBatchOnFunctionError != nil || in.MaximumRecordAgeInSeconds != nil ||
+			len(in.FunctionResponseTypes) > 0); err != nil {
+			return err
+		}
 	}
 
 	if in.SourceAccessConfigurations != nil {

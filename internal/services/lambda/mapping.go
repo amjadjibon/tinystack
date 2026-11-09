@@ -43,6 +43,7 @@ var uuidPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 
 // mapping is a stored queue, stream, or broker event source mapping.
 type mapping struct {
+	ProvisionedPollerConfig             *api.ProvisionedPollerConfig             `json:",omitempty"`
 	Topics                              []string                                 `json:",omitempty"`
 	Queues                              []string                                 `json:",omitempty"`
 	SourceAccessConfigurations          []api.SourceAccessConfiguration          `json:",omitempty"`
@@ -50,8 +51,8 @@ type mapping struct {
 	AmazonManagedKafkaEventSourceConfig *api.AmazonManagedKafkaEventSourceConfig `json:",omitempty"`
 	SelfManagedKafkaEventSourceConfig   *api.SelfManagedKafkaEventSourceConfig   `json:",omitempty"`
 
-	// MaximumRetryAttempts, StartingPosition, and Cursor, the sequence number
-	// of the last record processed, are only set for streams.
+	// MaximumRetryAttempts and StartingPosition apply to streams and Kafka.
+	// Cursor is the last sequence number processed by a DynamoDB stream.
 	MaximumRetryAttempts *int64 `json:",omitempty"`
 	UUID                 string
 	EventSourceArn       string
@@ -86,6 +87,7 @@ func (mp *mapping) configuration(scope request.Scope) api.EventSourceMappingConf
 	}
 
 	cfg := api.EventSourceMappingConfiguration{
+		ProvisionedPollerConfig:             mp.ProvisionedPollerConfig,
 		Topics:                              mp.Topics,
 		Queues:                              mp.Queues,
 		SourceAccessConfigurations:          mp.SourceAccessConfigurations,
@@ -109,7 +111,7 @@ func (mp *mapping) configuration(scope request.Scope) api.EventSourceMappingConf
 		cfg.StartingPosition = new(mp.StartingPosition)
 	}
 
-	if mp.StartingPosition != "" && !mp.brokerSource() {
+	if mp.StartingPosition != "" && !brokerARN(mp.EventSourceArn, "mq") {
 		cfg.BisectBatchOnFunctionError = new(mp.Bisect)
 		cfg.MaximumRecordAgeInSeconds = new(cmp.Or(mp.MaxRecordAge, -1))
 		cfg.DestinationConfig = &api.DestinationConfig{OnFailure: &api.OnFailure{}}
@@ -200,6 +202,10 @@ func (s *Service) CreateEventSourceMapping(
 	optionsErr := batchOptions(in.MaximumBatchingWindowInSeconds, in.FunctionResponseTypes, in.FilterCriteria, mp)
 	if optionsErr != nil {
 		return nil, optionsErr
+	}
+
+	if in.ProvisionedPollerConfig != nil && (in.SelfManagedEventSource == nil && !brokerARN(source, "kafka")) {
+		return nil, invalid("ProvisionedPollerConfig is only supported for Kafka")
 	}
 
 	if fieldsErr := validateBrokerFields(in); fieldsErr != nil {

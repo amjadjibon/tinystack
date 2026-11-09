@@ -66,6 +66,10 @@ func batchOptions(window *int64, responseTypes []string, criteria *api.FilterCri
 // checkLimits checks the mapping's batch size and retries against its kind of
 // event source.
 func (mp *mapping) checkLimits() error {
+	if mp.MaximumRetryAttempts != nil && (*mp.MaximumRetryAttempts < -1 || *mp.MaximumRetryAttempts > maxRetries) {
+		return invalid("MaximumRetryAttempts must be between -1 and %d", maxRetries)
+	}
+
 	if mp.brokerSource() {
 		if mp.BatchSize < 1 || mp.BatchSize > 10000 {
 			return invalid("BatchSize must be between 1 and 10000 for Kafka and MQ")
@@ -94,10 +98,6 @@ func (mp *mapping) checkLimits() error {
 
 	if mp.BatchSize < 1 || mp.BatchSize > maxStreamBatch {
 		return invalid("BatchSize must be between 1 and %d for %s", maxStreamBatch, kind)
-	}
-
-	if retries := common.Value(mp.MaximumRetryAttempts); retries < -1 || retries > maxRetries {
-		return invalid("MaximumRetryAttempts must be between -1 and %d", maxRetries)
 	}
 
 	return nil

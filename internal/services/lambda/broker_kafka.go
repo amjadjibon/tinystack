@@ -114,6 +114,7 @@ func (s *Service) consumeKafka(ctx context.Context, scope request.Scope, mp *map
 		kgo.SeedBrokers(servers...), kgo.ConsumerGroup(group), kgo.ConsumeTopics(mp.Topics...),
 		kgo.ConsumeResetOffset(offset), kgo.DisableAutoCommit(), kgo.BlockRebalanceOnPoll(),
 	}
+
 	user, password, err := s.brokerCredentials(ctx, scope, mp)
 	if err != nil {
 		return err
@@ -165,6 +166,7 @@ func (s *Service) consumeKafka(ctx context.Context, scope request.Scope, mp *map
 					break
 				}
 			}
+
 			cancel()
 		}
 
@@ -188,13 +190,7 @@ func (s *Service) consumeKafka(ctx context.Context, scope request.Scope, mp *map
 			}
 		}
 
-		for len(batch) > 0 && ctx.Err() == nil {
-			if s.invokeBroker(ctx, scope, mp, kafkaEvent(mp, servers, batch)) {
-				break
-			}
-
-			sleep(ctx, pollBackoff)
-		}
+		s.processKafkaBatch(ctx, scope, mp, servers, batch, client)
 
 		if ctx.Err() != nil {
 			return ctx.Err()

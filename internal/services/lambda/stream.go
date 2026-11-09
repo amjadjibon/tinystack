@@ -232,7 +232,7 @@ func (s *Service) pollStream(ctx context.Context, scope request.Scope, mp mappin
 				}
 			}
 
-			if split || common.Value(mp.MaximumRetryAttempts) < 0 || failures <= common.Value(mp.MaximumRetryAttempts) {
+			if mp.retryBatch(failures, split) {
 				if processed > 0 {
 					mp.Cursor = all[processed-1].sequence()
 				}
@@ -412,6 +412,7 @@ func (s *Service) streamBatchInfo(ctx context.Context, mp *mapping, records []st
 		ApproximateArrivalOfLastRecord:  arrivalText(records[len(records)-1].arrival()),
 		StreamArn:                       mp.EventSourceArn, BatchSize: len(records),
 	}
+
 	described, err := s.streams.DescribeStream(ctx, &streamsapi.DescribeStreamInput{StreamArn: &mp.EventSourceArn})
 	if err == nil && len(described.StreamDescription.Shards) > 0 {
 		info.ShardID = common.Value(described.StreamDescription.Shards[0].ShardId)
