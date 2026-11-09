@@ -18327,7 +18327,8 @@
       "PutObjectRetention",
       "GetObjectRetention",
       "PutObjectLegalHold",
-      "GetObjectLegalHold"
+      "GetObjectLegalHold",
+      "UploadPartCopy"
     ],
     "shapes": {
       "CreateBucketRequest": [
@@ -18720,7 +18721,9 @@
         "ChecksumAlgorithm",
         "ObjectLockMode",
         "ObjectLockRetainUntilDate",
-        "ObjectLockLegalHoldStatus"
+        "ObjectLockLegalHoldStatus",
+        "CopySourceIfModifiedSince",
+        "CopySourceIfUnmodifiedSince"
       ],
       "CopyObjectOutput": [
         "CopyObjectResult",
@@ -19238,6 +19241,33 @@
       ],
       "ObjectLockLegalHold": [
         "Status"
+      ],
+      "UploadPartCopyRequest": [
+        "Bucket",
+        "Key",
+        "CopySource",
+        "CopySourceRange",
+        "CopySourceIfMatch",
+        "CopySourceIfNoneMatch",
+        "CopySourceIfModifiedSince",
+        "CopySourceIfUnmodifiedSince",
+        "PartNumber",
+        "UploadId",
+        "ExpectedBucketOwner",
+        "ExpectedSourceBucketOwner"
+      ],
+      "UploadPartCopyOutput": [
+        "CopySourceVersionId",
+        "CopyPartResult"
+      ],
+      "CopyPartResult": [
+        "ETag",
+        "LastModified",
+        "ChecksumCRC32",
+        "ChecksumCRC32C",
+        "ChecksumCRC64NVME",
+        "ChecksumSHA1",
+        "ChecksumSHA256"
       ]
     }
   },

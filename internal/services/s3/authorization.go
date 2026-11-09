@@ -2,7 +2,6 @@ package s3
 
 import (
 	"context"
-	"net/url"
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
@@ -86,6 +85,8 @@ func (s *Service) authorizationTargets(
 		switch operation {
 		case "GetObject", "HeadObject":
 			action = "s3:GetObjectVersion"
+		case "GetObjectAttributes":
+			action = "s3:GetObjectVersionAttributes"
 		case "DeleteObject":
 			action = "s3:DeleteObjectVersion"
 		case "GetObjectTagging":
@@ -114,17 +115,15 @@ func (s *Service) authorizationTargets(
 	}
 
 	if operation == "CopyObject" || operation == "UploadPartCopy" {
-		source, err := url.QueryUnescape(catalog.InputString(input, "CopySource"))
+		sourceBucket, sourceKey, version, err := copySource(new(catalog.InputString(input, "CopySource")))
 		if err != nil {
 			return nil, err
 		}
 
-		source = strings.TrimPrefix(source, "/")
-		path, query, _ := strings.Cut(source, "?")
+		path := sourceBucket + "/" + sourceKey
 		action := "s3:GetObject"
-		parsed, _ := url.ParseQuery(query)
-		versions = append(versions, parsed.Get("versionId"))
-		if parsed.Get("versionId") != "" {
+		versions = append(versions, version)
+		if version != "" {
 			action = "s3:GetObjectVersion"
 		}
 

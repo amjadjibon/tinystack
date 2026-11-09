@@ -18,10 +18,11 @@ import (
 
 // restMaxBody bounds REST document payloads and non-S3 services.
 const (
-	restMaxBody  = 64 << 20
-	opPutObject  = "PutObject"
-	opUploadPart = "UploadPart"
-	opGetObject  = "GetObject"
+	restMaxBody   = 64 << 20
+	opPutObject   = "PutObject"
+	opUploadPart  = "UploadPart"
+	opGetObject   = "GetObject"
+	queryUploadID = "uploadId"
 )
 
 // restProtocol returns the REST protocol a service speaks, or "".
@@ -101,10 +102,13 @@ func routes(service *catalog.Service) []route {
 		// ordinary object operations. Their upload query parameters distinguish
 		// the operations even when the optional x-id parameter is absent.
 		switch name {
+		case "UploadPartCopy":
+			rt.required = []string{queryUploadID, "partNumber"}
+			rt.header = "X-Amz-Copy-Source"
 		case opUploadPart:
-			rt.required = []string{"uploadId", "partNumber"}
+			rt.required = []string{queryUploadID, "partNumber"}
 		case "ListParts", "CompleteMultipartUpload", "AbortMultipartUpload":
-			rt.required = []string{"uploadId"}
+			rt.required = []string{queryUploadID}
 		case "CopyObject":
 			rt.header = "X-Amz-Copy-Source"
 		}

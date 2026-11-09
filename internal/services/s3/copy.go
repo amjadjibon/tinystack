@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"maps"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -230,9 +232,9 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 			copied = &sourceVersion
 		}
 
-		if in.CopySourceIfMatch != nil && !matches(*in.CopySourceIfMatch, obj.ETag) ||
-			in.CopySourceIfNoneMatch != nil && matches(*in.CopySourceIfNoneMatch, obj.ETag) {
-			return preconditionFailed()
+		if guardErr := copyConditions(&obj, in.CopySourceIfMatch, in.CopySourceIfNoneMatch,
+			in.CopySourceIfModifiedSince, in.CopySourceIfUnmodifiedSince); guardErr != nil {
+			return guardErr
 		}
 
 		if metadataDirective == directiveReplace {
@@ -311,4 +313,172 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 		VersionId:           written,
 		CopySourceVersionId: copied,
 	}, nil
+}
+
+// copyConditions applies S3's ETag precedence over date conditions.
+func copyConditions(obj *object, match, none *string, modified, unmodified *time.Time) error {
+	changed := time.UnixMilli(obj.LastModified).UTC().Truncate(time.Second)
+	if match != nil && !matches(*match, obj.ETag) || none != nil && matches(*none, obj.ETag) {
+		return preconditionFailed()
+	}
+
+	if match == nil && unmodified != nil && changed.After(*unmodified) ||
+		none == nil && modified != nil && !changed.After(*modified) {
+		return preconditionFailed()
+	}
+
+	return nil
+}
+
+// copyRange requires an explicit inclusive interval; suffix and open ranges are not copy ranges.
+func copyRange(spec string, size int64) (byteRange, error) {
+	value, ok := strings.CutPrefix(spec, "bytes=")
+	first, last, split := strings.Cut(value, "-")
+	start, err1 := strconv.ParseInt(first, 10, 64)
+	end, err2 := strconv.ParseInt(last, 10, 64)
+	if !ok || !split || err1 != nil || err2 != nil || start < 0 || end < start || end >= size ||
+		strings.HasPrefix(first, "+") || strings.HasPrefix(last, "+") {
+		return byteRange{}, invalidArgument("The x-amz-copy-source-range value is invalid for the source object")
+	}
+
+	return byteRange{start: start, end: end}, nil
+}
+
+func (s *Service) UploadPartCopy(
+	ctx context.Context,
+	in *api.UploadPartCopyRequest,
+) (*api.UploadPartCopyOutput, error) {
+	m, err := request.Regional(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if guardErr := validKey(in.Key); guardErr != nil {
+		return nil, guardErr
+	}
+
+	n := common.Value(in.PartNumber)
+	if n < 1 || n > 10000 {
+		return nil, invalidArgument("Part number must be from 1 to 10000")
+	}
+
+	sourceBucket, sourceKey, version, err := copySource(in.CopySource)
+	if err != nil {
+		return nil, err
+	}
+
+	if guardErr := validKey(&sourceKey); guardErr != nil {
+		return nil, guardErr
+	}
+
+	var snapshot []byte
+	var obj object
+	var copied *string
+	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+		target, targetErr := resolve(tx, m, in.Bucket, in.ExpectedBucketOwner)
+		if targetErr != nil {
+			return targetErr
+		}
+
+		if _, uploadErr := loadUpload(tx, target, *in.Key, common.Value(in.UploadId)); uploadErr != nil {
+			return uploadErr
+		}
+
+		source, transactionErr := resolveSource(tx, m, sourceBucket, in.ExpectedSourceBucketOwner)
+		if transactionErr != nil {
+			return transactionErr
+		}
+
+		var data string
+		obj, data, transactionErr = locate(tx, source, sourceKey, version)
+		if transactionErr != nil {
+			return transactionErr
+		}
+
+		if guardErr := copyConditions(&obj, in.CopySourceIfMatch, in.CopySourceIfNoneMatch,
+			in.CopySourceIfModifiedSince, in.CopySourceIfUnmodifiedSince); guardErr != nil {
+			return guardErr
+		}
+
+		status, transactionErr := versioning(tx, source)
+		if transactionErr != nil {
+			return transactionErr
+		}
+
+		copied = reported(status, &obj)
+		snapshot, _ = tx.Get(data)
+		if blob, ok := storage.BlobReference(snapshot); ok {
+			s.blobs.Pin(blob)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	defer s.releaseBody(snapshot)
+	interval := byteRange{end: obj.Size - 1}
+	if in.CopySourceRange != nil {
+		interval, err = copyRange(*in.CopySourceRange, obj.Size)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	size := interval.end - interval.start + 1
+	if size > s.maxObjectBytes {
+		return nil, fail(400, "EntityTooLarge", "Part exceeds configured limit")
+	}
+
+	reader, err := s.openBody(snapshot)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() { _ = reader.Close() }()
+	if _, seekErr := reader.Seek(interval.start, io.SeekStart); seekErr != nil {
+		return nil, seekErr
+	}
+
+	blob, digest, values, err := s.writeStream(io.LimitReader(reader, size))
+	if err != nil {
+		return nil, err
+	}
+
+	committed := false
+	defer func() {
+		if committed {
+			s.blobs.Release(blob)
+		} else {
+			s.blobs.Discard(blob)
+		}
+	}()
+	part := uploadPart{ETag: fmt.Sprintf(`"%x"`, digest), Size: blob.Size, LastModified: s.now().UnixMilli()}
+	var sum checksum
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		bucket, transactionErr := resolve(tx, m, in.Bucket, in.ExpectedBucketOwner)
+		if transactionErr != nil {
+			return transactionErr
+		}
+
+		u, transactionErr := loadUpload(tx, bucket, *in.Key, common.Value(in.UploadId))
+		if transactionErr != nil {
+			return transactionErr
+		}
+
+		algorithm, _ := u.kind()
+		sum = checksum{Algorithm: algorithm, Value: values[algorithm]}
+		part.Checksum = sum.Value
+		tx.Put(partKey(bucket, *in.UploadId, n), blob.Record())
+		return storage.Write(tx, partMetaKey(bucket, *in.UploadId, n), &part)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	committed = true
+	result := &api.CopyPartResult{ETag: new(part.ETag), LastModified: new(time.UnixMilli(part.LastModified).UTC())}
+	sum.apply(result)
+	return &api.UploadPartCopyOutput{CopyPartResult: result, CopySourceVersionId: copied}, nil
 }
