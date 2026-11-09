@@ -60,15 +60,22 @@ func scopeOf(ctx context.Context) (request.Scope, error) {
 	return m.Scope, nil
 }
 
-// tableNamed resolves a member that takes a table name or ARN to the table's
-// storage key.
+// ownTableName resolves a member that takes a table name, or an ARN in the
+// caller's own account, to the table name.
+func ownTableName(ctx context.Context, nameOrARN *string) (*string, error) {
+	if !strings.HasPrefix(common.Value(nameOrARN), "arn:") {
+		return nameOrARN, nil
+	}
+
+	return arnName(ctx, nameOrARN)
+}
+
+// tableNamed resolves a member that takes a table name or an ARN in the
+// caller's own account to the table's storage key.
 func tableNamed(ctx context.Context, nameOrARN *string) (string, error) {
-	name := nameOrARN
-	if strings.HasPrefix(common.Value(nameOrARN), "arn:") {
-		var err error
-		if name, err = arnName(ctx, nameOrARN); err != nil {
-			return "", err
-		}
+	name, err := ownTableName(ctx, nameOrARN)
+	if err != nil {
+		return "", err
 	}
 
 	return tableKey(ctx, name)
@@ -457,7 +464,7 @@ func (s *Service) RestoreTableFromBackup(
 	ctx context.Context,
 	in *api.RestoreTableFromBackupInput,
 ) (*api.RestoreTableFromBackupOutput, error) {
-	key, err := tableKey(ctx, in.TargetTableName)
+	key, err := tableNamed(ctx, in.TargetTableName)
 	if err != nil {
 		return nil, err
 	}
@@ -518,7 +525,7 @@ func (s *Service) RestoreTableToPointInTime(
 		return nil, err
 	}
 
-	key, err := tableKey(ctx, in.TargetTableName)
+	key, err := tableNamed(ctx, in.TargetTableName)
 	if err != nil {
 		return nil, err
 	}

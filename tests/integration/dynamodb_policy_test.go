@@ -3,6 +3,7 @@ package integration_test
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -119,4 +120,27 @@ func TestDynamoDBCrossAccountPolicy(t *testing.T) {
 			wantCode(t, err, "AccessDeniedException")
 		}
 	}
+}
+
+func TestDynamoDBCreateTableByARN(t *testing.T) {
+	ctx := context.Background()
+	c := client(server(t), "test", "us-east-1")
+	probe, err := create(ctx, c, "probe")
+	mustAuthorize(t, err)
+	own := strings.Replace(*probe.TableDescription.TableArn, "table/probe", "table/by-arn", 1)
+	table, err := create(ctx, c, own)
+	mustAuthorize(t, err)
+	if got := *table.TableDescription.TableName; got != "by-arn" {
+		t.Fatalf("TableName = %q, want by-arn", got)
+	}
+
+	if got := *table.TableDescription.TableArn; got != own {
+		t.Fatalf("TableArn = %q, want %q", got, own)
+	}
+
+	foreign := strings.Replace(own, ":"+strings.Split(own, ":")[4]+":", ":222222222222:", 1)
+	_, err = create(ctx, c, foreign)
+	code(t, err, "ResourceNotFoundException")
+	_, err = c.DescribeTable(ctx, &sdk.DescribeTableInput{TableName: new(foreign)})
+	code(t, err, "ResourceNotFoundException")
 }

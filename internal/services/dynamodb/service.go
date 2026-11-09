@@ -114,7 +114,13 @@ func save(tx storage.WriteTx, key string, t *table) error {
 }
 
 func (s *Service) CreateTable(ctx context.Context, in *api.CreateTableInput) (*api.CreateTableOutput, error) {
-	key, err := tableKey(ctx, in.TableName)
+	// A table ARN creates the table it names, and only in the caller's own account.
+	name, err := ownTableName(ctx, in.TableName)
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := tableKey(ctx, name)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +158,7 @@ func (s *Service) CreateTable(ctx context.Context, in *api.CreateTableInput) (*a
 	}
 
 	m, _ := request.FromContext(ctx)
-	arn := fmt.Sprintf("arn:aws:dynamodb:%s:%s:table/%s", m.Region, m.AccountID, *in.TableName)
+	arn := fmt.Sprintf("arn:aws:dynamodb:%s:%s:table/%s", m.Region, m.AccountID, *name)
 	globals, locals, err := secondaryIndexDescriptions(in, types, used, arn, mode)
 	if err != nil {
 		return nil, err
@@ -166,7 +172,7 @@ func (s *Service) CreateTable(ctx context.Context, in *api.CreateTableInput) (*a
 	now := float64(time.Now().UnixMilli()) / 1000
 	t := table{
 		Description: api.TableDescription{
-			TableName:              in.TableName,
+			TableName:              name,
 			TableStatus:            new("ACTIVE"),
 			TableArn:               &arn,
 			TableId:                new(rand.Text()),
