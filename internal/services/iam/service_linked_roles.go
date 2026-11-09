@@ -4,8 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"strings"
-
-	"github.com/google/uuid"
+	"uuid"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/iam"
@@ -118,7 +117,7 @@ func (s *Service) DeleteServiceLinkedRole(
 			return invalidInput("Role is not a service-linked role")
 		}
 
-		id = "task/aws-service-role/" + r.ServicePrincipal + "/" + r.Name + "/" + uuid.NewString()
+		id = "task/aws-service-role/" + r.ServicePrincipal + "/" + r.Name + "/" + uuid.NewV4().String()
 		tx.Delete(rk)
 		return storage.Write(tx, key(m.AccountID, "service-linked-deletion", id), true)
 	})

@@ -42,25 +42,26 @@ func (s *Service) kafkaEndpoints(ctx context.Context, scope request.Scope, mp *m
 }
 
 type kafkaEventRecord struct {
-	Topic         string               `json:"topic"`
-	TimestampType string               `json:"timestampType"`
-	Key           []byte               `json:"key"`
-	Value         []byte               `json:"value"`
-	Headers       []map[string][]int16 `json:"headers"`
-	Offset        int64                `json:"offset"`
-	Timestamp     int64                `json:"timestamp"`
-	Partition     int32                `json:"partition"`
+	Topic         string              `json:"topic"`
+	TimestampType string              `json:"timestampType"`
+	Key           []byte              `json:"key"`
+	Value         []byte              `json:"value"`
+	Headers       []map[string][]int8 `json:"headers"`
+	Offset        int64               `json:"offset"`
+	Timestamp     int64               `json:"timestamp"`
+	Partition     int32               `json:"partition"`
 }
 
 func kafkaRecord(r *kgo.Record) kafkaEventRecord {
-	headers := make([]map[string][]int16, 0, len(r.Headers))
+	// Lambda reports header values as Java's signed bytes.
+	headers := make([]map[string][]int8, 0, len(r.Headers))
 	for _, h := range r.Headers {
-		value := make([]int16, len(h.Value))
+		value := make([]int8, len(h.Value))
 		for i, b := range h.Value {
-			value[i] = int16(b)
+			value[i] = int8(b) // #nosec G115 -- wrapping to a signed byte is the intent
 		}
 
-		headers = append(headers, map[string][]int16{h.Key: value})
+		headers = append(headers, map[string][]int8{h.Key: value})
 	}
 
 	typ := "CREATE_TIME"

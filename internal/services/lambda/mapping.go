@@ -140,12 +140,9 @@ func (mp *mapping) functionARN(scope request.Scope) string {
 // duplicates fails when other is another mapping of the same event source and
 // function.
 func (mp *mapping) duplicates(scope request.Scope, other *mapping) error {
-	if other.UUID == mp.UUID || !slices.Equal(other.Topics, mp.Topics) ||
-		!slices.Equal(
-			other.Queues,
-			mp.Queues,
-		) || other.EventSourceArn != mp.EventSourceArn || other.FunctionName != mp.FunctionName ||
-		other.Qualifier != mp.Qualifier || !sameBrokerEndpoints(mp, other) {
+	if other.UUID == mp.UUID || other.EventSourceArn != mp.EventSourceArn || other.FunctionName != mp.FunctionName ||
+		other.Qualifier != mp.Qualifier || !slices.Equal(other.Topics, mp.Topics) ||
+		!slices.Equal(other.Queues, mp.Queues) || !sameBrokerEndpoints(mp, other) {
 		return nil
 	}
 

@@ -15,10 +15,14 @@ import (
 	"github.com/amjadjibon/tinystack/internal/common"
 )
 
+// brokerResources maps a broker service to the resource prefix of its ARNs.
+var brokerResources = map[string]string{"kafka": "cluster/", "mq": "broker:"}
+
+// brokerARN reports whether arn names a broker of service, "kafka" or "mq".
 func brokerARN(arn, service string) bool {
 	p := strings.SplitN(arn, ":", 6)
 	return len(p) == 6 && strings.HasPrefix(arn, "arn:") && p[2] == service && p[3] != "" && p[4] != "" &&
-		strings.HasPrefix(p[5], map[string]string{"kafka": "cluster/", "mq": "broker:"}[service])
+		strings.HasPrefix(p[5], brokerResources[service])
 }
 
 func (mp *mapping) brokerSource() bool {
@@ -229,11 +233,8 @@ func (s *Service) brokerCredentials(
 		Password string `json:"password"`
 	}
 
-	if decodeErr := json.Unmarshal(
-		[]byte(text),
-		&credentials,
-	); decodeErr != nil || credentials.Username == "" ||
-		credentials.Password == "" {
+	decodeErr := json.Unmarshal([]byte(text), &credentials)
+	if decodeErr != nil || credentials.Username == "" || credentials.Password == "" {
 		return "", "", fmt.Errorf("secret must contain nonempty username and password strings")
 	}
 
