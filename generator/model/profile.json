@@ -18328,7 +18328,8 @@
       "GetObjectRetention",
       "PutObjectLegalHold",
       "GetObjectLegalHold",
-      "UploadPartCopy"
+      "UploadPartCopy",
+      "ListObjects"
     ],
     "shapes": {
       "CreateBucketRequest": [
@@ -18510,7 +18511,8 @@
         "LastModified",
         "ETag",
         "Size",
-        "StorageClass"
+        "StorageClass",
+        "Owner"
       ],
       "CommonPrefix": [
         "Prefix"
@@ -19268,6 +19270,27 @@
         "ChecksumCRC64NVME",
         "ChecksumSHA1",
         "ChecksumSHA256"
+      ],
+      "ListObjectsRequest": [
+        "Bucket",
+        "Delimiter",
+        "EncodingType",
+        "Marker",
+        "MaxKeys",
+        "Prefix",
+        "ExpectedBucketOwner"
+      ],
+      "ListObjectsOutput": [
+        "IsTruncated",
+        "Marker",
+        "NextMarker",
+        "Contents",
+        "Name",
+        "Prefix",
+        "Delimiter",
+        "MaxKeys",
+        "CommonPrefixes",
+        "EncodingType"
       ]
     }
   },

@@ -50,7 +50,7 @@ type object struct {
 	// ObjectLockMode is the lock mode: "GOVERNANCE" or "COMPLIANCE".
 	ObjectLockMode string `json:",omitempty"`
 	// ObjectLockLegalHoldStatus is the legal hold status: "ON" or "OFF".
-	ObjectLockLegalHoldStatus string `json:",omitempty"`
+	ObjectLockLegalHoldStatus string           `json:",omitempty"`
 	Size                      int64
 	LastModified              int64
 	// DeleteMarker marks a delete marker, which only a history record holds.
@@ -736,7 +736,7 @@ type listing struct {
 
 // page walks keys in order after start, grouping keys that share a prefix up
 // to the delimiter into common prefixes, until limit entries are collected.
-func page(keys []string, objects map[string]object, prefix, delimiter, start string, limit int64) listing {
+func page(keys []string, prefix, delimiter, start string, limit int64) listing {
 	var l listing
 	seen := map[string]bool{}
 	for _, key := range keys {
@@ -753,7 +753,7 @@ func page(keys []string, objects map[string]object, prefix, delimiter, start str
 			entry, rolled = key[:len(prefix)+i+len(delimiter)], true
 		}
 
-		if seen[entry] {
+		if seen[entry] || entry <= start {
 			continue
 		}
 
@@ -769,25 +769,13 @@ func page(keys []string, objects map[string]object, prefix, delimiter, start str
 			continue
 		}
 
-		obj := objects[key]
-		l.contents = append(l.contents, api.Object{
-			Key:          new(key),
-			LastModified: new(time.UnixMilli(obj.LastModified).UTC()),
-			ETag:         new(obj.ETag),
-			Size:         new(obj.Size),
-			StorageClass: new(storageStandard),
-		})
+		l.contents = append(l.contents, api.Object{Key: new(key), StorageClass: new(storageStandard)})
 	}
 
 	return l
 }
 
 func (s *Service) ListObjectsV2(ctx context.Context, in *api.ListObjectsV2Request) (*api.ListObjectsV2Output, error) {
-	m, err := request.Regional(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	limit := int64(maxListKeys)
 	if in.MaxKeys != nil {
 		if *in.MaxKeys < 0 {
@@ -812,36 +800,15 @@ func (s *Service) ListObjectsV2(ctx context.Context, in *api.ListObjectsV2Reques
 		start = string(b)
 	}
 
-	objects := map[string]object{}
-	var keys []string
-	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		prefix, resolveErr := resolve(tx, m, in.Bucket, in.ExpectedBucketOwner)
-		if resolveErr != nil {
-			return resolveErr
-		}
-
-		for _, k := range tx.Keys(prefix + "/o/" + common.Value(in.Prefix)) {
-			name := strings.TrimPrefix(k, prefix+"/o/")
-
-			var obj object
-			if _, readErr := readJSON(tx, k, &obj); readErr != nil {
-				return readErr
-			}
-
-			objects[name] = obj
-			keys = append(keys, name)
-		}
-
-		return nil
-	})
+	l, err := s.listObjects(ctx, in.Bucket, in.ExpectedBucketOwner,
+		common.Value(in.Prefix), common.Value(in.Delimiter), start, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	l := page(keys, objects, common.Value(in.Prefix), common.Value(in.Delimiter), start, limit)
 	encode := func(s string) *string {
 		if encoding == "url" {
-			s = url.QueryEscape(s)
+			s = strings.ReplaceAll(url.QueryEscape(s), "+", "%20")
 		}
 
 		return new(s)
@@ -895,4 +862,98 @@ func encryption(sse *string) error {
 	}
 
 	return nil
+}
+
+// listObjects selects the page before decoding metadata, including only the requested prefix.
+func (s *Service) listObjects(ctx context.Context, bucket, owner *string,
+	prefix, delimiter, start string, limit int64,
+) (listing, error) {
+	m, err := request.Regional(ctx)
+	if err != nil {
+		return listing{}, err
+	}
+
+	var l listing
+	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+		base, transactionErr := resolve(tx, m, bucket, owner)
+		if transactionErr != nil {
+			return transactionErr
+		}
+
+		if limit == 0 {
+			return nil
+		}
+
+		records := tx.Keys(base + "/o/" + prefix)
+		keys := make([]string, len(records))
+		for i, key := range records {
+			keys[i] = strings.TrimPrefix(key, base+"/o/")
+		}
+
+		l = page(keys, prefix, delimiter, start, limit)
+		for i := range l.contents {
+			entry := &l.contents[i]
+			obj, _, transactionErr := storage.Read[object](tx, base+"/o/"+*entry.Key)
+			if transactionErr != nil {
+				return transactionErr
+			}
+
+			entry.LastModified = new(time.UnixMilli(obj.LastModified).UTC())
+			entry.ETag, entry.Size = new(obj.ETag), new(obj.Size)
+		}
+
+		return nil
+	})
+	return l, err
+}
+
+func (s *Service) ListObjects(ctx context.Context, in *api.ListObjectsRequest) (*api.ListObjectsOutput, error) {
+	// V1 and V2 use the same page selection, validation and encoding.
+	out, err := s.ListObjectsV2(ctx, &api.ListObjectsV2Request{
+		Bucket: in.Bucket, ExpectedBucketOwner: in.ExpectedBucketOwner, Prefix: in.Prefix,
+		Delimiter: in.Delimiter, StartAfter: in.Marker, MaxKeys: in.MaxKeys, EncodingType: in.EncodingType,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	m, err := request.Regional(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	owner := m.AccountID
+	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+		base, transactionErr := resolve(tx, m, in.Bucket, in.ExpectedBucketOwner)
+		if transactionErr != nil {
+			return transactionErr
+		}
+
+		owner, _, _ = strings.Cut(base, "/")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range out.Contents {
+		out.Contents[i].Owner = &api.Owner{ID: new(canonicalID(owner))}
+	}
+
+	result := &api.ListObjectsOutput{
+		Name: out.Name, Prefix: out.Prefix, Delimiter: out.Delimiter, MaxKeys: out.MaxKeys,
+		EncodingType: out.EncodingType, Marker: out.StartAfter, IsTruncated: out.IsTruncated,
+		Contents: out.Contents, CommonPrefixes: out.CommonPrefixes,
+	}
+	if common.Value(in.Delimiter) != "" && common.Value(out.IsTruncated) {
+		raw, _ := base64.RawURLEncoding.DecodeString(common.Value(out.NextContinuationToken))
+		marker := string(raw)
+		if common.Value(in.EncodingType) == encodingURL {
+			marker = strings.ReplaceAll(url.QueryEscape(marker), "+", "%20")
+		}
+
+		result.NextMarker = new(marker)
+	}
+
+	return result, nil
 }

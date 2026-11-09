@@ -201,6 +201,7 @@ type Object struct {
 	ETag         *string    `json:"ETag,omitempty" xml:"ETag,omitempty"`
 	Size         *int64     `json:"Size,omitempty" xml:"Size,omitempty"`
 	StorageClass *string    `json:"StorageClass,omitempty" xml:"StorageClass,omitempty"`
+	Owner        *Owner     `json:"Owner,omitempty" xml:"Owner,omitempty"`
 }
 
 type CommonPrefix struct {
@@ -1209,6 +1210,30 @@ type UploadPartCopyOutput struct {
 	CopyPartResult      *CopyPartResult `json:"-" xml:"-"`
 }
 
+type ListObjectsRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	Delimiter           *string `json:"-" xml:"-"`
+	EncodingType        *string `json:"-" xml:"-"`
+	Marker              *string `json:"-" xml:"-"`
+	MaxKeys             *int64  `json:"-" xml:"-"`
+	Prefix              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type ListObjectsOutput struct {
+	XMLName        xml.Name       `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ ListBucketResult"`
+	IsTruncated    *bool          `json:"IsTruncated,omitempty" xml:"IsTruncated,omitempty"`
+	Marker         *string        `json:"Marker,omitempty" xml:"Marker,omitempty"`
+	NextMarker     *string        `json:"NextMarker,omitempty" xml:"NextMarker,omitempty"`
+	Contents       []Object       `json:"Contents,omitempty" xml:"Contents,omitempty"`
+	Name           *string        `json:"Name,omitempty" xml:"Name,omitempty"`
+	Prefix         *string        `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+	Delimiter      *string        `json:"Delimiter,omitempty" xml:"Delimiter,omitempty"`
+	MaxKeys        *int64         `json:"MaxKeys,omitempty" xml:"MaxKeys,omitempty"`
+	CommonPrefixes []CommonPrefix `json:"CommonPrefixes,omitempty" xml:"CommonPrefixes,omitempty"`
+	EncodingType   *string        `json:"EncodingType,omitempty" xml:"EncodingType,omitempty"`
+}
+
 type API interface {
 	CreateBucket(context.Context, *CreateBucketRequest) (*CreateBucketOutput, error)
 	DeleteBucket(context.Context, *DeleteBucketRequest) (*DeleteBucketOutput, error)
@@ -1272,6 +1297,7 @@ type API interface {
 	PutObjectLegalHold(context.Context, *PutObjectLegalHoldRequest) (*PutObjectLegalHoldOutput, error)
 	GetObjectLegalHold(context.Context, *GetObjectLegalHoldRequest) (*GetObjectLegalHoldOutput, error)
 	UploadPartCopy(context.Context, *UploadPartCopyRequest) (*UploadPartCopyOutput, error)
+	ListObjects(context.Context, *ListObjectsRequest) (*ListObjectsOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1461,6 +1487,9 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"UploadPartCopy": {Name: "UploadPartCopy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:PutObject", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "CopySource": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source", Format: ""}, "CopySourceIfMatch": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-match", Format: ""}, "CopySourceIfModifiedSince": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-modified-since", Format: ""}, "CopySourceIfNoneMatch": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-none-match", Format: ""}, "CopySourceIfUnmodifiedSince": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-unmodified-since", Format: ""}, "CopySourceRange": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-range", Format: ""}, "CopySourceSSECustomerAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-copy-source-server-side-encryption-customer-algorithm", Format: ""}, "CopySourceSSECustomerKey": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-copy-source-server-side-encryption-customer-key", Format: ""}, "CopySourceSSECustomerKeyMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-copy-source-server-side-encryption-customer-key-MD5", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "ExpectedSourceBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-source-expected-bucket-owner", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "PartNumber": catalog.MemberBinding{Location: "query", Name: "partNumber", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKey": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "UploadId": catalog.MemberBinding{Location: "query", Name: "uploadId", Format: ""}}, Output: map[string]catalog.MemberBinding{"CopyPartResult": catalog.MemberBinding{Location: "payload", Name: "CopyPartResult", Format: ""}, "CopySourceVersionId": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-version-id", Format: ""}}, Method: "PUT", URI: "/{Bucket}/{Key+}?x-id=UploadPartCopy", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &UploadPartCopyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.UploadPartCopy(ctx, input.(*UploadPartCopyRequest))
+		}},
+		"ListObjects": {Name: "ListObjects", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:ListBucket", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "Delimiter": catalog.MemberBinding{Location: "query", Name: "delimiter", Format: ""}, "EncodingType": catalog.MemberBinding{Location: "query", Name: "encoding-type", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Marker": catalog.MemberBinding{Location: "query", Name: "marker", Format: ""}, "MaxKeys": catalog.MemberBinding{Location: "query", Name: "max-keys", Format: ""}, "OptionalObjectAttributes": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-optional-object-attributes", Format: ""}, "Prefix": catalog.MemberBinding{Location: "query", Name: "prefix", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}}, Output: map[string]catalog.MemberBinding{"CommonPrefixes": catalog.MemberBinding{Location: "document", Name: "CommonPrefixes", Format: ""}, "Contents": catalog.MemberBinding{Location: "document", Name: "Contents", Format: ""}, "Delimiter": catalog.MemberBinding{Location: "document", Name: "Delimiter", Format: ""}, "EncodingType": catalog.MemberBinding{Location: "document", Name: "EncodingType", Format: ""}, "IsTruncated": catalog.MemberBinding{Location: "document", Name: "IsTruncated", Format: ""}, "Marker": catalog.MemberBinding{Location: "document", Name: "Marker", Format: ""}, "MaxKeys": catalog.MemberBinding{Location: "document", Name: "MaxKeys", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "Name", Format: ""}, "NextMarker": catalog.MemberBinding{Location: "document", Name: "NextMarker", Format: ""}, "Prefix": catalog.MemberBinding{Location: "document", Name: "Prefix", Format: ""}}, Method: "GET", URI: "/{Bucket}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &ListObjectsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListObjects(ctx, input.(*ListObjectsRequest))
 		}},
 	}}
 }
