@@ -11,6 +11,40 @@ import (
 )
 
 func init() {
+	register("AWS::IAM::ServiceLinkedRole", &resourceType{
+		properties: []string{"AWSServiceName", "CustomSuffix", memberDescription},
+		replace:    []string{"AWSServiceName", "CustomSuffix"}, iam: true,
+		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
+			out, err := c.call(
+				ctx,
+				"iam",
+				"CreateServiceLinkedRole",
+				pick(map[string]any{}, p, "AWSServiceName", "CustomSuffix", memberDescription),
+			)
+			if err != nil {
+				return "", nil, err
+			}
+			role, _ := out["Role"].(map[string]any)
+			name, _ := role[memberRoleName].(string)
+			return name, nil, nil
+		},
+		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
+			_, err := c.call(
+				ctx,
+				"iam",
+				"UpdateRoleDescription",
+				map[string]any{memberRoleName: r.Physical, memberDescription: p.str(memberDescription)},
+			)
+			return nil, err
+		},
+		remove: func(ctx context.Context, c *client, r *resource) error {
+			_, err := c.call(ctx, "iam", "DeleteServiceLinkedRole", map[string]any{memberRoleName: r.Physical})
+			if gone(err, "NoSuchEntityException") {
+				return nil
+			}
+			return err
+		},
+	})
 	register("AWS::IAM::Role", &resourceType{
 		name: memberRoleName,
 		properties: []string{

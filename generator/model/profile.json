@@ -14071,7 +14071,10 @@
       "PutRolePermissionsBoundary",
       "DeleteRolePermissionsBoundary",
       "SimulatePrincipalPolicy",
-      "SimulateCustomPolicy"
+      "SimulateCustomPolicy",
+      "CreateServiceLinkedRole",
+      "DeleteServiceLinkedRole",
+      "GetServiceLinkedRoleDeletionStatus"
     ],
     "shapes": {
       "CreateRoleRequest": [
@@ -14763,6 +14766,26 @@
       ],
       "PermissionsBoundaryDecisionDetail": [
         "AllowedByPermissionsBoundary"
+      ],
+      "CreateServiceLinkedRoleRequest": [
+        "AWSServiceName",
+        "Description",
+        "CustomSuffix"
+      ],
+      "CreateServiceLinkedRoleResponse": [
+        "Role"
+      ],
+      "DeleteServiceLinkedRoleRequest": [
+        "RoleName"
+      ],
+      "DeleteServiceLinkedRoleResponse": [
+        "DeletionTaskId"
+      ],
+      "GetServiceLinkedRoleDeletionStatusRequest": [
+        "DeletionTaskId"
+      ],
+      "GetServiceLinkedRoleDeletionStatusResponse": [
+        "Status"
       ]
     }
   },

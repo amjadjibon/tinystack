@@ -201,6 +201,10 @@ func (s *Service) DeleteRole(ctx context.Context, in *api.DeleteRoleRequest) (*a
 			return loadErr
 		}
 
+		if guardErr := unmodifiableRole(r); guardErr != nil {
+			return guardErr
+		}
+
 		if conflict := r.deleteConflict(); conflict != nil {
 			return conflict
 		}
@@ -272,6 +276,12 @@ func (s *Service) UpdateRole(ctx context.Context, in *api.UpdateRoleRequest) (*a
 	}
 
 	err := s.updateRole(ctx, in.RoleName, func(_ storage.WriteTx, _ string, r *role) error {
+		if in.MaxSessionDuration != nil {
+			if err := unmodifiableRole(r); err != nil {
+				return err
+			}
+		}
+
 		if in.Description != nil {
 			r.Description = *in.Description
 		}
@@ -323,6 +333,10 @@ func (s *Service) UpdateAssumeRolePolicy(
 	}
 
 	err := s.updateRole(ctx, in.RoleName, func(_ storage.WriteTx, _ string, r *role) error {
+		if guardErr := unmodifiableRole(r); guardErr != nil {
+			return guardErr
+		}
+
 		r.AssumeRolePolicy = *in.PolicyDocument
 		return nil
 	})

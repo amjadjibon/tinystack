@@ -50,6 +50,7 @@ func New(store storage.Store) *Service {
 }
 
 type role struct {
+	ServicePrincipal string            `json:",omitempty"`
 	Boundary         string            `json:",omitempty"`
 	Tags             map[string]string `json:",omitempty"`
 	Name             string

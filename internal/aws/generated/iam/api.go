@@ -934,6 +934,32 @@ type SimulateCustomPolicyRequest struct {
 	Marker                             *string        `json:"Marker,omitempty" query:"Marker"`
 }
 
+type CreateServiceLinkedRoleRequest struct {
+	AWSServiceName *string `json:"AWSServiceName,omitempty" query:"AWSServiceName"`
+	Description    *string `json:"Description,omitempty" query:"Description"`
+	CustomSuffix   *string `json:"CustomSuffix,omitempty" query:"CustomSuffix"`
+}
+
+type CreateServiceLinkedRoleResponse struct {
+	Role *Role `json:"Role,omitempty" query:"Role"`
+}
+
+type DeleteServiceLinkedRoleRequest struct {
+	RoleName *string `json:"RoleName,omitempty" query:"RoleName"`
+}
+
+type DeleteServiceLinkedRoleResponse struct {
+	DeletionTaskId *string `json:"DeletionTaskId,omitempty" query:"DeletionTaskId"`
+}
+
+type GetServiceLinkedRoleDeletionStatusRequest struct {
+	DeletionTaskId *string `json:"DeletionTaskId,omitempty" query:"DeletionTaskId"`
+}
+
+type GetServiceLinkedRoleDeletionStatusResponse struct {
+	Status *string `json:"Status,omitempty" query:"Status"`
+}
+
 type API interface {
 	CreateRole(context.Context, *CreateRoleRequest) (*CreateRoleResponse, error)
 	GetRole(context.Context, *GetRoleRequest) (*GetRoleResponse, error)
@@ -1022,6 +1048,9 @@ type API interface {
 	DeleteRolePermissionsBoundary(context.Context, *DeleteRolePermissionsBoundaryRequest) (*DeleteRolePermissionsBoundaryOutput, error)
 	SimulatePrincipalPolicy(context.Context, *SimulatePrincipalPolicyRequest) (*SimulatePolicyResponse, error)
 	SimulateCustomPolicy(context.Context, *SimulateCustomPolicyRequest) (*SimulatePolicyResponse, error)
+	CreateServiceLinkedRole(context.Context, *CreateServiceLinkedRoleRequest) (*CreateServiceLinkedRoleResponse, error)
+	DeleteServiceLinkedRole(context.Context, *DeleteServiceLinkedRoleRequest) (*DeleteServiceLinkedRoleResponse, error)
+	GetServiceLinkedRoleDeletionStatus(context.Context, *GetServiceLinkedRoleDeletionStatusRequest) (*GetServiceLinkedRoleDeletionStatusResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1276,6 +1305,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"SimulateCustomPolicy": {Name: "SimulateCustomPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:SimulateCustomPolicy", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "SimulateCustomPolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &SimulateCustomPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.SimulateCustomPolicy(ctx, input.(*SimulateCustomPolicyRequest))
+		}},
+		"CreateServiceLinkedRole": {Name: "CreateServiceLinkedRole", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:CreateServiceLinkedRole", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateServiceLinkedRole", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateServiceLinkedRoleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateServiceLinkedRole(ctx, input.(*CreateServiceLinkedRoleRequest))
+		}},
+		"DeleteServiceLinkedRole": {Name: "DeleteServiceLinkedRole", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:DeleteServiceLinkedRole", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteServiceLinkedRole", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteServiceLinkedRoleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteServiceLinkedRole(ctx, input.(*DeleteServiceLinkedRoleRequest))
+		}},
+		"GetServiceLinkedRoleDeletionStatus": {Name: "GetServiceLinkedRoleDeletionStatus", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:GetServiceLinkedRoleDeletionStatus", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetServiceLinkedRoleDeletionStatus", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetServiceLinkedRoleDeletionStatusRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetServiceLinkedRoleDeletionStatus(ctx, input.(*GetServiceLinkedRoleDeletionStatusRequest))
 		}},
 	}}
 }

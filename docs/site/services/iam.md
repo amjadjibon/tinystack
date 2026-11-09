@@ -13,7 +13,7 @@ Store account-wide identities and optionally evaluate their permission policies.
 | API version | `2010-05-08` |
 | Scope | Account-wide |
 | Execution | Local behavior |
-| Selected operations | 87 of 180 in the pinned model |
+| Selected operations | 90 of 180 in the pinned model |
 
 ## Implemented behavior
 
@@ -30,6 +30,7 @@ Lambda function, Secrets Manager secret and EventBridge bus policies follow the 
 - OIDC providers use the AWS API; console passwords, MFA, permissions boundaries and AWS-managed policy provisioning are not available in the console.
 - PassRole does not infer roles inherited from stored task definitions, launch templates or other stored service configuration; iam:AssociatedResourceArn and role resource tags are not supplied.
 - Policy simulation rejects unsupported policy constructs with InvalidInput; no statement source positions, Organizations policies, role/group resource-policy callers, resource handling scenarios or policy exclusions.
+- Service-linked roles support a fixed set of service principals; service resource usage is not checked before immediate deletion.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -56,6 +57,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `CreatePolicy` | `POST /` |
 | `CreatePolicyVersion` | `POST /` |
 | `CreateRole` | `POST /` |
+| `CreateServiceLinkedRole` | `POST /` |
 | `CreateUser` | `POST /` |
 | `DeleteAccessKey` | `POST /` |
 | `DeleteGroup` | `POST /` |
@@ -67,6 +69,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `DeleteRole` | `POST /` |
 | `DeleteRolePermissionsBoundary` | `POST /` |
 | `DeleteRolePolicy` | `POST /` |
+| `DeleteServiceLinkedRole` | `POST /` |
 | `DeleteUser` | `POST /` |
 | `DeleteUserPermissionsBoundary` | `POST /` |
 | `DeleteUserPolicy` | `POST /` |
@@ -82,6 +85,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `GetPolicyVersion` | `POST /` |
 | `GetRole` | `POST /` |
 | `GetRolePolicy` | `POST /` |
+| `GetServiceLinkedRoleDeletionStatus` | `POST /` |
 | `GetUser` | `POST /` |
 | `GetUserPolicy` | `POST /` |
 | `ListAccessKeys` | `POST /` |
@@ -133,7 +137,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "93 modeled operations outside the implementation"
+??? info "90 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -145,7 +149,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `CreateDelegationRequest`
     - `CreateLoginProfile`
     - `CreateSAMLProvider`
-    - `CreateServiceLinkedRole`
     - `CreateServiceSpecificCredential`
     - `CreateVirtualMFADevice`
     - `DeactivateMFADevice`
@@ -155,7 +158,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteSAMLProvider`
     - `DeleteSSHPublicKey`
     - `DeleteServerCertificate`
-    - `DeleteServiceLinkedRole`
     - `DeleteServiceSpecificCredential`
     - `DeleteSigningCertificate`
     - `DeleteVirtualMFADevice`
@@ -188,7 +190,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetServerCertificate`
     - `GetServiceLastAccessedDetails`
     - `GetServiceLastAccessedDetailsWithEntities`
-    - `GetServiceLinkedRoleDeletionStatus`
     - `ListAccountAliases`
     - `ListDelegationRequests`
     - `ListEntitiesForPolicy`
@@ -236,5 +237,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/iam)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/iam/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/iam.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [iam_authorization_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_authorization_test.go), [iam_boundaries_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_boundaries_test.go), [iam_groups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_groups_test.go), [iam_oidc_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_oidc_test.go), [iam_passrole_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_passrole_test.go), [iam_review_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_review_test.go), [iam_simulate_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_simulate_test.go), [iam_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_test.go), [iam_users_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_users_test.go).
+- SDK integration examples: [iam_authorization_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_authorization_test.go), [iam_boundaries_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_boundaries_test.go), [iam_groups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_groups_test.go), [iam_oidc_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_oidc_test.go), [iam_passrole_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_passrole_test.go), [iam_review_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_review_test.go), [iam_service_linked_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_service_linked_test.go), [iam_simulate_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_simulate_test.go), [iam_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_test.go), [iam_users_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_users_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).
