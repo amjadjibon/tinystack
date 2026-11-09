@@ -29,6 +29,7 @@ func batchOptions(window *int64, responseTypes []string, criteria *api.FilterCri
 		}
 
 		mp.BatchingWindow = *window
+		mp.DefaultBrokerWindow = false
 	}
 
 	if responseTypes != nil {
@@ -65,6 +66,14 @@ func batchOptions(window *int64, responseTypes []string, criteria *api.FilterCri
 // checkLimits checks the mapping's batch size and retries against its kind of
 // event source.
 func (mp *mapping) checkLimits() error {
+	if mp.brokerSource() {
+		if mp.BatchSize < 1 || mp.BatchSize > 10000 {
+			return invalid("BatchSize must be between 1 and 10000 for Kafka and MQ")
+		}
+
+		return nil
+	}
+
 	if mp.StartingPosition == "" {
 		if mp.BatchSize < 1 || mp.BatchSize > maxSQSWindowed {
 			return invalid("BatchSize must be between 1 and %d for SQS", maxSQSWindowed)
@@ -96,6 +105,10 @@ func (mp *mapping) checkLimits() error {
 
 // batchingWindow is how long a poller gathers records for one batch.
 func (mp *mapping) batchingWindow() time.Duration {
+	if mp.DefaultBrokerWindow {
+		return 500 * time.Millisecond
+	}
+
 	return time.Duration(mp.BatchingWindow) * time.Second
 }
 

@@ -17164,7 +17164,13 @@
         "FunctionResponseTypes",
         "DestinationConfig",
         "BisectBatchOnFunctionError",
-        "MaximumRecordAgeInSeconds"
+        "MaximumRecordAgeInSeconds",
+        "Topics",
+        "Queues",
+        "SourceAccessConfigurations",
+        "SelfManagedEventSource",
+        "AmazonManagedKafkaEventSourceConfig",
+        "SelfManagedKafkaEventSourceConfig"
       ],
       "EventSourceMappingConfiguration": [
         "UUID",
@@ -17182,7 +17188,13 @@
         "FunctionResponseTypes",
         "DestinationConfig",
         "BisectBatchOnFunctionError",
-        "MaximumRecordAgeInSeconds"
+        "MaximumRecordAgeInSeconds",
+        "Topics",
+        "Queues",
+        "SourceAccessConfigurations",
+        "SelfManagedEventSource",
+        "AmazonManagedKafkaEventSourceConfig",
+        "SelfManagedKafkaEventSourceConfig"
       ],
       "GetEventSourceMappingRequest": [
         "UUID"
@@ -17568,7 +17580,10 @@
         "FunctionResponseTypes",
         "DestinationConfig",
         "BisectBatchOnFunctionError",
-        "MaximumRecordAgeInSeconds"
+        "MaximumRecordAgeInSeconds",
+        "SourceAccessConfigurations",
+        "AmazonManagedKafkaEventSourceConfig",
+        "SelfManagedKafkaEventSourceConfig"
       ],
       "PutFunctionEventInvokeConfigRequest": [
         "FunctionName",
@@ -17655,6 +17670,19 @@
       "GetLayerVersionPolicyResponse": [
         "Policy",
         "RevisionId"
+      ],
+      "SourceAccessConfiguration": [
+        "Type",
+        "URI"
+      ],
+      "SelfManagedEventSource": [
+        "Endpoints"
+      ],
+      "AmazonManagedKafkaEventSourceConfig": [
+        "ConsumerGroupId"
+      ],
+      "SelfManagedKafkaEventSourceConfig": [
+        "ConsumerGroupId"
       ]
     }
   },

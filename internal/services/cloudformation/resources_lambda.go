@@ -81,6 +81,8 @@ func init() {
 	register("AWS::Lambda::EventSourceMapping", &resourceType{
 		properties: []string{
 			"EventSourceArn",
+			"Topics", "Queues", "SourceAccessConfigurations", "SelfManagedEventSource",
+			"AmazonManagedKafkaEventSourceConfig", "SelfManagedKafkaEventSourceConfig",
 			memberFunctionName,
 			propertyBatchSize,
 			memberEnabled,
@@ -96,6 +98,8 @@ func init() {
 				map[string]any{},
 				p,
 				"EventSourceArn",
+				"Topics", "Queues", "SourceAccessConfigurations", "SelfManagedEventSource",
+				"AmazonManagedKafkaEventSourceConfig", "SelfManagedKafkaEventSourceConfig",
 				memberFunctionName,
 				propertyBatchSize,
 				memberEnabled,

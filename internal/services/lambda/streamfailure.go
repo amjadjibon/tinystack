@@ -37,7 +37,7 @@ func streamOptions(destinations *api.DestinationConfig, bisect *bool, age *int64
 		return nil
 	}
 
-	if mp.StartingPosition == "" {
+	if mp.StartingPosition == "" || mp.brokerSource() {
 		return invalid("DestinationConfig, BisectBatchOnFunctionError, and MaximumRecordAgeInSeconds are only " +
 			"valid for stream event sources")
 	}

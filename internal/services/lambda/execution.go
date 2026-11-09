@@ -71,6 +71,10 @@ func readProblem(denied catalog.DeliveryRole) string {
 // checkMappingReads fails a mapping whose function's execution role may not read the event source, as AWS does when
 // the mapping is created.
 func (s *Service) checkMappingReads(ctx context.Context, scope request.Scope, mp *mapping) error {
+	if mp.brokerSource() {
+		return nil
+	}
+
 	defer s.checked.Delete(mp.UUID)
 	ctx = request.WithMetadata(context.WithoutCancel(ctx), request.Metadata{Scope: scope})
 	denied, err := s.authorizeReads(ctx, scope, mp.FunctionName, mp.UUID, mp.EventSourceArn)

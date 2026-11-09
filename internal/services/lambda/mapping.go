@@ -41,9 +41,15 @@ var pollBackoff = time.Second
 
 var uuidPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
-// mapping is a stored SQS queue, DynamoDB stream, or Kinesis stream event
-// source mapping.
+// mapping is a stored queue, stream, or broker event source mapping.
 type mapping struct {
+	Topics                              []string                                 `json:",omitempty"`
+	Queues                              []string                                 `json:",omitempty"`
+	SourceAccessConfigurations          []api.SourceAccessConfiguration          `json:",omitempty"`
+	SelfManagedEventSource              *api.SelfManagedEventSource              `json:",omitempty"`
+	AmazonManagedKafkaEventSourceConfig *api.AmazonManagedKafkaEventSourceConfig `json:",omitempty"`
+	SelfManagedKafkaEventSourceConfig   *api.SelfManagedKafkaEventSourceConfig   `json:",omitempty"`
+
 	// MaximumRetryAttempts, StartingPosition, and Cursor, the sequence number
 	// of the last record processed, are only set for streams.
 	MaximumRetryAttempts *int64 `json:",omitempty"`
@@ -62,14 +68,15 @@ type mapping struct {
 	// "done" for a closed shard read to its end.
 	Cursors map[string]string `json:",omitempty"`
 	// Filters are the FilterCriteria patterns a record must match one of.
-	Filters        []string `json:",omitempty"`
-	BatchSize      int64
-	BatchingWindow int64 `json:",omitempty"`
-	LastModified   int64
-	MaxRecordAge   int64 `json:",omitempty"`
-	Enabled        bool
-	ReportFailures bool `json:",omitempty"`
-	Bisect         bool `json:",omitempty"`
+	Filters             []string `json:",omitempty"`
+	BatchSize           int64
+	BatchingWindow      int64 `json:",omitempty"`
+	LastModified        int64
+	MaxRecordAge        int64 `json:",omitempty"`
+	DefaultBrokerWindow bool  `json:",omitempty"`
+	Enabled             bool
+	ReportFailures      bool `json:",omitempty"`
+	Bisect              bool `json:",omitempty"`
 }
 
 func (mp *mapping) configuration(scope request.Scope) api.EventSourceMappingConfiguration {
@@ -79,21 +86,30 @@ func (mp *mapping) configuration(scope request.Scope) api.EventSourceMappingConf
 	}
 
 	cfg := api.EventSourceMappingConfiguration{
-		UUID:                  new(mp.UUID),
-		EventSourceArn:        new(mp.EventSourceArn),
-		FunctionArn:           new(mp.functionARN(scope)),
-		BatchSize:             new(mp.BatchSize),
-		State:                 new(state),
-		StateTransitionReason: new("USER_INITIATED"),
-		LastModified:          new(float64(mp.LastModified) / 1000),
-		LastProcessingResult:  new(mp.LastProcessingResult),
-		MaximumRetryAttempts:  mp.MaximumRetryAttempts,
+		Topics:                              mp.Topics,
+		Queues:                              mp.Queues,
+		SourceAccessConfigurations:          mp.SourceAccessConfigurations,
+		SelfManagedEventSource:              mp.SelfManagedEventSource,
+		AmazonManagedKafkaEventSourceConfig: mp.AmazonManagedKafkaEventSourceConfig,
+		SelfManagedKafkaEventSourceConfig:   mp.SelfManagedKafkaEventSourceConfig,
+		UUID:                                new(mp.UUID),
+		EventSourceArn:                      new(mp.EventSourceArn),
+		FunctionArn:                         new(mp.functionARN(scope)),
+		BatchSize:                           new(mp.BatchSize),
+		State:                               new(state),
+		StateTransitionReason:               new("USER_INITIATED"),
+		LastModified:                        new(float64(mp.LastModified) / 1000),
+		LastProcessingResult:                new(mp.LastProcessingResult),
+		MaximumRetryAttempts:                mp.MaximumRetryAttempts,
 		// Lambda reports the window, even when it is 0.
 		MaximumBatchingWindowInSeconds: new(mp.BatchingWindow),
 	}
 
 	if mp.StartingPosition != "" {
 		cfg.StartingPosition = new(mp.StartingPosition)
+	}
+
+	if mp.StartingPosition != "" && !mp.brokerSource() {
 		cfg.BisectBatchOnFunctionError = new(mp.Bisect)
 		cfg.MaximumRecordAgeInSeconds = new(cmp.Or(mp.MaxRecordAge, -1))
 		cfg.DestinationConfig = &api.DestinationConfig{OnFailure: &api.OnFailure{}}
@@ -124,8 +140,12 @@ func (mp *mapping) functionARN(scope request.Scope) string {
 // duplicates fails when other is another mapping of the same event source and
 // function.
 func (mp *mapping) duplicates(scope request.Scope, other *mapping) error {
-	if other.UUID == mp.UUID || other.EventSourceArn != mp.EventSourceArn || other.FunctionName != mp.FunctionName ||
-		other.Qualifier != mp.Qualifier {
+	if other.UUID == mp.UUID || !slices.Equal(other.Topics, mp.Topics) ||
+		!slices.Equal(
+			other.Queues,
+			mp.Queues,
+		) || other.EventSourceArn != mp.EventSourceArn || other.FunctionName != mp.FunctionName ||
+		other.Qualifier != mp.Qualifier || !sameBrokerEndpoints(mp, other) {
 		return nil
 	}
 
@@ -185,7 +205,13 @@ func (s *Service) CreateEventSourceMapping(
 		return nil, optionsErr
 	}
 
-	if _, isQueue := queueScope(source); isQueue {
+	if fieldsErr := validateBrokerFields(in); fieldsErr != nil {
+		return nil, fieldsErr
+	}
+
+	if in.SelfManagedEventSource != nil || brokerARN(source, "kafka") || brokerARN(source, "mq") {
+		err = s.configureBroker(ctx, m.Scope, in, mp)
+	} else if _, isQueue := queueScope(source); isQueue {
 		err = s.queueSource(ctx, m.Scope, in, mp)
 	} else if _, _, _, isStream := dynamodb.ParseStreamARN(source); isStream {
 		err = s.streamSource(ctx, m.Scope, in, mp)
@@ -362,6 +388,10 @@ func (s *Service) UpdateEventSourceMapping(
 	}
 
 	change := func(mp *mapping) error {
+		if fieldsErr := updateBrokerFields(in, mp); fieldsErr != nil {
+			return fieldsErr
+		}
+
 		mp.FunctionName, mp.Qualifier = name, qualifier
 		if in.Enabled != nil {
 			mp.Enabled = *in.Enabled
@@ -397,6 +427,19 @@ func (s *Service) UpdateEventSourceMapping(
 
 		mp.LastModified = s.now().UnixMilli()
 		return mp.checkLimits()
+	}
+
+	// Resolve updated credentials outside the storage transaction.
+	if in.SourceAccessConfigurations != nil {
+		candidate := *current
+		candidate.SourceAccessConfigurations = in.SourceAccessConfigurations
+		if accessErr := validateAccess(&candidate); accessErr != nil {
+			return nil, accessErr
+		}
+
+		if _, _, secretErr := s.brokerCredentials(ctx, m.Scope, &candidate); secretErr != nil {
+			return nil, invalid("Cannot read broker credentials: %s", secretErr)
+		}
 	}
 
 	// Check the change before stopping the poller.
@@ -586,6 +629,8 @@ func (s *Service) startPoller(scope request.Scope, mp *mapping) {
 	s.mu.Unlock()
 	poll := s.poll
 	switch {
+	case mp.brokerSource():
+		poll = s.pollBroker
 	case isKinesis(mp.EventSourceArn):
 		poll = s.pollKinesis
 	case mp.StartingPosition != "":
