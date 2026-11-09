@@ -17048,7 +17048,10 @@
       "UpdateFunctionEventInvokeConfig",
       "GetFunctionEventInvokeConfig",
       "DeleteFunctionEventInvokeConfig",
-      "ListFunctionEventInvokeConfigs"
+      "ListFunctionEventInvokeConfigs",
+      "AddLayerVersionPermission",
+      "RemoveLayerVersionPermission",
+      "GetLayerVersionPolicy"
     ],
     "shapes": {
       "CreateFunctionRequest": [
@@ -17625,6 +17628,33 @@
       ],
       "ImageConfigResponse": [
         "ImageConfig"
+      ],
+      "AddLayerVersionPermissionRequest": [
+        "LayerName",
+        "VersionNumber",
+        "StatementId",
+        "Action",
+        "Principal",
+        "OrganizationId",
+        "RevisionId"
+      ],
+      "AddLayerVersionPermissionResponse": [
+        "Statement",
+        "RevisionId"
+      ],
+      "RemoveLayerVersionPermissionRequest": [
+        "LayerName",
+        "VersionNumber",
+        "StatementId",
+        "RevisionId"
+      ],
+      "GetLayerVersionPolicyRequest": [
+        "LayerName",
+        "VersionNumber"
+      ],
+      "GetLayerVersionPolicyResponse": [
+        "Policy",
+        "RevisionId"
       ]
     }
   },

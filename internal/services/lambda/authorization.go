@@ -2,6 +2,7 @@ package lambda
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
@@ -11,12 +12,43 @@ import (
 
 func (s *Service) AuthorizationResources(
 	ctx context.Context,
-	_ string,
+	operation string,
 	input any,
 ) ([]catalog.AuthorizationResource, error) {
 	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	if ref := catalog.InputString(input, "LayerName"); ref != "" {
+		scope, name, resolveErr := layerTarget(m, ref)
+		if resolveErr != nil {
+			return nil, resolveErr
+		}
+
+		var version int64
+		// Numeric input members are read through JSON for the authorization target.
+		data, marshalErr := json.Marshal(input)
+		if marshalErr != nil {
+			return nil, marshalErr
+		}
+
+		var fields struct{ VersionNumber int64 }
+		if decodeErr := json.Unmarshal(data, &fields); decodeErr != nil {
+			return nil, decodeErr
+		}
+
+		version = fields.VersionNumber
+		return s.layerAuthorization(ctx, scope, name, version, operation)
+	}
+
+	if operation == "GetLayerVersionByArn" {
+		scope, name, version, parseErr := parseLayerVersionARN(m, catalog.InputString(input, "Arn"))
+		if parseErr != nil {
+			return nil, parseErr
+		}
+
+		return s.layerAuthorization(ctx, scope, name, version, operation)
 	}
 
 	ref := catalog.InputString(input, "FunctionName")
@@ -74,4 +106,33 @@ func (s *Service) functionResource(
 		return readErr
 	})
 	return target, err
+}
+
+func (s *Service) layerAuthorization(
+	ctx context.Context,
+	scope request.Scope,
+	name string,
+	version int64,
+	operation string,
+) ([]catalog.AuthorizationResource, error) {
+	if version == 0 {
+		return nil, nil
+	}
+
+	target := catalog.AuthorizationResource{OwnerAccount: scope.AccountID, TagsKnown: true}
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+		l, loadErr := loadLayer(tx, scope, name, version)
+		if loadErr != nil {
+			return loadErr
+		}
+
+		data, marshalErr := json.Marshal(l.Policy)
+		target.ARN, target.Policy = l.versionARN(scope), string(data)
+		if operation == "GetLayerVersionByArn" {
+			target.Action = layerReadAction
+		}
+
+		return marshalErr
+	})
+	return []catalog.AuthorizationResource{target}, err
 }

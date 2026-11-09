@@ -39,15 +39,17 @@ var (
 
 // layerVersion is one published, immutable version of a layer.
 type layerVersion struct {
-	Name         string
-	Description  string `json:",omitempty"`
-	License      string `json:",omitempty"`
-	CreatedDate  string
-	CodeSha256   string
-	Runtimes     []string `json:",omitempty"`
-	Architecture []string `json:",omitempty"`
-	CodeSize     int64
-	Version      int64
+	Policy         policy
+	PolicyRevision string `json:",omitempty"`
+	Name           string
+	Description    string `json:",omitempty"`
+	License        string `json:",omitempty"`
+	CreatedDate    string
+	CodeSha256     string
+	Runtimes       []string `json:",omitempty"`
+	Architecture   []string `json:",omitempty"`
+	CodeSize       int64
+	Version        int64
 }
 
 // functionLayer is a layer version a function uses.
@@ -194,6 +196,7 @@ func (s *Service) PublishLayerVersion(
 		CreatedDate: s.now().UTC().Format(timeFormat), CodeSha256: base64.StdEncoding.EncodeToString(sum[:]),
 		Runtimes: in.CompatibleRuntimes, Architecture: in.CompatibleArchitectures, CodeSize: int64(len(code)),
 	}
+
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		head := m.Key("lambda", kindLayerHead, name)
 		if data, ok := tx.Get(head); ok {
@@ -236,6 +239,15 @@ func (s *Service) getLayerVersion(
 		return loadErr
 	})
 	if err != nil {
+		return nil, err
+	}
+
+	m, err := request.Regional(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := checkLayerAccess(&m, scope, l); err != nil {
 		return nil, err
 	}
 
@@ -472,6 +484,10 @@ func (s *Service) functionLayers(ctx context.Context, m *request.Metadata, arns 
 
 			if loadErr != nil {
 				return loadErr
+			}
+
+			if guardErr := checkLayerAccess(m, scope, l); guardErr != nil {
+				return guardErr
 			}
 
 			layers = append(layers, functionLayer{ARN: arn, CodeSize: l.CodeSize})

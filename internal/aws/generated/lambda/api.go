@@ -716,6 +716,40 @@ type ListFunctionEventInvokeConfigsResponse struct {
 	NextMarker                 *string                     `json:"NextMarker,omitempty"`
 }
 
+type AddLayerVersionPermissionRequest struct {
+	LayerName      *string `json:"-"`
+	VersionNumber  *int64  `json:"-"`
+	StatementId    *string `json:"StatementId,omitempty"`
+	Action         *string `json:"Action,omitempty"`
+	Principal      *string `json:"Principal,omitempty"`
+	OrganizationId *string `json:"OrganizationId,omitempty"`
+	RevisionId     *string `json:"-"`
+}
+
+type AddLayerVersionPermissionResponse struct {
+	Statement  *string `json:"Statement,omitempty"`
+	RevisionId *string `json:"RevisionId,omitempty"`
+}
+
+type RemoveLayerVersionPermissionOutput struct{}
+
+type RemoveLayerVersionPermissionRequest struct {
+	LayerName     *string `json:"-"`
+	VersionNumber *int64  `json:"-"`
+	StatementId   *string `json:"-"`
+	RevisionId    *string `json:"-"`
+}
+
+type GetLayerVersionPolicyRequest struct {
+	LayerName     *string `json:"-"`
+	VersionNumber *int64  `json:"-"`
+}
+
+type GetLayerVersionPolicyResponse struct {
+	Policy     *string `json:"Policy,omitempty"`
+	RevisionId *string `json:"RevisionId,omitempty"`
+}
+
 type API interface {
 	CreateFunction(context.Context, *CreateFunctionRequest) (*FunctionConfiguration, error)
 	GetFunction(context.Context, *GetFunctionRequest) (*GetFunctionResponse, error)
@@ -767,6 +801,9 @@ type API interface {
 	GetFunctionEventInvokeConfig(context.Context, *GetFunctionEventInvokeConfigRequest) (*FunctionEventInvokeConfig, error)
 	DeleteFunctionEventInvokeConfig(context.Context, *DeleteFunctionEventInvokeConfigRequest) (*DeleteFunctionEventInvokeConfigOutput, error)
 	ListFunctionEventInvokeConfigs(context.Context, *ListFunctionEventInvokeConfigsRequest) (*ListFunctionEventInvokeConfigsResponse, error)
+	AddLayerVersionPermission(context.Context, *AddLayerVersionPermissionRequest) (*AddLayerVersionPermissionResponse, error)
+	RemoveLayerVersionPermission(context.Context, *RemoveLayerVersionPermissionRequest) (*RemoveLayerVersionPermissionOutput, error)
+	GetLayerVersionPolicy(context.Context, *GetLayerVersionPolicyRequest) (*GetLayerVersionPolicyResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -914,6 +951,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListFunctionEventInvokeConfigs": {Name: "ListFunctionEventInvokeConfigs", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "lambda:ListFunctionEventInvokeConfigs", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"FunctionName": catalog.MemberBinding{Location: "label", Name: "FunctionName", Format: ""}, "Marker": catalog.MemberBinding{Location: "query", Name: "Marker", Format: ""}, "MaxItems": catalog.MemberBinding{Location: "query", Name: "MaxItems", Format: ""}}, Output: map[string]catalog.MemberBinding{"FunctionEventInvokeConfigs": catalog.MemberBinding{Location: "document", Name: "FunctionEventInvokeConfigs", Format: ""}, "NextMarker": catalog.MemberBinding{Location: "document", Name: "NextMarker", Format: ""}}, Method: "GET", URI: "/2019-09-25/functions/{FunctionName}/event-invoke-config/list", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListFunctionEventInvokeConfigsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListFunctionEventInvokeConfigs(ctx, input.(*ListFunctionEventInvokeConfigsRequest))
+		}},
+		"AddLayerVersionPermission": {Name: "AddLayerVersionPermission", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "lambda:AddLayerVersionPermission", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Action": catalog.MemberBinding{Location: "document", Name: "Action", Format: ""}, "LayerName": catalog.MemberBinding{Location: "label", Name: "LayerName", Format: ""}, "OrganizationId": catalog.MemberBinding{Location: "document", Name: "OrganizationId", Format: ""}, "Principal": catalog.MemberBinding{Location: "document", Name: "Principal", Format: ""}, "RevisionId": catalog.MemberBinding{Location: "query", Name: "RevisionId", Format: ""}, "StatementId": catalog.MemberBinding{Location: "document", Name: "StatementId", Format: ""}, "VersionNumber": catalog.MemberBinding{Location: "label", Name: "VersionNumber", Format: ""}}, Output: map[string]catalog.MemberBinding{"RevisionId": catalog.MemberBinding{Location: "document", Name: "RevisionId", Format: ""}, "Statement": catalog.MemberBinding{Location: "document", Name: "Statement", Format: ""}}, Method: "POST", URI: "/2018-10-31/layers/{LayerName}/versions/{VersionNumber}/policy", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &AddLayerVersionPermissionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AddLayerVersionPermission(ctx, input.(*AddLayerVersionPermissionRequest))
+		}},
+		"RemoveLayerVersionPermission": {Name: "RemoveLayerVersionPermission", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "lambda:RemoveLayerVersionPermission", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"LayerName": catalog.MemberBinding{Location: "label", Name: "LayerName", Format: ""}, "RevisionId": catalog.MemberBinding{Location: "query", Name: "RevisionId", Format: ""}, "StatementId": catalog.MemberBinding{Location: "label", Name: "StatementId", Format: ""}, "VersionNumber": catalog.MemberBinding{Location: "label", Name: "VersionNumber", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/2018-10-31/layers/{LayerName}/versions/{VersionNumber}/policy/{StatementId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 204}}, NewInput: func() any { return &RemoveLayerVersionPermissionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RemoveLayerVersionPermission(ctx, input.(*RemoveLayerVersionPermissionRequest))
+		}},
+		"GetLayerVersionPolicy": {Name: "GetLayerVersionPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "lambda:GetLayerVersionPolicy", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"LayerName": catalog.MemberBinding{Location: "label", Name: "LayerName", Format: ""}, "VersionNumber": catalog.MemberBinding{Location: "label", Name: "VersionNumber", Format: ""}}, Output: map[string]catalog.MemberBinding{"Policy": catalog.MemberBinding{Location: "document", Name: "Policy", Format: ""}, "RevisionId": catalog.MemberBinding{Location: "document", Name: "RevisionId", Format: ""}}, Method: "GET", URI: "/2018-10-31/layers/{LayerName}/versions/{VersionNumber}/policy", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetLayerVersionPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetLayerVersionPolicy(ctx, input.(*GetLayerVersionPolicyRequest))
 		}},
 	}}
 }
