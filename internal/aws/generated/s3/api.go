@@ -1284,6 +1284,55 @@ type GetObjectAttributesOutput struct {
 	ObjectSize   *int64                    `json:"ObjectSize,omitempty" xml:"ObjectSize,omitempty"`
 }
 
+type PutBucketLoggingOutput struct{}
+
+type TargetGrant struct {
+	Grantee    *Grantee `json:"Grantee,omitempty" xml:"Grantee,omitempty"`
+	Permission *string  `json:"Permission,omitempty" xml:"Permission,omitempty"`
+}
+
+type SimplePrefix struct {
+	XMLName xml.Name `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ SimplePrefix"`
+}
+
+type PartitionedPrefix struct {
+	XMLName             xml.Name `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ PartitionedPrefix"`
+	PartitionDateSource *string  `json:"PartitionDateSource,omitempty" xml:"PartitionDateSource,omitempty"`
+}
+
+type TargetObjectKeyFormat struct {
+	SimplePrefix      *SimplePrefix      `json:"SimplePrefix,omitempty" xml:"SimplePrefix,omitempty"`
+	PartitionedPrefix *PartitionedPrefix `json:"PartitionedPrefix,omitempty" xml:"PartitionedPrefix,omitempty"`
+}
+
+type LoggingEnabled struct {
+	TargetBucket          *string                `json:"TargetBucket,omitempty" xml:"TargetBucket,omitempty"`
+	TargetPrefix          *string                `json:"TargetPrefix,omitempty" xml:"TargetPrefix,omitempty"`
+	TargetGrants          []TargetGrant          `json:"TargetGrants,omitempty" xml:"TargetGrants>Grant,omitempty"`
+	TargetObjectKeyFormat *TargetObjectKeyFormat `json:"TargetObjectKeyFormat,omitempty" xml:"TargetObjectKeyFormat,omitempty"`
+}
+
+type BucketLoggingStatus struct {
+	LoggingEnabled *LoggingEnabled `json:"LoggingEnabled,omitempty" xml:"LoggingEnabled,omitempty"`
+}
+
+type PutBucketLoggingRequest struct {
+	Bucket              *string              `json:"-" xml:"-"`
+	BucketLoggingStatus *BucketLoggingStatus `json:"-" xml:"-"`
+	ExpectedBucketOwner *string              `json:"-" xml:"-"`
+	ContentMD5          *string              `json:"-" xml:"-"`
+}
+
+type GetBucketLoggingRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetBucketLoggingOutput struct {
+	XMLName        xml.Name        `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ BucketLoggingStatus"`
+	LoggingEnabled *LoggingEnabled `json:"LoggingEnabled,omitempty" xml:"LoggingEnabled,omitempty"`
+}
+
 type API interface {
 	CreateBucket(context.Context, *CreateBucketRequest) (*CreateBucketOutput, error)
 	DeleteBucket(context.Context, *DeleteBucketRequest) (*DeleteBucketOutput, error)
@@ -1349,6 +1398,8 @@ type API interface {
 	UploadPartCopy(context.Context, *UploadPartCopyRequest) (*UploadPartCopyOutput, error)
 	ListObjects(context.Context, *ListObjectsRequest) (*ListObjectsOutput, error)
 	GetObjectAttributes(context.Context, *GetObjectAttributesRequest) (*GetObjectAttributesOutput, error)
+	PutBucketLogging(context.Context, *PutBucketLoggingRequest) (*PutBucketLoggingOutput, error)
+	GetBucketLogging(context.Context, *GetBucketLoggingRequest) (*GetBucketLoggingOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1544,6 +1595,12 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"GetObjectAttributes": {Name: "GetObjectAttributes", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetObjectAttributes", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "MaxParts": catalog.MemberBinding{Location: "header", Name: "x-amz-max-parts", Format: ""}, "ObjectAttributes": catalog.MemberBinding{Location: "header", Name: "x-amz-object-attributes", Format: ""}, "PartNumberMarker": catalog.MemberBinding{Location: "header", Name: "x-amz-part-number-marker", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKey": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "VersionId": catalog.MemberBinding{Location: "query", Name: "versionId", Format: ""}}, Output: map[string]catalog.MemberBinding{"Checksum": catalog.MemberBinding{Location: "document", Name: "Checksum", Format: ""}, "DeleteMarker": catalog.MemberBinding{Location: "header", Name: "x-amz-delete-marker", Format: ""}, "ETag": catalog.MemberBinding{Location: "document", Name: "ETag", Format: ""}, "LastModified": catalog.MemberBinding{Location: "header", Name: "Last-Modified", Format: ""}, "ObjectParts": catalog.MemberBinding{Location: "document", Name: "ObjectParts", Format: ""}, "ObjectSize": catalog.MemberBinding{Location: "document", Name: "ObjectSize", Format: ""}, "StorageClass": catalog.MemberBinding{Location: "document", Name: "StorageClass", Format: ""}, "VersionId": catalog.MemberBinding{Location: "header", Name: "x-amz-version-id", Format: ""}}, Method: "GET", URI: "/{Bucket}/{Key+}?attributes", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetObjectAttributesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetObjectAttributes(ctx, input.(*GetObjectAttributesRequest))
+		}},
+		"PutBucketLogging": {Name: "PutBucketLogging", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "s3:PutBucketLogging", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "BucketLoggingStatus": catalog.MemberBinding{Location: "payload", Name: "BucketLoggingStatus", Format: ""}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-sdk-checksum-algorithm", Format: ""}, "ContentMD5": catalog.MemberBinding{Location: "header", Name: "Content-MD5", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/{Bucket}?logging", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutBucketLoggingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutBucketLogging(ctx, input.(*PutBucketLoggingRequest))
+		}},
+		"GetBucketLogging": {Name: "GetBucketLogging", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetBucketLogging", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}}, Output: map[string]catalog.MemberBinding{"LoggingEnabled": catalog.MemberBinding{Location: "document", Name: "LoggingEnabled", Format: ""}}, Method: "GET", URI: "/{Bucket}?logging", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketLoggingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBucketLogging(ctx, input.(*GetBucketLoggingRequest))
 		}},
 	}}
 }

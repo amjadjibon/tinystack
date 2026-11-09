@@ -18330,7 +18330,9 @@
       "GetObjectLegalHold",
       "UploadPartCopy",
       "ListObjects",
-      "GetObjectAttributes"
+      "GetObjectAttributes",
+      "PutBucketLogging",
+      "GetBucketLogging"
     ],
     "shapes": {
       "CreateBucketRequest": [
@@ -19336,6 +19338,40 @@
         "ChecksumSHA1",
         "ChecksumSHA256",
         "ChecksumType"
+      ],
+      "PutBucketLoggingRequest": [
+        "Bucket",
+        "BucketLoggingStatus",
+        "ExpectedBucketOwner",
+        "ContentMD5"
+      ],
+      "GetBucketLoggingRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketLoggingOutput": [
+        "LoggingEnabled"
+      ],
+      "BucketLoggingStatus": [
+        "LoggingEnabled"
+      ],
+      "LoggingEnabled": [
+        "TargetBucket",
+        "TargetPrefix",
+        "TargetGrants",
+        "TargetObjectKeyFormat"
+      ],
+      "TargetGrant": [
+        "Grantee",
+        "Permission"
+      ],
+      "TargetObjectKeyFormat": [
+        "SimplePrefix",
+        "PartitionedPrefix"
+      ],
+      "SimplePrefix": [],
+      "PartitionedPrefix": [
+        "PartitionDateSource"
       ]
     }
   },

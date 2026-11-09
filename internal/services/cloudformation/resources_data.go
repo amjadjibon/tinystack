@@ -10,7 +10,7 @@ func init() {
 		name: memberBucketName,
 		properties: []string{
 			memberBucketName, memberTags, propertyVersioning, propertyAccessControl, propertyBucketEncryption,
-			propertyPublicAccessBlock, propertyLifecycle,
+			propertyPublicAccessBlock, propertyLifecycle, propertyLogging,
 		},
 		attributes: []string{memberArn, memberDomainName, "DualStackDomainName", "RegionalDomainName", "WebsiteURL"},
 		replace:    []string{memberBucketName},

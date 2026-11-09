@@ -109,6 +109,7 @@ type bucketIndex struct {
 
 // bucketMeta is the bucket's regional metadata.
 type bucketMeta struct {
+	Logging       *api.LoggingEnabled            `json:",omitempty"`
 	Tags          map[string]string              `json:",omitempty"`
 	Notifications *api.NotificationConfiguration `json:",omitempty"`
 	// Encryption is the default encryption, stored only: TinyStack keeps

@@ -10,6 +10,7 @@ const (
 	propertyAccessControl     = "AccessControl"
 	propertyBucketEncryption  = "BucketEncryption"
 	propertyPublicAccessBlock = "PublicAccessBlockConfiguration"
+	propertyLogging           = "LoggingConfiguration"
 	propertyLifecycle         = "LifecycleConfiguration"
 	memberRules               = "Rules"
 )
@@ -42,6 +43,35 @@ func configureBucketGuards(ctx context.Context, c *client, name string, old, p p
 			base, func(v any) (map[string]any, error) {
 				return map[string]any{propertyPublicAccessBlock: v}, nil
 			})
+		if err != nil {
+			return err
+		}
+	}
+
+	if p.changed(old, propertyLogging) {
+		status := map[string]any{}
+		if value, ok := p[propertyLogging]; ok {
+			spec, _ := value.(map[string]any)
+			enabled := map[string]any{"TargetBucket": name, "TargetPrefix": ""}
+			for key, value := range spec {
+				switch key {
+				case "DestinationBucketName":
+					enabled["TargetBucket"] = value
+				case "LogFilePrefix":
+					enabled["TargetPrefix"] = value
+				case "TargetObjectKeyFormat":
+					enabled[key] = value
+				default:
+					return validation("Unsupported LoggingConfiguration property %s", key)
+				}
+			}
+
+			status["LoggingEnabled"] = enabled
+		}
+
+		_, err := c.call(ctx, "s3", "PutBucketLogging", map[string]any{
+			memberBucket: name, "BucketLoggingStatus": status,
+		})
 		if err != nil {
 			return err
 		}

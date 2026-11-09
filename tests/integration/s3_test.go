@@ -413,7 +413,7 @@ func TestS3RESTAddressing(t *testing.T) {
 	}
 
 	// Subresources that are not implemented fail instead of reaching another operation.
-	if status, body := do(http.MethodGet, "/site?logging", ""); status != http.StatusNotImplemented ||
+	if status, body := do(http.MethodGet, "/site?replication", ""); status != http.StatusNotImplemented ||
 		!strings.Contains(body, "<Code>NotImplemented</Code>") {
 		t.Fatal(status, body)
 	}
