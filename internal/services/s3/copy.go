@@ -407,6 +407,10 @@ func (s *Service) UploadPartCopy(
 		}
 
 		copied = reported(status, &obj)
+		if version != "" {
+			copied = new(version)
+		}
+
 		snapshot, _ = tx.Get(data)
 		if blob, ok := storage.BlobReference(snapshot); ok {
 			s.blobs.Pin(blob)

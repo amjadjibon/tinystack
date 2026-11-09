@@ -38,11 +38,15 @@ func TestS3EverydayCopyAttributes(t *testing.T) {
 	for i, interval := range []string{"bytes=0-5242879", "bytes=5242880-9599999"} {
 		out, copyErr := c.UploadPartCopy(ctx, &s3.UploadPartCopyInput{
 			Bucket: new(target), Key: new(key),
-			UploadId: upload.UploadId, PartNumber: new(int32(i + 1)), CopySource: new(copySource),
+			UploadId: upload.UploadId, PartNumber: new(int32(i + 1)), CopySource: new(copySource + "?versionId=null"),
 			CopySourceRange: new(interval), CopySourceIfMatch: put.ETag,
 		})
 		if copyErr != nil {
 			t.Fatal(copyErr)
+		}
+
+		if out.CopySourceVersionId == nil || *out.CopySourceVersionId != "null" {
+			t.Fatalf("copy source version: %+v", out)
 		}
 
 		if out.CopyPartResult.LastModified == nil {
