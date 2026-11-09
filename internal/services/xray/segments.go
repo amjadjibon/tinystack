@@ -6,6 +6,8 @@ import (
 	"math"
 	"regexp"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/xray"
@@ -166,10 +168,7 @@ func (s *Service) PutTraceSegments(
 	out := &api.PutTraceSegmentsResult{UnprocessedTraceSegments: []api.UnprocessedTraceSegment{}}
 	now := common.Unix(time.Now())
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if _, e := retainedTraces(tx, scope, now); e != nil {
-			return e
-		}
-
+		pruneTraces(tx, scope, now)
 		for _, raw := range in.TraceSegmentDocuments {
 			var d segmentDocument
 			parseErr := json.Unmarshal([]byte(raw), &d)
@@ -218,52 +217,33 @@ func (s *Service) PutTraceSegments(
 			}
 		}
 
-		traces, e := retainedTraces(tx, scope, now)
-		if e != nil {
-			return e
-		}
-
-		sort.Slice(traces, func(i, j int) bool {
-			a, _ := traces[i].bounds()
-			b, _ := traces[j].bounds()
-			if a == b {
-				return traces[i].ID < traces[j].ID
-			}
-
-			return a < b
-		})
-		for len(traces) > maxTraces {
-			tx.Delete(scope.Key(serviceName, traceKind, traces[0].ID))
-			traces = traces[1:]
-		}
-
+		pruneTraces(tx, scope, now)
 		return nil
 	})
 	return out, err
 }
 
-// Retention is enforced transactionally on ingestion and every trace read, including persistent stores.
-func retainedTraces(tx storage.WriteTx, scope request.Scope, now float64) ([]traceRecord, error) {
-	records, err := storage.Records[traceRecord](tx, scope.Prefix(serviceName, traceKind))
-	if err != nil {
-		return nil, err
+// pruneTraces drops traces past the 30-day retention, then the oldest beyond maxTraces. Trace IDs begin with their
+// epoch second in fixed-width hex, so key order is time order and this reads keys only, never records. It runs on
+// every ingestion and read, so persistent stores expire traces too.
+func pruneTraces(tx storage.WriteTx, scope request.Scope, now float64) {
+	prefix := scope.Prefix(serviceName, traceKind)
+	keys := tx.Keys(prefix)
+	for len(keys) > 0 && (len(keys) > maxTraces || traceIDTime(strings.TrimPrefix(keys[0], prefix)) < now-30*86400) {
+		tx.Delete(keys[0])
+		keys = keys[1:]
 	}
-
-	out := []traceRecord{}
-	for _, rec := range records {
-		start, _ := rec.bounds()
-		if start < now-30*86400 {
-			tx.Delete(scope.Key(serviceName, traceKind, rec.ID))
-			continue
-		}
-
-		out = append(out, *rec)
-	}
-
-	return out, nil
 }
 
-func (s *Service) traces(ctx context.Context) ([]traceRecord, error) {
+// traceIDTime is the epoch second a trace ID encodes.
+func traceIDTime(id string) float64 {
+	stamp, _ := strconv.ParseUint(strings.Split(id, "-")[1], 16, 32)
+	return float64(stamp)
+}
+
+// traces returns the retained traces with the given IDs, skipping unknown ones, or every retained trace when ids is
+// nil.
+func (s *Service) traces(ctx context.Context, ids []string) ([]traceRecord, error) {
 	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
@@ -271,9 +251,34 @@ func (s *Service) traces(ctx context.Context) ([]traceRecord, error) {
 
 	var records []traceRecord
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		var e error
-		records, e = retainedTraces(tx, scope, common.Unix(time.Now()))
-		return e
+		pruneTraces(tx, scope, common.Unix(time.Now()))
+		if ids == nil {
+			all, e := storage.Records[traceRecord](tx, scope.Prefix(serviceName, traceKind))
+			for _, rec := range all {
+				records = append(records, *rec)
+			}
+
+			return e
+		}
+
+		seen := map[string]bool{}
+		for _, id := range ids {
+			if seen[id] {
+				continue
+			}
+
+			seen[id] = true
+			rec, found, e := storage.Read[traceRecord](tx, scope.Key(serviceName, traceKind, id))
+			if e != nil {
+				return e
+			}
+
+			if found {
+				records = append(records, *rec)
+			}
+		}
+
+		return nil
 	})
 	return records, err
 }

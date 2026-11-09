@@ -244,21 +244,9 @@ func (s *Service) GetTraceGraph(ctx context.Context, in *api.GetTraceGraphReques
 		return nil, err
 	}
 
-	records, err := s.traces(ctx)
+	selected, err := s.traces(ctx, in.TraceIds)
 	if err != nil {
 		return nil, err
-	}
-
-	ids := map[string]bool{}
-	for _, id := range in.TraceIds {
-		ids[id] = true
-	}
-
-	selected := []traceRecord{}
-	for _, r := range records {
-		if ids[r.ID] {
-			selected = append(selected, r)
-		}
 	}
 
 	scope, err := request.RegionalScope(ctx)
@@ -281,7 +269,7 @@ func (s *Service) GetServiceGraph(
 		return nil, err
 	}
 
-	records, err := s.traces(ctx)
+	records, err := s.traces(ctx, nil)
 	if err != nil {
 		return nil, err
 	}

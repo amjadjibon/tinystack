@@ -4,8 +4,6 @@ import (
 	"context"
 	"math"
 	"sort"
-	"strconv"
-	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/xray"
 	"github.com/amjadjibon/tinystack/internal/common"
@@ -37,7 +35,7 @@ func (s *Service) BatchGetTraces(
 		return nil, err
 	}
 
-	records, err := s.traces(ctx)
+	records, err := s.traces(ctx, in.TraceIds)
 	if err != nil {
 		return nil, err
 	}
@@ -137,9 +135,8 @@ func traceInRange(t traceRecord, start, end float64, kind string) bool {
 	}
 
 	// W3C IDs need not encode the segment time; TraceId mode explicitly uses the ID timestamp.
-	parts := strings.Split(t.ID, "-")
-	stamp, _ := strconv.ParseUint(parts[1], 16, 32)
-	return float64(stamp) >= start && float64(stamp) <= end
+	stamp := traceIDTime(t.ID)
+	return stamp >= start && stamp <= end
 }
 
 func (s *Service) GetTraceSummaries(
@@ -168,7 +165,7 @@ func (s *Service) GetTraceSummaries(
 		return nil, err
 	}
 
-	records, err := s.traces(ctx)
+	records, err := s.traces(ctx, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -13,35 +13,30 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage/memory"
 )
 
-func TestTraceRetention(t *testing.T) {
+func TestTracePruning(t *testing.T) {
 	store := memory.New(nil, nil)
 	scope := request.Scope{AccountID: "123456789012", Region: "us-east-1"}
-	ctx := context.Background()
 	now := float64(2000000000)
-	err := store.Update(ctx, func(tx storage.WriteTx) error {
-		for i, start := range []float64{now - 30*86400 - 1, now - 30*86400, now} {
-			id := fmt.Sprintf("1-12345678-%024d", i)
-			rec := traceRecord{
-				ID:       id,
-				Segments: map[string]storedSegment{"a": {Segment: &segmentDocument{Start: start, End: new(start + 1)}}},
-			}
-
-			if err := storage.Write(tx, scope.Key(serviceName, traceKind, id), rec); err != nil {
-				return err
-			}
+	err := store.Update(context.Background(), func(tx storage.WriteTx) error {
+		stamps := []float64{now - 30*86400 - 1, now - 30*86400}
+		for i := range maxTraces + 1 {
+			stamps = append(stamps, now-float64(maxTraces-i))
 		}
 
-		records, err := retainedTraces(tx, scope, now)
-		if err != nil {
-			return err
+		for i, stamp := range stamps {
+			tx.Put(scope.Key(serviceName, traceKind, fmt.Sprintf("1-%08x-%024d", int64(stamp), i)), []byte("{}"))
 		}
 
-		if len(records) != 2 {
-			t.Fatalf("retained %d traces", len(records))
+		pruneTraces(tx, scope, now)
+		keys := tx.Keys(scope.Prefix(serviceName, traceKind))
+		if len(keys) != maxTraces {
+			t.Fatalf("kept %d traces, want %d", len(keys), maxTraces)
 		}
 
-		if len(tx.Keys(scope.Prefix(serviceName, traceKind))) != 2 {
-			t.Fatal("expired record not deleted")
+		// The expired trace goes first, then the oldest retained ones until the cap holds.
+		want := scope.Key(serviceName, traceKind, fmt.Sprintf("1-%08x-%024d", int64(now-float64(maxTraces-1)), 3))
+		if keys[0] != want {
+			t.Fatalf("oldest kept trace %s, want %s", keys[0], want)
 		}
 
 		return nil
