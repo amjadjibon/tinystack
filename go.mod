@@ -157,8 +157,9 @@ require (
 	github.com/recolabs/gnata v0.6.2
 	github.com/redis/go-redis/v9 v9.23.0
 	github.com/spf13/cobra v1.10.2
-	github.com/twmb/franz-go v1.22.2
-	github.com/twmb/franz-go/pkg/kmsg v1.15.0
+	github.com/twmb/franz-go v1.22.3
+	github.com/twmb/franz-go/pkg/kfake v0.0.0-20261109062748-d6ea02a174bc
+	github.com/twmb/franz-go/pkg/kmsg v1.15.1
 	github.com/vektah/gqlparser/v2 v2.5.64
 	golang.org/x/crypto v0.58.0
 	golang.org/x/net v0.62.0
