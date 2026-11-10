@@ -37,7 +37,9 @@ var (
 
 func init() {
 	register("AWS::ApiGatewayV2::Api", &resourceType{
-		properties: append([]string{memberProtocolType, memberTags}, httpAPIProperties...),
+		properties: append(
+			[]string{memberProtocolType, memberTags, apiBody, "BodyS3Location", apiFailOnWarnings},
+			httpAPIProperties...),
 		attributes: []string{memberAPIID, "ApiEndpoint"},
 		replace:    []string{memberProtocolType},
 		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
@@ -46,7 +48,18 @@ func init() {
 				params[memberTags] = tagMap(tags)
 			}
 
-			out, err := c.call(ctx, "apigatewayv2", "CreateApi", params)
+			operation := "CreateApi"
+			if p.has(apiBody) || p.has("BodyS3Location") {
+				body, bodyErr := apiDefinition(ctx, c, p)
+				if bodyErr != nil {
+					return "", nil, bodyErr
+				}
+
+				operation = "ImportApi"
+				params = map[string]any{apiBody: body, apiFailOnWarnings: p[apiFailOnWarnings]}
+			}
+
+			out, err := c.call(ctx, "apigatewayv2", operation, params)
 			if err != nil {
 				return "", nil, err
 			}
@@ -55,6 +68,21 @@ func init() {
 			return id, map[string]any{memberAPIID: id, "ApiEndpoint": outText(out, "ApiEndpoint")}, nil
 		},
 		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
+			if p.has(apiBody) || p.has("BodyS3Location") {
+				body, err := apiDefinition(ctx, c, p)
+				if err != nil {
+					return nil, err
+				}
+
+				_, err = c.call(ctx, "apigatewayv2", "ReimportApi", map[string]any{
+					"ApiId": r.Physical,
+					apiBody: body, apiFailOnWarnings: p[apiFailOnWarnings],
+				})
+				if err != nil {
+					return nil, err
+				}
+			}
+
 			target := map[string]any{memberAPIID: r.Physical}
 			if _, err := c.call(ctx, "apigatewayv2", "UpdateApi", pick(target, p, httpAPIProperties...)); err != nil {
 				return nil, err

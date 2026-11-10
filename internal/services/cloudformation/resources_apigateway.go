@@ -63,6 +63,7 @@ var (
 func init() {
 	register("AWS::ApiGateway::RestApi", &resourceType{
 		properties: []string{
+			apiBody, "BodyS3Location", apiImportMode, apiFailOnWarnings,
 			memberName, memberDescription, propertyBinaryMediaTypes, propertyMinimumCompressionSize, "ApiKeySourceType",
 			propertyEndpointConfiguration, memberPolicy, memberDisableExecuteAPIEndpoint, memberTags,
 		},
@@ -73,6 +74,21 @@ func init() {
 			if err := patchRest(ctx, c, "UpdateRestApi", map[string]any{memberRestAPIID: r.Physical},
 				patches(r.Properties, p, restAPIFields)); err != nil {
 				return nil, err
+			}
+
+			if p.has(apiBody) || p.has("BodyS3Location") {
+				body, err := apiDefinition(ctx, c, p)
+				if err != nil {
+					return nil, err
+				}
+
+				_, err = c.call(ctx, "apigateway", "PutRestApi", map[string]any{
+					"RestApiId": r.Physical,
+					apiBody:     body, apiImportMode: p[apiImportMode], apiFailOnWarnings: p[apiFailOnWarnings],
+				})
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			return r.Attributes, retag(ctx, c, r.Properties, p, restTagger(c, "/restapis/"+r.Physical))
@@ -258,7 +274,18 @@ func createRestAPI(ctx context.Context, c *client, p props) (physical string, at
 		params[memberTags] = tagMap(tags)
 	}
 
-	out, err := c.call(ctx, "apigateway", "CreateRestApi", params)
+	operation := "CreateRestApi"
+	if p.has(apiBody) || p.has("BodyS3Location") {
+		body, bodyErr := apiDefinition(ctx, c, p)
+		if bodyErr != nil {
+			return "", nil, bodyErr
+		}
+
+		operation = "ImportRestApi"
+		params = map[string]any{apiBody: body, apiFailOnWarnings: p[apiFailOnWarnings]}
+	}
+
+	out, err := c.call(ctx, "apigateway", operation, params)
 	if err != nil {
 		return "", nil, err
 	}

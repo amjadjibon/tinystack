@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"net/http"
 	"reflect"
 	"regexp"
 	"slices"
@@ -55,10 +56,12 @@ var (
 			propertyEvents,
 		},
 		samAPI: {
+			"DefinitionBody", "DefinitionUri", apiImportMode, apiFailOnWarnings,
 			memberName, memberStageName, memberDescription, propertyBinaryMediaTypes, propertyMinimumCompressionSize,
 			propertyEndpointConfiguration, memberVariables, memberTags, "OpenApiVersion",
 		},
 		samHTTPAPI: {
+			"DefinitionBody", "DefinitionUri", apiFailOnWarnings,
 			memberName, memberStageName, memberDescription, "StageVariables", "CorsConfiguration",
 			memberDisableExecuteAPIEndpoint, memberTags,
 		},
@@ -380,6 +383,12 @@ func (e *expander) properties(id string, decl map[string]any, typ string) (props
 	for _, k := range slices.Sorted(maps.Keys(p)) {
 		if !slices.Contains(supported, k) {
 			return nil, samError(id, "TinyStack does not support the %s property of %s", k, typ)
+		}
+	}
+
+	if p.has("DefinitionBody") && (typ == samAPI || typ == samHTTPAPI) {
+		if body, ok := p["DefinitionBody"].(map[string]any); !ok || body == nil {
+			return nil, samError(id, "DefinitionBody must be an OpenAPI object")
 		}
 	}
 
@@ -925,6 +934,52 @@ func (e *expander) httpAPIEvent(fn, id string, p props, target any) error {
 		return samError(fn, "the API %s already has a %s route", api, key)
 	}
 
+	if a := e.http[api]; a.props.has("DefinitionBody") || a.props.has("DefinitionUri") {
+		body, _ := a.props["DefinitionBody"].(map[string]any)
+		if body == nil {
+			body = map[string]any{
+				"openapi": "3.0.1",
+				"info":    map[string]any{"title": api, "version": "1.0"},
+				"paths":   map[string]any{},
+			}
+		}
+
+		paths, _ := body["paths"].(map[string]any)
+		if paths == nil {
+			paths = map[string]any{}
+			body["paths"] = paths
+		}
+
+		method, path, ok := strings.Cut(key, " ")
+		if !ok {
+			return samError(fn, "DefinitionBody HttpApi events require Path and Method")
+		}
+
+		item, _ := paths[path].(map[string]any)
+		if item == nil {
+			item = map[string]any{}
+			paths[path] = item
+		}
+
+		method = strings.ToLower(method)
+		if method == "any" {
+			method = "x-amazon-apigateway-any-method"
+		}
+
+		if _, exists := item[method]; !exists {
+			item[method] = map[string]any{
+				"responses": map[string]any{},
+				"x-amazon-apigateway-integration": map[string]any{
+					"type": "aws_proxy", "httpMethod": http.MethodPost, "uri": target, "payloadFormatVersion": "2.0",
+				},
+			}
+		}
+
+		a.props["DefinitionBody"] = body
+		return e.permission(fn, map[string]any{}, id, target, "apigateway.amazonaws.com",
+			sub("arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${"+api+"}/*"))
+	}
+
 	e.http[api].routes = append(e.http[api].routes, id+"Route")
 	integration := pick(map[string]any{
 		memberAPIID: ref(
@@ -958,8 +1013,8 @@ func (e *expander) httpAPIEvent(fn, id string, p props, target any) error {
 // restAPI generates a REST API with a resource for each path its routes
 // use, their methods, a deployment named for the routes, and a stage.
 func (e *expander) restAPI(id string, a *restAPI) error {
-	if len(a.routes) == 0 {
-		return samError(id, "the API has no Api events, and TinyStack does not support DefinitionBody")
+	if len(a.routes) == 0 && !a.props.has("DefinitionBody") && !a.props.has("DefinitionUri") {
+		return samError(id, "the API needs Api events or a definition")
 	}
 
 	if id != implicitAPI && !a.props.has(memberStageName) {
@@ -967,7 +1022,7 @@ func (e *expander) restAPI(id string, a *restAPI) error {
 	}
 
 	api := pick(map[string]any{memberName: ref("AWS::StackName")}, a.props, memberName, memberDescription,
-		propertyBinaryMediaTypes, propertyMinimumCompressionSize)
+		propertyBinaryMediaTypes, propertyMinimumCompressionSize, apiImportMode, apiFailOnWarnings)
 	switch endpoint := a.props[propertyEndpointConfiguration].(type) {
 	case nil:
 	case string:
@@ -976,6 +1031,51 @@ func (e *expander) restAPI(id string, a *restAPI) error {
 		api[propertyEndpointConfiguration] = map[string]any{"Types": []any{endpoint[memberType]}}
 	default:
 		return samError(id, "EndpointConfiguration must be an endpoint type or an object with a Type")
+	}
+
+	samAPIDefinition(api, a.props)
+	if a.props.has("DefinitionBody") || a.props.has("DefinitionUri") {
+		body, _ := api[apiBody].(map[string]any)
+		if body == nil {
+			body = map[string]any{
+				"openapi": "3.0.1",
+				"info":    map[string]any{"title": id, "version": "1.0"},
+				"paths":   map[string]any{},
+			}
+		}
+
+		paths, _ := body["paths"].(map[string]any)
+		if paths == nil {
+			paths = map[string]any{}
+			body["paths"] = paths
+		}
+
+		for _, r := range a.routes {
+			item, _ := paths[r.path].(map[string]any)
+			if item == nil {
+				item = map[string]any{}
+				paths[r.path] = item
+			}
+
+			method := strings.ToLower(r.method)
+			if r.method == methodAny {
+				method = "x-amazon-apigateway-any-method"
+			}
+
+			if _, ok := item[method]; !ok {
+				item[method] = map[string]any{
+					"responses": map[string]any{},
+					"x-amazon-apigateway-integration": map[string]any{
+						"type":       "aws_proxy",
+						"httpMethod": http.MethodPost,
+						"uri":        r.uri,
+					},
+				}
+			}
+		}
+
+		api[apiBody] = body
+		a.routes = nil
 	}
 
 	if err := e.add(id, id, primary(a.decl, "AWS::ApiGateway::RestApi", api)); err != nil {
@@ -1007,7 +1107,7 @@ func (e *expander) restAPI(id string, a *restAPI) error {
 			propertyAuthorizationType: "NONE",
 			"Integration": map[string]any{
 				memberType:              "AWS_PROXY",
-				"IntegrationHttpMethod": "POST",
+				"IntegrationHttpMethod": http.MethodPost,
 				"Uri":                   r.uri,
 			},
 		}))
@@ -1019,7 +1119,7 @@ func (e *expander) restAPI(id string, a *restAPI) error {
 		routes = append(routes, []any{r.path, r.method, r.uri})
 	}
 
-	digest := hash(routes, 10)
+	digest := hash([]any{routes, api}, 10)
 	deployment := derived(a.decl, "AWS::ApiGateway::Deployment", map[string]any{
 		memberRestAPIID: ref(id), memberDescription: "RestApi deployment id: " + digest,
 	})
@@ -1111,6 +1211,8 @@ func (e *expander) httpAPI(id string, a *httpAPI) error {
 	default:
 		return samError(id, "TinyStack requires CorsConfiguration to be an object")
 	}
+
+	samAPIDefinition(api, a.props)
 
 	if err := e.add(id, id, primary(a.decl, "AWS::ApiGatewayV2::Api", api)); err != nil {
 		return err
