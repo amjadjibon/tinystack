@@ -13,7 +13,7 @@ Manage and invoke REST APIs with deployments, stages, proxy integrations, and au
 | API version | `2015-07-09` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 66 of 124 in the pinned model |
+| Selected operations | 69 of 124 in the pinned model |
 
 ## Implemented behavior
 
@@ -24,11 +24,12 @@ See the [implemented feature catalogue](catalogue.md#api-gateway-rest-apis) for 
 - Integration credentials of arn:aws:iam::*:user/* (the caller's) are not re-evaluated.
 - No VTL integration mapping, non-proxy AWS/HTTP integrations, VPC links or request validation.
 - Throttling, quotas, caching, canaries and authorizer caching are not enforced.
-- No mutual TLS or import/export; REST API resource policies cannot use SourceVpc, SourceVpce, VpcSourceIp, Referer or UserAgent conditions, and console test requests do not evaluate them.
+- No mutual TLS; REST API resource policies cannot use SourceVpc, SourceVpce, VpcSourceIp, Referer or UserAgent conditions, and console test requests do not evaluate them.
 - Custom domains, response mappings, API keys and usage plans use the AWS API rather than console forms.
 - In verify mode, console management requires an authenticated root console session; without a session only resource inventory is available.
 - Console test requests run deployed routing and authorizers without impersonating IAM; AWS_IAM routes require signed execute-api requests. The console action JSON envelope is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64.
 - REST API metrics have no CacheHitCount, CacheMissCount or usage plan metrics; requests to a missing stage report nothing.
+- OpenAPI schemas/models, request bodies, external references, base-path import parameters and unsupported extensions fail explicitly; only AWS_PROXY, HTTP_PROXY and MOCK integrations are supported.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -76,6 +77,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `GetDeployments` | `GET /restapis/{restApiId}/deployments` |
 | `GetDomainName` | `GET /domainnames/{domainName}` |
 | `GetDomainNames` | `GET /domainnames` |
+| `GetExport` | `GET /restapis/{restApiId}/stages/{stageName}/exports/{exportType}` |
 | `GetIntegration` | `GET /restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}/integration` |
 | `GetIntegrationResponse` | `GET /restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}/integration/responses/{statusCode}` |
 | `GetMethod` | `GET /restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}` |
@@ -91,10 +93,12 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `GetUsagePlanKey` | `GET /usageplans/{usagePlanId}/keys/{keyId}` |
 | `GetUsagePlanKeys` | `GET /usageplans/{usagePlanId}/keys` |
 | `GetUsagePlans` | `GET /usageplans` |
+| `ImportRestApi` | `POST /restapis?mode=import` |
 | `PutIntegration` | `PUT /restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}/integration` |
 | `PutIntegrationResponse` | `PUT /restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}/integration/responses/{statusCode}` |
 | `PutMethod` | `PUT /restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}` |
 | `PutMethodResponse` | `PUT /restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}/responses/{statusCode}` |
+| `PutRestApi` | `PUT /restapis/{restApiId}` |
 | `TagResource` | `PUT /tags/{resourceArn}` |
 | `UntagResource` | `DELETE /tags/{resourceArn}` |
 | `UpdateApiKey` | `PATCH /apikeys/{apiKey}` |
@@ -111,7 +115,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "58 modeled operations outside the implementation"
+??? info "55 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -140,7 +144,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetDocumentationVersion`
     - `GetDocumentationVersions`
     - `GetDomainNameAccessAssociations`
-    - `GetExport`
     - `GetGatewayResponse`
     - `GetGatewayResponses`
     - `GetModel`
@@ -156,9 +159,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetVpcLinks`
     - `ImportApiKeys`
     - `ImportDocumentationParts`
-    - `ImportRestApi`
     - `PutGatewayResponse`
-    - `PutRestApi`
     - `RejectDomainNameAccessAssociation`
     - `TestInvokeAuthorizer`
     - `TestInvokeMethod`
@@ -179,5 +180,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/apigateway)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/apigateway/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/apigateway.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [apigateway_domains_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_domains_test.go), [apigateway_iam_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_iam_test.go), [apigateway_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_policy_test.go), [apigateway_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_test.go), [apigateway_usageplans_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_usageplans_test.go).
+- SDK integration examples: [apigateway_domains_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_domains_test.go), [apigateway_iam_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_iam_test.go), [apigateway_openapi_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_openapi_test.go), [apigateway_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_policy_test.go), [apigateway_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_test.go), [apigateway_usageplans_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_usageplans_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

@@ -720,17 +720,19 @@
         "With authorization on, Lambda proxy integrations without a credentials role need the function policy to allow apigateway.amazonaws.com with the method's execute-api ARN as aws:SourceArn; a denied invocation answers 500 Internal server error in enforce mode and is recorded in soft mode",
         "A credentials role must trust apigateway.amazonaws.com for the method's execute-api ARN and its policies must allow lambda:InvokeFunction; the same 500 reports a denial",
         "Lambda authorizers are invoked as apigateway.amazonaws.com, which the function policy must allow with arn:aws:execute-api:<region>:<account>:<api-id>/authorizers/<authorizer-id> as aws:SourceArn, or as the authorizer's credentials role, whose trust policy must allow it for that source; a denied invocation answers 500",
-        "AWS/ApiGateway metrics for requests to a deployed stage, with dimensions ApiName, ApiName with Stage, and per-method dimensions {ApiName, Method, Resource, Stage} when detailed metrics are enabled on the stage: Count, 4XXError, 5XXError, Latency and IntegrationLatency (Milliseconds; only for requests that reached the integration)"
+        "AWS/ApiGateway metrics for requests to a deployed stage, with dimensions ApiName, ApiName with Stage, and per-method dimensions {ApiName, Method, Resource, Stage} when detailed metrics are enabled on the stage: Count, 4XXError, 5XXError, Latency and IntegrationLatency (Milliseconds; only for requests that reached the integration)",
+        "Swagger 2.0 and OpenAPI 3.0 JSON/YAML import, transactional merge/overwrite, deployed-stage JSON/YAML export, proxy integrations, request parameters and authorizer extensions"
       ],
       "gaps": [
         "Integration credentials of arn:aws:iam::*:user/* (the caller's) are not re-evaluated",
         "No VTL integration mapping, non-proxy AWS/HTTP integrations, VPC links or request validation",
         "Throttling, quotas, caching, canaries and authorizer caching are not enforced",
-        "No mutual TLS or import/export; REST API resource policies cannot use SourceVpc, SourceVpce, VpcSourceIp, Referer or UserAgent conditions, and console test requests do not evaluate them",
+        "No mutual TLS; REST API resource policies cannot use SourceVpc, SourceVpce, VpcSourceIp, Referer or UserAgent conditions, and console test requests do not evaluate them",
         "Custom domains, response mappings, API keys and usage plans use the AWS API rather than console forms",
         "In verify mode, console management requires an authenticated root console session; without a session only resource inventory is available",
         "Console test requests run deployed routing and authorizers without impersonating IAM; AWS_IAM routes require signed execute-api requests. The console action JSON envelope is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64",
-        "REST API metrics have no CacheHitCount, CacheMissCount or usage plan metrics; requests to a missing stage report nothing"
+        "REST API metrics have no CacheHitCount, CacheMissCount or usage plan metrics; requests to a missing stage report nothing",
+        "OpenAPI schemas/models, request bodies, external references, base-path import parameters and unsupported extensions fail explicitly; only AWS_PROXY, HTTP_PROXY and MOCK integrations are supported"
       ],
       "execution": "Local behavior",
       "package": "apigateway"
@@ -753,7 +755,8 @@
         "WebSocket MOCK integrations return status 200 with an empty body; $default route response CRUD enables two-way message responses from Lambda or MOCK integrations; other routes are one-way",
         "WebSocket execute-api endpoints support host-style and /_aws/execute-api/<api-id>/<stage> addressing, auto/manual deployment snapshots, 10-minute idle and 2-hour lifetime limits; connections are memory-only and close on shutdown/reset",
         "API key selection expressions accept $request.header.x-api-key (the default) or $context.authorizer.usageIdentifierKey and are stored for both protocols",
-        "HTTP-only CORS, quick-create and IP address settings are rejected on WebSocket APIs; WebSocket-only route responses and ApiKeyRequired=true are rejected on HTTP APIs"
+        "HTTP-only CORS, quick-create and IP address settings are rejected on WebSocket APIs; WebSocket-only route responses and ApiKeyRequired=true are rejected on HTTP APIs",
+        "HTTP API OpenAPI 3.0 JSON/YAML import, transactional reimport and JSON/YAML export with integration references, JWT/Lambda authorizers, CORS and payload formats"
       ],
       "gaps": [
         "No VPC links, parameter mappings, throttling, caching or authorizer caching",
@@ -764,7 +767,8 @@
         "HTTP API metrics have no Route dimension or DataProcessed; requests to a missing stage report nothing",
         "WebSocket support is text-only: no binary input, API keys, IAM/JWT/Lambda route authorizers, access logs, metrics, throttling, integration response mappings, mapping templates or non-Lambda AWS/HTTP integrations; unsupported members and expressions fail explicitly",
         "WebSocket MOCK integrations are limited to empty successful responses; route responses support only $default; message selection supports dotted object fields, without array indexes or expression interpolation; message size is limited to 128 KiB, without AWS frame-level quota emulation",
-        "WebSocket APIs use the AWS SDK/CLI for configuration; the console API Gateway forms remain focused on HTTP APIs"
+        "WebSocket APIs use the AWS SDK/CLI for configuration; the console API Gateway forms remain focused on HTTP APIs",
+        "OpenAPI schemas, request parameter mappings, external references and base-path transformations are unsupported; CreateApi Body is absent from the pinned model"
       ],
       "execution": "Local behavior",
       "package": "apigatewayv2"
@@ -1163,7 +1167,8 @@
         "Selected SAM resources and event transformations",
         "Resource operations run outside store transactions through the lenient caller",
         "AWS CDK CLI bootstrap and deploy: template Rules, Systems Manager parameter types, S3 bucket policies and bucket encryption, public access block and lifecycle settings, and the CDK change set options",
-        "Console stack and change-set creation/update, plus: stacks with status filter and deleted stacks, events with follow mode and highlighted failures, resources linked to service pages, outputs, parameters (NoEcho hidden), original and processed templates, change set view/execute/delete, nested stacks, and confirmed stack deletion with retained resources"
+        "Console stack and change-set creation/update, plus: stacks with status filter and deleted stacks, events with follow mode and highlighted failures, resources linked to service pages, outputs, parameters (NoEcho hidden), original and processed templates, change set view/execute/delete, nested stacks, and confirmed stack deletion with retained resources",
+        "API Gateway REST/HTTP Body and BodyS3Location import; SAM Api/HttpApi DefinitionBody and S3 DefinitionUri with intrinsic resolution and missing function-event route merging"
       ],
       "gaps": [
         "Only registered resource types and properties, plus provider-defined Custom::<Name> properties and attributes, are supported",
@@ -1172,7 +1177,8 @@
         "The console offers no drift detection, continue update rollback or cancel update",
         "No macros/AWS::Include, policies with unsupported semantics or snapshot deletion behavior",
         "IAM capabilities are checked but permission policies and service roles are not evaluated",
-        "AWS::IAM::Role accepts PermissionsBoundary only as an absent value; AWS::S3::Bucket AccessControl is limited to Private; EXPRESS deployment mode is rejected"
+        "AWS::IAM::Role accepts PermissionsBoundary only as an absent value; AWS::S3::Bucket AccessControl is limited to Private; EXPRESS deployment mode is rejected",
+        "SAM API definition event merging requires object DefinitionBody and explicit HTTP event paths; AWS::Include remains unsupported"
       ],
       "execution": "Local behavior",
       "package": "cloudformation"

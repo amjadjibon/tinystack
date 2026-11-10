@@ -13,7 +13,7 @@ Manage and invoke HTTP and WebSocket APIs with routes, stages, deployments and L
 | API version | `2018-11-29` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 39 of 103 in the pinned model |
+| Selected operations | 42 of 103 in the pinned model |
 
 ## Implemented behavior
 
@@ -30,6 +30,7 @@ See the [implemented feature catalogue](catalogue.md#api-gateway-http-and-websoc
 - WebSocket support is text-only: no binary input, API keys, IAM/JWT/Lambda route authorizers, access logs, metrics, throttling, integration response mappings, mapping templates or non-Lambda AWS/HTTP integrations; unsupported members and expressions fail explicitly.
 - WebSocket MOCK integrations are limited to empty successful responses; route responses support only $default; message selection supports dotted object fields, without array indexes or expression interpolation; message size is limited to 128 KiB, without AWS frame-level quota emulation.
 - WebSocket APIs use the AWS SDK/CLI for configuration; the console API Gateway forms remain focused on HTTP APIs.
+- OpenAPI schemas, request parameter mappings, external references and base-path transformations are unsupported; CreateApi Body is absent from the pinned model.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -58,6 +59,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `DeleteRoute` | `DELETE /v2/apis/{ApiId}/routes/{RouteId}` |
 | `DeleteRouteResponse` | `DELETE /v2/apis/{ApiId}/routes/{RouteId}/routeresponses/{RouteResponseId}` |
 | `DeleteStage` | `DELETE /v2/apis/{ApiId}/stages/{StageName}` |
+| `ExportApi` | `GET /v2/apis/{ApiId}/exports/{Specification}` |
 | `GetApi` | `GET /v2/apis/{ApiId}` |
 | `GetApis` | `GET /v2/apis` |
 | `GetAuthorizer` | `GET /v2/apis/{ApiId}/authorizers/{AuthorizerId}` |
@@ -73,6 +75,8 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `GetStage` | `GET /v2/apis/{ApiId}/stages/{StageName}` |
 | `GetStages` | `GET /v2/apis/{ApiId}/stages` |
 | `GetTags` | `GET /v2/tags/{ResourceArn}` |
+| `ImportApi` | `PUT /v2/apis` |
+| `ReimportApi` | `PUT /v2/apis/{ApiId}` |
 | `TagResource` | `POST /v2/tags/{ResourceArn}` |
 | `UntagResource` | `DELETE /v2/tags/{ResourceArn}` |
 | `UpdateApi` | `PATCH /v2/apis/{ApiId}` |
@@ -85,7 +89,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "64 modeled operations outside the implementation"
+??? info "61 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -114,7 +118,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteRoutingRule`
     - `DeleteVpcLink`
     - `DisablePortal`
-    - `ExportApi`
     - `GetApiMapping`
     - `GetApiMappings`
     - `GetDomainName`
@@ -132,7 +135,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetRoutingRule`
     - `GetVpcLink`
     - `GetVpcLinks`
-    - `ImportApi`
     - `ListPortalProducts`
     - `ListPortals`
     - `ListProductPages`
@@ -142,7 +144,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `PublishPortal`
     - `PutPortalProductSharingPolicy`
     - `PutRoutingRule`
-    - `ReimportApi`
     - `ResetAuthorizersCache`
     - `UpdateApiMapping`
     - `UpdateDomainName`
