@@ -268,6 +268,7 @@ func (g *generator) xmlBodyMap(id string) bool {
 
 // restTraits are the HTTP binding traits REST protocols support.
 var restTraits = map[string]bool{
+	"smithy.api#httpQueryParams":   true,
 	"smithy.api#http":              true,
 	"smithy.api#httpLabel":         true,
 	traitHeader:                    true,

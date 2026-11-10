@@ -134,6 +134,8 @@ func memberBindings(
 				location = "label"
 			case traitHeader:
 				location = locHeader
+			case "smithy.api#httpQueryParams":
+				location = "queryParams"
 			case traitQuery:
 				location = locQuery
 			case "smithy.api#httpPayload":

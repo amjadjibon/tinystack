@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -501,6 +502,24 @@ func Decode(
 
 				err = setScalar(f, v, mb.Name)
 			}
+		case "queryParams":
+			values := map[string]string{}
+			for key, vv := range query {
+				bound := false
+				if uri, parseErr := url.Parse(b.URI); parseErr == nil {
+					_, bound = uri.Query()[key]
+				}
+
+				for _, binding := range b.Input {
+					if binding.Location == locationQuery && binding.Name == key {
+						bound = true
+					}
+				}
+				if !bound {
+					values[key] = strings.Join(vv, ",")
+				}
+			}
+			f.Set(reflect.ValueOf(values))
 		case locationQuery:
 			if values, ok := query[mb.Name]; ok {
 				// A list member repeats its key once per element.

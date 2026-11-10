@@ -49,9 +49,10 @@ type route struct {
 	// header is a request header the operation needs, such as the copy source
 	// that tells CopyObject from PutObject; a route that needs one outranks
 	// routes that do not.
-	header   string
-	segments []string
-	greedy   bool
+	header      string
+	segments    []string
+	greedy      bool
+	queryParams bool
 }
 
 // routes parses the REST bindings of a service.
@@ -93,6 +94,9 @@ func routes(service *catalog.Service) []route {
 		}
 
 		for _, mb := range b.Input {
+			if mb.Location == "queryParams" {
+				rt.queryParams = true
+			}
 			if strings.HasSuffix(mb.Location, "query") {
 				rt.allowed[mb.Name] = true
 			}
@@ -168,7 +172,7 @@ func (rt *route) match(
 	}
 
 	for k := range query {
-		if !rt.allowed[k] {
+		if !rt.allowed[k] && !rt.queryParams {
 			return nil, false
 		}
 	}

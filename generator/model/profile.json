@@ -1081,7 +1081,10 @@
       "CreateBasePathMapping",
       "GetBasePathMapping",
       "GetBasePathMappings",
-      "DeleteBasePathMapping"
+      "DeleteBasePathMapping",
+      "ImportRestApi",
+      "PutRestApi",
+      "GetExport"
     ],
     "shapes": {
       "CreateRestApiRequest": [
@@ -1390,6 +1393,50 @@
       "DeleteBasePathMappingRequest": [
         "domainName",
         "basePath"
+      ],
+      "ImportRestApiRequest": [
+        "failOnWarnings",
+        "parameters",
+        "body"
+      ],
+      "RestApi": [
+        "id",
+        "name",
+        "description",
+        "createdDate",
+        "version",
+        "warnings",
+        "binaryMediaTypes",
+        "minimumCompressionSize",
+        "apiKeySource",
+        "endpointConfiguration",
+        "policy",
+        "tags",
+        "disableExecuteApiEndpoint",
+        "rootResourceId",
+        "securityPolicy",
+        "endpointAccessMode",
+        "apiStatus",
+        "apiStatusMessage"
+      ],
+      "PutRestApiRequest": [
+        "restApiId",
+        "mode",
+        "failOnWarnings",
+        "parameters",
+        "body"
+      ],
+      "GetExportRequest": [
+        "restApiId",
+        "stageName",
+        "exportType",
+        "parameters",
+        "accepts"
+      ],
+      "ExportResponse": [
+        "contentType",
+        "contentDisposition",
+        "body"
       ]
     }
   },
@@ -1433,7 +1480,10 @@
       "GetRouteResponse",
       "GetRouteResponses",
       "UpdateRouteResponse",
-      "DeleteRouteResponse"
+      "DeleteRouteResponse",
+      "ImportApi",
+      "ReimportApi",
+      "ExportApi"
     ],
     "shapes": {
       "CreateApiRequest": [
@@ -1566,6 +1616,66 @@
         "RouteId",
         "RouteResponseKey",
         "RouteResponseId"
+      ],
+      "ImportApiRequest": [
+        "Basepath",
+        "Body",
+        "FailOnWarnings"
+      ],
+      "ImportApiResponse": [
+        "ApiEndpoint",
+        "ApiGatewayManaged",
+        "ApiId",
+        "ApiKeySelectionExpression",
+        "CorsConfiguration",
+        "CreatedDate",
+        "Description",
+        "DisableSchemaValidation",
+        "DisableExecuteApiEndpoint",
+        "ImportInfo",
+        "IpAddressType",
+        "Name",
+        "ProtocolType",
+        "RouteSelectionExpression",
+        "Tags",
+        "Version",
+        "Warnings"
+      ],
+      "ReimportApiRequest": [
+        "ApiId",
+        "Basepath",
+        "Body",
+        "FailOnWarnings"
+      ],
+      "ReimportApiResponse": [
+        "ApiEndpoint",
+        "ApiGatewayManaged",
+        "ApiId",
+        "ApiKeySelectionExpression",
+        "CorsConfiguration",
+        "CreatedDate",
+        "Description",
+        "DisableSchemaValidation",
+        "DisableExecuteApiEndpoint",
+        "ImportInfo",
+        "IpAddressType",
+        "Name",
+        "ProtocolType",
+        "RouteSelectionExpression",
+        "Tags",
+        "Version",
+        "Warnings"
+      ],
+      "ExportApiRequest": [
+        "ApiId",
+        "ExportVersion",
+        "IncludeExtensions",
+        "OutputType",
+        "Specification",
+        "StageName"
+      ],
+      "ExportApiResponse": [
+        "body"
       ]
     }
   },

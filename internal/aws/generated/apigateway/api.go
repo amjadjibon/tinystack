@@ -25,24 +25,24 @@ type CreateRestApiRequest struct {
 }
 
 type RestApi struct {
-	ApiKeySource              *string                `json:"apiKeySource,omitempty"`
-	ApiStatus                 *string                `json:"apiStatus,omitempty"`
-	ApiStatusMessage          *string                `json:"apiStatusMessage,omitempty"`
-	BinaryMediaTypes          []string               `json:"binaryMediaTypes,omitempty"`
-	CreatedDate               *float64               `json:"createdDate,omitempty"`
-	Description               *string                `json:"description,omitempty"`
-	DisableExecuteApiEndpoint *bool                  `json:"disableExecuteApiEndpoint,omitempty"`
-	EndpointAccessMode        *string                `json:"endpointAccessMode,omitempty"`
-	EndpointConfiguration     *EndpointConfiguration `json:"endpointConfiguration,omitempty"`
 	Id                        *string                `json:"id,omitempty"`
-	MinimumCompressionSize    *int64                 `json:"minimumCompressionSize,omitempty"`
 	Name                      *string                `json:"name,omitempty"`
-	Policy                    *string                `json:"policy,omitempty"`
-	RootResourceId            *string                `json:"rootResourceId,omitempty"`
-	SecurityPolicy            *string                `json:"securityPolicy,omitempty"`
-	Tags                      map[string]string      `json:"tags,omitempty"`
+	Description               *string                `json:"description,omitempty"`
+	CreatedDate               *float64               `json:"createdDate,omitempty"`
 	Version                   *string                `json:"version,omitempty"`
 	Warnings                  []string               `json:"warnings,omitempty"`
+	BinaryMediaTypes          []string               `json:"binaryMediaTypes,omitempty"`
+	MinimumCompressionSize    *int64                 `json:"minimumCompressionSize,omitempty"`
+	ApiKeySource              *string                `json:"apiKeySource,omitempty"`
+	EndpointConfiguration     *EndpointConfiguration `json:"endpointConfiguration,omitempty"`
+	Policy                    *string                `json:"policy,omitempty"`
+	Tags                      map[string]string      `json:"tags,omitempty"`
+	DisableExecuteApiEndpoint *bool                  `json:"disableExecuteApiEndpoint,omitempty"`
+	RootResourceId            *string                `json:"rootResourceId,omitempty"`
+	SecurityPolicy            *string                `json:"securityPolicy,omitempty"`
+	EndpointAccessMode        *string                `json:"endpointAccessMode,omitempty"`
+	ApiStatus                 *string                `json:"apiStatus,omitempty"`
+	ApiStatusMessage          *string                `json:"apiStatusMessage,omitempty"`
 }
 
 type GetRestApiRequest struct {
@@ -733,6 +733,34 @@ type DeleteBasePathMappingRequest struct {
 	BasePath   *string `json:"-"`
 }
 
+type ImportRestApiRequest struct {
+	FailOnWarnings *bool             `json:"-"`
+	Parameters     map[string]string `json:"-"`
+	Body           []byte            `json:"-"`
+}
+
+type PutRestApiRequest struct {
+	RestApiId      *string           `json:"-"`
+	Mode           *string           `json:"-"`
+	FailOnWarnings *bool             `json:"-"`
+	Parameters     map[string]string `json:"-"`
+	Body           []byte            `json:"-"`
+}
+
+type GetExportRequest struct {
+	RestApiId  *string           `json:"-"`
+	StageName  *string           `json:"-"`
+	ExportType *string           `json:"-"`
+	Parameters map[string]string `json:"-"`
+	Accepts    *string           `json:"-"`
+}
+
+type ExportResponse struct {
+	ContentType        *string `json:"-"`
+	ContentDisposition *string `json:"-"`
+	Body               []byte  `json:"-"`
+}
+
 type API interface {
 	CreateRestApi(context.Context, *CreateRestApiRequest) (*RestApi, error)
 	GetRestApi(context.Context, *GetRestApiRequest) (*RestApi, error)
@@ -800,6 +828,9 @@ type API interface {
 	GetBasePathMapping(context.Context, *GetBasePathMappingRequest) (*BasePathMapping, error)
 	GetBasePathMappings(context.Context, *GetBasePathMappingsRequest) (*BasePathMappings, error)
 	DeleteBasePathMapping(context.Context, *DeleteBasePathMappingRequest) (*DeleteBasePathMappingOutput, error)
+	ImportRestApi(context.Context, *ImportRestApiRequest) (*RestApi, error)
+	PutRestApi(context.Context, *PutRestApiRequest) (*RestApi, error)
+	GetExport(context.Context, *GetExportRequest) (*ExportResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -997,6 +1028,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteBasePathMapping": {Name: "DeleteBasePathMapping", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "apigateway:DELETE", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"BasePath": catalog.MemberBinding{Location: "label", Name: "basePath", Format: ""}, "DomainName": catalog.MemberBinding{Location: "label", Name: "domainName", Format: ""}, "DomainNameId": catalog.MemberBinding{Location: "unsupported:query", Name: "domainNameId", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/domainnames/{domainName}/basepathmappings/{basePath}", Target: "", Version: "", ContentType: "application/json", StatusCode: 202}}, NewInput: func() any { return &DeleteBasePathMappingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteBasePathMapping(ctx, input.(*DeleteBasePathMappingRequest))
+		}},
+		"ImportRestApi": {Name: "ImportRestApi", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:POST", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Body": catalog.MemberBinding{Location: "payload", Name: "body", Format: ""}, "FailOnWarnings": catalog.MemberBinding{Location: "query", Name: "failonwarnings", Format: ""}, "Parameters": catalog.MemberBinding{Location: "queryParams", Name: "parameters", Format: ""}}, Output: map[string]catalog.MemberBinding{"ApiKeySource": catalog.MemberBinding{Location: "document", Name: "apiKeySource", Format: ""}, "ApiStatus": catalog.MemberBinding{Location: "document", Name: "apiStatus", Format: ""}, "ApiStatusMessage": catalog.MemberBinding{Location: "document", Name: "apiStatusMessage", Format: ""}, "BinaryMediaTypes": catalog.MemberBinding{Location: "document", Name: "binaryMediaTypes", Format: ""}, "CreatedDate": catalog.MemberBinding{Location: "document", Name: "createdDate", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "description", Format: ""}, "DisableExecuteApiEndpoint": catalog.MemberBinding{Location: "document", Name: "disableExecuteApiEndpoint", Format: ""}, "EndpointAccessMode": catalog.MemberBinding{Location: "document", Name: "endpointAccessMode", Format: ""}, "EndpointConfiguration": catalog.MemberBinding{Location: "document", Name: "endpointConfiguration", Format: ""}, "Id": catalog.MemberBinding{Location: "document", Name: "id", Format: ""}, "MinimumCompressionSize": catalog.MemberBinding{Location: "document", Name: "minimumCompressionSize", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "Policy": catalog.MemberBinding{Location: "document", Name: "policy", Format: ""}, "RootResourceId": catalog.MemberBinding{Location: "document", Name: "rootResourceId", Format: ""}, "SecurityPolicy": catalog.MemberBinding{Location: "document", Name: "securityPolicy", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}, "Version": catalog.MemberBinding{Location: "document", Name: "version", Format: ""}, "Warnings": catalog.MemberBinding{Location: "document", Name: "warnings", Format: ""}}, Method: "POST", URI: "/restapis?mode=import", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &ImportRestApiRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ImportRestApi(ctx, input.(*ImportRestApiRequest))
+		}},
+		"PutRestApi": {Name: "PutRestApi", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:PUT", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Body": catalog.MemberBinding{Location: "payload", Name: "body", Format: ""}, "FailOnWarnings": catalog.MemberBinding{Location: "query", Name: "failonwarnings", Format: ""}, "Mode": catalog.MemberBinding{Location: "query", Name: "mode", Format: ""}, "Parameters": catalog.MemberBinding{Location: "queryParams", Name: "parameters", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{"ApiKeySource": catalog.MemberBinding{Location: "document", Name: "apiKeySource", Format: ""}, "ApiStatus": catalog.MemberBinding{Location: "document", Name: "apiStatus", Format: ""}, "ApiStatusMessage": catalog.MemberBinding{Location: "document", Name: "apiStatusMessage", Format: ""}, "BinaryMediaTypes": catalog.MemberBinding{Location: "document", Name: "binaryMediaTypes", Format: ""}, "CreatedDate": catalog.MemberBinding{Location: "document", Name: "createdDate", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "description", Format: ""}, "DisableExecuteApiEndpoint": catalog.MemberBinding{Location: "document", Name: "disableExecuteApiEndpoint", Format: ""}, "EndpointAccessMode": catalog.MemberBinding{Location: "document", Name: "endpointAccessMode", Format: ""}, "EndpointConfiguration": catalog.MemberBinding{Location: "document", Name: "endpointConfiguration", Format: ""}, "Id": catalog.MemberBinding{Location: "document", Name: "id", Format: ""}, "MinimumCompressionSize": catalog.MemberBinding{Location: "document", Name: "minimumCompressionSize", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "Policy": catalog.MemberBinding{Location: "document", Name: "policy", Format: ""}, "RootResourceId": catalog.MemberBinding{Location: "document", Name: "rootResourceId", Format: ""}, "SecurityPolicy": catalog.MemberBinding{Location: "document", Name: "securityPolicy", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}, "Version": catalog.MemberBinding{Location: "document", Name: "version", Format: ""}, "Warnings": catalog.MemberBinding{Location: "document", Name: "warnings", Format: ""}}, Method: "PUT", URI: "/restapis/{restApiId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &PutRestApiRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutRestApi(ctx, input.(*PutRestApiRequest))
+		}},
+		"GetExport": {Name: "GetExport", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Accepts": catalog.MemberBinding{Location: "header", Name: "Accept", Format: ""}, "ExportType": catalog.MemberBinding{Location: "label", Name: "exportType", Format: ""}, "Parameters": catalog.MemberBinding{Location: "queryParams", Name: "parameters", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}, "StageName": catalog.MemberBinding{Location: "label", Name: "stageName", Format: ""}}, Output: map[string]catalog.MemberBinding{"Body": catalog.MemberBinding{Location: "payload", Name: "body", Format: ""}, "ContentDisposition": catalog.MemberBinding{Location: "header", Name: "Content-Disposition", Format: ""}, "ContentType": catalog.MemberBinding{Location: "header", Name: "Content-Type", Format: ""}}, Method: "GET", URI: "/restapis/{restApiId}/stages/{stageName}/exports/{exportType}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetExportRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetExport(ctx, input.(*GetExportRequest))
 		}},
 	}}
 }

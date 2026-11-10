@@ -808,6 +808,72 @@ type DeleteRouteResponseRequest struct {
 	RouteResponseId *string `json:"-"`
 }
 
+type ImportApiRequest struct {
+	Basepath       *string `json:"-"`
+	Body           *string `json:"body,omitempty"`
+	FailOnWarnings *bool   `json:"-"`
+}
+
+type ImportApiResponse struct {
+	ApiEndpoint               *string           `json:"apiEndpoint,omitempty"`
+	ApiGatewayManaged         *bool             `json:"apiGatewayManaged,omitempty"`
+	ApiId                     *string           `json:"apiId,omitempty"`
+	ApiKeySelectionExpression *string           `json:"apiKeySelectionExpression,omitempty"`
+	CorsConfiguration         *Cors             `json:"corsConfiguration,omitempty"`
+	CreatedDate               *time.Time        `json:"createdDate,omitempty"`
+	Description               *string           `json:"description,omitempty"`
+	DisableSchemaValidation   *bool             `json:"disableSchemaValidation,omitempty"`
+	DisableExecuteApiEndpoint *bool             `json:"disableExecuteApiEndpoint,omitempty"`
+	ImportInfo                []string          `json:"importInfo,omitempty"`
+	IpAddressType             *string           `json:"ipAddressType,omitempty"`
+	Name                      *string           `json:"name,omitempty"`
+	ProtocolType              *string           `json:"protocolType,omitempty"`
+	RouteSelectionExpression  *string           `json:"routeSelectionExpression,omitempty"`
+	Tags                      map[string]string `json:"tags,omitempty"`
+	Version                   *string           `json:"version,omitempty"`
+	Warnings                  []string          `json:"warnings,omitempty"`
+}
+
+type ReimportApiRequest struct {
+	ApiId          *string `json:"-"`
+	Basepath       *string `json:"-"`
+	Body           *string `json:"body,omitempty"`
+	FailOnWarnings *bool   `json:"-"`
+}
+
+type ReimportApiResponse struct {
+	ApiEndpoint               *string           `json:"apiEndpoint,omitempty"`
+	ApiGatewayManaged         *bool             `json:"apiGatewayManaged,omitempty"`
+	ApiId                     *string           `json:"apiId,omitempty"`
+	ApiKeySelectionExpression *string           `json:"apiKeySelectionExpression,omitempty"`
+	CorsConfiguration         *Cors             `json:"corsConfiguration,omitempty"`
+	CreatedDate               *time.Time        `json:"createdDate,omitempty"`
+	Description               *string           `json:"description,omitempty"`
+	DisableSchemaValidation   *bool             `json:"disableSchemaValidation,omitempty"`
+	DisableExecuteApiEndpoint *bool             `json:"disableExecuteApiEndpoint,omitempty"`
+	ImportInfo                []string          `json:"importInfo,omitempty"`
+	IpAddressType             *string           `json:"ipAddressType,omitempty"`
+	Name                      *string           `json:"name,omitempty"`
+	ProtocolType              *string           `json:"protocolType,omitempty"`
+	RouteSelectionExpression  *string           `json:"routeSelectionExpression,omitempty"`
+	Tags                      map[string]string `json:"tags,omitempty"`
+	Version                   *string           `json:"version,omitempty"`
+	Warnings                  []string          `json:"warnings,omitempty"`
+}
+
+type ExportApiRequest struct {
+	ApiId             *string `json:"-"`
+	ExportVersion     *string `json:"-"`
+	IncludeExtensions *bool   `json:"-"`
+	OutputType        *string `json:"-"`
+	Specification     *string `json:"-"`
+	StageName         *string `json:"-"`
+}
+
+type ExportApiResponse struct {
+	Body []byte `json:"-"`
+}
+
 type API interface {
 	CreateApi(context.Context, *CreateApiRequest) (*CreateApiResponse, error)
 	GetApi(context.Context, *GetApiRequest) (*GetApiResponse, error)
@@ -848,6 +914,9 @@ type API interface {
 	GetRouteResponses(context.Context, *GetRouteResponsesRequest) (*GetRouteResponsesResponse, error)
 	UpdateRouteResponse(context.Context, *UpdateRouteResponseRequest) (*UpdateRouteResponseResponse, error)
 	DeleteRouteResponse(context.Context, *DeleteRouteResponseRequest) (*DeleteRouteResponseOutput, error)
+	ImportApi(context.Context, *ImportApiRequest) (*ImportApiResponse, error)
+	ReimportApi(context.Context, *ReimportApiRequest) (*ReimportApiResponse, error)
+	ExportApi(context.Context, *ExportApiRequest) (*ExportApiResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -958,6 +1027,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteRouteResponse": {Name: "DeleteRouteResponse", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "apigateway:DELETE", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiId": catalog.MemberBinding{Location: "label", Name: "ApiId", Format: ""}, "RouteId": catalog.MemberBinding{Location: "label", Name: "RouteId", Format: ""}, "RouteResponseId": catalog.MemberBinding{Location: "label", Name: "RouteResponseId", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/v2/apis/{ApiId}/routes/{RouteId}/routeresponses/{RouteResponseId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 204}}, NewInput: func() any { return &DeleteRouteResponseRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteRouteResponse(ctx, input.(*DeleteRouteResponseRequest))
+		}},
+		"ImportApi": {Name: "ImportApi", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:PUT", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Basepath": catalog.MemberBinding{Location: "query", Name: "basepath", Format: ""}, "Body": catalog.MemberBinding{Location: "document", Name: "Body", Format: ""}, "FailOnWarnings": catalog.MemberBinding{Location: "query", Name: "failOnWarnings", Format: ""}}, Output: map[string]catalog.MemberBinding{"ApiEndpoint": catalog.MemberBinding{Location: "document", Name: "ApiEndpoint", Format: ""}, "ApiGatewayManaged": catalog.MemberBinding{Location: "document", Name: "ApiGatewayManaged", Format: ""}, "ApiId": catalog.MemberBinding{Location: "document", Name: "ApiId", Format: ""}, "ApiKeySelectionExpression": catalog.MemberBinding{Location: "document", Name: "ApiKeySelectionExpression", Format: ""}, "CorsConfiguration": catalog.MemberBinding{Location: "document", Name: "CorsConfiguration", Format: ""}, "CreatedDate": catalog.MemberBinding{Location: "document", Name: "CreatedDate", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "Description", Format: ""}, "DisableExecuteApiEndpoint": catalog.MemberBinding{Location: "document", Name: "DisableExecuteApiEndpoint", Format: ""}, "DisableSchemaValidation": catalog.MemberBinding{Location: "document", Name: "DisableSchemaValidation", Format: ""}, "ImportInfo": catalog.MemberBinding{Location: "document", Name: "ImportInfo", Format: ""}, "IpAddressType": catalog.MemberBinding{Location: "document", Name: "IpAddressType", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "Name", Format: ""}, "ProtocolType": catalog.MemberBinding{Location: "document", Name: "ProtocolType", Format: ""}, "RouteSelectionExpression": catalog.MemberBinding{Location: "document", Name: "RouteSelectionExpression", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}, "Version": catalog.MemberBinding{Location: "document", Name: "Version", Format: ""}, "Warnings": catalog.MemberBinding{Location: "document", Name: "Warnings", Format: ""}}, Method: "PUT", URI: "/v2/apis", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &ImportApiRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ImportApi(ctx, input.(*ImportApiRequest))
+		}},
+		"ReimportApi": {Name: "ReimportApi", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:PUT", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiId": catalog.MemberBinding{Location: "label", Name: "ApiId", Format: ""}, "Basepath": catalog.MemberBinding{Location: "query", Name: "basepath", Format: ""}, "Body": catalog.MemberBinding{Location: "document", Name: "Body", Format: ""}, "FailOnWarnings": catalog.MemberBinding{Location: "query", Name: "failOnWarnings", Format: ""}}, Output: map[string]catalog.MemberBinding{"ApiEndpoint": catalog.MemberBinding{Location: "document", Name: "ApiEndpoint", Format: ""}, "ApiGatewayManaged": catalog.MemberBinding{Location: "document", Name: "ApiGatewayManaged", Format: ""}, "ApiId": catalog.MemberBinding{Location: "document", Name: "ApiId", Format: ""}, "ApiKeySelectionExpression": catalog.MemberBinding{Location: "document", Name: "ApiKeySelectionExpression", Format: ""}, "CorsConfiguration": catalog.MemberBinding{Location: "document", Name: "CorsConfiguration", Format: ""}, "CreatedDate": catalog.MemberBinding{Location: "document", Name: "CreatedDate", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "Description", Format: ""}, "DisableExecuteApiEndpoint": catalog.MemberBinding{Location: "document", Name: "DisableExecuteApiEndpoint", Format: ""}, "DisableSchemaValidation": catalog.MemberBinding{Location: "document", Name: "DisableSchemaValidation", Format: ""}, "ImportInfo": catalog.MemberBinding{Location: "document", Name: "ImportInfo", Format: ""}, "IpAddressType": catalog.MemberBinding{Location: "document", Name: "IpAddressType", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "Name", Format: ""}, "ProtocolType": catalog.MemberBinding{Location: "document", Name: "ProtocolType", Format: ""}, "RouteSelectionExpression": catalog.MemberBinding{Location: "document", Name: "RouteSelectionExpression", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}, "Version": catalog.MemberBinding{Location: "document", Name: "Version", Format: ""}, "Warnings": catalog.MemberBinding{Location: "document", Name: "Warnings", Format: ""}}, Method: "PUT", URI: "/v2/apis/{ApiId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &ReimportApiRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ReimportApi(ctx, input.(*ReimportApiRequest))
+		}},
+		"ExportApi": {Name: "ExportApi", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiId": catalog.MemberBinding{Location: "label", Name: "ApiId", Format: ""}, "ExportVersion": catalog.MemberBinding{Location: "query", Name: "exportVersion", Format: ""}, "IncludeExtensions": catalog.MemberBinding{Location: "query", Name: "includeExtensions", Format: ""}, "OutputType": catalog.MemberBinding{Location: "query", Name: "outputType", Format: ""}, "Specification": catalog.MemberBinding{Location: "label", Name: "Specification", Format: ""}, "StageName": catalog.MemberBinding{Location: "query", Name: "stageName", Format: ""}}, Output: map[string]catalog.MemberBinding{"Body": catalog.MemberBinding{Location: "payload", Name: "body", Format: ""}}, Method: "GET", URI: "/v2/apis/{ApiId}/exports/{Specification}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ExportApiRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ExportApi(ctx, input.(*ExportApiRequest))
 		}},
 	}}
 }
