@@ -24,15 +24,17 @@ import (
 )
 
 const (
-	locationLabel    = "label"
-	locationHeader   = "header"
-	locationQuery    = "query"
-	locationPrefix   = "prefix"
-	locationPayload  = "payload"
-	locationStatus   = "status"
-	locationDocument = "document"
-	unsupported      = "unsupported:"
-	awsChunked       = "aws-chunked"
+	locationLabel  = "label"
+	locationHeader = "header"
+	locationQuery  = "query"
+	// locationQueryParams collects the query parameters no other member binds.
+	locationQueryParams = "queryParams"
+	locationPrefix      = "prefix"
+	locationPayload     = "payload"
+	locationStatus      = "status"
+	locationDocument    = "document"
+	unsupported         = "unsupported:"
+	awsChunked          = "aws-chunked"
 )
 
 var timeType = reflect.TypeFor[time.Time]()
@@ -502,23 +504,27 @@ func Decode(
 
 				err = setScalar(f, v, mb.Name)
 			}
-		case "queryParams":
+		case locationQueryParams:
+			bound := map[string]bool{}
+			if uri, parseErr := url.Parse(b.URI); parseErr == nil {
+				for key := range uri.Query() {
+					bound[key] = true
+				}
+			}
+
+			for _, binding := range b.Input {
+				if binding.Location == locationQuery {
+					bound[binding.Name] = true
+				}
+			}
+
 			values := map[string]string{}
 			for key, vv := range query {
-				bound := false
-				if uri, parseErr := url.Parse(b.URI); parseErr == nil {
-					_, bound = uri.Query()[key]
-				}
-
-				for _, binding := range b.Input {
-					if binding.Location == locationQuery && binding.Name == key {
-						bound = true
-					}
-				}
-				if !bound {
+				if !bound[key] {
 					values[key] = strings.Join(vv, ",")
 				}
 			}
+
 			f.Set(reflect.ValueOf(values))
 		case locationQuery:
 			if values, ok := query[mb.Name]; ok {

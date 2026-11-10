@@ -97,6 +97,7 @@ func routes(service *catalog.Service) []route {
 			if mb.Location == "queryParams" {
 				rt.queryParams = true
 			}
+
 			if strings.HasSuffix(mb.Location, "query") {
 				rt.allowed[mb.Name] = true
 			}
