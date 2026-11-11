@@ -12,7 +12,7 @@ Model networking and instance lifecycle for SDK and infrastructure tests.
 | Wire protocol | EC2 Query |
 | API version | `2016-11-15` |
 | Scope | Account and region |
-| Execution | Records by default; opt-in Lima Linux VMs (ec2.runtime: lima). Shutdown leaves VMs running; terminate and reset delete only store-owned VMs |
+| Execution | Records by default; opt-in Lima or direct QEMU Linux VMs (ec2.runtime: lima or qemu). Shutdown leaves VMs running; terminate and reset delete only store-owned VMs |
 | Selected operations | 161 of 807 in the pinned model |
 
 ## Implemented behavior
@@ -21,9 +21,9 @@ See the [implemented feature catalogue](catalogue.md#ec2) for this service's cap
 
 ## Limitations and future work
 
-- Default records mode does not boot VMs; optional Lima mode supports Linux guests only and requires a user-installed Lima.
+- Default records mode does not boot VMs; optional VM modes support Linux guests only and require user-installed Lima or QEMU.
 - Security groups, routing and NAT are not enforced for real guests; networking remains records only.
-- Lima boot takes minutes and downloads multi-GB images on first launch; default limits are two VMs and 4096 MiB per VM.
+- VM boot takes minutes and downloads multi-GB images on first launch; default limits are two VMs and 4096 MiB per VM.
 - The large upstream EC2 API remains mostly outside the selected profile.
 - Console AMIs and derived network interfaces are read-only; launch templates use the AWS CLI or SDK.
 - Verify mode shows scoped inventory; detailed EC2/VPC reads and management require signed CLI/SDK requests.
@@ -865,5 +865,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/ec2)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/ec2/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/ec2.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [ec2_instances_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_instances_test.go), [ec2_lima_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_lima_test.go), [ec2_network_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_network_test.go), [ec2_security_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_security_test.go), [ec2_tags_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_tags_test.go), [ec2_templates_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_templates_test.go), [ec2_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_test.go), [ec2_tier1_inventory_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_tier1_inventory_test.go), [ec2_tier1_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_tier1_test.go), [ec2_transit_gateway_hardening_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_transit_gateway_hardening_test.go), [ec2_transit_gateway_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_transit_gateway_test.go), [ec2_vpc_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_vpc_test.go), [ec2_vpn_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_vpn_test.go).
+- SDK integration examples: [ec2_instances_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_instances_test.go), [ec2_lima_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_lima_test.go), [ec2_network_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_network_test.go), [ec2_qemu_helper_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_qemu_helper_test.go), [ec2_qemu_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_qemu_test.go), [ec2_security_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_security_test.go), [ec2_tags_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_tags_test.go), [ec2_templates_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_templates_test.go), [ec2_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_test.go), [ec2_tier1_inventory_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_tier1_inventory_test.go), [ec2_tier1_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_tier1_test.go), [ec2_transit_gateway_hardening_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_transit_gateway_hardening_test.go), [ec2_transit_gateway_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_transit_gateway_test.go), [ec2_vpc_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_vpc_test.go), [ec2_vpn_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_vpn_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

@@ -563,7 +563,7 @@ Persist Batch compute environments and queues; submit dependency-aware jobs with
 
 Model networking and instance lifecycle for SDK and infrastructure tests.
 
-**Execution:** Records by default; opt-in Lima Linux VMs (ec2.runtime: lima). Shutdown leaves VMs running; terminate and reset delete only store-owned VMs. **Selected operations:** 161.
+**Execution:** Records by default; opt-in Lima or direct QEMU Linux VMs (ec2.runtime: lima or qemu). Shutdown leaves VMs running; terminate and reset delete only store-owned VMs. **Selected operations:** 161.
 
 - VPCs, subnets, security groups, internet/NAT gateways and Elastic IPs.
 - Route tables, network ACLs, VPC endpoints, and persisted standalone/instance plus service-managed network interfaces.
@@ -577,7 +577,7 @@ Model networking and instance lifecycle for SDK and infrastructure tests.
 - Transit gateways with validated options and default-table selection, VPC attachments, transit gateway route tables, associations, VPC CIDR propagation, static and blackhole routes, and route table target support.
 - Customer gateways, virtual private gateways (VGWs), VPC gateway attachments, VGW VPN static-route propagation, and Site-to-Site VPN connections with automatic transit gateway attachment cleanup.
 - Supported launch, networking and launch template client tokens replay the committed response and reject changed input.
-- Optional ec2.runtime: lima boots pinned Linux cloud images asynchronously, with cloud-init user data, SSH endpoint tags and instance-profile credentials through per-instance IMDS listeners.
+- Optional ec2.runtime: lima or qemu boots pinned Linux cloud images asynchronously, with cloud-init user data, SSH endpoint tags and instance-profile credentials through per-instance IMDS listeners.
 
 [Supported operations](ec2.md#supported-operations) · [Limitations](ec2.md#limitations-and-future-work)
 

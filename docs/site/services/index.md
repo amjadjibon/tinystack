@@ -57,7 +57,7 @@ Future services and unimplemented extensions live in the [roadmap](../roadmap/in
 | --- | --- | --- |
 | [AWS App Runner](apprunner.md) | 28 | Records only |
 | [AWS Batch](batch.md) | 19 | Records by default: environments and queues become VALID immediately; jobs remain RUNNABLE or PENDING behind dependencies until cancelled, terminated or failed by a dependency. Optional local Docker execution supports EC2 jobs only; Fargate execution is explicitly rejected. |
-| [EC2](ec2.md) | 161 | Records by default; opt-in Lima Linux VMs (ec2.runtime: lima). Shutdown leaves VMs running; terminate and reset delete only store-owned VMs |
+| [EC2](ec2.md) | 161 | Records by default; opt-in Lima or direct QEMU Linux VMs (ec2.runtime: lima or qemu). Shutdown leaves VMs running; terminate and reset delete only store-owned VMs |
 | [EC2 Auto Scaling](autoscaling.md) | 25 | EC2 record reconciliation |
 | [Elastic Beanstalk](elasticbeanstalk.md) | 32 | Records only |
 | [Lambda](lambda.md) | 53 | Local processes or Docker runtime |
