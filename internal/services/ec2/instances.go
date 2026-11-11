@@ -56,7 +56,7 @@ var (
 	families = map[string]string{
 		"m1": archX86, "t2": archX86, "t3": archX86, "t3a": archX86, "m5": archX86, "m6i": archX86, "m7i": archX86,
 		"c5": archX86, "c6i": archX86, "c7i": archX86, "r5": archX86, "r6i": archX86,
-		"t4g": archARM, "m6g": archARM, "m7g": archARM, "c6g": archARM, "c7g": archARM, "r6g": archARM, "r7g": archARM,
+		vmT4g: archARM, "m6g": archARM, "m7g": archARM, "c6g": archARM, "c7g": archARM, "r6g": archARM, "r7g": archARM,
 	}
 
 	sizes = []string{
@@ -64,39 +64,43 @@ var (
 	}
 )
 
-// instance is a launched instance. No machine runs: an instance moves to
-// each state its operations ask for at once, and the operation reports the
-// transitional state (pending, stopping, shutting-down) on the way.
+// instance is a launched instance. Records settle immediately; an optional runtime
+// reconciles VMAction outside transactions before publishing the settled state.
 type instance struct {
-	// Profile is the instance's IAM instance profile association, if any.
-	Profile *profileAssociation `json:",omitempty"`
-	// MetadataOptions controls access to the instance metadata service.
+	// Changed marks the most recent requested state change.
+	Changed    time.Time
+	LaunchTime time.Time
+	// MetadataOptions controls IMDS access.
 	MetadataOptions *instanceMetadataOptions `json:",omitempty"`
-	LaunchTime      time.Time
-	Changed         time.Time         // when State last changed
-	Tags            map[string]string `json:",omitempty"`
-	ID              string
-	Reservation     string
-	ImageID         string
-	Type            string
-	KeyName         string `json:",omitempty"`
-	SubnetID        string
-	VPCID           string
-	Zone            string
-	PrivateIP       string `json:",omitempty"`
-	PublicIP        string `json:",omitempty"`
-	// AddressID is the Elastic IP address that is PublicIP, if any.
+	Tags            map[string]string        `json:",omitempty"`
+	// Profile is the IAM instance profile association.
+	Profile     *profileAssociation `json:",omitempty"`
+	Zone        string
+	PublicIP    string `json:",omitempty"`
+	RootDevice  string
+	Arch        string
+	ID          string
+	Reservation string
+	ImageID     string
+	Type        string
+	KeyName     string `json:",omitempty"`
+	SubnetID    string
+	VPCID       string
+	VMAction    string `json:",omitempty"`
+	PrivateIP   string `json:",omitempty"`
+	VMError     string `json:",omitempty"`
+	// AddressID is the associated Elastic IP, if any.
 	AddressID   string `json:",omitempty"`
 	State       string
-	Reason      string `json:",omitempty"` // the state transition reason
+	Reason      string `json:",omitempty"`
 	ClientToken string `json:",omitempty"`
 	UserData    string `json:",omitempty"`
 	Shutdown    string
 	Tenancy     string
-	Arch        string
-	RootDevice  string
 	Groups      []groupRef
+	VMPort      int `json:",omitempty"`
 	LaunchIndex int64
+	VMCreated   bool `json:",omitempty"`
 	// NoTerminate is the disableApiTermination attribute.
 	NoTerminate bool
 	Monitoring  bool
@@ -277,6 +281,10 @@ func instanceOutput(scope request.Scope, i *instance, state string) api.Instance
 			),
 			Message: new("Client.UserInitiatedShutdown: User initiated shutdown"),
 		}
+	}
+
+	if i.VMError != "" {
+		out.StateReason = &api.StateReason{Code: new("Server.InternalError"), Message: new(i.VMError)}
 	}
 
 	out.MetadataOptions = i.metadataOptionsOutput()
@@ -700,6 +708,12 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 				"than your current instance limit of %d allows.", l.min, maxInstances))
 		}
 
+		if s.runtime != nil {
+			if vmErr := s.validateVM(tx, l, count, common.Value(in.ImageId)); vmErr != nil {
+				return vmErr
+			}
+		}
+
 		sn, subnetErr := launchSubnet(tx, scope, in)
 		if subnetErr != nil {
 			return subnetErr
@@ -735,6 +749,10 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 				RootDevice: l.img.RootDevice, LaunchIndex: n, NoTerminate: common.Value(in.DisableApiTermination),
 				Monitoring: in.Monitoring != nil && common.Value(in.Monitoring.Enabled), Groups: groups, Tags: l.tags,
 				LaunchTime: now, Changed: now,
+			}
+
+			if s.runtime != nil {
+				i.State, i.VMAction = statePending, vmStart
 			}
 
 			if profile != nil {
@@ -915,6 +933,17 @@ func (s *Service) change(
 				return err
 			}
 
+			if s.runtime != nil && current != previous {
+				switch current {
+				case statePending:
+					i.State, i.VMAction = statePending, vmStart
+				case stateStopping:
+					i.State, i.VMAction = stateStopping, shutdownStop
+				case stateShuttingDown:
+					i.State, i.VMAction = stateShuttingDown, vmDelete
+				}
+			}
+
 			if i.State == stateTerminated {
 				if err := releaseInstanceInterfaces(tx, scope, i.ID); err != nil {
 					return err
@@ -1013,6 +1042,10 @@ func (s *Service) RebootInstances(
 	_, err := s.change(ctx, in.DryRun, in.InstanceIds, func(i *instance, _ *subnet, _ string) (string, error) {
 		if i.State != stateRunning {
 			return "", incorrectState(i.ID, "rebooted")
+		}
+
+		if s.runtime != nil {
+			i.VMAction = "restart"
 		}
 
 		return stateRunning, nil

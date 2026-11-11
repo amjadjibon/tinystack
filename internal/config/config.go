@@ -303,6 +303,7 @@ type Config struct {
 	Kafka struct {
 		Clusters string `yaml:"clusters"`
 	} `yaml:"kafka"`
+	EC2 EC2Config `yaml:"ec2"`
 	RDS struct {
 		Instances string `yaml:"instances"`
 	} `yaml:"rds"`
@@ -395,6 +396,7 @@ func Default() Config {
 	c.BedrockAgentCore.Runtimes = RuntimesRecords
 	c.Transfer.Servers = "records"
 	c.Kafka.Clusters = ContainersRecords
+	c.EC2 = EC2Config{Runtime: InstancesRecords, Lima: LimaConfig{Command: "limactl", MaxVMs: 2, MaxMemoryMiB: 4096}}
 	c.RDS.Instances = InstancesRecords
 	c.Init.Dir = DefaultInitDir
 	c.Init.LocalStackDir = DefaultLocalStackInitDir
@@ -591,6 +593,10 @@ func (c *Config) Validate() error {
 
 	if c.Kafka.Clusters != ContainersRecords && c.Kafka.Clusters != ContainersDocker {
 		return fmt.Errorf("kafka.clusters must be records or docker")
+	}
+
+	if err := c.EC2.Validate(); err != nil {
+		return err
 	}
 
 	if c.RDS.Instances != InstancesRecords && c.RDS.Instances != InstancesDocker {

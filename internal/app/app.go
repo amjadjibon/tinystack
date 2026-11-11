@@ -208,6 +208,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/dsql"
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/ec2"
+	ec2lima "github.com/amjadjibon/tinystack/internal/services/ec2/lima"
 	"github.com/amjadjibon/tinystack/internal/services/ecr"
 	"github.com/amjadjibon/tinystack/internal/services/ecs"
 	ecsdocker "github.com/amjadjibon/tinystack/internal/services/ecs/docker"
@@ -1100,6 +1101,19 @@ func build(
 		metadata.WithDefaultInstanceID(cfg.Metadata.IMDS.DefaultInstanceID),
 		metadata.WithVerifyIdentity(cfg.Identity.Mode == config.IdentityVerify),
 	)
+	if cfg.EC2.Runtime == "lima" {
+		if err = network.UseRuntime(
+			ec2lima.New(cfg.EC2.Lima.Command),
+			cfg.EC2.Lima,
+			metaService.IMDSHandler(),
+			handler,
+		); err != nil {
+			return nil, err
+		}
+		a.onStop(network.Stop)
+		a.onReset(network.Reset)
+	}
+
 	a.Metadata = metaService
 	handler.HandlePath("/_tinystack/imds/", metaService.IMDSHandler())
 	handler.HandlePath("/_tinystack/ecs/", metaService.ECSHandler())
