@@ -39,3 +39,11 @@ iot:
   # (identity.mode: parse only); 0 turns it off. MQTT over WebSocket is always
   # served at /mqtt on the server port.
   mqtt_port: 0
+
+ec2:
+  # records is the default. lima boots real Linux VMs; install Lima yourself first.
+  runtime: records
+  lima:
+    command: limactl
+    max_vms: 2
+    max_memory_mib: 4096

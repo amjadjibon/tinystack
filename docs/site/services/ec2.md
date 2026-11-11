@@ -12,7 +12,7 @@ Model networking and instance lifecycle for SDK and infrastructure tests.
 | Wire protocol | EC2 Query |
 | API version | `2016-11-15` |
 | Scope | Account and region |
-| Execution | Records only |
+| Execution | Records by default; opt-in Lima Linux VMs (ec2.runtime: lima). Shutdown leaves VMs running; terminate and reset delete only store-owned VMs |
 | Selected operations | 161 of 807 in the pinned model |
 
 ## Implemented behavior
@@ -21,9 +21,9 @@ See the [implemented feature catalogue](catalogue.md#ec2) for this service's cap
 
 ## Limitations and future work
 
-- Instances are records; no virtual machines boot and no guest software runs.
-- Networking configuration does not create a real VPC, NAT or firewall.
-- State transitions settle immediately.
+- Default records mode does not boot VMs; optional Lima mode supports Linux guests only and requires a user-installed Lima.
+- Security groups, routing and NAT are not enforced for real guests; networking remains records only.
+- Lima boot takes minutes and downloads multi-GB images on first launch; default limits are two VMs and 4096 MiB per VM.
 - The large upstream EC2 API remains mostly outside the selected profile.
 - Console AMIs and derived network interfaces are read-only; launch templates use the AWS CLI or SDK.
 - Verify mode shows scoped inventory; detailed EC2/VPC reads and management require signed CLI/SDK requests.
@@ -31,6 +31,7 @@ See the [implemented feature catalogue](catalogue.md#ec2) for this service's cap
 - CloudFormation rejects in-place ENI address changes and prefix-list address-family changes explicitly.
 - Explicit IPv6 CIDRs retain external BYOIP pool references; pool provisioning and ownership checks are not modeled.
 - Cross-region transit gateway peering, transit gateway Connect attachments, multicast domains, and real IPsec tunnel negotiation are outside the profile; enabling multicast and unsupported VPN tunnel or network options fails explicitly; TGW VPN static routes use transit gateway route APIs and BGP route learning is not simulated.
+- VM sizing supports t3/t4g/m5/m7g/c5; stopped VMs reserve capacity. Cloud-config accepts bootcmd, users, write_files, packages, package_update, package_upgrade and runcmd; other directives fail explicitly.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -864,5 +865,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/ec2)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/ec2/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/ec2.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [ec2_instances_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_instances_test.go), [ec2_network_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_network_test.go), [ec2_security_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_security_test.go), [ec2_tags_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_tags_test.go), [ec2_templates_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_templates_test.go), [ec2_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_test.go), [ec2_tier1_inventory_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_tier1_inventory_test.go), [ec2_tier1_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_tier1_test.go), [ec2_transit_gateway_hardening_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_transit_gateway_hardening_test.go), [ec2_transit_gateway_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_transit_gateway_test.go), [ec2_vpc_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_vpc_test.go), [ec2_vpn_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_vpn_test.go).
+- SDK integration examples: [ec2_instances_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_instances_test.go), [ec2_lima_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_lima_test.go), [ec2_network_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_network_test.go), [ec2_security_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_security_test.go), [ec2_tags_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_tags_test.go), [ec2_templates_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_templates_test.go), [ec2_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_test.go), [ec2_tier1_inventory_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_tier1_inventory_test.go), [ec2_tier1_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_tier1_test.go), [ec2_transit_gateway_hardening_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_transit_gateway_hardening_test.go), [ec2_transit_gateway_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_transit_gateway_test.go), [ec2_vpc_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_vpc_test.go), [ec2_vpn_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ec2_vpn_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).
