@@ -210,6 +210,21 @@ func TestQEMURealVM(t *testing.T) {
 	})
 	if err := sdk.NewInstanceRunningWaiter(c).
 		Wait(ctx, &sdk.DescribeInstancesInput{InstanceIds: ids}, 12*time.Minute); err != nil {
-		t.Fatal(err)
+		t.Fatalf("%v: %s", err, stateReason(ctx, c, ids[0]))
 	}
+}
+
+// stateReason returns the instance's state reason, which carries the VM runtime error.
+func stateReason(ctx context.Context, c *sdk.Client, id string) string {
+	out, err := c.DescribeInstances(ctx, &sdk.DescribeInstancesInput{InstanceIds: []string{id}})
+	if err != nil || len(out.Reservations) == 0 || len(out.Reservations[0].Instances) == 0 {
+		return fmt.Sprint(err)
+	}
+
+	reason := out.Reservations[0].Instances[0].StateReason
+	if reason == nil {
+		return "no state reason"
+	}
+
+	return aws.ToString(reason.Message)
 }

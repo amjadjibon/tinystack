@@ -11,16 +11,19 @@ import (
 // https://cdn.amazonlinux.com/al2023/os-images/2023.7.20250609.0/kvm/SHA256SUMS
 // https://cdn.amazonlinux.com/al2023/os-images/2023.7.20250609.0/kvm-arm64/SHA256SUMS
 // https://cloud-images.ubuntu.com/releases/noble/release-20260926/SHA256SUMS
+// DiskGiB is the virtual size in each qcow2 header (AL2023 25 GiB; Ubuntu 3.5 GiB, below the 8 GiB root volume).
 var vmImages = map[string]config.VMImage{
 	"amazon/x86_64": {
 		URL: "https://cdn.amazonlinux.com/al2023/os-images/2023.7.20250609.0/kvm/" +
 			"al2023-kvm-2023.7.20250609.0-kernel-6.1-x86_64.xfs.gpt.qcow2",
-		Digest: "sha256:55218a566db332f4c38c5b83e5c7063bc36d0f603f009dbfef7d5cf3b9369abe",
+		Digest:  "sha256:55218a566db332f4c38c5b83e5c7063bc36d0f603f009dbfef7d5cf3b9369abe",
+		DiskGiB: 25,
 	},
 	"amazon/arm64": {
 		URL: "https://cdn.amazonlinux.com/al2023/os-images/2023.7.20250609.0/kvm-arm64/" +
 			"al2023-kvm-2023.7.20250609.0-kernel-6.1-arm64.xfs.gpt.qcow2",
-		Digest: "sha256:aecdd5a82d103bcb2c44548c0a58a3f33d54cac353b1858c5a23c2bcd21f0166",
+		Digest:  "sha256:aecdd5a82d103bcb2c44548c0a58a3f33d54cac353b1858c5a23c2bcd21f0166",
+		DiskGiB: 25,
 	},
 	"ubuntu/x86_64": {
 		URL:    "https://cloud-images.ubuntu.com/releases/noble/release-20260926/ubuntu-24.04-server-cloudimg-amd64.img",

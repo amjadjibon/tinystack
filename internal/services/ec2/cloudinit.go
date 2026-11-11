@@ -166,7 +166,7 @@ func LimaConfig(spec *VMSpec) ([]byte, error) {
 	}
 
 	return yaml.Marshal(map[string]any{
-		"vmType": tenancyDefault, "arch": arch,
+		"arch":   arch,
 		"images": []any{map[string]any{"location": spec.Image.URL, "digest": spec.Image.Digest, "arch": arch}},
 		"cpus":   spec.CPUs, "memory": fmt.Sprintf("%dMiB", spec.MemoryMiB), "disk": fmt.Sprintf("%dGiB", rootGiB),
 		"mounts": []any{}, "containerd": map[string]bool{"system": false, "user": false},

@@ -343,7 +343,7 @@ func TestLimaRealVM(t *testing.T) {
 	})
 	waiter := sdk.NewInstanceRunningWaiter(c)
 	if err = waiter.Wait(ctx, &sdk.DescribeInstancesInput{InstanceIds: []string{id}}, 12*time.Minute); err != nil {
-		t.Fatal(err)
+		t.Fatalf("%v: %s", err, stateReason(ctx, c, id))
 	}
 
 	// limactl shell is used only inside this explicit opt-in test.

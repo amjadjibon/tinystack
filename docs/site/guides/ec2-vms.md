@@ -88,9 +88,11 @@ ec2:
       ami-<catalogue-id>:
         url: https://example.com/compatible-linux-cloud-image.qcow2
         digest: sha256:<64-hex-digits>
+        disk_gib: 25 # the image's virtual disk size, when larger than the 8 GiB root volume
 ```
 
-Overrides retain the catalogue architecture and login user; arbitrary unknown AMI IDs remain unsupported.
+The guest root disk is the larger of the 8 GiB root volume and `disk_gib`, so an image is never shrunk
+(Lima refuses to); the pinned AL2023 images are 25 GiB. Overrides retain the catalogue architecture and login user; arbitrary unknown AMI IDs remain unsupported.
 
 ## Tests
 

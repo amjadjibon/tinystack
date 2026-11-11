@@ -7,10 +7,12 @@ import (
 	"strings"
 )
 
-// VMImage pins a cloud image; the AMI supplies its architecture and login user.
+// VMImage pins a cloud image; the AMI supplies its architecture and login user. DiskGiB is the image's virtual
+// disk size, which the guest root disk never goes below: Lima refuses to shrink an image to the EC2 volume size.
 type VMImage struct {
-	URL    string `yaml:"url"`
-	Digest string `yaml:"digest"`
+	URL     string `yaml:"url"`
+	Digest  string `yaml:"digest"`
+	DiskGiB int    `yaml:"disk_gib"`
 }
 
 type VMConfig struct {
@@ -64,6 +66,10 @@ func (c *EC2Config) Validate() error {
 		validDigest := (algorithm == "sha256" && len(raw) == 32) || (algorithm == "sha512" && len(raw) == 64)
 		if err != nil || !validDigest {
 			return fmt.Errorf("ec2.vm.images.%s requires a sha256 or sha512 digest", id)
+		}
+
+		if image.DiskGiB < 0 {
+			return fmt.Errorf("ec2.vm.images.%s.disk_gib must not be negative", id)
 		}
 	}
 

@@ -27,12 +27,12 @@ const (
 // VMSpec contains only driver-independent launch configuration.
 type VMSpec struct {
 	Name      string
-	Image     config.VMImage
 	Arch      string
 	User      string
 	PublicKey string
 	UserData  string
 	Region    string
+	Image     config.VMImage
 	Port      int
 	CPUs      int
 	MemoryMiB int
@@ -480,7 +480,7 @@ func (s *Service) vmSpec(ctx context.Context, scope request.Scope, i *instance) 
 		Arch:      i.Arch,
 		User:      user,
 		PublicKey: publicKey,
-		RootGiB:   rootVolumeSize,
+		RootGiB:   max(rootVolumeSize, mapped.DiskGiB),
 		UserData:  string(data),
 		Region:    scope.Region,
 		Port:      i.VMPort,

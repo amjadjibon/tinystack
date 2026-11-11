@@ -68,7 +68,7 @@ func TestLimaYAML(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(cfg["mounts"].([]any)) != 0 || cfg["arch"] != "aarch64" || cfg["vmType"] != "default" {
+		if len(cfg["mounts"].([]any)) != 0 || cfg["arch"] != "aarch64" || cfg["vmType"] != nil {
 			t.Fatalf("unsafe config: %s", out)
 		}
 
