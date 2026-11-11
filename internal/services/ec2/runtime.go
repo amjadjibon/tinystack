@@ -54,7 +54,8 @@ func (s *Service) UseRuntime(rt Runtime, cfg config.LimaConfig, imds, gateway ht
 	}
 
 	s.runtime, s.runtimeConfig, s.owner = rt, cfg, "tinystack-ec2-"+owner[:16]+"-"
-	s.imds, s.gateway, s.listeners = imds, gateway, map[string]*http.Server{}
+	s.imds, s.gateway = imds, gateway
+	s.listeners, s.reconciling = map[string]*http.Server{}, map[string]bool{}
 	s.bg = background.New()
 	s.bg.Every(time.Second, s.visitVMs)
 	return nil
@@ -154,6 +155,8 @@ func (s *Service) validateVM(tx storage.ReadTx, l *launch, count int64, id strin
 // Each listener fixes the instance identity; request headers cannot select a different VM.
 // Lima's host.lima.internal gateway reaches host loopback without a host network change.
 func (s *Service) vmListener(ctx context.Context, i *instance) error {
+	s.vmMu.Lock()
+	defer s.vmMu.Unlock()
 	if s.listeners[i.ID] != nil {
 		return nil
 	}
@@ -185,9 +188,9 @@ func (s *Service) vmListener(ctx context.Context, i *instance) error {
 	return nil
 }
 
+// visitVMs deletes orphaned VMs and reconciles each instance in its own goroutine, so a slow boot or image
+// download never holds up other instances or a reset.
 func (s *Service) visitVMs(ctx context.Context) {
-	s.vmMu.Lock()
-	defer s.vmMu.Unlock()
 	var keys []string
 	known := map[string]bool{}
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
@@ -231,11 +234,26 @@ func (s *Service) visitVMs(ctx context.Context) {
 
 	cancel()
 	for _, key := range keys {
-		if ctx.Err() != nil {
-			return
+		s.vmMu.Lock()
+		busy := s.reconciling[key]
+		s.reconciling[key] = true
+		s.vmMu.Unlock()
+		if busy {
+			continue
 		}
 
-		s.reconcileVM(ctx, key)
+		started := s.bg.Go(func(ctx context.Context) {
+			defer func() {
+				s.vmMu.Lock()
+				delete(s.reconciling, key)
+				s.vmMu.Unlock()
+			}()
+
+			s.reconcileVM(ctx, key)
+		})
+		if !started {
+			return
+		}
 	}
 }
 
@@ -259,11 +277,11 @@ func (s *Service) reconcileVM(ctx context.Context, key string) {
 		return
 	}
 
-	action, changed := i.VMAction, i.Changed
+	action, changed, port := i.VMAction, i.Changed, i.VMPort
 	ioCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 	err = s.vmListener(ioCtx, i)
-	if err == nil {
+	if err == nil && i.VMPort != port {
 		err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 			current, found, readErr := storage.Read[instance](tx, scope.Key("ec2", kindInstance, i.ID))
 			if readErr != nil || !found {
@@ -275,8 +293,12 @@ func (s *Service) reconcileVM(ctx context.Context, key string) {
 		})
 	}
 
+	// A running guest with nothing to do only needs its listener, which a restart rebinds.
+	if err == nil && action == "" && i.State == stateRunning {
+		return
+	}
+
 	name := s.owner + i.ID
-	var port int
 	var ready bool
 	if err == nil && action != "" {
 		if action == vmStart && !i.VMCreated {
@@ -363,11 +385,13 @@ func (s *Service) reconcileVM(ctx context.Context, key string) {
 	}
 
 	if err != nil || action == vmDelete {
+		s.vmMu.Lock()
 		if server := s.listeners[i.ID]; server != nil {
 			_ = server.Close()
 		}
 
 		delete(s.listeners, i.ID)
+		s.vmMu.Unlock()
 	}
 }
 

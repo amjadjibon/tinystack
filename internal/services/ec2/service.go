@@ -20,17 +20,20 @@ import (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	store         storage.Store
-	runtime       Runtime
-	imds          http.Handler
-	gateway       http.Handler
-	now           func() time.Time
-	profiles      InstanceProfiles
-	bg            *background.Group
-	listeners     map[string]*http.Server
+	store     storage.Store
+	runtime   Runtime
+	imds      http.Handler
+	gateway   http.Handler
+	now       func() time.Time
+	profiles  InstanceProfiles
+	bg        *background.Group
+	listeners map[string]*http.Server
+	// reconciling holds the instance index keys whose VM work is in flight.
+	reconciling   map[string]bool
 	owner         string
 	runtimeConfig config.LimaConfig
-	vmMu          sync.Mutex
+	// vmMu guards listeners and reconciling; VM commands run without it.
+	vmMu sync.Mutex
 }
 
 func New(store storage.Store) *Service {

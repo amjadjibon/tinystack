@@ -130,13 +130,13 @@ func TestVMReconciliationRecoveryAndDeadline(t *testing.T) {
 		return current
 	}
 
-	s.visitVMs(ctx)
+	settle(t, s, ctx)
 	if read().State != statePending {
 		t.Fatal("published running before SSH readiness")
 	}
 
 	rt.ready.Store(true)
-	s.visitVMs(ctx)
+	settle(t, s, ctx)
 	first := read()
 	if first.State != stateRunning || first.VMPort == 0 {
 		t.Fatalf("running: %+v", first)
@@ -146,8 +146,8 @@ func TestVMReconciliationRecoveryAndDeadline(t *testing.T) {
 		t.Fatal(stopErr)
 	}
 
-	s.visitVMs(ctx)
-	s.visitVMs(ctx)
+	settle(t, s, ctx)
+	settle(t, s, ctx)
 	if read().State != stateStopped {
 		t.Fatal("reconciliation restarted a stopped VM")
 	}
@@ -156,7 +156,7 @@ func TestVMReconciliationRecoveryAndDeadline(t *testing.T) {
 		t.Fatal(startErr)
 	}
 
-	s.visitVMs(ctx)
+	settle(t, s, ctx)
 	s.Stop()
 	recovered := New(store)
 	if useErr := recovered.UseRuntime(rt, cfg, http.NotFoundHandler(), http.NotFoundHandler()); useErr != nil {
@@ -164,7 +164,7 @@ func TestVMReconciliationRecoveryAndDeadline(t *testing.T) {
 	}
 
 	t.Cleanup(recovered.Stop)
-	recovered.visitVMs(ctx)
+	settle(t, recovered, ctx)
 	if current := read(); current.State != stateRunning || current.VMPort != first.VMPort {
 		t.Fatalf("recovery changed endpoint or state: %+v", current)
 	}
@@ -183,8 +183,29 @@ func TestVMReconciliationRecoveryAndDeadline(t *testing.T) {
 		t.Fatal(updateErr)
 	}
 
-	recovered.visitVMs(ctx)
+	settle(t, recovered, ctx)
 	if current := read(); current.State != stateTerminated || current.VMError == "" {
 		t.Fatalf("boot deadline: %+v", current)
+	}
+}
+
+// settle runs one reconciliation pass and waits for its per-instance work to finish.
+func settle(t *testing.T, s *Service, ctx context.Context) {
+	t.Helper()
+	s.visitVMs(ctx)
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		s.vmMu.Lock()
+		idle := len(s.reconciling) == 0
+		s.vmMu.Unlock()
+		if idle {
+			return
+		}
+
+		if time.Now().After(deadline) {
+			t.Fatal("VM reconciliation did not settle")
+		}
+
+		time.Sleep(5 * time.Millisecond)
 	}
 }
