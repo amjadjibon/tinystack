@@ -82,7 +82,7 @@ func TestEC2LimaLifecycleIMDS(t *testing.T) {
 	}
 
 	cfg := testConfig()
-	cfg.EC2.Runtime, cfg.EC2.Lima.Command, cfg.EC2.Lima.MaxVMs = "lima", command, 1
+	cfg.EC2.Runtime, cfg.EC2.Lima.Command, cfg.EC2.VM.MaxVMs = "lima", command, 1
 	s := serverConfig(t, cfg, &fakeRuntime{})
 	c := ec2Client(s, "test", "us-east-1")
 	ctx := context.Background()
@@ -145,7 +145,7 @@ func TestEC2LimaLifecycleIMDS(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	match := regexp.MustCompile(`host:(\d+)`).FindSubmatch(data)
+	match := regexp.MustCompile(`192\.168\.5\.2:(\d+)`).FindSubmatch(data)
 	if len(match) != 2 {
 		t.Fatalf("no IMDS listener in %s", data)
 	}

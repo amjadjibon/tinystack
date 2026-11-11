@@ -209,6 +209,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/ec2"
 	ec2lima "github.com/amjadjibon/tinystack/internal/services/ec2/lima"
+	ec2qemu "github.com/amjadjibon/tinystack/internal/services/ec2/qemu"
 	"github.com/amjadjibon/tinystack/internal/services/ecr"
 	"github.com/amjadjibon/tinystack/internal/services/ecs"
 	ecsdocker "github.com/amjadjibon/tinystack/internal/services/ecs/docker"
@@ -1101,10 +1102,18 @@ func build(
 		metadata.WithDefaultInstanceID(cfg.Metadata.IMDS.DefaultInstanceID),
 		metadata.WithVerifyIdentity(cfg.Identity.Mode == config.IdentityVerify),
 	)
-	if cfg.EC2.Runtime == "lima" {
+	var vmRuntime ec2.Runtime
+	switch cfg.EC2.Runtime {
+	case "lima":
+		vmRuntime = ec2lima.New(cfg.EC2.Lima.Command)
+	case "qemu":
+		vmRuntime = ec2qemu.New(&cfg.EC2.QEMU)
+	}
+
+	if vmRuntime != nil {
 		if err = network.UseRuntime(
-			ec2lima.New(cfg.EC2.Lima.Command),
-			cfg.EC2.Lima,
+			vmRuntime,
+			cfg.EC2.VM,
 			metaService.IMDSHandler(),
 			handler,
 		); err != nil {

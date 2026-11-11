@@ -31,7 +31,7 @@ type Service struct {
 	// reconciling holds the instance index keys whose VM work is in flight.
 	reconciling   map[string]bool
 	owner         string
-	runtimeConfig config.LimaConfig
+	runtimeConfig config.VMConfig
 	// vmMu guards listeners and reconciling; VM commands run without it.
 	vmMu sync.Mutex
 }

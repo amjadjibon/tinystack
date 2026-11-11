@@ -2,6 +2,9 @@ package ec2
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"sync/atomic"
@@ -99,7 +102,7 @@ func TestVMReconciliationRecoveryAndDeadline(t *testing.T) {
 	store := memory.New(nil, nil)
 	s := New(store)
 	rt := &vmTestRuntime{}
-	cfg := config.Default().EC2.Lima
+	cfg := config.Default().EC2.VM
 	if err := s.UseRuntime(rt, cfg, http.NotFoundHandler(), http.NotFoundHandler()); err != nil {
 		t.Fatal(err)
 	}
@@ -207,5 +210,80 @@ func settle(t *testing.T, s *Service, ctx context.Context) {
 		}
 
 		time.Sleep(5 * time.Millisecond)
+	}
+}
+
+func TestNoCloudInstanceIsolation(t *testing.T) {
+	s := New(memory.New(nil, nil))
+	if err := s.UseRuntime(
+		&vmTestRuntime{},
+		config.Default().EC2.VM,
+		http.NotFoundHandler(),
+		http.NotFoundHandler(),
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(s.Stop)
+	scope := request.Scope{AccountID: "000000000000", Region: "us-east-1"}
+	ctx := request.WithMetadata(context.Background(), request.Metadata{Scope: scope})
+	ids := []string{}
+	for _, script := range []string{"first-secret", "second-secret"} {
+		out, err := s.RunInstances(ctx, &api.RunInstancesRequest{
+			ImageId:      new(imageID(scope.Region, &images[0])),
+			InstanceType: new("t3.micro"), MinCount: new(int64(1)), MaxCount: new(int64(1)),
+			UserData: new(base64.StdEncoding.EncodeToString([]byte("#!/bin/sh\necho " + script))),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		ids = append(ids, *out.Instances[0].InstanceId)
+	}
+
+	settle(t, s, ctx)
+	for n, id := range ids {
+		var current *instance
+		if err := s.store.View(ctx, func(tx storage.ReadTx) error {
+			var err error
+			current, _, err = storage.Read[instance](tx, scope.Key("ec2", kindInstance, id))
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+
+		for _, path := range []string{"meta-data", "user-data", "vendor-data"} {
+			req, err := http.NewRequestWithContext(
+				ctx,
+				http.MethodGet,
+				fmt.Sprintf("http://127.0.0.1:%d/%s", current.VMPort, path),
+				http.NoBody,
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			req.Header.Set("X-TinyStack-Instance-Id", ids[1-n])
+			response, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			data, _ := io.ReadAll(response.Body)
+			response.Body.Close()
+			if response.StatusCode != http.StatusOK {
+				t.Fatalf("%s: %s", path, response.Status)
+			}
+
+			if path == "meta-data" &&
+				(!strings.Contains(string(data), id) || strings.Contains(string(data), ids[1-n])) {
+				t.Fatalf("identity leaked: %s", data)
+			}
+
+			if path == "user-data" &&
+				(!strings.HasPrefix(string(data), "#cloud-config") || !strings.Contains(string(data), "10.0.2.2")) {
+				t.Fatalf("invalid cloud-init: %s", data)
+			}
+		}
 	}
 }

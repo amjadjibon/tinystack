@@ -396,7 +396,12 @@ func Default() Config {
 	c.BedrockAgentCore.Runtimes = RuntimesRecords
 	c.Transfer.Servers = "records"
 	c.Kafka.Clusters = ContainersRecords
-	c.EC2 = EC2Config{Runtime: InstancesRecords, Lima: LimaConfig{Command: "limactl", MaxVMs: 2, MaxMemoryMiB: 4096}}
+	c.EC2 = EC2Config{
+		Runtime: InstancesRecords, VM: VMConfig{MaxVMs: 2, MaxMemoryMiB: 4096}, Lima: LimaConfig{Command: "limactl"},
+		QEMU: QEMUConfig{ImgCommand: "qemu-img", SystemCommand: map[string]string{
+			"arm64": "qemu-system-aarch64", "x86_64": "qemu-system-x86_64",
+		}},
+	}
 	c.RDS.Instances = InstancesRecords
 	c.Init.Dir = DefaultInitDir
 	c.Init.LocalStackDir = DefaultLocalStackInitDir

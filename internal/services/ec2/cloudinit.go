@@ -45,20 +45,13 @@ func validateVMUserData(data string) error {
 	return nil
 }
 
-// LimaConfig generates YAML with no host mounts, container runtime or implicit port forwards.
-// Lima's boot provision is cloud-init bootcmd, repeated on every boot.
-// Gateway/loopback mapping: https://lima-vm.io/docs/config/network/user/
-func LimaConfig(spec *VMSpec) ([]byte, error) {
+// GuestSetup generates driver-independent provisioning with a driver-selected host gateway.
+func GuestSetup(spec *VMSpec, host, address string) (boot, setup string, err error) {
 	if err := validateVMUserData(spec.UserData); err != nil {
-		return nil, err
+		return "", "", err
 	}
 
-	arch := spec.Arch
-	if arch == archARM {
-		arch = "aarch64"
-	}
-
-	endpoint := fmt.Sprintf("http://host.lima.internal:%d", spec.Port)
+	endpoint := fmt.Sprintf("http://%s:%d", host, spec.Port)
 	env := fmt.Sprintf(
 		"AWS_ENDPOINT_URL=%s\nAWS_DEFAULT_REGION=%s\nAWS_REGION=%s\n",
 		endpoint,
@@ -66,13 +59,27 @@ func LimaConfig(spec *VMSpec) ([]byte, error) {
 		spec.Region,
 	)
 	// The NAT rule affects only the guest. Lima maps its host gateway to host loopback.
-	boot := fmt.Sprintf(`set -eu
-command -v iptables >/dev/null 2>&1 || exit 0
-host=192.168.5.2
-iptables -t nat -C OUTPUT -d 169.254.169.254/32 -p tcp --dport 80 -j DNAT --to-destination "$host:%d" 2>/dev/null ||
-iptables -t nat -A OUTPUT -d 169.254.169.254/32 -p tcp --dport 80 -j DNAT --to-destination "$host:%d"
-`, spec.Port, spec.Port)
-	setup := "#!/bin/sh\nset -eu\n" +
+	boot = fmt.Sprintf(`set -eu
+if command -v nft >/dev/null 2>&1; then
+ nft list table ip tinystack >/dev/null 2>&1 && nft delete table ip tinystack
+ nft -f - <<'NFT'
+table ip tinystack {
+ chain output {
+  type nat hook output priority -100; policy accept;
+  ip daddr 169.254.169.254 tcp dport 80 dnat to %s:%d
+ }
+}
+
+NFT
+elif command -v iptables >/dev/null 2>&1; then
+ iptables -t nat -C OUTPUT -d 169.254.169.254/32 -p tcp --dport 80 -j DNAT --to-destination %s:%d 2>/dev/null ||
+ iptables -t nat -A OUTPUT -d 169.254.169.254/32 -p tcp --dport 80 -j DNAT --to-destination %s:%d
+else
+ echo 'TinyStack IMDS requires nftables or iptables' >&2
+ exit 1
+fi
+`, address, spec.Port, address, spec.Port, address, spec.Port)
+	setup = "#!/bin/sh\nset -eu\n" +
 		"printf '%s' '" + base64.StdEncoding.EncodeToString([]byte(env)) + "' | base64 -d > /etc/tinystack.env\n" +
 		"sed -i '/^AWS_ENDPOINT_URL=/d; /^AWS_DEFAULT_REGION=/d; /^AWS_REGION=/d' /etc/environment\n" +
 		"cat /etc/tinystack.env >> /etc/environment\nset -a\n. /etc/tinystack.env\nset +a\n"
@@ -85,13 +92,14 @@ iptables -t nat -A OUTPUT -d 169.254.169.254/32 -p tcp --dport 80 -j DNAT --to-d
 				spec.User, spec.User, spec.User)
 	}
 
-	setup += `command -v iptables >/dev/null 2>&1 || {
+	setup += `command -v nft >/dev/null 2>&1 || command -v iptables >/dev/null 2>&1 || {
  if command -v apt-get >/dev/null; then
- apt-get update && apt-get install -y iptables
+ apt-get update && apt-get install -y nftables
  else
- dnf install -y iptables-nft
+ dnf install -y nftables
  fi
 }
+
 ` + boot
 	setup += "[ ! -e /var/lib/tinystack-user-data.done ] || exit 0\n"
 	if spec.UserData != "" {
@@ -123,10 +131,44 @@ iptables -t nat -A OUTPUT -d 169.254.169.254/32 -p tcp --dport 80 -j DNAT --to-d
 	}
 
 	setup += "touch /var/lib/tinystack-user-data.done\n"
+	return boot, setup, nil
+}
+
+// NoCloud delivers the shared setup through cloud-init, without an ISO.
+func NoCloud(spec *VMSpec) ([]byte, error) {
+	boot, setup, err := GuestSetup(spec, "10.0.2.2", "10.0.2.2")
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := yaml.Marshal(map[string]any{
+		"bootcmd": []any{[]string{"sh", "-c", boot}},
+		"runcmd":  []any{[]string{"sh", "-c", setup}},
+	})
+	return append([]byte("#cloud-config\n"), data...), err
+}
+
+// LimaConfig generates YAML without host mounts or implicit port forwards.
+func LimaConfig(spec *VMSpec) ([]byte, error) {
+	boot, setup, err := GuestSetup(spec, "host.lima.internal", "192.168.5.2")
+	if err != nil {
+		return nil, err
+	}
+
+	arch := spec.Arch
+	if arch == archARM {
+		arch = "aarch64"
+	}
+
+	rootGiB := spec.RootGiB
+	if rootGiB == 0 {
+		rootGiB = rootVolumeSize
+	}
+
 	return yaml.Marshal(map[string]any{
 		"vmType": tenancyDefault, "arch": arch,
 		"images": []any{map[string]any{"location": spec.Image.URL, "digest": spec.Image.Digest, "arch": arch}},
-		"cpus":   spec.CPUs, "memory": fmt.Sprintf("%dMiB", spec.MemoryMiB), "disk": "20GiB",
+		"cpus":   spec.CPUs, "memory": fmt.Sprintf("%dMiB", spec.MemoryMiB), "disk": fmt.Sprintf("%dGiB", rootGiB),
 		"mounts": []any{}, "containerd": map[string]bool{"system": false, "user": false},
 		"ssh":          map[string]any{"localPort": 0, "loadDotSSHPubKeys": false},
 		"portForwards": []any{map[string]any{"guestPortRange": []int{1, 65535}, "ignore": true}},

@@ -36,6 +36,7 @@ type VMSpec struct {
 	Port      int
 	CPUs      int
 	MemoryMiB int
+	RootGiB   int
 }
 
 // Runtime performs all VM I/O outside storage transactions. Implementations must
@@ -47,7 +48,7 @@ type Runtime interface {
 	Ready(context.Context, string) (int, bool, error)
 }
 
-func (s *Service) UseRuntime(rt Runtime, cfg config.LimaConfig, imds, gateway http.Handler) error {
+func (s *Service) UseRuntime(rt Runtime, cfg config.VMConfig, imds, gateway http.Handler) error {
 	owner, err := dockercli.RuntimeOwner(context.Background(), s.store, "aws/ec2/runtime-owner")
 	if err != nil {
 		return err
@@ -119,7 +120,7 @@ func (s *Service) validateVM(tx storage.ReadTx, l *launch, count int64, id strin
 	}
 
 	if memory > s.runtimeConfig.MaxMemoryMiB {
-		return awserror.New("InsufficientInstanceCapacity", "instance exceeds ec2.lima.max_memory_mib")
+		return awserror.New("InsufficientInstanceCapacity", "instance exceeds ec2.vm.max_memory_mib")
 	}
 
 	active := 0
@@ -145,7 +146,7 @@ func (s *Service) validateVM(tx storage.ReadTx, l *launch, count int64, id strin
 	}
 
 	if int64(active)+count > int64(s.runtimeConfig.MaxVMs) {
-		return awserror.New("InsufficientInstanceCapacity", "ec2.lima.max_vms exhausted (stopped VMs reserve capacity)")
+		return awserror.New("InsufficientInstanceCapacity", "ec2.vm.max_vms exhausted (stopped VMs reserve capacity)")
 	}
 
 	data, _ := base64.StdEncoding.DecodeString(l.userData)
@@ -161,6 +162,25 @@ func (s *Service) vmListener(ctx context.Context, i *instance) error {
 		return nil
 	}
 
+	var scope *request.Scope
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+		var readErr error
+		scope, _, readErr = storage.Read[request.Scope](tx, "aws/ec2/instances/"+i.ID)
+		return readErr
+	})
+	if err != nil {
+		return err
+	}
+
+	if scope == nil {
+		return fmt.Errorf("missing VM scope for %s", i.ID)
+	}
+
+	spec, err := s.vmSpec(ctx, *scope, i)
+	if err != nil {
+		return err
+	}
+
 	listener, err := (&net.ListenConfig{}).Listen(ctx, "tcp", net.JoinHostPort("127.0.0.1",
 		strconv.Itoa(i.VMPort)))
 	if err != nil {
@@ -168,9 +188,36 @@ func (s *Service) vmListener(ctx context.Context, i *instance) error {
 	}
 
 	i.VMPort = listener.Addr().(*net.TCPAddr).Port
+	spec.Port = i.VMPort
+	userData, err := NoCloud(&spec)
+	if err != nil {
+		_ = listener.Close()
+		return err
+	}
+
 	server := &http.Server{ReadHeaderTimeout: 5 * time.Second, Handler: http.HandlerFunc(func(w http.ResponseWriter,
 		r *http.Request,
 	) {
+		switch r.URL.Path {
+		case "/meta-data", "/user-data", "/vendor-data":
+			if r.Method != http.MethodGet {
+				w.WriteHeader(http.StatusMethodNotAllowed)
+				return
+			}
+
+			w.Header().Set("Content-Type", "text/plain")
+			switch r.URL.Path {
+			case "/meta-data":
+				_, _ = fmt.Fprintf(w, "instance-id: %s\nlocal-hostname: %s\n", i.ID, i.ID)
+			case "/user-data":
+				_, _ = w.Write(userData)
+			case "/vendor-data":
+				w.WriteHeader(http.StatusOK)
+			}
+
+			return
+		}
+
 		if strings.HasPrefix(r.URL.Path, "/latest/") {
 			r.Header.Set("X-TinyStack-Instance-Id", i.ID)
 			s.imds.ServeHTTP(w, r)
@@ -428,7 +475,16 @@ func (s *Service) vmSpec(ctx context.Context, scope request.Scope, i *instance) 
 	})
 	data, _ := base64.StdEncoding.DecodeString(i.UserData)
 	return VMSpec{
-		Name: s.owner + i.ID, Image: mapped, Arch: i.Arch, User: user, PublicKey: publicKey,
-		UserData: string(data), Region: scope.Region, Port: i.VMPort, CPUs: cpus, MemoryMiB: memory,
+		Name:      s.owner + i.ID,
+		Image:     mapped,
+		Arch:      i.Arch,
+		User:      user,
+		PublicKey: publicKey,
+		RootGiB:   rootVolumeSize,
+		UserData:  string(data),
+		Region:    scope.Region,
+		Port:      i.VMPort,
+		CPUs:      cpus,
+		MemoryMiB: memory,
 	}, err
 }
