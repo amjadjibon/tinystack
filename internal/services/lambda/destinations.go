@@ -484,7 +484,7 @@ func (s *Service) sendResult(
 
 	body, err := json.Marshal(record)
 	if err == nil {
-		err = s.deliver(ctx, destination, arn, r.condition, body, nil)
+		err = s.deliver(ctx, destination, arn, r.condition, body, nil, "")
 	}
 
 	s.deliveries.Add(delivery.ViaLambdaDestination, arn, destination, body, err)
@@ -502,6 +502,7 @@ func (s *Service) deliver(
 	destination, arn, condition string,
 	body []byte,
 	attributes map[string]any,
+	key string,
 ) error {
 	service, _ := destinationService(destination)
 	source := strings.Split(arn, ":")
@@ -565,7 +566,7 @@ func (s *Service) deliver(
 	case "s3":
 		_, err = call(&catalog.DeliveryRole{Service: "s3", Operation: "PutObject", Params: map[string]any{
 			"Bucket": parts[5],
-			"Key":    "aws/lambda/" + name + "/" + time.Now().UTC().Format("2006/01/02/") + uuid.NewV4().String(),
+			"Key":    key,
 			"Body":   base64.StdEncoding.EncodeToString(body),
 		}})
 	case serviceSNS:

@@ -54,7 +54,7 @@ func (s *Service) sendDeadLetter(ctx context.Context, scope request.Scope, name,
 	}
 
 	if err == nil {
-		err = s.deliver(ctx, target, arn, r.condition, payload, deadLetterAttributes(id, r))
+		err = s.deliver(ctx, target, arn, r.condition, payload, deadLetterAttributes(id, r), "")
 	}
 
 	s.deliveries.Add(delivery.ViaLambdaDeadLetter, arn, target, payload, err)

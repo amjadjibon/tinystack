@@ -413,6 +413,8 @@ func (s *Service) streamBatchInfo(ctx context.Context, mp *mapping, records []st
 		StreamArn:                       mp.EventSourceArn, BatchSize: len(records),
 	}
 
+	info.payload, _ = recordsEvent(records)
+
 	described, err := s.streams.DescribeStream(ctx, &streamsapi.DescribeStreamInput{StreamArn: &mp.EventSourceArn})
 	if err == nil && len(described.StreamDescription.Shards) > 0 {
 		info.ShardID = common.Value(described.StreamDescription.Shards[0].ShardId)

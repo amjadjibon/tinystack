@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -24,6 +26,11 @@ func validKafkaDestination(destination string) bool {
 		return true
 	}
 
+	return validS3Destination(destination)
+}
+
+// validS3Destination reports whether destination is an S3 bucket ARN, which stream and Kafka mappings accept.
+func validS3Destination(destination string) bool {
 	parts := strings.SplitN(destination, ":", 6)
 	return len(parts) == 6 && strings.HasPrefix(destination, "arn:") && strings.HasPrefix(parts[1], "aws") &&
 		parts[2] == "s3" && parts[3] == "" && parts[4] == "" && parts[5] != "" && !strings.Contains(parts[5], "/")
@@ -120,6 +127,11 @@ type kafkaBatchInfo struct {
 	BatchSize        int `json:"batchSize"`
 	PayloadSize      int `json:"payloadSize"`
 }
+
+// shard is the first topic partition of the batch, which names its S3 failure record.
+func (b *kafkaBatchInfo) shard() string { return slices.Min(slices.Collect(maps.Keys(b.RecordsInfo))) }
+
+func (b *kafkaBatchInfo) event() []byte { return b.payload }
 
 type kafkaPartitionInfo struct {
 	FirstRecordOffset    string `json:"firstRecordOffset"`

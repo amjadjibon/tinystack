@@ -247,7 +247,7 @@ func (s *Service) pollShard(
 			conditionRecordAge,
 			fieldKinesisBatchInfo,
 			0,
-			new(kinesisBatchInfo(mp, sh.ID, records[:old])),
+			new(kinesisBatchInfo(mp, sh.ID, records[:old], all[:old])),
 		)
 		failures[sh.ID], mp.Cursors[sh.ID] = 0, records[old-1].SequenceNumber
 		s.recordCursors(ctx, scope, mp.UUID, mp.Cursors, "")
@@ -285,7 +285,7 @@ func (s *Service) pollShard(
 		}
 
 		s.discard(ctx, scope, mp, conditionStreamRetries, fieldKinesisBatchInfo, int(failures[sh.ID]),
-			new(kinesisBatchInfo(mp, sh.ID, records[processed:])))
+			new(kinesisBatchInfo(mp, sh.ID, records[processed:], all[processed:])))
 	}
 
 	failures[sh.ID], sizes[sh.ID] = 0, 0
@@ -387,9 +387,11 @@ func oldKinesisRecords(records []kinesis.Record, mp *mapping, now time.Time) int
 }
 
 // kinesisBatchInfo describes records of a Kinesis mapping's batch.
-func kinesisBatchInfo(mp *mapping, shardID string, records []kinesis.Record) batchInfo {
+func kinesisBatchInfo(mp *mapping, shardID string, records []kinesis.Record, events []kinesisRecord) batchInfo {
 	first, last := &records[0], &records[len(records)-1]
+	payload, _ := recordsEvent(events)
 	return batchInfo{
+		payload: payload,
 		ShardID: shardID, StartSequenceNumber: first.SequenceNumber, EndSequenceNumber: last.SequenceNumber,
 		ApproximateArrivalOfFirstRecord: arrivalText(first.Arrival),
 		ApproximateArrivalOfLastRecord:  arrivalText(last.Arrival), StreamArn: mp.EventSourceArn,
