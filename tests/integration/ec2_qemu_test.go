@@ -10,7 +10,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -167,64 +166,4 @@ func TestEC2QEMULifecycle(t *testing.T) {
 	if _, err := os.Stat(foreign); err != nil {
 		t.Fatal("foreign VM removed", err)
 	}
-}
-
-// TestQEMURealVM is never part of ordinary tests: it downloads and boots a real guest.
-func TestQEMURealVM(t *testing.T) {
-	if os.Getenv("TINYSTACK_VM_TESTS") != "1" {
-		t.Skip("set TINYSTACK_VM_TESTS=1 to create a real QEMU VM")
-	}
-
-	cfg := testConfig()
-	cfg.EC2.Runtime = "qemu"
-	s := serverConfig(t, cfg, &fakeRuntime{})
-	c := ec2Client(s, "test", "us-east-1")
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
-	defer cancel()
-	arch, typ := "x86_64", types.InstanceTypeT3Micro
-	if runtime.GOARCH == "arm64" {
-		arch, typ = "arm64", types.InstanceTypeT4gMicro
-	}
-
-	images, err := c.DescribeImages(ctx, &sdk.DescribeImagesInput{Filters: []types.Filter{
-		{Name: new("name"), Values: []string{"al2023-*"}}, {Name: new("architecture"), Values: []string{arch}},
-	}})
-	if err != nil || len(images.Images) == 0 {
-		t.Fatalf("images: %v %v", images, err)
-	}
-
-	out, err := c.RunInstances(ctx, &sdk.RunInstancesInput{
-		ImageId: images.Images[0].ImageId, InstanceType: typ,
-		MinCount: new(int32(1)), MaxCount: new(int32(1)),
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	ids := []string{aws.ToString(out.Instances[0].InstanceId)}
-	t.Cleanup(func() {
-		cleanup, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-		defer cancel()
-		_, _ = c.TerminateInstances(cleanup, &sdk.TerminateInstancesInput{InstanceIds: ids})
-		_ = sdk.NewInstanceTerminatedWaiter(c).Wait(cleanup, &sdk.DescribeInstancesInput{InstanceIds: ids}, time.Minute)
-	})
-	if err := sdk.NewInstanceRunningWaiter(c).
-		Wait(ctx, &sdk.DescribeInstancesInput{InstanceIds: ids}, 12*time.Minute); err != nil {
-		t.Fatalf("%v: %s", err, stateReason(ctx, c, ids[0]))
-	}
-}
-
-// stateReason returns the instance's state reason, which carries the VM runtime error.
-func stateReason(ctx context.Context, c *sdk.Client, id string) string {
-	out, err := c.DescribeInstances(ctx, &sdk.DescribeInstancesInput{InstanceIds: []string{id}})
-	if err != nil || len(out.Reservations) == 0 || len(out.Reservations[0].Instances) == 0 {
-		return fmt.Sprint(err)
-	}
-
-	reason := out.Reservations[0].Instances[0].StateReason
-	if reason == nil {
-		return "no state reason"
-	}
-
-	return aws.ToString(reason.Message)
 }

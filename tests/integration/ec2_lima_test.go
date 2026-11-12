@@ -2,15 +2,12 @@ package integration_test
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -277,107 +274,6 @@ func waitVMCommand(t *testing.T, dir, command string, counts ...int) {
 		case <-deadline.C:
 			t.Fatalf("missing %s: %s", command, data)
 		case <-ticker.C:
-		}
-	}
-}
-
-// TestLimaRealVM is deliberately opt-in: it downloads a cloud image and creates a VM.
-func TestLimaRealVM(t *testing.T) {
-	if os.Getenv("TINYSTACK_VM_TESTS") != "1" {
-		t.Skip("set TINYSTACK_VM_TESTS=1 to boot a real Lima VM")
-	}
-
-	cfg := testConfig()
-	cfg.EC2.Runtime = "lima"
-	s := serverConfig(t, cfg, &fakeRuntime{})
-	c := ec2Client(s, "test", "us-east-1")
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
-	defer cancel()
-	arch, typ := "x86_64", types.InstanceTypeT3Micro
-	if runtime.GOARCH == "arm64" {
-		arch, typ = "arm64", types.InstanceTypeT4gMicro
-	}
-
-	images, err := c.DescribeImages(ctx, &sdk.DescribeImagesInput{Filters: []types.Filter{
-		{Name: new("name"), Values: []string{"al2023-*"}}, {Name: new("architecture"), Values: []string{arch}},
-	}})
-	if err != nil || len(images.Images) == 0 {
-		t.Fatalf("images: %v %v", images, err)
-	}
-
-	role := "real-vm-worker"
-	createServiceRole(t, s, "alias", role, "ec2.amazonaws.com")
-	ic := iamClient(s, "test", "us-east-1")
-	if _, err = ic.CreateInstanceProfile(
-		ctx,
-		&iam.CreateInstanceProfileInput{InstanceProfileName: new(role)},
-	); err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err = ic.AddRoleToInstanceProfile(
-		ctx,
-		&iam.AddRoleToInstanceProfileInput{InstanceProfileName: new(role), RoleName: new(role)},
-	); err != nil {
-		t.Fatal(err)
-	}
-
-	userData := "#!/bin/sh\necho userdata-ok > /var/lib/tinystack-user-test\n"
-	out, err := c.RunInstances(ctx, &sdk.RunInstancesInput{
-		ImageId: images.Images[0].ImageId, InstanceType: typ,
-		IamInstanceProfile: &types.IamInstanceProfileSpecification{Name: new(role)},
-		UserData:           new(base64.StdEncoding.EncodeToString([]byte(userData))),
-		MinCount:           new(int32(1)), MaxCount: new(int32(1)),
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	id := aws.ToString(out.Instances[0].InstanceId)
-	t.Cleanup(func() {
-		cleanupCtx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-		defer cancel()
-		_, _ = c.TerminateInstances(cleanupCtx, &sdk.TerminateInstancesInput{InstanceIds: []string{id}})
-		_ = sdk.NewInstanceTerminatedWaiter(c).
-			Wait(cleanupCtx, &sdk.DescribeInstancesInput{InstanceIds: []string{id}}, time.Minute)
-	})
-	waiter := sdk.NewInstanceRunningWaiter(c)
-	if err = waiter.Wait(ctx, &sdk.DescribeInstancesInput{InstanceIds: []string{id}}, 12*time.Minute); err != nil {
-		t.Fatalf("%v: %s", err, stateReason(ctx, c, id))
-	}
-
-	// limactl shell is used only inside this explicit opt-in test.
-	names, err := exec.CommandContext(ctx, "limactl", "list", "--json").Output()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	decoder := json.NewDecoder(strings.NewReader(string(names)))
-	for {
-		var machine struct {
-			Name string `json:"name"`
-		}
-
-		if err := decoder.Decode(&machine); err != nil {
-			t.Fatal(err)
-		}
-
-		if strings.HasSuffix(machine.Name, "-"+id) {
-			output, err := exec.CommandContext(
-				ctx,
-				"limactl",
-				"shell",
-				machine.Name,
-				"sh",
-				"-c",
-				"test $(cat /var/lib/tinystack-user-test) = userdata-ok && "+
-					"curl -fsS http://169.254.169.254/latest/meta-data/iam/security-credentials/real-vm-worker",
-			).CombinedOutput()
-			if err != nil || !strings.Contains(string(output), "AccessKeyId") {
-				t.Fatalf("guest IMDS: %s %v", output, err)
-			}
-
-			break
 		}
 	}
 }

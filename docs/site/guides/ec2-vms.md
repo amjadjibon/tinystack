@@ -96,12 +96,15 @@ The guest root disk is the larger of the 8 GiB root volume and `disk_gib`, so an
 
 ## Tests
 
-Ordinary tests use a fake `limactl` in a temporary directory and never create a VM.
-The explicit real-VM test downloads an image, creates a VM, runs user data, checks guest IMDS role
-credentials, and terminates it. Run only after installing Lima and accepting those resource effects:
+Ordinary tests use fake `limactl` and QEMU commands in a temporary directory and never create a VM.
+The explicit real-VM tests download the AL2023 and Ubuntu images for the host architecture, boot each guest in
+turn, SSH in through the `tinystack:ssh-endpoint` tag with an imported key pair, check that user data ran and that
+guest IMDS returns role credentials, and terminate it. Run them only after installing Lima or QEMU and accepting
+those resource effects:
 
 ```sh
-TINYSTACK_VM_TESTS=1 go test ./tests/integration -run '^TestLimaRealVM$' -timeout 20m
+TINYSTACK_VM_TESTS=1 go test ./tests/integration -run '^TestLimaRealVM$' -timeout 50m
+TINYSTACK_VM_TESTS=1 go test ./tests/integration -run '^TestQEMURealVM$' -timeout 50m
 ```
 
 ## Driver comparison
