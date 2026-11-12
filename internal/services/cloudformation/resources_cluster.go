@@ -21,6 +21,7 @@ const (
 	memberStorageEncrypted      = "StorageEncrypted"
 	memberVpcSecurityGroupIDs   = "VpcSecurityGroupIds"
 	memberClusterParameterGroup = "DBClusterParameterGroupName"
+	memberParameterGroup        = "DBParameterGroupName"
 )
 
 func init() {
@@ -57,6 +58,9 @@ func clusterProvider(engine string, isCluster bool) *resourceType {
 			replace = append(replace, memberMasterUsername)
 			mutable = append(mutable, memberMasterUserPassword)
 		}
+	} else if engine == clusterEngineNeptune {
+		properties = append(properties, memberParameterGroup)
+		mutable = append(mutable, memberParameterGroup)
 	}
 
 	return &resourceType{
@@ -91,7 +95,8 @@ func clusterProvider(engine string, isCluster bool) *resourceType {
 			}
 
 			params := pick(map[string]any{name: r.Physical, "ApplyImmediately": true}, p, mutable...)
-			if isCluster {
+			switch {
+			case isCluster:
 				// Removing optional mutable properties restores their create defaults. The caller takes JSON-like
 				// values, so numbers are float64.
 				defaults := map[string]any{
@@ -104,25 +109,22 @@ func clusterProvider(engine string, isCluster bool) *resourceType {
 				}
 
 				// Removing the group returns the cluster to its family's default group.
-				family := "docdb5.0"
-				if version := p.str(memberEngineVersion); engine == clusterEngineDocDB && version != "" {
-					family = "docdb" + version
-				} else if engine == clusterEngineNeptune {
-					family = "neptune1.3"
-					if strings.HasPrefix(version, "1.2.") {
-						family = "neptune1.2"
-					}
-				}
-
-				defaults[memberClusterParameterGroup] = "default." + family
-
+				defaults[memberClusterParameterGroup] = defaultGroup(engine, p.str(memberEngineVersion))
 				for key, value := range defaults {
 					if !p.has(key) {
 						params[key] = value
 					}
 				}
-			} else if !p.has(memberDBInstanceClass) {
+			case !p.has(memberDBInstanceClass):
 				return nil, errors.New("DBInstanceClass is required")
+			case engine == clusterEngineNeptune && !p.has(memberParameterGroup):
+				// Removing the group returns the member to its cluster family's default group.
+				group, err := neptuneDefaultGroup(ctx, c, p.str(memberDBClusterIdentifier))
+				if err != nil {
+					return nil, err
+				}
+
+				params[memberParameterGroup] = group
 			}
 
 			out, err := c.call(ctx, "rds", modifyOp, params)
@@ -245,4 +247,39 @@ func clusterRefreshMemberAttributes(st *stack, parent *resource) {
 			member.Attributes[memberPort] = parent.Attributes[memberPort]
 		}
 	}
+}
+
+// neptuneDefaultGroup names the default DB parameter group of a Neptune cluster's engine family.
+func neptuneDefaultGroup(ctx context.Context, c *client, id string) (string, error) {
+	out, err := c.call(ctx, "rds", "DescribeDBClusters", map[string]any{memberDBClusterIdentifier: id})
+	if err != nil {
+		return "", err
+	}
+
+	clusters, _ := out["DBClusters"].([]any)
+	if len(clusters) != 1 {
+		return "", errors.New("DB cluster " + id + " not found")
+	}
+
+	cluster, _ := clusters[0].(map[string]any)
+	version, _ := cluster[memberEngineVersion].(string)
+	return defaultGroup(clusterEngineNeptune, version), nil
+}
+
+// defaultGroup names the default parameter group of an engine version's family; an empty version is the engine
+// default (DocumentDB 5.0, Neptune 1.3.2.0).
+func defaultGroup(engine, version string) string {
+	if engine == clusterEngineNeptune {
+		if strings.HasPrefix(version, "1.2.") {
+			return "default.neptune1.2"
+		}
+
+		return "default.neptune1.3"
+	}
+
+	if version == "" {
+		version = "5.0"
+	}
+
+	return "default.docdb" + version
 }

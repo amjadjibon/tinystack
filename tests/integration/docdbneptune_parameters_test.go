@@ -11,6 +11,7 @@ import (
 	docdbtypes "github.com/aws/aws-sdk-go-v2/service/docdb/types"
 	"github.com/aws/aws-sdk-go-v2/service/neptune"
 	neptunetypes "github.com/aws/aws-sdk-go-v2/service/neptune/types"
+	"github.com/aws/aws-sdk-go-v2/service/rds"
 )
 
 func TestDocDBClusterParameters(t *testing.T) {
@@ -175,7 +176,12 @@ func TestDocDBNeptuneParameterCloudFormation(t *testing.T) {
  "DBClusterIdentifier":"documents","MasterUsername":"master","MasterUserPassword":"password123",
  "DBClusterParameterGroupName":{"Ref":"Documents"}}},
  "GraphCluster":{"Type":"AWS::Neptune::DBCluster","Properties":{
- "DBClusterIdentifier":"graph","DBClusterParameterGroupName":{"Ref":"Graph"}}}}}`
+ "DBClusterIdentifier":"graph","DBClusterParameterGroupName":{"Ref":"Graph"}}},
+ "MemberGroup":{"Type":"AWS::Neptune::DBParameterGroup","Properties":{
+ "Family":"neptune1.3","Description":"test","Parameters":{"neptune_result_cache":1}}},
+ "Member":{"Type":"AWS::Neptune::DBInstance","Properties":{
+ "DBInstanceIdentifier":"graph-writer","DBInstanceClass":"db.r5.large","DBClusterIdentifier":{"Ref":"GraphCluster"},
+ "DBParameterGroupName":{"Ref":"MemberGroup"}}}}}`
 	if _, err := c.CreateStack(ctx, &cfn.CreateStackInput{
 		StackName: new("cluster-parameters"), TemplateBody: new(template),
 	}); err != nil {
@@ -197,8 +203,25 @@ func TestDocDBNeptuneParameterCloudFormation(t *testing.T) {
 		t.Fatalf("parameters of %v: %+v %v", group, out, err)
 	}
 
-	// Removing the property returns the cluster to its family's default group.
+	members, err := n.DescribeDBInstances(ctx, &neptune.DescribeDBInstancesInput{
+		DBInstanceIdentifier: new("graph-writer"),
+	})
+	if err != nil || len(members.DBInstances[0].DBParameterGroups) != 1 {
+		t.Fatalf("members: %+v %v", members, err)
+	}
+
+	memberGroup := members.DBInstances[0].DBParameterGroups[0].DBParameterGroupName
+	values, err := n.DescribeDBParameters(ctx, &neptune.DescribeDBParametersInput{
+		DBParameterGroupName: memberGroup, Source: new("user"),
+	})
+	if err != nil || len(values.Parameters) != 1 || *values.Parameters[0].ParameterValue != "1" {
+		t.Fatalf("parameters of %v: %+v %v", memberGroup, values, err)
+	}
+
+	// Removing the properties returns the cluster and member to their family's default groups.
 	updated := strings.Replace(template, `,"DBClusterParameterGroupName":{"Ref":"Graph"}`, "", 1)
+	updated = strings.Replace(updated, `,
+ "DBParameterGroupName":{"Ref":"MemberGroup"}`, "", 1)
 	if _, err = c.UpdateStack(ctx, &cfn.UpdateStackInput{
 		StackName: new("cluster-parameters"), TemplateBody: new(updated),
 	}); err != nil {
@@ -210,4 +233,105 @@ func TestDocDBNeptuneParameterCloudFormation(t *testing.T) {
 	if err != nil || *clusters.DBClusters[0].DBClusterParameterGroup != "default.neptune1.3" {
 		t.Fatalf("clusters: %+v %v", clusters, err)
 	}
+
+	members, err = n.DescribeDBInstances(ctx, &neptune.DescribeDBInstancesInput{
+		DBInstanceIdentifier: new("graph-writer"),
+	})
+	if err != nil || *members.DBInstances[0].DBParameterGroups[0].DBParameterGroupName != "default.neptune1.3" {
+		t.Fatalf("members: %+v %v", members, err)
+	}
+}
+
+func TestNeptuneInstanceParameters(t *testing.T) {
+	s := server(t)
+	c := neptune.New(neptune.Options{Region: "us-east-1", BaseEndpoint: new(s.URL), Credentials: creds("test")})
+	ctx := context.Background()
+	for name, family := range map[string]string{"member": "neptune1.3", "older": "neptune1.2"} {
+		if _, err := c.CreateDBParameterGroup(ctx, &neptune.CreateDBParameterGroupInput{
+			DBParameterGroupName: new(name), DBParameterGroupFamily: new(family), Description: new("test"),
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	modify := func(name, value string, method neptunetypes.ApplyMethod) error {
+		_, err := c.ModifyDBParameterGroup(ctx, &neptune.ModifyDBParameterGroupInput{
+			DBParameterGroupName: new("member"),
+			Parameters: []neptunetypes.Parameter{
+				{ParameterName: new(name), ParameterValue: new(value), ApplyMethod: method},
+			},
+		})
+		return err
+	}
+
+	code(t, modify("neptune_query_timeout", "5000", neptunetypes.ApplyMethodImmediate), "InvalidParameterValue")
+	code(t, modify("neptune_dfe_query_engine", "always", neptunetypes.ApplyMethodPendingReboot),
+		"InvalidParameterValue")
+	code(t, modify("neptune_streams", "1", neptunetypes.ApplyMethodPendingReboot), "InvalidParameterValue")
+	if err := modify("neptune_result_cache", "1", neptunetypes.ApplyMethodPendingReboot); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := c.CreateDBCluster(ctx, &neptune.CreateDBClusterInput{
+		DBClusterIdentifier: new("graph"), Engine: new("neptune"),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	member := func(id string, group *string) (*neptunetypes.DBInstance, error) {
+		out, err := c.CreateDBInstance(ctx, &neptune.CreateDBInstanceInput{
+			DBInstanceIdentifier: new(id), DBInstanceClass: new("db.r5.large"), Engine: new("neptune"),
+			DBClusterIdentifier: new("graph"), DBParameterGroupName: group,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return out.DBInstance, nil
+	}
+
+	writer, err := member("writer", nil)
+	if err != nil || len(writer.DBParameterGroups) != 1 ||
+		*writer.DBParameterGroups[0].DBParameterGroupName != "default.neptune1.3" ||
+		*writer.DBParameterGroups[0].ParameterApplyStatus != "in-sync" {
+		t.Fatalf("writer: %+v %v", writer, err)
+	}
+
+	_, err = member("mismatch", new("older"))
+	code(t, err, "InvalidParameterValue")
+	reader, err := member("reader", new("member"))
+	if err != nil || *reader.DBParameterGroups[0].DBParameterGroupName != "member" {
+		t.Fatalf("reader: %+v %v", reader, err)
+	}
+
+	_, err = c.DeleteDBParameterGroup(ctx, &neptune.DeleteDBParameterGroupInput{DBParameterGroupName: new("member")})
+	code(t, err, "InvalidDBParameterGroupState")
+	modified, err := c.ModifyDBInstance(ctx, &neptune.ModifyDBInstanceInput{
+		DBInstanceIdentifier: new("reader"), DBParameterGroupName: new("default.neptune1.3"),
+		ApplyImmediately: new(true),
+	})
+	if err != nil || *modified.DBInstance.DBParameterGroups[0].DBParameterGroupName != "default.neptune1.3" {
+		t.Fatalf("modify: %+v %v", modified, err)
+	}
+
+	if _, err = c.DeleteDBParameterGroup(ctx, &neptune.DeleteDBParameterGroupInput{
+		DBParameterGroupName: new("member"),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// DocumentDB members have no DB parameter groups.
+	r := rdsClient(s, "test", "us-east-1")
+	if _, err = r.CreateDBCluster(ctx, &rds.CreateDBClusterInput{
+		DBClusterIdentifier: new("documents"), Engine: new("docdb"), MasterUsername: new("master"),
+		MasterUserPassword: new("password123"),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = r.CreateDBInstance(ctx, &rds.CreateDBInstanceInput{
+		DBInstanceIdentifier: new("document"), DBInstanceClass: new("db.r5.large"), Engine: new("docdb"),
+		DBClusterIdentifier: new("documents"), DBParameterGroupName: new("default.neptune1.3"),
+	})
+	code(t, err, "InvalidParameterValue")
 }

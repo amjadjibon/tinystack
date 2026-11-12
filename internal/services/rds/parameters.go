@@ -124,6 +124,13 @@ var neptuneParameters = []parameterDefinition{
 	{"neptune_streams_expiry_days", "7", parameterInteger, "1-90", true, false},
 }
 
+// Neptune instance parameters; all are static.
+var neptuneInstanceParameters = []parameterDefinition{
+	{"neptune_dfe_query_engine", "viaQueryHint", parameterString, "enabled,viaQueryHint", true, false},
+	{"neptune_query_timeout", "120000", parameterInteger, "10-2147483647", true, false},
+	{"neptune_result_cache", "0", parameterInteger, parameterFlag, true, false},
+}
+
 // The only values the Docker engines can honour for parameters they do not implement: community MongoDB has no
 // TLS certificates or auditing, and Gremlin Server has no audit log, slow-query log or streams.
 var dockerParameterValues = map[string][]string{
@@ -137,7 +144,7 @@ var dockerParameterValues = map[string][]string{
 func parameterCatalog(family string, cluster bool) ([]parameterDefinition, error) {
 	engine := ""
 	version := ""
-	engines := []string{EnginePostgres, EngineMySQL, EngineMariaDB}
+	engines := []string{EnginePostgres, EngineMySQL, EngineMariaDB, EngineNeptune}
 	if cluster {
 		engines = []string{EngineAuroraPostgres, EngineAuroraMySQL, EngineDocDB, EngineNeptune}
 	}
@@ -167,6 +174,12 @@ func parameterCatalog(family string, cluster bool) ([]parameterDefinition, error
 		if !supported {
 			return nil, invalid("Unsupported DBParameterGroupFamily")
 		}
+	} else if engine == EngineNeptune {
+		if version != "1.2" && version != "1.3" {
+			return nil, invalid("Unsupported DBParameterGroupFamily")
+		}
+
+		return neptuneInstanceParameters, nil
 	} else if _, _, _, err := Engine(engine, version); err != nil {
 		return nil, err
 	}
@@ -405,6 +418,12 @@ func (s *Service) alterParameters(
 				return invalid("Docker engines support only " + strings.Join(honoured, " or ") + " for " + pname)
 			}
 
+			// Docker Neptune members share their cluster's Gremlin Server, so only cluster groups configure it.
+			if !reset && s.runtime != nil && kind == kindParameter &&
+				strings.HasPrefix(parameterFamily(r), EngineNeptune) && *p.ParameterValue != d.value {
+				return invalid("Docker Neptune members share one server; set " + pname + " in the cluster group")
+			}
+
 			if reset {
 				delete(r.Parameters, pname)
 			} else {
@@ -438,7 +457,8 @@ func (s *Service) alterParameters(
 
 				previouslyPending[db.Name] = common.Value(p.ParameterApplyStatus) == parameterPending
 				status := parameterInSync
-				if s.runtime != nil {
+				// Cluster members have no instance engine to restart.
+				if s.runtime != nil && db.Instance.DBClusterIdentifier == nil {
 					status = parameterPending
 				}
 

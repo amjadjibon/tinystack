@@ -21,6 +21,7 @@ func init() {
 	// DocumentDB and Neptune name their cluster groups with Name rather than the API member.
 	register("AWS::DocDB::DBClusterParameterGroup", rdsParameterGroup("DBClusterParameterGroup", "Name"))
 	register("AWS::Neptune::DBClusterParameterGroup", rdsParameterGroup("DBClusterParameterGroup", "Name"))
+	register("AWS::Neptune::DBParameterGroup", rdsParameterGroup("DBParameterGroup", "Name"))
 }
 
 // rdsParameterGroup manages a DB or cluster parameter group (noun) named by property in templates.

@@ -28,11 +28,14 @@ func (s *Service) createClusterInstance(
 	}
 
 	if in.MasterUsername != nil || in.MasterUserPassword != nil || in.DBName != nil || in.AllocatedStorage != nil ||
-		in.DBParameterGroupName != nil || in.DBSubnetGroupName != nil || in.EngineVersion != nil ||
-		in.CopyTagsToSnapshot != nil {
+		in.DBSubnetGroupName != nil || in.EngineVersion != nil || in.CopyTagsToSnapshot != nil {
 		return nil, invalid(
 			"Cluster members inherit database settings; specify only identifier, class, engine, cluster and tags",
 		)
+	}
+
+	if in.DBParameterGroupName != nil && common.Value(in.Engine) != EngineNeptune {
+		return nil, invalid("Only Neptune cluster members take a DB parameter group")
 	}
 
 	if in.DBClusterIdentifier == nil || *in.DBClusterIdentifier == "" {
@@ -78,6 +81,13 @@ func (s *Service) createClusterInstance(
 			InstanceCreateTime:  new(time.Now().UTC()),
 			Endpoint:            &api.Endpoint{Address: c.Endpoint, Port: c.Port},
 		}}
+		groups, groupErr := memberParameterGroup(tx, scope, c, in.DBParameterGroupName)
+		if groupErr != nil {
+			return groupErr
+		}
+
+		r.Instance.DBParameterGroups = groups
+
 		c.DBClusterMembers = append(c.DBClusterMembers, api.DBClusterMember{
 			DBInstanceIdentifier: new(id), IsClusterWriter: new(len(c.DBClusterMembers) == 0),
 		})
@@ -149,9 +159,55 @@ func (s *Service) changeClusterMember(ctx context.Context, scope request.Scope, 
 		r.Instance.DBInstanceClass = in.DBInstanceClass
 	}
 
-	if err := s.store.Update(ctx, func(tx storage.WriteTx) error { return writeRecord(tx, scope, r) }); err != nil {
+	if in.DBParameterGroupName != nil && common.Value(r.Instance.Engine) != EngineNeptune {
+		return nil, invalid("Only Neptune cluster members take a DB parameter group")
+	}
+
+	if err := s.store.Update(ctx, func(tx storage.WriteTx) error {
+		if in.DBParameterGroupName != nil {
+			parent, err := readRecord(tx, scope, kindCluster, common.Value(r.Instance.DBClusterIdentifier))
+			if err != nil {
+				return err
+			}
+
+			if r.Instance.DBParameterGroups, err = memberParameterGroup(
+				tx, scope, parent.Cluster, in.DBParameterGroupName,
+			); err != nil {
+				return err
+			}
+		}
+
+		return writeRecord(tx, scope, r)
+	}); err != nil {
 		return nil, err
 	}
 
 	return instance(r), nil
+}
+
+// memberParameterGroup resolves a Neptune member's DB parameter group, defaulting to its cluster family's group. The
+// member has no engine of its own, so the group is always in sync.
+func memberParameterGroup(
+	tx storage.ReadTx,
+	scope request.Scope,
+	c *api.DBCluster,
+	name *string,
+) ([]api.DBParameterGroupStatus, error) {
+	if common.Value(c.Engine) != EngineNeptune {
+		return nil, nil
+	}
+
+	family := clusterFamily(EngineNeptune, common.Value(c.EngineVersion))
+	group, err := readRecord(tx, scope, kindParameter, common.Value(common.OrElse(name, new("default."+family))))
+	if err != nil {
+		return nil, err
+	}
+
+	if parameterFamily(group) != family {
+		return nil, invalid("DBParameterGroupFamily does not match the cluster engine version")
+	}
+
+	return []api.DBParameterGroupStatus{
+		{DBParameterGroupName: new(group.Name), ParameterApplyStatus: new(parameterInSync)},
+	}, nil
 }

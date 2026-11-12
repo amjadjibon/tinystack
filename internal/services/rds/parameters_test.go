@@ -118,3 +118,34 @@ func TestDockerClusterParameterValues(t *testing.T) {
 		}
 	}
 }
+
+// Docker Neptune members share their cluster's server, so instance groups keep engine defaults.
+func TestDockerNeptuneInstanceParameters(t *testing.T) {
+	s := New(memory.New(nil, nil))
+	s.runtime, s.owner = &fakeRuntime{ready: true}, "parameter-test"
+	ctx := runtimeContext()
+	if _, err := s.CreateDBParameterGroup(ctx, &api.CreateDBParameterGroupMessage{
+		DBParameterGroupName: new("member"), DBParameterGroupFamily: new("neptune1.3"), Description: new("test"),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	modify := func(value string) error {
+		_, err := s.ModifyDBParameterGroup(ctx, &api.ModifyDBParameterGroupMessage{
+			DBParameterGroupName: new("member"),
+			Parameters: []api.Parameter{{
+				ParameterName: new("neptune_query_timeout"), ParameterValue: new(value),
+				ApplyMethod: new(parameterPending),
+			}},
+		})
+		return err
+	}
+
+	if err := modify("5000"); err == nil {
+		t.Fatal("Docker accepted an instance-level Neptune timeout")
+	}
+
+	if err := modify("120000"); err != nil {
+		t.Fatal(err)
+	}
+}
