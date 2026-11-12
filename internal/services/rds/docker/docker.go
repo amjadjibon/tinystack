@@ -183,7 +183,11 @@ func (r *Runtime) Probe(ctx context.Context, spec *rds.Spec, started rds.Started
 
 func (r *Runtime) Action(ctx context.Context, spec *rds.Spec, action string) error {
 	if action == "restart" || action == "stop" {
-		// Recreate the container to replace startup arguments while retaining its volume.
+		// Shut the engine down cleanly, then recreate the container so startup arguments change; the volume stays.
+		if _, err := dockercli.Run(ctx, nil, "stop", spec.Name); err != nil && !dockercli.Gone(err) {
+			return err
+		}
+
 		return r.Remove(ctx, spec, false)
 	}
 

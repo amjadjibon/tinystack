@@ -357,6 +357,10 @@ func (s *Service) advance(ctx context.Context, k string) error {
 		}
 
 		cancel()
+		if err == nil && r.ParameterGroupStatus == parameterGroupInSync {
+			return nil
+		}
+
 		if err == nil {
 			return s.store.Update(ctx, func(tx storage.WriteTx) error {
 				current, found, e := storage.Read[clusterRecord](tx, recordKey)
