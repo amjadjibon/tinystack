@@ -90,17 +90,17 @@ func (s *Service) createClusterSnapshot(
 	}
 
 	if s.runtime != nil {
-		if err := s.runtime.Copy(ctx, s.clusterSpec(scope, source), s.clusterSpec(scope, r)); err != nil {
+		if err := s.runtime.Copy(ctx, s.clusterSpec(ctx, scope, source), s.clusterSpec(ctx, scope, r)); err != nil {
 			return nil, err
 		}
 
-		r.Volume = s.clusterSpec(scope, r).Volume
+		r.Volume = s.clusterSpec(ctx, scope, r).Volume
 	}
 
 	r.ReadyAt = time.Now().Add(snapshotDelay)
 	if err := s.insert(ctx, scope, r); err != nil {
 		if s.runtime != nil {
-			_ = s.runtime.Remove(ctx, s.clusterSpec(scope, r), true)
+			_ = s.runtime.Remove(ctx, s.clusterSpec(ctx, scope, r), true)
 		}
 
 		return nil, err
@@ -198,7 +198,7 @@ func (s *Service) DeleteDBClusterSnapshot(
 	}
 
 	if s.runtime != nil && r.Volume != "" {
-		if err := s.runtime.Remove(ctx, s.clusterSpec(scope, r), true); err != nil {
+		if err := s.runtime.Remove(ctx, s.clusterSpec(ctx, scope, r), true); err != nil {
 			return nil, err
 		}
 	}

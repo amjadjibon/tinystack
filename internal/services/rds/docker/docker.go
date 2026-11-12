@@ -123,7 +123,9 @@ func (r *Runtime) Ensure(ctx context.Context, spec *rds.Spec) (rds.Started, erro
 				"--entrypoint", "sh", "--", spec.Image, "-c", gremlinStartup)
 		} else {
 			args = append(args, "--", spec.Image)
+			args = append(args, parameterArguments(spec)...)
 		}
+
 		id, err = dockercli.Run(ctx, nil, args...)
 		if err != nil {
 			return rds.Started{}, err
@@ -158,6 +160,7 @@ func (r *Runtime) Probe(ctx context.Context, spec *rds.Spec, started rds.Started
 	args := []string{
 		execCommand, spec.Name, "pg_isready", "-h", loopback, "-U", spec.Username, "-d", spec.Database,
 	}
+
 	if spec.Engine != rds.EnginePostgres && spec.Engine != rds.EngineDocDB {
 		command := "mysqladmin"
 		if spec.Engine == rds.EngineMariaDB {
@@ -179,6 +182,11 @@ func (r *Runtime) Probe(ctx context.Context, spec *rds.Spec, started rds.Started
 }
 
 func (r *Runtime) Action(ctx context.Context, spec *rds.Spec, action string) error {
+	if action == "restart" || action == "stop" {
+		// Recreate the container to replace startup arguments while retaining its volume.
+		return r.Remove(ctx, spec, false)
+	}
+
 	r.mu.Lock()
 	r.specs[spec.Name] = spec
 	r.mu.Unlock()
@@ -312,4 +320,64 @@ func probeGremlin(ctx context.Context, port int64) error {
 	}
 
 	return nil
+}
+
+func parameterArguments(spec *rds.Spec) []string {
+	if len(spec.Parameters) == 0 {
+		return nil
+	}
+
+	args := []string{}
+	switch spec.Engine {
+	case rds.EnginePostgres:
+		args = append(args, "postgres")
+	case rds.EngineMariaDB:
+		args = append(args, "mariadbd")
+	default:
+		args = append(args, "mysqld")
+	}
+
+	for _, name := range slices.Sorted(maps.Keys(spec.Parameters)) {
+		value := spec.Parameters[name]
+		if spec.Engine == rds.EnginePostgres {
+			args = append(args, "-c", name+"="+value)
+		} else {
+			args = append(args, "--"+strings.ReplaceAll(name, "_", "-")+"="+value)
+		}
+	}
+
+	return args
+}
+
+// ApplyParameters uses root credentials for MySQL's global variables. PostgreSQL
+// startup -c settings take precedence over ALTER SYSTEM, so defer those to reboot.
+func (r *Runtime) ApplyParameters(ctx context.Context, spec *rds.Spec, values map[string]string) error {
+	if spec.Engine != rds.EngineMySQL && spec.Engine != rds.EngineMariaDB {
+		return fmt.Errorf("engine requires a restart to replace startup parameters")
+	}
+
+	command := "mysql"
+	if spec.Engine == rds.EngineMariaDB {
+		command = rds.EngineMariaDB
+	}
+
+	var sql strings.Builder
+	sql.WriteString("SET SESSION sql_mode='NO_BACKSLASH_ESCAPES';")
+	for _, name := range slices.Sorted(maps.Keys(values)) {
+		fmt.Fprintf(&sql, "SET GLOBAL `%s` = '%s';", name, strings.ReplaceAll(values[name], "'", "''"))
+	}
+
+	_, err := dockercli.Run(
+		ctx,
+		strings.NewReader(sql.String()),
+		execCommand,
+		"-i",
+		"-e",
+		"MYSQL_PWD="+spec.RootPassword,
+		spec.Name,
+		command,
+		"-u",
+		rootUser,
+	)
+	return err
 }

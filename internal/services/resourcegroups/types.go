@@ -221,6 +221,7 @@ var typeNames = map[string]string{
 	"rds/db-snapshot":                        "DBSnapshot",
 	"rds/db-instance":                        "DBInstance",
 	"rds/db-subnet-group":                    "DBSubnetGroup",
+	"rds/db-cluster-parameter-group":         "DBClusterParameterGroup",
 	"rds/db-parameter-group":                 "DBParameterGroup",
 	"elasticache/cache-parameter-group":      "ParameterGroup",
 	"elasticache/cache-replication-group":    "ReplicationGroup",

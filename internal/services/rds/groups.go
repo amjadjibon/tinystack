@@ -40,6 +40,7 @@ func (s *Service) CreateDBSubnetGroup(
 		if seen[id] {
 			return nil, awserror.New("InvalidSubnet", "SubnetIds must be unique")
 		}
+
 		seen[id] = true
 		ids[i] = id
 	}
@@ -128,20 +129,7 @@ func (s *Service) CreateDBParameterGroup(
 
 	name := strings.ToLower(common.Value(in.DBParameterGroupName))
 	family := common.Value(in.DBParameterGroupFamily)
-	engine := ""
-	version := ""
-	for _, e := range []string{EnginePostgres, EngineMySQL, EngineMariaDB} {
-		if strings.HasPrefix(family, e) {
-			engine = e
-			version = strings.TrimPrefix(family, e)
-		}
-	}
-
-	if engine == "" || version == "" {
-		return nil, invalid("Unsupported DBParameterGroupFamily")
-	}
-
-	if _, _, _, err = Engine(engine, version); err != nil {
+	if _, err = parameterCatalog(family, false); err != nil {
 		return nil, err
 	}
 
@@ -196,6 +184,10 @@ func (s *Service) DescribeDBParameterGroups(
 }
 
 func (s *Service) deleteGroup(ctx context.Context, kind, name string) error {
+	if strings.HasPrefix(strings.ToLower(name), "default.") {
+		return invalid("Default parameter groups are immutable")
+	}
+
 	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return err
@@ -238,14 +230,18 @@ func (s *Service) deleteGroup(ctx context.Context, kind, name string) error {
 			}
 		}
 
-		if kind == kindSubnet {
+		if kind == kindSubnet || kind == kindClusterParameter {
 			clusters, err := storage.Records[record](tx, scope.Prefix(serviceName, kindCluster))
 			if err != nil {
 				return err
 			}
 
 			for _, r := range clusters {
-				if common.Value(r.Cluster.DBSubnetGroup) == group.Name {
+				if kind == kindClusterParameter && common.Value(r.Cluster.DBClusterParameterGroup) == group.Name {
+					return awserror.New("InvalidDBParameterGroupStateFault", "Group is in use by a cluster")
+				}
+
+				if kind == kindSubnet && common.Value(r.Cluster.DBSubnetGroup) == group.Name {
 					return awserror.New("InvalidDBSubnetGroupStateFault", "Group is in use by a cluster")
 				}
 			}

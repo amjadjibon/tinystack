@@ -142,6 +142,22 @@ func checkCluster(c *api.DBCluster) error {
 
 // Validate referenced subnet/security groups in the transaction that writes the candidate.
 func checkClusterNetwork(tx storage.ReadTx, scope request.Scope, c *api.DBCluster) error {
+	if c.DBClusterParameterGroup != nil {
+		if !aurora(common.Value(c.Engine)) {
+			return invalid("Cluster parameter groups require Aurora")
+		}
+
+		group, err := readRecord(tx, scope, kindClusterParameter, *c.DBClusterParameterGroup)
+		if err != nil {
+			return err
+		}
+
+		family := clusterFamily(common.Value(c.Engine), common.Value(c.EngineVersion))
+		if parameterFamily(group) != family {
+			return invalid("DBParameterGroupFamily does not match cluster engine")
+		}
+	}
+
 	vpc := ""
 	if c.DBSubnetGroup != nil {
 		group, err := readRecord(tx, scope, kindSubnet, *c.DBSubnetGroup)
@@ -255,6 +271,7 @@ func (s *Service) CreateDBCluster(
 		MasterUsername:                   in.MasterUsername,
 		Port:                             common.OrElse(in.Port, new(port)),
 		DBSubnetGroup:                    in.DBSubnetGroupName,
+		DBClusterParameterGroup:          in.DBClusterParameterGroupName,
 		VpcSecurityGroups:                clusterGroups(in.VpcSecurityGroupIds),
 		BackupRetentionPeriod:            common.OrElse(in.BackupRetentionPeriod, new(int64(1))),
 		StorageEncrypted:                 common.OrElse(in.StorageEncrypted, new(false)),

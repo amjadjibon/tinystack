@@ -1441,7 +1441,7 @@
         "Create, describe, modify, stop, start, reboot and delete scoped DB instances; modeled duplicate, missing and state errors",
         "PostgreSQL majors 14, 15, 16 (default), 17 map to postgres:<major>; MySQL 8.0 maps to mysql:8.0; MariaDB 11 maps to mariadb:11; DocumentDB and Neptune cluster members share their cluster engine; other engines and versions fail explicitly",
         "Describe instances supports db-instance-id, engine and db-subnet-group exact-value filters; MaxRecords 20\u2013100 and Marker pagination also work for subnet and parameter group lists",
-        "Subnet groups validate existing EC2 subnets in one VPC; parameter groups are records with engine-family validation and in-use deletion checks",
+        "Subnet groups validate existing EC2 subnets in one VPC; parameter groups validate engine families and prevent in-use deletion",
         "Instance and group tags, diagnostic inventory and Resource Groups Tagging API integration",
         "CloudFormation AWS::RDS::DBInstance and AWS::RDS::DBSubnetGroup with selected properties",
         "Set rds.instances: docker to start real databases; default rds.instances: records returns available records immediately",
@@ -1472,7 +1472,11 @@
         "Aurora clusters create one Docker container shared by all member instances; creating transitions to available after readiness, and cluster, reader and member endpoints publish the same loopback host port",
         "Aurora supports DatabaseName, validated master credentials, ManageMasterUserPassword with an active Secrets Manager MasterUserSecret, HTTP endpoint flags and EnableHttpEndpoint/DisableHttpEndpoint, and stored ServerlessV2ScalingConfiguration",
         "Modify Aurora credentials, retention, security groups, deletion protection, HTTP settings and scaling metadata; StopDBCluster/StartDBCluster control the shared engine and stop rolls back Data API transactions",
-        "CreateDBClusterSnapshot, DescribeDBClusterSnapshots, DeleteDBClusterSnapshot and final snapshots on Aurora cluster deletion; Docker snapshots copy a paused source volume, records mode captures metadata; deletion requires no members and disabled deletion protection"
+        "CreateDBClusterSnapshot, DescribeDBClusterSnapshots, DeleteDBClusterSnapshot and final snapshots on Aurora cluster deletion; Docker snapshots copy a paused source volume, records mode captures metadata; deletion requires no members and disabled deletion protection",
+        "DB and Aurora cluster parameter groups support create/describe/delete, modify/reset, source filters, engine defaults, immutable named default groups and MaxRecords/Marker paging; DB groups also support copy",
+        "Pinned portable catalogs cover PostgreSQL 14\u201317, MySQL 8.0, MariaDB 11, Aurora PostgreSQL 15\u201317 and Aurora MySQL 8.0; unknown names, invalid values, non-modifiable settings, static immediate changes and batches over 20 fail explicitly",
+        "CloudFormation AWS::RDS::DBParameterGroup and AWS::RDS::DBClusterParameterGroup accept Family, Description, Parameters and Tags; Ref returns the group name",
+        "Docker engine creation and reboot apply overrides as PostgreSQL -c or MySQL/MariaDB options; immediate MySQL/MariaDB dynamic changes attempt SET GLOBAL outside storage transactions, with pending-reboot on failure"
       ],
       "gaps": [
         "Neptune uses Gremlin Server with the stock in-memory TinkerGraph: the owned named volume contains no graph data. Graph data survives a container stop/start, but not TinyStack shutdown, persistent restart or container recreation; this is not durable Neptune storage",
@@ -1481,7 +1485,6 @@
         "Records mode has no SQL listener: endpoints use 127.0.0.1 and the engine default port, matching the ElastiCache records-only convention",
         "AllocatedStorage does not enforce a volume size; DBInstanceClass does not change CPU or memory limits; network topology and AWS availability behavior are not reproduced",
         "Standalone EngineVersion accepts only the listed major tags; Aurora accepts only the listed AWS version strings; community image tags float within the selected major",
-        "Parameter groups are records only; engine parameters are not applied",
         "SQL replicas, Multi-AZ clusters, Multi-AZ instances, IAM DB authentication, option groups, events and proxies are unsupported; input members outside the profile fail explicitly",
         "ApplyImmediately=false rejects deferred changes",
         "Host ports can change after container recreation; no advertise host setting exists, so a remote Docker daemon is unsupported",
@@ -1498,9 +1501,10 @@
         "Automatic backups and scheduled automated snapshots are not produced; SnapshotType=automated returns an empty list. Cross-account/Region snapshots, shared/public/awsbackup selection, snapshot attributes/sharing, encrypted snapshot copies, cluster snapshot copy/restore and snapshot quotas are unsupported",
         "Snapshot data copy is synchronous and crash-consistent, rather than an AWS storage-level online snapshot: the source database has an I/O interruption while paused for the filesystem copy, and the restored engine performs crash recovery. Snapshot metadata transitions to available after a short simulated delay; progress is 0 or 100",
         "Snapshots created in records mode have no SQL data volume and cannot be copied/restored in Docker mode; restore supports only the whitelisted settings, does not reduce allocated storage, and uses default parameter groups unless explicitly overridden",
-        "ModifyDBSubnetGroup, ModifyDBParameterGroup, DescribeDBParameters and RestoreDBClusterFromSnapshot are not implemented or exposed by the console",
         "Aurora runs community PostgreSQL/MySQL, not the proprietary Aurora storage engine; readers and writers share one process, scaling is metadata only, versions map to floating community image tags, and failover, replicas, global clusters and Aurora Serverless v1 are unsupported",
-        "Aurora port changes, deferred modifications and EngineVersion changes fail explicitly; managed secret rotation and KMS customization are unsupported"
+        "Aurora port changes, deferred modifications and EngineVersion changes fail explicitly; managed secret rotation and KMS customization are unsupported",
+        "Parameter catalogs cover a portable subset, not every AWS engine parameter or extension; PostgreSQL changes and resets require reboot in Docker mode, while Aurora parameter changes require cluster stop/start; records mode stores values without running SQL",
+        "ModifyDBSubnetGroup and RestoreDBClusterFromSnapshot remain unsupported; the console does not view or edit parameter values"
       ],
       "execution": "Records / optional Docker",
       "package": "rds"

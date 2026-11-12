@@ -17,6 +17,7 @@ import (
 
 // Spec contains private runtime configuration for one database.
 type Spec struct {
+	Parameters   map[string]string
 	Owner        string
 	ARN          string
 	Name         string
@@ -47,7 +48,7 @@ type Runtime interface {
 	Close()
 }
 
-func (s *Service) spec(scope request.Scope, r *record) *Spec {
+func (s *Service) spec(ctx context.Context, scope request.Scope, r *record) *Spec {
 	resourceARN := arn(scope, kindDB, r.Name)
 	hash := sha256.Sum256([]byte(s.owner + resourceARN))
 	name := fmt.Sprintf("tinystack-rds-%x", hash[:16])
@@ -59,19 +60,20 @@ func (s *Service) spec(scope request.Scope, r *record) *Spec {
 	}
 
 	return &Spec{
-		Owner: s.owner, ARN: resourceARN, Name: name, Volume: name + "-data", Image: image, Port: port,
+		Parameters: s.runtimeParameters(ctx, scope, r),
+		Owner:      s.owner, ARN: resourceARN, Name: name, Volume: name + "-data", Image: image, Port: port,
 		Engine: common.Value(r.Instance.Engine), Username: common.Value(r.Instance.MasterUsername),
 		Password: r.Password, RootPassword: r.RootPassword, Database: database,
 	}
 }
 
 // dataSpec addresses snapshot volumes without referring to a live instance container.
-func (s *Service) dataSpec(scope request.Scope, r *record) *Spec {
+func (s *Service) dataSpec(ctx context.Context, scope request.Scope, r *record) *Spec {
 	if r.Cluster != nil {
-		return s.clusterSpec(scope, r)
+		return s.clusterSpec(ctx, scope, r)
 	}
 
-	spec := s.spec(scope, r)
+	spec := s.spec(ctx, scope, r)
 	if r.Kind == kindSnapshot {
 		spec.ARN = arn(scope, kindSnapshot, r.Name)
 		hash := sha256.Sum256([]byte(s.owner + spec.ARN))
@@ -207,7 +209,7 @@ func (s *Service) Reset(ctx context.Context) {
 	})
 
 	for _, item := range records {
-		_ = s.runtime.Remove(ctx, s.dataSpec(item.scope, item.r), true)
+		_ = s.runtime.Remove(ctx, s.dataSpec(ctx, item.scope, item.r), true)
 	}
 
 	_ = s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -290,7 +292,7 @@ func (s *Service) visit(ctx context.Context) {
 			continue
 		}
 
-		spec := s.spec(scope, r)
+		spec := s.spec(ctx, scope, r)
 		fresh := !r.Initialized
 		ioCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 		started, err := s.runtime.Ensure(ioCtx, spec)
@@ -311,6 +313,12 @@ func (s *Service) visit(ctx context.Context) {
 			probeCancel()
 			if probeErr == nil {
 				r.Initialized = true
+				for i := range r.Instance.DBParameterGroups {
+					if common.Value(r.Instance.DBParameterGroups[i].ParameterApplyStatus) == "applying" {
+						r.Instance.DBParameterGroups[i].ParameterApplyStatus = new(parameterInSync)
+					}
+				}
+
 				r.Instance.DBInstanceStatus = new(available)
 			} else {
 				if status == available {

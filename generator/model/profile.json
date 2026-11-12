@@ -22524,7 +22524,19 @@
       "DisableHttpEndpoint",
       "CreateDBClusterSnapshot",
       "DescribeDBClusterSnapshots",
-      "DeleteDBClusterSnapshot"
+      "DeleteDBClusterSnapshot",
+      "ModifyDBParameterGroup",
+      "ResetDBParameterGroup",
+      "DescribeDBParameters",
+      "DescribeEngineDefaultParameters",
+      "CopyDBParameterGroup",
+      "CreateDBClusterParameterGroup",
+      "DescribeDBClusterParameterGroups",
+      "DeleteDBClusterParameterGroup",
+      "ModifyDBClusterParameterGroup",
+      "ResetDBClusterParameterGroup",
+      "DescribeDBClusterParameters",
+      "DescribeEngineDefaultClusterParameters"
     ],
     "shapes": {
       "CreateDBInstanceMessage": [
@@ -22558,7 +22570,8 @@
         "DBInstanceClass",
         "MasterUserPassword",
         "ApplyImmediately",
-        "CopyTagsToSnapshot"
+        "CopyTagsToSnapshot",
+        "DBParameterGroupName"
       ],
       "StopDBInstanceMessage": [
         "DBInstanceIdentifier"
@@ -22682,7 +22695,8 @@
         "DatabaseName",
         "ManageMasterUserPassword",
         "EnableHttpEndpoint",
-        "ServerlessV2ScalingConfiguration"
+        "ServerlessV2ScalingConfiguration",
+        "DBClusterParameterGroupName"
       ],
       "DescribeDBClustersMessage": [
         "DBClusterIdentifier",
@@ -22700,7 +22714,8 @@
         "EngineVersion",
         "ApplyImmediately",
         "EnableHttpEndpoint",
-        "ServerlessV2ScalingConfiguration"
+        "ServerlessV2ScalingConfiguration",
+        "DBClusterParameterGroupName"
       ],
       "DeleteDBClusterMessage": [
         "DBClusterIdentifier",
@@ -22730,7 +22745,8 @@
         "DatabaseName",
         "MasterUserSecret",
         "HttpEndpointEnabled",
-        "ServerlessV2ScalingConfiguration"
+        "ServerlessV2ScalingConfiguration",
+        "DBClusterParameterGroup"
       ],
       "DBClusterMember": [
         "DBInstanceIdentifier",
@@ -22851,6 +22867,88 @@
         "TagList",
         "StorageEncrypted",
         "ClusterCreateTime"
+      ],
+      "ModifyDBParameterGroupMessage": [
+        "DBParameterGroupName",
+        "Parameters"
+      ],
+      "ResetDBParameterGroupMessage": [
+        "DBParameterGroupName",
+        "ResetAllParameters",
+        "Parameters"
+      ],
+      "DescribeDBParametersMessage": [
+        "DBParameterGroupName",
+        "Source",
+        "MaxRecords",
+        "Marker"
+      ],
+      "DescribeEngineDefaultParametersMessage": [
+        "DBParameterGroupFamily",
+        "MaxRecords",
+        "Marker"
+      ],
+      "CopyDBParameterGroupMessage": [
+        "SourceDBParameterGroupIdentifier",
+        "TargetDBParameterGroupIdentifier",
+        "TargetDBParameterGroupDescription",
+        "Tags"
+      ],
+      "CreateDBClusterParameterGroupMessage": [
+        "DBClusterParameterGroupName",
+        "DBParameterGroupFamily",
+        "Description",
+        "Tags"
+      ],
+      "DescribeDBClusterParameterGroupsMessage": [
+        "DBClusterParameterGroupName",
+        "MaxRecords",
+        "Marker"
+      ],
+      "DeleteDBClusterParameterGroupMessage": [
+        "DBClusterParameterGroupName"
+      ],
+      "ModifyDBClusterParameterGroupMessage": [
+        "DBClusterParameterGroupName",
+        "Parameters"
+      ],
+      "ResetDBClusterParameterGroupMessage": [
+        "DBClusterParameterGroupName",
+        "ResetAllParameters",
+        "Parameters"
+      ],
+      "DescribeDBClusterParametersMessage": [
+        "DBClusterParameterGroupName",
+        "Source",
+        "MaxRecords",
+        "Marker"
+      ],
+      "DescribeEngineDefaultClusterParametersMessage": [
+        "DBParameterGroupFamily",
+        "MaxRecords",
+        "Marker"
+      ],
+      "Parameter": [
+        "ParameterName",
+        "ParameterValue",
+        "Description",
+        "Source",
+        "ApplyType",
+        "DataType",
+        "AllowedValues",
+        "IsModifiable",
+        "ApplyMethod"
+      ],
+      "EngineDefaults": [
+        "DBParameterGroupFamily",
+        "Marker",
+        "Parameters"
+      ],
+      "DBClusterParameterGroup": [
+        "DBClusterParameterGroupName",
+        "DBParameterGroupFamily",
+        "Description",
+        "DBClusterParameterGroupArn"
       ]
     }
   },

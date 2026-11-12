@@ -114,6 +114,7 @@ type ModifyDBInstanceMessage struct {
 	MasterUserPassword   *string `json:"MasterUserPassword,omitempty" query:"MasterUserPassword"`
 	ApplyImmediately     *bool   `json:"ApplyImmediately,omitempty" query:"ApplyImmediately"`
 	CopyTagsToSnapshot   *bool   `json:"CopyTagsToSnapshot,omitempty" query:"CopyTagsToSnapshot"`
+	DBParameterGroupName *string `json:"DBParameterGroupName,omitempty" query:"DBParameterGroupName"`
 }
 
 type ModifyDBInstanceResult struct {
@@ -253,6 +254,7 @@ type CreateDBClusterMessage struct {
 	ManageMasterUserPassword         *bool                             `json:"ManageMasterUserPassword,omitempty" query:"ManageMasterUserPassword"`
 	EnableHttpEndpoint               *bool                             `json:"EnableHttpEndpoint,omitempty" query:"EnableHttpEndpoint"`
 	ServerlessV2ScalingConfiguration *ServerlessV2ScalingConfiguration `json:"ServerlessV2ScalingConfiguration,omitempty" query:"ServerlessV2ScalingConfiguration"`
+	DBClusterParameterGroupName      *string                           `json:"DBClusterParameterGroupName,omitempty" query:"DBClusterParameterGroupName"`
 }
 
 type VpcSecurityGroupMembership struct {
@@ -300,6 +302,7 @@ type DBCluster struct {
 	MasterUserSecret                 *MasterUserSecret                     `json:"MasterUserSecret,omitempty" query:"MasterUserSecret"`
 	HttpEndpointEnabled              *bool                                 `json:"HttpEndpointEnabled,omitempty" query:"HttpEndpointEnabled"`
 	ServerlessV2ScalingConfiguration *ServerlessV2ScalingConfigurationInfo `json:"ServerlessV2ScalingConfiguration,omitempty" query:"ServerlessV2ScalingConfiguration"`
+	DBClusterParameterGroup          *string                               `json:"DBClusterParameterGroup,omitempty" query:"DBClusterParameterGroup"`
 }
 
 type CreateDBClusterResult struct {
@@ -329,6 +332,7 @@ type ModifyDBClusterMessage struct {
 	ApplyImmediately                 *bool                             `json:"ApplyImmediately,omitempty" query:"ApplyImmediately"`
 	EnableHttpEndpoint               *bool                             `json:"EnableHttpEndpoint,omitempty" query:"EnableHttpEndpoint"`
 	ServerlessV2ScalingConfiguration *ServerlessV2ScalingConfiguration `json:"ServerlessV2ScalingConfiguration,omitempty" query:"ServerlessV2ScalingConfiguration"`
+	DBClusterParameterGroupName      *string                           `json:"DBClusterParameterGroupName,omitempty" query:"DBClusterParameterGroupName"`
 }
 
 type ModifyDBClusterResult struct {
@@ -509,6 +513,144 @@ type DeleteDBClusterSnapshotResult struct {
 	DBClusterSnapshot *DBClusterSnapshot `json:"DBClusterSnapshot,omitempty" query:"DBClusterSnapshot"`
 }
 
+type Parameter struct {
+	ParameterName  *string `json:"ParameterName,omitempty" query:"ParameterName"`
+	ParameterValue *string `json:"ParameterValue,omitempty" query:"ParameterValue"`
+	Description    *string `json:"Description,omitempty" query:"Description"`
+	Source         *string `json:"Source,omitempty" query:"Source"`
+	ApplyType      *string `json:"ApplyType,omitempty" query:"ApplyType"`
+	DataType       *string `json:"DataType,omitempty" query:"DataType"`
+	AllowedValues  *string `json:"AllowedValues,omitempty" query:"AllowedValues"`
+	IsModifiable   *bool   `json:"IsModifiable,omitempty" query:"IsModifiable"`
+	ApplyMethod    *string `json:"ApplyMethod,omitempty" query:"ApplyMethod"`
+}
+
+type ModifyDBParameterGroupMessage struct {
+	DBParameterGroupName *string     `json:"DBParameterGroupName,omitempty" query:"DBParameterGroupName"`
+	Parameters           []Parameter `json:"Parameters,omitempty" query:"Parameters,member=Parameter"`
+}
+
+type DBParameterGroupNameMessage struct {
+	DBParameterGroupName *string `json:"DBParameterGroupName,omitempty" query:"DBParameterGroupName"`
+}
+
+type ResetDBParameterGroupMessage struct {
+	DBParameterGroupName *string     `json:"DBParameterGroupName,omitempty" query:"DBParameterGroupName"`
+	ResetAllParameters   *bool       `json:"ResetAllParameters,omitempty" query:"ResetAllParameters"`
+	Parameters           []Parameter `json:"Parameters,omitempty" query:"Parameters,member=Parameter"`
+}
+
+type DescribeDBParametersMessage struct {
+	DBParameterGroupName *string `json:"DBParameterGroupName,omitempty" query:"DBParameterGroupName"`
+	Source               *string `json:"Source,omitempty" query:"Source"`
+	MaxRecords           *int64  `json:"MaxRecords,omitempty" query:"MaxRecords"`
+	Marker               *string `json:"Marker,omitempty" query:"Marker"`
+}
+
+type DBParameterGroupDetails struct {
+	Marker     *string     `json:"Marker,omitempty" query:"Marker"`
+	Parameters []Parameter `json:"Parameters,omitempty" query:"Parameters,member=Parameter"`
+}
+
+type DescribeEngineDefaultParametersMessage struct {
+	DBParameterGroupFamily *string `json:"DBParameterGroupFamily,omitempty" query:"DBParameterGroupFamily"`
+	MaxRecords             *int64  `json:"MaxRecords,omitempty" query:"MaxRecords"`
+	Marker                 *string `json:"Marker,omitempty" query:"Marker"`
+}
+
+type EngineDefaults struct {
+	DBParameterGroupFamily *string     `json:"DBParameterGroupFamily,omitempty" query:"DBParameterGroupFamily"`
+	Marker                 *string     `json:"Marker,omitempty" query:"Marker"`
+	Parameters             []Parameter `json:"Parameters,omitempty" query:"Parameters,member=Parameter"`
+}
+
+type DescribeEngineDefaultParametersResult struct {
+	EngineDefaults *EngineDefaults `json:"EngineDefaults,omitempty" query:"EngineDefaults"`
+}
+
+type CopyDBParameterGroupMessage struct {
+	SourceDBParameterGroupIdentifier  *string `json:"SourceDBParameterGroupIdentifier,omitempty" query:"SourceDBParameterGroupIdentifier"`
+	TargetDBParameterGroupIdentifier  *string `json:"TargetDBParameterGroupIdentifier,omitempty" query:"TargetDBParameterGroupIdentifier"`
+	TargetDBParameterGroupDescription *string `json:"TargetDBParameterGroupDescription,omitempty" query:"TargetDBParameterGroupDescription"`
+	Tags                              []Tag   `json:"Tags,omitempty" query:"Tags,member=Tag"`
+}
+
+type CopyDBParameterGroupResult struct {
+	DBParameterGroup *DBParameterGroup `json:"DBParameterGroup,omitempty" query:"DBParameterGroup"`
+}
+
+type CreateDBClusterParameterGroupMessage struct {
+	DBClusterParameterGroupName *string `json:"DBClusterParameterGroupName,omitempty" query:"DBClusterParameterGroupName"`
+	DBParameterGroupFamily      *string `json:"DBParameterGroupFamily,omitempty" query:"DBParameterGroupFamily"`
+	Description                 *string `json:"Description,omitempty" query:"Description"`
+	Tags                        []Tag   `json:"Tags,omitempty" query:"Tags,member=Tag"`
+}
+
+type DBClusterParameterGroup struct {
+	DBClusterParameterGroupName *string `json:"DBClusterParameterGroupName,omitempty" query:"DBClusterParameterGroupName"`
+	DBParameterGroupFamily      *string `json:"DBParameterGroupFamily,omitempty" query:"DBParameterGroupFamily"`
+	Description                 *string `json:"Description,omitempty" query:"Description"`
+	DBClusterParameterGroupArn  *string `json:"DBClusterParameterGroupArn,omitempty" query:"DBClusterParameterGroupArn"`
+}
+
+type CreateDBClusterParameterGroupResult struct {
+	DBClusterParameterGroup *DBClusterParameterGroup `json:"DBClusterParameterGroup,omitempty" query:"DBClusterParameterGroup"`
+}
+
+type DescribeDBClusterParameterGroupsMessage struct {
+	DBClusterParameterGroupName *string `json:"DBClusterParameterGroupName,omitempty" query:"DBClusterParameterGroupName"`
+	MaxRecords                  *int64  `json:"MaxRecords,omitempty" query:"MaxRecords"`
+	Marker                      *string `json:"Marker,omitempty" query:"Marker"`
+}
+
+type DBClusterParameterGroupsMessage struct {
+	DBClusterParameterGroups []DBClusterParameterGroup `json:"DBClusterParameterGroups,omitempty" query:"DBClusterParameterGroups,member=DBClusterParameterGroup"`
+	Marker                   *string                   `json:"Marker,omitempty" query:"Marker"`
+}
+
+type DeleteDBClusterParameterGroupOutput struct{}
+
+type DeleteDBClusterParameterGroupMessage struct {
+	DBClusterParameterGroupName *string `json:"DBClusterParameterGroupName,omitempty" query:"DBClusterParameterGroupName"`
+}
+
+type ModifyDBClusterParameterGroupMessage struct {
+	DBClusterParameterGroupName *string     `json:"DBClusterParameterGroupName,omitempty" query:"DBClusterParameterGroupName"`
+	Parameters                  []Parameter `json:"Parameters,omitempty" query:"Parameters,member=Parameter"`
+}
+
+type DBClusterParameterGroupNameMessage struct {
+	DBClusterParameterGroupName *string `json:"DBClusterParameterGroupName,omitempty" query:"DBClusterParameterGroupName"`
+}
+
+type ResetDBClusterParameterGroupMessage struct {
+	DBClusterParameterGroupName *string     `json:"DBClusterParameterGroupName,omitempty" query:"DBClusterParameterGroupName"`
+	ResetAllParameters          *bool       `json:"ResetAllParameters,omitempty" query:"ResetAllParameters"`
+	Parameters                  []Parameter `json:"Parameters,omitempty" query:"Parameters,member=Parameter"`
+}
+
+type DescribeDBClusterParametersMessage struct {
+	DBClusterParameterGroupName *string `json:"DBClusterParameterGroupName,omitempty" query:"DBClusterParameterGroupName"`
+	Source                      *string `json:"Source,omitempty" query:"Source"`
+	MaxRecords                  *int64  `json:"MaxRecords,omitempty" query:"MaxRecords"`
+	Marker                      *string `json:"Marker,omitempty" query:"Marker"`
+}
+
+type DBClusterParameterGroupDetails struct {
+	Marker     *string     `json:"Marker,omitempty" query:"Marker"`
+	Parameters []Parameter `json:"Parameters,omitempty" query:"Parameters,member=Parameter"`
+}
+
+type DescribeEngineDefaultClusterParametersMessage struct {
+	DBParameterGroupFamily *string `json:"DBParameterGroupFamily,omitempty" query:"DBParameterGroupFamily"`
+	MaxRecords             *int64  `json:"MaxRecords,omitempty" query:"MaxRecords"`
+	Marker                 *string `json:"Marker,omitempty" query:"Marker"`
+}
+
+type DescribeEngineDefaultClusterParametersResult struct {
+	EngineDefaults *EngineDefaults `json:"EngineDefaults,omitempty" query:"EngineDefaults"`
+}
+
 type API interface {
 	CreateDBInstance(context.Context, *CreateDBInstanceMessage) (*CreateDBInstanceResult, error)
 	DescribeDBInstances(context.Context, *DescribeDBInstancesMessage) (*DBInstanceMessage, error)
@@ -542,6 +684,18 @@ type API interface {
 	CreateDBClusterSnapshot(context.Context, *CreateDBClusterSnapshotMessage) (*CreateDBClusterSnapshotResult, error)
 	DescribeDBClusterSnapshots(context.Context, *DescribeDBClusterSnapshotsMessage) (*DBClusterSnapshotMessage, error)
 	DeleteDBClusterSnapshot(context.Context, *DeleteDBClusterSnapshotMessage) (*DeleteDBClusterSnapshotResult, error)
+	ModifyDBParameterGroup(context.Context, *ModifyDBParameterGroupMessage) (*DBParameterGroupNameMessage, error)
+	ResetDBParameterGroup(context.Context, *ResetDBParameterGroupMessage) (*DBParameterGroupNameMessage, error)
+	DescribeDBParameters(context.Context, *DescribeDBParametersMessage) (*DBParameterGroupDetails, error)
+	DescribeEngineDefaultParameters(context.Context, *DescribeEngineDefaultParametersMessage) (*DescribeEngineDefaultParametersResult, error)
+	CopyDBParameterGroup(context.Context, *CopyDBParameterGroupMessage) (*CopyDBParameterGroupResult, error)
+	CreateDBClusterParameterGroup(context.Context, *CreateDBClusterParameterGroupMessage) (*CreateDBClusterParameterGroupResult, error)
+	DescribeDBClusterParameterGroups(context.Context, *DescribeDBClusterParameterGroupsMessage) (*DBClusterParameterGroupsMessage, error)
+	DeleteDBClusterParameterGroup(context.Context, *DeleteDBClusterParameterGroupMessage) (*DeleteDBClusterParameterGroupOutput, error)
+	ModifyDBClusterParameterGroup(context.Context, *ModifyDBClusterParameterGroupMessage) (*DBClusterParameterGroupNameMessage, error)
+	ResetDBClusterParameterGroup(context.Context, *ResetDBClusterParameterGroupMessage) (*DBClusterParameterGroupNameMessage, error)
+	DescribeDBClusterParameters(context.Context, *DescribeDBClusterParametersMessage) (*DBClusterParameterGroupDetails, error)
+	DescribeEngineDefaultClusterParameters(context.Context, *DescribeEngineDefaultClusterParametersMessage) (*DescribeEngineDefaultClusterParametersResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -641,6 +795,42 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteDBClusterSnapshot": {Name: "DeleteDBClusterSnapshot", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "rds:DeleteDBClusterSnapshot", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteDBClusterSnapshot", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteDBClusterSnapshotMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteDBClusterSnapshot(ctx, input.(*DeleteDBClusterSnapshotMessage))
+		}},
+		"ModifyDBParameterGroup": {Name: "ModifyDBParameterGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "rds:ModifyDBParameterGroup", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifyDBParameterGroup", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifyDBParameterGroupMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifyDBParameterGroup(ctx, input.(*ModifyDBParameterGroupMessage))
+		}},
+		"ResetDBParameterGroup": {Name: "ResetDBParameterGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "rds:ResetDBParameterGroup", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ResetDBParameterGroup", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ResetDBParameterGroupMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ResetDBParameterGroup(ctx, input.(*ResetDBParameterGroupMessage))
+		}},
+		"DescribeDBParameters": {Name: "DescribeDBParameters", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "rds:DescribeDBParameters", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeDBParameters", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeDBParametersMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeDBParameters(ctx, input.(*DescribeDBParametersMessage))
+		}},
+		"DescribeEngineDefaultParameters": {Name: "DescribeEngineDefaultParameters", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "rds:DescribeEngineDefaultParameters", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeEngineDefaultParameters", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeEngineDefaultParametersMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeEngineDefaultParameters(ctx, input.(*DescribeEngineDefaultParametersMessage))
+		}},
+		"CopyDBParameterGroup": {Name: "CopyDBParameterGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "rds:CopyDBParameterGroup", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CopyDBParameterGroup", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CopyDBParameterGroupMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CopyDBParameterGroup(ctx, input.(*CopyDBParameterGroupMessage))
+		}},
+		"CreateDBClusterParameterGroup": {Name: "CreateDBClusterParameterGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "rds:CreateDBClusterParameterGroup", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateDBClusterParameterGroup", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateDBClusterParameterGroupMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateDBClusterParameterGroup(ctx, input.(*CreateDBClusterParameterGroupMessage))
+		}},
+		"DescribeDBClusterParameterGroups": {Name: "DescribeDBClusterParameterGroups", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "rds:DescribeDBClusterParameterGroups", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeDBClusterParameterGroups", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeDBClusterParameterGroupsMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeDBClusterParameterGroups(ctx, input.(*DescribeDBClusterParameterGroupsMessage))
+		}},
+		"DeleteDBClusterParameterGroup": {Name: "DeleteDBClusterParameterGroup", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "rds:DeleteDBClusterParameterGroup", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteDBClusterParameterGroup", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteDBClusterParameterGroupMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteDBClusterParameterGroup(ctx, input.(*DeleteDBClusterParameterGroupMessage))
+		}},
+		"ModifyDBClusterParameterGroup": {Name: "ModifyDBClusterParameterGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "rds:ModifyDBClusterParameterGroup", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifyDBClusterParameterGroup", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifyDBClusterParameterGroupMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifyDBClusterParameterGroup(ctx, input.(*ModifyDBClusterParameterGroupMessage))
+		}},
+		"ResetDBClusterParameterGroup": {Name: "ResetDBClusterParameterGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "rds:ResetDBClusterParameterGroup", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ResetDBClusterParameterGroup", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ResetDBClusterParameterGroupMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ResetDBClusterParameterGroup(ctx, input.(*ResetDBClusterParameterGroupMessage))
+		}},
+		"DescribeDBClusterParameters": {Name: "DescribeDBClusterParameters", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "rds:DescribeDBClusterParameters", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeDBClusterParameters", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeDBClusterParametersMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeDBClusterParameters(ctx, input.(*DescribeDBClusterParametersMessage))
+		}},
+		"DescribeEngineDefaultClusterParameters": {Name: "DescribeEngineDefaultClusterParameters", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "rds:DescribeEngineDefaultClusterParameters", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeEngineDefaultClusterParameters", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeEngineDefaultClusterParametersMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeEngineDefaultClusterParameters(ctx, input.(*DescribeEngineDefaultClusterParametersMessage))
 		}},
 	}}
 }

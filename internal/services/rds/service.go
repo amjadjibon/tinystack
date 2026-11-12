@@ -52,23 +52,25 @@ var (
 // SQL passwords are private storage fields.
 // Credentials never appear in inventory or API output.
 type record struct {
-	Since           time.Time
-	ReadyAt         time.Time
-	ClusterSnapshot *api.DBClusterSnapshot
-	Snapshot        *api.DBSnapshot
-	SourceTags      map[string]string
-	Name            string
-	Kind            string
-	Tags            map[string]string
-	Instance        *api.DBInstance
-	Cluster         *api.DBCluster
-	Subnet          *api.DBSubnetGroup
-	Parameter       *api.DBParameterGroup
-	Password        string
-	RootPassword    string
-	Container       string
-	Volume          string
-	Initialized     bool
+	Since            time.Time
+	ReadyAt          time.Time
+	ClusterSnapshot  *api.DBClusterSnapshot
+	Snapshot         *api.DBSnapshot
+	SourceTags       map[string]string
+	Name             string
+	Kind             string
+	Tags             map[string]string
+	Instance         *api.DBInstance
+	Cluster          *api.DBCluster
+	Subnet           *api.DBSubnetGroup
+	Parameter        *api.DBParameterGroup
+	ClusterParameter *api.DBClusterParameterGroup
+	Parameters       map[string]api.Parameter
+	Password         string
+	RootPassword     string
+	Container        string
+	Volume           string
+	Initialized      bool
 }
 
 type Service struct {
@@ -97,6 +99,8 @@ func resourceError(kind, suffix, name string) error {
 		shape = "DBCluster"
 	case kindSubnet:
 		shape = "DBSubnetGroup"
+	case kindClusterParameter:
+		shape = "DBParameterGroup"
 	case kindParameter:
 		shape = "DBParameterGroup"
 	}
@@ -114,6 +118,10 @@ func validName(name string, maximum int) bool {
 }
 
 func readRecord(tx storage.ReadTx, scope request.Scope, kind, name string) (*record, error) {
+	if (kind == kindParameter || kind == kindClusterParameter) && strings.HasPrefix(strings.ToLower(name), "default.") {
+		return defaultParameterGroup(scope, kind, strings.ToLower(name))
+	}
+
 	r, found, err := storage.Read[record](tx, scope.Key(serviceName, kind, strings.ToLower(name)))
 	if err != nil {
 		return nil, err

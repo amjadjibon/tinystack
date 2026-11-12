@@ -32,7 +32,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			typ := map[string]string{
 				kindClusterSnapshot: "db-cluster-snapshot", kindSnapshot: "db-snapshot", kindDB: "db-instance",
 				kindCluster: "db-cluster",
-				kindSubnet:  subnetType, kindParameter: "db-parameter-group",
+				kindSubnet:  subnetType, kindParameter: "db-parameter-group", kindClusterParameter: "db-cluster-parameter-group",
 			}[r.Kind]
 			details := map[string]any{}
 			if r.Snapshot != nil {

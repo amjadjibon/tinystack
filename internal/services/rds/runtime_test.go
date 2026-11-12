@@ -406,7 +406,7 @@ func TestRuntimeOwnerIsolation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	a, b := first.spec(scope, record), foreign.spec(scope, record)
+	a, b := first.spec(context.Background(), scope, record), foreign.spec(context.Background(), scope, record)
 	if a.Owner != first.owner || a.Name == b.Name || a.Volume == b.Volume {
 		t.Fatal("stores share database resources")
 	}

@@ -27,10 +27,10 @@ func Engine(engine, version string) (image, resolved string, port int64, err err
 
 	case EngineMySQL:
 		if version == "" {
-			version = "8.0"
+			version = mysqlFamilyVersion
 		}
 
-		if version == "8.0" {
+		if version == mysqlFamilyVersion {
 			return "mysql:8.0", version, 3306, nil
 		}
 
@@ -169,7 +169,7 @@ func (s *Service) CreateDBInstance(
 
 			r.Instance.DBParameterGroups = []api.DBParameterGroupStatus{{
 				DBParameterGroupName: new(group.Name),
-				ParameterApplyStatus: new("in-sync"),
+				ParameterApplyStatus: new(parameterInSync),
 			}}
 		}
 
@@ -304,7 +304,7 @@ func (s *Service) DeleteDBInstance(
 	}
 
 	if s.runtime != nil {
-		if removeErr := s.runtime.Remove(ctx, s.spec(scope, r), true); removeErr != nil {
+		if removeErr := s.runtime.Remove(ctx, s.spec(ctx, scope, r), true); removeErr != nil {
 			return nil, removeErr
 		}
 	}
@@ -361,6 +361,33 @@ func (s *Service) change(
 	r.ReadyAt = time.Time{}
 
 	if in != nil {
+		if in.DBParameterGroupName != nil {
+			err = s.store.View(ctx, func(tx storage.ReadTx) error {
+				group, e := readRecord(tx, scope, kindParameter, *in.DBParameterGroupName)
+				if e != nil {
+					return e
+				}
+
+				if parameterFamily(group) != common.Value(r.Instance.Engine)+common.Value(r.Instance.EngineVersion) {
+					return invalid("DBParameterGroupFamily does not match engine")
+				}
+
+				status := parameterInSync
+				if s.runtime != nil {
+					status = parameterPending
+				}
+
+				r.Instance.DBParameterGroups = []api.DBParameterGroupStatus{
+					{DBParameterGroupName: new(group.Name), ParameterApplyStatus: new(status)},
+				}
+
+				return nil
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		if in.CopyTagsToSnapshot != nil {
 			r.Instance.CopyTagsToSnapshot = in.CopyTagsToSnapshot
 		}
@@ -385,7 +412,7 @@ func (s *Service) change(
 			if s.runtime != nil {
 				if passwordErr := s.runtime.Password(
 					ctx,
-					s.spec(scope, r),
+					s.spec(ctx, scope, r),
 					*in.MasterUserPassword,
 				); passwordErr != nil {
 					return nil, passwordErr
@@ -399,7 +426,7 @@ func (s *Service) change(
 		}
 	} else {
 		if s.runtime != nil && action != actionStart {
-			if actionErr := s.runtime.Action(ctx, s.spec(scope, r), action); actionErr != nil {
+			if actionErr := s.runtime.Action(ctx, s.spec(ctx, scope, r), action); actionErr != nil {
 				return nil, actionErr
 			}
 		}
@@ -408,6 +435,15 @@ func (s *Service) change(
 		case "stop":
 			r.Instance.DBInstanceStatus = new(stopped)
 		case actionStart, "restart":
+			for i := range r.Instance.DBParameterGroups {
+				status := parameterInSync
+				if s.runtime != nil {
+					status = "applying"
+				}
+
+				r.Instance.DBParameterGroups[i].ParameterApplyStatus = new(status)
+			}
+
 			if s.runtime != nil {
 				r.Instance.DBInstanceStatus = new(creating)
 			}

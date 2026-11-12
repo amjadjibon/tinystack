@@ -143,17 +143,17 @@ func (s *Service) saveSnapshot(ctx context.Context, scope request.Scope, source,
 			return awserror.New("InvalidDBSnapshotStateFault", "Records-only snapshots have no Docker data volume")
 		}
 
-		if err := s.runtime.Copy(ctx, s.dataSpec(scope, source), s.dataSpec(scope, target)); err != nil {
+		if err := s.runtime.Copy(ctx, s.dataSpec(ctx, scope, source), s.dataSpec(ctx, scope, target)); err != nil {
 			return err
 		}
 
-		target.Volume = s.dataSpec(scope, target).Volume
+		target.Volume = s.dataSpec(ctx, scope, target).Volume
 	}
 
 	target.ReadyAt = time.Now().UTC().Add(snapshotDelay)
 	if err := s.insert(ctx, scope, target); err != nil {
 		if s.runtime != nil {
-			_ = s.runtime.Remove(ctx, s.dataSpec(scope, target), true)
+			_ = s.runtime.Remove(ctx, s.dataSpec(ctx, scope, target), true)
 		}
 
 		return err
@@ -308,7 +308,7 @@ func (s *Service) DeleteDBSnapshot(
 	}
 
 	if s.runtime != nil && r.Volume != "" {
-		if removeErr := s.runtime.Remove(ctx, s.dataSpec(scope, r), true); removeErr != nil {
+		if removeErr := s.runtime.Remove(ctx, s.dataSpec(ctx, scope, r), true); removeErr != nil {
 			return nil, removeErr
 		}
 	}
@@ -472,7 +472,7 @@ func (s *Service) RestoreDBInstanceFromDBSnapshot(
 			}
 
 			db.DBParameterGroups = []api.DBParameterGroupStatus{{
-				DBParameterGroupName: new(group.Name), ParameterApplyStatus: new("in-sync"),
+				DBParameterGroupName: new(group.Name), ParameterApplyStatus: new(parameterInSync),
 			}}
 		}
 
@@ -492,16 +492,16 @@ func (s *Service) RestoreDBInstanceFromDBSnapshot(
 
 		r.ReadyAt = time.Time{}
 		db.Endpoint = nil
-		if err := s.runtime.Copy(ctx, s.dataSpec(scope, source), s.spec(scope, r)); err != nil {
+		if err := s.runtime.Copy(ctx, s.dataSpec(ctx, scope, source), s.spec(ctx, scope, r)); err != nil {
 			return nil, err
 		}
 
-		r.Volume, r.Initialized = s.spec(scope, r).Volume, true
+		r.Volume, r.Initialized = s.spec(ctx, scope, r).Volume, true
 	}
 
 	if err := s.insert(ctx, scope, r); err != nil {
 		if s.runtime != nil {
-			_ = s.runtime.Remove(ctx, s.spec(scope, r), true)
+			_ = s.runtime.Remove(ctx, s.spec(ctx, scope, r), true)
 		}
 
 		return nil, err

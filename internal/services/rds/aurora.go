@@ -78,7 +78,7 @@ func (s *Service) createClusterSecret(ctx context.Context, scope request.Scope, 
 	return s.store.Update(ctx, func(tx storage.WriteTx) error { return writeRecord(tx, scope, r) })
 }
 
-func (s *Service) clusterSpec(scope request.Scope, r *record) *Spec {
+func (s *Service) clusterSpec(ctx context.Context, scope request.Scope, r *record) *Spec {
 	c := r.Cluster
 	engine, image, port := EngineMySQL, "mysql:8.0", int64(3306)
 	if common.Value(c.Engine) == EngineAuroraPostgres {
@@ -108,12 +108,13 @@ func (s *Service) clusterSpec(scope request.Scope, r *record) *Spec {
 	}
 
 	spec := &Spec{
-		Owner:  s.owner,
-		ARN:    resourceARN,
-		Name:   name,
-		Volume: name + "-data",
-		Image:  image,
-		Engine: engine,
+		Parameters: s.runtimeParameters(ctx, scope, r),
+		Owner:      s.owner,
+		ARN:        resourceARN,
+		Name:       name,
+		Volume:     name + "-data",
+		Image:      image,
+		Engine:     engine,
 		Username: common.Value(
 			c.MasterUsername,
 		),
@@ -180,7 +181,7 @@ func (s *Service) visitClusters(ctx context.Context) {
 		}
 
 		previousStatus := common.Value(r.Cluster.Status)
-		spec := s.clusterSpec(scope, r)
+		spec := s.clusterSpec(ctx, scope, r)
 		ioCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 		started, err := s.runtime.Ensure(ioCtx, spec)
 		cancel()
@@ -250,6 +251,10 @@ func (s *Service) modifyCluster(ctx context.Context, in *api.ModifyDBClusterMess
 	}
 
 	c := r.Cluster
+	if in.DBClusterParameterGroupName != nil {
+		c.DBClusterParameterGroup = in.DBClusterParameterGroupName
+	}
+
 	if (aurora(common.Value(c.Engine)) || s.runtime != nil) && in.ApplyImmediately != nil && !*in.ApplyImmediately {
 		return nil, invalid("Deferred modifications are unsupported")
 	}
@@ -328,7 +333,7 @@ func (s *Service) modifyCluster(ctx context.Context, in *api.ModifyDBClusterMess
 
 	if in.MasterUserPassword != nil && (aurora(common.Value(c.Engine)) || s.runtime != nil) {
 		if s.runtime != nil {
-			if err := s.runtime.Password(ctx, s.clusterSpec(scope, r), *in.MasterUserPassword); err != nil {
+			if err := s.runtime.Password(ctx, s.clusterSpec(ctx, scope, r), *in.MasterUserPassword); err != nil {
 				return nil, err
 			}
 		}
@@ -373,7 +378,7 @@ func (s *Service) changeCluster(ctx context.Context, id, action string) (*api.DB
 	}
 
 	if s.runtime != nil && action != actionStart {
-		if err := s.runtime.Action(ctx, s.clusterSpec(scope, r), action); err != nil {
+		if err := s.runtime.Action(ctx, s.clusterSpec(ctx, scope, r), action); err != nil {
 			return nil, err
 		}
 	}
@@ -485,7 +490,7 @@ func (s *Service) deleteCluster(ctx context.Context, in *api.DeleteDBClusterMess
 	}
 
 	if s.runtime != nil {
-		if removeErr := s.runtime.Remove(ctx, s.clusterSpec(scope, r), true); removeErr != nil {
+		if removeErr := s.runtime.Remove(ctx, s.clusterSpec(ctx, scope, r), true); removeErr != nil {
 			return nil, removeErr
 		}
 	}
@@ -535,12 +540,12 @@ func (s *Service) DataEngine(ctx context.Context, resourceARN string) (*Spec, in
 	}
 
 	if s.runtime == nil {
-		return s.clusterSpec(scope, r), 0, nil
+		return s.clusterSpec(ctx, scope, r), 0, nil
 	}
 
 	if common.Value(r.Cluster.Status) != available {
 		return nil, 0, awserror.New("DatabaseUnavailableException", "Cluster has no running engine")
 	}
 
-	return s.clusterSpec(scope, r), common.Value(r.Cluster.Port), nil
+	return s.clusterSpec(ctx, scope, r), common.Value(r.Cluster.Port), nil
 }
