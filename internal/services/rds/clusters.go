@@ -30,7 +30,7 @@ func clusterEngine(engine, version string) (resolved string, port int64, err err
 	case EngineAuroraMySQL:
 		versions, port = []string{"8.0.mysql_aurora.3.12.0", "8.0.mysql_aurora.3.11.1", "8.0.mysql_aurora.3.08.0"}, 3306
 	case EngineDocDB:
-		versions, port = []string{"5.0", "4.0", "3.6"}, 27017
+		versions, port = []string{docDB50, docDB40, "3.6"}, 27017
 	case EngineNeptune:
 		versions, port = []string{"1.3.2.0", "1.2.1.0"}, 8182
 	default:
@@ -143,10 +143,6 @@ func checkCluster(c *api.DBCluster) error {
 // Validate referenced subnet/security groups in the transaction that writes the candidate.
 func checkClusterNetwork(tx storage.ReadTx, scope request.Scope, c *api.DBCluster) error {
 	if c.DBClusterParameterGroup != nil {
-		if !aurora(common.Value(c.Engine)) {
-			return invalid("Cluster parameter groups require Aurora")
-		}
-
 		group, err := readRecord(tx, scope, kindClusterParameter, *c.DBClusterParameterGroup)
 		if err != nil {
 			return err

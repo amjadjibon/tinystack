@@ -2,6 +2,7 @@ package docker
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/amjadjibon/tinystack/internal/services/rds"
@@ -26,5 +27,25 @@ func TestParameterArguments(t *testing.T) {
 
 	if got := parameterArguments(&rds.Spec{}); len(got) != 0 {
 		t.Fatalf("empty parameters: %v", got)
+	}
+}
+
+func TestDocumentDBAndNeptuneParameters(t *testing.T) {
+	got := parameterArguments(&rds.Spec{Engine: rds.EngineDocDB, Parameters: map[string]string{
+		"profiler": "enabled", "profiler_threshold_ms": "250", "profiler_sampling_rate": "0.5",
+		"ttl_monitor": "disabled", "tls": "disabled", "audit_logs": "disabled",
+	}})
+	want := []string{
+		"mongod", "--profile", "1", "--slowms", "250", "--slowOpSampleRate", "0.5",
+		"--setParameter", "ttlMonitorEnabled=false",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("documentdb: %v", got)
+	}
+
+	script := gremlinStartup(&rds.Spec{Parameters: map[string]string{"neptune_query_timeout": "5000"}})
+	if !strings.Contains(script, "echo 'evaluationTimeout: 5000' >> conf/gremlin-server.yaml") ||
+		strings.Contains(gremlinStartup(&rds.Spec{}), "evaluationTimeout") {
+		t.Fatal(script)
 	}
 }

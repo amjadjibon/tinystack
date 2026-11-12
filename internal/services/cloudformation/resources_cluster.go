@@ -20,6 +20,7 @@ const (
 	memberDeletionProtection    = "DeletionProtection"
 	memberStorageEncrypted      = "StorageEncrypted"
 	memberVpcSecurityGroupIDs   = "VpcSecurityGroupIds"
+	memberClusterParameterGroup = "DBClusterParameterGroupName"
 )
 
 func init() {
@@ -42,11 +43,14 @@ func clusterProvider(engine string, isCluster bool) *resourceType {
 		properties = []string{
 			memberDBClusterIdentifier, memberEngineVersion, memberDBSubnetGroupName,
 			memberBackupRetentionPeriod, memberPort, memberVpcSecurityGroupIDs, memberDeletionProtection,
-			memberStorageEncrypted, memberKmsKeyID, memberTags,
+			memberStorageEncrypted, memberKmsKeyID, memberClusterParameterGroup, memberTags,
 		}
 
 		replace = []string{memberDBClusterIdentifier, memberDBSubnetGroupName, memberStorageEncrypted, memberKmsKeyID}
-		mutable = []string{memberBackupRetentionPeriod, memberPort, memberVpcSecurityGroupIDs, memberDeletionProtection}
+		mutable = []string{
+			memberBackupRetentionPeriod, memberPort, memberVpcSecurityGroupIDs, memberDeletionProtection,
+			memberClusterParameterGroup,
+		}
 		attributes = []string{"ClusterResourceId", propertyEndpoint, "ReadEndpoint", memberPort}
 		if engine == clusterEngineDocDB {
 			properties = append(properties, memberMasterUsername, memberMasterUserPassword)
@@ -88,15 +92,29 @@ func clusterProvider(engine string, isCluster bool) *resourceType {
 
 			params := pick(map[string]any{name: r.Physical, "ApplyImmediately": true}, p, mutable...)
 			if isCluster {
-				// Removing optional mutable properties restores their create defaults.
+				// Removing optional mutable properties restores their create defaults. The caller takes JSON-like
+				// values, so numbers are float64.
 				defaults := map[string]any{
-					memberBackupRetentionPeriod: 1, memberDeletionProtection: false,
-					memberVpcSecurityGroupIDs: []any{}, memberPort: 27017,
+					memberBackupRetentionPeriod: float64(1), memberDeletionProtection: false,
+					memberVpcSecurityGroupIDs: []any{}, memberPort: float64(27017),
 				}
 
 				if engine == clusterEngineNeptune {
-					defaults[memberPort] = 8182
+					defaults[memberPort] = float64(8182)
 				}
+
+				// Removing the group returns the cluster to its family's default group.
+				family := "docdb5.0"
+				if version := p.str(memberEngineVersion); engine == clusterEngineDocDB && version != "" {
+					family = "docdb" + version
+				} else if engine == clusterEngineNeptune {
+					family = "neptune1.3"
+					if strings.HasPrefix(version, "1.2.") {
+						family = "neptune1.2"
+					}
+				}
+
+				defaults[memberClusterParameterGroup] = "default." + family
 
 				for key, value := range defaults {
 					if !p.has(key) {

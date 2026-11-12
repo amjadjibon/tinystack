@@ -120,7 +120,7 @@ func (r *Runtime) Ensure(ctx context.Context, spec *rds.Spec) (rds.Started, erro
 		if spec.Engine == rds.EngineNeptune {
 			// Bound JIT startup work, including when Docker emulates the amd64-only 3.6.2 image.
 			args = append(args, "-e", "JAVA_OPTIONS=-XX:TieredStopAtLevel=1",
-				"--entrypoint", "sh", "--", spec.Image, "-c", gremlinStartup)
+				"--entrypoint", "sh", "--", spec.Image, "-c", gremlinStartup(spec))
 		} else {
 			args = append(args, "--", spec.Image)
 			args = append(args, parameterArguments(spec)...)
@@ -297,8 +297,17 @@ func mongoCommand(spec *rds.Spec, script string) []string {
 }
 
 // Enable Gremlin HTTP alongside WebSocket; the image entrypoint sets the container's bind address.
-const gremlinStartup = `sed -i 's/WebSocketChannelizer/WsAndHttpChannelizer/' conf/gremlin-server.yaml &&
-exec /docker-entrypoint.sh conf/gremlin-server.yaml`
+// gremlinStartup enables HTTP beside WebSocket and maps neptune_query_timeout, validated as an integer, to the
+// server's evaluationTimeout.
+func gremlinStartup(spec *rds.Spec) string {
+	script := "sed -i 's/WebSocketChannelizer/WsAndHttpChannelizer/' conf/gremlin-server.yaml && "
+	if timeout, ok := spec.Parameters["neptune_query_timeout"]; ok {
+		script += "sed -i '/^evaluationTimeout:/d' conf/gremlin-server.yaml && " +
+			"echo 'evaluationTimeout: " + timeout + "' >> conf/gremlin-server.yaml && "
+	}
+
+	return script + "exec /docker-entrypoint.sh conf/gremlin-server.yaml"
+}
 
 func probeGremlin(ctx context.Context, port int64) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
@@ -331,6 +340,10 @@ func parameterArguments(spec *rds.Spec) []string {
 		return nil
 	}
 
+	if spec.Engine == rds.EngineDocDB {
+		return mongoArguments(spec.Parameters)
+	}
+
 	args := []string{}
 	switch spec.Engine {
 	case rds.EnginePostgres:
@@ -348,6 +361,29 @@ func parameterArguments(spec *rds.Spec) []string {
 		} else {
 			args = append(args, "--"+strings.ReplaceAll(name, "_", "-")+"="+value)
 		}
+	}
+
+	return args
+}
+
+// mongoArguments maps DocumentDB's profiler and TTL settings to mongod options. TLS and auditing accept only their
+// disabled values in Docker mode, so they add nothing.
+func mongoArguments(parameters map[string]string) []string {
+	args := []string{"mongod"}
+	if parameters["profiler"] == "enabled" {
+		args = append(args, "--profile", "1")
+	}
+
+	if value, ok := parameters["profiler_threshold_ms"]; ok {
+		args = append(args, "--slowms", value)
+	}
+
+	if value, ok := parameters["profiler_sampling_rate"]; ok {
+		args = append(args, "--slowOpSampleRate", value)
+	}
+
+	if parameters["ttl_monitor"] == "disabled" {
+		args = append(args, "--setParameter", "ttlMonitorEnabled=false")
 	}
 
 	return args

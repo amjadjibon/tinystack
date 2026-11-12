@@ -28,6 +28,14 @@ const (
 
 const kindClusterParameter = "cluster-pg"
 
+const (
+	docDB40         = "4.0"
+	docDB50         = "5.0"
+	parameterSwitch = "enabled,disabled"
+	parameterNo     = "disabled"
+	parameterFlag   = "0-1"
+)
+
 type parameterDefinition struct {
 	name, value, dataType, allowed string
 	static, immutable              bool
@@ -85,12 +93,53 @@ var mysqlParameters = []parameterDefinition{
 	{"version", "", parameterString, "", true, true},
 }
 
+// DocumentDB cluster parameters. TLS 1.2+/1.3+ need engine 4.0 and FIPS needs 5.0.
+// https://docs.aws.amazon.com/documentdb/latest/developerguide/cluster_parameter_groups-list_of_parameters.html
+func docDBParameters(version string) []parameterDefinition {
+	tls := parameterSwitch
+	switch version {
+	case docDB40:
+		tls += ",tls1.2+,tls1.3+"
+	case docDB50:
+		tls += ",tls1.2+,tls1.3+,fips-140-3"
+	}
+
+	return []parameterDefinition{
+		{"audit_logs", parameterNo, parameterString, "enabled,disabled,ddl,dml_read,dml_write,all,none", false, false},
+		{"profiler", parameterNo, parameterString, parameterSwitch, false, false},
+		{"profiler_sampling_rate", "1.0", parameterFloat, "0.0-1.0", false, false},
+		{"profiler_threshold_ms", "100", parameterInteger, "50-2147483646", false, false},
+		{"tls", "enabled", parameterString, tls, true, false},
+		{"ttl_monitor", "enabled", parameterString, parameterSwitch, false, false},
+	}
+}
+
+// Neptune cluster parameters; https://docs.aws.amazon.com/neptune/latest/userguide/parameters.html
+var neptuneParameters = []parameterDefinition{
+	{"neptune_enable_audit_log", "0", parameterInteger, parameterFlag, true, false},
+	{"neptune_enable_slow_query_log", parameterNo, parameterString, "info,debug,disabled", false, false},
+	{"neptune_lookup_cache", "0", parameterInteger, parameterFlag, true, false},
+	{"neptune_query_timeout", "120000", parameterInteger, "10-2147483647", true, false},
+	{"neptune_streams", "0", parameterInteger, parameterFlag, true, false},
+	{"neptune_streams_expiry_days", "7", parameterInteger, "1-90", true, false},
+}
+
+// The only values the Docker engines can honour for parameters they do not implement: community MongoDB has no
+// TLS certificates or auditing, and Gremlin Server has no audit log, slow-query log or streams.
+var dockerParameterValues = map[string][]string{
+	"audit_logs":                    {parameterNo, "none"},
+	"tls":                           {parameterNo},
+	"neptune_enable_audit_log":      {"0"},
+	"neptune_enable_slow_query_log": {parameterNo},
+	"neptune_streams":               {"0"},
+}
+
 func parameterCatalog(family string, cluster bool) ([]parameterDefinition, error) {
 	engine := ""
 	version := ""
 	engines := []string{EnginePostgres, EngineMySQL, EngineMariaDB}
 	if cluster {
-		engines = []string{EngineAuroraPostgres, EngineAuroraMySQL}
+		engines = []string{EngineAuroraPostgres, EngineAuroraMySQL, EngineDocDB, EngineNeptune}
 	}
 
 	for _, e := range engines {
@@ -106,8 +155,13 @@ func parameterCatalog(family string, cluster bool) ([]parameterDefinition, error
 
 	if cluster {
 		supported := slices.Contains([]string{"15", "16", "17"}, version)
-		if engine == EngineAuroraMySQL {
+		switch engine {
+		case EngineAuroraMySQL:
 			supported = version == mysqlFamilyVersion
+		case EngineDocDB:
+			supported = slices.Contains([]string{"3.6", docDB40, docDB50}, version)
+		case EngineNeptune:
+			supported = slices.Contains([]string{"1.2", "1.3"}, version)
 		}
 
 		if !supported {
@@ -117,8 +171,13 @@ func parameterCatalog(family string, cluster bool) ([]parameterDefinition, error
 		return nil, err
 	}
 
-	if engine == EnginePostgres || engine == EngineAuroraPostgres {
+	switch engine {
+	case EnginePostgres, EngineAuroraPostgres:
 		return postgresParameters, nil
+	case EngineDocDB:
+		return docDBParameters(version), nil
+	case EngineNeptune:
+		return neptuneParameters, nil
 	}
 
 	return mysqlParameters, nil
@@ -341,6 +400,11 @@ func (s *Service) alterParameters(
 				return invalid("Invalid value for parameter: " + pname)
 			}
 
+			if honoured, limited := dockerParameterValues[pname]; !reset && s.runtime != nil && limited &&
+				!slices.Contains(honoured, *p.ParameterValue) {
+				return invalid("Docker engines support only " + strings.Join(honoured, " or ") + " for " + pname)
+			}
+
 			if reset {
 				delete(r.Parameters, pname)
 			} else {
@@ -455,8 +519,13 @@ func (s *Service) applyDynamicParameters(
 }
 
 func clusterFamily(engine, version string) string {
-	if engine == EngineAuroraMySQL {
+	switch engine {
+	case EngineAuroraMySQL:
 		return engine + mysqlFamilyVersion
+	case EngineDocDB:
+		return engine + version
+	case EngineNeptune:
+		return engine + strings.Join(strings.Split(version, ".")[:2], ".")
 	}
 
 	return engine + strings.Split(version, ".")[0]

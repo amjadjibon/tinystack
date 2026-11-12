@@ -85,3 +85,36 @@ func TestParameterRuntimeStatus(t *testing.T) {
 		t.Fatalf("startup parameters missing: %+v", rt.specs)
 	}
 }
+
+// Docker engines accept only the values they honour for parameters they do not implement.
+func TestDockerClusterParameterValues(t *testing.T) {
+	s := New(memory.New(nil, nil))
+	s.runtime, s.owner = &fakeRuntime{ready: true}, "parameter-test"
+	ctx := runtimeContext()
+	if _, err := s.CreateDBClusterParameterGroup(ctx, &api.CreateDBClusterParameterGroupMessage{
+		DBClusterParameterGroupName: new("documents"), DBParameterGroupFamily: new("docdb5.0"),
+		Description: new("test"),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	modify := func(name, value string) error {
+		_, err := s.ModifyDBClusterParameterGroup(ctx, &api.ModifyDBClusterParameterGroupMessage{
+			DBClusterParameterGroupName: new("documents"),
+			Parameters: []api.Parameter{
+				{ParameterName: new(name), ParameterValue: new(value), ApplyMethod: new(parameterPending)},
+			},
+		})
+		return err
+	}
+
+	if err := modify("tls", "enabled"); err == nil {
+		t.Fatal("Docker accepted tls=enabled")
+	}
+
+	for name, value := range map[string]string{"tls": "disabled", "audit_logs": "none", "profiler": "enabled"} {
+		if err := modify(name, value); err != nil {
+			t.Fatal(name, err)
+		}
+	}
+}
