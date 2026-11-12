@@ -2471,31 +2471,35 @@
       "scope": "Account and Region",
       "summary": "Store MemoryDB subnet groups, users, ACLs and clusters, optionally serving a cluster-protocol Valkey or Redis OSS engine in Docker.",
       "features": [
-        "Nineteen pinned AWS JSON 1.1 operations for subnet groups, users, ACLs, clusters and native tags, with AWS SDK v2 coverage",
+        "Twenty-five pinned AWS JSON 1.1 operations for subnet groups, users, ACLs, clusters, parameter groups and native tags, with AWS SDK v2 coverage",
         "Clusters follow the documented naming, shard (1-500), replica (0-5), port, maintenance and snapshot window rules, with whole-candidate validation on update and no change when an update is rejected",
         "Engine redis 6.2/7.0/7.1 or valkey 7.2 by major.minor version with the matching default parameter group; engines can be upgraded (Redis OSS to Valkey too) but never downgraded",
         "Records mode reports available with synthesized shards and nodes; opt-in memorydb.clusters: docker runs one cluster-mode engine with all 16384 slots, loopback cluster and node endpoints, and readiness-driven creating/available status; engine ACL errors report create-failed",
         "Built-in default user and open-access ACL that are identical on every read and cannot be changed, deleted or tagged; clusters without TLS must use open-access",
         "Users accept up to two checked passwords or IAM authentication in records mode; Docker mode rejects IAM and stores SHA-256 password hashes for engine ACL enforcement; deleting a user removes it from its ACLs",
         "Subnet groups read existing EC2 subnets in the same transaction, derive the VPC, and protect in-use groups from deletion",
-        "TagResource, UntagResource and ListTags on cluster, user, acl and subnetgroup ARNs; Resource Groups Tagging API and Resource Groups integration",
+        "TagResource, UntagResource and ListTags on cluster, user, acl, subnetgroup and parametergroup ARNs; Resource Groups Tagging API and Resource Groups integration",
         "AWS::MemoryDB::Cluster, SubnetGroup, User and ACL CloudFormation lifecycle with in-place updates, replacement for immutable properties, Ref returning the name and GetAtt ARN/Arn, ClusterEndpoint.Address/Port and Status",
         "Inventory reports RecordsOnly and ExecutionReady for the selected runtime; official AWS icon and Terraform memorydb endpoint key",
         "Docker runtime shares container execution with ElastiCache; TLS defaults on using TinyStack local CA, ACL changes reconcile every second, named volumes survive shutdown and sqlite restarts, and delete/reset remove owned resources",
-        "Console page for clusters (create, update node type, shards, replicas, engine version, ACL and description, delete with typed confirmation), users with masked passwords, ACL membership, subnet groups and tags; the cluster endpoint has a copy button, status is polled while a cluster is creating, updating or deleting, and a notice shows whether the runtime is records-only or Docker"
+        "Console page for clusters (create, update node type, shards, replicas, engine version, ACL and description, delete with typed confirmation), users with masked passwords, ACL membership, subnet groups and tags; the cluster endpoint has a copy button, status is polled while a cluster is creating, updating or deleting, and a notice shows whether the runtime is records-only or Docker",
+        "Parameter group CRUD, update (up to 20 values per call), selective/all reset and paginated parameter descriptions for memorydb_redis6, memorydb_redis7 and memorydb_valkey7; immutable default groups, family checks and in-use deletion protection",
+        "Shared Redis/Valkey parameter definitions with ElastiCache; Docker applies configuration at startup and reconciles live changes with CONFIG SET outside storage transactions, reporting applying/in-sync",
+        "AWS::MemoryDB::ParameterGroup supports Parameters maps, tags, name Ref, parameter removal resets and batched updates; clusters accept custom groups",
+        "Console parameter group list/create/edit and parameter descriptions"
       ],
       "gaps": [
         "Docker materializes one engine per cluster; shard and replica counts, node types and engine upgrades remain metadata. The initial engine image remains unchanged across updates and restarts; no distributed replication or failover",
-        "No snapshots (including SnapshotName, SnapshotArns and final snapshots on delete), parameter group CRUD, reserved nodes, multi-Region clusters, service updates, failover, events or DescribeEngineVersions",
+        "No snapshots (including SnapshotName, SnapshotArns and final snapshots on delete), reserved nodes, multi-Region clusters, service updates, failover, events or DescribeEngineVersions",
         "Unsupported cluster settings (SNS topic, data tiering, network type, IP discovery) reject at the shared decoder; r6gd node types are rejected because data tiering is unsupported",
-        "Only the documented default parameter groups are accepted; no implicit default subnet group exists, so a cluster without SubnetGroupName reports none and one Availability Zone",
+        "No implicit default subnet group exists, so a cluster without SubnetGroupName reports none and one Availability Zone",
         "Engine versions are major.minor only; patch versions are reported only where the AWS documentation states them (valkey 7.2.6)",
         "DescribeUsers supports the UserName filter only; page size has no default or maximum because the model documents none",
         "Records-mode access strings are checked only for being non-empty and free of reset; Docker evaluates the engine ACL grammar when applying users. IAM data-plane authentication is explicitly unsupported in Docker mode",
         "CloudFormation rejects removing optional properties the API cannot clear and changing AutoMinorVersionUpgrade; ClusterEndpoint, DataTiering, FinalSnapshotName, IpDiscovery, MultiRegionClusterName, NetworkType, SnapshotArns, SnapshotName and SNS properties fail explicitly",
-        "The console offers no snapshots, final snapshot on delete or parameter group management because the service implements none; the parameter group is the default group of the chosen engine version",
         "Redis managed version 7.1 maps to upstream redis:7.2-alpine because no upstream Redis 7.1 image exists; Redis 6.2/7.0 and Valkey 7.2 use their matching alpine image tags",
-        "Docker runtime uses TinyStack deadlines of 10 minutes per container start, 10 seconds per reconciliation probe/configuration and 5 seconds for access-string validation; failed reconciliation attempts retry"
+        "Docker runtime uses TinyStack deadlines of 10 minutes per container start, 10 seconds per reconciliation probe/configuration and 5 seconds for access-string validation; failed reconciliation attempts retry",
+        "Docker rejects search module parameters; records mode supports search parameters from engine 7.1 onward; vector-search default groups are unsupported; the console does not expose parameter group deletion or reset, or cluster parameter group selection"
       ],
       "execution": "Records by default; optional Docker Valkey/Redis cluster protocol with TLS and ACLs",
       "package": "memorydb"

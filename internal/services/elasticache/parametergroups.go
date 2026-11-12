@@ -7,86 +7,16 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/elasticache"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/redisparams"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-const (
-	typeString  = "string"
-	typeInteger = "integer"
-	minVerRedis = "6.0.0"
-)
-
-type paramDefinition struct {
-	Name          string
-	Description   string
-	DataType      string
-	AllowedValues string
-	DefaultValue  string
-	MinEngineVer  string
-	IsModifiable  bool
-	Dynamic       bool
-}
-
-var redisParams = []paramDefinition{
-	{
-		Name:        "maxmemory-policy",
-		Description: "How Redis will select what to remove when maxmemory is reached",
-		DataType:    typeString,
-		AllowedValues: "volatile-lru,allkeys-lru,volatile-lfu,allkeys-lfu,volatile-random," +
-			"allkeys-random,volatile-ttl,noeviction",
-		DefaultValue: "volatile-lru",
-		IsModifiable: true,
-		Dynamic:      true,
-		MinEngineVer: minVerRedis,
-	},
-	{
-		Name:          "timeout",
-		Description:   "Close connection after client is idle for N seconds (0 to disable)",
-		DataType:      typeInteger,
-		AllowedValues: "0-31536000",
-		DefaultValue:  "0",
-		IsModifiable:  true,
-		Dynamic:       true,
-		MinEngineVer:  minVerRedis,
-	},
-	{
-		Name:          "notify-keyspace-events",
-		Description:   "Events to notify via Pub/Sub",
-		DataType:      typeString,
-		AllowedValues: "K,E,g,$,l,s,h,z,x,e,A,t,m",
-		DefaultValue:  "",
-		IsModifiable:  true,
-		Dynamic:       true,
-		MinEngineVer:  minVerRedis,
-	},
-	{
-		Name:          "databases",
-		Description:   "Set the number of databases",
-		DataType:      typeInteger,
-		AllowedValues: "1-1000000",
-		DefaultValue:  "16",
-		IsModifiable:  true,
-		Dynamic:       false,
-		MinEngineVer:  minVerRedis,
-	},
-	{
-		Name:          "appendonly",
-		Description:   "Enable append only mode",
-		DataType:      typeString,
-		AllowedValues: "yes,no",
-		DefaultValue:  "no",
-		IsModifiable:  true,
-		Dynamic:       true,
-		MinEngineVer:  minVerRedis,
-	},
-}
-
-var memcachedParams = []paramDefinition{
+var memcachedParams = []redisparams.Definition{
 	{
 		Name:          "max_item_size",
 		Description:   "Maximum item size in bytes",
-		DataType:      typeInteger,
+		DataType:      "integer",
 		AllowedValues: "1048576-134217728",
 		DefaultValue:  "1048576",
 		IsModifiable:  true,
@@ -96,7 +26,7 @@ var memcachedParams = []paramDefinition{
 	{
 		Name:          "max_simultaneous_connections_per_node",
 		Description:   "Maximum simultaneous connections",
-		DataType:      typeInteger,
+		DataType:      "integer",
 		AllowedValues: "1024-65535",
 		DefaultValue:  "1024",
 		IsModifiable:  true,
@@ -136,13 +66,13 @@ func familyForDefaultGroup(name string) (string, bool) {
 	return "", false
 }
 
-func getFamilyParams(family string) []paramDefinition {
+func getFamilyParams(family string) []redisparams.Definition {
 	lower := strings.ToLower(family)
 	if strings.HasPrefix(lower, "memcached") {
 		return memcachedParams
 	}
 
-	return redisParams
+	return redisparams.Redis
 }
 
 func toAPIParameterGroup(scope request.Scope, name, family, description string, isGlobal bool) api.CacheParameterGroup {
@@ -496,7 +426,7 @@ func (s *Service) ModifyCacheParameterGroup(
 	}
 
 	defs := getFamilyParams(existing.Family)
-	defMap := make(map[string]paramDefinition, len(defs))
+	defMap := make(map[string]redisparams.Definition, len(defs))
 	for _, d := range defs {
 		defMap[d.Name] = d
 	}
@@ -672,7 +602,7 @@ func (s *Service) applyParameterGroupChanges(
 	scope request.Scope,
 	groupName string,
 	pnvs []api.ParameterNameValue,
-	defs map[string]paramDefinition,
+	defs map[string]redisparams.Definition,
 ) {
 	var clusters []clusterRecord
 	_ = s.store.View(ctx, func(tx storage.ReadTx) error {
@@ -682,6 +612,7 @@ func (s *Service) applyParameterGroupChanges(
 				clusters = append(clusters, *cl)
 			}
 		}
+
 		return nil
 	})
 
@@ -696,7 +627,19 @@ func (s *Service) applyParameterGroupChanges(
 				if d.Dynamic && cl.Status == statusAvailable {
 					for _, node := range cl.Nodes {
 						if node.Port > 0 {
-							_ = redisConfigSet(ctx, node.Port, cl.AuthToken, pName, pVal)
+							_ = redisparams.Apply(
+								ctx,
+								map[string]string{pName: pVal},
+								func(ctx context.Context, args ...any) error {
+									return redisConfigSet(
+										ctx,
+										node.Port,
+										cl.AuthToken,
+										args[2].(string),
+										args[3].(string),
+									)
+								},
+							)
 						}
 					}
 				} else {

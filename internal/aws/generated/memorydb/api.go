@@ -334,6 +334,87 @@ type UpdateUserResponse struct {
 	User *User `json:"User,omitempty"`
 }
 
+type CreateParameterGroupRequest struct {
+	ParameterGroupName *string `json:"ParameterGroupName,omitempty"`
+	Family             *string `json:"Family,omitempty"`
+	Description        *string `json:"Description,omitempty"`
+	Tags               []Tag   `json:"Tags,omitempty"`
+}
+
+type ParameterGroup struct {
+	Name        *string `json:"Name,omitempty"`
+	Family      *string `json:"Family,omitempty"`
+	Description *string `json:"Description,omitempty"`
+	ARN         *string `json:"ARN,omitempty"`
+}
+
+type CreateParameterGroupResponse struct {
+	ParameterGroup *ParameterGroup `json:"ParameterGroup,omitempty"`
+}
+
+type DescribeParameterGroupsRequest struct {
+	ParameterGroupName *string `json:"ParameterGroupName,omitempty"`
+	MaxResults         *int64  `json:"MaxResults,omitempty"`
+	NextToken          *string `json:"NextToken,omitempty"`
+}
+
+type DescribeParameterGroupsResponse struct {
+	NextToken       *string          `json:"NextToken,omitempty"`
+	ParameterGroups []ParameterGroup `json:"ParameterGroups,omitempty"`
+}
+
+type DeleteParameterGroupRequest struct {
+	ParameterGroupName *string `json:"ParameterGroupName,omitempty"`
+}
+
+type DeleteParameterGroupResponse struct {
+	ParameterGroup *ParameterGroup `json:"ParameterGroup,omitempty"`
+}
+
+type ParameterNameValue struct {
+	ParameterName  *string `json:"ParameterName,omitempty"`
+	ParameterValue *string `json:"ParameterValue,omitempty"`
+}
+
+type UpdateParameterGroupRequest struct {
+	ParameterGroupName  *string              `json:"ParameterGroupName,omitempty"`
+	ParameterNameValues []ParameterNameValue `json:"ParameterNameValues,omitempty"`
+}
+
+type UpdateParameterGroupResponse struct {
+	ParameterGroup *ParameterGroup `json:"ParameterGroup,omitempty"`
+}
+
+type ResetParameterGroupRequest struct {
+	ParameterGroupName *string  `json:"ParameterGroupName,omitempty"`
+	AllParameters      *bool    `json:"AllParameters,omitempty"`
+	ParameterNames     []string `json:"ParameterNames,omitempty"`
+}
+
+type ResetParameterGroupResponse struct {
+	ParameterGroup *ParameterGroup `json:"ParameterGroup,omitempty"`
+}
+
+type DescribeParametersRequest struct {
+	ParameterGroupName *string `json:"ParameterGroupName,omitempty"`
+	MaxResults         *int64  `json:"MaxResults,omitempty"`
+	NextToken          *string `json:"NextToken,omitempty"`
+}
+
+type Parameter struct {
+	Name                 *string `json:"Name,omitempty"`
+	Value                *string `json:"Value,omitempty"`
+	Description          *string `json:"Description,omitempty"`
+	DataType             *string `json:"DataType,omitempty"`
+	AllowedValues        *string `json:"AllowedValues,omitempty"`
+	MinimumEngineVersion *string `json:"MinimumEngineVersion,omitempty"`
+}
+
+type DescribeParametersResponse struct {
+	NextToken  *string     `json:"NextToken,omitempty"`
+	Parameters []Parameter `json:"Parameters,omitempty"`
+}
+
 type API interface {
 	CreateACL(context.Context, *CreateACLRequest) (*CreateACLResponse, error)
 	CreateCluster(context.Context, *CreateClusterRequest) (*CreateClusterResponse, error)
@@ -354,10 +435,16 @@ type API interface {
 	UpdateCluster(context.Context, *UpdateClusterRequest) (*UpdateClusterResponse, error)
 	UpdateSubnetGroup(context.Context, *UpdateSubnetGroupRequest) (*UpdateSubnetGroupResponse, error)
 	UpdateUser(context.Context, *UpdateUserRequest) (*UpdateUserResponse, error)
+	CreateParameterGroup(context.Context, *CreateParameterGroupRequest) (*CreateParameterGroupResponse, error)
+	DescribeParameterGroups(context.Context, *DescribeParameterGroupsRequest) (*DescribeParameterGroupsResponse, error)
+	DeleteParameterGroup(context.Context, *DeleteParameterGroupRequest) (*DeleteParameterGroupResponse, error)
+	UpdateParameterGroup(context.Context, *UpdateParameterGroupRequest) (*UpdateParameterGroupResponse, error)
+	ResetParameterGroup(context.Context, *ResetParameterGroupRequest) (*ResetParameterGroupResponse, error)
+	DescribeParameters(context.Context, *DescribeParametersRequest) (*DescribeParametersResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "memorydb", SigningName: "memorydb", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "memorydb", TargetPrefix: "AmazonMemoryDB", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"ACLAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ACLNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ACLQuotaExceededFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ClusterAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ClusterNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ClusterQuotaForCustomerExceededFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "DefaultUserRequired": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "DuplicateUserNameFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InsufficientClusterCapacityFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidACLStateFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidARNFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidClusterStateFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidCredentialsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 408}, "InvalidKMSKeyFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidMultiRegionClusterStateFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidNodeStateFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidParameterCombinationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidParameterValueException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSubnet": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidUserStateFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidVPCNetworkStateFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "MultiRegionClusterNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "MultiRegionParameterGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "NoOperationFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NodeQuotaForClusterExceededFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NodeQuotaForCustomerExceededFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ParameterGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServiceLinkedRoleNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ShardsPerClusterQuotaExceededFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SnapshotAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SnapshotNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "SubnetGroupAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SubnetGroupInUseFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SubnetGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "SubnetGroupQuotaExceededFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SubnetInUse": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SubnetNotAllowedFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SubnetQuotaExceededFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TagNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "TagQuotaPerResourceExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "UserQuotaExceededFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "memorydb", SigningName: "memorydb", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "memorydb", TargetPrefix: "AmazonMemoryDB", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"ACLAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ACLNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ACLQuotaExceededFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ClusterAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ClusterNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ClusterQuotaForCustomerExceededFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "DefaultUserRequired": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "DuplicateUserNameFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InsufficientClusterCapacityFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidACLStateFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidARNFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidClusterStateFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidCredentialsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 408}, "InvalidKMSKeyFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidMultiRegionClusterStateFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidNodeStateFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidParameterCombinationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidParameterGroupStateFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidParameterValueException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidSubnet": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidUserStateFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidVPCNetworkStateFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "MultiRegionClusterNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "MultiRegionParameterGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "NoOperationFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NodeQuotaForClusterExceededFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NodeQuotaForCustomerExceededFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ParameterGroupAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ParameterGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ParameterGroupQuotaExceededFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ServiceLinkedRoleNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ShardsPerClusterQuotaExceededFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SnapshotAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SnapshotNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "SubnetGroupAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SubnetGroupInUseFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SubnetGroupNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "SubnetGroupQuotaExceededFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SubnetInUse": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SubnetNotAllowedFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "SubnetQuotaExceededFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TagNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "TagQuotaPerResourceExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserAlreadyExistsFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UserNotFoundFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "UserQuotaExceededFault": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateACL": {Name: "CreateACL", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "memorydb:CreateACL", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonMemoryDB.CreateACL", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateACLRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateACL(ctx, input.(*CreateACLRequest))
 		}},
@@ -412,6 +499,24 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"UpdateUser": {Name: "UpdateUser", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "memorydb:UpdateUser", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonMemoryDB.UpdateUser", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateUserRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.UpdateUser(ctx, input.(*UpdateUserRequest))
+		}},
+		"CreateParameterGroup": {Name: "CreateParameterGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "memorydb:CreateParameterGroup", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonMemoryDB.CreateParameterGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateParameterGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateParameterGroup(ctx, input.(*CreateParameterGroupRequest))
+		}},
+		"DescribeParameterGroups": {Name: "DescribeParameterGroups", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "memorydb:DescribeParameterGroups", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonMemoryDB.DescribeParameterGroups", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeParameterGroupsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeParameterGroups(ctx, input.(*DescribeParameterGroupsRequest))
+		}},
+		"DeleteParameterGroup": {Name: "DeleteParameterGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "memorydb:DeleteParameterGroup", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonMemoryDB.DeleteParameterGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteParameterGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteParameterGroup(ctx, input.(*DeleteParameterGroupRequest))
+		}},
+		"UpdateParameterGroup": {Name: "UpdateParameterGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "memorydb:UpdateParameterGroup", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonMemoryDB.UpdateParameterGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateParameterGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateParameterGroup(ctx, input.(*UpdateParameterGroupRequest))
+		}},
+		"ResetParameterGroup": {Name: "ResetParameterGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "memorydb:ResetParameterGroup", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonMemoryDB.ResetParameterGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ResetParameterGroupRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ResetParameterGroup(ctx, input.(*ResetParameterGroupRequest))
+		}},
+		"DescribeParameters": {Name: "DescribeParameters", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "memorydb:DescribeParameters", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AmazonMemoryDB.DescribeParameters", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeParametersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeParameters(ctx, input.(*DescribeParametersRequest))
 		}},
 	}}
 }

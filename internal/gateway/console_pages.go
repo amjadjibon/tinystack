@@ -328,6 +328,8 @@ TagResource UntagResource GetTags
  CreateUser DescribeUsers UpdateUser DeleteUser
  CreateACL DescribeACLs UpdateACL DeleteACL
  CreateSubnetGroup DescribeSubnetGroups UpdateSubnetGroup DeleteSubnetGroup
+ CreateParameterGroup DescribeParameterGroups DescribeParameters
+ UpdateParameterGroup ResetParameterGroup DeleteParameterGroup
  ListTags TagResource UntagResource
 `)},
 	"mq": {operations: strings.Fields(`

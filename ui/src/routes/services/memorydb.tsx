@@ -7,6 +7,7 @@ import {
 	MemoryDBUsers,
 } from "#/components/memorydb/MemoryDBAccess";
 import { MemoryDBClusters } from "#/components/memorydb/MemoryDBClusters";
+import { MemoryDBParameters } from "#/components/memorydb/MemoryDBParameters";
 import {
 	MemoryDBSubnetGroups,
 	MemoryDBTags,
@@ -129,6 +130,17 @@ function Workspace({
 				activeTabId={tab}
 				onChange={({ detail }) => setTab(detail.activeTabId)}
 				tabs={[
+					{
+						id: "parameters",
+						label: "Parameter groups",
+						content: (
+							<MemoryDBParameters
+								scope={scope}
+								enabled={enabled}
+								onChanged={refresh}
+							/>
+						),
+					},
 					{
 						id: "clusters",
 						label: "Clusters",

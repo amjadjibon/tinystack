@@ -122,8 +122,12 @@ func TestConsoleMemoryDBLifecycle(t *testing.T) {
 	call("DeleteUser", map[string]any{"UserName": "console-user"})
 	call("DeleteSubnetGroup", map[string]any{"SubnetGroupName": "console-net"})
 
+	if len(call("DescribeParameterGroups", map[string]any{})["ParameterGroups"].([]any)) != 3 {
+		t.Fatal("default parameter groups missing")
+	}
+
 	// Operations the service does not implement stay out of reach of the console.
-	for _, op := range []string{"CreateSnapshot", "DescribeParameterGroups", "FailoverShard"} {
+	for _, op := range []string{"CreateSnapshot", "FailoverShard"} {
 		consoleResponse(t, srv,
 			consoleLambdaRequest(t, srv, "memorydb", op, account, region, map[string]any{}),
 			http.StatusBadRequest)

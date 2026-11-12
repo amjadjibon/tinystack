@@ -67,6 +67,8 @@ func (r reference) notFound() error {
 		return userNotFound(r.name)
 	case kindACL:
 		return aclNotFound(r.name)
+	case kindParameterGroup:
+		return parameterGroupNotFound(r.name)
 	default:
 		return subnetGroupNotFound(r.name)
 	}
@@ -90,7 +92,8 @@ func parseARN(scope request.Scope, value *string) (reference, error) {
 	}
 
 	kind, name, ok := strings.Cut(parts[2], "/")
-	if !ok || name == "" || !slices.Contains([]string{kindCluster, kindUser, kindACL, kindSubnetGroup}, kind) {
+	if !ok || name == "" ||
+		!slices.Contains([]string{kindCluster, kindUser, kindACL, kindSubnetGroup, kindParameterGroup}, kind) {
 		return reference{}, invalid
 	}
 
@@ -114,7 +117,9 @@ func (r reference) key(scope request.Scope) string { return key(scope, r.kind, r
 
 // builtIn reports whether the resource is the default user or the open-access ACL, which cannot carry tags.
 func (r reference) builtIn() bool {
-	return r.kind == kindUser && r.name == defaultUserName || r.kind == kindACL && r.name == openAccessACL
+	return r.kind == kindUser && r.name == defaultUserName || r.kind == kindACL && r.name == openAccessACL ||
+		r.kind == kindParameterGroup &&
+			slices.ContainsFunc(parameterFamilies, func(f string) bool { return defaultGroup(f) == r.name })
 }
 
 // readTags returns a resource's tags.
@@ -127,6 +132,8 @@ func readTags(tx storage.ReadTx, scope request.Scope, ref reference) (map[string
 	var found bool
 	var err error
 	switch ref.kind {
+	case kindParameterGroup:
+		r, found, err = readTagged[parameterGroupRecord](tx, ref.key(scope))
 	case kindCluster:
 		r, found, err = readTagged[clusterRecord](tx, ref.key(scope))
 	case kindUser:
@@ -164,6 +171,8 @@ func readTagged[T any, P interface {
 func writeTags(tx storage.WriteTx, scope request.Scope, ref reference, tags map[string]string) error {
 	var err error
 	switch ref.kind {
+	case kindParameterGroup:
+		err = replaceTags[parameterGroupRecord](tx, ref.key(scope), tags)
 	case kindCluster:
 		err = replaceTags[clusterRecord](tx, ref.key(scope), tags)
 	case kindUser:

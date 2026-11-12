@@ -19,6 +19,7 @@ const (
 	defaultMaintenanceWindow = "wed:03:00-wed:04:00"
 	defaultSnapshotWindow    = "04:30-05:30"
 	parameterGroupInSync     = "in-sync"
+	parameterApplying        = "applying"
 
 	// The quotas page: "Shards per cluster can go up to 500"; the API: at most 5 replicas per shard.
 	maxShards   = 500
@@ -45,7 +46,7 @@ type engineVersion struct {
 // only where the guide states it.
 var engineVersions = []engineVersion{
 	{engine: engineRedis, version: "6.2", parameterGroup: "default.memorydb-redis6", preferred: true},
-	{engine: engineRedis, version: "7.0", parameterGroup: "default.memorydb-redis7"},
+	{engine: engineRedis, version: redisVersion7, parameterGroup: "default.memorydb-redis7"},
 	{engine: engineRedis, version: "7.1", parameterGroup: "default.memorydb-redis7"},
 	{engine: engineValkey, version: "7.2", patch: "7.2.6", parameterGroup: "default.memorydb-valkey7", preferred: true},
 }
@@ -61,31 +62,33 @@ const (
 type clusterRecord struct {
 	CreatedAt time.Time
 	tagSet
-	EngineVersion      string
-	Engine             string
-	Admin              string
-	RuntimeEngine      string
-	RuntimeVersion     string
-	Container          string
-	Name               string
-	Description        string
-	NodeType           string
-	EndpointToken      string
-	RuntimeStatus      string
-	ParameterGroupName string
-	MaintenanceWindow  string
-	SnapshotWindow     string
-	SubnetGroupName    string
-	KmsKeyID           string
-	ACLName            string
-	SecurityGroupIDs   []string
-	Port               int
-	NumShards          int
-	NumReplicas        int
-	HostPort           int64
-	SnapshotRetention  int
-	TLS                bool
-	AutoMinorUpgrade   bool
+	EngineVersion        string
+	Engine               string
+	Admin                string
+	RuntimeEngine        string
+	RuntimeVersion       string
+	Container            string
+	Name                 string
+	Description          string
+	NodeType             string
+	EndpointToken        string
+	RuntimeStatus        string
+	ParameterGroupName   string
+	ParameterGroupStatus string
+	MaintenanceWindow    string
+	SnapshotWindow       string
+	SubnetGroupName      string
+	KmsKeyID             string
+	ACLName              string
+	SecurityGroupIDs     []string
+	ParameterRevision    uint64
+	Port                 int
+	NumShards            int
+	NumReplicas          int
+	HostPort             int64
+	SnapshotRetention    int
+	TLS                  bool
+	AutoMinorUpgrade     bool
 }
 
 // clusterPatch holds the settings a request sets; nil leaves a setting as it is. Creating a cluster merges a
@@ -158,15 +161,12 @@ func (r *clusterRecord) merge(p *clusterPatch) error {
 	}
 
 	r.Engine, r.EngineVersion = ev.engine, ev.version
-	if group := common.Value(p.ParameterGroupName); group != "" && group != ev.parameterGroup {
-		if slices.ContainsFunc(engineVersions, func(e engineVersion) bool { return e.parameterGroup == group }) {
-			return invalidCombination("Parameter group %s does not match engine %s %s.", group, ev.engine, ev.version)
-		}
-
-		return fault("ParameterGroupNotFoundFault", "Parameter group %s not found.", group)
+	if p.ParameterGroupName != nil {
+		r.ParameterGroupName = normalize(p.ParameterGroupName)
+	} else if r.ParameterGroupName == "" || strings.HasPrefix(r.ParameterGroupName, "default.") {
+		r.ParameterGroupName = ev.parameterGroup
 	}
 
-	r.ParameterGroupName = ev.parameterGroup
 	return nil
 }
 
@@ -281,6 +281,30 @@ func validSnapshotWindow(w string) bool {
 
 // checkReferences verifies the ACL and subnet group a cluster names.
 func checkReferences(tx storage.ReadTx, scope request.Scope, r *clusterRecord) error {
+	group, err := readParameterGroup(tx, scope, r.ParameterGroupName)
+	if err != nil {
+		return err
+	}
+
+	ev, err := findEngine(r.Engine, r.EngineVersion)
+	if err != nil {
+		return err
+	}
+
+	if defaultGroup(group.Family) != ev.parameterGroup {
+		return invalidCombination(
+			"Parameter group %s does not match engine %s %s.",
+			r.ParameterGroupName,
+			r.Engine,
+			r.EngineVersion,
+		)
+	}
+
+	if r.EngineVersion == redisVersion7 &&
+		(group.Values["search-enabled"] == parameterYes || group.Values["search-query-timeout-ms"] != "") {
+		return invalidCombination("Search parameters require engine version 7.1 or later.")
+	}
+
 	if _, err := readACL(tx, scope, r.ACLName); err != nil {
 		return err
 	}
@@ -350,7 +374,7 @@ func (r *clusterRecord) output(scope request.Scope, zones []string, shards bool,
 		EngineVersion:           new(r.EngineVersion),
 		EnginePatchVersion:      optional(patch),
 		ParameterGroupName:      new(r.ParameterGroupName),
-		ParameterGroupStatus:    new(parameterGroupInSync),
+		ParameterGroupStatus:    common.OrElse(optional(r.ParameterGroupStatus), new(parameterGroupInSync)),
 		SubnetGroupName:         optional(r.SubnetGroupName),
 		TLSEnabled:              new(r.TLS),
 		KmsKeyId:                optional(r.KmsKeyID),
@@ -505,6 +529,11 @@ func (s *Service) CreateCluster(ctx context.Context, in *api.CreateClusterReques
 			return e
 		}
 
+		if s.runtime != nil {
+			r.ParameterGroupStatus = parameterApplying
+			r.ParameterRevision++
+		}
+
 		out = r.output(scope, az, false, statusAvailable)
 		if s.runtime != nil {
 			if e := storage.Write(tx, indexKey(scope, name), true); e != nil {
@@ -568,6 +597,11 @@ func (s *Service) UpdateCluster(ctx context.Context, in *api.UpdateClusterReques
 			return clusterNotFound(name)
 		}
 
+		oldGroup, e := readParameterGroup(tx, scope, r.ParameterGroupName)
+		if e != nil {
+			return e
+		}
+
 		old := engineIndex(r.Engine, r.EngineVersion)
 		e = r.merge(&patch)
 		if e != nil {
@@ -592,9 +626,33 @@ func (s *Service) UpdateCluster(ctx context.Context, in *api.UpdateClusterReques
 			return e
 		}
 
+		newGroup, e := readParameterGroup(tx, scope, r.ParameterGroupName)
+		if e != nil {
+			return e
+		}
+
+		if oldGroup.Name != newGroup.Name {
+			for _, parameter := range []string{parameterActiveRehashing, "search-enabled"} {
+				if conditionalParameter(
+					oldGroup.Values,
+					parameter,
+				) != conditionalParameter(
+					newGroup.Values,
+					parameter,
+				) {
+					return invalidCombination("%s must match when changing groups.", parameter)
+				}
+			}
+		}
+
 		az, e := zones(tx, scope, r)
 		if e != nil {
 			return e
+		}
+
+		if s.runtime != nil {
+			r.ParameterGroupStatus = parameterApplying
+			r.ParameterRevision++
 		}
 
 		out = r.output(scope, az, false, statusAvailable)

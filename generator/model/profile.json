@@ -26563,7 +26563,13 @@
       "UpdateACL",
       "UpdateCluster",
       "UpdateSubnetGroup",
-      "UpdateUser"
+      "UpdateUser",
+      "CreateParameterGroup",
+      "DescribeParameterGroups",
+      "DeleteParameterGroup",
+      "UpdateParameterGroup",
+      "ResetParameterGroup",
+      "DescribeParameters"
     ],
     "shapes": {
       "ACL": [
@@ -26839,6 +26845,72 @@
         "MinimumEngineVersion",
         "Authentication",
         "ARN"
+      ],
+      "CreateParameterGroupRequest": [
+        "ParameterGroupName",
+        "Family",
+        "Description",
+        "Tags"
+      ],
+      "CreateParameterGroupResponse": [
+        "ParameterGroup"
+      ],
+      "DescribeParameterGroupsRequest": [
+        "ParameterGroupName",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeParameterGroupsResponse": [
+        "NextToken",
+        "ParameterGroups"
+      ],
+      "DeleteParameterGroupRequest": [
+        "ParameterGroupName"
+      ],
+      "DeleteParameterGroupResponse": [
+        "ParameterGroup"
+      ],
+      "UpdateParameterGroupRequest": [
+        "ParameterGroupName",
+        "ParameterNameValues"
+      ],
+      "UpdateParameterGroupResponse": [
+        "ParameterGroup"
+      ],
+      "ResetParameterGroupRequest": [
+        "ParameterGroupName",
+        "AllParameters",
+        "ParameterNames"
+      ],
+      "ResetParameterGroupResponse": [
+        "ParameterGroup"
+      ],
+      "DescribeParametersRequest": [
+        "ParameterGroupName",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeParametersResponse": [
+        "NextToken",
+        "Parameters"
+      ],
+      "ParameterGroup": [
+        "Name",
+        "Family",
+        "Description",
+        "ARN"
+      ],
+      "Parameter": [
+        "Name",
+        "Value",
+        "Description",
+        "DataType",
+        "AllowedValues",
+        "MinimumEngineVersion"
+      ],
+      "ParameterNameValue": [
+        "ParameterName",
+        "ParameterValue"
       ]
     }
   },

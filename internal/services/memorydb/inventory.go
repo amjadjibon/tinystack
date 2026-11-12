@@ -30,6 +30,13 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 			)
 
 			switch kind {
+			case kindParameterGroup:
+				r, _, e := storage.Read[parameterGroupRecord](tx, k)
+				if e != nil {
+					return e
+				}
+
+				name, tags, configuration = r.Name, r.Tags, r.output(scope)
 			case kindCluster:
 				r, _, e := storage.Read[clusterRecord](tx, k)
 				if e != nil {

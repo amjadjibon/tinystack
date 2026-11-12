@@ -225,3 +225,79 @@ func TestRuntimeRejectsPersistedIAMCluster(t *testing.T) {
 		t.Fatal("Docker startup accepted a persisted IAM cluster")
 	}
 }
+
+func TestRuntimeParameterCommands(t *testing.T) {
+	rt := &fakeClusterRuntime{}
+	s := New(memory.New(nil, nil), nil)
+	s.runtime = rt
+	if err := s.applyConfig(context.Background(), &valkeydocker.ClusterSpec{}, map[string]string{
+		"timeout": "30", "maxmemory-policy": "allkeys-lru",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := fmt.Sprint(rt.commands); got != "[[CONFIG SET maxmemory-policy allkeys-lru] [CONFIG SET timeout 30]]" {
+		t.Fatal(got)
+	}
+}
+
+func TestRuntimeParameterReconciliation(t *testing.T) {
+	s := New(memory.New(nil, nil), nil)
+	scope := request.Scope{AccountID: "000000000000", Region: "us-east-1"}
+	ctx := request.WithMetadata(context.Background(), request.Metadata{Scope: scope})
+	rt := &fakeClusterRuntime{}
+	s.runtime = rt
+	_, err := s.CreateParameterGroup(ctx, &api.CreateParameterGroupRequest{
+		ParameterGroupName: new("custom"), Family: new("memorydb_valkey7"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = s.CreateCluster(ctx, &api.CreateClusterRequest{
+		ClusterName: new("engine"),
+		NodeType:    new("db.r6g.large"), ACLName: new("open-access"), ParameterGroupName: new("custom"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, value := range []string{"30", "40", "0"} {
+		if value == "0" {
+			_, err = s.ResetParameterGroup(
+				ctx,
+				&api.ResetParameterGroupRequest{ParameterGroupName: new("custom"), AllParameters: new(true)},
+			)
+		} else {
+			_, err = s.UpdateParameterGroup(ctx, &api.UpdateParameterGroupRequest{
+				ParameterGroupName: new("custom"),
+				ParameterNameValues: []api.ParameterNameValue{
+					{ParameterName: new("timeout"), ParameterValue: new(value)},
+				},
+			})
+		}
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		before, e := s.DescribeClusters(ctx, &api.DescribeClustersRequest{ClusterName: new("engine")})
+		if e != nil || *before.Clusters[0].ParameterGroupStatus != "applying" {
+			t.Fatal(before, e)
+		}
+
+		rt.commands = nil
+		if err = s.advance(ctx, indexKey(scope, "engine")); err != nil {
+			t.Fatal(err)
+		}
+
+		if !strings.Contains(fmt.Sprint(rt.commands), "[CONFIG SET timeout "+value+"]") {
+			t.Fatal(rt.commands)
+		}
+
+		after, e := s.DescribeClusters(ctx, &api.DescribeClustersRequest{ClusterName: new("engine")})
+		if e != nil || *after.Clusters[0].ParameterGroupStatus != parameterGroupInSync {
+			t.Fatal(after, e)
+		}
+	}
+}

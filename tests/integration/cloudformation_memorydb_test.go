@@ -22,8 +22,16 @@ type memoryDBStack struct {
 
 func memoryDBTemplate(s *memoryDBStack) string {
 	tags := []any{map[string]any{"Key": "version", "Value": s.tag}}
+	parameters := map[string]any{"maxmemory-policy": "allkeys-lru"}
+	if s.tag == "one" {
+		parameters["timeout"] = "30"
+	}
 	raw, _ := json.Marshal(map[string]any{
 		"Resources": map[string]any{
+			"Parameters": map[string]any{"Type": "AWS::MemoryDB::ParameterGroup", "Properties": map[string]any{
+				"ParameterGroupName": "cfn-parameters", "Family": "memorydb_valkey7", "Description": "custom",
+				"Parameters": parameters, "Tags": tags,
+			}},
 			"Subnets": map[string]any{"Type": "AWS::MemoryDB::SubnetGroup", "Properties": map[string]any{
 				"SubnetGroupName": "cfn-net", "Description": "private", "SubnetIds": []string{s.subnet}, "Tags": tags,
 			}},
@@ -40,7 +48,8 @@ func memoryDBTemplate(s *memoryDBStack) string {
 				"UserNames": []any{map[string]any{"Ref": "Reader"}, map[string]any{"Ref": "Writer"}}[:s.members],
 			}},
 			"Cache": map[string]any{"Type": "AWS::MemoryDB::Cluster", "Properties": map[string]any{
-				"ClusterName": "cfn-cache", "NodeType": "db.r6g.large", "Description": s.description,
+				"ParameterGroupName": map[string]any{"Ref": "Parameters"},
+				"ClusterName":        "cfn-cache", "NodeType": "db.r6g.large", "Description": s.description,
 				"ACLName":         map[string]any{"Ref": "Acl"},
 				"SubnetGroupName": map[string]any{"Ref": "Subnets"},
 				"NumShards":       s.shards, "NumReplicasPerShard": 1, "Engine": "valkey",
@@ -95,6 +104,7 @@ func TestCloudFormationMemoryDBLifecycle(t *testing.T) {
 		subnet: aws.ToString(subnet.Subnet.SubnetId), description: "one", accessLevel: "on ~* +@read",
 		members: 2, shards: 1, autoMinor: true, tag: "one",
 	}
+
 	update := func(next *memoryDBStack) {
 		t.Helper()
 		_, updateErr := cf.UpdateStack(ctx, &cfn.UpdateStackInput{

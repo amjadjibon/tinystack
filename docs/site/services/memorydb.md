@@ -13,7 +13,7 @@ Store MemoryDB subnet groups, users, ACLs and clusters, optionally serving a clu
 | API version | `2021-01-01` |
 | Scope | Account and region |
 | Execution | Records by default; optional Docker Valkey/Redis cluster protocol with TLS and ACLs |
-| Selected operations | 19 of 45 in the pinned model |
+| Selected operations | 25 of 45 in the pinned model |
 
 ## Implemented behavior
 
@@ -22,16 +22,16 @@ See the [implemented feature catalogue](catalogue.md#amazon-memorydb) for this s
 ## Limitations and future work
 
 - Docker materializes one engine per cluster; shard and replica counts, node types and engine upgrades remain metadata. The initial engine image remains unchanged across updates and restarts; no distributed replication or failover.
-- No snapshots (including SnapshotName, SnapshotArns and final snapshots on delete), parameter group CRUD, reserved nodes, multi-Region clusters, service updates, failover, events or DescribeEngineVersions.
+- No snapshots (including SnapshotName, SnapshotArns and final snapshots on delete), reserved nodes, multi-Region clusters, service updates, failover, events or DescribeEngineVersions.
 - Unsupported cluster settings (SNS topic, data tiering, network type, IP discovery) reject at the shared decoder; r6gd node types are rejected because data tiering is unsupported.
-- Only the documented default parameter groups are accepted; no implicit default subnet group exists, so a cluster without SubnetGroupName reports none and one Availability Zone.
+- No implicit default subnet group exists, so a cluster without SubnetGroupName reports none and one Availability Zone.
 - Engine versions are major.minor only; patch versions are reported only where the AWS documentation states them (valkey 7.2.6).
 - DescribeUsers supports the UserName filter only; page size has no default or maximum because the model documents none.
 - Records-mode access strings are checked only for being non-empty and free of reset; Docker evaluates the engine ACL grammar when applying users. IAM data-plane authentication is explicitly unsupported in Docker mode.
 - CloudFormation rejects removing optional properties the API cannot clear and changing AutoMinorVersionUpgrade; ClusterEndpoint, DataTiering, FinalSnapshotName, IpDiscovery, MultiRegionClusterName, NetworkType, SnapshotArns, SnapshotName and SNS properties fail explicitly.
-- The console offers no snapshots, final snapshot on delete or parameter group management because the service implements none; the parameter group is the default group of the chosen engine version.
 - Redis managed version 7.1 maps to upstream redis:7.2-alpine because no upstream Redis 7.1 image exists; Redis 6.2/7.0 and Valkey 7.2 use their matching alpine image tags.
 - Docker runtime uses TinyStack deadlines of 10 minutes per container start, 10 seconds per reconciliation probe/configuration and 5 seconds for access-string validation; failed reconciliation attempts retry.
+- Docker rejects search module parameters; records mode supports search parameters from engine 7.1 onward; vector-search default groups are unsupported; the console does not expose parameter group deletion or reset, or cluster parameter group selection.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -47,45 +47,47 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | --- | --- |
 | `CreateACL` | `POST /` |
 | `CreateCluster` | `POST /` |
+| `CreateParameterGroup` | `POST /` |
 | `CreateSubnetGroup` | `POST /` |
 | `CreateUser` | `POST /` |
 | `DeleteACL` | `POST /` |
 | `DeleteCluster` | `POST /` |
+| `DeleteParameterGroup` | `POST /` |
 | `DeleteSubnetGroup` | `POST /` |
 | `DeleteUser` | `POST /` |
 | `DescribeACLs` | `POST /` |
 | `DescribeClusters` | `POST /` |
+| `DescribeParameterGroups` | `POST /` |
+| `DescribeParameters` | `POST /` |
 | `DescribeSubnetGroups` | `POST /` |
 | `DescribeUsers` | `POST /` |
 | `ListTags` | `POST /` |
+| `ResetParameterGroup` | `POST /` |
 | `TagResource` | `POST /` |
 | `UntagResource` | `POST /` |
 | `UpdateACL` | `POST /` |
 | `UpdateCluster` | `POST /` |
+| `UpdateParameterGroup` | `POST /` |
 | `UpdateSubnetGroup` | `POST /` |
 | `UpdateUser` | `POST /` |
 
 ## Operations not implemented
 
-??? info "26 modeled operations outside the implementation"
+??? info "20 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
     - `BatchUpdateCluster`
     - `CopySnapshot`
     - `CreateMultiRegionCluster`
-    - `CreateParameterGroup`
     - `CreateSnapshot`
     - `DeleteMultiRegionCluster`
-    - `DeleteParameterGroup`
     - `DeleteSnapshot`
     - `DescribeEngineVersions`
     - `DescribeEvents`
     - `DescribeMultiRegionClusters`
     - `DescribeMultiRegionParameterGroups`
     - `DescribeMultiRegionParameters`
-    - `DescribeParameterGroups`
-    - `DescribeParameters`
     - `DescribeReservedNodes`
     - `DescribeReservedNodesOfferings`
     - `DescribeServiceUpdates`
@@ -94,14 +96,12 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListAllowedMultiRegionClusterUpdates`
     - `ListAllowedNodeTypeUpdates`
     - `PurchaseReservedNodesOffering`
-    - `ResetParameterGroup`
     - `UpdateMultiRegionCluster`
-    - `UpdateParameterGroup`
 
 ## Source and examples
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/memorydb)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/memorydb/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/memorydb.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [memorydb_docker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/memorydb_docker_test.go), [memorydb_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/memorydb_test.go).
+- SDK integration examples: [memorydb_docker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/memorydb_docker_test.go), [memorydb_parameters_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/memorydb_parameters_test.go), [memorydb_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/memorydb_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

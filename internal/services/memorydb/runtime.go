@@ -16,6 +16,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/localtls"
 	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/dockercli"
+	"github.com/amjadjibon/tinystack/internal/services/redisparams"
 	"github.com/amjadjibon/tinystack/internal/services/valkeydocker"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -143,6 +144,15 @@ func (s *Service) spec(scope request.Scope, r *clusterRecord) *valkeydocker.Clus
 func checkRuntimeACL(tx storage.ReadTx, scope request.Scope, r *clusterRecord, enabled bool) error {
 	if !enabled {
 		return nil
+	}
+
+	group, err := readParameterGroup(tx, scope, r.ParameterGroupName)
+	if err != nil {
+		return err
+	}
+
+	if group.Values["search-enabled"] == parameterYes || group.Values["search-query-timeout-ms"] != "" {
+		return invalidValue("Search module parameters are unsupported in Docker mode.")
 	}
 
 	acl, err := readACL(tx, scope, r.ACLName)
@@ -273,11 +283,30 @@ func (s *Service) advance(ctx context.Context, k string) error {
 	recordKey := key(scope, kindCluster, parts[2])
 	var r *clusterRecord
 	var users []*userRecord
+	values := map[string]string{}
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		var readErr error
 		r, _, readErr = storage.Read[clusterRecord](tx, recordKey)
 		if readErr != nil || r == nil || r.RuntimeStatus == statusDeleting {
 			return readErr
+		}
+
+		group, e := readParameterGroup(tx, scope, r.ParameterGroupName)
+		if e != nil {
+			return e
+		}
+
+		for _, d := range redisparams.MemoryDB(group.Family) {
+			if strings.HasPrefix(d.Name, "search-") {
+				continue
+			}
+
+			value, ok := group.Values[d.Name]
+			if !ok {
+				value = d.DefaultValue
+			}
+
+			values[d.Name] = value
 		}
 
 		acl, err := readACL(tx, scope, r.ACLName)
@@ -323,9 +352,24 @@ func (s *Service) advance(ctx context.Context, k string) error {
 	if r.RuntimeStatus == statusAvailable && r.HostPort != 0 {
 		probeCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		err = s.configure(probeCtx, spec, users)
+		if err == nil {
+			err = s.applyConfig(probeCtx, spec, values)
+		}
+
 		cancel()
 		if err == nil {
-			return nil
+			return s.store.Update(ctx, func(tx storage.WriteTx) error {
+				current, found, e := storage.Read[clusterRecord](tx, recordKey)
+				if e != nil || !found {
+					return e
+				}
+
+				if current.ParameterRevision == r.ParameterRevision {
+					current.ParameterGroupStatus = parameterGroupInSync
+				}
+
+				return storage.Write(tx, recordKey, current)
+			})
 		}
 	}
 
@@ -340,6 +384,10 @@ func (s *Service) advance(ctx context.Context, k string) error {
 	probeCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	readyErr := s.configure(probeCtx, spec, users)
+	if readyErr == nil {
+		readyErr = s.applyConfig(probeCtx, spec, values)
+	}
+
 	if readyErr != nil {
 		s.logError(readyErr)
 	}
@@ -360,6 +408,9 @@ func (s *Service) advance(ctx context.Context, k string) error {
 
 		if readyErr == nil {
 			current.RuntimeStatus = statusAvailable
+			if current.ParameterRevision == r.ParameterRevision {
+				current.ParameterGroupStatus = parameterGroupInSync
+			}
 		}
 
 		return storage.Write(tx, recordKey, current)
@@ -477,4 +528,11 @@ func (s *Service) checkRuntimeAccess(ctx context.Context, scope request.Scope, a
 	}
 
 	return nil
+}
+
+func (s *Service) applyConfig(ctx context.Context, spec *valkeydocker.ClusterSpec, values map[string]string) error {
+	return redisparams.Apply(ctx, values, func(ctx context.Context, args ...any) error {
+		_, err := s.runtime.Command(ctx, spec, args...)
+		return err
+	})
 }
