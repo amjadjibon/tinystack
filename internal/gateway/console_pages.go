@@ -356,6 +356,9 @@ TagResource UntagResource GetTags
  DescribeDBClusterSnapshots CreateDBClusterSnapshot DeleteDBClusterSnapshot
  CreateDBSubnetGroup DescribeDBSubnetGroups DeleteDBSubnetGroup
  CreateDBParameterGroup DescribeDBParameterGroups DeleteDBParameterGroup
+ DescribeDBParameters ModifyDBParameterGroup ResetDBParameterGroup
+ CreateDBClusterParameterGroup DescribeDBClusterParameterGroups DeleteDBClusterParameterGroup
+ DescribeDBClusterParameters ModifyDBClusterParameterGroup ResetDBClusterParameterGroup
  AddTagsToResource RemoveTagsFromResource ListTagsForResource
 `)},
 	// Only the tagging writes are exposed; discovery remains on the inventory endpoint.

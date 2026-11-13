@@ -29,8 +29,18 @@ export type DBGroup = {
 	VpcId?: string;
 	Subnets?: { SubnetIdentifier: string }[];
 	DBParameterGroupName?: string;
+	DBClusterParameterGroupName?: string;
 	DBParameterGroupFamily?: string;
 	Description?: string;
+};
+export type DBParameter = {
+	ParameterName: string;
+	ParameterValue?: string;
+	AllowedValues?: string;
+	Source?: string;
+	ApplyType?: string;
+	DataType?: string;
+	IsModifiable?: boolean;
 };
 export const engines = [
 	{
@@ -40,6 +50,22 @@ export const engines = [
 	},
 	{ value: "mysql", label: "MySQL", versions: ["8.0"] },
 	{ value: "mariadb", label: "MariaDB", versions: ["11"] },
+];
+export const parameterFamilies = [
+	...engines.flatMap((e) => e.versions.map((v) => e.value + v)),
+	"neptune1.2",
+	"neptune1.3",
+];
+export const clusterParameterFamilies = [
+	"aurora-postgresql15",
+	"aurora-postgresql16",
+	"aurora-postgresql17",
+	"aurora-mysql8.0",
+	"docdb3.6",
+	"docdb4.0",
+	"docdb5.0",
+	"neptune1.2",
+	"neptune1.3",
 ];
 export function rdsHref(s: RDSScope) {
 	const p = new URLSearchParams({ account: s.account, region: s.region });
@@ -78,7 +104,7 @@ export async function rdsPages<T>(
 	return items;
 }
 export const runtimeNote =
-	"SQL connections require rds.instances: docker and a working local Docker daemon. In records mode, no database listens on the endpoint. Class and storage are metadata; parameter groups do not apply engine settings.";
+	"SQL connections require rds.instances: docker and a working local Docker daemon. In records mode, no database listens on the endpoint. Class and storage are metadata; parameter group values apply only to Docker-backed databases.";
 
 export function rdsDate(value?: string | number) {
 	if (value === undefined) return "—";

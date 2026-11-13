@@ -47,7 +47,7 @@ See the [implemented feature catalogue](catalogue.md#rds-documentdb-and-neptune)
 - Aurora runs community PostgreSQL/MySQL, not the proprietary Aurora storage engine; readers and writers share one process, scaling is metadata only, versions map to floating community image tags, and failover, replicas, global clusters and Aurora Serverless v1 are unsupported.
 - Aurora port changes, deferred modifications and EngineVersion changes fail explicitly; managed secret rotation and KMS customization are unsupported.
 - Parameter catalogs cover a portable subset, not every AWS engine parameter or extension; PostgreSQL changes and resets require reboot in Docker mode, while Aurora parameter changes require cluster stop/start; records mode stores values without running SQL.
-- ModifyDBSubnetGroup and RestoreDBClusterFromSnapshot remain unsupported; the console does not view or edit parameter values.
+- ModifyDBSubnetGroup and RestoreDBClusterFromSnapshot remain unsupported; the console does not copy parameter groups or attach cluster parameter groups when creating clusters.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

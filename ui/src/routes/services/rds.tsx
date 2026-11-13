@@ -22,6 +22,7 @@ import {
 import { DatabaseForm } from "#/components/rds/DatabaseForm";
 import { DatabaseGroups } from "#/components/rds/DatabaseGroups";
 import { DatabaseSnapshots } from "#/components/rds/DatabaseSnapshots";
+import { ParameterGroups } from "#/components/rds/ParameterGroups";
 import {
 	type DBInstance,
 	type RDSScope,
@@ -38,9 +39,13 @@ export const Route = createFileRoute("/services/rds")({
 		account: String(s.account ?? ""),
 		region: String(s.region ?? ""),
 		database: String(s.database ?? ""),
-		section: ["subnets", "parameters", "clusters", "snapshots"].includes(
-			String(s.section),
-		)
+		section: [
+			"subnets",
+			"parameters",
+			"clusterparameters",
+			"clusters",
+			"snapshots",
+		].includes(String(s.section))
 			? String(s.section)
 			: "databases",
 	}),
@@ -67,6 +72,7 @@ function RDSPage() {
 		{ id: "snapshots", text: "Snapshots" },
 		{ id: "subnets", text: "Subnet groups" },
 		{ id: "parameters", text: "Parameter groups" },
+		{ id: "clusterparameters", text: "Cluster parameter groups" },
 	];
 	return (
 		<ConsoleLayout
@@ -195,8 +201,15 @@ function RDSWorkspace({
 		return <DatabaseClusters {...{ scope, enabled, onChanged }} />;
 	if (scope.section === "snapshots")
 		return <DatabaseSnapshots {...{ scope, enabled, onChanged }} />;
-	if (scope.section !== "databases")
+	if (scope.section === "subnets")
 		return <DatabaseGroups {...{ scope, enabled, onChanged }} />;
+	if (scope.section !== "databases")
+		return (
+			<ParameterGroups
+				cluster={scope.section === "clusterparameters"}
+				{...{ scope, enabled, onChanged }}
+			/>
+		);
 	return (
 		<SpaceBetween size="l">
 			{!!poll.error && <Alert type="error">{poll.error}</Alert>}

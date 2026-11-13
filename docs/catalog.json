@@ -1452,7 +1452,7 @@
         "Startup removes orphaned RDS containers and volumes whose ownership ARN has no instance record",
         "Omitted DBName uses the instance identifier with hyphens replaced by underscores for the Docker database name; default AllocatedStorage is 20 GiB of metadata",
         "CloudFormation DBInstance creation waits for availability before publishing endpoint attributes",
-        "AWS-style scoped console with Instances, Clusters, Snapshots and group sections: instance lifecycle and final snapshots; Aurora, DocumentDB and Neptune cluster create/modify/delete/start/stop, member creation and instance links, Data API toggles and tags; instance snapshot create/copy/delete/restore and Aurora cluster snapshot create/delete; subnet and parameter group create/delete",
+        "AWS-style scoped console with Instances, Clusters, Snapshots and group sections: instance lifecycle and final snapshots; Aurora, DocumentDB and Neptune cluster create/modify/delete/start/stop, member creation and instance links, Data API toggles and tags; instance snapshot create/copy/delete/restore and Aurora cluster snapshot create/delete; subnet group create/delete; DB and cluster parameter group create/delete with a parameter editor that filters values, edits one value with its allowed values and apply method, and resets selected or all parameters",
         "DocumentDB (Engine docdb) and Neptune (Engine neptune) SDKs share the RDS Query API for scoped cluster and member lifecycles; records mode retains the existing metadata-only behavior",
         "Cluster identifiers, DocumentDB credentials, retention 1\u201335 days, ports 1150\u201365535, subnet/security-group references, encryption metadata, deletion protection and tags are validated; DocumentDB passwords are discarded after validation in records mode and retained privately in Docker mode",
         "DocumentDB versions 3.6, 4.0 and 5.0 (default); Neptune versions 1.2.1.0 and 1.3.2.0 (default); default ports 27017 and 8182 respectively; stable resource IDs; Docker cluster, reader and member endpoints share one loopback host port",
@@ -1509,7 +1509,7 @@
         "Aurora runs community PostgreSQL/MySQL, not the proprietary Aurora storage engine; readers and writers share one process, scaling is metadata only, versions map to floating community image tags, and failover, replicas, global clusters and Aurora Serverless v1 are unsupported",
         "Aurora port changes, deferred modifications and EngineVersion changes fail explicitly; managed secret rotation and KMS customization are unsupported",
         "Parameter catalogs cover a portable subset, not every AWS engine parameter or extension; PostgreSQL changes and resets require reboot in Docker mode, while Aurora parameter changes require cluster stop/start; records mode stores values without running SQL",
-        "ModifyDBSubnetGroup and RestoreDBClusterFromSnapshot remain unsupported; the console does not view or edit parameter values"
+        "ModifyDBSubnetGroup and RestoreDBClusterFromSnapshot remain unsupported; the console does not copy parameter groups or attach cluster parameter groups when creating clusters"
       ],
       "execution": "Records / optional Docker",
       "package": "rds"
