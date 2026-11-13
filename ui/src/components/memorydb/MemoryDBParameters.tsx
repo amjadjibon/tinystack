@@ -1,5 +1,5 @@
 import { Alert, SpaceBetween } from "@cloudscape-design/components";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ActionDialog } from "#/components/ActionDialog";
 import { Action, Buttons, Rows } from "#/components/containers/Controls";
 import { Pick, Text } from "#/components/memorydb/Fields";
@@ -48,6 +48,11 @@ export function MemoryDBParameters({
 				: Promise.resolve([]),
 		0,
 	);
+	// The poll loads once on mount, so load again for each group the user selects.
+	const reloadParameters = parameters.reload;
+	useEffect(() => {
+		if (selected) reloadParameters();
+	}, [selected, reloadParameters]);
 	const refresh = () => {
 		groups.reload();
 		parameters.reload();
@@ -55,7 +60,7 @@ export function MemoryDBParameters({
 	};
 	return (
 		<SpaceBetween size="m">
-			{(groups.error || parameters.error) && (
+			{!!(groups.error || parameters.error) && (
 				<Alert type="error">{groups.error || parameters.error}</Alert>
 			)}
 			<Rows
@@ -112,7 +117,7 @@ export function MemoryDBParameters({
 					},
 				]}
 			/>
-			{selected && (
+			{!!selected && (
 				<Rows
 					title={`Parameters: ${selected}`}
 					emptyText="No parameters"
@@ -124,7 +129,7 @@ export function MemoryDBParameters({
 					]}
 				/>
 			)}
-			{dialog && (
+			{!!dialog && (
 				<ActionDialog
 					title={
 						dialog === "create" ? "Create parameter group" : `Edit ${name}`
