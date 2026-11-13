@@ -48,8 +48,8 @@ type invokeConfig struct {
 	LastModified             float64 // seconds
 }
 
-// UseCaller lets asynchronous invocations send their results to SQS, SNS, and
-// EventBridge destinations. Call it before serving requests.
+// UseCaller lets asynchronous invocations send their results to SQS, SNS,
+// EventBridge, and S3 destinations. Call it before serving requests.
 func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
 
 func invokeConfigKey(scope request.Scope, name, qualifier string) string {
@@ -129,11 +129,12 @@ func (c *invokeConfig) configure(
 
 	self := functionARN(scope, name)
 	for _, d := range []struct {
-		arn *string
-		to  *string
+		arn     *string
+		to      *string
+		failure bool
 	}{
 		{arn: onSuccess(destinations), to: &c.OnSuccess},
-		{arn: onFailure(destinations), to: &c.OnFailure},
+		{arn: onFailure(destinations), to: &c.OnFailure, failure: true},
 	} {
 		if d.arn == nil {
 			continue
@@ -141,9 +142,10 @@ func (c *invokeConfig) configure(
 
 		arn := *d.arn
 		if arn != "" {
-			if _, ok := destinationService(arn); !ok {
+			// S3 buckets receive only failed invocations, as on AWS.
+			if _, ok := destinationService(arn); !ok && (!d.failure || !validS3Destination(arn)) {
 				return invalid("The destination ARN %s is invalid: it must be an SQS queue, SNS topic, Lambda "+
-					"function, or EventBridge event bus", arn)
+					"function, EventBridge event bus, or, on failure, S3 bucket", arn)
 			}
 
 			if name, _, err := resolveName(&request.Metadata{Scope: scope}, arn); err == nil &&
@@ -482,9 +484,14 @@ func (s *Service) sendResult(
 		record.ResponseContext.FunctionError = "Unhandled"
 	}
 
+	key := ""
+	if validS3Destination(destination) {
+		key = s3RecordKey("aws/lambda/async/"+strings.Split(arn, ":")[6], s.now())
+	}
+
 	body, err := json.Marshal(record)
 	if err == nil {
-		err = s.deliver(ctx, destination, arn, r.condition, body, nil, "")
+		err = s.deliver(ctx, destination, arn, r.condition, body, nil, key)
 	}
 
 	s.deliveries.Add(delivery.ViaLambdaDestination, arn, destination, body, err)
@@ -494,8 +501,8 @@ func (s *Service) sendResult(
 	}
 }
 
-// deliver sends a record to an SQS queue, SNS topic, Lambda function, or
-// EventBridge event bus, in the destination's account and region, under the
+// deliver sends a record to an SQS queue, SNS topic, Lambda function,
+// EventBridge event bus, or S3 bucket (under key), in the destination's account and region, under the
 // execution role of the function arn names.
 func (s *Service) deliver(
 	ctx context.Context,

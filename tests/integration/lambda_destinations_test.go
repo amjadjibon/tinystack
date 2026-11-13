@@ -3,6 +3,8 @@ package integration_test
 import (
 	"context"
 	"encoding/json"
+	"io"
+	"regexp"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -10,6 +12,7 @@ import (
 	ebtypes "github.com/aws/aws-sdk-go-v2/service/eventbridge/types"
 	sdklambda "github.com/aws/aws-sdk-go-v2/service/lambda"
 	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 )
@@ -185,6 +188,65 @@ func TestLambdaDestinations(t *testing.T) {
 	})
 	if !isType[*lambdatypes.ResourceNotFoundException](err) {
 		t.Fatalf("after delete: %v", err)
+	}
+}
+
+// An S3 bucket receives only failed asynchronous invocations, under AWS's per-function key.
+func TestLambdaDestinationS3OnFailure(t *testing.T) {
+	s := server(t)
+	c := lambdaClient(s, "test")
+	objects := s3Client(s, "test", "us-east-1")
+	ctx := context.Background()
+	createFunction(t, c, "broken", "app.fail")
+	if _, err := objects.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String("async-failures")}); err != nil {
+		t.Fatal(err)
+	}
+
+	put, err := c.PutFunctionEventInvokeConfig(ctx, &sdklambda.PutFunctionEventInvokeConfigInput{
+		FunctionName: aws.String("broken"), MaximumRetryAttempts: aws.Int32(0),
+		DestinationConfig: &lambdatypes.DestinationConfig{
+			OnFailure: &lambdatypes.OnFailure{Destination: aws.String("arn:aws:s3:::async-failures")},
+		},
+	})
+	if err != nil || aws.ToString(put.DestinationConfig.OnFailure.Destination) != "arn:aws:s3:::async-failures" {
+		t.Fatalf("put %+v, %v", put, err)
+	}
+
+	if _, err = c.Invoke(ctx, &sdklambda.InvokeInput{
+		FunctionName: aws.String("broken"), InvocationType: lambdatypes.InvocationTypeEvent,
+		Payload: []byte(`{"n":3}`),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	var listed *s3.ListObjectsV2Output
+	waitFor(t, "a failure record in S3", func() bool {
+		listed, err = objects.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String("async-failures")})
+		return err == nil && len(listed.Contents) > 0
+	})
+
+	key := aws.ToString(listed.Contents[0].Key)
+	layout := regexp.MustCompile(`^aws/lambda/async/broken/\d{4}/\d{2}/\d{2}/` +
+		`\d{4}-\d{2}-\d{2}T\d{2}\.\d{2}\.\d{2}-[0-9a-f-]{36}$`)
+	if len(listed.Contents) != 1 || !layout.MatchString(key) {
+		t.Fatalf("objects %+v", listed.Contents)
+	}
+
+	object, err := objects.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String("async-failures"), Key: &key})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer object.Body.Close()
+	body, err := io.ReadAll(object.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	failure := invocationRecord(t, string(body))
+	if failure.RequestContext.Condition != "RetriesExhausted" || string(failure.RequestPayload) != `{"n":3}` ||
+		failure.RequestContext.ApproximateInvokeCount != 1 || failure.ResponseContext.FunctionError != "Unhandled" {
+		t.Fatalf("failure %+v", failure)
 	}
 }
 

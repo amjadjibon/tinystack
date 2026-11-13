@@ -124,12 +124,11 @@ func (b *batchInfo) shard() string { return b.ShardID }
 
 func (b *batchInfo) event() []byte { return b.payload }
 
-// failureKey is where an S3 destination stores a mapping's failure record, as AWS names it:
-// aws/lambda/<mapping UUID>/<shard>/YYYY/MM/DD/YYYY-MM-DDTHH.MM.SS-<UUID>.
-func failureKey(mp *mapping, shard string, now time.Time) string {
-	now = now.UTC()
-	return "aws/lambda/" + mp.UUID + "/" + shard + "/" + now.Format("2006/01/02/2006-01-02T15.04.05-") +
-		uuid.NewV4().String()
+// s3RecordKey is where an S3 destination stores a record, as AWS names it:
+// <prefix>/YYYY/MM/DD/YYYY-MM-DDTHH.MM.SS-<UUID>. Mappings use aws/lambda/<mapping UUID>/<shard> and
+// asynchronous invocations aws/lambda/async/<function name>.
+func s3RecordKey(prefix string, now time.Time) string {
+	return prefix + "/" + now.UTC().Format("2006/01/02/2006-01-02T15.04.05-") + uuid.NewV4().String()
 }
 
 // discard sends the record of a batch a stream mapping gave up on to its
@@ -164,7 +163,7 @@ func (s *Service) discard(
 
 	key := ""
 	if validS3Destination(mp.OnFailure) {
-		record["payload"], key = string(info.event()), failureKey(mp, info.shard(), s.now())
+		record["payload"], key = string(info.event()), s3RecordKey("aws/lambda/"+mp.UUID+"/"+info.shard(), s.now())
 	}
 
 	body, err := json.Marshal(record)

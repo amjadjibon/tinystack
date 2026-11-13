@@ -619,7 +619,7 @@ Manage functions and execute Python/Node locally or managed runtimes in Docker.
 - Local Zip execution supports Python 3.x and Node.js CJS/ESM, async/callback handlers, ordered layers, warm reuse, timeouts, logs and directory hot reload.
 - Synchronous Invoke ClientContext accepts base64-encoded JSON and reaches the handler context.
 - LocalStack-compatible hot reload using S3Bucket=hot-reload and an absolute host directory; see [CLI and Terraform examples](../guides/lambda-hot-reload.md).
-- Synchronous and asynchronous invocation, retries and destinations.
+- Synchronous and asynchronous invocation, retries and destinations: SQS, SNS, Lambda and EventBridge on success or failure, and S3 buckets on failure only, which store the invocation record under aws/lambda/async/<function name>/YYYY/MM/DD/YYYY-MM-DDTHH.MM.SS-<UUID>.
 - SQS, DynamoDB Streams and Kinesis event source mappings; stream batches that run out of retries or pass MaximumRecordAgeInSeconds go to an SQS, SNS or S3 OnFailure destination with DDBStreamBatchInfo or KinesisBatchInfo, and S3 records also carry the original event as an escaped JSON payload under aws/lambda/<mapping UUID>/<shard ID>/YYYY/MM/DD/YYYY-MM-DDTHH.MM.SS-<UUID>.
 - Resource policies, function URLs and concurrency settings.
 - Logs flow into CloudWatch Logs; tests use an in-process fake runtime.
