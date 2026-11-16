@@ -37,6 +37,7 @@ type call struct {
 	// path is the request path after the stage.
 	path             string
 	authorizerError  string
+	validationError  string
 	integrationError string
 	integrationCode  int
 	// integrated is how long the integration took, when the request reached it.
@@ -103,6 +104,10 @@ func (s *Service) run(ctx context.Context, c *call) *execute.Response {
 
 	if keyDenied := s.checkAPIKey(ctx, c, authorizer); keyDenied != nil {
 		return keyDenied
+	}
+
+	if invalid := validateRequest(c); invalid != nil {
+		return invalid
 	}
 
 	integrating := time.Now()
@@ -554,6 +559,8 @@ func contextVariable(c *call, resp *execute.Response, name string) string {
 		return r.Header.Get("User-Agent")
 	case "authorizer.error":
 		return c.authorizerError
+	case "error.validationErrorString":
+		return c.validationError
 	case "integrationErrorMessage", "integration.error":
 		return c.integrationError
 	case "integrationStatus", "integration.status":

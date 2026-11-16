@@ -147,6 +147,7 @@ require (
 	github.com/dop251/goja v0.0.0-20261027234916-5f913d1693d9
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/go-sql-driver/mysql v1.10.1
+	github.com/google/jsonschema-go v0.4.3
 	github.com/lib/pq v1.12.3
 	github.com/miekg/dns v1.1.73
 	github.com/mochi-mqtt/server/v2 v2.7.9
@@ -196,7 +197,6 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gohugoio/hashstructure v0.6.0 // indirect
 	github.com/gohugoio/hugo v0.164.0 // indirect
-	github.com/google/jsonschema-go v0.4.3 // indirect
 	github.com/google/pprof v0.0.0-20261016150608-1facf8f91b50 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect

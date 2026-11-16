@@ -123,6 +123,7 @@ type Method struct {
 	MethodResponses     map[string]MethodResponse `json:"methodResponses,omitempty"`
 	MethodIntegration   *Integration              `json:"methodIntegration,omitempty"`
 	AuthorizationScopes []string                  `json:"authorizationScopes,omitempty"`
+	RequestValidatorId  *string                   `json:"requestValidatorId,omitempty"`
 }
 
 type Resource struct {
@@ -175,6 +176,7 @@ type PutMethodRequest struct {
 	RequestParameters   map[string]bool   `json:"requestParameters,omitempty"`
 	RequestModels       map[string]string `json:"requestModels,omitempty"`
 	AuthorizationScopes []string          `json:"authorizationScopes,omitempty"`
+	RequestValidatorId  *string           `json:"requestValidatorId,omitempty"`
 }
 
 type GetMethodRequest struct {
@@ -761,6 +763,94 @@ type ExportResponse struct {
 	Body               []byte  `json:"-"`
 }
 
+type CreateModelRequest struct {
+	ContentType *string `json:"contentType,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Name        *string `json:"name,omitempty"`
+	RestApiId   *string `json:"-"`
+	Schema      *string `json:"schema,omitempty"`
+}
+
+type Model struct {
+	ContentType *string `json:"contentType,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Id          *string `json:"id,omitempty"`
+	Name        *string `json:"name,omitempty"`
+	Schema      *string `json:"schema,omitempty"`
+}
+
+type GetModelRequest struct {
+	RestApiId *string `json:"-"`
+	ModelName *string `json:"-"`
+}
+
+type GetModelsRequest struct {
+	Limit     *int64  `json:"-"`
+	Position  *string `json:"-"`
+	RestApiId *string `json:"-"`
+}
+
+type Models struct {
+	Items    []Model `json:"item,omitempty"`
+	Position *string `json:"position,omitempty"`
+}
+
+type UpdateModelRequest struct {
+	ModelName       *string          `json:"-"`
+	PatchOperations []PatchOperation `json:"patchOperations,omitempty"`
+	RestApiId       *string          `json:"-"`
+}
+
+type DeleteModelOutput struct{}
+
+type DeleteModelRequest struct {
+	ModelName *string `json:"-"`
+	RestApiId *string `json:"-"`
+}
+
+type CreateRequestValidatorRequest struct {
+	Name                      *string `json:"name,omitempty"`
+	RestApiId                 *string `json:"-"`
+	ValidateRequestBody       *bool   `json:"validateRequestBody,omitempty"`
+	ValidateRequestParameters *bool   `json:"validateRequestParameters,omitempty"`
+}
+
+type RequestValidator struct {
+	Id                        *string `json:"id,omitempty"`
+	Name                      *string `json:"name,omitempty"`
+	ValidateRequestBody       *bool   `json:"validateRequestBody,omitempty"`
+	ValidateRequestParameters *bool   `json:"validateRequestParameters,omitempty"`
+}
+
+type GetRequestValidatorRequest struct {
+	RequestValidatorId *string `json:"-"`
+	RestApiId          *string `json:"-"`
+}
+
+type GetRequestValidatorsRequest struct {
+	Limit     *int64  `json:"-"`
+	Position  *string `json:"-"`
+	RestApiId *string `json:"-"`
+}
+
+type RequestValidators struct {
+	Items    []RequestValidator `json:"item,omitempty"`
+	Position *string            `json:"position,omitempty"`
+}
+
+type UpdateRequestValidatorRequest struct {
+	PatchOperations    []PatchOperation `json:"patchOperations,omitempty"`
+	RequestValidatorId *string          `json:"-"`
+	RestApiId          *string          `json:"-"`
+}
+
+type DeleteRequestValidatorOutput struct{}
+
+type DeleteRequestValidatorRequest struct {
+	RequestValidatorId *string `json:"-"`
+	RestApiId          *string `json:"-"`
+}
+
 type API interface {
 	CreateRestApi(context.Context, *CreateRestApiRequest) (*RestApi, error)
 	GetRestApi(context.Context, *GetRestApiRequest) (*RestApi, error)
@@ -831,6 +921,16 @@ type API interface {
 	ImportRestApi(context.Context, *ImportRestApiRequest) (*RestApi, error)
 	PutRestApi(context.Context, *PutRestApiRequest) (*RestApi, error)
 	GetExport(context.Context, *GetExportRequest) (*ExportResponse, error)
+	CreateModel(context.Context, *CreateModelRequest) (*Model, error)
+	GetModel(context.Context, *GetModelRequest) (*Model, error)
+	GetModels(context.Context, *GetModelsRequest) (*Models, error)
+	UpdateModel(context.Context, *UpdateModelRequest) (*Model, error)
+	DeleteModel(context.Context, *DeleteModelRequest) (*DeleteModelOutput, error)
+	CreateRequestValidator(context.Context, *CreateRequestValidatorRequest) (*RequestValidator, error)
+	GetRequestValidator(context.Context, *GetRequestValidatorRequest) (*RequestValidator, error)
+	GetRequestValidators(context.Context, *GetRequestValidatorsRequest) (*RequestValidators, error)
+	UpdateRequestValidator(context.Context, *UpdateRequestValidatorRequest) (*RequestValidator, error)
+	DeleteRequestValidator(context.Context, *DeleteRequestValidatorRequest) (*DeleteRequestValidatorOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -865,13 +965,13 @@ func Descriptor(api API) catalog.Service {
 		"DeleteResource": {Name: "DeleteResource", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "apigateway:DELETE", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ResourceId": catalog.MemberBinding{Location: "label", Name: "resourceId", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/restapis/{restApiId}/resources/{resourceId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 202}}, NewInput: func() any { return &DeleteResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteResource(ctx, input.(*DeleteResourceRequest))
 		}},
-		"PutMethod": {Name: "PutMethod", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:PUT", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiKeyRequired": catalog.MemberBinding{Location: "document", Name: "apiKeyRequired", Format: ""}, "AuthorizationScopes": catalog.MemberBinding{Location: "document", Name: "authorizationScopes", Format: ""}, "AuthorizationType": catalog.MemberBinding{Location: "document", Name: "authorizationType", Format: ""}, "AuthorizerId": catalog.MemberBinding{Location: "document", Name: "authorizerId", Format: ""}, "HttpMethod": catalog.MemberBinding{Location: "label", Name: "httpMethod", Format: ""}, "OperationName": catalog.MemberBinding{Location: "document", Name: "operationName", Format: ""}, "RequestModels": catalog.MemberBinding{Location: "document", Name: "requestModels", Format: ""}, "RequestParameters": catalog.MemberBinding{Location: "document", Name: "requestParameters", Format: ""}, "ResourceId": catalog.MemberBinding{Location: "label", Name: "resourceId", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{"ApiKeyRequired": catalog.MemberBinding{Location: "document", Name: "apiKeyRequired", Format: ""}, "AuthorizationScopes": catalog.MemberBinding{Location: "document", Name: "authorizationScopes", Format: ""}, "AuthorizationType": catalog.MemberBinding{Location: "document", Name: "authorizationType", Format: ""}, "AuthorizerId": catalog.MemberBinding{Location: "document", Name: "authorizerId", Format: ""}, "HttpMethod": catalog.MemberBinding{Location: "document", Name: "httpMethod", Format: ""}, "MethodIntegration": catalog.MemberBinding{Location: "document", Name: "methodIntegration", Format: ""}, "MethodResponses": catalog.MemberBinding{Location: "document", Name: "methodResponses", Format: ""}, "OperationName": catalog.MemberBinding{Location: "document", Name: "operationName", Format: ""}, "RequestModels": catalog.MemberBinding{Location: "document", Name: "requestModels", Format: ""}, "RequestParameters": catalog.MemberBinding{Location: "document", Name: "requestParameters", Format: ""}}, Method: "PUT", URI: "/restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &PutMethodRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"PutMethod": {Name: "PutMethod", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:PUT", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiKeyRequired": catalog.MemberBinding{Location: "document", Name: "apiKeyRequired", Format: ""}, "AuthorizationScopes": catalog.MemberBinding{Location: "document", Name: "authorizationScopes", Format: ""}, "AuthorizationType": catalog.MemberBinding{Location: "document", Name: "authorizationType", Format: ""}, "AuthorizerId": catalog.MemberBinding{Location: "document", Name: "authorizerId", Format: ""}, "HttpMethod": catalog.MemberBinding{Location: "label", Name: "httpMethod", Format: ""}, "OperationName": catalog.MemberBinding{Location: "document", Name: "operationName", Format: ""}, "RequestModels": catalog.MemberBinding{Location: "document", Name: "requestModels", Format: ""}, "RequestParameters": catalog.MemberBinding{Location: "document", Name: "requestParameters", Format: ""}, "RequestValidatorId": catalog.MemberBinding{Location: "document", Name: "requestValidatorId", Format: ""}, "ResourceId": catalog.MemberBinding{Location: "label", Name: "resourceId", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{"ApiKeyRequired": catalog.MemberBinding{Location: "document", Name: "apiKeyRequired", Format: ""}, "AuthorizationScopes": catalog.MemberBinding{Location: "document", Name: "authorizationScopes", Format: ""}, "AuthorizationType": catalog.MemberBinding{Location: "document", Name: "authorizationType", Format: ""}, "AuthorizerId": catalog.MemberBinding{Location: "document", Name: "authorizerId", Format: ""}, "HttpMethod": catalog.MemberBinding{Location: "document", Name: "httpMethod", Format: ""}, "MethodIntegration": catalog.MemberBinding{Location: "document", Name: "methodIntegration", Format: ""}, "MethodResponses": catalog.MemberBinding{Location: "document", Name: "methodResponses", Format: ""}, "OperationName": catalog.MemberBinding{Location: "document", Name: "operationName", Format: ""}, "RequestModels": catalog.MemberBinding{Location: "document", Name: "requestModels", Format: ""}, "RequestParameters": catalog.MemberBinding{Location: "document", Name: "requestParameters", Format: ""}, "RequestValidatorId": catalog.MemberBinding{Location: "document", Name: "requestValidatorId", Format: ""}}, Method: "PUT", URI: "/restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &PutMethodRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.PutMethod(ctx, input.(*PutMethodRequest))
 		}},
-		"GetMethod": {Name: "GetMethod", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"HttpMethod": catalog.MemberBinding{Location: "label", Name: "httpMethod", Format: ""}, "ResourceId": catalog.MemberBinding{Location: "label", Name: "resourceId", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{"ApiKeyRequired": catalog.MemberBinding{Location: "document", Name: "apiKeyRequired", Format: ""}, "AuthorizationScopes": catalog.MemberBinding{Location: "document", Name: "authorizationScopes", Format: ""}, "AuthorizationType": catalog.MemberBinding{Location: "document", Name: "authorizationType", Format: ""}, "AuthorizerId": catalog.MemberBinding{Location: "document", Name: "authorizerId", Format: ""}, "HttpMethod": catalog.MemberBinding{Location: "document", Name: "httpMethod", Format: ""}, "MethodIntegration": catalog.MemberBinding{Location: "document", Name: "methodIntegration", Format: ""}, "MethodResponses": catalog.MemberBinding{Location: "document", Name: "methodResponses", Format: ""}, "OperationName": catalog.MemberBinding{Location: "document", Name: "operationName", Format: ""}, "RequestModels": catalog.MemberBinding{Location: "document", Name: "requestModels", Format: ""}, "RequestParameters": catalog.MemberBinding{Location: "document", Name: "requestParameters", Format: ""}}, Method: "GET", URI: "/restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetMethodRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"GetMethod": {Name: "GetMethod", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"HttpMethod": catalog.MemberBinding{Location: "label", Name: "httpMethod", Format: ""}, "ResourceId": catalog.MemberBinding{Location: "label", Name: "resourceId", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{"ApiKeyRequired": catalog.MemberBinding{Location: "document", Name: "apiKeyRequired", Format: ""}, "AuthorizationScopes": catalog.MemberBinding{Location: "document", Name: "authorizationScopes", Format: ""}, "AuthorizationType": catalog.MemberBinding{Location: "document", Name: "authorizationType", Format: ""}, "AuthorizerId": catalog.MemberBinding{Location: "document", Name: "authorizerId", Format: ""}, "HttpMethod": catalog.MemberBinding{Location: "document", Name: "httpMethod", Format: ""}, "MethodIntegration": catalog.MemberBinding{Location: "document", Name: "methodIntegration", Format: ""}, "MethodResponses": catalog.MemberBinding{Location: "document", Name: "methodResponses", Format: ""}, "OperationName": catalog.MemberBinding{Location: "document", Name: "operationName", Format: ""}, "RequestModels": catalog.MemberBinding{Location: "document", Name: "requestModels", Format: ""}, "RequestParameters": catalog.MemberBinding{Location: "document", Name: "requestParameters", Format: ""}, "RequestValidatorId": catalog.MemberBinding{Location: "document", Name: "requestValidatorId", Format: ""}}, Method: "GET", URI: "/restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetMethodRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetMethod(ctx, input.(*GetMethodRequest))
 		}},
-		"UpdateMethod": {Name: "UpdateMethod", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:PATCH", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"HttpMethod": catalog.MemberBinding{Location: "label", Name: "httpMethod", Format: ""}, "PatchOperations": catalog.MemberBinding{Location: "document", Name: "patchOperations", Format: ""}, "ResourceId": catalog.MemberBinding{Location: "label", Name: "resourceId", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{"ApiKeyRequired": catalog.MemberBinding{Location: "document", Name: "apiKeyRequired", Format: ""}, "AuthorizationScopes": catalog.MemberBinding{Location: "document", Name: "authorizationScopes", Format: ""}, "AuthorizationType": catalog.MemberBinding{Location: "document", Name: "authorizationType", Format: ""}, "AuthorizerId": catalog.MemberBinding{Location: "document", Name: "authorizerId", Format: ""}, "HttpMethod": catalog.MemberBinding{Location: "document", Name: "httpMethod", Format: ""}, "MethodIntegration": catalog.MemberBinding{Location: "document", Name: "methodIntegration", Format: ""}, "MethodResponses": catalog.MemberBinding{Location: "document", Name: "methodResponses", Format: ""}, "OperationName": catalog.MemberBinding{Location: "document", Name: "operationName", Format: ""}, "RequestModels": catalog.MemberBinding{Location: "document", Name: "requestModels", Format: ""}, "RequestParameters": catalog.MemberBinding{Location: "document", Name: "requestParameters", Format: ""}}, Method: "PATCH", URI: "/restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateMethodRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UpdateMethod": {Name: "UpdateMethod", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:PATCH", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"HttpMethod": catalog.MemberBinding{Location: "label", Name: "httpMethod", Format: ""}, "PatchOperations": catalog.MemberBinding{Location: "document", Name: "patchOperations", Format: ""}, "ResourceId": catalog.MemberBinding{Location: "label", Name: "resourceId", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{"ApiKeyRequired": catalog.MemberBinding{Location: "document", Name: "apiKeyRequired", Format: ""}, "AuthorizationScopes": catalog.MemberBinding{Location: "document", Name: "authorizationScopes", Format: ""}, "AuthorizationType": catalog.MemberBinding{Location: "document", Name: "authorizationType", Format: ""}, "AuthorizerId": catalog.MemberBinding{Location: "document", Name: "authorizerId", Format: ""}, "HttpMethod": catalog.MemberBinding{Location: "document", Name: "httpMethod", Format: ""}, "MethodIntegration": catalog.MemberBinding{Location: "document", Name: "methodIntegration", Format: ""}, "MethodResponses": catalog.MemberBinding{Location: "document", Name: "methodResponses", Format: ""}, "OperationName": catalog.MemberBinding{Location: "document", Name: "operationName", Format: ""}, "RequestModels": catalog.MemberBinding{Location: "document", Name: "requestModels", Format: ""}, "RequestParameters": catalog.MemberBinding{Location: "document", Name: "requestParameters", Format: ""}, "RequestValidatorId": catalog.MemberBinding{Location: "document", Name: "requestValidatorId", Format: ""}}, Method: "PATCH", URI: "/restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateMethodRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.UpdateMethod(ctx, input.(*UpdateMethodRequest))
 		}},
 		"DeleteMethod": {Name: "DeleteMethod", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "apigateway:DELETE", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"HttpMethod": catalog.MemberBinding{Location: "label", Name: "httpMethod", Format: ""}, "ResourceId": catalog.MemberBinding{Location: "label", Name: "resourceId", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}", Target: "", Version: "", ContentType: "application/json", StatusCode: 204}}, NewInput: func() any { return &DeleteMethodRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
@@ -1037,6 +1137,34 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"GetExport": {Name: "GetExport", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Accepts": catalog.MemberBinding{Location: "header", Name: "Accept", Format: ""}, "ExportType": catalog.MemberBinding{Location: "label", Name: "exportType", Format: ""}, "Parameters": catalog.MemberBinding{Location: "queryParams", Name: "parameters", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}, "StageName": catalog.MemberBinding{Location: "label", Name: "stageName", Format: ""}}, Output: map[string]catalog.MemberBinding{"Body": catalog.MemberBinding{Location: "payload", Name: "body", Format: ""}, "ContentDisposition": catalog.MemberBinding{Location: "header", Name: "Content-Disposition", Format: ""}, "ContentType": catalog.MemberBinding{Location: "header", Name: "Content-Type", Format: ""}}, Method: "GET", URI: "/restapis/{restApiId}/stages/{stageName}/exports/{exportType}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetExportRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetExport(ctx, input.(*GetExportRequest))
+		}},
+		"CreateModel": {Name: "CreateModel", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:POST", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ContentType": catalog.MemberBinding{Location: "document", Name: "contentType", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "description", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}, "Schema": catalog.MemberBinding{Location: "document", Name: "schema", Format: ""}}, Output: map[string]catalog.MemberBinding{"ContentType": catalog.MemberBinding{Location: "document", Name: "contentType", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "description", Format: ""}, "Id": catalog.MemberBinding{Location: "document", Name: "id", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "Schema": catalog.MemberBinding{Location: "document", Name: "schema", Format: ""}}, Method: "POST", URI: "/restapis/{restApiId}/models", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &CreateModelRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateModel(ctx, input.(*CreateModelRequest))
+		}},
+		"GetModel": {Name: "GetModel", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Flatten": catalog.MemberBinding{Location: "unsupported:query", Name: "flatten", Format: ""}, "ModelName": catalog.MemberBinding{Location: "label", Name: "modelName", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{"ContentType": catalog.MemberBinding{Location: "document", Name: "contentType", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "description", Format: ""}, "Id": catalog.MemberBinding{Location: "document", Name: "id", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "Schema": catalog.MemberBinding{Location: "document", Name: "schema", Format: ""}}, Method: "GET", URI: "/restapis/{restApiId}/models/{modelName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetModelRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.GetModel(ctx, input.(*GetModelRequest)) }},
+		"GetModels": {Name: "GetModels", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Limit": catalog.MemberBinding{Location: "query", Name: "limit", Format: ""}, "Position": catalog.MemberBinding{Location: "query", Name: "position", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{"Items": catalog.MemberBinding{Location: "document", Name: "items", Format: ""}, "Position": catalog.MemberBinding{Location: "document", Name: "position", Format: ""}}, Method: "GET", URI: "/restapis/{restApiId}/models", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetModelsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetModels(ctx, input.(*GetModelsRequest))
+		}},
+		"UpdateModel": {Name: "UpdateModel", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:PATCH", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ModelName": catalog.MemberBinding{Location: "label", Name: "modelName", Format: ""}, "PatchOperations": catalog.MemberBinding{Location: "document", Name: "patchOperations", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{"ContentType": catalog.MemberBinding{Location: "document", Name: "contentType", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "description", Format: ""}, "Id": catalog.MemberBinding{Location: "document", Name: "id", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "Schema": catalog.MemberBinding{Location: "document", Name: "schema", Format: ""}}, Method: "PATCH", URI: "/restapis/{restApiId}/models/{modelName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateModelRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateModel(ctx, input.(*UpdateModelRequest))
+		}},
+		"DeleteModel": {Name: "DeleteModel", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "apigateway:DELETE", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ModelName": catalog.MemberBinding{Location: "label", Name: "modelName", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/restapis/{restApiId}/models/{modelName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 202}}, NewInput: func() any { return &DeleteModelRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteModel(ctx, input.(*DeleteModelRequest))
+		}},
+		"CreateRequestValidator": {Name: "CreateRequestValidator", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:POST", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}, "ValidateRequestBody": catalog.MemberBinding{Location: "document", Name: "validateRequestBody", Format: ""}, "ValidateRequestParameters": catalog.MemberBinding{Location: "document", Name: "validateRequestParameters", Format: ""}}, Output: map[string]catalog.MemberBinding{"Id": catalog.MemberBinding{Location: "document", Name: "id", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "ValidateRequestBody": catalog.MemberBinding{Location: "document", Name: "validateRequestBody", Format: ""}, "ValidateRequestParameters": catalog.MemberBinding{Location: "document", Name: "validateRequestParameters", Format: ""}}, Method: "POST", URI: "/restapis/{restApiId}/requestvalidators", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &CreateRequestValidatorRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateRequestValidator(ctx, input.(*CreateRequestValidatorRequest))
+		}},
+		"GetRequestValidator": {Name: "GetRequestValidator", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"RequestValidatorId": catalog.MemberBinding{Location: "label", Name: "requestValidatorId", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{"Id": catalog.MemberBinding{Location: "document", Name: "id", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "ValidateRequestBody": catalog.MemberBinding{Location: "document", Name: "validateRequestBody", Format: ""}, "ValidateRequestParameters": catalog.MemberBinding{Location: "document", Name: "validateRequestParameters", Format: ""}}, Method: "GET", URI: "/restapis/{restApiId}/requestvalidators/{requestValidatorId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetRequestValidatorRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetRequestValidator(ctx, input.(*GetRequestValidatorRequest))
+		}},
+		"GetRequestValidators": {Name: "GetRequestValidators", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Limit": catalog.MemberBinding{Location: "query", Name: "limit", Format: ""}, "Position": catalog.MemberBinding{Location: "query", Name: "position", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{"Items": catalog.MemberBinding{Location: "document", Name: "items", Format: ""}, "Position": catalog.MemberBinding{Location: "document", Name: "position", Format: ""}}, Method: "GET", URI: "/restapis/{restApiId}/requestvalidators", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetRequestValidatorsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetRequestValidators(ctx, input.(*GetRequestValidatorsRequest))
+		}},
+		"UpdateRequestValidator": {Name: "UpdateRequestValidator", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:PATCH", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"PatchOperations": catalog.MemberBinding{Location: "document", Name: "patchOperations", Format: ""}, "RequestValidatorId": catalog.MemberBinding{Location: "label", Name: "requestValidatorId", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{"Id": catalog.MemberBinding{Location: "document", Name: "id", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "ValidateRequestBody": catalog.MemberBinding{Location: "document", Name: "validateRequestBody", Format: ""}, "ValidateRequestParameters": catalog.MemberBinding{Location: "document", Name: "validateRequestParameters", Format: ""}}, Method: "PATCH", URI: "/restapis/{restApiId}/requestvalidators/{requestValidatorId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateRequestValidatorRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateRequestValidator(ctx, input.(*UpdateRequestValidatorRequest))
+		}},
+		"DeleteRequestValidator": {Name: "DeleteRequestValidator", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "apigateway:DELETE", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"RequestValidatorId": catalog.MemberBinding{Location: "label", Name: "requestValidatorId", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/restapis/{restApiId}/requestvalidators/{requestValidatorId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 202}}, NewInput: func() any { return &DeleteRequestValidatorRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteRequestValidator(ctx, input.(*DeleteRequestValidatorRequest))
 		}},
 	}}
 }

@@ -79,6 +79,8 @@ func (s *Service) CreateRestApi(ctx context.Context, in *api.CreateRestApiReques
 		},
 		Resources:   map[string]*api.Resource{root: {Id: new(root), Path: new("/")}},
 		Authorizers: map[string]*api.Authorizer{},
+		Models:      defaultModels(),
+		Validators:  map[string]*api.RequestValidator{},
 	}
 	if a.API.EndpointConfiguration.IpAddressType == nil {
 		a.API.EndpointConfiguration.IpAddressType = new("ipv4")

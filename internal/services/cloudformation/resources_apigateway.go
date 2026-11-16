@@ -13,8 +13,8 @@ type patchField struct{ property, path string }
 
 var (
 	restAPIFields = []patchField{
-		{memberName, "/name"},
-		{memberDescription, "/description"},
+		{memberName, patchName},
+		{memberDescription, patchDescription},
 		{propertyBinaryMediaTypes, "/binaryMediaTypes"},
 		{propertyMinimumCompressionSize, "/minimumCompressionSize"},
 		{"ApiKeySourceType", "/apiKeySource"},
@@ -22,7 +22,7 @@ var (
 		{memberDisableExecuteAPIEndpoint, "/disableExecuteApiEndpoint"},
 	}
 	stageFields = []patchField{
-		{memberDescription, "/description"},
+		{memberDescription, patchDescription},
 		{memberDeploymentID, "/deploymentId"},
 		{memberVariables, "/variables"},
 		{"TracingEnabled", "/tracingEnabled"},
@@ -30,7 +30,7 @@ var (
 		{"CacheClusterSize", "/cacheClusterSize"},
 	}
 	authorizerFields = []patchField{
-		{memberName, "/name"},
+		{memberName, patchName},
 		{memberType, "/type"},
 		{memberAuthorizerURI, "/authorizerUri"},
 		{memberIdentitySource, "/identitySource"},
@@ -50,6 +50,7 @@ var (
 		"RequestParameters",
 		"RequestModels",
 		"AuthorizationScopes",
+		memberRequestValidatorID,
 	}
 	// integrationProperties are the members of a method's Integration that
 	// PutIntegration takes by the same names.
@@ -191,6 +192,75 @@ func init() {
 		remove: func(ctx context.Context, c *client, r *resource) error {
 			_, err := c.call(ctx, "apigateway", "DeleteStage", map[string]any{
 				memberRestAPIID: props(r.Properties).str(memberRestAPIID), memberStageName: r.Physical,
+			})
+			return ignoreNotFound(err)
+		},
+	})
+	register("AWS::ApiGateway::Model", &resourceType{
+		properties: []string{memberRestAPIID, memberName, propertyContentType, memberDescription, "Schema"},
+		replace:    []string{memberRestAPIID, memberName, propertyContentType},
+		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
+			// Model names are alphanumeric, so a generated name drops the separators.
+			name := p.str(memberName)
+			if name == "" {
+				name = strings.ReplaceAll(c.generate(64), "-", "")
+			}
+
+			params := pick(map[string]any{memberName: name}, p, memberRestAPIID, propertyContentType,
+				memberDescription)
+			if p.has("Schema") {
+				params["Schema"] = p.str("Schema")
+			}
+
+			_, err := c.call(ctx, "apigateway", "CreateModel", params)
+			return name, nil, err
+		},
+		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
+			var ops []any
+			for _, f := range []patchField{{memberDescription, patchDescription}, {"Schema", "/schema"}} {
+				if p.changed(r.Properties, f.property) {
+					ops = append(ops, map[string]any{"Op": "replace", "Path": f.path, memberValue: p.str(f.property)})
+				}
+			}
+
+			return nil, patchRest(ctx, c, "UpdateModel", map[string]any{
+				memberRestAPIID: p.str(memberRestAPIID), "ModelName": r.Physical,
+			}, ops)
+		},
+		remove: func(ctx context.Context, c *client, r *resource) error {
+			_, err := c.call(ctx, "apigateway", "DeleteModel", map[string]any{
+				memberRestAPIID: props(r.Properties).str(memberRestAPIID), "ModelName": r.Physical,
+			})
+			return ignoreNotFound(err)
+		},
+	})
+	register("AWS::ApiGateway::RequestValidator", &resourceType{
+		properties: []string{memberRestAPIID, memberName, "ValidateRequestBody", "ValidateRequestParameters"},
+		attributes: []string{memberRequestValidatorID},
+		replace:    []string{memberRestAPIID},
+		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
+			params := pick(map[string]any{memberName: c.nameOf(p, memberName, 128)}, p, memberRestAPIID,
+				"ValidateRequestBody", "ValidateRequestParameters")
+			out, err := c.call(ctx, "apigateway", "CreateRequestValidator", params)
+			if err != nil {
+				return "", nil, err
+			}
+
+			id := outText(out, "Id")
+			return id, map[string]any{memberRequestValidatorID: id}, nil
+		},
+		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
+			return r.Attributes, patchRest(ctx, c, "UpdateRequestValidator", map[string]any{
+				memberRestAPIID: p.str(memberRestAPIID), memberRequestValidatorID: r.Physical,
+			}, patches(r.Properties, p, []patchField{
+				{memberName, patchName},
+				{"ValidateRequestBody", "/validateRequestBody"},
+				{"ValidateRequestParameters", "/validateRequestParameters"},
+			}))
+		},
+		remove: func(ctx context.Context, c *client, r *resource) error {
+			_, err := c.call(ctx, "apigateway", "DeleteRequestValidator", map[string]any{
+				memberRestAPIID: props(r.Properties).str(memberRestAPIID), memberRequestValidatorID: r.Physical,
 			})
 			return ignoreNotFound(err)
 		},

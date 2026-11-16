@@ -81,7 +81,11 @@ func checkMethod(a *restAPI, m *api.Method) error {
 		return badRequest("AuthorizationScopes are only for COGNITO_USER_POOLS authorization.")
 	}
 
-	return nil
+	if id := common.Value(m.RequestValidatorId); id != "" && a.Validators[id] == nil {
+		return badRequest("Invalid Request Validator identifier specified")
+	}
+
+	return checkModels(a, m.RequestModels)
 }
 
 // changeMethod runs fn on a method of the API's resource and stores the API.
@@ -131,7 +135,7 @@ func (s *Service) PutMethod(ctx context.Context, in *api.PutMethodRequest) (*api
 		HttpMethod: in.HttpMethod, AuthorizationType: in.AuthorizationType, AuthorizerId: in.AuthorizerId,
 		ApiKeyRequired: new(common.Value(in.ApiKeyRequired)), OperationName: in.OperationName,
 		RequestParameters: in.RequestParameters, RequestModels: in.RequestModels,
-		AuthorizationScopes: in.AuthorizationScopes,
+		AuthorizationScopes: in.AuthorizationScopes, RequestValidatorId: in.RequestValidatorId,
 	}
 	err := s.changeAPI(ctx, in.RestApiId, func(_ storage.WriteTx, _ request.Scope, a *restAPI) error {
 		r, loadErr := loadResource(a, in.ResourceId)
@@ -177,8 +181,18 @@ func (s *Service) GetMethod(ctx context.Context, in *api.GetMethodRequest) (*api
 func (s *Service) UpdateMethod(ctx context.Context, in *api.UpdateMethodRequest) (*api.Method, error) {
 	var out *api.Method
 	err := s.changeMethod(ctx, in.RestApiId, in.ResourceId, in.HttpMethod, func(m *method) error {
-		if err := patch(m.method, in.PatchOperations, "authorizationType", "authorizerId", "apiKeyRequired",
-			"operationName", "requestParameters", "requestModels", "authorizationScopes"); err != nil {
+		if err := patch(
+			m.method,
+			in.PatchOperations,
+			"authorizationType",
+			"authorizerId",
+			"apiKeyRequired",
+			"operationName",
+			"requestParameters",
+			"requestModels",
+			"authorizationScopes",
+			"requestValidatorId",
+		); err != nil {
 			return err
 		}
 
@@ -236,6 +250,10 @@ func (s *Service) PutMethodResponse(
 			return conflict("Response already exists for this resource")
 		}
 
+		if checkErr := checkModels(m.api, in.ResponseModels); checkErr != nil {
+			return checkErr
+		}
+
 		if m.method.MethodResponses == nil {
 			m.method.MethodResponses = map[string]api.MethodResponse{}
 		}
@@ -289,6 +307,10 @@ func (s *Service) UpdateMethodResponse(
 
 		if changeErr := patch(r, in.PatchOperations, "responseParameters", "responseModels"); changeErr != nil {
 			return changeErr
+		}
+
+		if checkErr := checkModels(m.api, r.ResponseModels); checkErr != nil {
+			return checkErr
 		}
 
 		m.method.MethodResponses[*in.StatusCode], out = *r, r

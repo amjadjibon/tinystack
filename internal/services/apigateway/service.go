@@ -37,6 +37,8 @@ const (
 	kindAPI        = "restapi"
 	kindDeployment = "deployment"
 	kindStage      = "stage"
+	// locationQuery is the request parameter location of query strings, as in method.request.querystring.<name>.
+	locationQuery = "querystring"
 )
 
 var _ api.API = (*Service)(nil)
@@ -64,11 +66,13 @@ func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
 }
 
 // restAPI is a REST API's record: the API, its resource tree (each resource
-// holds its methods, and each method its responses and integration), and its
-// authorizers.
+// holds its methods, and each method its responses and integration), its
+// authorizers, its models by name, and its request validators.
 type restAPI struct {
 	Resources   map[string]*api.Resource
 	Authorizers map[string]*api.Authorizer
+	Models      map[string]*api.Model
+	Validators  map[string]*api.RequestValidator
 	API         api.RestApi
 }
 

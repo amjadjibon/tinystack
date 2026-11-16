@@ -715,6 +715,7 @@
         "AWS_IAM requires a SigV4 caller, verifies signatures in identity.mode verify, and evaluates execute-api:Invoke identity policies in authorization soft/enforce; soft denials appear in the request inspector",
         "REST API resource policies are validated on write, expand execute-api:/ shorthand resources, and are evaluated for execute-api:Invoke in authorization soft/enforce following AWS's authorization flow for NONE, AWS_IAM, Lambda and Cognito authorizers",
         "Resource trees, methods, responses, integrations, deployments and stages",
+        "Models (JSON Schema draft 4, with the default Empty and Error models and cross-model $ref by model URI) and request validators; deployed methods with a validator reject missing or blank required query, header and path parameters and bodies that fail the model for their content type (or $default) with 400 BadRequestException, after authorization and before the integration, and report $context.error.validationErrorString; models and validators in use cannot be deleted",
         "Lambda and HTTP proxy execution through gateway data routes",
         "Lambda and Cognito authorizers, API keys and usage plan metadata",
         "Custom domains, base path mappings and access logs",
@@ -727,7 +728,7 @@
       ],
       "gaps": [
         "Integration credentials of arn:aws:iam::*:user/* (the caller's) are not re-evaluated",
-        "No VTL integration mapping, non-proxy AWS/HTTP integrations, VPC links or request validation",
+        "No VTL integration mapping, non-proxy AWS/HTTP integrations or VPC links; GetModel flatten and GetModelTemplate are unsupported, and the console has no model or request validator forms",
         "Throttling, quotas, caching, canaries and authorizer caching are not enforced",
         "No mutual TLS; REST API resource policies cannot use SourceVpc, SourceVpce, VpcSourceIp, Referer or UserAgent conditions, and console test requests do not evaluate them",
         "Custom domains, response mappings, API keys and usage plans use the AWS API rather than console forms",

@@ -156,6 +156,7 @@ func (s *Service) applyDefinition(
 				root := *record.API.RootResourceId
 				record.Resources = map[string]*api.Resource{root: {Id: new(root), Path: new("/")}}
 				record.Authorizers = map[string]*api.Authorizer{}
+				record.Models, record.Validators = defaultModels(), map[string]*api.RequestValidator{}
 			}
 
 			if checkErr := checkAPI(&record.API); checkErr != nil {
@@ -266,7 +267,7 @@ func (s *Service) applyDefinition(
 		for _, p := range op.Parameters {
 			location := p.In
 			if location == "query" {
-				location = "querystring"
+				location = locationQuery
 			}
 
 			in.RequestParameters["method.request."+location+"."+p.Name] = p.Required
@@ -454,7 +455,7 @@ func (s *Service) GetExport(ctx context.Context, in *api.GetExportRequest) (*api
 					}
 
 					location := parts[0]
-					if location == "querystring" {
+					if location == locationQuery {
 						location = "query"
 					}
 

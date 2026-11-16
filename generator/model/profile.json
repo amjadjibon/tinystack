@@ -1084,7 +1084,17 @@
       "DeleteBasePathMapping",
       "ImportRestApi",
       "PutRestApi",
-      "GetExport"
+      "GetExport",
+      "CreateModel",
+      "GetModel",
+      "GetModels",
+      "UpdateModel",
+      "DeleteModel",
+      "CreateRequestValidator",
+      "GetRequestValidator",
+      "GetRequestValidators",
+      "UpdateRequestValidator",
+      "DeleteRequestValidator"
     ],
     "shapes": {
       "CreateRestApiRequest": [
@@ -1113,7 +1123,8 @@
         "operationName",
         "requestParameters",
         "requestModels",
-        "authorizationScopes"
+        "authorizationScopes",
+        "requestValidatorId"
       ],
       "Method": [
         "httpMethod",
@@ -1125,7 +1136,8 @@
         "requestModels",
         "methodResponses",
         "methodIntegration",
-        "authorizationScopes"
+        "authorizationScopes",
+        "requestValidatorId"
       ],
       "PutIntegrationRequest": [
         "restApiId",
@@ -1437,6 +1449,10 @@
         "contentType",
         "contentDisposition",
         "body"
+      ],
+      "GetModelRequest": [
+        "restApiId",
+        "modelName"
       ]
     }
   },

@@ -13,7 +13,7 @@ Manage and invoke REST APIs with deployments, stages, proxy integrations, and au
 | API version | `2015-07-09` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 69 of 124 in the pinned model |
+| Selected operations | 79 of 124 in the pinned model |
 
 ## Implemented behavior
 
@@ -22,7 +22,7 @@ See the [implemented feature catalogue](catalogue.md#api-gateway-rest-apis) for 
 ## Limitations and future work
 
 - Integration credentials of arn:aws:iam::*:user/* (the caller's) are not re-evaluated.
-- No VTL integration mapping, non-proxy AWS/HTTP integrations, VPC links or request validation.
+- No VTL integration mapping, non-proxy AWS/HTTP integrations or VPC links; GetModel flatten and GetModelTemplate are unsupported, and the console has no model or request validator forms.
 - Throttling, quotas, caching, canaries and authorizer caching are not enforced.
 - No mutual TLS; REST API resource policies cannot use SourceVpc, SourceVpce, VpcSourceIp, Referer or UserAgent conditions, and console test requests do not evaluate them.
 - Custom domains, response mappings, API keys and usage plans use the AWS API rather than console forms.
@@ -48,6 +48,8 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `CreateBasePathMapping` | `POST /domainnames/{domainName}/basepathmappings` |
 | `CreateDeployment` | `POST /restapis/{restApiId}/deployments` |
 | `CreateDomainName` | `POST /domainnames` |
+| `CreateModel` | `POST /restapis/{restApiId}/models` |
+| `CreateRequestValidator` | `POST /restapis/{restApiId}/requestvalidators` |
 | `CreateResource` | `POST /restapis/{restApiId}/resources/{parentId}` |
 | `CreateRestApi` | `POST /restapis` |
 | `CreateStage` | `POST /restapis/{restApiId}/stages` |
@@ -62,6 +64,8 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `DeleteIntegrationResponse` | `DELETE /restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}/integration/responses/{statusCode}` |
 | `DeleteMethod` | `DELETE /restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}` |
 | `DeleteMethodResponse` | `DELETE /restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}/responses/{statusCode}` |
+| `DeleteModel` | `DELETE /restapis/{restApiId}/models/{modelName}` |
+| `DeleteRequestValidator` | `DELETE /restapis/{restApiId}/requestvalidators/{requestValidatorId}` |
 | `DeleteResource` | `DELETE /restapis/{restApiId}/resources/{resourceId}` |
 | `DeleteRestApi` | `DELETE /restapis/{restApiId}` |
 | `DeleteStage` | `DELETE /restapis/{restApiId}/stages/{stageName}` |
@@ -82,6 +86,10 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `GetIntegrationResponse` | `GET /restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}/integration/responses/{statusCode}` |
 | `GetMethod` | `GET /restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}` |
 | `GetMethodResponse` | `GET /restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}/responses/{statusCode}` |
+| `GetModel` | `GET /restapis/{restApiId}/models/{modelName}` |
+| `GetModels` | `GET /restapis/{restApiId}/models` |
+| `GetRequestValidator` | `GET /restapis/{restApiId}/requestvalidators/{requestValidatorId}` |
+| `GetRequestValidators` | `GET /restapis/{restApiId}/requestvalidators` |
 | `GetResource` | `GET /restapis/{restApiId}/resources/{resourceId}` |
 | `GetResources` | `GET /restapis/{restApiId}/resources` |
 | `GetRestApi` | `GET /restapis/{restApiId}` |
@@ -108,6 +116,8 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `UpdateIntegrationResponse` | `PATCH /restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}/integration/responses/{statusCode}` |
 | `UpdateMethod` | `PATCH /restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}` |
 | `UpdateMethodResponse` | `PATCH /restapis/{restApiId}/resources/{resourceId}/methods/{httpMethod}/responses/{statusCode}` |
+| `UpdateModel` | `PATCH /restapis/{restApiId}/models/{modelName}` |
+| `UpdateRequestValidator` | `PATCH /restapis/{restApiId}/requestvalidators/{requestValidatorId}` |
 | `UpdateResource` | `PATCH /restapis/{restApiId}/resources/{resourceId}` |
 | `UpdateRestApi` | `PATCH /restapis/{restApiId}` |
 | `UpdateStage` | `PATCH /restapis/{restApiId}/stages/{stageName}` |
@@ -115,23 +125,19 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "55 modeled operations outside the implementation"
+??? info "45 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
     - `CreateDocumentationPart`
     - `CreateDocumentationVersion`
     - `CreateDomainNameAccessAssociation`
-    - `CreateModel`
-    - `CreateRequestValidator`
     - `CreateVpcLink`
     - `DeleteClientCertificate`
     - `DeleteDocumentationPart`
     - `DeleteDocumentationVersion`
     - `DeleteDomainNameAccessAssociation`
     - `DeleteGatewayResponse`
-    - `DeleteModel`
-    - `DeleteRequestValidator`
     - `DeleteVpcLink`
     - `FlushStageAuthorizersCache`
     - `FlushStageCache`
@@ -146,11 +152,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetDomainNameAccessAssociations`
     - `GetGatewayResponse`
     - `GetGatewayResponses`
-    - `GetModel`
     - `GetModelTemplate`
-    - `GetModels`
-    - `GetRequestValidator`
-    - `GetRequestValidators`
     - `GetSdk`
     - `GetSdkType`
     - `GetSdkTypes`
@@ -170,8 +172,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `UpdateDocumentationVersion`
     - `UpdateDomainName`
     - `UpdateGatewayResponse`
-    - `UpdateModel`
-    - `UpdateRequestValidator`
     - `UpdateUsage`
     - `UpdateVpcLink`
 
@@ -180,5 +180,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/apigateway)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/apigateway/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/apigateway.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [apigateway_domains_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_domains_test.go), [apigateway_iam_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_iam_test.go), [apigateway_openapi_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_openapi_test.go), [apigateway_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_policy_test.go), [apigateway_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_test.go), [apigateway_usageplans_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_usageplans_test.go).
+- SDK integration examples: [apigateway_domains_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_domains_test.go), [apigateway_iam_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_iam_test.go), [apigateway_models_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_models_test.go), [apigateway_openapi_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_openapi_test.go), [apigateway_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_policy_test.go), [apigateway_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_test.go), [apigateway_usageplans_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigateway_usageplans_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

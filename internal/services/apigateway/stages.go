@@ -17,6 +17,8 @@ import (
 type deployment struct {
 	Resources   map[string]*api.Resource
 	Authorizers map[string]*api.Authorizer
+	Models      map[string]*api.Model
+	Validators  map[string]*api.RequestValidator
 	Deployment  api.Deployment
 }
 
@@ -45,7 +47,12 @@ func snapshot(a *restAPI) (*deployment, error) {
 	}
 
 	c := common.Clone(a)
-	return &deployment{Resources: c.Resources, Authorizers: c.Authorizers}, nil
+	return &deployment{
+		Resources:   c.Resources,
+		Authorizers: c.Authorizers,
+		Models:      c.Models,
+		Validators:  c.Validators,
+	}, nil
 }
 
 func checkStage(tx storage.ReadTx, scope request.Scope, apiID string, st *api.Stage) error {
