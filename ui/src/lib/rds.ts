@@ -124,6 +124,7 @@ export type DBCluster = {
 	BackupRetentionPeriod?: number;
 	DeletionProtection?: boolean;
 	HttpEndpointEnabled?: boolean;
+	DBClusterParameterGroup?: string;
 	DBClusterMembers?: {
 		DBInstanceIdentifier: string;
 		IsClusterWriter: boolean;

@@ -80,6 +80,8 @@ function text(label: string, value: string, update: (v: string) => void) {
 	);
 }
 
+const verbs = { create: "Create", copy: "Copy", delete: "Delete" };
+
 /** ParameterGroups lists DB or DB cluster parameter groups and shows the selected group's parameters. */
 export function ParameterGroups({
 	scope,
@@ -95,11 +97,12 @@ export function ParameterGroups({
 	const kind = groupKind(cluster),
 		families = cluster ? clusterParameterFamilies : parameterFamilies,
 		noun = cluster ? "cluster parameter group" : "parameter group";
-	const [dialog, setDialog] = useState<"" | "create" | "delete">(""),
+	const [dialog, setDialog] = useState<"" | "create" | "copy" | "delete">(""),
 		[name, setName] = useState(""),
 		[description, setDescription] = useState(""),
 		[family, setFamily] = useState(families[0]),
-		[tags, setTags] = useState("{}");
+		[tags, setTags] = useState("{}"),
+		[source, setSource] = useState("");
 	const poll = usePoll(() =>
 		enabled
 			? rdsPages<DBGroup>(
@@ -161,6 +164,20 @@ export function ParameterGroups({
 								>
 									Delete
 								</Button>
+								{!cluster && (
+									<Button
+										disabled={!enabled || !group}
+										onClick={() => {
+											setSource(group);
+											setName("");
+											setDescription("");
+											setTags("{}");
+											setDialog("copy");
+										}}
+									>
+										Copy
+									</Button>
+								)}
 								<Button
 									variant="primary"
 									disabled={!enabled}
@@ -212,8 +229,10 @@ export function ParameterGroups({
 			)}
 			{!!dialog && (
 				<ActionDialog
-					title={`${dialog === "create" ? "Create" : "Delete"} ${noun}`}
-					submit={`${dialog === "create" ? "Create" : "Delete"} group`}
+					title={
+						dialog === "copy" ? `Copy ${source}` : `${verbs[dialog]} ${noun}`
+					}
+					submit={`${verbs[dialog]} group`}
 					confirmation={dialog === "delete" ? name : undefined}
 					onClose={() => setDialog("")}
 					onSaved={() => {
@@ -231,6 +250,19 @@ export function ParameterGroups({
 						validateName(name, 255);
 						if (!description.trim())
 							throw new Error("Description is required.");
+						if (dialog === "copy")
+							return [
+								{
+									label: "Copy group",
+									run: () =>
+										rdsCall(scope, "CopyDBParameterGroup", {
+											SourceDBParameterGroupIdentifier: source,
+											TargetDBParameterGroupIdentifier: name,
+											TargetDBParameterGroupDescription: description,
+											Tags: tagList(stringMap(tags, "Tags")),
+										}),
+								},
+							];
 						return [
 							{
 								label: "Create group",
@@ -252,7 +284,8 @@ export function ParameterGroups({
 						<SpaceBetween size="m">
 							{text("Group name", name, setName)}
 							{text("Description", description, setDescription)}
-							{choose("Parameter group family", family, families, setFamily)}
+							{dialog === "create" &&
+								choose("Parameter group family", family, families, setFamily)}
 							<FormField label="Tags (JSON)">
 								<Textarea
 									ariaLabel="Group tags"

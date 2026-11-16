@@ -9,10 +9,11 @@ import {
 	SpaceBetween,
 	Table,
 } from "@cloudscape-design/components";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	clusterEngines,
 	type DBCluster,
+	type DBGroup,
 	finalSnapshotInput,
 	type RDSScope,
 	rdsHref,
@@ -41,6 +42,32 @@ export function DatabaseClusters({
 	);
 	const [selected, setSelected] = useState<string>(""),
 		[action, setAction] = useState("");
+	// Parameter groups are listed when a dialog opens, so groups created meanwhile appear.
+	const groups = usePoll(
+		async () =>
+			enabled && action
+				? {
+						cluster: await rdsPages<DBGroup>(
+							scope,
+							"DescribeDBClusterParameterGroups",
+							"DBClusterParameterGroups",
+						),
+						instance: await rdsPages<DBGroup>(
+							scope,
+							"DescribeDBParameterGroups",
+							"DBParameterGroups",
+						),
+					}
+				: { cluster: [], instance: [] },
+		0,
+	);
+	const reloadGroups = groups.reload;
+	useEffect(() => {
+		if (action) reloadGroups();
+	}, [action, reloadGroups]);
+	const clusterGroups = (groups.data?.cluster ?? []).map((g) =>
+		String(g.DBClusterParameterGroupName),
+	);
 	const cluster = poll.data?.find((c) => c.DBClusterIdentifier === selected),
 		follow = useFollow();
 	const aurora = cluster?.Engine.startsWith("aurora"),
@@ -75,6 +102,11 @@ export function DatabaseClusters({
 				type: "password",
 			},
 			{ key: "DBSubnetGroupName", label: "Subnet group (optional)" },
+			{
+				key: "DBClusterParameterGroupName",
+				label: "Cluster parameter group (optional; engine default)",
+				options: clusterGroups,
+			},
 		];
 	if (action === "Create" || action === "Modify")
 		fields.push(
@@ -95,6 +127,13 @@ export function DatabaseClusters({
 				value: action === "Modify" && !!cluster?.DeletionProtection,
 			},
 		);
+	if (action === "Modify")
+		fields.push({
+			key: "DBClusterParameterGroupName",
+			label: "Cluster parameter group",
+			options: clusterGroups,
+			value: cluster?.DBClusterParameterGroup ?? "",
+		});
 	if (action === "Modify" && cluster?.Engine !== "neptune")
 		fields.push({
 			key: "MasterUserPassword",
@@ -131,6 +170,18 @@ export function DatabaseClusters({
 				value: "db.t3.medium",
 				required: true,
 			},
+			// Only Neptune members take their own parameter group.
+			...(cluster?.Engine === "neptune"
+				? [
+						{
+							key: "DBParameterGroupName",
+							label: "Parameter group (optional; engine default)",
+							options: (groups.data?.instance ?? [])
+								.filter((g) => g.DBParameterGroupFamily?.startsWith("neptune"))
+								.map((g) => String(g.DBParameterGroupName)),
+						},
+					]
+				: []),
 		];
 	const operation =
 		action === "Member"
@@ -327,6 +378,12 @@ export function DatabaseClusters({
 							validateName(String(input.DBInstanceIdentifier));
 						if (action === "Create")
 							validateName(String(input.DBClusterIdentifier));
+						if (
+							action === "Modify" &&
+							input.DBClusterParameterGroupName ===
+								cluster?.DBClusterParameterGroup
+						)
+							delete input.DBClusterParameterGroupName;
 						if (action === "Delete") {
 							if (input.SkipFinalSnapshot && input.FinalDBSnapshotIdentifier)
 								throw new Error("Omit the final identifier when skipping.");
