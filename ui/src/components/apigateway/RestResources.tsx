@@ -423,15 +423,17 @@ function RestMethodForm({
 					{
 						label: "Save integration",
 						run: () =>
+							// UpdateIntegration cannot change the type; a new type replaces the integration.
 							apiCall(
 								scope,
-								integration ? "UpdateIntegration" : "PutIntegration",
+								integration?.Type === type
+									? "UpdateIntegration"
+									: "PutIntegration",
 								{
 									...input,
-									...(integration
+									...(integration?.Type === type
 										? {
 												PatchOperations: scalarPatch({
-													type,
 													...(type !== "MOCK" ? { uri } : {}),
 													httpMethod: integrationInput.IntegrationHttpMethod,
 													timeoutInMillis: integrationInput.TimeoutInMillis,
