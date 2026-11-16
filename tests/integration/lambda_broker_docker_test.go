@@ -14,7 +14,9 @@ import (
 	mqtypes "github.com/aws/aws-sdk-go-v2/service/mq/types"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 
 	"github.com/amjadjibon/tinystack/internal/config"
 )
@@ -47,6 +49,21 @@ func TestLambdaMSKDockerMapping(t *testing.T) {
 	}
 
 	defer producer.Close()
+	// Create the topic first: the client does not ask the broker to auto-create it and gives up after a few
+	// unknown-topic retries, which a slow broker can exhaust.
+	create := kmsg.NewPtrCreateTopicsRequest()
+	topic := kmsg.NewCreateTopicsRequestTopic()
+	topic.Topic, topic.NumPartitions, topic.ReplicationFactor = "lambda-orders", 1, 1
+	create.Topics = append(create.Topics, topic)
+	created, err := create.RequestWith(ctx, producer)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if topicErr := kerr.ErrorForCode(created.Topics[0].ErrorCode); topicErr != nil {
+		t.Fatal(topicErr)
+	}
+
 	if produceErr := producer.ProduceSync(ctx, &kgo.Record{Topic: "lambda-orders", Value: []byte("order")}).
 		FirstErr(); produceErr != nil {
 		t.Fatal(produceErr)

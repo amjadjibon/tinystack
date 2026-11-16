@@ -224,8 +224,10 @@ func TestRDSDockerDocumentDB(t *testing.T) {
 	code(t, err, "DBClusterNotFoundFault")
 }
 
+// clusterContainer names the cluster's container. Stopping or rebooting replaces the container under the same name,
+// so tests refer to it by name rather than by ID.
 func clusterContainer(ctx context.Context, arn string) (string, error) {
-	out, err := dockercli.Run(ctx, nil, "ps", "-a", "--filter", "label=tinystack.rds="+arn, "--format", "{{.ID}}")
+	out, err := dockercli.Run(ctx, nil, "ps", "-a", "--filter", "label=tinystack.rds="+arn, "--format", "{{.Names}}")
 	return strings.TrimSpace(out), err
 }
 
