@@ -30,7 +30,7 @@ var modelName = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
 func defaultModels() map[string]*api.Model {
 	model := func(name, schema string) *api.Model {
 		return &api.Model{
-			Id: new(common.RandomID(6)), Name: new(name), ContentType: new("application/json"),
+			Id: new(common.RandomID(6)), Name: new(name), ContentType: new(mediaJSON),
 			Schema: new(schema), Description: new("This is a default " + strings.ToLower(name) + " schema model"),
 		}
 	}

@@ -216,6 +216,15 @@ func (s *Service) applyDefinition(
 		authors[name] = author
 	}
 
+	if importErr := s.importModels(ctx, a.Id, d); importErr != nil {
+		return nil, importErr
+	}
+
+	validators, err := s.importValidators(ctx, a.Id, d)
+	if err != nil {
+		return nil, err
+	}
+
 	resources, err := s.GetResources(
 		ctx,
 		&api.GetResourcesRequest{RestApiId: a.Id, Limit: new(int64(500)), Embed: []string{"methods"}},
@@ -259,9 +268,14 @@ func (s *Service) applyDefinition(
 			return nil, err
 		}
 
+		models, validator, modelErr := requestModels(d, op, validators)
+		if modelErr != nil {
+			return nil, modelErr
+		}
+
 		in := &api.PutMethodRequest{
 			RestApiId: a.Id, ResourceId: parent, HttpMethod: new(op.Method), AuthorizationType: new("NONE"),
-			RequestParameters: map[string]bool{},
+			RequestParameters: map[string]bool{}, RequestModels: models, RequestValidatorId: validator,
 		}
 
 		for _, p := range op.Parameters {
@@ -407,16 +421,22 @@ func (s *Service) GetExport(ctx context.Context, in *api.GetExportRequest) (*api
 			}
 		}
 
-		if common.Value(in.ExportType) == exportSwagger {
+		swagger := common.Value(in.ExportType) == exportSwagger
+		if swagger {
 			root["securityDefinitions"] = schemes
 		} else {
 			root["components"] = openapi.Object{"securitySchemes": schemes}
+		}
+
+		if err := exportModels(root, *a.API.Id, dep.Models, swagger); err != nil {
+			return err
 		}
 
 		if extensions == service {
 			root["x-amazon-apigateway-api-key-source"] = a.API.ApiKeySource
 			root["x-amazon-apigateway-binary-media-types"] = a.API.BinaryMediaTypes
 			root["x-amazon-apigateway-endpoint-configuration"] = a.API.EndpointConfiguration
+			exportValidators(root, dep.Validators)
 			if a.API.Policy != nil {
 				var policy any
 				if err := json.Unmarshal([]byte(*a.API.Policy), &policy); err != nil {
@@ -459,7 +479,7 @@ func (s *Service) GetExport(ctx context.Context, in *api.GetExportRequest) (*api
 						location = "query"
 					}
 
-					p := openapi.Object{openAPIName: parts[1], "in": location, "required": required}
+					p := openapi.Object{openAPIName: parts[1], "in": location, openAPIRequired: required}
 					if common.Value(in.ExportType) == exportSwagger {
 						p[openAPIType] = "string"
 					} else {
@@ -470,6 +490,11 @@ func (s *Service) GetExport(ctx context.Context, in *api.GetExportRequest) (*api
 				}
 
 				op["parameters"] = params
+				exportRequestBody(op, m.RequestModels, swagger)
+				if v := dep.Validators[common.Value(m.RequestValidatorId)]; v != nil && extensions == service {
+					op[validatorExtension] = *v.Name
+				}
+
 				if extensions == "integrations" || extensions == service {
 					if i := m.MethodIntegration; i != nil {
 						ext := openapi.Object{}

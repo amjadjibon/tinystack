@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"slices"
 	"strings"
@@ -344,4 +345,117 @@ func TestCloudFormationRESTModels(t *testing.T) {
 		_, describeErr := c.DescribeStacks(ctx, &cfn.DescribeStacksInput{StackName: aws.String("models")})
 		return describeErr != nil
 	})
+}
+
+// OpenAPI import turns Swagger definitions or component schemas into models, body schemas into method request
+// models and the request validator extensions into validators; export writes them back.
+func TestRESTAPIOpenAPIModels(t *testing.T) {
+	s := server(t)
+	ctx := context.Background()
+	c := restClient(s)
+	uri := *lambdaURI(createFunction(t, lambdaClient(s, "test"), "respond", "app.respond").FunctionArn)
+	integration := fmt.Sprintf(`"x-amazon-apigateway-integration":{"type":"aws_proxy","httpMethod":"POST","uri":%q}`,
+		uri)
+	validators := `"x-amazon-apigateway-request-validators":{
+		"all":{"validateRequestBody":true,"validateRequestParameters":true},
+		"params":{"validateRequestBody":false,"validateRequestParameters":true}},
+		"x-amazon-apigateway-request-validator":"all"`
+	pet := `{"type":"object","required":["name"],"properties":{"name":{"type":"string"},"tag":{"$ref":%q}}}`
+	tag := `{"type":"string","maxLength":3}`
+	specs := map[string]string{
+		"swagger": fmt.Sprintf(`{"swagger":"2.0","info":{"title":"pets","version":"1"},%s,
+			"definitions":{"Pet":`+pet+`,"Tag":%s},
+			"paths":{"/pets":{
+				"post":{"responses":{},"parameters":[
+					{"in":"query","name":"store","required":true,"type":"string"},
+					{"in":"body","name":"Pet","schema":{"$ref":"#/definitions/Pet"}}],%s},
+				"put":{"responses":{},"x-amazon-apigateway-request-validator":"params","parameters":[
+					{"in":"query","name":"store","required":true,"type":"string"},
+					{"in":"body","name":"Pet","schema":{"$ref":"#/definitions/Pet"}}],%s}}}}`,
+			validators, "#/definitions/Tag", tag, integration, integration),
+		"oas30": fmt.Sprintf(`{"openapi":"3.0.1","info":{"title":"pets","version":"1"},%s,
+			"components":{"schemas":{"Pet":`+pet+`,"Tag":%s}},
+			"paths":{"/pets":{
+				"post":{"responses":{},"parameters":[{"in":"query","name":"store","required":true}],
+					"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Pet"}}}},%s},
+				"put":{"responses":{},"x-amazon-apigateway-request-validator":"params",
+					"parameters":[{"in":"query","name":"store","required":true}],
+					"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Pet"}}}},%s}}}}`,
+			validators, "#/components/schemas/Tag", tag, integration, integration),
+	}
+
+	check := func(t *testing.T, id *string) {
+		t.Helper()
+		if _, err := c.CreateDeployment(context.Background(), &restapi.CreateDeploymentInput{
+			RestApiId: id, StageName: aws.String("prod"),
+		}); err != nil {
+			t.Fatal(err)
+		}
+
+		for _, tc := range []struct {
+			method, path, body string
+			status             int
+		}{
+			{"POST", "/prod/pets", `{"name":"rex"}`, 400},
+			{"POST", "/prod/pets?store=1", `{"tag":"dog"}`, 400},
+			{"POST", "/prod/pets?store=1", `{"name":"rex","tag":"long"}`, 400},
+			{"POST", "/prod/pets?store=1", `{"name":"rex","tag":"dog"}`, 201},
+			{"PUT", "/prod/pets", `{}`, 400},
+			{"PUT", "/prod/pets?store=1", `{}`, 201},
+		} {
+			status, _, body := call(t, s, tc.method, *id, tc.path, nil, tc.body)
+			if status != tc.status {
+				t.Fatalf("%s %s %s: %d %s", tc.method, tc.path, tc.body, status, body)
+			}
+		}
+	}
+
+	for format, spec := range specs {
+		t.Run(format, func(t *testing.T) {
+			imported, err := c.ImportRestApi(ctx, &restapi.ImportRestApiInput{Body: []byte(spec)})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			check(t, imported.Id)
+			model, err := c.GetModel(ctx, &restapi.GetModelInput{RestApiId: imported.Id, ModelName: aws.String("Pet")})
+			if err != nil || !strings.Contains(aws.ToString(model.Schema), "/restapis/"+*imported.Id+"/models/Tag") {
+				t.Fatalf("model %+v, %v", model, err)
+			}
+
+			exported, err := c.GetExport(ctx, &restapi.GetExportInput{
+				RestApiId: imported.Id, StageName: aws.String("prod"), ExportType: aws.String(format),
+				Parameters: map[string]string{"extensions": "apigateway"},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			copied, err := c.ImportRestApi(ctx, &restapi.ImportRestApiInput{Body: exported.Body})
+			if err != nil {
+				t.Fatalf("%v\n%s", err, exported.Body)
+			}
+
+			check(t, copied.Id)
+		})
+	}
+
+	for name, spec := range map[string]string{
+		"inline": `{"openapi":"3.0.1","info":{"title":"x","version":"1"},"paths":{"/a":{"post":{"responses":{},
+			"requestBody":{"content":{"application/json":{"schema":{"type":"object"}}}}}}}}`,
+		"validator": `{"openapi":"3.0.1","info":{"title":"x","version":"1"},
+			"x-amazon-apigateway-request-validator":"missing","paths":{"/a":{"get":{"responses":{}}}}}`,
+		"model": `{"openapi":"3.0.1","info":{"title":"x","version":"1"},"paths":{"/a":{"post":{"responses":{},
+			"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Nope"}}}}}}}}`,
+		"ref": `{"openapi":"3.0.1","info":{"title":"x","version":"1"},"paths":{},
+			"components":{"schemas":{"A":{"$ref":"#/components/schemas/B"}}}}`,
+		"name": `{"openapi":"3.0.1","info":{"title":"x","version":"1"},"paths":{},
+			"components":{"schemas":{"my-model":{"type":"object"}}}}`,
+	} {
+		_, err := c.ImportRestApi(ctx, &restapi.ImportRestApiInput{Body: []byte(spec)})
+		code(t, err, "BadRequestException")
+		if t.Failed() {
+			t.Fatal(name)
+		}
+	}
 }

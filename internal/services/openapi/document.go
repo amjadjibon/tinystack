@@ -15,25 +15,32 @@ import (
 
 const anyMethod = "x-amazon-apigateway-any-method"
 
+const mediaJSON = "application/json"
+
 type Object map[string]any
 
 type Operation struct {
+	Body       Object
+	Bodies     map[string]any
 	Path       string
 	Method     string
-	Body       Object
 	Parameters []Parameter
 }
 
 type Parameter struct {
+	Schema   any    `json:"schema"`
 	Name     string `json:"name"`
 	In       string `json:"in"`
 	Required bool   `json:"required"`
 }
 
+// Document is a parsed Swagger 2.0 or OpenAPI 3.0 definition. Schemas holds the reusable schemas (Swagger
+// definitions or OpenAPI components.schemas), and each operation's Bodies maps a request content type to its schema.
 type Document struct {
 	Root       Object
-	Operations []Operation
 	Schemes    Object
+	Schemas    Object
+	Operations []Operation
 	Warnings   []string
 }
 
@@ -101,6 +108,9 @@ func Parse(body []byte) (*Document, error) {
 		"x-amazon-apigateway-endpoint-configuration",
 		"x-amazon-apigateway-policy",
 		"x-amazon-apigateway-cors",
+		"definitions",
+		"x-amazon-apigateway-request-validators",
+		"x-amazon-apigateway-request-validator",
 	); err != nil {
 		return nil, err
 	}
@@ -111,13 +121,17 @@ func Parse(body []byte) (*Document, error) {
 	}
 
 	components := Map(root["components"])
-	if err := Check(components, "securitySchemes", "x-amazon-apigateway-integrations"); err != nil {
+	if err := Check(components, "securitySchemes", "schemas", "x-amazon-apigateway-integrations"); err != nil {
 		return nil, err
 	}
 
-	d := &Document{Root: root, Schemes: Map(root["securityDefinitions"])}
+	d := &Document{Root: root, Schemes: Map(root["securityDefinitions"]), Schemas: Map(root["definitions"])}
 	if d.Schemes == nil {
 		d.Schemes = Map(components["securitySchemes"])
+	}
+
+	if d.Schemas == nil {
+		d.Schemas = Map(components["schemas"])
 	}
 
 	paths, ok := root["paths"].(map[string]any)
@@ -165,8 +179,15 @@ func Parse(body []byte) (*Document, error) {
 				"security",
 				"consumes",
 				"produces",
+				"requestBody",
 				"x-amazon-apigateway-integration",
+				"x-amazon-apigateway-request-validator",
 			); err != nil {
+				return nil, err
+			}
+
+			bodies, err := requestBodies(root, op)
+			if err != nil {
 				return nil, err
 			}
 
@@ -178,12 +199,20 @@ func Parse(body []byte) (*Document, error) {
 				}
 
 				for _, p := range pp {
+					if p.In == "body" {
+						if err := swaggerBody(root, op, p, bodies); err != nil {
+							return nil, err
+						}
+
+						continue
+					}
+
 					if p.Name == "" || !slices.Contains([]string{"path", "query", "header"}, p.In) {
 						return nil, Invalid("Unsupported parameter %q in %q", p.Name, p.In)
 					}
-				}
 
-				params = append(params, pp...)
+					params = append(params, p)
+				}
 			}
 
 			upper := strings.ToUpper(method)
@@ -195,11 +224,77 @@ func Parse(body []byte) (*Document, error) {
 				d.Warnings = append(d.Warnings, fmt.Sprintf("No integration defined for %s %s", upper, path))
 			}
 
-			d.Operations = append(d.Operations, Operation{path, upper, op, params})
+			d.Operations = append(d.Operations, Operation{
+				Body: op, Bodies: bodies, Path: path, Method: upper, Parameters: params,
+			})
 		}
 	}
 
 	return d, nil
+}
+
+// requestBodies reads an OpenAPI 3.0 operation's requestBody into a schema per content type.
+func requestBodies(root, op Object) (map[string]any, error) {
+	bodies := map[string]any{}
+	raw, ok := op["requestBody"]
+	if !ok {
+		return bodies, nil
+	}
+
+	body := Map(raw)
+	if root["swagger"] != nil || body == nil {
+		return nil, Invalid("requestBody must be an OpenAPI 3.0 object")
+	}
+
+	if err := Check(body, "description", "required", "content"); err != nil {
+		return nil, err
+	}
+
+	content := Map(body["content"])
+	for _, contentType := range slices.Sorted(maps.Keys(content)) {
+		media := Map(content[contentType])
+		if err := Check(media, "schema", "example", "examples"); err != nil {
+			return nil, err
+		}
+
+		if media["schema"] != nil {
+			bodies[contentType] = media["schema"]
+		}
+	}
+
+	return bodies, nil
+}
+
+// swaggerBody records a Swagger 2.0 body parameter's schema under each content type the operation consumes.
+func swaggerBody(root, op Object, p Parameter, bodies map[string]any) error {
+	if root["swagger"] == nil {
+		return Invalid("Body parameters are only supported in Swagger 2.0; use requestBody")
+	}
+
+	if p.Schema == nil {
+		return Invalid("Body parameter %q has no schema", p.Name)
+	}
+
+	var consumes []string
+	for _, raw := range []any{op["consumes"], root["consumes"]} {
+		if err := Decode(raw, &consumes); err != nil {
+			return err
+		}
+
+		if len(consumes) > 0 {
+			break
+		}
+	}
+
+	if len(consumes) == 0 {
+		consumes = []string{mediaJSON}
+	}
+
+	for _, contentType := range consumes {
+		bodies[contentType] = p.Schema
+	}
+
+	return nil
 }
 
 func (d *Document) Integration(op Operation) (Object, error) {
@@ -272,9 +367,9 @@ func Add(root Object, path, method string, op Object) {
 
 func Encode(root Object, format string) (body []byte, contentType string, err error) {
 	switch strings.ToLower(format) {
-	case "json", "application/json", "":
+	case "json", mediaJSON, "":
 		b, err := json.Marshal(root)
-		return b, "application/json", err
+		return b, mediaJSON, err
 	case "yaml", "application/yaml", "application/x-yaml", "text/yaml":
 		var normalized map[string]any
 		if err := Decode(root, &normalized); err != nil {

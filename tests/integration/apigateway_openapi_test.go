@@ -84,7 +84,7 @@ func TestAPIGatewayOpenAPI(t *testing.T) {
 
 	for _, spec := range []string{
 		`broken`, `{"openapi":"3.0.1","info":{"title":"bad"},"paths":{"/x":{"trace":{}}}}`,
-		`{"openapi":"3.0.1","info":{"title":"bad"},"paths":{},"components":{"schemas":{"Pet":{}}}}`,
+		`{"openapi":"3.0.1","info":{"title":"bad"},"paths":{},"components":{"requestBodies":{"Pet":{}}}}`,
 	} {
 		if _, err := c.ImportRestApi(ctx, &rest.ImportRestApiInput{Body: []byte(spec)}); err == nil {
 			t.Fatal("accepted invalid spec")
@@ -169,6 +169,17 @@ func TestHTTPAPIOpenAPI(t *testing.T) {
 		&httpapi.ReimportApiInput{ApiId: a.ApiId, Body: new(string(exported.Body))},
 	); err != nil {
 		t.Fatal(err)
+	}
+
+	// HTTP APIs have no request models or validators.
+	for _, spec := range []string{
+		`{"openapi":"3.0.1","info":{"title":"x","version":"1"},"paths":{},
+			"components":{"schemas":{"Pet":{"type":"object"}}}}`,
+		`{"openapi":"3.0.1","info":{"title":"x","version":"1"},"paths":{"/a":{"get":{"responses":{},
+			"x-amazon-apigateway-request-validator":"all"}}}}`,
+	} {
+		_, err = c.ImportApi(ctx, &httpapi.ImportApiInput{Body: new(spec)})
+		code(t, err, "BadRequestException")
 	}
 }
 

@@ -22,14 +22,14 @@ See the [implemented feature catalogue](catalogue.md#api-gateway-rest-apis) for 
 ## Limitations and future work
 
 - Integration credentials of arn:aws:iam::*:user/* (the caller's) are not re-evaluated.
-- No VTL integration mapping, non-proxy AWS/HTTP integrations or VPC links; GetModel flatten and GetModelTemplate are unsupported, and the console has no model or request validator forms.
+- No VTL integration mapping, non-proxy AWS/HTTP integrations or VPC links; GetModel flatten and GetModelTemplate are unsupported.
 - Throttling, quotas, caching, canaries and authorizer caching are not enforced.
 - No mutual TLS; REST API resource policies cannot use SourceVpc, SourceVpce, VpcSourceIp, Referer or UserAgent conditions, and console test requests do not evaluate them.
 - Custom domains, response mappings, API keys and usage plans use the AWS API rather than console forms.
 - In verify mode, console management requires an authenticated root console session; without a session only resource inventory is available.
 - Console test requests run deployed routing and authorizers without impersonating IAM; AWS_IAM routes require signed execute-api requests. The console action JSON envelope is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64.
 - REST API metrics have no CacheHitCount, CacheMissCount or usage plan metrics; requests to a missing stage report nothing.
-- OpenAPI schemas/models, request bodies, external references, base-path import parameters and unsupported extensions fail explicitly; only AWS_PROXY, HTTP_PROXY and MOCK integrations are supported.
+- Inline request body schemas (AWS generates models for them), references into part of a schema, external references, base-path import parameters and unsupported extensions fail explicitly; the console edits only the application/json request model; only AWS_PROXY, HTTP_PROXY and MOCK integrations are supported.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

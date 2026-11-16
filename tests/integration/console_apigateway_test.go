@@ -259,12 +259,45 @@ func TestConsoleRESTAPIResourcesAndPreservedConfiguration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The models page writes models and validators that the method form then attaches.
+	scoped("CreateModel", map[string]any{
+		"Name": "Pet", "ContentType": "application/json", "Schema": `{"type":"object"}`,
+	})
+	scoped("UpdateModel", map[string]any{
+		"ModelName":       "Pet",
+		"PatchOperations": []any{map[string]any{"Op": "replace", "Path": "/description", "Value": "pet"}},
+	})
+	validator := scoped("CreateRequestValidator", map[string]any{"Name": "params", "ValidateRequestParameters": true})
+	if len(scoped("GetModels", map[string]any{})["Items"].([]any)) != 3 ||
+		len(scoped("GetRequestValidators", map[string]any{})["Items"].([]any)) != 1 {
+		t.Fatal("models or validators missing")
+	}
+
 	method(
 		"UpdateMethod",
 		map[string]any{
-			"PatchOperations": []any{map[string]any{"Op": "replace", "Path": "/operationName", "Value": "createPet"}},
+			"PatchOperations": []any{
+				map[string]any{"Op": "replace", "Path": "/operationName", "Value": "createPet"},
+				map[string]any{"Op": "replace", "Path": "/requestModels/application~1json", "Value": "Pet"},
+				map[string]any{"Op": "replace", "Path": "/requestValidatorId", "Value": validator["Id"]},
+			},
 		},
 	)
+	method(
+		"UpdateMethod",
+		map[string]any{
+			"PatchOperations": []any{
+				map[string]any{"Op": "remove", "Path": "/requestModels/application~1json"},
+				map[string]any{"Op": "remove", "Path": "/requestValidatorId"},
+			},
+		},
+	)
+	scoped("UpdateRequestValidator", map[string]any{
+		"RequestValidatorId": validator["Id"],
+		"PatchOperations":    []any{map[string]any{"Op": "replace", "Path": "/validateRequestBody", "Value": "true"}},
+	})
+	scoped("DeleteRequestValidator", map[string]any{"RequestValidatorId": validator["Id"]})
+	scoped("DeleteModel", map[string]any{"ModelName": "Pet"})
 	deployment := scoped("CreateDeployment", map[string]any{"StageName": "dev"})["Id"].(string)
 	invoke := func() map[string]any {
 		t.Helper()

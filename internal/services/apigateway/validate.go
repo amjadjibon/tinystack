@@ -33,7 +33,7 @@ func validateRequest(c *call) *execute.Response {
 	}
 
 	// A request without a content type is treated as JSON.
-	contentType := "application/json"
+	contentType := mediaJSON
 	if header := c.req.Header.Get("Content-Type"); header != "" {
 		if parsed, _, err := mime.ParseMediaType(header); err == nil {
 			contentType = parsed

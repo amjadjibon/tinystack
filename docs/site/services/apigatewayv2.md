@@ -30,7 +30,7 @@ See the [implemented feature catalogue](catalogue.md#api-gateway-http-and-websoc
 - WebSocket support is text-only: no binary input, API keys, IAM/JWT/Lambda route authorizers, access logs, metrics, throttling, integration response mappings, mapping templates or non-Lambda AWS/HTTP integrations; unsupported members and expressions fail explicitly.
 - WebSocket MOCK integrations are limited to empty successful responses; route responses support only $default; message selection supports dotted object fields, without array indexes or expression interpolation; message size is limited to 128 KiB, without AWS frame-level quota emulation.
 - WebSocket APIs use the AWS SDK/CLI for configuration; the console API Gateway forms remain focused on HTTP APIs.
-- OpenAPI schemas, request parameter mappings, external references and base-path transformations are unsupported; CreateApi Body is absent from the pinned model.
+- OpenAPI schemas, request bodies and validators, request parameter mappings, external references and base-path transformations are unsupported; CreateApi Body is absent from the pinned model.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

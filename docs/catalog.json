@@ -724,18 +724,18 @@
         "A credentials role must trust apigateway.amazonaws.com for the method's execute-api ARN and its policies must allow lambda:InvokeFunction; the same 500 reports a denial",
         "Lambda authorizers are invoked as apigateway.amazonaws.com, which the function policy must allow with arn:aws:execute-api:<region>:<account>:<api-id>/authorizers/<authorizer-id> as aws:SourceArn, or as the authorizer's credentials role, whose trust policy must allow it for that source; a denied invocation answers 500",
         "AWS/ApiGateway metrics for requests to a deployed stage, with dimensions ApiName, ApiName with Stage, and per-method dimensions {ApiName, Method, Resource, Stage} when detailed metrics are enabled on the stage: Count, 4XXError, 5XXError, Latency and IntegrationLatency (Milliseconds; only for requests that reached the integration)",
-        "Swagger 2.0 and OpenAPI 3.0 JSON/YAML import, transactional merge/overwrite, deployed-stage JSON/YAML export, proxy integrations, request parameters and authorizer extensions"
+        "Swagger 2.0 and OpenAPI 3.0 JSON/YAML import, transactional merge/overwrite, deployed-stage JSON/YAML export, proxy integrations, request parameters and authorizer extensions; Swagger definitions and component schemas become models, $ref request bodies (Swagger body parameters or requestBody content) become method request models, and x-amazon-apigateway-request-validators/-validator become validators, all exported back"
       ],
       "gaps": [
         "Integration credentials of arn:aws:iam::*:user/* (the caller's) are not re-evaluated",
-        "No VTL integration mapping, non-proxy AWS/HTTP integrations or VPC links; GetModel flatten and GetModelTemplate are unsupported, and the console has no model or request validator forms",
+        "No VTL integration mapping, non-proxy AWS/HTTP integrations or VPC links; GetModel flatten and GetModelTemplate are unsupported",
         "Throttling, quotas, caching, canaries and authorizer caching are not enforced",
         "No mutual TLS; REST API resource policies cannot use SourceVpc, SourceVpce, VpcSourceIp, Referer or UserAgent conditions, and console test requests do not evaluate them",
         "Custom domains, response mappings, API keys and usage plans use the AWS API rather than console forms",
         "In verify mode, console management requires an authenticated root console session; without a session only resource inventory is available",
         "Console test requests run deployed routing and authorizers without impersonating IAM; AWS_IAM routes require signed execute-api requests. The console action JSON envelope is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64",
         "REST API metrics have no CacheHitCount, CacheMissCount or usage plan metrics; requests to a missing stage report nothing",
-        "OpenAPI schemas/models, request bodies, external references, base-path import parameters and unsupported extensions fail explicitly; only AWS_PROXY, HTTP_PROXY and MOCK integrations are supported"
+        "Inline request body schemas (AWS generates models for them), references into part of a schema, external references, base-path import parameters and unsupported extensions fail explicitly; the console edits only the application/json request model; only AWS_PROXY, HTTP_PROXY and MOCK integrations are supported"
       ],
       "execution": "Local behavior",
       "package": "apigateway"
@@ -771,7 +771,7 @@
         "WebSocket support is text-only: no binary input, API keys, IAM/JWT/Lambda route authorizers, access logs, metrics, throttling, integration response mappings, mapping templates or non-Lambda AWS/HTTP integrations; unsupported members and expressions fail explicitly",
         "WebSocket MOCK integrations are limited to empty successful responses; route responses support only $default; message selection supports dotted object fields, without array indexes or expression interpolation; message size is limited to 128 KiB, without AWS frame-level quota emulation",
         "WebSocket APIs use the AWS SDK/CLI for configuration; the console API Gateway forms remain focused on HTTP APIs",
-        "OpenAPI schemas, request parameter mappings, external references and base-path transformations are unsupported; CreateApi Body is absent from the pinned model"
+        "OpenAPI schemas, request bodies and validators, request parameter mappings, external references and base-path transformations are unsupported; CreateApi Body is absent from the pinned model"
       ],
       "execution": "Local behavior",
       "package": "apigatewayv2"

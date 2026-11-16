@@ -56,6 +56,7 @@ func (s *Service) importDefinition(
 	for _, key := range []string{
 		"x-amazon-apigateway-api-key-source", "x-amazon-apigateway-binary-media-types",
 		"x-amazon-apigateway-endpoint-configuration", "x-amazon-apigateway-policy",
+		"x-amazon-apigateway-request-validators", "x-amazon-apigateway-request-validator",
 	} {
 		if _, ok := d.Root[key]; ok {
 			return nil, badRequest("HTTP APIs do not support %s", key)
@@ -64,6 +65,10 @@ func (s *Service) importDefinition(
 
 	if d.Root["swagger"] != nil {
 		return nil, badRequest("HTTP APIs require OpenAPI 3.0")
+	}
+
+	if d.Schemas != nil {
+		return nil, badRequest("HTTP APIs do not support models")
 	}
 
 	if failOnWarnings && len(d.Warnings) > 0 {
@@ -206,6 +211,10 @@ func (s *Service) applyDefinition(ctx context.Context, id *string, d *openapi.Do
 	for _, op := range d.Operations {
 		if len(op.Parameters) > 0 {
 			return nil, badRequest("HTTP API request parameters are unsupported")
+		}
+
+		if len(op.Bodies) > 0 || op.Body["x-amazon-apigateway-request-validator"] != nil {
+			return nil, badRequest("HTTP APIs do not support request models or validators")
 		}
 
 		route := &api.CreateRouteRequest{

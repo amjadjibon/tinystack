@@ -36,6 +36,7 @@ import { ApiForm } from "./ApiForm";
 import { Authorizers } from "./Authorizers";
 import { GatewayTable } from "./GatewayTable";
 import { HttpRouteForm, IntegrationForm } from "./HttpForms";
+import { Models } from "./Models";
 import { RequestTest } from "./RequestTest";
 import { RestResources } from "./RestResources";
 import { Stages } from "./Stages";
@@ -44,6 +45,7 @@ const sections: Record<string, string> = {
 	routes: "Routes and resources",
 	integrations: "Integrations",
 	authorizers: "Authorizers",
+	models: "Models and validators",
 	stages: "Stages",
 	settings: "API settings",
 	test: "Test requests",
@@ -137,8 +139,8 @@ function Workspace({
 			r.region === scope.region,
 	);
 	const selected = rows.find((r) => r.details?.ApiId === scope.apiId);
-	const availableSections = Object.entries(sections).filter(
-		([id]) => http || id !== "integrations",
+	const availableSections = Object.entries(sections).filter(([id]) =>
+		http ? id !== "models" : id !== "integrations",
 	);
 	return (
 		<ConsoleLayout
@@ -432,6 +434,13 @@ function ApiWorkspace({
 							/>
 						) : section === "authorizers" ? (
 							<Authorizers
+								scope={scope}
+								snapshot={snapshot}
+								enabled={enabled}
+								onChanged={changed}
+							/>
+						) : section === "models" && !http ? (
+							<Models
 								scope={scope}
 								snapshot={snapshot}
 								enabled={enabled}

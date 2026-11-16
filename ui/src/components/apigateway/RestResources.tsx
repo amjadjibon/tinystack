@@ -20,6 +20,7 @@ import {
 	type GatewaySnapshot,
 	gatewayHref,
 	listPatch,
+	mapPatch,
 	scalarPatch,
 	stringLines,
 	validateURI,
@@ -343,6 +344,15 @@ function RestMethodForm({
 		[apiKey, setApiKey] = useState(initial?.ApiKeyRequired ?? false),
 		[scopes, setScopes] = useState(
 			(initial?.AuthorizationScopes ?? []).join("\n"),
+		),
+		[validator, setValidator] = useState(initial?.RequestValidatorId ?? ""),
+		[bodyModel, setBodyModel] = useState(
+			initial?.RequestModels?.["application/json"] ?? "",
+		),
+		[parameters, setParameters] = useState(
+			Object.entries(initial?.RequestParameters ?? {})
+				.map(([k, required]) => (required ? k : `${k}?`))
+				.join("\n"),
 		);
 	const integration = initial?.MethodIntegration,
 		[type, setType] = useState(integration?.Type ?? "AWS_PROXY"),
@@ -379,6 +389,24 @@ function RestMethodForm({
 				const scopeList =
 						auth === "COGNITO_USER_POOLS" ? stringLines(scopes) : [],
 					input = { ResourceId: resource.Id, HttpMethod: method };
+				const requestParameters = Object.fromEntries(
+					stringLines(parameters).map((line) => {
+						const name = line.replace(/\?$/, "");
+						if (
+							!/^method\.request\.(querystring|header|path)\.[^.\s]+$/.test(
+								name,
+							)
+						)
+							throw new Error(
+								`Request parameter ${name} must look like method.request.querystring.name.`,
+							);
+						return [name, !line.endsWith("?")];
+					}),
+				);
+				// The form edits the JSON body model; other content types keep theirs.
+				const requestModels = { ...initial?.RequestModels };
+				if (bodyModel) requestModels["application/json"] = bodyModel;
+				else delete requestModels["application/json"];
 				const integrationInput = {
 					Type: type,
 					...(type !== "MOCK" ? { Uri: uri } : {}),
@@ -408,7 +436,28 @@ function RestMethodForm({
 													scopeList,
 													initial.AuthorizationScopes,
 												),
-											],
+												...mapPatch(
+													"requestParameters",
+													requestParameters,
+													initial.RequestParameters,
+												),
+												...mapPatch(
+													"requestModels",
+													requestModels,
+													initial.RequestModels,
+												),
+												validator
+													? {
+															Op: "replace",
+															Path: "/requestValidatorId",
+															Value: validator,
+														}
+													: { Op: "remove", Path: "/requestValidatorId" },
+											].filter(
+												(p) =>
+													p.Path !== "/requestValidatorId" ||
+													validator !== (initial.RequestValidatorId ?? ""),
+											),
 										}
 									: {
 											AuthorizationType: auth,
@@ -417,6 +466,11 @@ function RestMethodForm({
 												? { AuthorizerId: authorizer }
 												: {}),
 											AuthorizationScopes: scopeList,
+											RequestParameters: requestParameters,
+											...(Object.keys(requestModels).length
+												? { RequestModels: requestModels }
+												: {}),
+											...(validator ? { RequestValidatorId: validator } : {}),
 										}),
 							}),
 					},
@@ -499,6 +553,34 @@ function RestMethodForm({
 						Require an API key
 					</Checkbox>
 				</FormField>
+				<GatewayText
+					label="Request parameters"
+					value={parameters}
+					onChange={setParameters}
+					description="One per line, e.g. method.request.querystring.store or method.request.header.X-Trace. End a line with ? to make it optional."
+				/>
+				<GatewaySelect
+					label="Request body model (application/json)"
+					value={bodyModel}
+					onChange={setBodyModel}
+					options={[
+						{ value: "", label: "None" },
+						...snapshot.models.map((m) => ({ value: m.Name, label: m.Name })),
+					]}
+				/>
+				<GatewaySelect
+					label="Request validator"
+					value={validator}
+					onChange={setValidator}
+					options={[
+						{ value: "", label: "None" },
+						...snapshot.validators.map((v) => ({
+							value: v.Id,
+							label: v.Name ?? v.Id,
+						})),
+					]}
+					description="Create models and validators under Models and validators."
+				/>
 				<GatewaySelect
 					label="Integration type"
 					value={type}

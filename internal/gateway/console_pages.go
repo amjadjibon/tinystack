@@ -24,6 +24,8 @@ var consolePages = map[string]consolePage{
 	CreateStage GetStage GetStages UpdateStage DeleteStage
 	CreateDeployment GetDeployment GetDeployments UpdateDeployment DeleteDeployment
 	CreateAuthorizer GetAuthorizer GetAuthorizers UpdateAuthorizer DeleteAuthorizer
+	CreateModel GetModels UpdateModel DeleteModel
+	CreateRequestValidator GetRequestValidators UpdateRequestValidator DeleteRequestValidator
 	GetTags TagResource UntagResource InvokeApi
 `)},
 	"apigatewayv2": {operations: strings.Fields(`

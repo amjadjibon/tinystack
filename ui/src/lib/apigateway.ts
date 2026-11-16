@@ -49,6 +49,9 @@ export type GatewayMethod = {
 	AuthorizationScopes?: string[];
 	OperationName?: string;
 	MethodIntegration?: GatewayIntegration;
+	RequestParameters?: Record<string, boolean>;
+	RequestModels?: Record<string, string>;
+	RequestValidatorId?: string;
 	[key: string]: unknown;
 };
 export type GatewayResource = {
@@ -82,6 +85,19 @@ export type GatewayAuthorizer = {
 	Type?: string;
 	AuthorizerType?: string;
 	[key: string]: unknown;
+};
+export type GatewayModel = {
+	Id?: string;
+	Name: string;
+	ContentType?: string;
+	Description?: string;
+	Schema?: string;
+};
+export type GatewayValidator = {
+	Id: string;
+	Name?: string;
+	ValidateRequestBody?: boolean;
+	ValidateRequestParameters?: boolean;
 };
 export const isHTTP = (scope: GatewayScope) => scope.kind === "apigatewayv2";
 export function gatewayHref(scope: GatewayScope, section = "apis") {
@@ -145,28 +161,38 @@ export async function gatewayList<T>(
 export async function gatewaySnapshot(scope: GatewayScope) {
 	const http = isHTTP(scope);
 	const api = await apiCall<GatewayAPI>(scope, http ? "GetApi" : "GetRestApi");
-	const [routes, resources, integrations, stages, deployments, authorizers] =
-		await Promise.all([
-			http
-				? gatewayList<GatewayRoute>(scope, "GetRoutes")
-				: Promise.resolve([]),
-			http
-				? Promise.resolve([])
-				: gatewayList<GatewayResource>(scope, "GetResources", {
-						Embed: ["methods"],
-					}),
-			http
-				? gatewayList<GatewayIntegration>(scope, "GetIntegrations")
-				: Promise.resolve([]),
-			// REST GetStages has no pagination fields.
-			http
-				? gatewayList<GatewayStage>(scope, "GetStages")
-				: apiCall<{ Item?: GatewayStage[] }>(scope, "GetStages").then(
-						(p) => p.Item ?? [],
-					),
-			gatewayList<GatewayDeployment>(scope, "GetDeployments"),
-			gatewayList<GatewayAuthorizer>(scope, "GetAuthorizers"),
-		]);
+	const [
+		routes,
+		resources,
+		integrations,
+		stages,
+		deployments,
+		authorizers,
+		models,
+		validators,
+	] = await Promise.all([
+		http ? gatewayList<GatewayRoute>(scope, "GetRoutes") : Promise.resolve([]),
+		http
+			? Promise.resolve([])
+			: gatewayList<GatewayResource>(scope, "GetResources", {
+					Embed: ["methods"],
+				}),
+		http
+			? gatewayList<GatewayIntegration>(scope, "GetIntegrations")
+			: Promise.resolve([]),
+		// REST GetStages has no pagination fields.
+		http
+			? gatewayList<GatewayStage>(scope, "GetStages")
+			: apiCall<{ Item?: GatewayStage[] }>(scope, "GetStages").then(
+					(p) => p.Item ?? [],
+				),
+		gatewayList<GatewayDeployment>(scope, "GetDeployments"),
+		gatewayList<GatewayAuthorizer>(scope, "GetAuthorizers"),
+		http ? Promise.resolve([]) : gatewayList<GatewayModel>(scope, "GetModels"),
+		http
+			? Promise.resolve([])
+			: gatewayList<GatewayValidator>(scope, "GetRequestValidators"),
+	]);
 	return {
 		api,
 		routes,
@@ -175,6 +201,8 @@ export async function gatewaySnapshot(scope: GatewayScope) {
 		stages,
 		deployments,
 		authorizers,
+		models,
+		validators,
 	};
 }
 export type GatewaySnapshot = Awaited<ReturnType<typeof gatewaySnapshot>>;

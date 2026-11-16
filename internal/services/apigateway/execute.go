@@ -471,7 +471,7 @@ func mock(c *call, i *api.Integration) *execute.Response {
 	}
 
 	code, _ := strconv.Atoi(common.Value(chosen.StatusCode))
-	resp := &execute.Response{Status: code, Header: http.Header{"Content-Type": {"application/json"}}}
+	resp := &execute.Response{Status: code, Header: http.Header{"Content-Type": {mediaJSON}}}
 	for k, v := range chosen.ResponseParameters {
 		if header, ok := strings.CutPrefix(
 			k,
@@ -482,7 +482,7 @@ func mock(c *call, i *api.Integration) *execute.Response {
 		}
 	}
 
-	if body, ok := chosen.ResponseTemplates["application/json"]; ok {
+	if body, ok := chosen.ResponseTemplates[mediaJSON]; ok {
 		resp.Body = []byte(body)
 	}
 
