@@ -135,8 +135,8 @@ func TestConsoleRDSLifecycle(t *testing.T) {
 	}
 
 	for _, op := range []string{
-		"DescribeDBEngineVersions", "ModifyDBParameterGroup", "ModifyDBSubnetGroup",
-		"DescribeDBParameters", "RestoreDBClusterFromSnapshot",
+		"DescribeDBEngineVersions", "DescribeEngineDefaultParameters", "ModifyDBSubnetGroup",
+		"DescribeEngineDefaultClusterParameters", "RestoreDBClusterFromSnapshot",
 	} {
 		response := consoleResponse(
 			t,
