@@ -32,6 +32,20 @@ func TestConsoleRDSLifecycle(t *testing.T) {
 		t.Fatal("parameter group missing")
 	}
 
+	call("CreateDBClusterParameterGroup", map[string]any{
+		"DBClusterParameterGroupName": "console-cluster-pg",
+		"DBParameterGroupFamily":      "aurora-postgresql16",
+		"Description":                 "console source",
+	})
+	copied := call("CopyDBClusterParameterGroup", map[string]any{
+		"SourceDBClusterParameterGroupIdentifier":  "console-cluster-pg",
+		"TargetDBClusterParameterGroupIdentifier":  "console-cluster-copy",
+		"TargetDBClusterParameterGroupDescription": "console copy",
+	})["DBClusterParameterGroup"].(map[string]any)
+	if copied["DBClusterParameterGroupName"] != "console-cluster-copy" || copied["Description"] != "console copy" {
+		t.Fatal("cluster parameter group not copied", copied)
+	}
+
 	// Subnet groups validate against the same scoped EC2 inventory.
 	ec2 := func(op string, input map[string]any) map[string]any {
 		t.Helper()

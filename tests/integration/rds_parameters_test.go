@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -283,4 +284,128 @@ func TestRDSParameterCloudFormation(t *testing.T) {
 		_, describeErr := c.DescribeStacks(ctx, &cfn.DescribeStacksInput{StackName: new("parameter-stack")})
 		return describeErr != nil
 	})
+}
+
+func TestRDSCopyDBClusterParameterGroup(t *testing.T) {
+	c := rdsClient(server(t), "test", "us-east-1")
+	ctx := context.Background()
+	source, err := c.CreateDBClusterParameterGroup(ctx, &rds.CreateDBClusterParameterGroupInput{
+		DBClusterParameterGroupName: new("copy-source"),
+		DBParameterGroupFamily:      new("aurora-postgresql16"),
+		Description:                 new("source description"),
+		Tags:                        []types.Tag{{Key: new("source"), Value: new("only")}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.ModifyDBClusterParameterGroup(ctx, &rds.ModifyDBClusterParameterGroupInput{
+		DBClusterParameterGroupName: new("copy-source"),
+		Parameters: []types.Parameter{
+			{ParameterName: new("work_mem"), ParameterValue: new("8192"), ApplyMethod: types.ApplyMethodImmediate},
+			{
+				ParameterName:  new("max_connections"),
+				ParameterValue: new("200"),
+				ApplyMethod:    types.ApplyMethodPendingReboot,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, tc := range []struct {
+		name, source string
+		tags         []types.Tag
+	}{
+		{"Copy-Name", "copy-source", []types.Tag{{Key: new("target"), Value: new("only")}}},
+		{"copy-arn", aws.ToString(source.DBClusterParameterGroup.DBClusterParameterGroupArn), nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			copied, copyErr := c.CopyDBClusterParameterGroup(ctx, &rds.CopyDBClusterParameterGroupInput{
+				SourceDBClusterParameterGroupIdentifier:  new(tc.source),
+				TargetDBClusterParameterGroupIdentifier:  new(tc.name),
+				TargetDBClusterParameterGroupDescription: new("copied description"),
+				Tags:                                     tc.tags,
+			})
+			if copyErr != nil {
+				t.Fatal(copyErr)
+			}
+
+			group := copied.DBClusterParameterGroup
+			if aws.ToString(group.DBClusterParameterGroupName) != strings.ToLower(tc.name) ||
+				aws.ToString(group.DBParameterGroupFamily) != "aurora-postgresql16" ||
+				aws.ToString(group.Description) != "copied description" ||
+				!strings.HasSuffix(
+					aws.ToString(group.DBClusterParameterGroupArn),
+					":cluster-pg:"+strings.ToLower(tc.name),
+				) {
+				t.Fatalf("copy: %+v", group)
+			}
+
+			out, describeErr := c.DescribeDBClusterParameters(ctx, &rds.DescribeDBClusterParametersInput{
+				DBClusterParameterGroupName: group.DBClusterParameterGroupName, Source: new("user"),
+			})
+			if describeErr != nil || len(out.Parameters) != 2 {
+				t.Fatalf("parameters: %+v %v", out, describeErr)
+			}
+
+			for _, p := range out.Parameters {
+				value, method := "8192", types.ApplyMethodImmediate
+				if aws.ToString(p.ParameterName) == "max_connections" {
+					value, method = "200", types.ApplyMethodPendingReboot
+				}
+
+				if aws.ToString(p.ParameterValue) != value || p.ApplyMethod != method {
+					t.Fatalf("copied parameter: %+v", p)
+				}
+			}
+
+			tags, tagErr := c.ListTagsForResource(ctx, &rds.ListTagsForResourceInput{
+				ResourceName: group.DBClusterParameterGroupArn,
+			})
+			if tagErr != nil || len(tags.TagList) != len(tc.tags) {
+				t.Fatalf("tags: %+v %v", tags, tagErr)
+			}
+
+			if len(tc.tags) != 0 && (aws.ToString(tags.TagList[0].Key) != "target" ||
+				aws.ToString(tags.TagList[0].Value) != "only") {
+				t.Fatalf("unexpected tags: %+v", tags.TagList)
+			}
+		})
+	}
+
+	_, err = c.ResetDBClusterParameterGroup(ctx, &rds.ResetDBClusterParameterGroupInput{
+		DBClusterParameterGroupName: new("copy-source"), ResetAllParameters: new(true),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := c.DescribeDBClusterParameters(ctx, &rds.DescribeDBClusterParametersInput{
+		DBClusterParameterGroupName: new("copy-name"), Source: new("user"),
+	})
+	if err != nil || len(out.Parameters) != 2 {
+		t.Fatalf("copy changed with source: %+v %v", out, err)
+	}
+
+	for _, tc := range []struct{ source, target, description, code string }{
+		{"missing", "missing-copy", "copy", "DBParameterGroupNotFound"},
+		{"copy-source", "copy-name", "copy", "DBParameterGroupAlreadyExists"},
+		{"copy-source", "1invalid", "copy", "InvalidParameterValue"},
+		{"copy-source", "invalid--name", "copy", "InvalidParameterValue"},
+		{"copy-source", "invalid-", "copy", "InvalidParameterValue"},
+		{"copy-source", strings.Repeat("a", 256), "copy", "InvalidParameterValue"},
+		{"copy-source", "valid", "", "InvalidParameterValue"},
+		{"default.aurora-postgresql16", "default-copy", "copy", "InvalidParameterValue"},
+		{"arn:aws:rds:us-west-2:000000000000:cluster-pg:copy-source", "other-region", "copy", "DBParameterGroupNotFound"},
+		{"arn:aws:rds:us-east-1:111111111111:cluster-pg:copy-source", "other-account", "copy", "DBParameterGroupNotFound"},
+	} {
+		_, err = c.CopyDBClusterParameterGroup(ctx, &rds.CopyDBClusterParameterGroupInput{
+			SourceDBClusterParameterGroupIdentifier:  new(tc.source),
+			TargetDBClusterParameterGroupIdentifier:  new(tc.target),
+			TargetDBClusterParameterGroupDescription: new(tc.description),
+		})
+		code(t, err, tc.code)
+	}
 }

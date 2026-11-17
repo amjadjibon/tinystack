@@ -249,3 +249,57 @@ func (s *Service) CopyDBParameterGroup(
 	err = s.insert(ctx, scope, source)
 	return &api.CopyDBParameterGroupResult{DBParameterGroup: source.Parameter}, err
 }
+
+func (s *Service) CopyDBClusterParameterGroup(
+	ctx context.Context,
+	in *api.CopyDBClusterParameterGroupMessage,
+) (*api.CopyDBClusterParameterGroupResult, error) {
+	scope, err := request.RegionalScope(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	identifier := common.Value(in.SourceDBClusterParameterGroupIdentifier)
+	if strings.HasPrefix(identifier, "arn:") {
+		prefix := arn(scope, kindClusterParameter, "")
+		if !strings.HasPrefix(identifier, prefix) || strings.Contains(strings.TrimPrefix(identifier, prefix), ":") {
+			return nil, resourceError(kindClusterParameter, "NotFound", identifier)
+		}
+
+		identifier = strings.TrimPrefix(identifier, prefix)
+	}
+
+	if strings.HasPrefix(strings.ToLower(identifier), "default.") {
+		return nil, invalid("Default parameter groups cannot be copied")
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var source *record
+	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+		var e error
+		source, e = readRecord(tx, scope, kindClusterParameter, identifier)
+		return e
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	name := strings.ToLower(common.Value(in.TargetDBClusterParameterGroupIdentifier))
+	if !validName(name, 255) || common.Value(in.TargetDBClusterParameterGroupDescription) == "" {
+		return nil, invalid("Valid name and description required")
+	}
+
+	tags, err := parseTags(in.Tags)
+	if err != nil {
+		return nil, err
+	}
+
+	source.Name, source.Tags = name, tags
+	source.ClusterParameter.DBClusterParameterGroupName, source.ClusterParameter.Description = new(
+		name,
+	), in.TargetDBClusterParameterGroupDescription
+	source.ClusterParameter.DBClusterParameterGroupArn = new(arn(scope, kindClusterParameter, name))
+	err = s.insert(ctx, scope, source)
+	return &api.CopyDBClusterParameterGroupResult{DBClusterParameterGroup: source.ClusterParameter}, err
+}

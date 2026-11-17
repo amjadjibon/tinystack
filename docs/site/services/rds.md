@@ -13,7 +13,7 @@ Manage RDS instances, Aurora, DocumentDB and Neptune clusters with optional Dock
 | API version | `2014-10-31` |
 | Scope | Account and region |
 | Execution | Records / optional Docker |
-| Selected operations | 44 of 164 in the pinned model |
+| Selected operations | 45 of 164 in the pinned model |
 
 ## Implemented behavior
 
@@ -47,7 +47,7 @@ See the [implemented feature catalogue](catalogue.md#rds-documentdb-and-neptune)
 - Aurora runs community PostgreSQL/MySQL, not the proprietary Aurora storage engine; readers and writers share one process, scaling is metadata only, versions map to floating community image tags, and failover, replicas, global clusters and Aurora Serverless v1 are unsupported.
 - Aurora port changes, deferred modifications and EngineVersion changes fail explicitly; managed secret rotation and KMS customization are unsupported.
 - Parameter catalogs cover a portable subset, not every AWS engine parameter or extension; PostgreSQL changes and resets require reboot in Docker mode, while Aurora parameter changes require cluster stop/start; records mode stores values without running SQL.
-- ModifyDBSubnetGroup and RestoreDBClusterFromSnapshot remain unsupported; the console does not copy cluster parameter groups (CopyDBClusterParameterGroup is not implemented).
+- ModifyDBSubnetGroup and RestoreDBClusterFromSnapshot remain unsupported; parameter group quotas are not enforced and copies cannot cross accounts or Regions.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -62,6 +62,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | Operation | HTTP binding |
 | --- | --- |
 | `AddTagsToResource` | `POST /` |
+| `CopyDBClusterParameterGroup` | `POST /` |
 | `CopyDBParameterGroup` | `POST /` |
 | `CopyDBSnapshot` | `POST /` |
 | `CreateDBCluster` | `POST /` |
@@ -108,7 +109,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "120 modeled operations outside the implementation"
+??? info "119 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -119,7 +120,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `AuthorizeDBSecurityGroupIngress`
     - `BacktrackDBCluster`
     - `CancelExportTask`
-    - `CopyDBClusterParameterGroup`
     - `CopyDBClusterSnapshot`
     - `CopyOptionGroup`
     - `CreateBlueGreenDeployment`

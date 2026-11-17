@@ -22546,6 +22546,7 @@
       "DescribeDBParameters",
       "DescribeEngineDefaultParameters",
       "CopyDBParameterGroup",
+      "CopyDBClusterParameterGroup",
       "CreateDBClusterParameterGroup",
       "DescribeDBClusterParameterGroups",
       "DeleteDBClusterParameterGroup",
@@ -22908,6 +22909,12 @@
         "SourceDBParameterGroupIdentifier",
         "TargetDBParameterGroupIdentifier",
         "TargetDBParameterGroupDescription",
+        "Tags"
+      ],
+      "CopyDBClusterParameterGroupMessage": [
+        "SourceDBClusterParameterGroupIdentifier",
+        "TargetDBClusterParameterGroupIdentifier",
+        "TargetDBClusterParameterGroupDescription",
         "Tags"
       ],
       "CreateDBClusterParameterGroupMessage": [

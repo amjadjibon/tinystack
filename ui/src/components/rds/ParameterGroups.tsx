@@ -164,20 +164,18 @@ export function ParameterGroups({
 								>
 									Delete
 								</Button>
-								{!cluster && (
-									<Button
-										disabled={!enabled || !group}
-										onClick={() => {
-											setSource(group);
-											setName("");
-											setDescription("");
-											setTags("{}");
-											setDialog("copy");
-										}}
-									>
-										Copy
-									</Button>
-								)}
+								<Button
+									disabled={!enabled || !group}
+									onClick={() => {
+										setSource(group);
+										setName("");
+										setDescription("");
+										setTags("{}");
+										setDialog("copy");
+									}}
+								>
+									Copy
+								</Button>
 								<Button
 									variant="primary"
 									disabled={!enabled}
@@ -255,10 +253,11 @@ export function ParameterGroups({
 								{
 									label: "Copy group",
 									run: () =>
-										rdsCall(scope, "CopyDBParameterGroup", {
-											SourceDBParameterGroupIdentifier: source,
-											TargetDBParameterGroupIdentifier: name,
-											TargetDBParameterGroupDescription: description,
+										rdsCall(scope, `Copy${kind.prefix}ParameterGroup`, {
+											[`Source${kind.prefix}ParameterGroupIdentifier`]: source,
+											[`Target${kind.prefix}ParameterGroupIdentifier`]: name,
+											[`Target${kind.prefix}ParameterGroupDescription`]:
+												description,
 											Tags: tagList(stringMap(tags, "Tags")),
 										}),
 								},

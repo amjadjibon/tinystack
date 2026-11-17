@@ -579,11 +579,11 @@ type CopyDBParameterGroupResult struct {
 	DBParameterGroup *DBParameterGroup `json:"DBParameterGroup,omitempty" query:"DBParameterGroup"`
 }
 
-type CreateDBClusterParameterGroupMessage struct {
-	DBClusterParameterGroupName *string `json:"DBClusterParameterGroupName,omitempty" query:"DBClusterParameterGroupName"`
-	DBParameterGroupFamily      *string `json:"DBParameterGroupFamily,omitempty" query:"DBParameterGroupFamily"`
-	Description                 *string `json:"Description,omitempty" query:"Description"`
-	Tags                        []Tag   `json:"Tags,omitempty" query:"Tags,member=Tag"`
+type CopyDBClusterParameterGroupMessage struct {
+	SourceDBClusterParameterGroupIdentifier  *string `json:"SourceDBClusterParameterGroupIdentifier,omitempty" query:"SourceDBClusterParameterGroupIdentifier"`
+	TargetDBClusterParameterGroupIdentifier  *string `json:"TargetDBClusterParameterGroupIdentifier,omitempty" query:"TargetDBClusterParameterGroupIdentifier"`
+	TargetDBClusterParameterGroupDescription *string `json:"TargetDBClusterParameterGroupDescription,omitempty" query:"TargetDBClusterParameterGroupDescription"`
+	Tags                                     []Tag   `json:"Tags,omitempty" query:"Tags,member=Tag"`
 }
 
 type DBClusterParameterGroup struct {
@@ -591,6 +591,17 @@ type DBClusterParameterGroup struct {
 	DBParameterGroupFamily      *string `json:"DBParameterGroupFamily,omitempty" query:"DBParameterGroupFamily"`
 	Description                 *string `json:"Description,omitempty" query:"Description"`
 	DBClusterParameterGroupArn  *string `json:"DBClusterParameterGroupArn,omitempty" query:"DBClusterParameterGroupArn"`
+}
+
+type CopyDBClusterParameterGroupResult struct {
+	DBClusterParameterGroup *DBClusterParameterGroup `json:"DBClusterParameterGroup,omitempty" query:"DBClusterParameterGroup"`
+}
+
+type CreateDBClusterParameterGroupMessage struct {
+	DBClusterParameterGroupName *string `json:"DBClusterParameterGroupName,omitempty" query:"DBClusterParameterGroupName"`
+	DBParameterGroupFamily      *string `json:"DBParameterGroupFamily,omitempty" query:"DBParameterGroupFamily"`
+	Description                 *string `json:"Description,omitempty" query:"Description"`
+	Tags                        []Tag   `json:"Tags,omitempty" query:"Tags,member=Tag"`
 }
 
 type CreateDBClusterParameterGroupResult struct {
@@ -689,6 +700,7 @@ type API interface {
 	DescribeDBParameters(context.Context, *DescribeDBParametersMessage) (*DBParameterGroupDetails, error)
 	DescribeEngineDefaultParameters(context.Context, *DescribeEngineDefaultParametersMessage) (*DescribeEngineDefaultParametersResult, error)
 	CopyDBParameterGroup(context.Context, *CopyDBParameterGroupMessage) (*CopyDBParameterGroupResult, error)
+	CopyDBClusterParameterGroup(context.Context, *CopyDBClusterParameterGroupMessage) (*CopyDBClusterParameterGroupResult, error)
 	CreateDBClusterParameterGroup(context.Context, *CreateDBClusterParameterGroupMessage) (*CreateDBClusterParameterGroupResult, error)
 	DescribeDBClusterParameterGroups(context.Context, *DescribeDBClusterParameterGroupsMessage) (*DBClusterParameterGroupsMessage, error)
 	DeleteDBClusterParameterGroup(context.Context, *DeleteDBClusterParameterGroupMessage) (*DeleteDBClusterParameterGroupOutput, error)
@@ -810,6 +822,9 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"CopyDBParameterGroup": {Name: "CopyDBParameterGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "rds:CopyDBParameterGroup", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CopyDBParameterGroup", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CopyDBParameterGroupMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CopyDBParameterGroup(ctx, input.(*CopyDBParameterGroupMessage))
+		}},
+		"CopyDBClusterParameterGroup": {Name: "CopyDBClusterParameterGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "rds:CopyDBClusterParameterGroup", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CopyDBClusterParameterGroup", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CopyDBClusterParameterGroupMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CopyDBClusterParameterGroup(ctx, input.(*CopyDBClusterParameterGroupMessage))
 		}},
 		"CreateDBClusterParameterGroup": {Name: "CreateDBClusterParameterGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "rds:CreateDBClusterParameterGroup", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateDBClusterParameterGroup", Version: "2014-10-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateDBClusterParameterGroupMessage{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateDBClusterParameterGroup(ctx, input.(*CreateDBClusterParameterGroupMessage))
