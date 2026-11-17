@@ -6,6 +6,7 @@ import {
 	Container,
 	FormField,
 	Header,
+	KeyValuePairs,
 	Link,
 	SpaceBetween,
 } from "@cloudscape-design/components";
@@ -202,7 +203,57 @@ export function RestResources({
 									</Header>
 								}
 							>
-								<CodeBlock text={JSON.stringify(method, null, 2)} />
+								<SpaceBetween size="l">
+									<KeyValuePairs
+										columns={1}
+										items={[
+											{
+												label: "Request validator",
+												value:
+													snapshot.validators.find(
+														(v) => v.Id === method.RequestValidatorId,
+													)?.Name ??
+													method.RequestValidatorId ??
+													"None",
+											},
+											{
+												label: "Request models",
+												value: Object.entries(method.RequestModels ?? {})
+													.length ? (
+													<SpaceBetween size="xxs">
+														{Object.entries(method.RequestModels ?? {})
+															.sort(([a], [b]) => a.localeCompare(b))
+															.map(([contentType, name]) => (
+																<Box key={contentType}>
+																	{contentType} → {name}
+																</Box>
+															))}
+													</SpaceBetween>
+												) : (
+													"None"
+												),
+											},
+											{
+												label: "Request parameters",
+												value: Object.entries(method.RequestParameters ?? {})
+													.length ? (
+													<SpaceBetween size="xxs">
+														{Object.entries(method.RequestParameters ?? {})
+															.sort(([a], [b]) => a.localeCompare(b))
+															.map(([name, required]) => (
+																<Box key={name}>
+																	{name}: {required ? "Required" : "Optional"}
+																</Box>
+															))}
+													</SpaceBetween>
+												) : (
+													"None"
+												),
+											},
+										]}
+									/>
+									<CodeBlock text={JSON.stringify(method, null, 2)} />
+								</SpaceBetween>
 							</Container>
 						)}
 					</SpaceBetween>

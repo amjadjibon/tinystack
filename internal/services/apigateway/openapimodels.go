@@ -2,7 +2,9 @@ package apigateway
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"maps"
 	"slices"
 	"strings"
@@ -81,10 +83,36 @@ func schemaName(ref string) (string, error) {
 	return "", badRequest("Unsupported schema reference %q", ref)
 }
 
-// importModels stores the document's schemas as application/json models, replacing models of the same name, with
-// references between them rewritten to model URIs. Every imported model must then compile.
+// importModels stores reusable schemas as application/json models and inline request schemas with their content
+// types, replacing models of the same name. References become model URIs, and every imported model must compile.
 func (s *Service) importModels(ctx context.Context, apiID *string, d *openapi.Document) error {
-	if len(d.Schemas) == 0 {
+	schemas := maps.Clone(d.Schemas)
+	if schemas == nil {
+		schemas = openapi.Object{}
+	}
+
+	contentTypes := map[string]string{}
+	for _, op := range d.Operations {
+		for _, contentType := range slices.Sorted(maps.Keys(op.Bodies)) {
+			name, inline, err := requestModel(op, contentType)
+			if err != nil {
+				return err
+			}
+
+			if !inline {
+				continue
+			}
+
+			if _, exists := schemas[name]; exists {
+				return badRequest("Generated request model name conflicts with schema %s", name)
+			}
+
+			schemas[name] = op.Bodies[contentType]
+			contentTypes[name] = contentType
+		}
+	}
+
+	if len(schemas) == 0 {
 		return nil
 	}
 
@@ -94,13 +122,13 @@ func (s *Service) importModels(ctx context.Context, apiID *string, d *openapi.Do
 			return modelURI(*apiID, name), err
 		}
 
-		names := slices.Sorted(maps.Keys(d.Schemas))
+		names := slices.Sorted(maps.Keys(schemas))
 		for _, name := range names {
 			if !modelName.MatchString(name) {
 				return badRequest("Model name must be non-empty and alphanumeric: %s", name)
 			}
 
-			raw, err := rewriteRefs(d.Schemas[name], toURI)
+			raw, err := rewriteRefs(schemas[name], toURI)
 			if err != nil {
 				return err
 			}
@@ -127,6 +155,10 @@ func (s *Service) importModels(ctx context.Context, apiID *string, d *openapi.Do
 				Id: new(common.RandomID(6)), Name: new(name), ContentType: new(mediaJSON),
 				Schema: new(string(text)),
 			}
+			if contentType, ok := contentTypes[name]; ok {
+				m.ContentType = new(contentType)
+			}
+
 			if old := a.Models[name]; old != nil {
 				m.Id, m.Description = old.Id, old.Description
 			}
@@ -182,8 +214,31 @@ func (s *Service) importValidators(ctx context.Context, apiID *string, d *openap
 	return ids, nil
 }
 
-// requestModels maps each content type of an operation's request body to the model its schema references, and
-// returns the id of the validator the operation (or, failing that, the document) names.
+// requestModel names a whole-schema reference or an inline request schema.
+func requestModel(op openapi.Operation, contentType string) (name string, inline bool, err error) {
+	schema := openapi.Map(op.Bodies[contentType])
+	if schema == nil {
+		return "", false, badRequest("Request body schema for %s %s must be an object", op.Method, op.Path)
+	}
+
+	if raw, ok := schema[schemaRef]; ok {
+		ref := openapi.Text(raw)
+		if len(schema) != 1 || ref == "" {
+			return "", false, badRequest("Request body $ref must be a whole schema without siblings")
+		}
+
+		name, err = schemaName(ref)
+		return name, false, err
+	}
+
+	// AWS requires alphanumeric model names but does not document its generated-name algorithm.
+	// Use Body + method + the first 8 bytes of SHA-256(path NUL content type): stable across schema edits and
+	// reimports, distinct for paths that differ only in punctuation, and independent of operationId or iteration order.
+	digest := sha256.Sum256([]byte(op.Path + "\x00" + contentType))
+	return fmt.Sprintf("Body%s%x", op.Method, digest[:8]), true, nil
+}
+
+// requestModels maps request content types to imported models and returns the operation's (or document's) validator.
 func requestModels(
 	d *openapi.Document,
 	op openapi.Operation,
@@ -191,15 +246,7 @@ func requestModels(
 ) (models map[string]string, validator *string, err error) {
 	models = map[string]string{}
 	for _, contentType := range slices.Sorted(maps.Keys(op.Bodies)) {
-		schema := openapi.Map(op.Bodies[contentType])
-		ref := openapi.Text(schema[schemaRef])
-		if len(schema) != 1 || ref == "" {
-			return nil, nil, badRequest(
-				"Request body schema for %s %s must reference a model with $ref", op.Method, op.Path,
-			)
-		}
-
-		name, nameErr := schemaName(ref)
+		name, _, nameErr := requestModel(op, contentType)
 		if nameErr != nil {
 			return nil, nil, nameErr
 		}

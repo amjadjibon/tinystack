@@ -384,6 +384,17 @@ func TestRESTAPIOpenAPIModels(t *testing.T) {
 			validators, "#/components/schemas/Tag", tag, integration, integration),
 	}
 
+	// Exercise inline bodies in both formats, including a nested reference to another imported model.
+	for _, format := range []string{"swagger", "oas30"} {
+		prefix := "#/components/schemas/"
+		if format == "swagger" {
+			prefix = "#/definitions/"
+		}
+
+		specs[format+"Inline"] = strings.ReplaceAll(specs[format],
+			`{"$ref":"`+prefix+`Pet"}`, fmt.Sprintf(pet, prefix+"Tag"))
+	}
+
 	check := func(t *testing.T, id *string) {
 		t.Helper()
 		if _, err := c.CreateDeployment(context.Background(), &restapi.CreateDeploymentInput{
@@ -424,7 +435,9 @@ func TestRESTAPIOpenAPIModels(t *testing.T) {
 			}
 
 			exported, err := c.GetExport(ctx, &restapi.GetExportInput{
-				RestApiId: imported.Id, StageName: aws.String("prod"), ExportType: aws.String(format),
+				RestApiId:  imported.Id,
+				StageName:  aws.String("prod"),
+				ExportType: aws.String(strings.TrimSuffix(format, "Inline")),
 				Parameters: map[string]string{"extensions": "apigateway"},
 			})
 			if err != nil {
@@ -436,13 +449,65 @@ func TestRESTAPIOpenAPIModels(t *testing.T) {
 				t.Fatalf("%v\n%s", err, exported.Body)
 			}
 
+			// Reapplying the inline source and its exported references must reuse names and model IDs in merge mode.
+			before, err := c.GetModels(ctx, &restapi.GetModelsInput{RestApiId: imported.Id, Limit: aws.Int32(500)})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if strings.HasSuffix(format, "Inline") {
+				generated := 0
+				for _, model := range before.Items {
+					if strings.HasPrefix(aws.ToString(model.Name), "Body") {
+						generated++
+						if aws.ToString(model.ContentType) != "application/json" ||
+							!strings.Contains(aws.ToString(model.Schema), "/restapis/"+*imported.Id+"/models/Tag") ||
+							!strings.Contains(string(exported.Body), aws.ToString(model.Name)) {
+							t.Fatalf("inline model not rewritten/exported: %+v", model)
+						}
+					}
+				}
+
+				if generated != 2 {
+					t.Fatalf("expected inline models for POST and PUT, got %d", generated)
+				}
+			}
+
+			for _, body := range [][]byte{[]byte(spec), []byte(spec), exported.Body} {
+				if _, err := c.PutRestApi(ctx, &restapi.PutRestApiInput{
+					RestApiId: imported.Id, Mode: resttypes.PutModeMerge, Body: body,
+				}); err != nil {
+					t.Fatal(err)
+				}
+
+				after, err := c.GetModels(ctx, &restapi.GetModelsInput{RestApiId: imported.Id, Limit: aws.Int32(500)})
+				if err != nil || len(before.Items) != len(after.Items) {
+					t.Fatalf("models before %+v, after %+v, %v", before, after, err)
+				}
+
+				for i, model := range after.Items {
+					old := before.Items[i]
+					if aws.ToString(model.Name) != aws.ToString(old.Name) ||
+						aws.ToString(model.Id) != aws.ToString(old.Id) {
+						t.Fatalf("model changed on reimport: %+v -> %+v", old, model)
+					}
+				}
+			}
+
+			check(t, imported.Id)
+
 			check(t, copied.Id)
 		})
 	}
 
 	for name, spec := range map[string]string{
-		"inline": `{"openapi":"3.0.1","info":{"title":"x","version":"1"},"paths":{"/a":{"post":{"responses":{},
-			"requestBody":{"content":{"application/json":{"schema":{"type":"object"}}}}}}}}`,
+		"partialRef": `{"openapi":"3.0.1","info":{"title":"x","version":"1"},"paths":{"/a":{"post":{"responses":{},
+   "requestBody":{"content":{"application/json":{"schema":{"type":"object",
+   "properties":{"x":{"$ref":"#/components/schemas/Pet/properties/name"}}}}}}}}}}`,
+		"refSiblings": `{"openapi":"3.0.1","info":{"title":"x","version":"1"},"paths":{"/a":{"post":{"responses":{},
+   "requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Pet","type":"object"}}}}}}}}`,
+		"invalidInline": `{"openapi":"3.0.1","info":{"title":"x","version":"1"},"paths":{"/a":{"post":{"responses":{},
+   "requestBody":{"content":{"application/json":{"schema":{"type":123}}}}}}}}`,
 		"validator": `{"openapi":"3.0.1","info":{"title":"x","version":"1"},
 			"x-amazon-apigateway-request-validator":"missing","paths":{"/a":{"get":{"responses":{}}}}}`,
 		"model": `{"openapi":"3.0.1","info":{"title":"x","version":"1"},"paths":{"/a":{"post":{"responses":{},
@@ -452,10 +517,9 @@ func TestRESTAPIOpenAPIModels(t *testing.T) {
 		"name": `{"openapi":"3.0.1","info":{"title":"x","version":"1"},"paths":{},
 			"components":{"schemas":{"my-model":{"type":"object"}}}}`,
 	} {
-		_, err := c.ImportRestApi(ctx, &restapi.ImportRestApiInput{Body: []byte(spec)})
-		code(t, err, "BadRequestException")
-		if t.Failed() {
-			t.Fatal(name)
-		}
+		t.Run(name, func(t *testing.T) {
+			_, err := c.ImportRestApi(ctx, &restapi.ImportRestApiInput{Body: []byte(spec)})
+			code(t, err, "BadRequestException")
+		})
 	}
 }

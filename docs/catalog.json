@@ -719,12 +719,12 @@
         "Lambda and HTTP proxy execution through gateway data routes",
         "Lambda and Cognito authorizers, API keys and usage plan metadata",
         "Custom domains, base path mappings and access logs",
-        "AWS-style console for scoped REST API creation and settings, resource trees and method/integration edits, authorizers, stage variables and access log settings, deployment snapshots, API/stage tags, and explicit deployed-stage request testing",
+        "AWS-style console for scoped REST API creation and settings, resource trees and method/integration edits, read-only method request models, validator names and required/optional parameters, authorizers, stage variables and access log settings, deployment snapshots, API/stage tags, and explicit deployed-stage request testing",
         "With authorization on, Lambda proxy integrations without a credentials role need the function policy to allow apigateway.amazonaws.com with the method's execute-api ARN as aws:SourceArn; a denied invocation answers 500 Internal server error in enforce mode and is recorded in soft mode",
         "A credentials role must trust apigateway.amazonaws.com for the method's execute-api ARN and its policies must allow lambda:InvokeFunction; the same 500 reports a denial",
         "Lambda authorizers are invoked as apigateway.amazonaws.com, which the function policy must allow with arn:aws:execute-api:<region>:<account>:<api-id>/authorizers/<authorizer-id> as aws:SourceArn, or as the authorizer's credentials role, whose trust policy must allow it for that source; a denied invocation answers 500",
         "AWS/ApiGateway metrics for requests to a deployed stage, with dimensions ApiName, ApiName with Stage, and per-method dimensions {ApiName, Method, Resource, Stage} when detailed metrics are enabled on the stage: Count, 4XXError, 5XXError, Latency and IntegrationLatency (Milliseconds; only for requests that reached the integration)",
-        "Swagger 2.0 and OpenAPI 3.0 JSON/YAML import, transactional merge/overwrite, deployed-stage JSON/YAML export, proxy integrations, request parameters and authorizer extensions; Swagger definitions and component schemas become models, $ref request bodies (Swagger body parameters or requestBody content) become method request models, and x-amazon-apigateway-request-validators/-validator become validators, all exported back"
+        "Swagger 2.0 and OpenAPI 3.0 JSON/YAML import, transactional merge/overwrite, deployed-stage JSON/YAML export, proxy integrations, request parameters and authorizer extensions; Swagger definitions and component schemas become models, $ref and inline request bodies (Swagger body parameters or requestBody content) become method request models; inline schemas get stable alphanumeric names per method, path and content type, and x-amazon-apigateway-request-validators/-validator become validators, all exported back"
       ],
       "gaps": [
         "Integration credentials of arn:aws:iam::*:user/* (the caller's) are not re-evaluated",
@@ -735,7 +735,7 @@
         "In verify mode, console management requires an authenticated root console session; without a session only resource inventory is available",
         "Console test requests run deployed routing and authorizers without impersonating IAM; AWS_IAM routes require signed execute-api requests. The console action JSON envelope is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64",
         "REST API metrics have no CacheHitCount, CacheMissCount or usage plan metrics; requests to a missing stage report nothing",
-        "Inline request body schemas (AWS generates models for them), references into part of a schema, external references, base-path import parameters and unsupported extensions fail explicitly; the console edits only the application/json request model; only AWS_PROXY, HTTP_PROXY and MOCK integrations are supported"
+        "References into part of a schema, $ref schemas with sibling fields, external references, base-path import parameters and unsupported extensions fail explicitly; the console edits only the application/json request model; only AWS_PROXY, HTTP_PROXY and MOCK integrations are supported"
       ],
       "execution": "Local behavior",
       "package": "apigateway"

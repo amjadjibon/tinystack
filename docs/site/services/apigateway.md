@@ -29,7 +29,7 @@ See the [implemented feature catalogue](catalogue.md#api-gateway-rest-apis) for 
 - In verify mode, console management requires an authenticated root console session; without a session only resource inventory is available.
 - Console test requests run deployed routing and authorizers without impersonating IAM; AWS_IAM routes require signed execute-api requests. The console action JSON envelope is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64.
 - REST API metrics have no CacheHitCount, CacheMissCount or usage plan metrics; requests to a missing stage report nothing.
-- Inline request body schemas (AWS generates models for them), references into part of a schema, external references, base-path import parameters and unsupported extensions fail explicitly; the console edits only the application/json request model; only AWS_PROXY, HTTP_PROXY and MOCK integrations are supported.
+- References into part of a schema, $ref schemas with sibling fields, external references, base-path import parameters and unsupported extensions fail explicitly; the console edits only the application/json request model; only AWS_PROXY, HTTP_PROXY and MOCK integrations are supported.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
