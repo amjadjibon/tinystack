@@ -425,6 +425,14 @@ func (s *Service) ServiceSession(
 		return request.Principal{}, err
 	}
 
+	issued := &session{
+		AccountID: role.Account, RoleARN: role.ARN, RoleName: role.Name, RoleID: role.ID, Name: fitSessionName(name),
+	}
+	return issued.principal(), nil
+}
+
+// fitSessionName replaces the characters a role session name cannot hold and fits it to the allowed length.
+func fitSessionName(name string) string {
 	name = invalidSessionName.ReplaceAllString(name, "-")
 	if len(name) > maxSessionName {
 		name = name[:maxSessionName]
@@ -434,8 +442,7 @@ func (s *Service) ServiceSession(
 		name = "session"
 	}
 
-	issued := &session{AccountID: role.Account, RoleARN: role.ARN, RoleName: role.Name, RoleID: role.ID, Name: name}
-	return issued.principal(), nil
+	return name
 }
 
 // FederatedSession is what AssumeRoleForFederatedUser issued.
@@ -456,6 +463,26 @@ func (s *Service) AssumeRoleForFederatedUser(
 	ctx context.Context,
 	roleARN, sessionName string,
 	seconds int64,
+) (*FederatedSession, error) {
+	return s.assumeForPerson(ctx, roleARN, sessionName, seconds, true)
+}
+
+// AssumeRoleForIdentityCenter issues credentials for a role that Identity Center provisioned for a permission set to
+// a user who signed in to the access portal; the user's account assignment stands in for the role's trust policy.
+// The session name is made fit for STS. Other packages call it in-process; no API operation reaches it.
+func (s *Service) AssumeRoleForIdentityCenter(
+	ctx context.Context,
+	roleARN, userName string,
+	seconds int64,
+) (*FederatedSession, error) {
+	return s.assumeForPerson(ctx, roleARN, fitSessionName(userName), seconds, false)
+}
+
+func (s *Service) assumeForPerson(
+	ctx context.Context,
+	roleARN, sessionName string,
+	seconds int64,
+	federated bool,
 ) (*FederatedSession, error) {
 	if err := checkAssumeRole(&api.AssumeRoleRequest{RoleArn: &roleARN, RoleSessionName: &sessionName}); err != nil {
 		return nil, err
@@ -479,7 +506,7 @@ func (s *Service) AssumeRoleForFederatedUser(
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		issued := &session{
 			AccountID: role.Account, RoleARN: role.ARN, RoleName: role.Name, RoleID: role.ID, Name: sessionName,
-			Federated: true, Expires: now.Add(duration).Unix(),
+			Federated: federated, Expires: now.Add(duration).Unix(),
 		}
 
 		credentials, issueErr := issue(tx, issued, now)

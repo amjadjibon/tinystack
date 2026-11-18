@@ -35,6 +35,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/recent"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/services/iam"
+	"github.com/amjadjibon/tinystack/internal/services/ssooidc"
 )
 
 const (
@@ -64,6 +65,7 @@ type Server struct {
 	serviceSession   ServiceSession
 	instanceProfiles func(context.Context, string, string) (iam.InstanceProfile, bool, error)
 	hosted           *cognitoidp.Service
+	signIn           *ssooidc.Service
 	documents        Documents
 	tokens           Tokens
 	registry         Registry
@@ -737,6 +739,11 @@ func formProtocol(protocol string) bool {
 func (s *Server) restServices(r *http.Request) []*catalog.Service {
 	var m request.Metadata
 	signed, err := s.identify(r, &m)
+	if err == nil && signed == "" {
+		if service := s.anonymousService(r); service != nil {
+			return []*catalog.Service{service}
+		}
+	}
 	name := signed
 	if name == "" {
 		name = m.Service
@@ -775,6 +782,39 @@ func (s *Server) restServices(r *http.Request) []*catalog.Service {
 
 	slices.SortFunc(out, func(a, b *catalog.Service) int { return strings.Compare(a.Name, b.Name) })
 	return out
+}
+
+// anonymousService returns the REST service an unsigned request belongs to when it matches one of the service's
+// unsigned operations on a fixed path, such as Identity Center's OIDC and access portal APIs. Their SDKs call them
+// unsigned on local endpoints, where the host names no service; without this, unsigned requests go to S3.
+func (s *Server) anonymousService(r *http.Request) *catalog.Service {
+	var segments []string
+	if trimmed := strings.Trim(r.URL.Path, "/"); trimmed != "" {
+		segments = strings.Split(trimmed, "/")
+	}
+
+	values := r.URL.Query()
+	for _, service := range s.services {
+		if service.SigningName == "s3" || restProtocol(service) == "" {
+			continue
+		}
+
+		routes := s.routes[service.Name]
+		for i := range routes {
+			rt := &routes[i]
+			if !service.Operations[rt.name].Anonymous || slices.ContainsFunc(rt.segments, func(segment string) bool {
+				return strings.HasPrefix(segment, "{")
+			}) {
+				continue
+			}
+
+			if _, ok := rt.match(r.Method, segments, values, r.Header); ok {
+				return service
+			}
+		}
+	}
+
+	return nil
 }
 
 // signsQuery reports whether a Query service signs with name.
@@ -980,7 +1020,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if s.serveHosted(w, r) || s.serveDocument(w, r) || s.serveToken(w, r) || s.serveRegistry(w, r) ||
+	if s.serveHosted(w, r) || s.serveSignIn(w, r) || s.serveDocument(w, r) || s.serveToken(w, r) ||
+		s.serveRegistry(w, r) ||
 		s.serveGit(w, r) ||
 		s.serveMQTT(w, r) ||
 		s.serveAPI(w, r) ||

@@ -11,14 +11,15 @@ Extend the user/group, membership, permission set and assignment records with se
 ## Proposed scope
 
 - [ ] Additional user attributes, extensions and revision controls
-- [ ] Explicit provisioning and IAM role lifecycle
+- [ ] Explicit provisioning and IAM role cleanup (roles are provisioned on first credential request)
 - [ ] Customer managed policy references and permissions boundaries
 - [ ] Applications, trusted token issuers and access control attributes
-- [ ] Sign-in, federation and identity provider synchronization
+- [x] Sign-in through OIDC device code and authorization code grants, access portal role credentials
+- [ ] Federation and identity provider synchronization
 
 ## Integration decisions
 
-Identity Store and SSO Admin currently share one built-in account-wide instance and store configuration records only.
+Identity Store and SSO Admin share one built-in account-wide instance. The OIDC and access portal services sign its users in and provision permission set roles on first use; see their catalogue entries.
 
 
 ## Decisions before implementation

@@ -129,7 +129,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sns v1.47.7
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.52.7
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.81.1
+	github.com/aws/aws-sdk-go-v2/service/sso v1.39.0
 	github.com/aws/aws-sdk-go-v2/service/ssoadmin v1.52.1
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.44.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.6
 	github.com/aws/aws-sdk-go-v2/service/swf v1.43.7
 	github.com/aws/aws-sdk-go-v2/service/timestreamquery v1.46.1

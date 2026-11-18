@@ -522,6 +522,14 @@
     "timestreamquery": {
       "path": "codegen/sdk-codegen/aws-models/timestream-query.json",
       "sha256": "e209f2ccf023f01ce7d2fcc1388519fe2583aaca344f6a395ad001a8d9af70aa"
+    },
+    "sso": {
+      "path": "codegen/sdk-codegen/aws-models/sso.json",
+      "sha256": "00d1e392ca5410c900a430edcaa52fc5f95c279aea180e8b2b1f2fbcf84f7967"
+    },
+    "ssooidc": {
+      "path": "codegen/sdk-codegen/aws-models/sso-oidc.json",
+      "sha256": "c91f6c092ef06f7147b96e5fd7c204f37941b91f1fba54af8cba63cdca160c55"
     }
   }
 }

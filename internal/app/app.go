@@ -136,7 +136,9 @@ import (
 	snsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
 	sqsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sqs"
 	ssmapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssm"
+	ssoapi "github.com/amjadjibon/tinystack/internal/aws/generated/sso"
 	ssoadminapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssoadmin"
+	ssooidcapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssooidc"
 	stsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
 	swfapi "github.com/amjadjibon/tinystack/internal/aws/generated/swf"
 	timestreamqueryapi "github.com/amjadjibon/tinystack/internal/aws/generated/timestreamquery"
@@ -284,7 +286,9 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/sns"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/services/ssm"
+	ssoportal "github.com/amjadjibon/tinystack/internal/services/sso"
 	"github.com/amjadjibon/tinystack/internal/services/ssoadmin"
+	"github.com/amjadjibon/tinystack/internal/services/ssooidc"
 	"github.com/amjadjibon/tinystack/internal/services/sts"
 	"github.com/amjadjibon/tinystack/internal/services/swf"
 	"github.com/amjadjibon/tinystack/internal/services/timestreamquery"
@@ -616,6 +620,8 @@ func build(
 	glacierRecords := glacier.New(store)
 	identityStoreRecords := identitystore.New(store)
 	ssoAdminRecords := ssoadmin.New(store)
+	signIns := ssooidc.New(store)
+	accessPortal := ssoportal.New(store, signIns, roles, tokens)
 	ramRecords := ram.New(store)
 	privateAuthorities := acmpca.New(store, buckets)
 	verifiedpermissionsRecords := verifiedpermissions.New(store)
@@ -784,6 +790,8 @@ func build(
 		glacierapi.Descriptor(glacierRecords),
 		identitystoreapi.Descriptor(identityStoreRecords),
 		ssoadminapi.Descriptor(ssoAdminRecords),
+		ssooidcapi.Descriptor(signIns),
+		ssoapi.Descriptor(accessPortal),
 		ramapi.Descriptor(ramRecords),
 		acmpcaapi.Descriptor(privateAuthorities),
 		verifiedpermissionsapi.Descriptor(verifiedpermissionsRecords),
@@ -977,6 +985,7 @@ func build(
 	handler.UseDocuments(identities.Documents)
 	handler.UseTokens(identities.Token)
 	handler.UseHosted(identities)
+	handler.UseSignIn(signIns)
 	handler.UseRegistry(registry)
 	handler.UseGit(codecommitRecords)
 	if cfg.DSQL.Clusters == config.ContainersDocker {

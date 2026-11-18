@@ -186,6 +186,16 @@ const catalog: Record<string, ServiceInfo> = {
 		category: security,
 		icon: "identitysso",
 	},
+	ssooidc: {
+		title: "Identity Center — OIDC",
+		category: security,
+		icon: "identitysso",
+	},
+	sso: {
+		title: "Identity Center — access portal",
+		category: security,
+		icon: "identitysso",
+	},
 	memorydb: { title: "Amazon MemoryDB", category: database, icon: "memorydb" },
 	redshiftdata: {
 		title: "Amazon Redshift Data API",

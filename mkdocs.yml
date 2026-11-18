@@ -250,7 +250,9 @@ nav:
           - "Route 53": services/route53.md
       - "Security, Identity & Compliance":
           - "AWS IAM Identity Center \u2014 Identity Store": services/identitystore.md
+          - "AWS IAM Identity Center \u2014 OIDC": services/ssooidc.md
           - "AWS IAM Identity Center \u2014 SSO Admin": services/ssoadmin.md
+          - "AWS IAM Identity Center \u2014 access portal": services/sso.md
           - "AWS Network Firewall": services/networkfirewall.md
           - "AWS Private CA": services/acmpca.md
           - "AWS Resource Access Manager": services/ram.md

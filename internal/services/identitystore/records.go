@@ -73,6 +73,8 @@ func (s *Service) CreateUser(ctx context.Context, in *api.CreateUserRequest) (*a
 			return e
 		}
 
+		_, storeID := Instance(scope.AccountID)
+		tx.Put(instancePrefix+storeID, []byte(scope.AccountID))
 		return storage.Write(tx, scope.Key(serviceName, "user", id), r)
 	})
 	if err != nil {

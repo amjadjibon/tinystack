@@ -24,10 +24,15 @@ func checkPermission(p *api.PermissionSet) error {
 		return err
 	}
 
-	duration := common.Value(p.SessionDuration)
+	_, err := SessionSeconds(common.Value(p.SessionDuration))
+	return err
+}
+
+// SessionSeconds parses a permission set's ISO-8601 session duration, which must be one to twelve hours.
+func SessionSeconds(duration string) (int64, error) {
 	parts := durationPattern.FindStringSubmatch(duration)
 	if len(duration) > 100 || parts == nil {
-		return awserror.Validation("Invalid ISO-8601 SessionDuration")
+		return 0, awserror.Validation("Invalid ISO-8601 SessionDuration")
 	}
 
 	// A positive calendar component is always longer than the 12-hour maximum.
@@ -35,7 +40,7 @@ func checkPermission(p *api.PermissionSet) error {
 		if component != "" {
 			n, e := strconv.ParseFloat(component, 64)
 			if e != nil || n != 0 {
-				return awserror.Validation("SessionDuration must be between PT1H and PT12H")
+				return 0, awserror.Validation("SessionDuration must be between PT1H and PT12H")
 			}
 		}
 	}
@@ -45,7 +50,7 @@ func checkPermission(p *api.PermissionSet) error {
 		if parts[i+6] != "" {
 			n, err := strconv.ParseFloat(parts[i+6], 64)
 			if err != nil {
-				return awserror.Validation("Invalid SessionDuration")
+				return 0, awserror.Validation("Invalid SessionDuration")
 			}
 
 			seconds += n * multiplier
@@ -53,10 +58,10 @@ func checkPermission(p *api.PermissionSet) error {
 	}
 
 	if parts[1] != "" || seconds < 3600 || seconds > 43200 {
-		return awserror.Validation("SessionDuration must be between PT1H and PT12H")
+		return 0, awserror.Validation("SessionDuration must be between PT1H and PT12H")
 	}
 
-	return nil
+	return int64(seconds), nil
 }
 
 func (s *Service) CreatePermissionSet(ctx context.Context, in *api.CreatePermissionSetRequest) (

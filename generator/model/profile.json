@@ -46235,5 +46235,115 @@
         "NextToken"
       ]
     }
+  },
+  "sso": {
+    "operations": [
+      "GetRoleCredentials",
+      "ListAccountRoles",
+      "ListAccounts",
+      "Logout"
+    ],
+    "shapes": {
+      "AccountInfo": [
+        "accountId",
+        "accountName",
+        "emailAddress"
+      ],
+      "GetRoleCredentialsRequest": [
+        "roleName",
+        "accountId",
+        "accessToken"
+      ],
+      "GetRoleCredentialsResponse": [
+        "roleCredentials"
+      ],
+      "ListAccountRolesRequest": [
+        "nextToken",
+        "maxResults",
+        "accessToken",
+        "accountId"
+      ],
+      "ListAccountRolesResponse": [
+        "nextToken",
+        "roleList"
+      ],
+      "ListAccountsRequest": [
+        "nextToken",
+        "maxResults",
+        "accessToken"
+      ],
+      "ListAccountsResponse": [
+        "nextToken",
+        "accountList"
+      ],
+      "LogoutRequest": [
+        "accessToken"
+      ],
+      "RoleCredentials": [
+        "accessKeyId",
+        "secretAccessKey",
+        "sessionToken",
+        "expiration"
+      ],
+      "RoleInfo": [
+        "roleName",
+        "accountId"
+      ]
+    }
+  },
+  "ssooidc": {
+    "operations": [
+      "CreateToken",
+      "RegisterClient",
+      "StartDeviceAuthorization"
+    ],
+    "shapes": {
+      "CreateTokenRequest": [
+        "clientId",
+        "clientSecret",
+        "grantType",
+        "deviceCode",
+        "code",
+        "refreshToken",
+        "scope",
+        "redirectUri",
+        "codeVerifier"
+      ],
+      "CreateTokenResponse": [
+        "accessToken",
+        "tokenType",
+        "expiresIn",
+        "refreshToken"
+      ],
+      "RegisterClientRequest": [
+        "clientName",
+        "clientType",
+        "scopes",
+        "redirectUris",
+        "grantTypes",
+        "issuerUrl"
+      ],
+      "RegisterClientResponse": [
+        "clientId",
+        "clientSecret",
+        "clientIdIssuedAt",
+        "clientSecretExpiresAt",
+        "authorizationEndpoint",
+        "tokenEndpoint"
+      ],
+      "StartDeviceAuthorizationRequest": [
+        "clientId",
+        "clientSecret",
+        "startUrl"
+      ],
+      "StartDeviceAuthorizationResponse": [
+        "deviceCode",
+        "userCode",
+        "verificationUri",
+        "verificationUriComplete",
+        "expiresIn",
+        "interval"
+      ]
+    }
   }
 }
