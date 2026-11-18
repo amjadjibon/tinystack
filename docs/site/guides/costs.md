@@ -402,7 +402,9 @@ resource "aws_cloudwatch_metric_alarm" "billing" {
 
 Load costs with the fixture endpoint described earlier in the guide.
 
-## Translation and transcription fixtures
+## Machine learning fixtures
+
+### Translation and transcription
 
 TinyStack never infers translations or recognizes speech. Register the exact answers your tests need with
 `PUT /_tinystack/translate/fixtures/{id}` or `PUT /_tinystack/transcribe/fixtures/{id}`:
@@ -415,7 +417,8 @@ TinyStack never infers translations or recognizes speech. Register the exact ans
 {"mediaFileUri":"s3://media/audio.wav","languageCode":"en-US","transcript":"Hello from a fixture."}
 ```
 
-Both endpoints support GET (list or one ID), PUT (replace one ID), and DELETE. IDs use 1–64 letters, digits,
+All six fixture endpoints in this section support GET (list or one ID), PUT (replace one ID), and DELETE.
+IDs use 1–64 letters, digits,
 underscores or hyphens. Use the same administrator authorization as cost fixtures; signed requests use service
 `tinystack`. Fixtures belong to the configured default account across Regions, persist in SQLite mode, and are
 cleared by `/_tinystack/reset`. Requests have a 1 MiB HTTP body ceiling; this is an admin transport limit.
@@ -439,3 +442,81 @@ Batch translations and transcription jobs run in background workers. Pending job
 `{output-prefix}/{account}-TranslateText-{job-id}/{language}.{filename}` and a `details` subfolder.
 
 See [Translate](../services/translate.md) and [Transcribe](../services/transcribe.md) for the full supported scope.
+
+### Comprehend, Textract, Rekognition and Polly
+
+Register an answer with `PUT /_tinystack/{service}/fixtures/{id}`. Use the AWS operation name, a fixture input
+key, and an output object with the AWS response field names. The output is checked against the supported response
+shape when registered. The examples below each represent one fixture.
+
+Comprehend matches `text` and `languageCode` exactly. Omit `languageCode` for `DetectDominantLanguage`,
+which requires at least 20 characters. Sentiment and syntax accept up to 5,000 UTF-8 bytes. Other supported
+operations accept up to 100,000 bytes. Missing and duplicate matches return `InvalidRequestException`.
+
+```json
+{
+  "operation": "DetectSentiment",
+  "input": {"text": "hello", "languageCode": "en"},
+  "output": {"Sentiment": "POSITIVE", "SentimentScore": {"Positive": 1.0}}
+}
+```
+
+Textract and Rekognition hash the exact PNG or JPEG bytes with SHA-256. Supply the lowercase hex digest as
+`input.sha256`. Inline bytes and the same bytes read from an existing local S3 object share a fixture.
+Textract accepts up to 10 MiB. Rekognition accepts up to 5 MiB inline or 15 MiB from S3. Missing and duplicate
+matches return `InvalidParameterException`.
+
+`AnalyzeDocument` also matches the unordered set `featureTypes`. Supported values are `FORMS`, `TABLES`,
+`SIGNATURES` and `LAYOUT`. Omit `featureTypes` for `DetectDocumentText`.
+
+```json
+{
+  "operation": "AnalyzeDocument",
+  "input": {
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "featureTypes": ["FORMS", "TABLES"]
+  },
+  "output": {"DocumentMetadata": {"Pages": 1}, "Blocks": [{"BlockType": "LINE", "Text": "Invoice"}]}
+}
+```
+
+Replace the sample digests with the actual digests of the image or document files. Rekognition's `CompareFaces`
+uses `sha256` for the source and `targetSha256` for the target. Label and moderation confidence minimums
+default to 55 and 50, respectively. `MaxLabels` caps the label results by highest confidence.
+`CompareFaces` moves faces below the requested similarity threshold (default 80) into `UnmatchedFaces`.
+
+```json
+{
+  "operation": "DetectLabels",
+  "input": {"sha256": "0000000000000000000000000000000000000000000000000000000000000000"},
+  "output": {"Labels": [{"Name": "Example", "Confidence": 99}]}
+}
+```
+
+Polly uses `SynthesizeSpeech` fixtures for both direct speech requests and synthesis tasks. Match the text,
+voice ID and output format. Optionally include the supported engine, language, sample rate, text type and
+speech-mark types. Defaults are normalized and mark type order is immaterial. `AudioStream` contains base64
+of the encoded file or newline-delimited JSON marks. Duplicate matches fail explicitly.
+
+```json
+{
+  "operation": "SynthesizeSpeech",
+  "input": {"text": "hello", "voiceId": "Joanna", "outputFormat": "pcm"},
+  "output": {"AudioStream": "AAAAAA=="}
+}
+```
+
+Without a fixture, Polly returns a short silent stream for `mp3`, `ogg_vorbis` or signed 16-bit mono
+little-endian `pcm`. Compressed audio defaults to 22050 Hz and also supports 8000, 16000, 24000, 44100 and
+48000 Hz; task requests support rates through 24000 Hz. PCM supports 8000 and 16000 Hz (the default).
+`json` requires `word` or `sentence` marks and returns newline-delimited objects. Word marks use UTF-8 byte
+offsets. The placeholder sentence mark spans the full input, with all times set to zero.
+The standard-engine catalog has Amy (`en-GB`), Joanna and Matthew (`en-US`). Plain text is limited to 3,000
+characters per synchronous request and 100,000 per task. PLS lexicons are stored as regional records.
+
+A Polly task resolves its audio fixture when the worker runs. Its output URI is `s3://{bucket}/{prefix}{id}.{ext}`
+in the existing local output bucket. The worker stores the completed status after writing the object. The
+output key prefix is used literally, so include a trailing slash to put results under an S3 prefix.
+
+See [Comprehend](../services/comprehend.md), [Textract](../services/textract.md),
+[Rekognition](../services/rekognition.md), and [Polly](../services/polly.md) for operation coverage.

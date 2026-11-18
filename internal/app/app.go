@@ -57,6 +57,7 @@ import (
 	codepipelineapi "github.com/amjadjibon/tinystack/internal/aws/generated/codepipeline"
 	cognitoidentityapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidentity"
 	cognitoidpapi "github.com/amjadjibon/tinystack/internal/aws/generated/cognitoidp"
+	comprehendapi "github.com/amjadjibon/tinystack/internal/aws/generated/comprehend"
 	configapi "github.com/amjadjibon/tinystack/internal/aws/generated/config"
 	costandusagereportserviceapi "github.com/amjadjibon/tinystack/internal/aws/generated/costandusagereportservice"
 	costexplorerapi "github.com/amjadjibon/tinystack/internal/aws/generated/costexplorer"
@@ -107,12 +108,14 @@ import (
 	opensearchserverlessapi "github.com/amjadjibon/tinystack/internal/aws/generated/opensearchserverless"
 	organizationsapi "github.com/amjadjibon/tinystack/internal/aws/generated/organizations"
 	pipesapi "github.com/amjadjibon/tinystack/internal/aws/generated/pipes"
+	pollyapi "github.com/amjadjibon/tinystack/internal/aws/generated/polly"
 	ramapi "github.com/amjadjibon/tinystack/internal/aws/generated/ram"
 	rdsapi "github.com/amjadjibon/tinystack/internal/aws/generated/rds"
 	rdsdataapi "github.com/amjadjibon/tinystack/internal/aws/generated/rdsdata"
 	redshiftapi "github.com/amjadjibon/tinystack/internal/aws/generated/redshift"
 	redshiftdataapi "github.com/amjadjibon/tinystack/internal/aws/generated/redshiftdata"
 	redshiftserverlessapi "github.com/amjadjibon/tinystack/internal/aws/generated/redshiftserverless"
+	rekognitionapi "github.com/amjadjibon/tinystack/internal/aws/generated/rekognition"
 	resourceexplorer2api "github.com/amjadjibon/tinystack/internal/aws/generated/resourceexplorer2"
 	resourcegroupsapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroups"
 	resourcegroupstaggingapiapi "github.com/amjadjibon/tinystack/internal/aws/generated/resourcegroupstaggingapi"
@@ -141,6 +144,7 @@ import (
 	ssooidcapi "github.com/amjadjibon/tinystack/internal/aws/generated/ssooidc"
 	stsapi "github.com/amjadjibon/tinystack/internal/aws/generated/sts"
 	swfapi "github.com/amjadjibon/tinystack/internal/aws/generated/swf"
+	textractapi "github.com/amjadjibon/tinystack/internal/aws/generated/textract"
 	timestreamqueryapi "github.com/amjadjibon/tinystack/internal/aws/generated/timestreamquery"
 	timestreamwriteapi "github.com/amjadjibon/tinystack/internal/aws/generated/timestreamwrite"
 	transcribeapi "github.com/amjadjibon/tinystack/internal/aws/generated/transcribe"
@@ -201,6 +205,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/codepipeline"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidentity"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
+	"github.com/amjadjibon/tinystack/internal/services/comprehend"
 	configservice "github.com/amjadjibon/tinystack/internal/services/config"
 	"github.com/amjadjibon/tinystack/internal/services/costandusagereportservice"
 	"github.com/amjadjibon/tinystack/internal/services/costdata"
@@ -256,6 +261,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/opensearchserverless"
 	"github.com/amjadjibon/tinystack/internal/services/organizations"
 	"github.com/amjadjibon/tinystack/internal/services/pipes"
+	"github.com/amjadjibon/tinystack/internal/services/polly"
 	"github.com/amjadjibon/tinystack/internal/services/ram"
 	"github.com/amjadjibon/tinystack/internal/services/rds"
 	rdsdocker "github.com/amjadjibon/tinystack/internal/services/rds/docker"
@@ -263,6 +269,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/redshift"
 	"github.com/amjadjibon/tinystack/internal/services/redshiftdata"
 	"github.com/amjadjibon/tinystack/internal/services/redshiftserverless"
+	"github.com/amjadjibon/tinystack/internal/services/rekognition"
 	"github.com/amjadjibon/tinystack/internal/services/resourceexplorer2"
 	"github.com/amjadjibon/tinystack/internal/services/resourcegroups"
 	"github.com/amjadjibon/tinystack/internal/services/resourcegroupstaggingapi"
@@ -291,6 +298,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/ssooidc"
 	"github.com/amjadjibon/tinystack/internal/services/sts"
 	"github.com/amjadjibon/tinystack/internal/services/swf"
+	"github.com/amjadjibon/tinystack/internal/services/textract"
 	"github.com/amjadjibon/tinystack/internal/services/timestreamquery"
 	"github.com/amjadjibon/tinystack/internal/services/timestreamwrite"
 	"github.com/amjadjibon/tinystack/internal/services/transcribe"
@@ -558,6 +566,15 @@ func build(
 	a.onStop(mediaConvertRecords.Stop)
 	mediaConnectRecords := mediaconnect.New(store, network, roles)
 	a.onStop(mediaConnectRecords.Stop)
+	comprehendRecords := comprehend.New(store)
+	textractRecords := textract.New(store, buckets)
+	rekognitionRecords := rekognition.New(store, buckets)
+	pollyRecords := polly.New(store, buckets)
+	a.onStop(pollyRecords.Stop)
+	if err = pollyRecords.Start(ctx); err != nil {
+		return nil, err
+	}
+
 	translateRecords := translate.New(store, buckets, roles, keys)
 	a.onStop(translateRecords.Stop)
 	if err = translateRecords.Start(ctx); err != nil {
@@ -743,6 +760,10 @@ func build(
 		servicecatalogapi.Descriptor(serviceCatalogRecords),
 		mediaconvertapi.Descriptor(mediaConvertRecords),
 		datasyncapi.Descriptor(dataSyncRecords),
+		comprehendapi.Descriptor(comprehendRecords),
+		textractapi.Descriptor(textractRecords),
+		rekognitionapi.Descriptor(rekognitionRecords),
+		pollyapi.Descriptor(pollyRecords),
 		translateapi.Descriptor(translateRecords),
 		transcribeapi.Descriptor(transcribeRecords),
 		s3filesapi.Descriptor(s3FilesRecords),
@@ -1094,6 +1115,16 @@ func build(
 	transcribeFixtures := transcribe.Handler(store, cfg.Defaults.Account)
 	handler.Handle("transcribe/fixtures", transcribeFixtures)
 	handler.Handle("transcribe/fixtures/", transcribeFixtures)
+	for path, fixtures := range map[string]http.Handler{
+		"comprehend/fixtures":  comprehend.Handler(store, cfg.Defaults.Account),
+		"textract/fixtures":    textract.Handler(store, cfg.Defaults.Account),
+		"rekognition/fixtures": rekognition.Handler(store, cfg.Defaults.Account),
+		"polly/fixtures":       polly.Handler(store, cfg.Defaults.Account),
+	} {
+		handler.Handle(path, fixtures)
+		handler.Handle(path+"/", fixtures)
+	}
+
 	fixtures := costdata.Handler(store, cfg.Defaults.Account)
 	handler.Handle("costs/fixtures", fixtures)
 	handler.Handle("costs/fixtures/", fixtures)

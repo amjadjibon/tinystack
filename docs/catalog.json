@@ -92,6 +92,80 @@
     }
   ],
   "services": {
+    "comprehend": {
+      "title": "Amazon Comprehend",
+      "category": "Machine Learning",
+      "scope": "Default account across Regions",
+      "summary": "Return exact user-registered answers for synchronous text analysis.",
+      "features": [
+        "DetectSentiment, DetectEntities, DetectKeyPhrases, DetectDominantLanguage, DetectPiiEntities, DetectSyntax and ContainsPiiEntities",
+        "Exact matches by operation, UTF-8 text and input language; dominant-language detection uses text alone",
+        "Operation-specific byte limits and language validation; missing or ambiguous fixtures return InvalidRequestException"
+      ],
+      "gaps": [
+        "Batch operations, asynchronous jobs, custom models and document or endpoint-based entity detection are unsupported",
+        "The pinned model (aws-sdk-go-v2 at 6b78958e) speaks AWS JSON 1.1; newer SDK releases that moved this service to RPC v2 CBOR (Go service/comprehend v1.50.0 and later) are rejected with UnknownOperationException until the models are re-pinned"
+      ],
+      "execution": "Fixture-backed text analysis",
+      "package": "comprehend"
+    },
+    "textract": {
+      "title": "Amazon Textract",
+      "category": "Machine Learning",
+      "scope": "Account and Region for S3; fixtures default account across Regions",
+      "summary": "Return fixture blocks for synchronous document text and analysis requests.",
+      "features": [
+        "DetectDocumentText and AnalyzeDocument over inline bytes or a local, optionally versioned S3 object",
+        "PNG and JPEG inputs up to 10 MiB; the exact SHA-256 digest and unordered feature types select a response",
+        "AnalyzeDocument supports FORMS, LAYOUT, SIGNATURES and TABLES"
+      ],
+      "gaps": [
+        "Asynchronous jobs, PDF and TIFF, queries, adapters, human loops, lending, expense and identity analyses are unsupported",
+        "Missing or ambiguous fixtures return InvalidParameterException",
+        "The pinned model (aws-sdk-go-v2 at 6b78958e) speaks AWS JSON 1.1; newer SDK releases that moved this service to RPC v2 CBOR (Go service/textract v1.50.0 and later) are rejected with UnknownOperationException until the models are re-pinned"
+      ],
+      "execution": "Fixture-backed document analysis with local S3 reads",
+      "package": "textract"
+    },
+    "rekognition": {
+      "title": "Amazon Rekognition",
+      "category": "Machine Learning",
+      "scope": "Account and Region; fixtures default account across Regions",
+      "summary": "Return fixture image analysis results and manage collection records and tags.",
+      "features": [
+        "DetectLabels, DetectFaces, DetectText, DetectModerationLabels and CompareFaces over PNG or JPEG bytes or versioned local S3 objects",
+        "Match by operation and SHA-256 digest; CompareFaces matches ordered source and target digests",
+        "Minimum confidence, maximum label count, and face similarity filtering apply to fixture results",
+        "CreateCollection, DescribeCollection, ListCollections, DeleteCollection, TagResource, UntagResource and ListTagsForResource",
+        "Collection inventory and Resource Groups Tagging API"
+      ],
+      "gaps": [
+        "Collections hold metadata and tags; face indexing, face and user search, and real image inference are unsupported",
+        "Video, custom models, DetectLabels feature and settings overrides, face attributes selection, text filters and quality filters are unsupported",
+        "Missing or ambiguous fixtures return InvalidParameterException"
+      ],
+      "execution": "Fixture-backed image analysis, local S3 reads and collection records",
+      "package": "rekognition"
+    },
+    "polly": {
+      "title": "Amazon Polly",
+      "category": "Machine Learning",
+      "scope": "Account and Region; fixtures default account across Regions",
+      "summary": "Return fixture audio or deterministic placeholders and write synthesis task results to local S3.",
+      "features": [
+        "DescribeVoices lists standard Amy (en-GB), Joanna and Matthew (en-US), with language and engine filters",
+        "SynthesizeSpeech serves fixture bytes, valid silent MP3, Ogg Vorbis and PCM, or deterministic JSON speech marks",
+        "PutLexicon, GetLexicon, ListLexicons and DeleteLexicon manage regional PLS records",
+        "StartSpeechSynthesisTask, GetSpeechSynthesisTask and ListSpeechSynthesisTasks use a durable local worker and existing local S3 buckets",
+        "Tasks enter scheduled, then inProgress, then completed or failed; restart fails previously claimed tasks and resumes scheduled work"
+      ],
+      "gaps": [
+        "Plain text and the standard engine only; real synthesis, SSML, viseme marks, lexicon application, SNS notifications, and Opus, mu-law and a-law audio are unsupported",
+        "Task records are retained until reset; an interrupted task may leave its S3 output because task and S3 writes are separate"
+      ],
+      "execution": "Fixture-backed local media, deterministic placeholders and S3 task outputs",
+      "package": "polly"
+    },
     "translate": {
       "title": "Amazon Translate",
       "category": "Machine Learning",

@@ -1,4 +1,628 @@
 {
+  "comprehend": {
+    "validation": {
+      "code": "InvalidRequestException"
+    },
+    "operations": [
+      "DetectSentiment",
+      "DetectEntities",
+      "DetectKeyPhrases",
+      "DetectDominantLanguage",
+      "DetectPiiEntities",
+      "DetectSyntax",
+      "ContainsPiiEntities"
+    ],
+    "shapes": {
+      "DetectSentimentRequest": [
+        "Text",
+        "LanguageCode"
+      ],
+      "DetectSentimentResponse": [
+        "Sentiment",
+        "SentimentScore"
+      ],
+      "SentimentScore": [
+        "Positive",
+        "Negative",
+        "Neutral",
+        "Mixed"
+      ],
+      "DetectEntitiesRequest": [
+        "Text",
+        "LanguageCode"
+      ],
+      "DetectEntitiesResponse": [
+        "Entities"
+      ],
+      "Entity": [
+        "Score",
+        "Type",
+        "Text",
+        "BeginOffset",
+        "EndOffset",
+        "BlockReferences"
+      ],
+      "BlockReference": [
+        "BlockId",
+        "BeginOffset",
+        "EndOffset",
+        "ChildBlocks"
+      ],
+      "ChildBlock": [
+        "ChildBlockId",
+        "BeginOffset",
+        "EndOffset"
+      ],
+      "DetectKeyPhrasesRequest": [
+        "Text",
+        "LanguageCode"
+      ],
+      "DetectKeyPhrasesResponse": [
+        "KeyPhrases"
+      ],
+      "KeyPhrase": [
+        "Score",
+        "Text",
+        "BeginOffset",
+        "EndOffset"
+      ],
+      "DetectDominantLanguageRequest": [
+        "Text"
+      ],
+      "DetectDominantLanguageResponse": [
+        "Languages"
+      ],
+      "DominantLanguage": [
+        "LanguageCode",
+        "Score"
+      ],
+      "DetectPiiEntitiesRequest": [
+        "Text",
+        "LanguageCode"
+      ],
+      "DetectPiiEntitiesResponse": [
+        "Entities"
+      ],
+      "PiiEntity": [
+        "Score",
+        "Type",
+        "BeginOffset",
+        "EndOffset"
+      ],
+      "DetectSyntaxRequest": [
+        "Text",
+        "LanguageCode"
+      ],
+      "DetectSyntaxResponse": [
+        "SyntaxTokens"
+      ],
+      "SyntaxToken": [
+        "TokenId",
+        "Text",
+        "BeginOffset",
+        "EndOffset",
+        "PartOfSpeech"
+      ],
+      "PartOfSpeechTag": [
+        "Tag",
+        "Score"
+      ],
+      "ContainsPiiEntitiesRequest": [
+        "Text",
+        "LanguageCode"
+      ],
+      "ContainsPiiEntitiesResponse": [
+        "Labels"
+      ],
+      "EntityLabel": [
+        "Name",
+        "Score"
+      ]
+    }
+  },
+  "textract": {
+    "validation": {
+      "code": "InvalidParameterException"
+    },
+    "operations": [
+      "DetectDocumentText",
+      "AnalyzeDocument"
+    ],
+    "shapes": {
+      "DetectDocumentTextRequest": [
+        "Document"
+      ],
+      "Document": [
+        "Bytes",
+        "S3Object"
+      ],
+      "S3Object": [
+        "Bucket",
+        "Name",
+        "Version"
+      ],
+      "DetectDocumentTextResponse": [
+        "DocumentMetadata",
+        "Blocks",
+        "DetectDocumentTextModelVersion"
+      ],
+      "DocumentMetadata": [
+        "Pages"
+      ],
+      "Block": [
+        "BlockType",
+        "Confidence",
+        "Text",
+        "TextType",
+        "RowIndex",
+        "ColumnIndex",
+        "RowSpan",
+        "ColumnSpan",
+        "Geometry",
+        "Id",
+        "Relationships",
+        "EntityTypes",
+        "SelectionStatus",
+        "Page",
+        "Query"
+      ],
+      "Geometry": [
+        "BoundingBox",
+        "Polygon",
+        "RotationAngle"
+      ],
+      "BoundingBox": [
+        "Width",
+        "Height",
+        "Left",
+        "Top"
+      ],
+      "Point": [
+        "X",
+        "Y"
+      ],
+      "Relationship": [
+        "Type",
+        "Ids"
+      ],
+      "Query": [
+        "Text",
+        "Alias",
+        "Pages"
+      ],
+      "AnalyzeDocumentRequest": [
+        "Document",
+        "FeatureTypes"
+      ],
+      "AnalyzeDocumentResponse": [
+        "DocumentMetadata",
+        "Blocks",
+        "AnalyzeDocumentModelVersion"
+      ]
+    }
+  },
+  "rekognition": {
+    "validation": {
+      "code": "InvalidParameterException"
+    },
+    "operations": [
+      "DetectLabels",
+      "DetectFaces",
+      "DetectText",
+      "DetectModerationLabels",
+      "CompareFaces",
+      "CreateCollection",
+      "DescribeCollection",
+      "ListCollections",
+      "DeleteCollection",
+      "TagResource",
+      "UntagResource",
+      "ListTagsForResource"
+    ],
+    "shapes": {
+      "DetectLabelsRequest": [
+        "Image",
+        "MaxLabels",
+        "MinConfidence"
+      ],
+      "Image": [
+        "Bytes",
+        "S3Object"
+      ],
+      "S3Object": [
+        "Bucket",
+        "Name",
+        "Version"
+      ],
+      "DetectLabelsResponse": [
+        "Labels",
+        "OrientationCorrection",
+        "LabelModelVersion"
+      ],
+      "Label": [
+        "Name",
+        "Confidence",
+        "Instances",
+        "Parents",
+        "Aliases",
+        "Categories"
+      ],
+      "Instance": [
+        "BoundingBox",
+        "Confidence",
+        "DominantColors"
+      ],
+      "BoundingBox": [
+        "Width",
+        "Height",
+        "Left",
+        "Top"
+      ],
+      "DominantColor": [
+        "Red",
+        "Blue",
+        "Green",
+        "HexCode",
+        "CSSColor",
+        "SimplifiedColor",
+        "PixelPercent"
+      ],
+      "Parent": [
+        "Name"
+      ],
+      "LabelAlias": [
+        "Name"
+      ],
+      "LabelCategory": [
+        "Name"
+      ],
+      "DetectFacesRequest": [
+        "Image"
+      ],
+      "DetectFacesResponse": [
+        "FaceDetails",
+        "OrientationCorrection"
+      ],
+      "FaceDetail": [
+        "BoundingBox",
+        "AgeRange",
+        "Smile",
+        "Eyeglasses",
+        "Sunglasses",
+        "Gender",
+        "Beard",
+        "Mustache",
+        "EyesOpen",
+        "MouthOpen",
+        "Emotions",
+        "Landmarks",
+        "Pose",
+        "Quality",
+        "Confidence",
+        "FaceOccluded",
+        "EyeDirection"
+      ],
+      "AgeRange": [
+        "Low",
+        "High"
+      ],
+      "Smile": [
+        "Value",
+        "Confidence"
+      ],
+      "Eyeglasses": [
+        "Value",
+        "Confidence"
+      ],
+      "Sunglasses": [
+        "Value",
+        "Confidence"
+      ],
+      "Gender": [
+        "Value",
+        "Confidence"
+      ],
+      "Beard": [
+        "Value",
+        "Confidence"
+      ],
+      "Mustache": [
+        "Value",
+        "Confidence"
+      ],
+      "EyeOpen": [
+        "Value",
+        "Confidence"
+      ],
+      "MouthOpen": [
+        "Value",
+        "Confidence"
+      ],
+      "Emotion": [
+        "Type",
+        "Confidence"
+      ],
+      "Landmark": [
+        "Type",
+        "X",
+        "Y"
+      ],
+      "Pose": [
+        "Roll",
+        "Yaw",
+        "Pitch"
+      ],
+      "ImageQuality": [
+        "Brightness",
+        "Sharpness"
+      ],
+      "FaceOccluded": [
+        "Value",
+        "Confidence"
+      ],
+      "EyeDirection": [
+        "Yaw",
+        "Pitch",
+        "Confidence"
+      ],
+      "DetectTextRequest": [
+        "Image"
+      ],
+      "DetectTextResponse": [
+        "TextDetections",
+        "TextModelVersion"
+      ],
+      "TextDetection": [
+        "DetectedText",
+        "Type",
+        "Id",
+        "ParentId",
+        "Confidence",
+        "Geometry"
+      ],
+      "Geometry": [
+        "BoundingBox",
+        "Polygon"
+      ],
+      "Point": [
+        "X",
+        "Y"
+      ],
+      "DetectModerationLabelsRequest": [
+        "Image",
+        "MinConfidence"
+      ],
+      "DetectModerationLabelsResponse": [
+        "ModerationLabels",
+        "ModerationModelVersion",
+        "ContentTypes"
+      ],
+      "ModerationLabel": [
+        "Confidence",
+        "Name",
+        "ParentName",
+        "TaxonomyLevel"
+      ],
+      "ContentType": [
+        "Confidence",
+        "Name"
+      ],
+      "CompareFacesRequest": [
+        "SourceImage",
+        "TargetImage",
+        "SimilarityThreshold"
+      ],
+      "CompareFacesResponse": [
+        "SourceImageFace",
+        "FaceMatches",
+        "UnmatchedFaces",
+        "SourceImageOrientationCorrection",
+        "TargetImageOrientationCorrection"
+      ],
+      "ComparedSourceImageFace": [
+        "BoundingBox",
+        "Confidence"
+      ],
+      "CompareFacesMatch": [
+        "Similarity",
+        "Face"
+      ],
+      "ComparedFace": [
+        "BoundingBox",
+        "Confidence",
+        "Landmarks",
+        "Pose",
+        "Quality",
+        "Emotions",
+        "Smile"
+      ],
+      "CreateCollectionRequest": [
+        "CollectionId",
+        "Tags"
+      ],
+      "CreateCollectionResponse": [
+        "StatusCode",
+        "CollectionArn",
+        "FaceModelVersion"
+      ],
+      "DescribeCollectionRequest": [
+        "CollectionId"
+      ],
+      "DescribeCollectionResponse": [
+        "FaceCount",
+        "FaceModelVersion",
+        "CollectionARN",
+        "CreationTimestamp",
+        "UserCount"
+      ],
+      "ListCollectionsRequest": [
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListCollectionsResponse": [
+        "CollectionIds",
+        "NextToken",
+        "FaceModelVersions"
+      ],
+      "DeleteCollectionRequest": [
+        "CollectionId"
+      ],
+      "DeleteCollectionResponse": [
+        "StatusCode"
+      ],
+      "TagResourceRequest": [
+        "ResourceArn",
+        "Tags"
+      ],
+      "TagResourceResponse": [],
+      "UntagResourceRequest": [
+        "ResourceArn",
+        "TagKeys"
+      ],
+      "UntagResourceResponse": [],
+      "ListTagsForResourceRequest": [
+        "ResourceArn"
+      ],
+      "ListTagsForResourceResponse": [
+        "Tags"
+      ]
+    }
+  },
+  "polly": {
+    "validation": {
+      "code": "InvalidParameterValueException"
+    },
+    "operations": [
+      "DescribeVoices",
+      "SynthesizeSpeech",
+      "PutLexicon",
+      "GetLexicon",
+      "ListLexicons",
+      "DeleteLexicon",
+      "StartSpeechSynthesisTask",
+      "GetSpeechSynthesisTask",
+      "ListSpeechSynthesisTasks"
+    ],
+    "shapes": {
+      "DescribeVoicesInput": [
+        "Engine",
+        "LanguageCode",
+        "NextToken"
+      ],
+      "DescribeVoicesOutput": [
+        "Voices",
+        "NextToken"
+      ],
+      "Voice": [
+        "Gender",
+        "Id",
+        "LanguageCode",
+        "LanguageName",
+        "Name",
+        "AdditionalLanguageCodes",
+        "SupportedEngines"
+      ],
+      "SynthesizeSpeechInput": [
+        "Engine",
+        "LanguageCode",
+        "OutputFormat",
+        "SampleRate",
+        "SpeechMarkTypes",
+        "Text",
+        "TextType",
+        "VoiceId"
+      ],
+      "SynthesizeSpeechOutput": [
+        "AudioStream",
+        "ContentType",
+        "RequestCharacters"
+      ],
+      "PutLexiconInput": [
+        "Name",
+        "Content"
+      ],
+      "PutLexiconOutput": [],
+      "GetLexiconInput": [
+        "Name"
+      ],
+      "GetLexiconOutput": [
+        "Lexicon",
+        "LexiconAttributes"
+      ],
+      "Lexicon": [
+        "Content",
+        "Name"
+      ],
+      "LexiconAttributes": [
+        "Alphabet",
+        "LanguageCode",
+        "LastModified",
+        "LexiconArn",
+        "LexemesCount",
+        "Size"
+      ],
+      "ListLexiconsInput": [
+        "NextToken"
+      ],
+      "ListLexiconsOutput": [
+        "Lexicons",
+        "NextToken"
+      ],
+      "LexiconDescription": [
+        "Name",
+        "Attributes"
+      ],
+      "DeleteLexiconInput": [
+        "Name"
+      ],
+      "DeleteLexiconOutput": [],
+      "StartSpeechSynthesisTaskInput": [
+        "Engine",
+        "LanguageCode",
+        "OutputFormat",
+        "OutputS3BucketName",
+        "OutputS3KeyPrefix",
+        "SampleRate",
+        "SpeechMarkTypes",
+        "Text",
+        "TextType",
+        "VoiceId"
+      ],
+      "StartSpeechSynthesisTaskOutput": [
+        "SynthesisTask"
+      ],
+      "SynthesisTask": [
+        "Engine",
+        "TaskId",
+        "TaskStatus",
+        "TaskStatusReason",
+        "OutputUri",
+        "CreationTime",
+        "RequestCharacters",
+        "OutputFormat",
+        "SampleRate",
+        "SpeechMarkTypes",
+        "TextType",
+        "VoiceId",
+        "LanguageCode"
+      ],
+      "GetSpeechSynthesisTaskInput": [
+        "TaskId"
+      ],
+      "GetSpeechSynthesisTaskOutput": [
+        "SynthesisTask"
+      ],
+      "ListSpeechSynthesisTasksInput": [
+        "MaxResults",
+        "NextToken",
+        "Status"
+      ],
+      "ListSpeechSynthesisTasksOutput": [
+        "NextToken",
+        "SynthesisTasks"
+      ]
+    }
+  },
   "mediaconvert": {
     "validation": {
       "code": "BadRequestException"

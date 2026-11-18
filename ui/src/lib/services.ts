@@ -45,6 +45,10 @@ export const categories = [
 ];
 
 const catalog: Record<string, ServiceInfo> = {
+	comprehend: { title: "Amazon Comprehend", category: machineLearning },
+	textract: { title: "Amazon Textract", category: machineLearning },
+	rekognition: { title: "Amazon Rekognition", category: machineLearning },
+	polly: { title: "Amazon Polly", category: machineLearning },
 	translate: {
 		title: "Amazon Translate",
 		category: machineLearning,

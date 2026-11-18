@@ -26,6 +26,10 @@ const AdminSigningName = "tinystack"
 var adminPaths = []string{
 	"/_tinystack/translate/fixtures",
 	"/_tinystack/transcribe/fixtures",
+	"/_tinystack/comprehend/fixtures",
+	"/_tinystack/textract/fixtures",
+	"/_tinystack/rekognition/fixtures",
+	"/_tinystack/polly/fixtures",
 	"/_tinystack/bedrock/fixtures",
 	"/_tinystack/redshift-data/fixtures",
 	"/_tinystack/bedrock-agent/fixtures",

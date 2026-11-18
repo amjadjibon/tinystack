@@ -530,6 +530,22 @@
     "ssooidc": {
       "path": "codegen/sdk-codegen/aws-models/sso-oidc.json",
       "sha256": "c91f6c092ef06f7147b96e5fd7c204f37941b91f1fba54af8cba63cdca160c55"
+    },
+    "comprehend": {
+      "path": "codegen/sdk-codegen/aws-models/comprehend.json",
+      "sha256": "5e71daa14e94074c344fb8b665ac6126e5217007bf60c499d69a637fb8f35af0"
+    },
+    "textract": {
+      "path": "codegen/sdk-codegen/aws-models/textract.json",
+      "sha256": "655cd437e6a3f1a83679f625037ff5bb41baa83f52a389a8f0ea28da6195d77f"
+    },
+    "rekognition": {
+      "path": "codegen/sdk-codegen/aws-models/rekognition.json",
+      "sha256": "0264a1bae0b00c8b1576c5e0d3652866323b53dd32731fd88615dfa4c0e4196f"
+    },
+    "polly": {
+      "path": "codegen/sdk-codegen/aws-models/polly.json",
+      "sha256": "8da11df26b9ef2c9c79b2390780bd8d1cc2b661afabfc0e9d1787804c46be09b"
     }
   }
 }

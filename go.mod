@@ -49,6 +49,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/codepipeline v1.56.2
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentity v1.42.7
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.75.6
+	github.com/aws/aws-sdk-go-v2/service/comprehend v1.49.4
 	github.com/aws/aws-sdk-go-v2/service/configservice v1.74.7
 	github.com/aws/aws-sdk-go-v2/service/costandusagereportservice v1.43.7
 	github.com/aws/aws-sdk-go-v2/service/costexplorer v1.74.4
@@ -100,12 +101,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/opensearchserverless v1.41.1
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.62.3
 	github.com/aws/aws-sdk-go-v2/service/pipes v1.32.7
+	github.com/aws/aws-sdk-go-v2/service/polly v1.65.4
 	github.com/aws/aws-sdk-go-v2/service/ram v1.45.7
 	github.com/aws/aws-sdk-go-v2/service/rds v1.131.2
 	github.com/aws/aws-sdk-go-v2/service/rdsdata v1.41.0
 	github.com/aws/aws-sdk-go-v2/service/redshift v1.71.6
 	github.com/aws/aws-sdk-go-v2/service/redshiftdata v1.52.1
 	github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.46.1
+	github.com/aws/aws-sdk-go-v2/service/rekognition v1.60.3
 	github.com/aws/aws-sdk-go-v2/service/resourceexplorer2 v1.33.7
 	github.com/aws/aws-sdk-go-v2/service/resourcegroups v1.42.7
 	github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.41.7
@@ -134,6 +137,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.44.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.6
 	github.com/aws/aws-sdk-go-v2/service/swf v1.43.7
+	github.com/aws/aws-sdk-go-v2/service/textract v1.49.4
 	github.com/aws/aws-sdk-go-v2/service/timestreamquery v1.46.1
 	github.com/aws/aws-sdk-go-v2/service/timestreamwrite v1.45.1
 	github.com/aws/aws-sdk-go-v2/service/transcribe v1.66.7

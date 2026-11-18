@@ -126,6 +126,8 @@ github.com/aws/aws-sdk-go-v2/service/cognitoidentity v1.42.7 h1:sxu1CcuoeMZ6bPJn
 github.com/aws/aws-sdk-go-v2/service/cognitoidentity v1.42.7/go.mod h1:Xc/9qOwcFqAq0WIQkRvKMPbwwaKP/BpjRFIPAHH9ZeE=
 github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.75.6 h1:2Qa8ebESKAhInr1NdsP9AH+mIWU0Xzd+1GEESakQqV8=
 github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.75.6/go.mod h1:W1j24uE6EWwovExGFkwGhBdYqqm28JukOmSiNTYUcVM=
+github.com/aws/aws-sdk-go-v2/service/comprehend v1.49.4 h1:UMbhxIPCsr9iozL9+ghrPpIL8qwq8ROER84hf47KFyI=
+github.com/aws/aws-sdk-go-v2/service/comprehend v1.49.4/go.mod h1:0DQeGcdGr4tMCt1pZ/jVaNYa4pgQYN6SkWeLwXOszjY=
 github.com/aws/aws-sdk-go-v2/service/configservice v1.74.7 h1:1zNPbJqad4AUf47N1cmc6dSXOjMOO+x6Rz/Iqa8BS3s=
 github.com/aws/aws-sdk-go-v2/service/configservice v1.74.7/go.mod h1:SlAa6pjMZ3b6WcyQSehQl+mwj0estVCPFgh/ntpPKYQ=
 github.com/aws/aws-sdk-go-v2/service/costandusagereportservice v1.43.7 h1:xTKm4/IaDkNHAA1vAoUMD047ST0l7Y9etStoYMU5BvQ=
@@ -238,6 +240,8 @@ github.com/aws/aws-sdk-go-v2/service/organizations v1.62.3 h1:TkAjkZyjQAe5EftICP
 github.com/aws/aws-sdk-go-v2/service/organizations v1.62.3/go.mod h1:DLYXemnX70yBq6rTxkFP7YopkQ/TlWIO1KAParzUnrw=
 github.com/aws/aws-sdk-go-v2/service/pipes v1.32.7 h1:2pRK0LYhDC/5TFwh7YsnV6B0klRqSicpWViaAjdnI2E=
 github.com/aws/aws-sdk-go-v2/service/pipes v1.32.7/go.mod h1:cJkAjqMAdH2IaGoheUelIIMLi4bMz4Yp2NGORp8zt7k=
+github.com/aws/aws-sdk-go-v2/service/polly v1.65.4 h1:ILs6RS5INKffKSBpxqJzFO1KLvj/C4PWKnIQA1W6tmE=
+github.com/aws/aws-sdk-go-v2/service/polly v1.65.4/go.mod h1:dZ4c+RJoQh5XbJolsv+IKRTcVESd0LME431mb2o9hTE=
 github.com/aws/aws-sdk-go-v2/service/ram v1.45.7 h1:tQty3UX+vimgKDDceNBhIBc8Y8PIO/NTAT3mNM6FsaM=
 github.com/aws/aws-sdk-go-v2/service/ram v1.45.7/go.mod h1:rWNbrl1Ub0DhVrKua22jy3TDkvt0a+ggKeb1/fcdNGk=
 github.com/aws/aws-sdk-go-v2/service/rds v1.131.2 h1:Rytfx+dmiAPJDxJKXCbK6X4staGfRUjfFDx8Lcy/LA8=
@@ -250,6 +254,8 @@ github.com/aws/aws-sdk-go-v2/service/redshiftdata v1.52.1 h1:GeyHaxljin+rQVCSSCr
 github.com/aws/aws-sdk-go-v2/service/redshiftdata v1.52.1/go.mod h1:5aScUzj3RqGpyKIZ5MG26DqUCyQAaKpj93UI9a3aYIw=
 github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.46.1 h1:yJiszGXvHlvjX7pLnVAi+ADefqrqElWcL6kmm7jhYyo=
 github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.46.1/go.mod h1:712WYXbRr7LWZWAR1iUiGGhbmPv5yfsCShJY7jgz0H0=
+github.com/aws/aws-sdk-go-v2/service/rekognition v1.60.3 h1:2m4Gw5xeLbawytpow2f0J4ZeP9LXqe4oHS8poP5/t10=
+github.com/aws/aws-sdk-go-v2/service/rekognition v1.60.3/go.mod h1:tBUiEOgygz/zJQdCTGfd0Yomyu/CzXFmNWoUOSCkQTc=
 github.com/aws/aws-sdk-go-v2/service/resourceexplorer2 v1.33.7 h1:Nzq/lKQVzIkpTfY60PCjrnkY+e0IltistMNxzZrgr6w=
 github.com/aws/aws-sdk-go-v2/service/resourceexplorer2 v1.33.7/go.mod h1:Q/e4unzj095wtXRpsAk3B8bzIllHzNqssiZ7WOqDylU=
 github.com/aws/aws-sdk-go-v2/service/resourcegroups v1.42.7 h1:RCfnyqi+KXdmg1lvsW4+NFzLiiYFPYHlrYGtKBtnZhc=
@@ -308,6 +314,8 @@ github.com/aws/aws-sdk-go-v2/service/sts v1.51.6 h1:BVjKrtRUtSYKztBCCfE1oAB+d3Vi
 github.com/aws/aws-sdk-go-v2/service/sts v1.51.6/go.mod h1:eSukFLeLkPMm+1OxDR+F0joauZdyBkF47Ow7MqjZiJw=
 github.com/aws/aws-sdk-go-v2/service/swf v1.43.7 h1:7MDoxzE32GvUpQhzP6A3km+AJp5pv1KsRNR9pv8YzHw=
 github.com/aws/aws-sdk-go-v2/service/swf v1.43.7/go.mod h1:HOAlxj5a6l7BYpnbDsF7weFhCqxs6mm/MG4fZBfJPPs=
+github.com/aws/aws-sdk-go-v2/service/textract v1.49.4 h1:R1r/FTS6grQSuR94U7YQKOgETYbtWKaVqC5nHvu2VZI=
+github.com/aws/aws-sdk-go-v2/service/textract v1.49.4/go.mod h1:nFSbt5GGd77sCCmmfV837/R821vHqrxkzXAl2Gf+XbM=
 github.com/aws/aws-sdk-go-v2/service/timestreamquery v1.46.1 h1:Fgp70H/hxLTVyk4X3ZZ6I21o8ljwN6kIyuRh3/pQxdY=
 github.com/aws/aws-sdk-go-v2/service/timestreamquery v1.46.1/go.mod h1:ce3tIJNxMnUC7zO1QqDu7F7hC/4NuYAgkCbOHntVPs8=
 github.com/aws/aws-sdk-go-v2/service/timestreamwrite v1.45.1 h1:wHT95lzTGpWjt9O/fapSxAsTwGilnTkhDaZMC9dIOfQ=

@@ -203,6 +203,10 @@ nav:
           - "Amazon Bedrock AgentCore data plane": services/bedrockagentcore.md
           - "Amazon Bedrock Agents": services/bedrockagent.md
           - "Amazon Bedrock Runtime": services/bedrockruntime.md
+          - "Amazon Comprehend": services/comprehend.md
+          - "Amazon Polly": services/polly.md
+          - "Amazon Rekognition": services/rekognition.md
+          - "Amazon Textract": services/textract.md
           - "Amazon Transcribe": services/transcribe.md
           - "Amazon Translate": services/translate.md
       - "Management & Governance":
