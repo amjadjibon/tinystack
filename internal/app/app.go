@@ -901,6 +901,7 @@ func build(
 	functions.UseCaller(caller)
 	// GraphQL data sources reach DynamoDB and EventBridge.
 	graphQL.UseCaller(caller)
+	restAPIs.UseCaller(caller)
 	email.UseCaller(caller)
 	identityPools.UseCaller(caller)
 	// Topic rules' actions reach the other services.

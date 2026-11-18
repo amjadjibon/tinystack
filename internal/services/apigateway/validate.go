@@ -80,7 +80,7 @@ func missingParameters(c *call) []string {
 			value = c.req.Query.Get(name)
 		case "header":
 			value = c.req.Header.Get(name)
-		case "path":
+		case locationPath:
 			value = c.params[name]
 		default:
 			continue

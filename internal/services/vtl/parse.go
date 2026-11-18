@@ -1,6 +1,5 @@
-// Package vtl renders Apache Velocity templates: the subset AppSync's
-// mapping templates use. A template holds text, references ($ctx.args.id,
-// $!quiet, ${formal}, and method calls such as $util.toJson($x)), comments,
+// Package vtl renders the Apache Velocity subset used by AWS mapping templates. A template holds text, references
+// ($ctx.args.id, $!quiet, ${formal}, and method calls such as $util.toJson($x)), comments,
 // and the #set, #if, #elseif, #else, #foreach, #break, #stop, #return, and
 // #end directives; expressions have Velocity's operators, string, number,
 // list, range, and map literals, and Java's methods on maps, lists, and
@@ -76,13 +75,22 @@ type part struct {
 }
 
 type parser struct {
-	src string
-	i   int
+	src    string
+	i      int
+	strict bool
 }
 
 // Parse parses a template.
 func Parse(src string) (*Template, error) {
-	p := &parser{src: src}
+	return (&parser{src: src}).parse()
+}
+
+// ParseStrict rejects unsupported directives in API Gateway mapping templates.
+func ParseStrict(src string) (*Template, error) {
+	return (&parser{src: src, strict: true}).parse()
+}
+
+func (p *parser) parse() (*Template, error) {
 	nodes, end, _, err := p.nodes()
 	switch {
 	case err != nil:
@@ -113,20 +121,22 @@ func (p *parser) ident() string {
 }
 
 const (
-	directiveSet    = "set"
-	directiveElse   = "else"
-	directiveElseIf = "elseif"
-	directiveEnd    = "end"
-	directiveReturn = "return"
-	methodSize      = "size"
-	methodToString  = "toString"
-	methodEquals    = "equals"
-	methodIsEmpty   = "isEmpty"
+	directiveForeach = "foreach"
+	velocityCount    = "velocityCount"
+	directiveSet     = "set"
+	directiveElse    = "else"
+	directiveElseIf  = "elseif"
+	directiveEnd     = "end"
+	directiveReturn  = "return"
+	methodSize       = "size"
+	methodToString   = "toString"
+	methodEquals     = "equals"
+	methodIsEmpty    = "isEmpty"
 )
 
 // directives are the directive names, by whether they take (arguments).
 var directives = map[string]bool{
-	directiveSet: true, "if": true, directiveElseIf: true, "foreach": true, directiveReturn: true,
+	directiveSet: true, "if": true, directiveElseIf: true, directiveForeach: true, directiveReturn: true,
 	directiveElse: false, directiveEnd: false, "break": false, "stop": false,
 }
 
@@ -170,9 +180,19 @@ func (p *parser) nodes() (out []node, end string, cond expr, err error) {
 		case c == '#':
 			name, args, ok := p.directive()
 			if !ok {
+				if p.strict {
+					if unknown := p.unsupportedDirective(); unknown != "" {
+						return nil, "", nil, p.errorf("unsupported directive #%s", unknown)
+					}
+				}
+
 				text.WriteByte(c)
 				p.i++
 				continue
+			}
+
+			if p.strict && name == directiveReturn {
+				return nil, "", nil, p.errorf("unsupported directive #%s", name)
 			}
 
 			flush()
@@ -208,6 +228,35 @@ func (p *parser) nodes() (out []node, end string, cond expr, err error) {
 
 	flush()
 	return out, "", nil, nil
+}
+
+func (p *parser) unsupportedDirective() string {
+	probe := *p
+	probe.i++
+	formal := probe.i < len(probe.src) && probe.src[probe.i] == '{'
+	if formal {
+		probe.i++
+	}
+
+	name := probe.ident()
+	if name == "" {
+		return ""
+	}
+
+	if formal && probe.i < len(probe.src) && probe.src[probe.i] == '}' {
+		probe.i++
+	}
+
+	if strings.HasPrefix(strings.TrimLeft(probe.src[probe.i:], " \t"), "(") {
+		return name
+	}
+
+	switch name {
+	case "macro", "define", "evaluate", "include", "parse":
+		return name
+	}
+
+	return ""
 }
 
 // directive reads the name of the directive at p.i, if one starts there,
@@ -246,7 +295,7 @@ func (p *parser) parseDirective(name string, args bool) (n node, end string, con
 			}
 		} else {
 			p.i++
-			if name == "foreach" {
+			if name == directiveForeach {
 				return p.foreach()
 			}
 
@@ -704,7 +753,7 @@ func (p *parser) doubleQuoted() (expr, error) {
 			continue
 		case c == '"':
 			p.i++
-			t, err := Parse(b.String())
+			t, err := (&parser{src: b.String(), strict: p.strict}).parse()
 			if err != nil {
 				return nil, err
 			}

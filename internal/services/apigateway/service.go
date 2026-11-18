@@ -45,6 +45,7 @@ var _ api.API = (*Service)(nil)
 
 type Service struct {
 	store     storage.Store
+	caller    *catalog.Caller
 	functions *lambda.Service
 	logs      *logs.Service
 	pools     *cognitoidp.Service
@@ -64,6 +65,9 @@ func New(store storage.Store, functions *lambda.Service, logGroups *logs.Service
 func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
 	s.authorizer = authorizer
 }
+
+// UseCaller supplies the registry for AWS service-action integrations.
+func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
 
 // restAPI is a REST API's record: the API, its resource tree (each resource
 // holds its methods, and each method its responses and integration), its

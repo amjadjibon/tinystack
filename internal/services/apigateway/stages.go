@@ -216,7 +216,7 @@ func (s *Service) UpdateDeployment(ctx context.Context, in *api.UpdateDeployment
 			return loadErr
 		}
 
-		if patchErr := patch(&d.Deployment, in.PatchOperations, "description"); patchErr != nil {
+		if patchErr := patch(&d.Deployment, in.PatchOperations, openAPIDescription); patchErr != nil {
 			return patchErr
 		}
 
@@ -372,7 +372,7 @@ var methodSettingFields = map[string]string{
 }
 
 var stageFields = []string{
-	"description", "deploymentId", "variables", "tracingEnabled", "cacheClusterEnabled", "cacheClusterSize",
+	openAPIDescription, "deploymentId", "variables", "tracingEnabled", "cacheClusterEnabled", "cacheClusterSize",
 	"accessLogSettings",
 }
 

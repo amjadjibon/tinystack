@@ -330,14 +330,16 @@ func exportRequestBody(op openapi.Object, models map[string]string, swagger bool
 		op["consumes"] = types
 		op["parameters"] = append(op["parameters"].([]openapi.Object), openapi.Object{
 			"in": "body", openAPIName: models[contentType], openAPIRequired: true,
-			"schema": openapi.Object{schemaRef: definitionsRef + models[contentType]},
+			openAPISchema: openapi.Object{schemaRef: definitionsRef + models[contentType]},
 		})
 		return
 	}
 
 	content := openapi.Object{}
 	for _, contentType := range types {
-		content[contentType] = openapi.Object{"schema": openapi.Object{schemaRef: schemasRef + models[contentType]}}
+		content[contentType] = openapi.Object{
+			openAPISchema: openapi.Object{schemaRef: schemasRef + models[contentType]},
+		}
 	}
 
 	op["requestBody"] = openapi.Object{"content": content, openAPIRequired: true}

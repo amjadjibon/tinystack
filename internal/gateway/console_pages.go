@@ -21,6 +21,7 @@ var consolePages = map[string]consolePage{
 	CreateResource GetResource GetResources UpdateResource DeleteResource
 	PutMethod GetMethod UpdateMethod DeleteMethod
 	PutIntegration GetIntegration UpdateIntegration DeleteIntegration
+	PutMethodResponse PutIntegrationResponse UpdateIntegrationResponse DeleteIntegrationResponse
 	CreateStage GetStage GetStages UpdateStage DeleteStage
 	CreateDeployment GetDeployment GetDeployments UpdateDeployment DeleteDeployment
 	CreateAuthorizer GetAuthorizer GetAuthorizers UpdateAuthorizer DeleteAuthorizer

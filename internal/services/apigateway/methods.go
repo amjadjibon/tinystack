@@ -314,6 +314,12 @@ func (s *Service) UpdateMethodResponse(
 		}
 
 		m.method.MethodResponses[*in.StatusCode], out = *r, r
+		if i := m.method.MethodIntegration; i != nil && mappedIntegration(i) {
+			if mapped, ok := i.IntegrationResponses[*in.StatusCode]; ok {
+				return checkIntegrationResponse(m, &mapped)
+			}
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -332,6 +338,12 @@ func (s *Service) DeleteMethodResponse(
 			return err
 		}
 
+		if i := m.method.MethodIntegration; i != nil && mappedIntegration(i) {
+			if _, used := i.IntegrationResponses[*in.StatusCode]; used {
+				return badRequest("Delete the integration response before deleting its method response")
+			}
+		}
+
 		delete(m.method.MethodResponses, *in.StatusCode)
 		return nil
 	})
@@ -342,7 +354,7 @@ func (s *Service) DeleteMethodResponse(
 	return &api.DeleteMethodResponseOutput{}, nil
 }
 
-// checkIntegration validates a Lambda proxy, HTTP proxy, or mock integration.
+// checkIntegration validates an integration before it is stored.
 func checkIntegration(i *api.Integration) error {
 	switch common.Value(i.Type) {
 	case typeLambda:
@@ -358,7 +370,11 @@ func checkIntegration(i *api.Integration) error {
 			return badRequest("Integrations of type 'AWS_PROXY' currently only support POST for integration " +
 				"HTTP method.")
 		}
-	case typeHTTP:
+	case typeAWSMapped:
+		if err := checkAWSIntegration(i); err != nil {
+			return err
+		}
+	case typeHTTP, typeHTTPMapped:
 		u, err := url.Parse(strings.NewReplacer("${", "", "}", "", "{", "", "}", "").Replace(common.Value(i.Uri)))
 		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 			return badRequest("Invalid HTTP endpoint specified for URI")
@@ -367,9 +383,12 @@ func checkIntegration(i *api.Integration) error {
 		if !methods[common.Value(i.HttpMethod)] {
 			return badRequest("Enumeration value for HttpMethod must be non-empty")
 		}
+		if common.Value(i.Type) == typeHTTPMapped && common.Value(i.Credentials) != "" {
+			return badRequest("HTTP integrations do not support credentials")
+		}
 	case typeMock:
 	default:
-		return badRequest("TinyStack supports AWS_PROXY, HTTP_PROXY, and MOCK integrations for REST APIs.")
+		return badRequest("Unsupported REST integration type %q", common.Value(i.Type))
 	}
 
 	switch {
@@ -377,6 +396,10 @@ func checkIntegration(i *api.Integration) error {
 		return badRequest("TinyStack supports INTERNET connections only.")
 	case common.Value(i.TimeoutInMillis) < minTimeout || common.Value(i.TimeoutInMillis) > maxTimeout:
 		return badRequest("Timeout should be between %d ms and %d ms", minTimeout, maxTimeout)
+	}
+
+	if mappedIntegration(i) {
+		return checkMappedIntegration(i)
 	}
 
 	return nil
@@ -389,7 +412,7 @@ func (s *Service) PutIntegration(ctx context.Context, in *api.PutIntegrationRequ
 			Type: in.Type, HttpMethod: in.IntegrationHttpMethod, Uri: in.Uri, Credentials: in.Credentials,
 			ConnectionType: common.OrElse(in.ConnectionType, new("INTERNET")), RequestParameters: in.RequestParameters,
 			RequestTemplates: in.RequestTemplates, ContentHandling: in.ContentHandling,
-			PassthroughBehavior: common.OrElse(in.PassthroughBehavior, new("WHEN_NO_MATCH")),
+			PassthroughBehavior: common.OrElse(in.PassthroughBehavior, new(whenNoMatch)),
 			TimeoutInMillis:     common.OrElse(in.TimeoutInMillis, new(int64(maxTimeout))),
 			CacheNamespace:      common.OrElse(in.CacheNamespace, m.resource.Id),
 			CacheKeyParameters:  in.CacheKeyParameters,
@@ -408,6 +431,14 @@ func (s *Service) PutIntegration(ctx context.Context, in *api.PutIntegrationRequ
 		}
 
 		m.method.MethodIntegration, out = i, i
+		if mappedIntegration(i) {
+			for _, r := range i.IntegrationResponses {
+				if err := checkIntegrationResponse(m, &r); err != nil {
+					return err
+				}
+			}
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -490,7 +521,14 @@ func checkIntegrationResponse(m *method, r *api.IntegrationResponse) error {
 		return notFound("Invalid Response status code specified")
 	}
 
-	for k := range r.ResponseParameters {
+	for k, expr := range r.ResponseParameters {
+		if mappedIntegration(m.method.MethodIntegration) {
+			name, ok := strings.CutPrefix(k, methodHeader)
+			if !ok || name == "" || !responseSourceValid(expr) {
+				return badRequest("Unsupported integration response mapping %q = %q", k, expr)
+			}
+		}
+
 		if _, found := declared.ResponseParameters[k]; !found {
 			return badRequest("Invalid mapping expression specified: Validation Result: warnings : [], errors : "+
 				"[Invalid mapping expression parameter specified: %s]", k)
@@ -498,9 +536,13 @@ func checkIntegrationResponse(m *method, r *api.IntegrationResponse) error {
 	}
 
 	if p := common.Value(r.SelectionPattern); p != "" {
-		if _, err := regexp.Compile(p); err != nil {
+		if _, err := regexp.Compile("^(?:" + p + ")$"); err != nil {
 			return badRequest("Invalid selection pattern specified: %s", p)
 		}
+	}
+
+	if mappedIntegration(m.method.MethodIntegration) {
+		return checkContentHandling(r.ContentHandling)
 	}
 
 	return nil

@@ -15,6 +15,7 @@ import { ActionDialog } from "#/components/ActionDialog";
 import { CodeBlock } from "#/components/CodeBlock";
 import {
 	apiCall,
+	type GatewayIntegration,
 	type GatewayMethod,
 	type GatewayResource,
 	type GatewayScope,
@@ -26,7 +27,7 @@ import {
 	stringLines,
 	validateURI,
 } from "#/lib/apigateway";
-import { integer } from "#/lib/consoleActions";
+import { type ActionStep, integer } from "#/lib/consoleActions";
 import { useScope } from "#/lib/scope";
 import { useFollow } from "#/lib/useFollow";
 import { GatewayInput, GatewaySelect, GatewayText, options } from "./Fields";
@@ -358,6 +359,91 @@ export function RestResources({
 		</SpaceBetween>
 	);
 }
+const templateDescription =
+	"Enter a JSON object with content types as keys and VTL templates as values.";
+
+type ResponseEdit = {
+	id: string;
+	status: string;
+	pattern: string;
+	templates: string;
+};
+
+function readTemplates(text: string): Record<string, string> {
+	const value: unknown = JSON.parse(text || "{}");
+	if (
+		!value ||
+		typeof value !== "object" ||
+		Array.isArray(value) ||
+		Object.values(value).some((template) => typeof template !== "string")
+	) {
+		throw new Error("Templates must be a JSON object with string values.");
+	}
+	return value as Record<string, string>;
+}
+
+function responseSteps(
+	scope: GatewayScope,
+	input: { ResourceId: string; HttpMethod: string },
+	initial: GatewayMethod | undefined,
+	integration: GatewayIntegration | undefined,
+	edits: ResponseEdit[],
+): ActionStep[] {
+	const previous = integration?.IntegrationResponses ?? {};
+	const seen = new Set<string>();
+	const steps: ActionStep[] = [];
+	for (const edit of edits) {
+		const status = edit.status;
+		if (!/^[1-5][0-9]{2}$/.test(status) || seen.has(status)) {
+			throw new Error("Each integration response needs a unique HTTP status.");
+		}
+		seen.add(status);
+		const templates = readTemplates(edit.templates);
+		const args = { ...input, StatusCode: status };
+		const old = previous[status];
+		if (!initial?.MethodResponses?.[status]) {
+			steps.push({
+				label: `Create method response ${status}`,
+				run: () => apiCall(scope, "PutMethodResponse", args),
+			});
+		}
+		steps.push({
+			label: `Save integration response ${status}`,
+			run: () =>
+				old
+					? apiCall(scope, "UpdateIntegrationResponse", {
+							...args,
+							PatchOperations: [
+								...scalarPatch({ selectionPattern: edit.pattern }),
+								...mapPatch(
+									"responseTemplates",
+									templates,
+									old.ResponseTemplates,
+								),
+							],
+						})
+					: apiCall(scope, "PutIntegrationResponse", {
+							...args,
+							SelectionPattern: edit.pattern,
+							ResponseTemplates: templates,
+						}),
+		});
+	}
+	for (const status of Object.keys(previous)) {
+		if (!seen.has(status)) {
+			steps.push({
+				label: `Delete integration response ${status}`,
+				run: () =>
+					apiCall(scope, "DeleteIntegrationResponse", {
+						...input,
+						StatusCode: status,
+					}),
+			});
+		}
+	}
+	return steps;
+}
+
 function RestMethodForm({
 	scope,
 	resource,
@@ -411,6 +497,28 @@ function RestMethodForm({
 		[verb, setVerb] = useState(integration?.HttpMethod ?? "GET"),
 		[timeout, setTimeout] = useState(
 			String(integration?.TimeoutInMillis ?? 29000),
+		),
+		[credentials, setCredentials] = useState(integration?.Credentials ?? ""),
+		[passthrough, setPassthrough] = useState(
+			integration?.PassthroughBehavior ?? "WHEN_NO_MATCH",
+		),
+		[templates, setTemplates] = useState(
+			JSON.stringify(integration?.RequestTemplates ?? {}, null, 2),
+		),
+		[responses, setResponses] = useState<ResponseEdit[]>(() =>
+			Object.entries(integration?.IntegrationResponses ?? {}).map(
+				([status, response]) => ({
+					id: status,
+					status,
+					pattern: response.SelectionPattern ?? "",
+					templates: JSON.stringify(response.ResponseTemplates ?? {}, null, 2),
+				}),
+			),
+		);
+	const mapped = type === "AWS" || type === "HTTP";
+	const setResponse = (id: string, patch: Partial<ResponseEdit>) =>
+		setResponses((items) =>
+			items.map((item) => (item.id === id ? { ...item, ...patch } : item)),
 		);
 	const functions = (inventory.data ?? [])
 		.filter(
@@ -458,10 +566,21 @@ function RestMethodForm({
 				const requestModels = { ...initial?.RequestModels };
 				if (bodyModel) requestModels["application/json"] = bodyModel;
 				else delete requestModels["application/json"];
+				const requestTemplates = mapped ? readTemplates(templates) : {};
 				const integrationInput = {
 					Type: type,
 					...(type !== "MOCK" ? { Uri: uri } : {}),
-					IntegrationHttpMethod: type === "AWS_PROXY" ? "POST" : verb,
+					IntegrationHttpMethod:
+						type === "AWS_PROXY" || type === "AWS" ? "POST" : verb,
+					...(type === "AWS" && credentials
+						? { Credentials: credentials }
+						: {}),
+					...(mapped
+						? {
+								PassthroughBehavior: passthrough,
+								RequestTemplates: requestTemplates,
+							}
+						: {}),
 					TimeoutInMillis: integer(timeout, "Timeout", 50, 29000),
 				};
 				return [
@@ -538,16 +657,39 @@ function RestMethodForm({
 									...input,
 									...(integration?.Type === type
 										? {
-												PatchOperations: scalarPatch({
-													...(type !== "MOCK" ? { uri } : {}),
-													httpMethod: integrationInput.IntegrationHttpMethod,
-													timeoutInMillis: integrationInput.TimeoutInMillis,
-												}),
+												PatchOperations: [
+													...scalarPatch({
+														...(type !== "MOCK" ? { uri } : {}),
+														httpMethod: integrationInput.IntegrationHttpMethod,
+														timeoutInMillis: integrationInput.TimeoutInMillis,
+														...(mapped
+															? { passthroughBehavior: passthrough }
+															: {}),
+														...(type === "AWS" && credentials
+															? { credentials }
+															: {}),
+													}),
+													...(type === "AWS" &&
+													!credentials &&
+													integration.Credentials
+														? [{ Op: "remove", Path: "/credentials" }]
+														: []),
+													...(mapped
+														? mapPatch(
+																"requestTemplates",
+																requestTemplates,
+																integration.RequestTemplates,
+															)
+														: []),
+												],
 											}
 										: integrationInput),
 								},
 							),
 					},
+					...(mapped
+						? responseSteps(scope, input, initial, integration, responses)
+						: []),
 				];
 			}}
 		>
@@ -636,7 +778,7 @@ function RestMethodForm({
 					label="Integration type"
 					value={type}
 					onChange={setType}
-					options={options(["AWS_PROXY", "HTTP_PROXY", "MOCK"])}
+					options={options(["AWS_PROXY", "HTTP_PROXY", "AWS", "HTTP", "MOCK"])}
 				/>
 				{type === "AWS_PROXY" && (
 					<GatewaySelect
@@ -651,13 +793,15 @@ function RestMethodForm({
 						label={
 							type === "AWS_PROXY"
 								? "Lambda function ARN or invocation URI"
-								: "HTTP endpoint URL"
+								: type === "AWS"
+									? "AWS integration ARN"
+									: "HTTP endpoint URL"
 						}
 						value={uri}
 						onChange={setURI}
 					/>
 				)}
-				{type === "HTTP_PROXY" && (
+				{(type === "HTTP_PROXY" || type === "HTTP") && (
 					<GatewaySelect
 						label="Integration HTTP method"
 						value={verb}
@@ -673,6 +817,93 @@ function RestMethodForm({
 							"OPTIONS",
 						])}
 					/>
+				)}
+				{type === "AWS" && (
+					<GatewayInput
+						label="Credentials role ARN"
+						value={credentials}
+						onChange={setCredentials}
+					/>
+				)}
+				{mapped && (
+					<>
+						<GatewaySelect
+							label="Request passthrough behavior"
+							value={passthrough}
+							onChange={setPassthrough}
+							options={options(["WHEN_NO_MATCH", "WHEN_NO_TEMPLATES", "NEVER"])}
+						/>
+						<GatewayText
+							label="Request templates"
+							description={templateDescription}
+							value={templates}
+							onChange={setTemplates}
+						/>
+						<Container
+							header={
+								<Header
+									actions={
+										<Button
+											onClick={() =>
+												setResponses([
+													...responses,
+													{
+														id: crypto.randomUUID(),
+														status: responses.length === 0 ? "200" : "",
+														pattern: "",
+														templates: "{}",
+													},
+												])
+											}
+										>
+											Add response
+										</Button>
+									}
+								>
+									Integration responses
+								</Header>
+							}
+						>
+							<SpaceBetween size="l">
+								{responses.map((response) => (
+									<SpaceBetween key={response.id} size="s">
+										<GatewayInput
+											label="Status code"
+											value={response.status}
+											onChange={(status) =>
+												setResponse(response.id, { status })
+											}
+										/>
+										<GatewayInput
+											label="Selection pattern"
+											value={response.pattern}
+											description="Leave blank for the default response."
+											onChange={(pattern) =>
+												setResponse(response.id, { pattern })
+											}
+										/>
+										<GatewayText
+											label="Response templates"
+											value={response.templates}
+											description={templateDescription}
+											onChange={(templates) =>
+												setResponse(response.id, { templates })
+											}
+										/>
+										<Button
+											onClick={() =>
+												setResponses(
+													responses.filter((r) => r.id !== response.id),
+												)
+											}
+										>
+											Remove response
+										</Button>
+									</SpaceBetween>
+								))}
+							</SpaceBetween>
+						</Container>
+					</>
 				)}
 				<GatewayInput
 					label="Timeout (milliseconds)"

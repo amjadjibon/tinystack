@@ -14,7 +14,13 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-const openAPIType = "type"
+const (
+	openAPIType        = "type"
+	openAPIString      = "string"
+	openAPISchema      = "schema"
+	openAPIDescription = "description"
+	openAPIDefault     = "default"
+)
 
 const exportSwagger = "swagger"
 
@@ -336,8 +342,19 @@ func (s *Service) applyDefinition(
 
 			integration.Type = new(strings.ToUpper(openapi.Text(ext[openAPIType])))
 			integration.IntegrationHttpMethod = new(strings.ToUpper(openapi.Text(ext["httpMethod"])))
-			if _, err = s.PutIntegration(ctx, integration); err != nil {
-				return nil, err
+			if integration.PassthroughBehavior != nil {
+				integration.PassthroughBehavior = new(strings.ToUpper(*integration.PassthroughBehavior))
+			}
+
+			configured, putErr := s.PutIntegration(ctx, integration)
+			if putErr != nil {
+				return nil, putErr
+			}
+
+			if mappedIntegration(configured) || ext["responses"] != nil {
+				if err := s.importResponses(ctx, integration, op, ext); err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
@@ -449,7 +466,7 @@ func (s *Service) GetExport(ctx context.Context, in *api.GetExportRequest) (*api
 
 		for _, r := range dep.Resources {
 			for method, m := range r.ResourceMethods {
-				op := openapi.Object{"responses": openapi.Object{"200": openapi.Object{"description": "Success"}}}
+				op := openapi.Object{"responses": exportMethodResponses(m.MethodResponses, swagger)}
 				requirement := openapi.Object{}
 				if common.Value(m.ApiKeyRequired) {
 					requirement["api_key"] = []string{}
@@ -481,9 +498,9 @@ func (s *Service) GetExport(ctx context.Context, in *api.GetExportRequest) (*api
 
 					p := openapi.Object{openAPIName: parts[1], "in": location, openAPIRequired: required}
 					if common.Value(in.ExportType) == exportSwagger {
-						p[openAPIType] = "string"
+						p[openAPIType] = openAPIString
 					} else {
-						p["schema"] = openapi.Object{openAPIType: "string"}
+						p[openAPISchema] = openapi.Object{openAPIType: openAPIString}
 					}
 
 					params = append(params, p)
@@ -504,6 +521,19 @@ func (s *Service) GetExport(ctx context.Context, in *api.GetExportRequest) (*api
 
 						delete(ext, "integrationResponses")
 						ext[openAPIType] = strings.ToLower(common.Value(i.Type))
+						if i.PassthroughBehavior != nil {
+							ext["passthroughBehavior"] = strings.ToLower(*i.PassthroughBehavior)
+						}
+
+						responses, err := exportIntegrationResponses(i)
+						if err != nil {
+							return err
+						}
+
+						if len(responses) > 0 {
+							ext["responses"] = responses
+						}
+
 						op["x-amazon-apigateway-integration"] = ext
 					}
 				}

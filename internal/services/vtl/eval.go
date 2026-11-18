@@ -191,13 +191,27 @@ func (e *env) foreach(f foreachNode) error {
 		items = []any{v}
 	}
 
+	outer := map[string]any{}
+	for _, key := range []string{f.name, directiveForeach, velocityCount} {
+		if value, ok := e.vars[key]; ok {
+			outer[key] = value
+		}
+	}
+	defer func() {
+		for _, key := range []string{f.name, directiveForeach, velocityCount} {
+			delete(e.vars, key)
+		}
+
+		maps.Copy(e.vars, outer)
+	}()
+
 	for i, item := range items {
 		e.vars[f.name] = item
-		e.vars["foreach"] = map[string]any{
+		e.vars[directiveForeach] = map[string]any{
 			"index": int64(i), "count": int64(i + 1), "hasNext": i+1 < len(items), "first": i == 0,
 			"last": i+1 == len(items),
 		}
-		e.vars["velocityCount"] = int64(i + 1)
+		e.vars[velocityCount] = int64(i + 1)
 		err = e.render(f.body)
 		if errors.As(err, new(broke)) {
 			return nil
@@ -317,6 +331,12 @@ func (e *env) eval(x expr) (any, error) {
 		}
 
 		a, b := toInt(from), toInt(to)
+		lo, hi := min(a, b), max(a, b)
+		const maxRange = 10000
+		if lo <= math.MaxInt64-maxRange && hi >= lo+maxRange {
+			return nil, errors.New("range exceeds 10000 elements")
+		}
+
 		l := &List{}
 		for i := a; ; i += map[bool]int64{true: 1, false: -1}[b >= a] {
 			l.Items = append(l.Items, i)

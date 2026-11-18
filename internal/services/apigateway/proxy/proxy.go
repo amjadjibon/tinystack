@@ -186,10 +186,8 @@ func isNil(v any) bool {
 	return v == nil
 }
 
-// EventV1 builds payload format 1.0's event, the one REST APIs send and HTTP
-// APIs send for 1.0 integrations.
-func EventV1(r *execute.Request, c *Context, pathParameters, stageVariables map[string]string) ([]byte, error) {
-	text, encoded := body(r)
+// RequestContextV1 provides the request context shared by proxy events and REST API templates.
+func RequestContextV1(r *execute.Request, c *Context) map[string]any {
 	requestContext := map[string]any{
 		keyAccountID: c.AccountID, "apiId": c.APIID, "domainName": c.DomainName,
 		"domainPrefix": strings.Split(c.DomainName, ".")[0], "extendedRequestId": c.RequestID,
@@ -207,6 +205,14 @@ func EventV1(r *execute.Request, c *Context, pathParameters, stageVariables map[
 		identity["sourceIp"], identity["userAgent"] = r.SourceIP, r.Header.Get("User-Agent")
 		requestContext["identity"] = identity
 	}
+
+	return requestContext
+}
+
+// EventV1 builds payload format 1.0's event.
+func EventV1(r *execute.Request, c *Context, pathParameters, stageVariables map[string]string) ([]byte, error) {
+	text, encoded := body(r)
+	requestContext := RequestContextV1(r, c)
 
 	resource := c.Resource
 	if resource == "" {
@@ -395,12 +401,39 @@ func Forward(
 	payload []byte,
 	timeout time.Duration,
 ) *execute.Response {
+	out, _ := forward(ctx, http.DefaultClient, method, url, header, payload, timeout)
+	return out
+}
+
+var integrationClient = &http.Client{
+	CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse },
+}
+
+// RoundTrip distinguishes backend HTTP statuses from forwarding failures.
+func RoundTrip(
+	ctx context.Context,
+	method, url string,
+	header http.Header,
+	payload []byte,
+	timeout time.Duration,
+) (*execute.Response, error) {
+	return forward(ctx, integrationClient, method, url, header, payload, timeout)
+}
+
+func forward(
+	ctx context.Context,
+	client *http.Client,
+	method, url string,
+	header http.Header,
+	payload []byte,
+	timeout time.Duration,
+) (*execute.Response, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewReader(payload))
 	if err != nil {
-		return execute.Message(http.StatusInternalServerError, "Internal Server Error")
+		return execute.Message(http.StatusInternalServerError, "Internal Server Error"), err
 	}
 
 	req.Header = header.Clone()
@@ -408,19 +441,19 @@ func Forward(
 		req.Header.Del(h)
 	}
 
-	resp, err := http.DefaultClient.Do(req) // #nosec G704 -- the API's owner chose the backend URL.
+	resp, err := client.Do(req) // #nosec G704 -- the API's owner chose the backend URL.
 	if errors.Is(err, context.DeadlineExceeded) {
-		return execute.Message(http.StatusGatewayTimeout, "Service Unavailable")
+		return execute.Message(http.StatusGatewayTimeout, "Service Unavailable"), err
 	}
 
 	if err != nil {
-		return execute.Message(http.StatusInternalServerError, "Internal Server Error")
+		return execute.Message(http.StatusInternalServerError, "Internal Server Error"), err
 	}
 
 	defer func() { _ = resp.Body.Close() }()
 	data, err := io.ReadAll(io.LimitReader(resp.Body, maxBackendBody))
 	if err != nil {
-		return execute.Message(http.StatusBadGateway, "Bad Gateway")
+		return execute.Message(http.StatusBadGateway, "Bad Gateway"), err
 	}
 
 	out := &execute.Response{Status: resp.StatusCode, Header: resp.Header.Clone(), Body: data}
@@ -428,7 +461,7 @@ func Forward(
 		out.Header.Del(h)
 	}
 
-	return out
+	return out, nil
 }
 
 // Substitute replaces ${stageVariables.<name>} in s with the stage's

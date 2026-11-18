@@ -370,6 +370,8 @@ func (s *Service) integrate(ctx context.Context, c *call, authorizer map[string]
 	switch common.Value(i.Type) {
 	case typeMock:
 		return mock(c, i)
+	case typeHTTPMapped, typeAWSMapped:
+		return s.integrateMapped(ctx, c, i, uri, authorizer, timeout)
 	case typeHTTP:
 		method := common.Value(i.HttpMethod)
 		if method == methodAny {
@@ -395,8 +397,29 @@ func (s *Service) integrate(ctx context.Context, c *call, authorizer map[string]
 	}
 
 	arn, _ := proxy.LambdaARN(uri)
-	var out []byte
-	var functionError bool
+	out, functionError, err := s.invokeIntegrationLambda(ctx, c, i, arn, event, timeout)
+
+	switch {
+	case errors.Is(err, context.DeadlineExceeded):
+		c.integrationError = "timed out"
+		return execute.Message(http.StatusGatewayTimeout, "Endpoint request timed out")
+	case err != nil:
+		c.integrationError = err.Error()
+		return execute.Message(http.StatusInternalServerError, "Internal server error")
+	}
+
+	c.integrationCode = http.StatusOK
+	return proxy.ResponseV1(out, functionError, http.StatusBadGateway)
+}
+
+func (s *Service) invokeIntegrationLambda(
+	ctx context.Context,
+	c *call,
+	i *api.Integration,
+	arn string,
+	payload []byte,
+	timeout time.Duration,
+) (payloadOut []byte, functionError bool, err error) {
 	// A role invokes the function as that role; otherwise the function's policy must allow API Gateway.
 	delivery := catalog.ServiceDelivery{
 		Principal:     "apigateway.amazonaws.com",
@@ -415,24 +438,12 @@ func (s *Service) integrate(ctx context.Context, c *call, authorizer map[string]
 
 	// Credentials that are not a role, arn:aws:iam::*:user/*, invoke as the caller, whom the request authorized.
 	if credentials == "" || delivery.Role != nil {
-		err = s.authorizer.Authorize(ctx, delivery)
+		if err := s.authorizer.Authorize(ctx, delivery); err != nil {
+			return nil, false, err
+		}
 	}
 
-	if err == nil {
-		out, functionError, err = s.invoke(ctx, c, arn, event, timeout)
-	}
-
-	switch {
-	case errors.Is(err, context.DeadlineExceeded):
-		c.integrationError = "timed out"
-		return execute.Message(http.StatusGatewayTimeout, "Endpoint request timed out")
-	case err != nil:
-		c.integrationError = err.Error()
-		return execute.Message(http.StatusInternalServerError, "Internal server error")
-	}
-
-	c.integrationCode = http.StatusOK
-	return proxy.ResponseV1(out, functionError, http.StatusBadGateway)
+	return s.invoke(ctx, c, arn, payload, timeout)
 }
 
 // mock answers a MOCK integration: the status comes from the request
@@ -537,7 +548,7 @@ func contextVariable(c *call, resp *execute.Response, name string) string {
 		}
 	case "httpMethod":
 		return r.Method
-	case "path":
+	case locationPath:
 		return r.Path
 	case "resourcePath":
 		if c.resource != nil {

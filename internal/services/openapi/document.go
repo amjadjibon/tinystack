@@ -313,7 +313,7 @@ func (d *Document) Integration(op Operation) (Object, error) {
 
 	if err := Check(m, "type", "uri", "httpMethod", "credentials", "requestParameters", "requestTemplates",
 		"passthroughBehavior", "contentHandling", "timeoutInMillis", "cacheNamespace", "cacheKeyParameters",
-		"connectionType", "payloadFormatVersion"); err != nil {
+		"connectionType", "payloadFormatVersion", "responses"); err != nil {
 		return nil, err
 	}
 

@@ -19,7 +19,7 @@ import (
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/appsync"
 	"github.com/amjadjibon/tinystack/internal/common"
-	"github.com/amjadjibon/tinystack/internal/services/appsync/vtl"
+	"github.com/amjadjibon/tinystack/internal/services/vtl"
 )
 
 // versionRaising is the mapping template version whose data source errors

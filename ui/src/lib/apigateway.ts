@@ -19,6 +19,10 @@ export type GatewayAPI = {
 	DisableExecuteApiEndpoint?: boolean;
 	CorsConfiguration?: Record<string, unknown>;
 };
+export type GatewayIntegrationResponse = {
+	SelectionPattern?: string;
+	ResponseTemplates?: Record<string, string>;
+};
 export type GatewayIntegration = {
 	IntegrationId?: string;
 	IntegrationType?: string;
@@ -30,6 +34,10 @@ export type GatewayIntegration = {
 	Type?: string;
 	Uri?: string;
 	HttpMethod?: string;
+	Credentials?: string;
+	RequestTemplates?: Record<string, string>;
+	PassthroughBehavior?: string;
+	IntegrationResponses?: Record<string, GatewayIntegrationResponse>;
 	[key: string]: unknown;
 };
 export type GatewayRoute = {
@@ -49,6 +57,7 @@ export type GatewayMethod = {
 	AuthorizationScopes?: string[];
 	OperationName?: string;
 	MethodIntegration?: GatewayIntegration;
+	MethodResponses?: Record<string, unknown>;
 	RequestParameters?: Record<string, boolean>;
 	RequestModels?: Record<string, string>;
 	RequestValidatorId?: string;
@@ -320,8 +329,13 @@ export function stageInput(
 export function validateURI(type: string, uri: string) {
 	if (type === "AWS_PROXY" && !/^arn:aws[a-z-]*:(lambda|apigateway):/.test(uri))
 		throw new Error("Choose a Lambda function ARN or invocation URI.");
-	if (type === "HTTP_PROXY" && !/^https?:\/\/\S+/.test(uri))
+	if (["HTTP", "HTTP_PROXY"].includes(type) && !/^https?:\/\/\S+/.test(uri))
 		throw new Error("Enter an HTTP or HTTPS integration URL.");
+	if (
+		type === "AWS" &&
+		!/^arn:aws:apigateway:[^:]+:[^:]+:(action|path)\/\S+$/.test(uri)
+	)
+		throw new Error("Enter an API Gateway AWS action or path ARN.");
 }
 export function listPatch(field: string, next: string[], old: string[] = []) {
 	return [
