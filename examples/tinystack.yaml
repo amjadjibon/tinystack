@@ -29,6 +29,9 @@ elasticache:
 opensearch:
   # records keeps domains as records; docker runs each domain's engine in a container with a named data volume.
   domains: records
+keyspaces:
+  # docker runs Cassandra per account and Region and publishes its CQL listener.
+  runtime: records
 rds:
   # records has no SQL listener; docker runs database containers with named data volumes.
   instances: records

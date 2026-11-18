@@ -57,7 +57,7 @@
     },
     {
       "title": "Runtime adapters",
-      "summary": "Docker Lambda execution and opt-in ECS Docker tasks, EKS k3s clusters, and ElastiCache Docker nodes; default optional adapters manage records.",
+      "summary": "Docker Lambda execution and opt-in ECS Docker tasks, EKS k3s clusters, ElastiCache Docker nodes, and Cassandra for Keyspaces. Optional adapters manage records by default.",
       "reference": "guides/runtimes.md"
     },
     {
@@ -3340,6 +3340,29 @@
       ],
       "execution": "Records only",
       "package": "globalaccelerator"
+    },
+    "keyspaces": {
+      "title": "Amazon Keyspaces (for Apache Cassandra)",
+      "category": "Database",
+      "scope": "Account and Region",
+      "summary": "Manage Cassandra keyspaces, tables, and user-defined types locally, with opt-in Cassandra execution.",
+      "features": [
+        "Keyspace, table, and user-defined type lifecycles with ordered pagination, read-only system keyspaces, and account and Region isolation.",
+        "Schema validation covers Cassandra scalar and collection types, user-defined type dependencies, partition and clustering keys, sort order, static columns, and additive table updates.",
+        "Table capacity, encryption, point-in-time recovery, TTL, comments and client-side timestamp settings are visible through the control plane. Tables and types transition from CREATING to ACTIVE.",
+        "Keyspace and table tags, resource inventory, Resource Groups Tagging API, and CloudFormation AWS::Cassandra::Keyspace and AWS::Cassandra::Table support. CloudFormation supports in-place table option updates and regular column additions.",
+        "Optional Docker mode applies committed schema changes to one Apache Cassandra 5 container per account and Region and publishes a loopback CQL endpoint in the resource inventory."
+      ],
+      "gaps": [
+        "Records mode has no CQL data plane. Docker uses stock Cassandra CQL and schema features without TLS, the Keyspaces SigV4 authentication plugin, IAM data-plane enforcement, or AWS endpoint discovery.",
+        "Multi-Region replication is metadata only. Other Regions do not receive a copy, and the local Cassandra node uses a single replica. UpdateKeyspace can add Regions and enable client-side timestamps across existing tables. Removing Regions is unsupported.",
+        "Capacity, customer-managed encryption, point-in-time recovery, and client-side timestamp settings do not configure the Docker engine. Cassandra supports per-write TTL and timestamps natively.",
+        "RestoreTable, GetTableAutoScalingSettings, change data capture, replica overrides, and warm throughput are unsupported. DeleteKeyspace requires removing its tables and user-defined types first.",
+        "Table and user-defined type field identifiers are limited to alphanumeric characters and underscores. Quoted type names preserve case within the supported identifier characters. The built-in keyspaces expose names and metadata. Their system tables are accessible only through Cassandra CQL where Cassandra provides them."
+      ],
+      "execution": "Records / optional Docker",
+      "package": "keyspaces",
+      "guide": "## Connect over CQL\n\nEnable the runtime for local CQL access:\n\n```yaml\nstorage:\n  mode: persistent\n  path: ./state\nkeyspaces:\n  runtime: docker\n```\n\nThe first keyspace in each account and Region starts a single `cassandra:5` container. The official Apache Cassandra\nimage provides both the native CQL protocol and the matching `cqlsh` client. Docker assigns an ephemeral\n`127.0.0.1` port for container port 9042. Find the keyspace in `GET /_tinystack/resources` and read\n`details.CqlEndpoint` after startup. For a new table, wait for `GetTable` to report `ACTIVE` before connecting.\n\n```sh\ncqlsh 127.0.0.1 <port>\n```\n\nCommitted schema changes, including table, keyspace and type deletions, are applied in order with `docker exec … cqlsh`.\nIf Cassandra is unavailable or CQL fails, the head of the queue is retried and the resource inventory shows\n`details.RuntimeError` while a resource in that scope remains. Manage schema through the Keyspaces API so that\nCassandra and the control plane agree. CQL reads and row writes go directly to Cassandra.\n\nShutdown removes the store's containers and keeps its named data volumes. Reusing the same persistent store\nrecovers the data and pending schema changes. Recreated containers may use a new port. Reset removes the store's\ncontainers and volumes. A memory store has a new runtime owner after restart, so use persistent storage to retain CQL\ndata across TinyStack restarts. Keep Docker mode enabled when resetting a persistent store so TinyStack can remove its volumes.\n"
     },
     "dsql": {
       "title": "Amazon Aurora DSQL",

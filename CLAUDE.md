@@ -24,9 +24,9 @@ task check          # merge gate: lint, Go tests, docs:check, headless build, ui
 ```
 
 Single test: `go test -race ./tests/integration -run TestName`.
-Opt-in suites: `task test:docker` (real containers: Lambda, ECS, EKS, ElastiCache, MemoryDB, RDS, DSQL, OpenSearch,
-MQ, MSK, Batch, CodeBuild, AgentCore; 30m timeout), `task test:testcontainers` (Go module, local image build or
-`TINYSTACK_IMAGE`; also `:python`, `:java`, `:node`, `:dotnet`), `task test:terraform`, `task test:sam`,
+Opt-in suites: `task test:docker` (real containers: Lambda, ECS, EKS, ElastiCache, MemoryDB, RDS, DSQL, Keyspaces,
+OpenSearch, MQ, MSK, Batch, CodeBuild, AgentCore; 30m timeout), `task test:testcontainers` (Go module, local image
+build or `TINYSTACK_IMAGE`; also `:python`, `:java`, `:node`, `:dotnet`), `task test:terraform`, `task test:sam`,
 `task test:cdk`, `task smoke`. Lint and unit CI run on pushes to `main`; `docker-tests.yml` runs `test:docker`
 weekly and on demand, split across runners; `v*` tags run `release.yml`, which calls every check workflow (adding
 integration and docs), then publishes
@@ -89,9 +89,9 @@ service, listeners, shutdown) → `internal/gateway.Server` → generated `catal
   the identity grant; explicit deny wins. In-process reads across accounts go through `catalog.ServiceDelivery`.
 - Container runtimes are optional, configured per service as `records` (default) or `docker`, and shell out to the
   docker CLI (`services/dockercli`) behind a `Runtime` interface in the service package (e.g. `rds/runtime.go`):
-  Lambda, ECS, EKS (k3s), ElastiCache, MemoryDB (Valkey), RDS, DSQL, OpenSearch, MQ, MSK, Batch, CodeBuild and
-  AgentCore. Cleanup removes only the owning store's resources. Without them, resources are records only. Run every
-  CLI call through `dockercli.Command`, which honors `DOCKER_ALIAS` (podman, nerdctl).
+  Lambda, ECS, EKS (k3s), ElastiCache, MemoryDB (Valkey), RDS, DSQL, Keyspaces (Cassandra), OpenSearch, MQ, MSK,
+  Batch, CodeBuild and AgentCore. Cleanup removes only the owning store's resources. Without them, resources are
+  records only. Run every CLI call through `dockercli.Command`, which honors `DOCKER_ALIAS` (podman, nerdctl).
 
 ## Adding an operation or service
 

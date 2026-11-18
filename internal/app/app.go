@@ -91,6 +91,7 @@ import (
 	iotjobsdataplaneapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotjobsdataplane"
 	iotwirelessapi "github.com/amjadjibon/tinystack/internal/aws/generated/iotwireless"
 	kafkaapi "github.com/amjadjibon/tinystack/internal/aws/generated/kafka"
+	keyspacesapi "github.com/amjadjibon/tinystack/internal/aws/generated/keyspaces"
 	kinesisapi "github.com/amjadjibon/tinystack/internal/aws/generated/kinesis"
 	kinesisanalyticsv2api "github.com/amjadjibon/tinystack/internal/aws/generated/kinesisanalyticsv2"
 	kmsapi "github.com/amjadjibon/tinystack/internal/aws/generated/kms"
@@ -243,6 +244,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/iotwireless"
 	"github.com/amjadjibon/tinystack/internal/services/kafka"
 	kafkadocker "github.com/amjadjibon/tinystack/internal/services/kafka/docker"
+	"github.com/amjadjibon/tinystack/internal/services/keyspaces"
 	"github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/services/kinesisanalyticsv2"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
@@ -645,6 +647,15 @@ func build(
 	redshiftRecords := redshift.New(store, network)
 	redshiftDataRecords := redshiftdata.New(store, redshiftRecords, redshiftServerlessRecords)
 	a.onStop(redshiftDataRecords.Stop)
+	keyspacesRecords := keyspaces.New(store)
+	if cfg.Keyspaces.Runtime == config.ContainersDocker {
+		if err = keyspacesRecords.UseDocker(ctx, logger); err != nil {
+			return nil, err
+		}
+	}
+
+	a.onStop(keyspacesRecords.Stop)
+	a.onReset(keyspacesRecords.Reset)
 	memoryDBRecords := memorydb.New(store, network)
 	a.onStop(memoryDBRecords.Stop)
 	a.onReset(memoryDBRecords.Reset)
@@ -818,6 +829,7 @@ func build(
 		verifiedpermissionsapi.Descriptor(verifiedpermissionsRecords),
 		redshiftapi.Descriptor(redshiftRecords),
 		redshiftdataapi.Descriptor(redshiftDataRecords),
+		keyspacesapi.Descriptor(keyspacesRecords),
 		memorydbapi.Descriptor(memoryDBRecords),
 		elbapi.Descriptor(classicBalancers),
 		rdsapi.Descriptor(databases),

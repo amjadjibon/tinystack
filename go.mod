@@ -84,6 +84,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/iotjobsdataplane v1.40.1
 	github.com/aws/aws-sdk-go-v2/service/iotwireless v1.67.1
 	github.com/aws/aws-sdk-go-v2/service/kafka v1.65.7
+	github.com/aws/aws-sdk-go-v2/service/keyspaces v1.37.1
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.56.8
 	github.com/aws/aws-sdk-go-v2/service/kinesisanalyticsv2 v1.47.7
 	github.com/aws/aws-sdk-go-v2/service/kms v1.62.1

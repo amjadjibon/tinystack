@@ -36,6 +36,7 @@ var namespaces = map[string]string{
 	"costandusagereportservice": "CUR",
 	"costexplorer":              "CE",
 	"redshift":                  "Redshift",
+	"keyspaces":                 "Cassandra",
 	"memorydb":                  "MemoryDB",
 	"identitystore":             "IdentityStore",
 	"ssoadmin":                  "SSO",

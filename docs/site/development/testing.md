@@ -15,7 +15,7 @@ contact AWS; integration tests use the official AWS SDK v2 and in-process runtim
 | `task lint` | Vet and golangci-lint | golangci-lint v2 |
 | `task generate` | Reproduce generated interfaces and bindings | Local models, Go deps |
 | `task smoke` | AWS CLI workflows and graceful shutdown | Python 3, AWS CLI; Lambda invocation when Docker is available |
-| `task test:docker` | Lambda, ECS, EKS and ElastiCache actual adapters | Docker, image download access |
+| `task test:docker` | Real containers for Lambda, ECS, EKS, ElastiCache, MemoryDB, RDS, DSQL, Keyspaces, OpenSearch, MQ, MSK, Batch, CodeBuild and AgentCore | Docker, image download access |
 | `task test:terraform` | Provider apply, no-change/read behavior, update and destroy | Python 3, Terraform, provider download access |
 | `task test:sam` | Deploy, new code/parameter redeploy and delete | Python 3, SAM CLI, AWS CLI; deployed API invocation with Docker |
 | `task ui:check` | Biome checks and TypeScript | Node.js, pnpm |

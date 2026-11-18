@@ -51,6 +51,9 @@ jobs:
           - group: MemoryDB
             run: TestMemoryDBDocker
             images: redis:6.2-alpine redis:7.0-alpine redis:7.2-alpine valkey/valkey:7.2-alpine
+          - group: Keyspaces
+            run: TestKeyspacesDocker
+            images: cassandra:5
           - group: OpenSearch
             run: TestOpenSearchDocker
             images: opensearchproject/opensearch:2.11.0 docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
@@ -73,7 +76,7 @@ jobs:
           # Every other Docker test (ECS, Bedrock with Ollama, and any new one) runs here.
           - group: Other
             run: Docker
-            skip: Test(RDS|RDSData|DSQL|ElastiCache|MemoryDB|OpenSearch|MQ|MSK|Batch|CodeBuild|BedrockAgentCore)Docker
+            skip: Test(RDS|RDSData|DSQL|ElastiCache|MemoryDB|Keyspaces|OpenSearch|MQ|MSK|Batch|CodeBuild|BedrockAgentCore)Docker
             images: busybox ollama/ollama:0.40.13
     steps:
       - name: Prefetch images in the background

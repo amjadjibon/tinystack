@@ -310,6 +310,9 @@ type Config struct {
 	DSQL struct {
 		Clusters string `yaml:"clusters"`
 	} `yaml:"dsql"`
+	Keyspaces struct {
+		Runtime string `yaml:"runtime"`
+	} `yaml:"keyspaces"`
 	MemoryDB struct {
 		Clusters string `yaml:"clusters"`
 	} `yaml:"memorydb"`
@@ -388,6 +391,7 @@ func Default() Config {
 	c.ECS.Containers = ContainersRecords
 	c.EKS.Clusters = ClustersRecords
 	c.DSQL.Clusters = ContainersRecords
+	c.Keyspaces.Runtime = ContainersRecords
 	c.MemoryDB.Clusters = CachesRecords
 	c.ElastiCache.Caches = CachesRecords
 	c.OpenSearch.Domains = DomainsRecords
@@ -610,6 +614,10 @@ func (c *Config) Validate() error {
 
 	if c.DSQL.Clusters != ContainersRecords && c.DSQL.Clusters != ContainersDocker {
 		return fmt.Errorf("dsql.clusters must be records or docker")
+	}
+
+	if c.Keyspaces.Runtime != ContainersRecords && c.Keyspaces.Runtime != ContainersDocker {
+		return fmt.Errorf("keyspaces.runtime must be records or docker")
 	}
 
 	if c.MemoryDB.Clusters != CachesRecords && c.MemoryDB.Clusters != CachesDocker {

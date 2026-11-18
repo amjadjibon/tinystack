@@ -72,6 +72,11 @@ func TypeOf(r *catalog.Owned) (service, kind string) {
 			return parts[2], path[1]
 		}
 	}
+	// Keyspaces ARNs start with a slash and both resource types share the keyspace prefix.
+	if parts[2] == "cassandra" {
+		return parts[2], r.Type
+	}
+
 	if i := strings.IndexAny(parts[5], "/:"); i >= 0 {
 		return parts[2], parts[5][:i]
 	}

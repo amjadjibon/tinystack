@@ -546,6 +546,10 @@
     "polly": {
       "path": "codegen/sdk-codegen/aws-models/polly.json",
       "sha256": "8da11df26b9ef2c9c79b2390780bd8d1cc2b661afabfc0e9d1787804c46be09b"
+    },
+    "keyspaces": {
+      "path": "codegen/sdk-codegen/aws-models/keyspaces.json",
+      "sha256": "4f8277a96b4e690fc289796be3ed89b33194325ad9871b357c6484c7fd3bb820"
     }
   }
 }

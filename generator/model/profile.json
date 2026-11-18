@@ -46969,5 +46969,267 @@
         "interval"
       ]
     }
+  },
+  "keyspaces": {
+    "validation": {
+      "code": "ValidationException"
+    },
+    "operations": [
+      "CreateKeyspace",
+      "CreateTable",
+      "CreateType",
+      "DeleteKeyspace",
+      "DeleteTable",
+      "DeleteType",
+      "GetKeyspace",
+      "GetTable",
+      "GetType",
+      "ListKeyspaces",
+      "ListTables",
+      "ListTagsForResource",
+      "ListTypes",
+      "TagResource",
+      "UntagResource",
+      "UpdateKeyspace",
+      "UpdateTable"
+    ],
+    "shapes": {
+      "CreateKeyspaceRequest": [
+        "keyspaceName",
+        "tags",
+        "replicationSpecification"
+      ],
+      "Tag": [
+        "key",
+        "value"
+      ],
+      "ReplicationSpecification": [
+        "replicationStrategy",
+        "regionList"
+      ],
+      "CreateKeyspaceResponse": [
+        "resourceArn"
+      ],
+      "CreateTableRequest": [
+        "keyspaceName",
+        "tableName",
+        "schemaDefinition",
+        "comment",
+        "capacitySpecification",
+        "encryptionSpecification",
+        "pointInTimeRecovery",
+        "ttl",
+        "defaultTimeToLive",
+        "tags",
+        "clientSideTimestamps"
+      ],
+      "SchemaDefinition": [
+        "allColumns",
+        "partitionKeys",
+        "clusteringKeys",
+        "staticColumns"
+      ],
+      "ColumnDefinition": [
+        "name",
+        "type"
+      ],
+      "PartitionKey": [
+        "name"
+      ],
+      "ClusteringKey": [
+        "name",
+        "orderBy"
+      ],
+      "StaticColumn": [
+        "name"
+      ],
+      "Comment": [
+        "message"
+      ],
+      "CapacitySpecification": [
+        "throughputMode",
+        "readCapacityUnits",
+        "writeCapacityUnits"
+      ],
+      "EncryptionSpecification": [
+        "type",
+        "kmsKeyIdentifier"
+      ],
+      "PointInTimeRecovery": [
+        "status"
+      ],
+      "TimeToLive": [
+        "status"
+      ],
+      "ClientSideTimestamps": [
+        "status"
+      ],
+      "CreateTableResponse": [
+        "resourceArn"
+      ],
+      "CreateTypeRequest": [
+        "keyspaceName",
+        "typeName",
+        "fieldDefinitions"
+      ],
+      "FieldDefinition": [
+        "name",
+        "type"
+      ],
+      "CreateTypeResponse": [
+        "keyspaceArn",
+        "typeName"
+      ],
+      "DeleteKeyspaceRequest": [
+        "keyspaceName"
+      ],
+      "DeleteTableRequest": [
+        "keyspaceName",
+        "tableName"
+      ],
+      "DeleteTypeRequest": [
+        "keyspaceName",
+        "typeName"
+      ],
+      "DeleteTypeResponse": [
+        "keyspaceArn",
+        "typeName"
+      ],
+      "GetKeyspaceRequest": [
+        "keyspaceName"
+      ],
+      "GetKeyspaceResponse": [
+        "keyspaceName",
+        "resourceArn",
+        "replicationStrategy",
+        "replicationRegions",
+        "replicationGroupStatuses"
+      ],
+      "ReplicationGroupStatus": [
+        "region",
+        "keyspaceStatus",
+        "tablesReplicationProgress"
+      ],
+      "GetTableRequest": [
+        "keyspaceName",
+        "tableName"
+      ],
+      "GetTableResponse": [
+        "keyspaceName",
+        "tableName",
+        "resourceArn",
+        "creationTimestamp",
+        "status",
+        "schemaDefinition",
+        "capacitySpecification",
+        "encryptionSpecification",
+        "pointInTimeRecovery",
+        "ttl",
+        "defaultTimeToLive",
+        "comment",
+        "clientSideTimestamps"
+      ],
+      "CapacitySpecificationSummary": [
+        "throughputMode",
+        "readCapacityUnits",
+        "writeCapacityUnits",
+        "lastUpdateToPayPerRequestTimestamp"
+      ],
+      "PointInTimeRecoverySummary": [
+        "status",
+        "earliestRestorableTimestamp"
+      ],
+      "GetTypeRequest": [
+        "keyspaceName",
+        "typeName"
+      ],
+      "GetTypeResponse": [
+        "keyspaceName",
+        "typeName",
+        "fieldDefinitions",
+        "lastModifiedTimestamp",
+        "status",
+        "directReferringTables",
+        "directParentTypes",
+        "maxNestingDepth",
+        "keyspaceArn"
+      ],
+      "ListKeyspacesRequest": [
+        "nextToken",
+        "maxResults"
+      ],
+      "ListKeyspacesResponse": [
+        "nextToken",
+        "keyspaces"
+      ],
+      "KeyspaceSummary": [
+        "keyspaceName",
+        "resourceArn",
+        "replicationStrategy",
+        "replicationRegions"
+      ],
+      "ListTablesRequest": [
+        "nextToken",
+        "maxResults",
+        "keyspaceName"
+      ],
+      "ListTablesResponse": [
+        "nextToken",
+        "tables"
+      ],
+      "TableSummary": [
+        "keyspaceName",
+        "tableName",
+        "resourceArn"
+      ],
+      "ListTagsForResourceRequest": [
+        "resourceArn",
+        "nextToken",
+        "maxResults"
+      ],
+      "ListTagsForResourceResponse": [
+        "nextToken",
+        "tags"
+      ],
+      "ListTypesRequest": [
+        "nextToken",
+        "maxResults",
+        "keyspaceName"
+      ],
+      "ListTypesResponse": [
+        "nextToken",
+        "types"
+      ],
+      "TagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "UntagResourceRequest": [
+        "resourceArn",
+        "tags"
+      ],
+      "UpdateKeyspaceRequest": [
+        "keyspaceName",
+        "replicationSpecification",
+        "clientSideTimestamps"
+      ],
+      "UpdateKeyspaceResponse": [
+        "resourceArn"
+      ],
+      "UpdateTableRequest": [
+        "keyspaceName",
+        "tableName",
+        "addColumns",
+        "capacitySpecification",
+        "encryptionSpecification",
+        "pointInTimeRecovery",
+        "ttl",
+        "defaultTimeToLive",
+        "clientSideTimestamps"
+      ],
+      "UpdateTableResponse": [
+        "resourceArn"
+      ]
+    }
   }
 }

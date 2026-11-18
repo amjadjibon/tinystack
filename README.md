@@ -5,7 +5,7 @@ CI. Point the AWS CLI, an SDK, Terraform, CDK, or SAM at `http://localhost:4566`
 
 - 130 services, from DynamoDB, SQS, S3, and Lambda to EKS, Step Functions, and CloudFormation
 - Optional Docker runtimes that really run Lambda functions, ECS tasks, EKS clusters, Batch jobs, CodeBuild builds,
-  and RDS, DSQL, ElastiCache, MemoryDB, OpenSearch, MQ, and MSK engines
+  and RDS, DSQL, Keyspaces, ElastiCache, MemoryDB, OpenSearch, MQ, and MSK engines
 - IAM policy evaluation, including resource policies and cross-account access, when authorization is turned on
 - A web console on port 4567, with CloudShell, request, delivery, and metrics logs, single sign-on, and an MCP server
 - In-memory state by default, or SQLite persistence across restarts; starts in about 0.1 s

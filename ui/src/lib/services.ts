@@ -200,6 +200,11 @@ const catalog: Record<string, ServiceInfo> = {
 		category: security,
 		icon: "identitysso",
 	},
+	keyspaces: {
+		title: "Amazon Keyspaces (for Apache Cassandra)",
+		category: database,
+		icon: "dynamodb",
+	},
 	memorydb: { title: "Amazon MemoryDB", category: database, icon: "memorydb" },
 	redshiftdata: {
 		title: "Amazon Redshift Data API",

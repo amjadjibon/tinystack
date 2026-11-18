@@ -41,6 +41,7 @@ WebSocket subscriptions, MQTT sessions and some task tokens remain ephemeral.
 | EKS | Cluster records | `eks.clusters: k3s` |
 | ElastiCache | Cache records | `elasticache.caches: docker` |
 | RDS | Database records | `rds.instances: docker` with named data volumes |
+| Amazon Keyspaces | Keyspace, table and type records | `keyspaces.runtime: docker` with a Cassandra container per account and Region |
 | Athena | SQLite-backed SQL execution | In-process engine; no Docker requirement |
 | EC2 / CloudFront / Route 53 | Resource records | No VM, CDN, or DNS engine |
 

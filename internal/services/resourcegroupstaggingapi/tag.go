@@ -28,6 +28,8 @@ type tagger struct {
 	untag func(ctx context.Context, c *catalog.Caller, r *catalog.Owned, keys []string) error
 }
 
+const keyspacesARNMember = "ResourceArn"
+
 // target returns the members that name a resource in a service's tag
 // operations.
 type target func(ctx context.Context, c *catalog.Caller, r *catalog.Owned) (map[string]any, error)
@@ -236,7 +238,30 @@ var taggers = map[string]tagger{
 	"networkfirewall":      resourceOperations("networkfirewall", "ResourceArn", pairs),
 	"amplify":              resourceOperations("amplify", "ResourceArn", plain),
 	"codeconnections":      resourceOperations("codeconnections", "ResourceArn", pairs),
-	"memorydb":             resourceOperations("memorydb", "ResourceArn", pairs),
+	"keyspaces": {
+		tag: resourceOperations("keyspaces", keyspacesARNMember, pairs).tag,
+		untag: func(ctx context.Context, c *catalog.Caller, r *catalog.Owned, keys []string) error {
+			tags := make(map[string]string, len(keys))
+			for _, key := range keys {
+				if value, ok := r.Tags[key]; ok {
+					tags[key] = value
+				}
+			}
+
+			if len(tags) == 0 {
+				return nil
+			}
+
+			_, err := c.Call(
+				ctx,
+				"keyspaces",
+				"UntagResource",
+				map[string]any{keyspacesARNMember: r.ARN, "Tags": pairs(tags)},
+			)
+			return err
+		},
+	},
+	"memorydb": resourceOperations("memorydb", "ResourceArn", pairs),
 	"redshift": operations("redshift", "CreateTags", "DeleteTags", byARN("ResourceName"),
 		"Tags", pairs, "TagKeys", names),
 	"codedeploy":             resourceOperations("codedeploy", "ResourceArn", pairs),

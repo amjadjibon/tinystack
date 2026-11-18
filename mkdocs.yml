@@ -172,6 +172,7 @@ nav:
           - "EKS": services/eks.md
       - "Database":
           - "Amazon Aurora DSQL": services/dsql.md
+          - "Amazon Keyspaces (for Apache Cassandra)": services/keyspaces.md
           - "Amazon MemoryDB": services/memorydb.md
           - "Amazon Timestream Query": services/timestreamquery.md
           - "Amazon Timestream Write": services/timestreamwrite.md

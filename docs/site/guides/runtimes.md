@@ -34,9 +34,11 @@ elasticache:
   caches: docker
 rds:
   instances: docker
+keyspaces:
+  runtime: docker
 ```
 
-Without these settings, ECS, EKS, ElastiCache and RDS manage records without starting their engines.
+Without these settings, ECS, EKS, ElastiCache, RDS and Keyspaces manage records without starting their engines.
 
 | Adapter | What runs | Local limits |
 | --- | --- | --- |
@@ -45,9 +47,10 @@ Without these settings, ECS, EKS, ElastiCache and RDS manage records without sta
 | EKS | Privileged k3s container and local HTTPS proxy per cluster | Account callers are administrators; Kubernetes state is not retained across restart |
 | ElastiCache | Redis, Valkey or Memcached nodes with readiness probes | Fresh nodes lose cache data and may receive new ports |
 | RDS | PostgreSQL, MySQL or MariaDB databases with readiness probes | Named volumes retain data; recreated containers may receive new ports |
+| Keyspaces | Apache Cassandra 5 per account and Region | Loopback CQL endpoint with named volumes for persistent data |
 
 Check the [Lambda](../services/lambda.md), [ECS](../services/ecs.md), [EKS](../services/eks.md)
-[ElastiCache](../services/elasticache.md) and [RDS](../services/rds.md) pages for exact subsets.
+[ElastiCache](../services/elasticache.md), [RDS](../services/rds.md) and [Keyspaces](../services/keyspaces.md) pages for exact subsets.
 
 ## Native process versus Compose
 
@@ -63,7 +66,7 @@ resource endpoint and verify it from your client.
 task test:docker
 ```
 
-This opts into real Lambda, ECS, EKS, cache and RDS tests, including image pulls and privileged k3s containers.
+This opts into real container tests, including Cassandra schema and persistence checks, image pulls, and privileged k3s containers.
 The adapters own cleanup and run outside store transactions. Regular Go integration tests use fake runtimes unless a test explicitly opts into host execution.
 Persistent resource metadata does not preserve every engine's data or in-flight work; read the
 [restart matrix](persistence.md).
