@@ -205,6 +205,15 @@ func cluster(r *record) *api.DBCluster {
 	return out
 }
 
+func setClusterIdentity(scope request.Scope, c *api.DBCluster, id, engine string, now time.Time) {
+	suffix := common.RandomID(12)
+	c.Endpoint = new(fmt.Sprintf("%s.cluster-%s.%s.%s.amazonaws.com", id, suffix, scope.Region, engine))
+	c.ReaderEndpoint = new(fmt.Sprintf("%s.cluster-ro-%s.%s.%s.amazonaws.com", id, suffix, scope.Region, engine))
+	c.DbClusterResourceId = new("cluster-" + common.RandomID(26, common.AlphabetUpperHex))
+	c.DBClusterArn = new(arn(scope, kindCluster, id))
+	c.ClusterCreateTime = new(now)
+}
+
 func (s *Service) CreateDBCluster(
 	ctx context.Context,
 	in *api.CreateDBClusterMessage,
@@ -256,7 +265,6 @@ func (s *Service) CreateDBCluster(
 	}
 
 	id := strings.ToLower(common.Value(in.DBClusterIdentifier))
-	suffix := common.RandomID(12)
 	c := &api.DBCluster{
 		DBClusterIdentifier:              new(id),
 		Engine:                           new(engine),
@@ -274,16 +282,8 @@ func (s *Service) CreateDBCluster(
 		KmsKeyId:                         in.KmsKeyId,
 		DeletionProtection:               common.OrElse(in.DeletionProtection, new(false)),
 		Status:                           new(available),
-		Endpoint: new(
-			fmt.Sprintf("%s.cluster-%s.%s.%s.amazonaws.com", id, suffix, scope.Region, engine),
-		),
-		ReaderEndpoint: new(
-			fmt.Sprintf("%s.cluster-ro-%s.%s.%s.amazonaws.com", id, suffix, scope.Region, engine),
-		),
-		DbClusterResourceId: new("cluster-" + common.RandomID(26, common.AlphabetUpperHex)),
-		DBClusterArn:        new(arn(scope, kindCluster, id)),
-		ClusterCreateTime:   new(time.Now().UTC()),
 	}
+	setClusterIdentity(scope, c, id, engine, time.Now().UTC())
 
 	if c.DBSubnetGroup != nil {
 		c.DBSubnetGroup = new(strings.ToLower(*c.DBSubnetGroup))

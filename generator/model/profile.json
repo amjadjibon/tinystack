@@ -23177,7 +23177,14 @@
       "ModifyDBClusterParameterGroup",
       "ResetDBClusterParameterGroup",
       "DescribeDBClusterParameters",
-      "DescribeEngineDefaultClusterParameters"
+      "DescribeEngineDefaultClusterParameters",
+      "ModifyDBSubnetGroup",
+      "CopyDBClusterSnapshot",
+      "RestoreDBClusterFromSnapshot",
+      "DescribeDBSnapshotAttributes",
+      "ModifyDBSnapshotAttribute",
+      "DescribeDBClusterSnapshotAttributes",
+      "ModifyDBClusterSnapshotAttribute"
     ],
     "shapes": {
       "CreateDBInstanceMessage": [
@@ -23507,7 +23514,10 @@
         "DBClusterSnapshotArn",
         "TagList",
         "StorageEncrypted",
-        "ClusterCreateTime"
+        "ClusterCreateTime",
+        "KmsKeyId",
+        "VpcId",
+        "SourceDBClusterSnapshotArn"
       ],
       "ModifyDBParameterGroupMessage": [
         "DBParameterGroupName",
@@ -23596,6 +23606,64 @@
         "DBParameterGroupFamily",
         "Description",
         "DBClusterParameterGroupArn"
+      ],
+      "ModifyDBSubnetGroupMessage": [
+        "DBSubnetGroupName",
+        "DBSubnetGroupDescription",
+        "SubnetIds"
+      ],
+      "CopyDBClusterSnapshotMessage": [
+        "SourceDBClusterSnapshotIdentifier",
+        "TargetDBClusterSnapshotIdentifier",
+        "CopyTags",
+        "Tags"
+      ],
+      "RestoreDBClusterFromSnapshotMessage": [
+        "DBClusterIdentifier",
+        "SnapshotIdentifier",
+        "Engine",
+        "EngineVersion",
+        "Port",
+        "DBSubnetGroupName",
+        "VpcSecurityGroupIds",
+        "DBClusterParameterGroupName",
+        "BackupRetentionPeriod",
+        "DeletionProtection",
+        "Tags"
+      ],
+      "DescribeDBSnapshotAttributesMessage": [
+        "DBSnapshotIdentifier"
+      ],
+      "ModifyDBSnapshotAttributeMessage": [
+        "DBSnapshotIdentifier",
+        "AttributeName",
+        "ValuesToAdd",
+        "ValuesToRemove"
+      ],
+      "DBSnapshotAttributesResult": [
+        "DBSnapshotIdentifier",
+        "DBSnapshotAttributes"
+      ],
+      "DBSnapshotAttribute": [
+        "AttributeName",
+        "AttributeValues"
+      ],
+      "DescribeDBClusterSnapshotAttributesMessage": [
+        "DBClusterSnapshotIdentifier"
+      ],
+      "ModifyDBClusterSnapshotAttributeMessage": [
+        "DBClusterSnapshotIdentifier",
+        "AttributeName",
+        "ValuesToAdd",
+        "ValuesToRemove"
+      ],
+      "DBClusterSnapshotAttributesResult": [
+        "DBClusterSnapshotIdentifier",
+        "DBClusterSnapshotAttributes"
+      ],
+      "DBClusterSnapshotAttribute": [
+        "AttributeName",
+        "AttributeValues"
       ]
     }
   },

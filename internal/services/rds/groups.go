@@ -2,6 +2,7 @@ package rds
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -30,15 +31,36 @@ func (s *Service) CreateDBSubnetGroup(
 		return nil, err
 	}
 
-	if s.caller == nil {
-		return nil, awserror.New("InvalidSubnet", "EC2 subnet validation is unavailable")
+	subnets, vpc, err := s.validateSubnets(ctx, in.SubnetIds)
+	if err != nil {
+		return nil, err
 	}
 
-	seen := make(map[string]bool, len(in.SubnetIds))
-	ids := make([]any, len(in.SubnetIds))
-	for i, id := range in.SubnetIds {
+	group := &api.DBSubnetGroup{
+		DBSubnetGroupName: new(name), DBSubnetGroupDescription: in.DBSubnetGroupDescription,
+		DBSubnetGroupArn: new(arn(scope, kindSubnet, name)), SubnetGroupStatus: new("Complete"),
+		VpcId: new(vpc), Subnets: subnets,
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.insert(ctx, scope, &record{Name: name, Kind: kindSubnet, Subnet: group, Tags: tags}); err != nil {
+		return nil, err
+	}
+
+	return &api.CreateDBSubnetGroupResult{DBSubnetGroup: group}, nil
+}
+
+func (s *Service) validateSubnets(ctx context.Context, subnetIDs []string) ([]api.Subnet, string, error) {
+	if s.caller == nil {
+		return nil, "", awserror.New("InvalidSubnet", "EC2 subnet validation is unavailable")
+	}
+
+	seen := make(map[string]bool, len(subnetIDs))
+	ids := make([]any, len(subnetIDs))
+	for i, id := range subnetIDs {
 		if seen[id] {
-			return nil, awserror.New("InvalidSubnet", "SubnetIds must be unique")
+			return nil, "", awserror.New("InvalidSubnet", "SubnetIds must be unique")
 		}
 
 		seen[id] = true
@@ -47,15 +69,11 @@ func (s *Service) CreateDBSubnetGroup(
 
 	out, err := s.caller.Call(ctx, "ec2", "DescribeSubnets", map[string]any{"SubnetIds": ids})
 	if err != nil {
-		return nil, awserror.New("InvalidSubnet", err.Error())
-	}
-
-	group := &api.DBSubnetGroup{
-		DBSubnetGroupName: new(name), DBSubnetGroupDescription: in.DBSubnetGroupDescription,
-		DBSubnetGroupArn: new(arn(scope, kindSubnet, name)), SubnetGroupStatus: new("Complete"),
+		return nil, "", awserror.New("InvalidSubnet", err.Error())
 	}
 
 	subnets, _ := out["Subnets"].([]any)
+	var result []api.Subnet
 	vpc := ""
 	for _, raw := range subnets {
 		subnet, ok := raw.(map[string]any)
@@ -67,28 +85,136 @@ func (s *Service) CreateDBSubnetGroup(
 		currentVpc, _ := subnet["VpcId"].(string)
 		zone, _ := subnet["AvailabilityZone"].(string)
 		if vpc != "" && currentVpc != vpc {
-			return nil, awserror.New("InvalidSubnet", "Subnets must share a VPC")
+			return nil, "", awserror.New("InvalidSubnet", "Subnets must share a VPC")
 		}
 
 		vpc = currentVpc
-		group.Subnets = append(group.Subnets, api.Subnet{
+		result = append(result, api.Subnet{
 			SubnetIdentifier: new(subnetID), SubnetStatus: new("Active"),
 			SubnetAvailabilityZone: &api.AvailabilityZone{Name: new(zone)},
 		})
 	}
 
-	if len(group.Subnets) != len(in.SubnetIds) {
-		return nil, awserror.New("InvalidSubnet", "Subnets must exist and be unique")
+	if len(result) != len(subnetIDs) {
+		return nil, "", awserror.New("InvalidSubnet", "Subnets must exist and be unique")
 	}
 
-	group.VpcId = new(vpc)
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if err := s.insert(ctx, scope, &record{Name: name, Kind: kindSubnet, Subnet: group, Tags: tags}); err != nil {
+	return result, vpc, nil
+}
+
+func (s *Service) ModifyDBSubnetGroup(
+	ctx context.Context,
+	in *api.ModifyDBSubnetGroupMessage,
+) (*api.ModifyDBSubnetGroupResult, error) {
+	scope, err := request.RegionalScope(ctx)
+	if err != nil {
 		return nil, err
 	}
 
-	return &api.CreateDBSubnetGroupResult{DBSubnetGroup: group}, nil
+	name := strings.ToLower(common.Value(in.DBSubnetGroupName))
+	if name == "default" {
+		return nil, awserror.New("InvalidDBSubnetGroupStateFault", "The default subnet group cannot be modified")
+	}
+
+	if in.DBSubnetGroupDescription != nil && *in.DBSubnetGroupDescription == "" {
+		return nil, invalid("DBSubnetGroupDescription must not be empty")
+	}
+
+	if len(in.SubnetIds) == 0 {
+		return nil, awserror.New("InvalidSubnet", "At least one subnet is required")
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	subnets, vpc, err := s.validateSubnets(ctx, in.SubnetIds)
+	if err != nil {
+		return nil, err
+	}
+
+	var group *api.DBSubnetGroup
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		r, readErr := readRecord(tx, scope, kindSubnet, name)
+		if readErr != nil {
+			return readErr
+		}
+
+		group = r.Subnet
+		if common.Value(group.VpcId) != vpc {
+			return awserror.New("InvalidSubnet", "Subnets must belong to the group's existing VPC")
+		}
+
+		removed := removedSubnet(group.Subnets, subnets)
+		group.Subnets = subnets
+		group.DBSubnetGroupDescription = common.OrElse(in.DBSubnetGroupDescription, group.DBSubnetGroupDescription)
+		if updateErr := updateSubnetInstances(tx, scope, group, removed); updateErr != nil {
+			return updateErr
+		}
+
+		if removed {
+			if checkErr := checkClusterSubnetRemoval(tx, scope, name); checkErr != nil {
+				return checkErr
+			}
+		}
+
+		return writeRecord(tx, scope, r)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.ModifyDBSubnetGroupResult{DBSubnetGroup: group}, nil
+}
+
+func removedSubnet(before, after []api.Subnet) bool {
+	ids := make(map[string]bool, len(after))
+	for _, subnet := range after {
+		ids[common.Value(subnet.SubnetIdentifier)] = true
+	}
+
+	return slices.ContainsFunc(before, func(subnet api.Subnet) bool {
+		return !ids[common.Value(subnet.SubnetIdentifier)]
+	})
+}
+
+// TinyStack tracks group membership without assigning databases to individual subnets.
+func updateSubnetInstances(tx storage.WriteTx, scope request.Scope, group *api.DBSubnetGroup, removed bool) error {
+	instances, err := storage.Records[record](tx, scope.Prefix(serviceName, kindDB))
+	if err != nil {
+		return err
+	}
+
+	for _, instance := range instances {
+		current := instance.Instance.DBSubnetGroup
+		if current == nil || common.Value(current.DBSubnetGroupName) != common.Value(group.DBSubnetGroupName) {
+			continue
+		}
+
+		if removed {
+			return awserror.New("SubnetAlreadyInUse", "A DB instance uses the subnet group")
+		}
+
+		instance.Instance.DBSubnetGroup = group
+		if err := writeRecord(tx, scope, instance); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func checkClusterSubnetRemoval(tx storage.ReadTx, scope request.Scope, name string) error {
+	clusters, err := storage.Records[record](tx, scope.Prefix(serviceName, kindCluster))
+	if err != nil {
+		return err
+	}
+
+	for _, r := range clusters {
+		if common.Value(r.Cluster.DBSubnetGroup) == name {
+			return awserror.New("SubnetAlreadyInUse", "A DB cluster uses the subnet group")
+		}
+	}
+
+	return nil
 }
 
 func (s *Service) DescribeDBSubnetGroups(

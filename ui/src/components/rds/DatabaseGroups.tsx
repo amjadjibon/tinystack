@@ -99,6 +99,21 @@ export function DatabaseGroups({
 									disabled={!enabled || !selectedName}
 									onClick={() => {
 										setName(selectedName ?? "");
+										setDescription(selected?.DBSubnetGroupDescription ?? "");
+										setIds(
+											selected?.Subnets?.map((s) => s.SubnetIdentifier).join(
+												", ",
+											) ?? "",
+										);
+										setDialog("Modify");
+									}}
+								>
+									Modify
+								</Button>
+								<Button
+									disabled={!enabled || !selectedName}
+									onClick={() => {
+										setName(selectedName ?? "");
 										setDialog("Delete");
 									}}
 								>
@@ -182,13 +197,15 @@ export function DatabaseGroups({
 							);
 						return [
 							{
-								label: "Create group",
+								label: `${dialog} group`,
 								run: () =>
-									rdsCall(scope, "CreateDBSubnetGroup", {
+									rdsCall(scope, `${dialog}DBSubnetGroup`, {
 										[nameKey]: name,
 										DBSubnetGroupDescription: description,
 										SubnetIds: subnetIDs,
-										Tags: tagList(stringMap(tags, "Tags")),
+										...(dialog === "Create"
+											? { Tags: tagList(stringMap(tags, "Tags")) }
+											: {}),
 									}),
 							},
 						];
@@ -200,20 +217,26 @@ export function DatabaseGroups({
 						</Alert>
 					) : (
 						<SpaceBetween size="m">
-							{field("Group name", name, setName)}
+							{dialog === "Create" ? (
+								field("Group name", name, setName)
+							) : (
+								<Box>{name}</Box>
+							)}
 							{field("Description", description, setDescription)}
 							{field("Subnet IDs (comma separated)", ids, setIds)}
 							<Alert type="info">
 								Use existing EC2 subnets in the selected account and Region, all
 								in one VPC.
 							</Alert>
-							<FormField label="Tags (JSON)">
-								<Textarea
-									ariaLabel="Group tags"
-									value={tags}
-									onChange={({ detail }) => setTags(detail.value)}
-								/>
-							</FormField>
+							{dialog === "Create" && (
+								<FormField label="Tags (JSON)">
+									<Textarea
+										ariaLabel="Group tags"
+										value={tags}
+										onChange={({ detail }) => setTags(detail.value)}
+									/>
+								</FormField>
+							)}
 						</SpaceBetween>
 					)}
 				</ActionDialog>

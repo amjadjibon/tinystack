@@ -150,20 +150,19 @@ with its engine, optional version (blank selects the service default), credentia
 subnet group, retention and deletion protection. Select a cluster to modify retention, protection or its
 password, stop/start it, edit tags or toggle the Aurora Data API. Create member instances from the action
 menu; member links open instance details. Delete members and disable protection before deleting a cluster.
-DocumentDB and Neptune stop/start require Docker. Aurora deletion can keep a final snapshot; DocumentDB and Neptune require skipping it.
+DocumentDB and Neptune stop/start require Docker. Cluster deletion can keep a final snapshot in records
+mode and for Aurora and DocumentDB in Docker mode. Docker Neptune requires skipping the final snapshot.
 
-The **Snapshots** section separates instance and cluster snapshots. Create snapshots from source identifiers,
-then select an available snapshot to delete, copy or restore it into a new instance. Copy and restore apply
-to instance snapshots only; restore accepts optional class, storage and group overrides. Both snapshot types
-support tag editing. Cluster snapshots support Aurora only. Snapshots and restored databases are metadata
-in the default records runtime; Docker mode copies database volumes.
+The **Snapshots** section separates instance and cluster snapshots. Create a snapshot from a source
+identifier, then select it when available to copy, delete or restore it. Instance restore accepts class,
+storage and group overrides. Cluster restore accepts subnet and parameter group overrides and creates
+an empty cluster membership list. Both snapshot types support tag editing and restore access metadata.
+Records mode captures metadata. Docker copies Aurora, DocumentDB and standalone instance volumes.
 
-`ModifyDBSubnetGroup`, `ModifyDBParameterGroup`, `DescribeDBParameters` and
-`RestoreDBClusterFromSnapshot` are not implemented and are not exposed by the console.
-
-The **Subnet groups** and **Parameter groups** sections list, create and delete groups. Subnet groups
-require existing EC2 subnets in one VPC; parameter families match the supported engine versions. Groups
-in use cannot be deleted. Parameter settings, class limits and storage limits are not applied to SQL engines.
+The **Subnet groups** section lists, creates, modifies and deletes groups. Use existing EC2 subnets in the
+group's VPC. A group in use allows description changes and subnet additions. The **Parameter groups**
+section lets you create, copy and delete groups, edit parameter values and reset values to engine defaults.
+Groups in use cannot be deleted.
 
 SQL connections require `rds.instances: docker` and a working local Docker daemon; the default records
 mode has no SQL listener. The health endpoint does not expose RDS runtime availability, so the console

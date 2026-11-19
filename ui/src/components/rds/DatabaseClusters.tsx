@@ -148,14 +148,10 @@ export function DatabaseClusters({
 				type: "boolean",
 				value: true,
 			},
-			...(aurora
-				? [
-						{
-							key: "FinalDBSnapshotIdentifier",
-							label: "Final snapshot identifier (required unless skipping)",
-						},
-					]
-				: []),
+			{
+				key: "FinalDBSnapshotIdentifier",
+				label: "Final snapshot identifier (required unless skipping)",
+			},
 		];
 	if (action === "Member")
 		fields = [
@@ -192,9 +188,9 @@ export function DatabaseClusters({
 	return (
 		<SpaceBetween size="l">
 			<Alert type="info">
-				{runtimeNote} DocumentDB and Neptune require Docker for stop/start and
-				require skipping the final snapshot. Delete all members and disable
-				deletion protection before deleting a cluster.
+				{runtimeNote} DocumentDB and Neptune require Docker for stop/start.
+				Docker Neptune requires skipping the final snapshot. Delete all members
+				and disable deletion protection before deleting a cluster.
 			</Alert>
 			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Table

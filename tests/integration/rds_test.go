@@ -457,6 +457,26 @@ func TestRDSCloudFormation(t *testing.T) {
 		t.Fatalf("outputs: %+v", stack.Outputs)
 	}
 
+	template = strings.Replace(template, `"DBSubnetGroupDescription":"test"`, `"DBSubnetGroupDescription":"updated"`, 1)
+	if _, err := c.UpdateStack(
+		ctx,
+		&cfn.UpdateStackInput{StackName: new("rds-stack"), TemplateBody: new(template)},
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	wantStatus(ctx, t, c, "rds-stack", cfntypes.StackStatusUpdateComplete)
+	groups, describeErr := rdsClient(
+		s,
+		"test",
+		"us-east-1",
+	).DescribeDBSubnetGroups(ctx, &rds.DescribeDBSubnetGroupsInput{
+		DBSubnetGroupName: new("cfn-subnets"),
+	})
+	if describeErr != nil || aws.ToString(groups.DBSubnetGroups[0].DBSubnetGroupDescription) != "updated" {
+		t.Fatal(groups, describeErr)
+	}
+
 	if _, err := c.DeleteStack(ctx, &cfn.DeleteStackInput{StackName: new("rds-stack")}); err != nil {
 		t.Fatal(err)
 	}

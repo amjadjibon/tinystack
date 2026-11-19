@@ -9,6 +9,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/rds"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/tagging"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -29,8 +30,10 @@ func (s *Service) createClusterSnapshot(
 	id string,
 	tags []api.Tag,
 ) (*record, error) {
-	if !aurora(common.Value(source.Cluster.Engine)) {
-		return nil, invalid("Cluster snapshots require Aurora")
+	c := source.Cluster
+	engine := common.Value(c.Engine)
+	if s.runtime != nil && engine == EngineNeptune {
+		return nil, awserror.New("InvalidDBClusterStateFault", "Docker Neptune has no durable graph data to snapshot")
 	}
 
 	id = strings.ToLower(id)
@@ -48,61 +51,50 @@ func (s *Service) createClusterSnapshot(
 		return nil, err
 	}
 
-	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		_, found, e := storage.Read[record](tx, scope.Key(serviceName, kindClusterSnapshot, id))
-		if e != nil {
-			return e
-		}
-
-		if found {
-			return awserror.New("DBClusterSnapshotAlreadyExistsFault", "Snapshot already exists")
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	r := common.Clone(source)
 	r.Name, r.Kind, r.Tags, r.Container, r.Volume = id, kindClusterSnapshot, parsed, "", ""
-	c := source.Cluster
-	_, port, _ := clusterEngine(common.Value(c.Engine), common.Value(c.EngineVersion))
+	port := common.Value(c.Port)
+	if s.runtime != nil {
+		_, port, _ = clusterEngine(engine, common.Value(c.EngineVersion))
+	}
+
+	var vpc *string
+	if c.DBSubnetGroup != nil {
+		err := s.store.View(ctx, func(tx storage.ReadTx) error {
+			group, err := readRecord(tx, scope, kindSubnet, *c.DBSubnetGroup)
+			if err != nil {
+				return err
+			}
+
+			vpc = group.Subnet.VpcId
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	now := time.Now().UTC()
+	r.Since = now
 	r.ClusterSnapshot = &api.DBClusterSnapshot{
 		DBClusterSnapshotIdentifier: new(id),
 		DBClusterIdentifier:         c.DBClusterIdentifier,
-		SnapshotCreateTime: new(
-			now,
-		),
-		ClusterCreateTime: c.ClusterCreateTime,
-		Engine:            c.Engine,
-		EngineVersion:     c.EngineVersion,
-		MasterUsername:    c.MasterUsername,
-		Port:              new(port),
-		Status:            new(creating),
-		PercentProgress:   new(int64(0)),
-		DBClusterSnapshotArn: new(
-			arn(scope, kindClusterSnapshot, id),
-		),
-		SnapshotType:     new("manual"),
-		StorageEncrypted: c.StorageEncrypted,
+		SnapshotCreateTime:          new(now),
+		ClusterCreateTime:           c.ClusterCreateTime,
+		Engine:                      c.Engine,
+		EngineVersion:               c.EngineVersion,
+		MasterUsername:              c.MasterUsername,
+		Port:                        new(port),
+		Status:                      new(creating),
+		PercentProgress:             new(int64(0)),
+		DBClusterSnapshotArn:        new(arn(scope, kindClusterSnapshot, id)),
+		SnapshotType:                new(manualSnapshot),
+		StorageEncrypted:            c.StorageEncrypted,
+		KmsKeyId:                    c.KmsKeyId,
+		VpcId:                       vpc,
 	}
 
-	if s.runtime != nil {
-		if err := s.runtime.Copy(ctx, s.clusterSpec(ctx, scope, source), s.clusterSpec(ctx, scope, r)); err != nil {
-			return nil, err
-		}
-
-		r.Volume = s.clusterSpec(ctx, scope, r).Volume
-	}
-
-	r.ReadyAt = time.Now().Add(snapshotDelay)
-	if err := s.insert(ctx, scope, r); err != nil {
-		if s.runtime != nil {
-			_ = s.runtime.Remove(ctx, s.clusterSpec(ctx, scope, r), true)
-		}
-
+	if err := s.saveSnapshot(ctx, scope, source, r); err != nil {
 		return nil, err
 	}
 
@@ -142,19 +134,28 @@ func (s *Service) DescribeDBClusterSnapshots(
 		return nil, err
 	}
 
-	if in.SnapshotType != nil && *in.SnapshotType != "manual" {
+	if in.SnapshotType != nil && *in.SnapshotType != manualSnapshot {
 		return nil, invalid("Only manual cluster snapshots are supported")
 	}
 
-	records, err := s.list(ctx, scope, kindClusterSnapshot, common.Value(in.DBClusterSnapshotIdentifier))
+	id, err := resourceID(scope, kindClusterSnapshot, common.Value(in.DBClusterSnapshotIdentifier))
+	if err != nil {
+		return nil, err
+	}
+
+	sourceID, err := resourceID(scope, kindCluster, common.Value(in.DBClusterIdentifier))
+	if err != nil {
+		return nil, err
+	}
+
+	records, err := s.list(ctx, scope, kindClusterSnapshot, id)
 	if err != nil {
 		return nil, err
 	}
 
 	var selected []*record
 	for _, r := range records {
-		if in.DBClusterIdentifier == nil ||
-			common.Value(r.ClusterSnapshot.DBClusterIdentifier) == *in.DBClusterIdentifier {
+		if sourceID == "" || common.Value(r.ClusterSnapshot.DBClusterIdentifier) == sourceID {
 			selected = append(selected, r)
 		}
 	}
@@ -183,18 +184,13 @@ func (s *Service) DeleteDBClusterSnapshot(
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	var r *record
-	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		var e error
-		r, e = readRecord(tx, scope, kindClusterSnapshot, common.Value(in.DBClusterSnapshotIdentifier))
-		return e
-	})
+	r, err := s.snapshotRecord(ctx, scope, kindClusterSnapshot, common.Value(in.DBClusterSnapshotIdentifier))
 	if err != nil {
 		return nil, err
 	}
 
-	if common.Value(clusterSnapshot(r).Status) != available {
-		return nil, awserror.New("InvalidDBClusterSnapshotStateFault", "Snapshot is not available")
+	if err := clusterSnapshotReady(r); err != nil {
+		return nil, err
 	}
 
 	if s.runtime != nil && r.Volume != "" {
@@ -210,5 +206,67 @@ func (s *Service) DeleteDBClusterSnapshot(
 		return nil, err
 	}
 
-	return &api.DeleteDBClusterSnapshotResult{DBClusterSnapshot: clusterSnapshot(r)}, nil
+	out := clusterSnapshot(r)
+	out.Status = new("deleted")
+	return &api.DeleteDBClusterSnapshotResult{DBClusterSnapshot: out}, nil
+}
+
+func clusterSnapshotReady(r *record) error {
+	if common.Value(clusterSnapshot(r).Status) != available {
+		return snapshotStateError(kindClusterSnapshot, "Snapshot is not available")
+	}
+
+	return nil
+}
+
+func (s *Service) CopyDBClusterSnapshot(
+	ctx context.Context,
+	in *api.CopyDBClusterSnapshotMessage,
+) (*api.CopyDBClusterSnapshotResult, error) {
+	scope, err := request.RegionalScope(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	source, err := s.snapshotRecord(ctx, scope, kindClusterSnapshot, common.Value(in.SourceDBClusterSnapshotIdentifier))
+	if err != nil {
+		return nil, err
+	}
+
+	if readyErr := clusterSnapshotReady(source); readyErr != nil {
+		return nil, readyErr
+	}
+
+	id := strings.ToLower(common.Value(in.TargetDBClusterSnapshotIdentifier))
+	if !validName(id, 255) {
+		return nil, invalid("Invalid TargetDBClusterSnapshotIdentifier")
+	}
+
+	tags, err := parseTags(in.Tags)
+	if err != nil {
+		return nil, err
+	}
+
+	if common.Value(in.CopyTags) {
+		tags, err = tagging.Merge(source.Tags, tags)
+		if err != nil {
+			return nil, invalid(err.Error())
+		}
+	}
+
+	r := common.Clone(source)
+	r.Name, r.Tags, r.Volume, r.Since = id, tags, "", time.Now().UTC()
+	r.RestoreAccounts = nil
+	snap := r.ClusterSnapshot
+	snap.DBClusterSnapshotIdentifier, snap.DBClusterSnapshotArn = new(id), new(arn(scope, kindClusterSnapshot, id))
+	snap.SourceDBClusterSnapshotArn = source.ClusterSnapshot.DBClusterSnapshotArn
+	snap.SnapshotCreateTime = new(r.Since)
+	snap.Status, snap.PercentProgress = new(creating), new(int64(0))
+	if err := s.saveSnapshot(ctx, scope, source, r); err != nil {
+		return nil, err
+	}
+
+	return &api.CopyDBClusterSnapshotResult{DBClusterSnapshot: clusterSnapshot(r)}, nil
 }

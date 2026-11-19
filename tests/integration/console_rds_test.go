@@ -65,6 +65,10 @@ func TestConsoleRDSLifecycle(t *testing.T) {
 			"SubnetIds":                []any{subnet},
 		},
 	)
+	call("ModifyDBSubnetGroup", map[string]any{
+		"DBSubnetGroupName": "console-subnets", "DBSubnetGroupDescription": "updated",
+		"SubnetIds": []any{subnet},
+	})
 	if len(call("DescribeDBSubnetGroups", map[string]any{})["DBSubnetGroups"].([]any)) != 1 {
 		t.Fatal("subnet group missing")
 	}
@@ -149,8 +153,7 @@ func TestConsoleRDSLifecycle(t *testing.T) {
 	}
 
 	for _, op := range []string{
-		"DescribeDBEngineVersions", "DescribeEngineDefaultParameters", "ModifyDBSubnetGroup",
-		"DescribeEngineDefaultClusterParameters", "RestoreDBClusterFromSnapshot",
+		"DescribeDBEngineVersions", "DescribeEngineDefaultParameters", "DescribeEngineDefaultClusterParameters",
 	} {
 		response := consoleResponse(
 			t,
@@ -323,6 +326,27 @@ func TestConsoleRDSClusters(t *testing.T) {
 				)
 				return out["DBClusterSnapshots"].([]any)[0].(map[string]any)["Status"].(string)
 			})
+			attrs := call("ModifyDBClusterSnapshotAttribute", map[string]any{
+				"DBClusterSnapshotIdentifier": id + "-snapshot", "AttributeName": "restore",
+				"ValuesToAdd": []string{"123456789012"},
+			})["DBClusterSnapshotAttributesResult"].(map[string]any)
+			if len(attrs["DBClusterSnapshotAttributes"].([]any)) != 1 {
+				t.Fatal(attrs)
+			}
+
+			call("CopyDBClusterSnapshot", map[string]any{
+				"SourceDBClusterSnapshotIdentifier": id + "-snapshot",
+				"TargetDBClusterSnapshotIdentifier": id + "-copy",
+			})
+			waitConsoleRDS(t, func() string {
+				out := call("DescribeDBClusterSnapshots", map[string]any{"DBClusterSnapshotIdentifier": id + "-copy"})
+				return out["DBClusterSnapshots"].([]any)[0].(map[string]any)["Status"].(string)
+			})
+			call("RestoreDBClusterFromSnapshot", map[string]any{
+				"DBClusterIdentifier": id + "-restored", "SnapshotIdentifier": id + "-copy", "Engine": engine,
+			})
+			call("DeleteDBCluster", map[string]any{"DBClusterIdentifier": id + "-restored", "SkipFinalSnapshot": true})
+			call("DeleteDBClusterSnapshot", map[string]any{"DBClusterSnapshotIdentifier": id + "-copy"})
 			call("DeleteDBClusterSnapshot", map[string]any{"DBClusterSnapshotIdentifier": id + "-snapshot"})
 		}
 

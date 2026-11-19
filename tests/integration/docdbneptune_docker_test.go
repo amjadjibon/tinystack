@@ -114,10 +114,6 @@ func TestRDSDockerDocumentDB(t *testing.T) {
 	r := rdsClient(s, "test", "us-east-1")
 	cluster := waitAurora(t, ctx, r, id)
 
-	_, err = r.CreateDBClusterSnapshot(ctx, &rds.CreateDBClusterSnapshotInput{
-		DBClusterIdentifier: new(id), DBClusterSnapshotIdentifier: new(id + "-snapshot"),
-	})
-	code(t, err, "InvalidParameterValue")
 	_, err = c.ModifyDBCluster(ctx, &docdb.ModifyDBClusterInput{
 		DBClusterIdentifier: new(id), ApplyImmediately: new(false),
 	})
@@ -176,7 +172,56 @@ func TestRDSDockerDocumentDB(t *testing.T) {
 
 	password = "changed-password"
 	query("if(db.documents.countDocuments({_id:1}) !== 1) quit(1)")
+
+	// Snapshot a stopped source after its container has been removed; retain the named volume.
 	_, err = c.StopDBCluster(ctx, &docdb.StopDBClusterInput{DBClusterIdentifier: new(id)})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	backup, copied, restored := id+"-snapshot", id+"-copy", id+"-restored"
+	if _, err = r.CreateDBClusterSnapshot(ctx, &rds.CreateDBClusterSnapshotInput{
+		DBClusterIdentifier: new(id), DBClusterSnapshotIdentifier: new(backup),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	waitRDSClusterSnapshot(t, r, backup)
+	if _, err = r.CopyDBClusterSnapshot(ctx, &rds.CopyDBClusterSnapshotInput{
+		SourceDBClusterSnapshotIdentifier: new(backup), TargetDBClusterSnapshotIdentifier: new(copied),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		for _, snapshotID := range []string{backup, copied} {
+			_, _ = r.DeleteDBClusterSnapshot(ctx, &rds.DeleteDBClusterSnapshotInput{
+				DBClusterSnapshotIdentifier: new(snapshotID),
+			})
+		}
+	}()
+
+	waitRDSClusterSnapshot(t, r, copied)
+	if _, err = r.RestoreDBClusterFromSnapshot(ctx, &rds.RestoreDBClusterFromSnapshotInput{
+		DBClusterIdentifier: new(restored), SnapshotIdentifier: new(copied), Engine: new("docdb"),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		_, _ = r.DeleteDBCluster(ctx, &rds.DeleteDBClusterInput{
+			DBClusterIdentifier: new(restored), SkipFinalSnapshot: new(true),
+		})
+	}()
+	restoredCluster := waitAurora(t, ctx, r, restored)
+	restoredContainer, err := clusterContainer(ctx, aws.ToString(restoredCluster.DBClusterArn))
+	if err != nil || restoredContainer == "" {
+		t.Fatal(restoredContainer, err)
+	}
+
+	_, err = dockercli.Run(ctx, nil, "exec", restoredContainer, "mongosh", "--quiet", "--username", "master",
+		"--password", password, "--authenticationDatabase", "admin", "test",
+		"--eval", "if(db.documents.findOne({_id:1}).value !== 'durable') quit(1)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -261,6 +306,10 @@ func TestRDSDockerNeptune(t *testing.T) {
 			}
 
 			cluster := waitAurora(t, ctx, rdsClient(s, "test", "us-east-1"), id)
+			_, err = c.CreateDBClusterSnapshot(ctx, &neptune.CreateDBClusterSnapshotInput{
+				DBClusterIdentifier: new(id), DBClusterSnapshotIdentifier: new(id + "-snapshot"),
+			})
+			code(t, err, "InvalidDBClusterStateFault")
 			container, err := clusterContainer(ctx, aws.ToString(cluster.DBClusterArn))
 			if err != nil || container == "" {
 				t.Fatal(container, err)

@@ -14,7 +14,10 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-const snapshotDelay = 250 * time.Millisecond
+const (
+	snapshotDelay  = 250 * time.Millisecond
+	manualSnapshot = "manual"
+)
 
 func snapshot(r *record) *api.DBSnapshot {
 	out := common.Clone(r.Snapshot)
@@ -41,8 +44,8 @@ func resourceID(scope request.Scope, kind, id string) (string, error) {
 	return strings.ToLower(id), nil
 }
 
-func (s *Service) snapshotRecord(ctx context.Context, scope request.Scope, id string) (*record, error) {
-	id, err := resourceID(scope, kindSnapshot, id)
+func (s *Service) snapshotRecord(ctx context.Context, scope request.Scope, kind, id string) (*record, error) {
+	id, err := resourceID(scope, kind, id)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +53,7 @@ func (s *Service) snapshotRecord(ctx context.Context, scope request.Scope, id st
 	var r *record
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var e error
-		r, e = readRecord(tx, scope, kindSnapshot, id)
+		r, e = readRecord(tx, scope, kind, id)
 		return e
 	})
 	return r, err
@@ -97,7 +100,7 @@ func (s *Service) createSnapshot(
 	_, _, port, _ := Engine(common.Value(db.Engine), common.Value(db.EngineVersion))
 	r.Snapshot = &api.DBSnapshot{
 		DBSnapshotIdentifier: new(id), DBInstanceIdentifier: db.DBInstanceIdentifier,
-		DBSnapshotArn: new(arn(scope, kindSnapshot, id)), SnapshotType: new("manual"),
+		DBSnapshotArn: new(arn(scope, kindSnapshot, id)), SnapshotType: new(manualSnapshot),
 		Status: new(creating), PercentProgress: new(int64(0)), Engine: db.Engine, EngineVersion: db.EngineVersion,
 		AllocatedStorage: db.AllocatedStorage, MasterUsername: db.MasterUsername, Port: new(port),
 		InstanceCreateTime: db.InstanceCreateTime, SnapshotCreateTime: new(now), OriginalSnapshotCreateTime: new(now),
@@ -123,13 +126,13 @@ func (s *Service) createSnapshot(
 // saveSnapshot checks duplicates before any I/O and removes a failed copy's owned volume.
 func (s *Service) saveSnapshot(ctx context.Context, scope request.Scope, source, target *record) error {
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		_, found, e := storage.Read[record](tx, scope.Key(serviceName, kindSnapshot, target.Name))
+		_, found, e := storage.Read[record](tx, scope.Key(serviceName, target.Kind, target.Name))
 		if e != nil {
 			return e
 		}
 
 		if found {
-			return resourceError(kindSnapshot, "AlreadyExists", target.Name)
+			return resourceError(target.Kind, "AlreadyExists", target.Name)
 		}
 
 		return nil
@@ -139,15 +142,23 @@ func (s *Service) saveSnapshot(ctx context.Context, scope request.Scope, source,
 	}
 
 	if s.runtime != nil {
-		if source.Kind == kindSnapshot && source.Volume == "" {
-			return awserror.New("InvalidDBSnapshotStateFault", "Records-only snapshots have no Docker data volume")
+		if source.Volume == "" && (source.Kind == kindSnapshot || source.Kind == kindClusterSnapshot) {
+			return snapshotStateError(source.Kind, "Records-only snapshots have no Docker data volume")
 		}
 
-		if err := s.runtime.Copy(ctx, s.dataSpec(ctx, scope, source), s.dataSpec(ctx, scope, target)); err != nil {
+		sourceSpec := s.dataSpec(ctx, scope, source)
+		// Stop removes the container but retains the volume.
+		if (source.Kind == kindCluster && common.Value(source.Cluster.Status) == stopped) ||
+			(source.Kind == kindDB && common.Value(source.Instance.DBInstanceStatus) == stopped) {
+			sourceSpec.Name = ""
+		}
+
+		targetSpec := s.dataSpec(ctx, scope, target)
+		if err := s.runtime.Copy(ctx, sourceSpec, targetSpec); err != nil {
 			return err
 		}
 
-		target.Volume = s.dataSpec(ctx, scope, target).Volume
+		target.Volume = targetSpec.Volume
 	}
 
 	target.ReadyAt = time.Now().UTC().Add(snapshotDelay)
@@ -204,7 +215,7 @@ func (s *Service) DescribeDBSnapshots(
 	}
 
 	typ := common.Value(in.SnapshotType)
-	if typ != "" && typ != "manual" && typ != "automated" {
+	if typ != "" && typ != manualSnapshot && typ != "automated" {
 		return nil, invalid("Supported SnapshotType values are manual and automated")
 	}
 
@@ -298,7 +309,7 @@ func (s *Service) DeleteDBSnapshot(
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	r, err := s.snapshotRecord(ctx, scope, common.Value(in.DBSnapshotIdentifier))
+	r, err := s.snapshotRecord(ctx, scope, kindSnapshot, common.Value(in.DBSnapshotIdentifier))
 	if err != nil {
 		return nil, err
 	}
@@ -336,7 +347,7 @@ func (s *Service) CopyDBSnapshot(
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	source, err := s.snapshotRecord(ctx, scope, common.Value(in.SourceDBSnapshotIdentifier))
+	source, err := s.snapshotRecord(ctx, scope, kindSnapshot, common.Value(in.SourceDBSnapshotIdentifier))
 	if err != nil {
 		return nil, err
 	}
@@ -364,6 +375,7 @@ func (s *Service) CopyDBSnapshot(
 
 	r := common.Clone(source)
 	r.Name, r.Tags, r.Volume, r.Since = id, tags, "", time.Now().UTC()
+	r.RestoreAccounts = nil
 	r.Snapshot.DBSnapshotIdentifier, r.Snapshot.DBSnapshotArn = new(id), new(arn(scope, kindSnapshot, id))
 	r.Snapshot.SourceDBSnapshotIdentifier = source.Snapshot.DBSnapshotArn
 	r.Snapshot.SourceRegion = new(scope.Region)
@@ -386,7 +398,7 @@ func (s *Service) RestoreDBInstanceFromDBSnapshot(
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	source, err := s.snapshotRecord(ctx, scope, common.Value(in.DBSnapshotIdentifier))
+	source, err := s.snapshotRecord(ctx, scope, kindSnapshot, common.Value(in.DBSnapshotIdentifier))
 	if err != nil {
 		return nil, err
 	}
@@ -412,7 +424,7 @@ func (s *Service) RestoreDBInstanceFromDBSnapshot(
 		r.Tags = common.CloneTags(source.SourceTags)
 	}
 
-	r.SourceTags = nil
+	r.SourceTags, r.RestoreAccounts = nil, nil
 
 	db := r.Instance
 	db.DBInstanceIdentifier, db.DBInstanceArn = new(id), new(arn(scope, kindDB, id))

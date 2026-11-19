@@ -13,7 +13,7 @@ Manage RDS instances, Aurora, DocumentDB and Neptune clusters with optional Dock
 | API version | `2014-10-31` |
 | Scope | Account and region |
 | Execution | Records / optional Docker |
-| Selected operations | 45 of 164 in the pinned model |
+| Selected operations | 52 of 164 in the pinned model |
 
 ## Implemented behavior
 
@@ -35,19 +35,19 @@ See the [implemented feature catalogue](catalogue.md#rds-documentdb-and-neptune)
 - CloudFormation endpoint attributes do not refresh when a later container recreation changes the host port.
 - Verify mode exposes database metadata inventory; RDS management and full group metadata require a signed root console session or signed AWS CLI/SDK requests.
 - DocumentDB uses community MongoDB, not the proprietary DocumentDB engine: TLS is not enabled despite AWS cluster parameter defaults; use tls=false. Replicas, failover and AWS backup execution are unsupported.
-- DocumentDB/Neptune engine version changes, cluster snapshots, global clusters, DocumentDB Elastic and input members outside the profile fail explicitly.
+- DocumentDB and Neptune engine version changes, global clusters, DocumentDB Elastic and input members outside the profile fail explicitly.
 - DocumentDB change_stream_log_retention_duration, default_collection_compression and planner_version, and Neptune lab mode, ML, autoscaling and slow-query threshold parameters, are not catalogued and fail explicitly; the neptune1 family (engines before 1.2) is unsupported. Docker mode never enables TLS even though the DocumentDB default is tls=enabled, and Gremlin Server keeps the image's evaluationTimeout rather than the Neptune default of 120000 ms unless neptune_query_timeout is set.
 - Cluster subnet groups and security groups must exist in the request scope and share a VPC when supplied; omitted networking does not provision default networking or enforce AWS Availability Zone coverage.
 - Cluster members accept identifier, class, matching engine, parent cluster and tags; inherited database settings and member start/stop/reboot requests fail explicitly; class changes and ApplyImmediately are metadata only.
-- DocumentDB/Neptune snapshots remain explicitly unsupported, including Docker mode: paused-volume snapshots are not exposed for either engine. Deletion requires SkipFinalSnapshot=true; CloudFormation skips snapshots. Docker rejects deferred modifications and engine port changes; records mode still applies metadata synchronously.
+- Docker Neptune snapshot creation, copy and restore are unsupported because Gremlin graph data lives in memory. Set SkipFinalSnapshot=true to delete a Docker Neptune cluster. CloudFormation skips final cluster snapshots. Docker rejects deferred modifications and engine port changes.
 - Encryption and KMS keys are metadata only and do not provision KMS resources; DocumentDB password validation supports 8–100 printable ASCII characters except slash, double quote and at sign; passwords are not returned; records mode discards them and Docker mode retains them in local storage.
-- Automatic backups and scheduled automated snapshots are not produced; SnapshotType=automated returns an empty list. Cross-account/Region snapshots, shared/public/awsbackup selection, snapshot attributes/sharing, encrypted snapshot copies, cluster snapshot copy/restore and snapshot quotas are unsupported.
+- Automated backups and scheduled snapshots are unsupported. SnapshotType=automated returns an empty list for instances and is unsupported for clusters. Snapshot sharing records restore access metadata only. Cross-account or cross-Region copies and restores, shared/public/awsbackup snapshot selection, KMS key changes during copy or restore and snapshot count quotas are unsupported.
 - Snapshot data copy is synchronous and crash-consistent, rather than an AWS storage-level online snapshot: the source database has an I/O interruption while paused for the filesystem copy, and the restored engine performs crash recovery. Snapshot metadata transitions to available after a short simulated delay; progress is 0 or 100.
-- Snapshots created in records mode have no SQL data volume and cannot be copied/restored in Docker mode; restore supports only the whitelisted settings, does not reduce allocated storage, and uses default parameter groups unless explicitly overridden.
+- Snapshots created in records mode have no engine data volume and cannot be copied or restored in Docker mode. Restores use default parameter groups unless overridden. Instance restore cannot reduce allocated storage. Cluster restore requires a cluster snapshot and its original engine and version, leaves DB subnet and VPC security groups unset unless supplied, and creates a cluster with no member instances.
 - Aurora runs community PostgreSQL/MySQL, not the proprietary Aurora storage engine; readers and writers share one process, scaling is metadata only, versions map to floating community image tags, and failover, replicas, global clusters and Aurora Serverless v1 are unsupported.
 - Aurora port changes, deferred modifications and EngineVersion changes fail explicitly; managed secret rotation and KMS customization are unsupported.
 - Parameter catalogs cover a portable subset, not every AWS engine parameter or extension; PostgreSQL changes and resets require reboot in Docker mode, while Aurora parameter changes require cluster stop/start; records mode stores values without running SQL.
-- ModifyDBSubnetGroup and RestoreDBClusterFromSnapshot remain unsupported; parameter group quotas are not enforced and copies cannot cross accounts or Regions.
+- Parameter group quotas are not enforced and copies cannot cross accounts or Regions.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -63,6 +63,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | --- | --- |
 | `AddTagsToResource` | `POST /` |
 | `CopyDBClusterParameterGroup` | `POST /` |
+| `CopyDBClusterSnapshot` | `POST /` |
 | `CopyDBParameterGroup` | `POST /` |
 | `CopyDBSnapshot` | `POST /` |
 | `CreateDBCluster` | `POST /` |
@@ -81,11 +82,13 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `DeleteDBSubnetGroup` | `POST /` |
 | `DescribeDBClusterParameterGroups` | `POST /` |
 | `DescribeDBClusterParameters` | `POST /` |
+| `DescribeDBClusterSnapshotAttributes` | `POST /` |
 | `DescribeDBClusterSnapshots` | `POST /` |
 | `DescribeDBClusters` | `POST /` |
 | `DescribeDBInstances` | `POST /` |
 | `DescribeDBParameterGroups` | `POST /` |
 | `DescribeDBParameters` | `POST /` |
+| `DescribeDBSnapshotAttributes` | `POST /` |
 | `DescribeDBSnapshots` | `POST /` |
 | `DescribeDBSubnetGroups` | `POST /` |
 | `DescribeEngineDefaultClusterParameters` | `POST /` |
@@ -95,12 +98,16 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `ListTagsForResource` | `POST /` |
 | `ModifyDBCluster` | `POST /` |
 | `ModifyDBClusterParameterGroup` | `POST /` |
+| `ModifyDBClusterSnapshotAttribute` | `POST /` |
 | `ModifyDBInstance` | `POST /` |
 | `ModifyDBParameterGroup` | `POST /` |
+| `ModifyDBSnapshotAttribute` | `POST /` |
+| `ModifyDBSubnetGroup` | `POST /` |
 | `RebootDBInstance` | `POST /` |
 | `RemoveTagsFromResource` | `POST /` |
 | `ResetDBClusterParameterGroup` | `POST /` |
 | `ResetDBParameterGroup` | `POST /` |
+| `RestoreDBClusterFromSnapshot` | `POST /` |
 | `RestoreDBInstanceFromDBSnapshot` | `POST /` |
 | `StartDBCluster` | `POST /` |
 | `StartDBInstance` | `POST /` |
@@ -109,7 +116,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "119 modeled operations outside the implementation"
+??? info "112 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -120,7 +127,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `AuthorizeDBSecurityGroupIngress`
     - `BacktrackDBCluster`
     - `CancelExportTask`
-    - `CopyDBClusterSnapshot`
     - `CopyOptionGroup`
     - `CreateBlueGreenDeployment`
     - `CreateCustomDBEngineVersion`
@@ -156,7 +162,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DescribeDBClusterAutomatedBackups`
     - `DescribeDBClusterBacktracks`
     - `DescribeDBClusterEndpoints`
-    - `DescribeDBClusterSnapshotAttributes`
     - `DescribeDBEngineVersions`
     - `DescribeDBInstanceAutomatedBackups`
     - `DescribeDBLogFiles`
@@ -168,7 +173,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DescribeDBRecommendations`
     - `DescribeDBSecurityGroups`
     - `DescribeDBShardGroups`
-    - `DescribeDBSnapshotAttributes`
     - `DescribeDBSnapshotTenantDatabases`
     - `DescribeEventCategories`
     - `DescribeEventSubscriptions`
@@ -194,15 +198,12 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ModifyCurrentDBClusterCapacity`
     - `ModifyCustomDBEngineVersion`
     - `ModifyDBClusterEndpoint`
-    - `ModifyDBClusterSnapshotAttribute`
     - `ModifyDBProxy`
     - `ModifyDBProxyEndpoint`
     - `ModifyDBProxyTargetGroup`
     - `ModifyDBRecommendation`
     - `ModifyDBShardGroup`
     - `ModifyDBSnapshot`
-    - `ModifyDBSnapshotAttribute`
-    - `ModifyDBSubnetGroup`
     - `ModifyEventSubscription`
     - `ModifyGlobalCluster`
     - `ModifyIntegration`
@@ -219,7 +220,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `RemoveRoleFromDBInstance`
     - `RemoveSourceIdentifierFromSubscription`
     - `RestoreDBClusterFromS3`
-    - `RestoreDBClusterFromSnapshot`
     - `RestoreDBClusterToPointInTime`
     - `RestoreDBInstanceFromS3`
     - `RestoreDBInstanceToPointInTime`
@@ -238,5 +238,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/rds)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/rds/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/rds.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [rds_docker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_docker_test.go), [rds_parameters_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_parameters_test.go), [rds_snapshots_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_snapshots_test.go), [rds_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_test.go).
+- SDK integration examples: [rds_cluster_snapshots_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_cluster_snapshots_test.go), [rds_docker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_docker_test.go), [rds_parameters_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_parameters_test.go), [rds_snapshots_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_snapshots_test.go), [rds_subnet_groups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_subnet_groups_test.go), [rds_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

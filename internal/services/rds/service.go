@@ -70,6 +70,7 @@ type record struct {
 	RootPassword     string
 	Container        string
 	Volume           string
+	RestoreAccounts  []string
 	Initialized      bool
 }
 
@@ -151,8 +152,13 @@ func (s *Service) insert(ctx context.Context, scope request.Scope, r *record) er
 			return err
 		}
 
-		if r.Kind == kindDB {
+		switch r.Kind {
+		case kindDB:
 			return storage.Write(tx, indexPrefix+scope.AccountID+"/"+scope.Region+"/"+r.Name, true)
+		case kindCluster:
+			if aurora(common.Value(r.Cluster.Engine)) || s.runtime != nil {
+				return storage.Write(tx, clusterIndex+scope.AccountID+"/"+scope.Region+"/"+r.Name, true)
+			}
 		}
 
 		return nil

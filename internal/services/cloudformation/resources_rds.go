@@ -132,7 +132,7 @@ func init() {
 		name:       memberDBSubnetGroupName,
 		properties: []string{memberDBSubnetGroupName, memberDBSubnetGroupDescription, memberSubnetIDs, memberTags},
 		attributes: []string{},
-		replace:    []string{memberDBSubnetGroupName, memberDBSubnetGroupDescription, memberSubnetIDs, memberTags},
+		replace:    []string{memberDBSubnetGroupName, memberTags},
 		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
 			name := strings.ToLower(c.nameOf(p, memberDBSubnetGroupName, 255))
 			params := map[string]any{
@@ -150,6 +150,14 @@ func init() {
 			}
 
 			return name, map[string]any{}, nil
+		},
+		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
+			_, err := c.call(ctx, "rds", "ModifyDBSubnetGroup", map[string]any{
+				memberDBSubnetGroupName:        r.Physical,
+				memberDBSubnetGroupDescription: p.str(memberDBSubnetGroupDescription),
+				memberSubnetIDs:                p.list(memberSubnetIDs),
+			})
+			return nil, err
 		},
 		remove: func(ctx context.Context, c *client, r *resource) error {
 			_, err := c.call(ctx, "rds", "DeleteDBSubnetGroup", map[string]any{memberDBSubnetGroupName: r.Physical})

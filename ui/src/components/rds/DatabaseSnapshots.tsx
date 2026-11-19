@@ -15,6 +15,7 @@ import {
 	type DBSnapshot,
 	hasPendingSnapshots,
 	type RDSScope,
+	rdsCall,
 	rdsDate,
 	rdsPages,
 	validateName,
@@ -57,7 +58,9 @@ function SnapshotList({
 	cluster: boolean;
 }) {
 	const kind = cluster ? "DBClusterSnapshot" : "DBSnapshot",
-		field = `${kind}Identifier`;
+		field = `${kind}Identifier`,
+		targetField = `Target${field}`,
+		restoreField = cluster ? "DBClusterIdentifier" : "DBInstanceIdentifier";
 	const [pending, setPending] = useState(false);
 	const poll = usePoll(
 		async () => {
@@ -88,6 +91,7 @@ function SnapshotList({
 	const identifier = (s: DBSnapshot) =>
 		(cluster ? s.DBClusterSnapshotIdentifier : s.DBSnapshotIdentifier) ?? "";
 	const snapshot = poll.data?.find((s) => identifier(s) === selected);
+	const snapshotAvailable = enabled && snapshot?.Status === "available";
 	const changed = () => {
 		poll.reload();
 		onChanged();
@@ -113,7 +117,7 @@ function SnapshotList({
 	if (action === "Copy")
 		fields = [
 			{
-				key: "TargetDBSnapshotIdentifier",
+				key: targetField,
 				label: "Target snapshot identifier",
 				required: true,
 			},
@@ -124,34 +128,51 @@ function SnapshotList({
 				value: true,
 			},
 		];
-	if (action === "Restore")
+	if (action === "Restore") {
 		fields = [
 			{
-				key: "DBInstanceIdentifier",
-				label: "New instance identifier",
+				key: restoreField,
+				label: cluster ? "New cluster identifier" : "New instance identifier",
 				required: true,
 			},
-			{
-				key: "DBInstanceClass",
-				label: "Instance class (blank inherits source)",
-			},
-			{
-				key: "AllocatedStorage",
-				label: "Storage GiB (blank inherits source)",
-				type: "number",
-			},
 			{ key: "DBSubnetGroupName", label: "Subnet group (optional)" },
-			{ key: "DBParameterGroupName", label: "Parameter group (optional)" },
+			{
+				key: cluster ? "DBClusterParameterGroupName" : "DBParameterGroupName",
+				label: "Parameter group (optional)",
+			},
 		];
+		if (!cluster)
+			fields.push(
+				{
+					key: "DBInstanceClass",
+					label: "Instance class (blank inherits source)",
+				},
+				{
+					key: "AllocatedStorage",
+					label: "Storage GiB (blank inherits source)",
+					type: "number",
+				},
+			);
+	}
+
 	const operation =
 		action === "Restore"
-			? "RestoreDBInstanceFromDBSnapshot"
+			? cluster
+				? "RestoreDBClusterFromSnapshot"
+				: "RestoreDBInstanceFromDBSnapshot"
 			: `${action}${kind}`;
+	const sourceInput: Record<string, unknown> = {};
+	if (action === "Copy") sourceInput[`Source${field}`] = selected;
+	else if (action === "Restore" && cluster) {
+		sourceInput.SnapshotIdentifier = selected;
+		sourceInput.Engine = snapshot?.Engine;
+	} else if (action !== "Create") sourceInput[field] = selected;
+
 	return (
 		<SpaceBetween size="l">
 			<Alert type="info">
-				Snapshots preserve metadata in records mode. Cluster snapshots support
-				Aurora only. Cluster restore is not implemented.
+				Snapshots capture metadata in records mode. Docker cluster snapshots and
+				restores support Aurora and DocumentDB.
 			</Alert>
 			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
 			<Table
@@ -178,26 +199,16 @@ function SnapshotList({
 								<ButtonDropdown
 									onItemClick={({ detail }) => setAction(detail.id)}
 									items={[
-										...(!cluster
-											? [
-													{
-														id: "Copy",
-														text: "Copy",
-														disabled:
-															!enabled || snapshot?.Status !== "available",
-													},
-													{
-														id: "Restore",
-														text: "Restore instance",
-														disabled:
-															!enabled || snapshot?.Status !== "available",
-													},
-												]
-											: []),
+										{ id: "Copy", text: "Copy", disabled: !snapshotAvailable },
+										{
+											id: "Restore",
+											text: cluster ? "Restore cluster" : "Restore instance",
+											disabled: !snapshotAvailable,
+										},
 										{
 											id: "Delete",
 											text: "Delete",
-											disabled: !enabled || snapshot?.Status !== "available",
+											disabled: !snapshotAvailable,
 										},
 									]}
 								>
@@ -252,30 +263,97 @@ function SnapshotList({
 					onChanged={changed}
 				/>
 			)}
+			{snapshotAvailable && (
+				<SnapshotRestoreAccess
+					key={`${scope.account}/${scope.region}/${selected}`}
+					{...{ scope, kind, field, selected }}
+				/>
+			)}
 			{!!action && (
 				<RDSOperationDialog
 					key={`${action}/${selected}`}
 					{...{ scope, fields, operation }}
 					title={`${action} ${cluster ? "cluster snapshot" : "snapshot"}`}
 					confirmation={action === "Delete" ? selected : undefined}
-					input={
-						action === "Create"
-							? {}
-							: action === "Copy"
-								? { SourceDBSnapshotIdentifier: selected }
-								: { [field]: selected }
-					}
+					input={sourceInput}
 					validate={(input) => {
 						if (action === "Create") validateName(String(input[field]), 255);
 						if (action === "Copy")
-							validateName(String(input.TargetDBSnapshotIdentifier), 255);
-						if (action === "Restore")
-							validateName(String(input.DBInstanceIdentifier));
+							validateName(String(input[targetField]), 255);
+						if (action === "Restore") validateName(String(input[restoreField]));
 					}}
 					onClose={() => setAction("")}
 					onSaved={() => {
 						setAction("");
 						changed();
+					}}
+				/>
+			)}
+		</SpaceBetween>
+	);
+}
+
+function SnapshotRestoreAccess({
+	scope,
+	kind,
+	field,
+	selected,
+}: {
+	scope: RDSScope;
+	kind: string;
+	field: string;
+	selected: string;
+}) {
+	const input = { [field]: selected };
+	const poll = usePoll(async () => {
+		type Attribute = { AttributeName: string; AttributeValues?: string[] };
+		const data = await rdsCall<Record<string, Record<string, Attribute[]>>>(
+			scope,
+			`Describe${kind}Attributes`,
+			input,
+		);
+		const attrs = data[`${kind}AttributesResult`]?.[`${kind}Attributes`];
+		return (
+			attrs?.find((a) => a.AttributeName === "restore")?.AttributeValues ?? []
+		);
+	}, 0);
+	const [editing, setEditing] = useState(false);
+	return (
+		<SpaceBetween size="xs">
+			<Header
+				variant="h3"
+				actions={
+					<Button onClick={() => setEditing(true)}>
+						Modify restore access
+					</Button>
+				}
+			>
+				Snapshot restore access metadata
+			</Header>
+			{!!poll.error && <Alert type="error">{poll.error}</Alert>}
+			{poll.data && <Box>{poll.data.join(", ") || "No shared accounts"}</Box>}
+			{editing && (
+				<RDSOperationDialog
+					scope={scope}
+					operation={`Modify${kind}Attribute`}
+					title="Modify restore access metadata"
+					input={{ ...input, AttributeName: "restore" }}
+					fields={[
+						{ key: "ValuesToAdd", label: "Account IDs or all to add" },
+						{ key: "ValuesToRemove", label: "Account IDs or all to remove" },
+					]}
+					validate={(next) => {
+						for (const key of ["ValuesToAdd", "ValuesToRemove"]) {
+							if (next[key])
+								next[key] = String(next[key])
+									.split(/[\s,]+/)
+									.filter(Boolean);
+						}
+					}}
+					onClose={() => setEditing(false)}
+					onSaved={() => {
+						setEditing(false);
+						poll.reload();
 					}}
 				/>
 			)}
