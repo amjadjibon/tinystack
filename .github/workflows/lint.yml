@@ -34,10 +34,11 @@ jobs:
       - uses: golangci/golangci-lint-action@v9
         with:
           version: v2.15.0
+      # Reuse the binary the step above put on PATH: extracting it again fails with "Text file busy".
       - name: Lint the Go Testcontainers module
         uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.15.0
+          install-mode: none
           working-directory: tests/testcontainers
           args: --config ../../.golangci.yml
 
