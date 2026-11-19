@@ -177,6 +177,7 @@ func (s *Service) discard(
 
 	s.deliveries.Add(delivery.ViaLambdaDestination, arn, mp.OnFailure, body, err)
 	if err != nil {
+		s.publish(scope, mp.FunctionName, mp.Qualifier, counter(metricDestinationFailures, 1))
 		s.logger.Warn("sending a stream batch's failure record failed", "function", arn,
 			"destination", mp.OnFailure, "error", err)
 	}

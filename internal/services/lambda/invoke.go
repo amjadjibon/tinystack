@@ -19,7 +19,6 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
-	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/recent"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
@@ -35,26 +34,45 @@ const (
 )
 
 // retryDelay spaces asynchronous retries.
-var retryDelay = time.Second
+const retryDelay = time.Second
 
 type clientContextKey struct{}
 
 // prepare loads what the runtime needs to run the function stored under name
 // at qualifier: $LATEST when it is empty, a version, or an alias.
 func (s *Service) prepare(ctx context.Context, scope request.Scope, name, qualifier string) (*Function, error) {
+	return s.prepareTarget(ctx, scope, name, qualifier, "")
+}
+
+func (s *Service) prepareTarget(
+	ctx context.Context, scope request.Scope, name, qualifier, version string,
+) (*Function, error) {
 	var fn *function
+	var p provisioned
 	var code []byte
 	var layers [][]byte
-	poolARN := ""
+	arn := ""
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		var codeKey string
 		var loadErr error
-		if fn, codeKey, loadErr = resolveRouted(tx, scope, name, qualifier, true); loadErr != nil {
+		if version == "" {
+			fn, codeKey, loadErr = resolveRouted(tx, scope, name, qualifier, true)
+		} else {
+			fn, codeKey, loadErr = resolve(tx, scope, name, version)
+		}
+
+		if loadErr != nil {
 			return loadErr
 		}
 
-		if _, ok := tx.Get(provisionedKey(scope, name, qualifier)); ok {
-			poolARN = qualifiedARN(scope, name, qualifier)
+		found, loadErr := readJSON(tx, provisionedKey(scope, name, qualifier), &p)
+		if loadErr != nil {
+			return loadErr
+		}
+
+		arn = fn.arn(scope)
+		if found {
+			arn = qualifiedARN(scope, name, qualifier)
 		}
 
 		code, _ = tx.Get(codeKey)
@@ -90,10 +108,6 @@ func (s *Service) prepare(ctx context.Context, scope request.Scope, name, qualif
 		env[k] = v
 	}
 
-	if poolARN == "" {
-		poolARN = fn.arn(scope)
-	}
-
 	metadata, _ := request.FromContext(ctx)
 	clientContext, _ := ctx.Value(clientContextKey{}).(string)
 	return &Function{
@@ -102,7 +116,11 @@ func (s *Service) prepare(ctx context.Context, scope request.Scope, name, qualif
 		TraceID:       metadata.TraceID,
 		ClientContext: clientContext,
 		Environment:   env,
-		ARN:           poolARN,
+		ARN:           arn,
+		PoolKey:       p.poolKey(arn, fn.version()),
+		onDemandPool:  fn.arn(scope),
+		provisioned:   p.capacity(fn.version()),
+		allocated:     p.Allocated,
 		Name:          fn.Name,
 		Version:       fn.version(),
 		Region:        scope.Region,
@@ -143,17 +161,27 @@ func (s *Service) run(
 		}
 	}
 
-	release, concurrent, err := s.acquire(ctx, scope, name)
+	release, concurrency, err := s.acquire(ctx, scope, fn)
 	if err != nil {
 		s.publish(scope, name, qualifier, counter(metricThrottles, 1))
 		return Result{}, "", "", err
 	}
 
 	defer release()
+	queued, async := ctx.Value(asyncArrivalKey{}).(time.Time)
+	if async {
+		s.publishAsyncAge(scope, name, qualifier, queued)
+	}
+
+	s.publishConcurrency(scope, name, qualifier, fn, concurrency)
 	started := time.Now()
 	result, err = s.runtime.Invoke(ctx, fn, payload)
 	duration := time.Since(started)
-	s.publishInvocation(scope, name, qualifier, duration, concurrent, err != nil || result.Error)
+	if async && ctx.Err() != nil {
+		err = ctx.Err()
+	}
+
+	s.publishInvocation(scope, name, qualifier, duration, concurrency.function, err != nil || result.Error)
 	if err != nil {
 		return Result{}, "", "", awserror.New("ServiceException", "The function could not be run: "+err.Error())
 	}
@@ -198,62 +226,6 @@ func (s *Service) record(
 	}
 
 	return strings.Join(lines, "\n") + "\n"
-}
-
-// runAsync invokes the function at qualifier in the background, retrying
-// failures as its event invoke configuration allows and then sending the
-// result to its destination. It reports false when the service is stopping.
-func (s *Service) runAsync(scope request.Scope, name, qualifier string, payload []byte) bool {
-	arn := qualifiedARN(scope, name, qualifier)
-	queued := s.now()
-	return s.bg.Go(func(ctx context.Context) {
-		cfg := s.loadInvokeConfig(ctx, scope, name, qualifier)
-		attempts, id := cfg.attempts(), uuid.NewV4().String()
-		ctx = request.WithMetadata(ctx, request.Metadata{Scope: scope, RequestID: id})
-		for attempt := 1; ; attempt++ {
-			result, _, version, err := s.run(ctx, scope, name, qualifier, payload)
-			r := &attemptResult{err: err, version: version, result: result, attempts: attempt}
-			failure := invokeError(result, err)
-			if failure != nil {
-				failure = fmt.Errorf("attempt %d of %d: %w", attempt, attempts, failure)
-			}
-
-			s.deliveries.Add(delivery.ViaLambdaAsync, "", arn, payload, failure)
-			if failure == nil {
-				r.condition = conditionSuccess
-				s.sendResult(ctx, arn, cfg.OnSuccess, id, payload, r)
-				return
-			}
-
-			s.logger.Warn(
-				"async lambda invocation failed",
-				"function", arn,
-				"attempt", attempt,
-				"error", err,
-				"payload", string(result.Payload),
-			)
-
-			if attempt == attempts {
-				r.condition = conditionRetries
-				s.sendDeadLetter(ctx, scope, name, qualifier, arn, id, payload, r)
-				s.sendResult(ctx, arn, cfg.OnFailure, id, payload, r)
-				return
-			}
-
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(retryDelay * time.Duration(attempt)):
-			}
-
-			if s.now().Sub(queued) > cfg.maxAge() {
-				r.condition = conditionEventAge
-				s.sendDeadLetter(ctx, scope, name, qualifier, arn, id, payload, r)
-				s.sendResult(ctx, arn, cfg.OnFailure, id, payload, r)
-				return
-			}
-		}
-	})
 }
 
 // invokeError reports why an invocation failed: the runtime error, or the
@@ -368,18 +340,26 @@ func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.I
 		}
 
 		return out, nil
-	case "Event":
+	case invocationEvent:
 		payload, checkErr := checkPayload(in.Payload, maxAsyncPayload)
 		if checkErr != nil {
 			return nil, checkErr
 		}
 
-		if !s.runAsync(m.Scope, name, q, payload) {
-			return nil, awserror.New("ServiceException", "The service is shutting down")
+		if in.ClientContext != nil {
+			return nil, invalid("ClientContext is only supported for RequestResponse invocations")
+		}
+
+		if err := s.enqueueAsync(ctx, m.Scope, name, q, payload); err != nil {
+			return nil, err
 		}
 
 		return &api.InvocationResponse{StatusCode: new(int64(http.StatusAccepted)), ExecutedVersion: &fn.Version}, nil
 	case "DryRun":
+		if in.ClientContext != nil {
+			return nil, invalid("ClientContext is only supported for RequestResponse invocations")
+		}
+
 		return &api.InvocationResponse{StatusCode: new(int64(http.StatusNoContent))}, nil
 	default:
 		return nil, invalid("InvocationType must be RequestResponse, Event, or DryRun")
@@ -411,9 +391,10 @@ func (s *Service) InvokeAsync(ctx context.Context, arn string, payload []byte) e
 		return err
 	}
 
-	if !s.runAsync(m.Scope, name, q, payload) {
-		return awserror.New("ServiceException", "The service is shutting down")
+	payload, err = checkPayload(payload, maxAsyncPayload)
+	if err != nil {
+		return err
 	}
 
-	return nil
+	return s.enqueueAsync(ctx, m.Scope, name, q, payload)
 }

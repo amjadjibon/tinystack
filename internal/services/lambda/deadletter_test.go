@@ -89,8 +89,12 @@ func TestDeadLetterEventAge(t *testing.T) {
 		calls <- d
 		return errors.New("delivery denied")
 	})
-	if !s.runAsync(scope, "worker", "", []byte(payload)) {
-		t.Fatal("async invocation did not start")
+	if err := s.Resume(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := s.enqueueAsync(context.Background(), scope, "worker", "", []byte(payload)); err != nil {
+		t.Fatal(err)
 	}
 
 	for i := range 2 {

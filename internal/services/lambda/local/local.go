@@ -125,7 +125,7 @@ func (r *Runtime) acquire(ctx context.Context, fn *lambda.Function) (*environmen
 		return nil, errors.New("local Lambda runtime is closed")
 	}
 
-	p := r.pools[fn.ARN]
+	p := r.pools[fn.Pool()]
 	if p != nil && p.revision != fn.Revision {
 		for e := range p.environments {
 			e.close()
@@ -136,7 +136,7 @@ func (r *Runtime) acquire(ctx context.Context, fn *lambda.Function) (*environmen
 
 	if p == nil {
 		p = &pool{revision: fn.Revision, environments: map[*environmentProcess]bool{}}
-		r.pools[fn.ARN] = p
+		r.pools[fn.Pool()] = p
 	}
 
 	for _, reserved := range []bool{true, false} {
@@ -180,7 +180,7 @@ func (r *Runtime) acquire(ctx context.Context, fn *lambda.Function) (*environmen
 
 	// An environment whose pool was released or replaced while it started
 	// runs this invocation only: release discards environments it does not pool.
-	if r.pools[fn.ARN] == p {
+	if r.pools[fn.Pool()] == p {
 		p.environments[e] = true
 	}
 
@@ -190,7 +190,7 @@ func (r *Runtime) acquire(ctx context.Context, fn *lambda.Function) (*environmen
 func (r *Runtime) release(fn *lambda.Function, e *environmentProcess, healthy bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	p := r.pools[fn.ARN]
+	p := r.pools[fn.Pool()]
 	if p != nil && p.revision == fn.Revision && p.environments[e] && healthy && !r.closed {
 		p.environments[e] = false
 		if e.provisioned {
@@ -201,7 +201,7 @@ func (r *Runtime) release(fn *lambda.Function, e *environmentProcess, healthy bo
 		expiry = time.AfterFunc(idleLifetime, func() {
 			r.mu.Lock()
 			defer r.mu.Unlock()
-			if current := r.pools[fn.ARN]; current == p && e.expiry == expiry && !p.environments[e] {
+			if current := r.pools[fn.Pool()]; current == p && e.expiry == expiry && !p.environments[e] {
 				delete(p.environments, e)
 				e.close()
 			}
@@ -598,7 +598,7 @@ func (r *Runtime) Warm(ctx context.Context, fn *lambda.Function, count int) erro
 	for range count {
 		e, err := r.acquire(ctx, fn)
 		if err != nil {
-			r.Release(fn.ARN)
+			r.Release(fn.Pool())
 			return err
 		}
 
@@ -606,13 +606,13 @@ func (r *Runtime) Warm(ctx context.Context, fn *lambda.Function, count int) erro
 		select {
 		case <-e.ready:
 		case result := <-e.initError:
-			r.Release(fn.ARN)
+			r.Release(fn.Pool())
 			return fmt.Errorf("initialization failed: %s", result.Payload)
 		case <-e.done:
-			r.Release(fn.ARN)
+			r.Release(fn.Pool())
 			return errors.New("runtime exited during initialization")
 		case <-ctx.Done():
-			r.Release(fn.ARN)
+			r.Release(fn.Pool())
 			return ctx.Err()
 		}
 	}

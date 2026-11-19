@@ -278,6 +278,7 @@ func (s *Service) ListVersionsByFunction(
 
 // deleteVersion deletes a published version that no alias points to.
 func (s *Service) deleteVersion(ctx context.Context, scope request.Scope, name, version string) error {
+	var p provisioned
 	s.warmMu.Lock()
 	defer s.warmMu.Unlock()
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -292,7 +293,7 @@ func (s *Service) deleteVersion(ctx context.Context, scope request.Scope, name, 
 				return loadErr
 			}
 
-			if a.Version == version {
+			if _, weighted := a.Weights[version]; a.Version == version || weighted {
 				used = append(used, a.Name)
 			}
 		}
@@ -305,7 +306,12 @@ func (s *Service) deleteVersion(ctx context.Context, scope request.Scope, name, 
 		tx.Delete(scope.Key("lambda", kindVersion, versionID(name, version)))
 		tx.Delete(scope.Key("lambda", kindVersionCode, versionID(name, version)))
 		tx.Delete(policyKey(scope, name, version))
-		tx.Delete(provisionedKey(scope, name, version))
+		key := provisionedKey(scope, name, version)
+		if _, err := readJSON(tx, key, &p); err != nil {
+			return err
+		}
+
+		tx.Delete(key)
 		tx.Delete(invokeConfigKey(scope, name, version))
 		return nil
 	})
@@ -313,6 +319,7 @@ func (s *Service) deleteVersion(ctx context.Context, scope request.Scope, name, 
 		return err
 	}
 
+	s.releaseProvisioned(scope, name, &p)
 	s.runtime.Release(qualifiedARN(scope, name, version))
 	return nil
 }
@@ -322,6 +329,7 @@ func (s *Service) deleteFunction(ctx context.Context, scope request.Scope, name 
 	s.warmMu.Lock()
 	defer s.warmMu.Unlock()
 	arns := []string{functionARN(scope, name)}
+	var configs []provisioned
 	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, _, loadErr := resolve(tx, scope, name, ""); loadErr != nil {
 			return loadErr
@@ -337,11 +345,13 @@ func (s *Service) deleteFunction(ctx context.Context, scope request.Scope, name 
 		kinds := []string{kindVersion, kindVersionCode, kindAlias, kindPolicy, kindProvisioned, kindInvokeConfig}
 		for _, kind := range kinds {
 			for _, k := range tx.Keys(scope.Key("lambda", kind, name+"/")) {
-				if kind == kindAlias || kind == kindProvisioned {
-					arns = append(
-						arns,
-						qualifiedARN(scope, name, strings.TrimPrefix(k, scope.Key("lambda", kind, name+"/"))),
-					)
+				if kind == kindProvisioned {
+					var p provisioned
+					if _, err := readJSON(tx, k, &p); err != nil {
+						return err
+					}
+
+					configs = append(configs, p)
 				}
 
 				if kind == kindVersion {
@@ -361,6 +371,10 @@ func (s *Service) deleteFunction(ctx context.Context, scope request.Scope, name 
 	})
 	if err != nil {
 		return err
+	}
+
+	for i := range configs {
+		s.releaseProvisioned(scope, name, &configs[i])
 	}
 
 	for _, arn := range arns {

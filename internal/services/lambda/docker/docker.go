@@ -87,7 +87,7 @@ func (r *Runtime) acquire(ctx context.Context, fn *lambda.Function) (*container,
 		return nil, errors.New("runtime is closed")
 	}
 
-	p := r.pools[fn.ARN]
+	p := r.pools[fn.Pool()]
 	if p == nil || p.revision != fn.Revision {
 		if p != nil {
 			for _, c := range p.idle {
@@ -96,7 +96,7 @@ func (r *Runtime) acquire(ctx context.Context, fn *lambda.Function) (*container,
 		}
 
 		p = &pool{revision: fn.Revision, busy: map[*container]bool{}}
-		r.pools[fn.ARN] = p
+		r.pools[fn.Pool()] = p
 	}
 
 	if n := len(p.idle); n > 0 {
@@ -123,7 +123,7 @@ func (r *Runtime) acquire(ctx context.Context, fn *lambda.Function) (*container,
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if r.closed || r.pools[fn.ARN] != p {
+	if r.closed || r.pools[fn.Pool()] != p {
 		go remove(ctx, c)
 		return nil, errors.New("function changed while its container started")
 	}
@@ -137,7 +137,7 @@ func (r *Runtime) acquire(ctx context.Context, fn *lambda.Function) (*container,
 func (r *Runtime) release(ctx context.Context, fn *lambda.Function, c *container, healthy bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	p := r.pools[fn.ARN]
+	p := r.pools[fn.Pool()]
 	if p != nil && p.busy[c] {
 		delete(p.busy, c)
 		if healthy && !r.closed {
@@ -615,7 +615,7 @@ func (r *Runtime) Warm(ctx context.Context, fn *lambda.Function, count int) erro
 		c, err := r.acquire(ctx, fn)
 		if err != nil {
 			//nolint:contextcheck // Runtime.Release has no context; removal outlives the allocation.
-			r.Release(fn.ARN)
+			r.Release(fn.Pool())
 			for _, started := range all {
 				r.release(ctx, fn, started, false)
 			}

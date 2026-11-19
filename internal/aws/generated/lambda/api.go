@@ -105,6 +105,27 @@ type GetFunctionResponse struct {
 	Concurrency   *Concurrency           `json:"Concurrency,omitempty"`
 }
 
+type GetAccountSettingsRequest struct {
+}
+
+type AccountLimit struct {
+	CodeSizeUnzipped               *int64 `json:"CodeSizeUnzipped,omitempty"`
+	CodeSizeZipped                 *int64 `json:"CodeSizeZipped,omitempty"`
+	ConcurrentExecutions           *int64 `json:"ConcurrentExecutions,omitempty"`
+	TotalCodeSize                  *int64 `json:"TotalCodeSize,omitempty"`
+	UnreservedConcurrentExecutions *int64 `json:"UnreservedConcurrentExecutions,omitempty"`
+}
+
+type AccountUsage struct {
+	FunctionCount *int64 `json:"FunctionCount,omitempty"`
+	TotalCodeSize *int64 `json:"TotalCodeSize,omitempty"`
+}
+
+type GetAccountSettingsResponse struct {
+	AccountLimit *AccountLimit `json:"AccountLimit,omitempty"`
+	AccountUsage *AccountUsage `json:"AccountUsage,omitempty"`
+}
+
 type DeleteFunctionRequest struct {
 	FunctionName *string `json:"-"`
 	Qualifier    *string `json:"-"`
@@ -793,6 +814,7 @@ type GetLayerVersionPolicyResponse struct {
 type API interface {
 	CreateFunction(context.Context, *CreateFunctionRequest) (*FunctionConfiguration, error)
 	GetFunction(context.Context, *GetFunctionRequest) (*GetFunctionResponse, error)
+	GetAccountSettings(context.Context, *GetAccountSettingsRequest) (*GetAccountSettingsResponse, error)
 	DeleteFunction(context.Context, *DeleteFunctionRequest) (*DeleteFunctionResponse, error)
 	ListFunctions(context.Context, *ListFunctionsRequest) (*ListFunctionsResponse, error)
 	Invoke(context.Context, *InvocationRequest) (*InvocationResponse, error)
@@ -853,6 +875,9 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"GetFunction": {Name: "GetFunction", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "lambda:GetFunction", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"FunctionName": catalog.MemberBinding{Location: "label", Name: "FunctionName", Format: ""}, "Qualifier": catalog.MemberBinding{Location: "query", Name: "Qualifier", Format: ""}}, Output: map[string]catalog.MemberBinding{"Code": catalog.MemberBinding{Location: "document", Name: "Code", Format: ""}, "Concurrency": catalog.MemberBinding{Location: "document", Name: "Concurrency", Format: ""}, "Configuration": catalog.MemberBinding{Location: "document", Name: "Configuration", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Method: "GET", URI: "/2015-03-31/functions/{FunctionName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetFunctionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetFunction(ctx, input.(*GetFunctionRequest))
+		}},
+		"GetAccountSettings": {Name: "GetAccountSettings", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "lambda:GetAccountSettings", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{}, Output: map[string]catalog.MemberBinding{"AccountLimit": catalog.MemberBinding{Location: "document", Name: "AccountLimit", Format: ""}, "AccountUsage": catalog.MemberBinding{Location: "document", Name: "AccountUsage", Format: ""}}, Method: "GET", URI: "/2016-08-19/account-settings", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetAccountSettingsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetAccountSettings(ctx, input.(*GetAccountSettingsRequest))
 		}},
 		"DeleteFunction": {Name: "DeleteFunction", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "lambda:DeleteFunction", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"FunctionName": catalog.MemberBinding{Location: "label", Name: "FunctionName", Format: ""}, "Qualifier": catalog.MemberBinding{Location: "query", Name: "Qualifier", Format: ""}}, Output: map[string]catalog.MemberBinding{"StatusCode": catalog.MemberBinding{Location: "status", Name: "StatusCode", Format: ""}}, Method: "DELETE", URI: "/2015-03-31/functions/{FunctionName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteFunctionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteFunction(ctx, input.(*DeleteFunctionRequest))

@@ -1,7 +1,6 @@
 package lambda
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"regexp"
@@ -10,9 +9,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
-	"github.com/amjadjibon/tinystack/internal/aws/request"
-	"github.com/amjadjibon/tinystack/internal/delivery"
-	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
 // Only standard SQS queues and SNS topics are supported, not FIFO targets.
@@ -30,39 +26,6 @@ func checkDeadLetterARN(arn string) error {
 	}
 
 	return nil
-}
-
-// sendDeadLetter sends the original event, with the documented attributes, independently of OnFailure delivery.
-// AWS documents delivery to both targets, without a relative ordering guarantee:
-// https://aws.amazon.com/blogs/compute/introducing-aws-lambda-destinations/
-// Versions use the current $LATEST dead-letter configuration:
-// https://docs.aws.amazon.com/lambda/latest/dg/invocation-async-retain-records.html
-func (s *Service) sendDeadLetter(ctx context.Context, scope request.Scope, name, qualifier, arn, id string,
-	payload []byte, r *attemptResult,
-) {
-	var target string
-	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		fn, _, readErr := loadFunction(tx, scope.Key("lambda", kindFunction, name))
-		if fn != nil {
-			target = fn.DeadLetterARN
-		}
-
-		return readErr
-	})
-	if target == "" && err == nil {
-		return
-	}
-
-	if err == nil {
-		err = s.deliver(ctx, target, arn, r.condition, payload, deadLetterAttributes(id, r), "")
-	}
-
-	s.deliveries.Add(delivery.ViaLambdaDeadLetter, arn, target, payload, err)
-	if err != nil {
-		s.logger.Warn("sending an async event to its dead-letter target failed", "function", arn, "target", target,
-			"error", err)
-		s.publish(scope, name, qualifier, counter(metricDeadLetterErrors, 1))
-	}
 }
 
 // deadLetterAttributes follows the HTTP status of Invoke (200 even for a function error), and limits the error

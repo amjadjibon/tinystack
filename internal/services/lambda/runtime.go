@@ -20,6 +20,8 @@ type Function struct {
 	ClientContext   string
 	CognitoIdentity string
 	ARN             string
+	PoolKey         string
+	onDemandPool    string
 	Name            string
 	// Version is the version that runs: a number or $LATEST.
 	Version     string
@@ -39,9 +41,20 @@ type Function struct {
 	Code []byte
 	// Layers are the packages of the function's layers, in order; each is
 	// extracted into /opt over the ones before it.
-	Layers     [][]byte
-	Timeout    time.Duration
-	MemorySize int64
+	Layers      [][]byte
+	Timeout     time.Duration
+	MemorySize  int64
+	provisioned int64
+	allocated   int64
+}
+
+// Pool returns the identity of the reusable environments for this invocation.
+func (f *Function) Pool() string {
+	if f.PoolKey != "" {
+		return f.PoolKey
+	}
+
+	return f.ARN
 }
 
 // Result is a completed invocation. Error reports that the function failed

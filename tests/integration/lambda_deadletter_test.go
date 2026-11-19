@@ -66,6 +66,15 @@ func TestLambdaDeadLetterDelivery(t *testing.T) {
 						DeadLetterConfig: &lambdatypes.DeadLetterConfig{TargetArn: &arn},
 						Publish:          true,
 					})
+					if mode == config.AuthorizationEnforce && choice != roleAllowed {
+						if !isType[*lambdatypes.InvalidParameterValueException](err) ||
+							!strings.Contains(err.Error(), "execution role does not have permissions") {
+							t.Fatalf("configuring DLQ with unauthorized role: %v", err)
+						}
+
+						return
+					}
+
 					mustAuthorize(t, err)
 					if created.DeadLetterConfig == nil || aws.ToString(created.DeadLetterConfig.TargetArn) != arn {
 						t.Fatalf("created configuration = %+v", created)
@@ -84,16 +93,6 @@ func TestLambdaDeadLetterDelivery(t *testing.T) {
 					})
 					mustAuthorize(t, err)
 					wantRoleChecks(t, s, mode, choice, role)
-					want := choice == roleAllowed || mode == config.AuthorizationSoft
-					if !want {
-						// The failed delivery has been recorded by the authorization check above.
-						if body := receiveOne(t, queues, url); body != "" {
-							t.Fatalf("denied DLQ delivery reached queue: %s", body)
-						}
-
-						return
-					}
-
 					var message sqstypes.Message
 					waitFor(t, "the original event in the DLQ", func() bool {
 						out, readErr := queues.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
@@ -155,7 +154,7 @@ func TestLambdaDeadLetterConfiguration(t *testing.T) {
 	_, arn := queueARN(t, queues, "dead")
 	createFunction(t, functions, "worker", "app.echo")
 	for _, invalid := range []string{
-		"bad", "arn:aws:s3:::bucket", "arn:aws:sqs:us-east-1:000000000000:",
+		"bad", "arn:aws:s3:::bucket", "arn:aws:sqs:us-east-1:000000000000:missing", "arn:aws:sqs:us-east-1:000000000000:",
 		"arn:aws:sqs:us-east-1:000000000000:dead.fifo", "arn:aws:sns:us-east-1:000000000000:dead.fifo",
 		"arn:aws:sns:us-east-1:000000000000:topic:extra", "arn::sqs:us-east-1:000000000000:queue",
 	} {

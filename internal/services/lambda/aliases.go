@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/rand/v2"
 	"strings"
 	"uuid"
@@ -79,12 +80,26 @@ func (a *alias) setRouting(tx storage.ReadTx, scope request.Scope, routing *api.
 			return invalid("The additional version must differ from the alias's FunctionVersion")
 		}
 
-		if weight < 0 || weight > 1 {
+		if math.IsNaN(weight) || weight < 0 || weight > 1 {
 			return invalid("Additional version weights must be between 0.0 and 1.0")
 		}
 
 		if err := checkTarget(tx, scope, a.Function, version); err != nil {
 			return err
+		}
+
+		primary, _, err := resolve(tx, scope, a.Function, a.Version)
+		if err != nil {
+			return err
+		}
+
+		secondary, _, err := resolve(tx, scope, a.Function, version)
+		if err != nil {
+			return err
+		}
+
+		if primary.Role != secondary.Role || primary.DeadLetterARN != secondary.DeadLetterARN {
+			return invalid("Weighted alias versions must use the same execution role and dead-letter configuration")
 		}
 	}
 
@@ -221,7 +236,7 @@ func (s *Service) changeAlias(
 	}
 
 	var a *alias
-	var p provisioned
+	var p, previous provisioned
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		var found bool
 		var loadErr error
@@ -238,33 +253,39 @@ func (s *Service) changeAlias(
 			return changeErr
 		}
 
+		key := provisionedKey(m.Scope, fn, a.Name)
+		if _, readErr := readJSON(tx, key, &previous); readErr != nil {
+			return readErr
+		}
+
 		if !keep {
+			tx.Delete(key)
 			tx.Delete(aliasKey(m.Scope, fn, a.Name))
 			return nil
 		}
 
-		key := provisionedKey(m.Scope, fn, a.Name)
-		if found, readErr := readJSON(tx, key, &p); readErr != nil {
-			return readErr
-		} else if found {
-			if len(a.Weights) > 0 {
-				return invalid("Provisioned concurrency does not support weighted aliases")
-			}
-
-			p.Status, p.StatusReason, p.Allocated = "IN_PROGRESS", "", 0
-			p.Token = common.RandomID(32)
-			if writeErr := writeJSON(tx, key, &p); writeErr != nil {
-				return writeErr
-			}
+		if writeErr := writeJSON(tx, aliasKey(m.Scope, fn, a.Name), a); writeErr != nil {
+			return writeErr
 		}
 
-		return writeJSON(tx, aliasKey(m.Scope, fn, a.Name), a)
+		if previous.Token != "" {
+			p = previous
+			if planErr := p.plan(tx, m.Scope, fn); planErr != nil {
+				return planErr
+			}
+
+			p.Status, p.StatusReason, p.Allocated = statusInProgress, "", 0
+			p.LastModified, p.Token = s.now().UTC().Format(timeFormat), common.RandomID(32)
+			return writeJSON(tx, key, &p)
+		}
+
+		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	s.runtime.Release(qualifiedARN(m.Scope, fn, a.Name))
+	s.releaseProvisioned(m.Scope, fn, &previous)
 	if p.Token != "" {
 		s.queueWarm(ctx, m.Scope, fn, &p)
 	}
@@ -335,7 +356,6 @@ func (s *Service) DeleteAlias(ctx context.Context, in *api.DeleteAliasRequest) (
 	_, err := s.changeAlias(ctx, in.FunctionName, in.Name,
 		func(tx storage.WriteTx, scope request.Scope, a *alias) (bool, error) {
 			tx.Delete(policyKey(scope, a.Function, a.Name))
-			tx.Delete(provisionedKey(scope, a.Function, a.Name))
 			tx.Delete(invokeConfigKey(scope, a.Function, a.Name))
 			return false, deleteURLs(tx, scope, a.Function, a.Name)
 		})

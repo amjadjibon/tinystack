@@ -24,14 +24,20 @@ import (
 const (
 	kindInvokeConfig = "invoke-config"
 	// maxEventAge is Lambda's default and largest MaximumEventAgeInSeconds.
-	maxEventAge       = 21600
-	minEventAge       = 60
-	conditionSuccess  = "Success"
-	conditionRetries  = "RetriesExhausted"
-	conditionEventAge = "EventAgeExceeded"
-	serviceLambda     = "lambda"
-	serviceSQS        = "sqs"
-	serviceSNS        = "sns"
+	maxEventAge        = 21600
+	minEventAge        = 60
+	conditionSuccess   = "Success"
+	conditionRetries   = "RetriesExhausted"
+	conditionEventAge  = "EventAgeExceeded"
+	serviceLambda      = "lambda"
+	serviceEventBridge = "eventbridge"
+	invocationEvent    = "Event"
+	paramQueueURL      = "QueueUrl"
+	paramTopicARN      = "TopicArn"
+	paramBucket        = "Bucket"
+	paramFunctionName  = "FunctionName"
+	serviceSQS         = "sqs"
+	serviceSNS         = "sns"
 	// recordVersion is the version of the records Lambda sends functions and
 	// destinations.
 	recordVersion = "1.0"
@@ -185,12 +191,13 @@ var destinationResources = map[string]string{
 // destinationService is the service of a destination ARN.
 func destinationService(arn string) (string, bool) {
 	parts := strings.SplitN(arn, ":", 6)
-	if len(parts) < 6 || !strings.HasPrefix(arn, "arn:") || !accountID.MatchString(parts[4]) || parts[3] == "" {
+	if len(parts) < 6 || !strings.HasPrefix(arn, "arn:aws") ||
+		!accountID.MatchString(parts[4]) || parts[3] == "" {
 		return "", false
 	}
 
 	resource, ok := destinationResources[parts[2]]
-	if !ok || !strings.HasPrefix(parts[5], resource) {
+	if !ok || !strings.HasPrefix(parts[5], resource) || len(parts[5]) == len(resource) {
 		return "", false
 	}
 
@@ -235,11 +242,69 @@ func (s *Service) changeInvokeConfig(
 
 	var c invokeConfig
 	var name string
+	var checkedRole string
+	if destinations != nil {
+		// Validate shape and target access before updating the configuration.
+		var proposed invokeConfig
+		var fn *function
+		viewErr := s.store.View(ctx, func(tx storage.ReadTx) error {
+			resolved, q, resolveErr := invokeConfigTarget(tx, &m, raw, qualifier)
+			if resolveErr != nil {
+				return resolveErr
+			}
+
+			if !replace {
+				found, readErr := readJSON(tx, invokeConfigKey(m.Scope, resolved, q), &proposed)
+				if readErr != nil {
+					return readErr
+				}
+
+				if !found {
+					return noInvokeConfig(m.Scope, resolved, q)
+				}
+			}
+
+			fn, _, resolveErr = resolve(tx, m.Scope, resolved, q)
+			return resolveErr
+		})
+		if viewErr != nil {
+			return nil, viewErr
+		}
+
+		if configErr := proposed.configure(m.Scope, fn.Name, retries, age, destinations); configErr != nil {
+			return nil, configErr
+		}
+
+		checkedRole = fn.Role
+		for _, dest := range []*string{onSuccess(destinations), onFailure(destinations)} {
+			if targetErr := s.checkAsyncTarget(
+				ctx,
+				m.Scope,
+				fn.Name,
+				checkedRole,
+				common.Value(dest),
+			); targetErr != nil {
+				return nil, targetErr
+			}
+		}
+	}
+
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		var q string
 		var resolveErr error
 		if name, q, resolveErr = invokeConfigTarget(tx, &m, raw, qualifier); resolveErr != nil {
 			return resolveErr
+		}
+
+		if destinations != nil {
+			fn, _, readErr := resolve(tx, m.Scope, name, q)
+			if readErr != nil {
+				return readErr
+			}
+
+			if fn.Role != checkedRole {
+				return conflict("The function's execution role changed while validating its destinations")
+			}
 		}
 
 		key := invokeConfigKey(m.Scope, name, q)
@@ -402,22 +467,6 @@ func (s *Service) ListFunctionEventInvokeConfigs(
 	return out, nil
 }
 
-// loadInvokeConfig reads the configuration of an asynchronous invocation of
-// the function at qualifier, or Lambda's defaults when it has none.
-func (s *Service) loadInvokeConfig(ctx context.Context, scope request.Scope, name, qualifier string) invokeConfig {
-	var c invokeConfig
-	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		_, readErr := readJSON(tx, invokeConfigKey(scope, name, qualifier), &c)
-		return readErr
-	})
-	if err != nil {
-		s.logger.Warn("read event invoke config", "function", qualifiedARN(scope, name, qualifier), "error", err)
-		return invokeConfig{}
-	}
-
-	return c
-}
-
 // invocationRecord is the document Lambda sends to a destination.
 type invocationRecord struct {
 	RequestPayload  json.RawMessage `json:"requestPayload"`
@@ -449,18 +498,15 @@ type attemptResult struct {
 // sendResult sends an asynchronous invocation's record to destination, if any.
 func (s *Service) sendResult(
 	ctx context.Context,
-	arn, destination, id string,
+	arn, destination, id, key string,
+	finished time.Time,
 	payload []byte,
 	r *attemptResult,
-) {
-	if destination == "" {
-		return
-	}
-
+) error {
 	record := invocationRecord{
 		RequestPayload: payload,
 		Version:        recordVersion,
-		Timestamp:      s.now().UTC().Format("2006-01-02T15:04:05.000Z"),
+		Timestamp:      finished.UTC().Format(timestampMillis),
 	}
 
 	record.RequestContext.RequestID = id
@@ -484,21 +530,16 @@ func (s *Service) sendResult(
 		record.ResponseContext.FunctionError = "Unhandled"
 	}
 
-	key := ""
-	if validS3Destination(destination) {
-		key = s3RecordKey("aws/lambda/async/"+strings.Split(arn, ":")[6], s.now())
-	}
-
 	body, err := json.Marshal(record)
 	if err == nil {
 		err = s.deliver(ctx, destination, arn, r.condition, body, nil, key)
 	}
 
-	s.deliveries.Add(delivery.ViaLambdaDestination, arn, destination, body, err)
-	if err != nil {
-		s.logger.Warn("sending an async invocation record failed", "function", arn, "destination", destination,
-			"error", err)
+	if ctx.Err() == nil {
+		s.deliveries.Add(delivery.ViaLambdaDestination, arn, destination, body, err)
 	}
+
+	return err
 }
 
 // deliver sends a record to an SQS queue, SNS topic, Lambda function,
@@ -512,14 +553,19 @@ func (s *Service) deliver(
 	key string,
 ) error {
 	service, _ := destinationService(destination)
-	source := strings.Split(arn, ":")
+	source := strings.SplitN(arn, ":", 8)
 	fnScope, name := request.Scope{AccountID: source[4], Region: source[3]}, source[6]
+	var qualifier string
+	if len(source) == 8 {
+		qualifier = source[7]
+	}
+
 	// A destination is invoked asynchronously; the execution role needs lambda:InvokeFunction on it.
 	if service == serviceLambda {
 		invoke := &catalog.DeliveryRole{Service: serviceLambda, Operation: "Invoke", Params: map[string]any{
-			"FunctionName": destination, "InvocationType": "Event",
+			paramFunctionName: destination, "InvocationType": invocationEvent,
 		}}
-		d, err := s.executionDelivery(ctx, fnScope, name, invoke)
+		d, err := s.executionDeliveryAt(ctx, fnScope, name, qualifier, invoke)
 		if err == nil {
 			err = s.authorizer.Authorize(ctx, d)
 		}
@@ -550,7 +596,7 @@ func (s *Service) deliver(
 			ctx,
 			request.Metadata{Scope: scope, Service: c.Service, RequestID: uuid.NewV4().String()},
 		)
-		d, err := s.executionDelivery(callCtx, fnScope, name, c)
+		d, err := s.executionDeliveryAt(callCtx, fnScope, name, qualifier, c)
 		if err != nil {
 			return nil, err
 		}
@@ -568,17 +614,17 @@ func (s *Service) deliver(
 	case serviceSQS:
 		url, _ := sqs.QueueURL(destination)
 		_, err = call(&catalog.DeliveryRole{Service: service, Operation: "SendMessage", Params: map[string]any{
-			"QueueUrl": url, "MessageBody": string(body), "MessageAttributes": attributes,
+			paramQueueURL: url, "MessageBody": string(body), "MessageAttributes": attributes,
 		}})
 	case "s3":
 		_, err = call(&catalog.DeliveryRole{Service: "s3", Operation: "PutObject", Params: map[string]any{
-			"Bucket": parts[5],
-			"Key":    key,
-			"Body":   base64.StdEncoding.EncodeToString(body),
+			paramBucket: parts[5],
+			"Key":       key,
+			"Body":      base64.StdEncoding.EncodeToString(body),
 		}})
 	case serviceSNS:
 		_, err = call(&catalog.DeliveryRole{Service: service, Operation: "Publish", Params: map[string]any{
-			"TopicArn": destination, "Message": string(body), "MessageAttributes": attributes,
+			paramTopicARN: destination, "Message": string(body), "MessageAttributes": attributes,
 		}})
 	default:
 		outcome := "Success"
@@ -587,15 +633,17 @@ func (s *Service) deliver(
 		}
 
 		var out any
-		out, err = call(&catalog.DeliveryRole{Service: "eventbridge", Operation: "PutEvents", Params: map[string]any{
-			"Entries": []any{map[string]any{
-				"Source":       serviceLambda,
-				"DetailType":   "Lambda Function Invocation Result - " + outcome,
-				"Detail":       string(body),
-				"EventBusName": destination,
-				"Resources":    []any{destination, arn},
+		out, err = call(
+			&catalog.DeliveryRole{Service: serviceEventBridge, Operation: "PutEvents", Params: map[string]any{
+				"Entries": []any{map[string]any{
+					"Source":       serviceLambda,
+					"DetailType":   "Lambda Function Invocation Result - " + outcome,
+					"Detail":       string(body),
+					"EventBusName": destination,
+					"Resources":    []any{destination, arn},
+				}},
 			}},
-		}})
+		)
 		if err == nil {
 			err = putEventsFailure(out)
 		}

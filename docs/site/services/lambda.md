@@ -13,7 +13,7 @@ Manage functions and execute Python/Node locally or managed runtimes in Docker.
 | API version | `2015-03-31` |
 | Scope | Account and region |
 | Execution | Local processes or Docker runtime |
-| Selected operations | 53 of 88 in the pinned model |
+| Selected operations | 54 of 88 in the pinned model |
 
 ## Implemented behavior
 
@@ -29,14 +29,14 @@ When IAM authorization is enabled, function-scoped SDK actions and AWS_IAM funct
 - Hot reload does not support image packages, live layers, symlinks or special files; published versions retain a live directory reference rather than a code snapshot.
 - SourceArn/SourceAccount conditions are absent on ordinary API requests; PrincipalOrgID and EventSourceToken conditions are unsupported.
 - Execution-role read checks are cached for 30 seconds per mapping, role and source, including denials; role or source changes force a recheck, deletion drops the entry and reset clears all entries; stream checks use wildcard resources, so a role scoped to a stream ARN is denied; a denied mapping stays Enabled.
-- Provisioned concurrency on weighted aliases is unsupported.
-- Asynchronous work in flight is lost on restart.
+- Async delivery can be repeated if the target accepted a send just before shutdown or process exit. Configured event age and retry limits are captured when the event is accepted. Retry delays are compressed for local use, and throttled attempts use the same retry budget as handler errors.
 - Console ZIP uploads and test events are limited to 1 MiB; larger deployment packages can be copied from S3.
 - In identity.mode: verify the console shows function and trigger inventory; management, invocation and log reads require signed CLI/SDK requests.
 - Console manages $LATEST; versions, aliases, layers and concurrency use the AWS API.
-- Reset ends event source mapping pollers and removes warm execution environments; asynchronous invocations already running can still write records back.
-- DLQ targets are validated as standard SQS/SNS ARNs; configuration does not check target existence or execution-role permissions; failed DLQ delivery is dropped and recorded.
-- Lambda metrics omit DestinationDeliveryFailures, AsyncEventsReceived, ProvisionedConcurrency and UnreservedConcurrentExecutions; invocations that fail validation, authorization or lookup before running report nothing.
+- Reset ends event source and async workers, clears queued events and removes warm execution environments.
+- DLQ and asynchronous destination configuration checks do not simulate AWS destination-specific KMS policies. A completed delivery failure is recorded and the delivery is discarded.
+- Invocation metrics do not count requests rejected before runtime admission by validation, authorization or resource lookup. Account and storage quotas reported by GetAccountSettings are informational. Weighted provisioned allocations round the secondary share to the nearest whole environment and give the remainder to the primary.
+- Runtime-management and recursion configuration, streaming responses, code-signing management, durability workflows, VPC networking, and SnapStart are outside the implemented profile.
 - Layer OrganizationId conditions are stored and fail closed without trusted organization context; existing functions retain their attached layers after permission removal.
 - Broker mappings support plaintext MSK endpoints and self-managed Kafka BASIC_AUTH/SASL SCRAM credentials; ActiveMQ, Kafka TLS/mTLS, VPC source access settings, virtual hosts, timestamp starting positions and provisioned poller scaling are unavailable. ProvisionedPollerConfig stores validated bounds but does not scale local consumers. Kafka partial failures use topic-partition strings and retry only the identified records. RabbitMQ retries failed invocations until success or disable/delete; MQ does not support FilterCriteria or Lambda retry/destination controls and uses broker-side dead-lettering. Broker read permissions are checked through in-process service calls; there is no Kafka data-plane IAM emulation.
 
@@ -66,6 +66,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `DeleteFunctionUrlConfig` | `DELETE /2021-10-31/functions/{FunctionName}/url` |
 | `DeleteLayerVersion` | `DELETE /2018-10-31/layers/{LayerName}/versions/{VersionNumber}` |
 | `DeleteProvisionedConcurrencyConfig` | `DELETE /2019-09-30/functions/{FunctionName}/provisioned-concurrency` |
+| `GetAccountSettings` | `GET /2016-08-19/account-settings` |
 | `GetAlias` | `GET /2015-03-31/functions/{FunctionName}/aliases/{Name}` |
 | `GetEventSourceMapping` | `GET /2015-03-31/event-source-mappings/{UUID}` |
 | `GetFunction` | `GET /2015-03-31/functions/{FunctionName}` |
@@ -108,7 +109,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "35 modeled operations outside the implementation"
+??? info "34 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -119,7 +120,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteCodeSigningConfig`
     - `DeleteFunctionCodeSigningConfig`
     - `DeleteResourcePolicy`
-    - `GetAccountSettings`
     - `GetCapacityProvider`
     - `GetCodeSigningConfig`
     - `GetDurableExecution`
@@ -153,5 +153,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/lambda)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/lambda/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/lambda.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [lambda_broker_docker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_broker_docker_test.go), [lambda_broker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_broker_test.go), [lambda_concurrency_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_concurrency_test.go), [lambda_deadletter_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_deadletter_test.go), [lambda_destinations_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_destinations_test.go), [lambda_hotreload_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_hotreload_test.go), [lambda_imageconfig_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_imageconfig_test.go), [lambda_kafka_destinations_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_kafka_destinations_test.go), [lambda_layer_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_layer_policy_test.go), [lambda_layers_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_layers_test.go), [lambda_local_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_local_test.go), [lambda_mapping_options_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_mapping_options_test.go), [lambda_mapping_update_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_mapping_update_test.go), [lambda_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_policy_test.go), [lambda_s3_code_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_s3_code_test.go), [lambda_secrets_resource_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_secrets_resource_policy_test.go), [lambda_stream_failure_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_stream_failure_test.go), [lambda_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_test.go), [lambda_update_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_update_test.go), [lambda_urls_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_urls_test.go), [lambda_versions_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_versions_test.go), [lambda_warm_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_warm_test.go).
+- SDK integration examples: [lambda_async_restart_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_async_restart_test.go), [lambda_broker_docker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_broker_docker_test.go), [lambda_broker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_broker_test.go), [lambda_concurrency_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_concurrency_test.go), [lambda_deadletter_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_deadletter_test.go), [lambda_destinations_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_destinations_test.go), [lambda_hotreload_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_hotreload_test.go), [lambda_imageconfig_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_imageconfig_test.go), [lambda_kafka_destinations_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_kafka_destinations_test.go), [lambda_layer_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_layer_policy_test.go), [lambda_layers_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_layers_test.go), [lambda_local_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_local_test.go), [lambda_mapping_options_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_mapping_options_test.go), [lambda_mapping_update_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_mapping_update_test.go), [lambda_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_policy_test.go), [lambda_s3_code_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_s3_code_test.go), [lambda_secrets_resource_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_secrets_resource_policy_test.go), [lambda_stream_failure_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_stream_failure_test.go), [lambda_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_test.go), [lambda_update_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_update_test.go), [lambda_urls_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_urls_test.go), [lambda_versions_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_versions_test.go), [lambda_warm_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_warm_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

@@ -16,12 +16,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 
 	"github.com/amjadjibon/tinystack/internal/config"
+	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/storage/sqlite"
 )
 
 // persistent starts a server on the SQLite store in dir. stop shuts the server
 // down and closes the store, as app.Run does on exit.
-func persistent(t *testing.T, dir string, runtime *fakeRuntime) (s *httptest.Server, stop func()) {
+func persistent(t *testing.T, dir string, runtime lambda.Runtime) (s *httptest.Server, stop func()) {
 	t.Helper()
 	store, err := sqlite.Open(context.Background(), dir)
 	if err != nil {

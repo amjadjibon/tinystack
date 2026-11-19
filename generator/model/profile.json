@@ -17751,6 +17751,7 @@
     "operations": [
       "CreateFunction",
       "GetFunction",
+      "GetAccountSettings",
       "DeleteFunction",
       "ListFunctions",
       "Invoke",

@@ -22,7 +22,7 @@ func (s *Service) UpdateFunctionCode(
 		return nil, err
 	}
 
-	return s.update(ctx, in.FunctionName, in.RevisionId, common.Value(in.DryRun), common.Value(in.Publish), func(
+	return s.update(ctx, in.FunctionName, in.RevisionId, common.Value(in.DryRun), common.Value(in.Publish), nil, func(
 		fn *function,
 	) ([]byte, error) {
 		if err := fn.setArchitecture(in.Architectures); err != nil {
@@ -53,7 +53,14 @@ func (s *Service) UpdateFunctionConfiguration(
 		}
 	}
 
-	return s.update(ctx, in.FunctionName, in.RevisionId, false, false, func(fn *function) ([]byte, error) {
+	var check func(*function) error
+	if in.DeadLetterConfig != nil || in.Role != nil {
+		check = func(fn *function) error {
+			return s.checkAsyncTarget(ctx, m.Scope, fn.Name, fn.Role, fn.DeadLetterARN)
+		}
+	}
+
+	return s.update(ctx, in.FunctionName, in.RevisionId, false, false, check, func(fn *function) ([]byte, error) {
 		if in.Layers != nil {
 			if len(layers) > 0 && fn.PackageType == packageImage {
 				return nil, invalid("Layers are not supported for Image functions")
@@ -84,6 +91,7 @@ func (s *Service) update(
 	ctx context.Context,
 	raw, revision *string,
 	dryRun, publishing bool,
+	check func(*function) error,
 	change func(*function) ([]byte, error),
 ) (*api.FunctionConfiguration, error) {
 	m, err := request.Regional(ctx)
@@ -100,22 +108,51 @@ func (s *Service) update(
 		return nil, guardErr
 	}
 
-	var fn *function
-	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		key := m.Key("lambda", kindFunction, name)
-		var found bool
-		var loadErr error
-		fn, found, loadErr = loadFunction(tx, key)
-		if loadErr != nil {
-			return loadErr
+	key := m.Key("lambda", kindFunction, name)
+	load := func(tx storage.ReadTx) (*function, error) {
+		fn, found, readErr := loadFunction(tx, key)
+		if readErr != nil {
+			return nil, readErr
 		}
 
 		if !found {
-			return notFound("Function " + functionARN(m.Scope, name))
+			return nil, notFound("Function " + functionARN(m.Scope, name))
 		}
 
 		if revision != nil && *revision != fn.RevisionID {
-			return revisionMismatch()
+			return nil, revisionMismatch()
+		}
+
+		return fn, nil
+	}
+
+	if check != nil {
+		var fn *function
+		viewErr := s.store.View(ctx, func(tx storage.ReadTx) error {
+			var readErr error
+			fn, readErr = load(tx)
+			return readErr
+		})
+		if viewErr != nil {
+			return nil, viewErr
+		}
+
+		if _, changeErr := change(fn); changeErr != nil {
+			return nil, changeErr
+		}
+
+		if checkErr := check(fn); checkErr != nil {
+			return nil, checkErr
+		}
+
+		revision = new(fn.RevisionID)
+	}
+
+	var fn *function
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		var readErr error
+		if fn, readErr = load(tx); readErr != nil {
+			return readErr
 		}
 
 		code, changeErr := change(fn)

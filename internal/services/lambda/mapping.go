@@ -578,8 +578,8 @@ func (s *Service) ListEventSourceMappings(
 	return out, nil
 }
 
-// Resume starts a poller for every enabled mapping already in the store, such
-// as those a persistent store reloads on start.
+// Resume starts the async worker, reinitializes provisioned concurrency, and restarts enabled mapping pollers.
+// Call it after connecting the service's dependencies and before serving requests.
 func (s *Service) Resume(ctx context.Context) error {
 	type stored struct {
 		mp    *mapping
@@ -610,6 +610,12 @@ func (s *Service) Resume(ctx context.Context) error {
 		return err
 	}
 
+	if err := s.resumeProvisioned(ctx); err != nil {
+		return err
+	}
+
+	s.startAsync(s.async)
+	s.wakeAsync()
 	for _, e := range enabled {
 		s.startPoller(e.scope, e.mp) //nolint:contextcheck // The poller outlives Resume until Stop.
 	}

@@ -4,7 +4,11 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"maps"
+	"math"
+	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
@@ -20,12 +24,15 @@ const (
 	kindProvisioned = "provisioned"
 	// maxReserved leaves the 100 unreserved executions Lambda keeps of the
 	// default account limit of 1000.
-	maxReserved = 900
-	statusReady = "READY"
+	accountConcurrency = 1000
+	maxReserved        = accountConcurrency - 100
+	statusReady        = "READY"
+	statusInProgress   = "IN_PROGRESS"
 )
 
 // provisioned tracks allocation and initialization of reusable environments.
 type provisioned struct {
+	Versions     map[string]int64
 	Status       string
 	StatusReason string
 	Token        string
@@ -43,41 +50,117 @@ func provisionedKey(scope request.Scope, name, qualifier string) string {
 	return scope.Key("lambda", kindProvisioned, name+"/"+qualifier)
 }
 
-// acquire takes one of the function's concurrent executions, failing when its
-// reserved concurrency is in use, and returns the function that releases it
-// with the executions now in flight.
+// plan allocates the alias's requested capacity across the versions it routes to.
+func (p *provisioned) plan(tx storage.ReadTx, scope request.Scope, name string) error {
+	a, found, err := loadAlias(tx, scope, name, p.Qualifier)
+	if err != nil {
+		return err
+	}
+
+	if !found {
+		p.Versions = map[string]int64{p.Qualifier: p.Requested}
+		return nil
+	}
+
+	if a.Version == latest {
+		return invalid("Provisioned Concurrency Configs cannot be applied to unpublished function versions.")
+	}
+
+	p.Versions = map[string]int64{a.Version: p.Requested}
+	for version, weight := range a.Weights {
+		secondary := int64(math.Round(float64(p.Requested) * weight))
+		p.Versions[version] = secondary
+		p.Versions[a.Version] -= secondary
+	}
+
+	return nil
+}
+
+func (p *provisioned) poolKey(arn, version string) string {
+	return arn + "/" + version + "/" + p.Token
+}
+
+func (p *provisioned) capacity(version string) int64 {
+	if p.Status == statusReady {
+		return p.Versions[version]
+	}
+
+	return 0
+}
+
+func (s *Service) releaseProvisioned(scope request.Scope, name string, p *provisioned) {
+	arn := qualifiedARN(scope, name, p.Qualifier)
+	for version := range p.Versions {
+		s.runtime.Release(p.poolKey(arn, version))
+	}
+}
+
+type invocationConcurrency struct {
+	function, provisioned, unreserved int
+	spillover, usesUnreserved         bool
+}
+
+// acquire accounts for the function's reserved limit and the provisioned slots available to the routed version.
 func (s *Service) acquire(
-	ctx context.Context,
-	scope request.Scope,
-	name string,
-) (release func(), running int, err error) {
+	ctx context.Context, scope request.Scope, fn *Function,
+) (func(), invocationConcurrency, error) {
+	var current invocationConcurrency
 	var limit int64
 	var capped bool
-	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		var readErr error
-		limit, capped, readErr = reservedConcurrency(tx, scope, name)
+		limit, capped, readErr = reservedConcurrency(tx, scope, fn.Name)
 		return readErr
 	})
 	if err != nil {
-		return nil, 0, err
+		return nil, current, err
 	}
 
-	key := functionARN(scope, name)
+	key := functionARN(scope, fn.Name)
 	s.slots.Lock()
 	defer s.slots.Unlock()
 	if capped && int64(s.running[key]) >= limit {
-		return nil, 0, awserror.New("TooManyRequestsException", "Rate Exceeded.")
+		return nil, current, awserror.New("TooManyRequestsException", "Rate Exceeded.")
+	}
+
+	arn, pool := fn.ARN, fn.PoolKey
+	usesProvisioned := int64(s.poolRunning[pool]) < fn.provisioned
+	if usesProvisioned {
+		s.poolRunning[pool]++
+		s.provisionedRunning[arn]++
+	} else {
+		fn.PoolKey = fn.onDemandPool
+		current.spillover = fn.allocated > 0
+		current.usesUnreserved = !capped
+		if current.usesUnreserved {
+			s.unreserved[scope]++
+		}
 	}
 
 	s.running[key]++
+	current.function = s.running[key]
+	current.provisioned = s.provisionedRunning[arn]
+	current.unreserved = s.unreserved[scope]
 	return func() {
 		s.slots.Lock()
 		defer s.slots.Unlock()
-		s.running[key]--
-		if s.running[key] == 0 {
-			delete(s.running, key)
+		releaseSlot(s.running, key)
+		if usesProvisioned {
+			releaseSlot(s.poolRunning, pool)
+			releaseSlot(s.provisionedRunning, arn)
 		}
-	}, s.running[key], nil
+
+		if current.usesUnreserved {
+			releaseSlot(s.unreserved, scope)
+		}
+	}, current, nil
+}
+
+func releaseSlot[K comparable](slots map[K]int, key K) {
+	slots[key]--
+	if slots[key] == 0 {
+		delete(slots, key)
+	}
 }
 
 // latestFunction resolves a request's unqualified function and checks that it
@@ -249,32 +332,33 @@ func (s *Service) PutProvisionedConcurrencyConfig(
 	defer s.warmMu.Unlock()
 	p := provisioned{
 		Requested: n, LastModified: s.now().UTC().Format(timeFormat),
-		Status: "IN_PROGRESS", Token: common.RandomID(32),
+		Status: statusInProgress, Token: common.RandomID(32),
 	}
 	var name string
+	var previous provisioned
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		resolved, q, resolveErr := provisionedTarget(tx, &m, in.FunctionName, in.Qualifier)
 		if resolveErr != nil {
 			return resolveErr
 		}
 
-		a, found, aliasErr := loadAlias(tx, m.Scope, resolved, q)
-		if aliasErr != nil {
-			return aliasErr
-		}
-
-		if found && len(a.Weights) > 0 {
-			return invalid("Provisioned concurrency does not support weighted aliases")
-		}
-
 		name, p.Qualifier = resolved, q
-		return writeJSON(tx, provisionedKey(m.Scope, name, q), &p)
+		if planErr := p.plan(tx, m.Scope, name); planErr != nil {
+			return planErr
+		}
+
+		key := provisionedKey(m.Scope, name, q)
+		if _, readErr := readJSON(tx, key, &previous); readErr != nil {
+			return readErr
+		}
+
+		return writeJSON(tx, key, &p)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	s.runtime.Release(qualifiedARN(m.Scope, name, p.Qualifier))
+	s.releaseProvisioned(m.Scope, name, &previous)
 	s.queueWarm(ctx, m.Scope, name, &p)
 	return &api.PutProvisionedConcurrencyConfigResponse{
 		RequestedProvisionedConcurrentExecutions: new(n),
@@ -328,27 +412,33 @@ func (s *Service) DeleteProvisionedConcurrencyConfig(
 ) (*api.DeleteProvisionedConcurrencyConfigOutput, error) {
 	s.warmMu.Lock()
 	defer s.warmMu.Unlock()
-	var arn string
+	var p provisioned
+	var name string
 	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		name, q, resolveErr := provisionedTarget(tx, &m, in.FunctionName, in.Qualifier)
+		resolved, q, resolveErr := provisionedTarget(tx, &m, in.FunctionName, in.Qualifier)
 		if resolveErr != nil {
 			return resolveErr
 		}
 
-		arn = qualifiedARN(m.Scope, name, q)
-		tx.Delete(provisionedKey(m.Scope, name, q))
+		name = resolved
+		key := provisionedKey(m.Scope, name, q)
+		if _, readErr := readJSON(tx, key, &p); readErr != nil {
+			return readErr
+		}
+
+		tx.Delete(key)
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	s.runtime.Release(arn)
+	s.releaseProvisioned(m.Scope, name, &p)
 	return &api.DeleteProvisionedConcurrencyConfigOutput{}, nil
 }
 
@@ -424,7 +514,6 @@ func (s *Service) queueWarm(ctx context.Context, scope request.Scope, name strin
 		s.warmJobs.Lock()
 		defer s.warmJobs.Unlock()
 		key := provisionedKey(scope, name, p.Qualifier)
-		arn := qualifiedARN(scope, name, p.Qualifier)
 		var current provisioned
 		readErr := s.store.View(bgctx, func(tx storage.ReadTx) error {
 			_, err := readJSON(tx, key, &current)
@@ -434,14 +523,7 @@ func (s *Service) queueWarm(ctx context.Context, scope request.Scope, name strin
 			return
 		}
 
-		fn, startErr := s.prepare(bgctx, scope, name, p.Qualifier)
-		if startErr == nil {
-			if runtime, ok := s.runtime.(WarmRuntime); ok {
-				startErr = runtime.Warm(bgctx, fn, int(p.Requested))
-			} else {
-				startErr = fmt.Errorf("configured runtime does not support warm reuse")
-			}
-		}
+		startErr := s.warmVersions(bgctx, scope, name, p)
 
 		s.warmMu.Lock()
 		defer s.warmMu.Unlock()
@@ -464,7 +546,88 @@ func (s *Service) queueWarm(ctx context.Context, scope request.Scope, name strin
 		}
 
 		if stale || startErr != nil {
-			s.runtime.Release(arn)
+			s.releaseProvisioned(scope, name, p)
 		}
 	})
+}
+
+func (s *Service) warmVersions(ctx context.Context, scope request.Scope, name string, p *provisioned) error {
+	runtime, ok := s.runtime.(WarmRuntime)
+	if !ok {
+		return fmt.Errorf("configured runtime does not support warm reuse")
+	}
+
+	for _, version := range slices.Sorted(maps.Keys(p.Versions)) {
+		count := p.Versions[version]
+		if count == 0 {
+			continue
+		}
+
+		fn, err := s.prepareTarget(ctx, scope, name, p.Qualifier, version)
+		if err != nil {
+			return err
+		}
+
+		fn.PoolKey = p.poolKey(qualifiedARN(scope, name, p.Qualifier), version)
+		if err := runtime.Warm(ctx, fn, int(count)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Runtime environments cannot survive a restart. Reinitialize saved configurations before advertising them as ready.
+func (s *Service) resumeProvisioned(ctx context.Context) error {
+	s.warmMu.Lock()
+	defer s.warmMu.Unlock()
+	type warmJob struct {
+		scope  request.Scope
+		name   string
+		config provisioned
+	}
+
+	var jobs []warmJob
+	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
+		for _, key := range tx.Keys("") {
+			account, region, rest, ok := storage.Scoped(key, "lambda")
+			if !ok {
+				continue
+			}
+
+			target, ok := strings.CutPrefix(rest, kindProvisioned+"/")
+			if !ok {
+				continue
+			}
+
+			name, _, _ := strings.Cut(target, "/")
+			var p provisioned
+			if _, err := readJSON(tx, key, &p); err != nil {
+				return err
+			}
+
+			p.Status, p.StatusReason, p.Allocated = statusInProgress, "", 0
+			p.Token = common.RandomID(32)
+			if err := writeJSON(tx, key, &p); err != nil {
+				return err
+			}
+
+			jobs = append(
+				jobs,
+				warmJob{scope: request.Scope{AccountID: account, Region: region}, name: name, config: p},
+			)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	for i := range jobs {
+		job := &jobs[i]
+		s.queueWarm(ctx, job.scope, job.name, &job.config)
+	}
+
+	return nil
 }

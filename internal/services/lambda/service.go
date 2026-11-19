@@ -88,18 +88,28 @@ type Service struct {
 	objects ObjectReader
 	metrics awsmetrics.Meter
 	now     func() time.Time
-	// bg runs background work (async invocations and pollers) until Stop.
+	// bg runs mapping pollers and warm jobs until Stop.
 	bg      *background.Group
 	pollers map[string]*poller
+	// Reset replaces the async group after its workers have stopped.
+	async     *background.Group
+	asyncWake chan struct{}
 	// running counts each function's invocations in flight, which its
 	// reserved concurrency caps; slots guards it.
-	running   map[string]int
-	checked   eventsource.ReadCache
-	mu        sync.Mutex
-	slots     sync.Mutex
-	warmMu    sync.Mutex
-	warmJobs  sync.Mutex
-	warmEpoch uint64
+	running            map[string]int
+	unreserved         map[request.Scope]int
+	provisionedRunning map[string]int
+	poolRunning        map[string]int
+	checked            eventsource.ReadCache
+	asyncActive        sync.Map
+	asyncMu            sync.RWMutex
+	stopOnce           sync.Once
+	asyncStopping      bool
+	mu                 sync.Mutex
+	slots              sync.Mutex
+	warmMu             sync.Mutex
+	warmJobs           sync.Mutex
+	warmEpoch          uint64
 }
 
 // New returns a Lambda service that runs code with runtime, reads SQS and
@@ -121,18 +131,23 @@ func New(
 	}
 
 	return &Service{
-		store:      store,
-		queues:     queues,
-		streams:    streams,
-		logs:       logGroups,
-		runtime:    runtime,
-		logger:     logger,
-		secretKeys: secretKeys,
-		deliveries: deliveries,
-		now:        time.Now,
-		bg:         background.New(),
-		pollers:    map[string]*poller{},
-		running:    map[string]int{},
+		store:              store,
+		queues:             queues,
+		streams:            streams,
+		logs:               logGroups,
+		runtime:            runtime,
+		logger:             logger,
+		secretKeys:         secretKeys,
+		deliveries:         deliveries,
+		now:                time.Now,
+		bg:                 background.New(),
+		async:              background.New(),
+		asyncWake:          make(chan struct{}, 1),
+		pollers:            map[string]*poller{},
+		running:            map[string]int{},
+		unreserved:         map[request.Scope]int{},
+		provisionedRunning: map[string]int{},
+		poolRunning:        map[string]int{},
 	}
 }
 
@@ -178,15 +193,22 @@ func (s *Service) deploymentPackage(ctx context.Context, zipFile []byte, bucket,
 // Stop ends pollers and async invocations, waits for them, and then releases
 // every runtime environment. Concurrent and later calls wait for the first.
 func (s *Service) Stop() {
-	if s.bg.Stop() {
+	s.stopOnce.Do(func() {
+		s.asyncMu.Lock()
+		s.asyncStopping = true
+		group := s.async
+		s.asyncMu.Unlock()
+		group.Stop()
+		s.bg.Stop()
 		s.runtime.Close()
-	}
+	})
 }
 
 // Reset ends every event source mapping's poller and removes the warm
 // environments, so nothing keeps running for functions that no longer exist.
 // Call it before the store is cleared.
 func (s *Service) Reset(ctx context.Context) {
+	s.resetAsync(ctx)
 	s.warmMu.Lock()
 	defer s.warmMu.Unlock()
 	s.warmEpoch++
@@ -758,6 +780,10 @@ func (s *Service) CreateFunction(
 
 	if fn.Layers, err = s.layersOf(ctx, &m, fn, in.Layers); err != nil {
 		return nil, err
+	}
+
+	if targetErr := s.checkAsyncTarget(ctx, m.Scope, fn.Name, fn.Role, fn.DeadLetterARN); targetErr != nil {
+		return nil, targetErr
 	}
 
 	fn.AccessKey = m.AccessKey

@@ -24,15 +24,25 @@ func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
 func (s *Service) executionDelivery(ctx context.Context, scope request.Scope, name string, c *catalog.DeliveryRole) (
 	catalog.ServiceDelivery, error,
 ) {
+	return s.executionDeliveryAt(ctx, scope, name, "", c)
+}
+
+func (s *Service) executionDeliveryAt(
+	ctx context.Context, scope request.Scope, name, qualifier string, c *catalog.DeliveryRole,
+) (catalog.ServiceDelivery, error) {
 	var role string
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		fn, _, readErr := loadFunction(tx, scope.Key("lambda", "function", name))
+		fn, _, readErr := resolve(tx, scope, name, qualifier)
 		if fn != nil {
 			role = fn.Role
 		}
 
 		return readErr
 	})
+	return executionRoleDelivery(scope, name, role, c), err
+}
+
+func executionRoleDelivery(scope request.Scope, name, role string, c *catalog.DeliveryRole) catalog.ServiceDelivery {
 	call := *c
 	call.ARN, call.Session = role, name
 
@@ -41,7 +51,7 @@ func (s *Service) executionDelivery(ctx context.Context, scope request.Scope, na
 		SourceARN:     functionARN(scope, name),
 		SourceAccount: scope.AccountID,
 		Role:          &call,
-	}, err
+	}
 }
 
 // authorizeReads checks that the function's execution role may read the event source, and returns the first call it

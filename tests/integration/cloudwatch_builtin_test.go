@@ -72,7 +72,7 @@ func builtinMetric(
 		}
 
 		if time.Now().After(deadline) {
-			t.Fatalf("%s %s %v: %+v", namespace, name, aws.ToString(dims[0].Value), got)
+			t.Fatalf("%s %s %v: %+v", namespace, name, dims, got)
 		}
 
 		time.Sleep(100 * time.Millisecond)
@@ -234,25 +234,47 @@ func TestBuiltinLambdaMetrics(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	// A function whose dead-letter target does not exist reports DeadLetterErrors after failing.
-	missingDLQ := "arn:aws:sqs:us-east-1:000000000000:missing"
+	// Delivery failures are reported when targets are deleted after configuration.
+	queues := sqsClient(s, "test")
+	dlqURL, dlqARN := queueARN(t, queues, "deadletter-metrics")
+	destinationURL, destinationARN := queueARN(t, queues, "destination-metrics")
 	createFunction(t, functions, "deadletter", "app.fail")
 	if _, err = functions.UpdateFunctionConfiguration(ctx, &sdklambda.UpdateFunctionConfigurationInput{
 		FunctionName:     new("deadletter"),
-		DeadLetterConfig: &lambdatypes.DeadLetterConfig{TargetArn: &missingDLQ},
+		DeadLetterConfig: &lambdatypes.DeadLetterConfig{TargetArn: &dlqARN},
 	}); err != nil {
 		t.Fatal(err)
 	}
 
 	if _, err = functions.PutFunctionEventInvokeConfig(ctx, &sdklambda.PutFunctionEventInvokeConfigInput{
 		FunctionName: new("deadletter"), MaximumRetryAttempts: new(int32(0)),
+		DestinationConfig: &lambdatypes.DestinationConfig{
+			OnFailure: &lambdatypes.OnFailure{Destination: &destinationARN},
+		},
 	}); err != nil {
 		t.Fatal(err)
 	}
 
+	for _, url := range []string{dlqURL, destinationURL} {
+		_, err := queues.DeleteQueue(ctx, &sqs.DeleteQueueInput{QueueUrl: &url})
+		mustAuthorize(t, err)
+	}
+
 	invoke("deadletter", lambdatypes.InvocationTypeEvent, nil)
 	deadLetter := dimensions("FunctionName", "deadletter")
-	expectBuiltin(t, c, "AWS/Lambda", "DeadLetterErrors", "Count", deadLetter, 1)
+	for _, name := range []string{
+		"DeadLetterErrors", "DestinationDeliveryFailures", "AsyncEventsReceived",
+		"AsyncEventsDropped",
+	} {
+		expectBuiltin(t, c, "AWS/Lambda", name, "Count", deadLetter, 1)
+	}
+
+	age := builtinMetric(t, c, "AWS/Lambda", "AsyncEventAge", deadLetter, func(b builtin) bool { return b.count == 1 })
+	if age.unit != "Milliseconds" || age.sum < 0 {
+		t.Fatalf("AsyncEventAge = %+v", age)
+	}
+
+	builtinMetric(t, c, "AWS/Lambda", "UnreservedConcurrentExecutions", nil, func(b builtin) bool { return b.sum > 0 })
 }
 
 func TestBuiltinSQSMetrics(t *testing.T) {

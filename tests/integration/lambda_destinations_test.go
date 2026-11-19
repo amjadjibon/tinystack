@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -15,6 +16,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+
+	"github.com/amjadjibon/tinystack/internal/config"
 )
 
 // destinationRecord is the part of an asynchronous invocation record the
@@ -320,5 +323,49 @@ func TestLambdaDestinationsSNSAndEventBridge(t *testing.T) {
 		event.DetailType != "Lambda Function Invocation Result - Success" ||
 		event.Detail.RequestContext.Condition != "Success" {
 		t.Fatalf("event %+v, %v", event, err)
+	}
+}
+
+func TestLambdaDestinationConfigurationChecksExecutionRole(t *testing.T) {
+	const function = "arn:aws:lambda:us-east-1:" + deliveryAccount + ":function:destination-check"
+	s, _ := deliveryServer(t, config.AuthorizationEnforce)
+	ctx := context.Background()
+	_, arn := queueARN(t, sqsClient(s, "test"), "results")
+	trust, permissions := roleNoPermission.documentsFor("lambda.amazonaws.com", function, arn, "sqs:SendMessage")
+	role := createDeliveryRole(t, s, "execution", trust, permissions)
+	c := lambdaClient(s, "test")
+	_, err := c.CreateFunction(ctx, &sdklambda.CreateFunctionInput{
+		FunctionName: new("destination-check"), Role: &role, Runtime: lambdatypes.RuntimePython312,
+		Handler: new("app.echo"), Code: &lambdatypes.FunctionCode{
+			ZipFile: zipOf(t, "app.py", "def echo(event, context): return event"),
+		},
+	})
+	mustAuthorize(t, err)
+	target := &lambdatypes.DestinationConfig{OnSuccess: &lambdatypes.OnSuccess{Destination: &arn}}
+	_, err = c.PutFunctionEventInvokeConfig(ctx, &sdklambda.PutFunctionEventInvokeConfigInput{
+		FunctionName: new("destination-check"), DestinationConfig: target,
+	})
+	if !isType[*lambdatypes.InvalidParameterValueException](err) ||
+		!strings.Contains(err.Error(), "permissions to call SendMessage") {
+		t.Fatalf("put with denied execution role = %v", err)
+	}
+
+	_, err = c.PutFunctionEventInvokeConfig(ctx, &sdklambda.PutFunctionEventInvokeConfigInput{
+		FunctionName: new("destination-check"), MaximumRetryAttempts: new(int32(0)),
+	})
+	mustAuthorize(t, err)
+	_, err = c.UpdateFunctionEventInvokeConfig(ctx, &sdklambda.UpdateFunctionEventInvokeConfigInput{
+		FunctionName: new("destination-check"), DestinationConfig: target,
+	})
+	if !isType[*lambdatypes.InvalidParameterValueException](err) {
+		t.Fatalf("update with denied execution role = %v", err)
+	}
+
+	got, err := c.GetFunctionEventInvokeConfig(ctx, &sdklambda.GetFunctionEventInvokeConfigInput{
+		FunctionName: new("destination-check"),
+	})
+	mustAuthorize(t, err)
+	if aws.ToString(got.DestinationConfig.OnSuccess.Destination) != "" {
+		t.Fatalf("failed update changed configuration: %+v", got)
 	}
 }

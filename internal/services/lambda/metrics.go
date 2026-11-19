@@ -12,15 +12,23 @@ import (
 const (
 	metricNamespace = "AWS/Lambda"
 
-	metricInvocations      = "Invocations"
-	metricErrors           = "Errors"
-	metricDeadLetterErrors = "DeadLetterErrors"
-	metricDuration         = "Duration"
-	metricThrottles        = "Throttles"
-	metricConcurrent       = "ConcurrentExecutions"
-	metricIteratorAge      = "IteratorAge"
+	metricInvocations         = "Invocations"
+	metricErrors              = "Errors"
+	metricDeadLetterErrors    = "DeadLetterErrors"
+	metricDuration            = "Duration"
+	metricThrottles           = "Throttles"
+	metricConcurrent          = "ConcurrentExecutions"
+	metricIteratorAge         = "IteratorAge"
+	metricAsyncReceived       = "AsyncEventsReceived"
+	metricAsyncAge            = "AsyncEventAge"
+	metricAsyncDropped        = "AsyncEventsDropped"
+	metricDestinationFailures = "DestinationDeliveryFailures"
+	metricUnreserved          = "UnreservedConcurrentExecutions"
+	metricProvisioned         = "ProvisionedConcurrentExecutions"
+	metricUtilization         = "ProvisionedConcurrencyUtilization"
+	metricSpillover           = "ProvisionedConcurrencySpilloverInvocations"
 
-	dimensionFunction = "FunctionName"
+	dimensionFunction = paramFunctionName
 	dimensionResource = "Resource"
 )
 
@@ -77,6 +85,15 @@ func (s *Service) publishInvocation(
 	)
 }
 
+type asyncArrivalKey struct{}
+
+func (s *Service) publishAsyncAge(scope request.Scope, name, qualifier string, queued time.Time) {
+	s.publish(scope, name, qualifier, awsmetrics.Datum{
+		Name: metricAsyncAge, Unit: awsmetrics.Milliseconds,
+		Value: float64(max(0, s.now().Sub(queued)).Microseconds()) / 1000,
+	})
+}
+
 func (s *Service) publishIteratorAge(scope request.Scope, name, qualifier string, arrival time.Time) {
 	if arrival.IsZero() {
 		return
@@ -92,4 +109,24 @@ func (s *Service) publishIteratorAge(scope request.Scope, name, qualifier string
 		Unit:  awsmetrics.Milliseconds,
 		Value: float64(age.Microseconds()) / 1000,
 	})
+}
+
+func (s *Service) publishConcurrency(
+	scope request.Scope, name, qualifier string, fn *Function, concurrent invocationConcurrency,
+) {
+	if concurrent.usesUnreserved {
+		s.metrics.Publish(scope, metricNamespace, counter(metricUnreserved, float64(concurrent.unreserved)))
+	}
+
+	if fn.allocated == 0 {
+		return
+	}
+
+	s.publish(scope, name, qualifier, counter(metricProvisioned, float64(concurrent.provisioned)), awsmetrics.Datum{
+		Name: metricUtilization, Unit: awsmetrics.None,
+		Value: min(1, float64(concurrent.provisioned)/float64(fn.allocated)),
+	})
+	if concurrent.spillover {
+		s.publish(scope, name, qualifier, counter(metricSpillover, 1))
+	}
 }
