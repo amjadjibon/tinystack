@@ -21,9 +21,22 @@ func (s *Server) authorizeRole(ctx context.Context, mode string, d *catalog.Serv
 		return nil
 	}
 
-	op, input, err := s.consoleCaller.Decode(role.Service, role.Operation, role.Params)
-	if err != nil {
-		return nil //nolint:nilerr // A call that does not decode has nothing to authorize.
+	var (
+		op        *catalog.Operation
+		input     any
+		resources []catalog.AuthorizationResource
+		err       error
+	)
+	if _, modeled := service.Operations[role.Operation]; !modeled && d.Target != "" {
+		op = &catalog.Operation{Name: role.Operation, IAMAction: service.IAMPrefix + ":" + role.Operation}
+		resources = []catalog.AuthorizationResource{{
+			ARN: d.Target, OwnerAccount: arnField(d.Target, accountField),
+		}}
+	} else {
+		op, input, err = s.consoleCaller.Decode(role.Service, role.Operation, role.Params)
+		if err != nil {
+			return nil //nolint:nilerr // A call that does not decode has nothing to authorize.
+		}
 	}
 
 	// A delivery from a request, such as API Gateway's, carries no account or Region of its own: the resource that
@@ -71,6 +84,7 @@ func (s *Server) authorizeRole(ctx context.Context, mode string, d *catalog.Serv
 	meta.AuthorizationValues = authorizationValues(nil, &principal, snapshot.Tags, meta.Region)
 	record = s.evaluate(request.WithMetadata(ctx, meta), mode, &evaluation{
 		service: service, op: op, input: input, snapshot: snapshot, values: meta.AuthorizationValues,
+		resources:   resources,
 		serviceName: role.Service, lookupFailed: lookupFailed,
 	})
 

@@ -222,8 +222,8 @@ type ServiceDelivery struct {
 	// SourceARN and SourceAccount name the resource that delivers and its account, which policies match with
 	// aws:SourceArn and aws:SourceAccount. SourceAccount is empty where AWS sends none.
 	SourceARN, SourceAccount string
-	// Target is the ARN of the queue, topic, or function delivered to. A delivery under a role names its target in
-	// the call instead.
+	// Target is the destination ARN. A delivery under a role names its target in the modeled call, or here
+	// when the delivery action has no modeled operation.
 	Target string
 }
 

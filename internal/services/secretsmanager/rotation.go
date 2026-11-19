@@ -3,7 +3,6 @@ package secretsmanager
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -83,12 +82,17 @@ func rules(in *api.RotationRulesType) (*rotation, *schedule.Schedule, error) {
 
 	s, err := schedule.Parse(r.Expression)
 	switch {
-	case errors.Is(err, schedule.ErrUnsupported):
-		return nil, nil, invalidParameter("TinyStack does not support L, W, or # in cron expressions.")
 	case err != nil:
 		return nil, nil, invalidParameter("The ScheduleExpression is not valid.")
 	case strings.HasPrefix(r.Expression, "rate(") && s.Period() < minRotationPeriod:
 		return nil, nil, invalidParameter("The rotation schedule must be at least 4 hours.")
+	}
+
+	if body, ok := strings.CutPrefix(r.Expression, "cron("); ok {
+		day := strings.Fields(body)[2]
+		if strings.HasSuffix(strings.ToUpper(day), "W") {
+			return nil, nil, invalidParameter("Secrets Manager rotation schedules do not support W.")
+		}
 	}
 
 	return r, s, nil

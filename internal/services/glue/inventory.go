@@ -41,7 +41,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 						ARN:     "arn:aws:glue:" + region + ":" + account + ":classifier/" + decoded,
 					},
 				)
-			case kindJob, kindTrigger, kindWorkflow, kindCrawler:
+			case kindJob, kindTrigger, kindWorkflow, kindCrawler, kindConnection:
 				decoded, decodeErr := url.PathUnescape(n)
 				if decodeErr != nil {
 					return decodeErr

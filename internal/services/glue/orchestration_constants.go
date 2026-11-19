@@ -21,6 +21,7 @@ const (
 	triggerConditional  = "CONDITIONAL"
 	triggerActivated    = "ACTIVATED"
 	behaviorLog         = "LOG"
+	updateInDatabase    = "UPDATE_IN_DATABASE"
 	deleteFromDatabase  = "DELETE_FROM_DATABASE"
 	deprecateInDatabase = "DEPRECATE_IN_DATABASE"
 	recrawlNewFolders   = "CRAWL_NEW_FOLDERS_ONLY"

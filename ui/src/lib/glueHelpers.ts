@@ -61,6 +61,7 @@ const shapes: Record<string, string[]> = {
 		"Description",
 		"Role",
 		"ExecutionProperty",
+		"Connections",
 		"Command",
 		"DefaultArguments",
 		"NonOverridableArguments",
@@ -76,6 +77,7 @@ const shapes: Record<string, string[]> = {
 		"Description",
 		"Role",
 		"ExecutionProperty",
+		"Connections",
 		"Command",
 		"DefaultArguments",
 		"NonOverridableArguments",
@@ -122,9 +124,17 @@ const shapes: Record<string, string[]> = {
 		"Actions",
 		"Description",
 		"StartOnCreation",
+		"EventBatchingCondition",
 		"Tags",
 	],
-	TriggerUpdate: ["Name", "Description", "Schedule", "Actions", "Predicate"],
+	TriggerUpdate: [
+		"Name",
+		"Description",
+		"Schedule",
+		"Actions",
+		"Predicate",
+		"EventBatchingCondition",
+	],
 	CreateWorkflowRequest: [
 		"Name",
 		"Description",
@@ -162,8 +172,12 @@ const shapes: Record<string, string[]> = {
 	],
 	JobCommand: ["Name", "ScriptLocation", "PythonVersion", "Runtime"],
 	ExecutionProperty: ["MaxConcurrentRuns"],
-	CrawlerTargets: ["S3Targets"],
+	CrawlerTargets: ["S3Targets", "DynamoDBTargets", "CatalogTargets"],
 	S3Target: ["Path", "Exclusions", "SampleSize"],
+	DynamoDBTarget: ["Path", "scanAll"],
+	CatalogTarget: ["DatabaseName", "Tables"],
+	EventBatchingCondition: ["BatchSize", "BatchWindow"],
+	ConnectionsList: ["Connections"],
 	SchemaChangePolicy: ["UpdateBehavior", "DeleteBehavior"],
 	RecrawlPolicy: ["RecrawlBehavior"],
 	Predicate: ["Logical", "Conditions"],
@@ -189,6 +203,11 @@ const children: Record<string, string> = {
 	ExecutionProperty: "ExecutionProperty",
 	Targets: "CrawlerTargets",
 	S3Targets: "S3Target",
+	DynamoDBTargets: "DynamoDBTarget",
+	CatalogTargets: "CatalogTarget",
+	EventBatchingCondition: "EventBatchingCondition",
+	"CreateJobRequest.Connections": "ConnectionsList",
+	"JobUpdate.Connections": "ConnectionsList",
 	SchemaChangePolicy: "SchemaChangePolicy",
 	RecrawlPolicy: "RecrawlPolicy",
 	Predicate: "Predicate",
@@ -203,10 +222,11 @@ function validate(value: unknown, shape: string): void {
 	for (const [key, child] of Object.entries(value)) {
 		if (!shapes[shape].includes(key))
 			throw new Error(`${shape}.${key} is not supported.`);
-		if (children[key]) {
+		const childShape = children[`${shape}.${key}`] ?? children[key];
+		if (childShape) {
 			if (Array.isArray(child))
-				for (const item of child) validate(item, children[key]);
-			else validate(child, children[key]);
+				for (const item of child) validate(item, childShape);
+			else validate(child, childShape);
 		}
 	}
 }

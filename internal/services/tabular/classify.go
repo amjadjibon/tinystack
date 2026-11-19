@@ -17,17 +17,19 @@ import (
 
 // ClassifyOptions describes a custom text classifier. Empty Kind selects built-ins.
 type ClassifyOptions struct {
-	Kind, Delimiter, Quote, ContainsHeader, JSONPath string
-	Header, Types                                    []string
-	DisableTrimming, SingleColumn                    bool
+	Grok                                                               *Grok
+	Kind, Delimiter, Quote, ContainsHeader, JSONPath, Label, XMLRowTag string
+	Header, Types                                                      []string
+	DisableTrimming, SingleColumn                                      bool
 }
 
 // Classification is independent of catalog records and object storage.
 type Classification struct {
-	Kind, Delimiter, Quote, Compression string
-	Columns                             []Column
-	Records                             int64
-	Header                              bool
+	Kind, Delimiter, Quote, Compression, Label string
+	FormatParameters                           map[string]string
+	Columns                                    []Column
+	Records                                    int64
+	Header                                     bool
 }
 
 var jsonPathPattern = regexp.MustCompile(`^\$(\.[A-Za-z_][A-Za-z0-9_]*)*(\[\*\])?$`)
@@ -63,11 +65,25 @@ func Classify(body []byte, o *ClassifyOptions) (*Classification, error) {
 		return nil, err
 	}
 
-	c.Compression = compression
+	c.Compression, c.Label = compression, o.Label
 	return c, nil
 }
 
 func classify(body []byte, o *ClassifyOptions) (*Classification, error) {
+	if o.Grok != nil {
+		return o.Grok.classify(body)
+	}
+
+	if o.XMLRowTag != "" {
+		c, err := classifyXML(body, o.XMLRowTag)
+		if err != nil {
+			return nil, err
+		}
+
+		c.FormatParameters = map[string]string{"rowTag": o.XMLRowTag}
+		return c, nil
+	}
+
 	if o.Kind == "" && bytes.HasPrefix(body, []byte("PAR1")) {
 		cols, err := Infer(body)
 		if err != nil {
@@ -118,7 +134,7 @@ func scalarType(v string) string {
 	}
 
 	if strings.EqualFold(v, "true") || strings.EqualFold(v, "false") {
-		return "boolean"
+		return hiveBoolean
 	}
 
 	for _, layout := range []string{time.RFC3339Nano, "2006-01-02 15:04:05.999999999"} {
@@ -326,7 +342,7 @@ func jsonType(v any) string {
 	case nil:
 		return ""
 	case bool:
-		return "boolean"
+		return hiveBoolean
 	case json.Number:
 		return scalarType(v.String())
 	case string:

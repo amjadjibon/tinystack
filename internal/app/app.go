@@ -405,7 +405,9 @@ func build(
 	secrets := secretsmanager.New(store, keys, functions, deliveries)
 	// Stop ends the rotation scheduler and running rotations.
 	a.onStop(secrets.Stop)
-	rules := eventbridge.New(store, queues, topics, functions, deliveries, secrets)
+	dataCatalog := glue.New(store)
+	dataCatalog.UseDynamoDB(tables)
+	rules := eventbridge.New(store, queues, topics, functions, deliveries, secrets, dataCatalog.DeliverWorkflowEvent)
 	// Stop ends the scheduler, which writes to the store.
 	a.onStop(rules.Stop)
 	blobDir := ""
@@ -690,7 +692,6 @@ func build(
 	a.onStop(stacks.Stop)
 	email := sesv2.New(store, deliveries)
 	identityPools := cognitoidentity.New(store, identities, roles)
-	dataCatalog := glue.New(store)
 	hostRuntime, localExecution := runtime.(interface{ LocalExecution() bool })
 	dataCatalog.UseExecution(roles, buckets, logGroups, localExecution && hostRuntime.LocalExecution(),
 		cfg.Lambda.Local.Python, cfg.Identity.SecretKeys)
@@ -855,7 +856,7 @@ func build(
 		sesapi.Descriptor(ses.New(email)),
 		sesv2api.Descriptor(email),
 		cognitoidentityapi.Descriptor(identityPools),
-		glueapi.Descriptor(dataCatalog),
+		glue.ProtectConnections(glueapi.Descriptor(dataCatalog)),
 		athenaapi.Descriptor(queries),
 		iotapi.Descriptor(things),
 		iotdataplaneapi.Descriptor(things.DataPlane()),

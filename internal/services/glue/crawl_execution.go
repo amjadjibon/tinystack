@@ -1,8 +1,10 @@
 package glue
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"maps"
 	"net/url"
 	"path"
 	"regexp"
@@ -195,13 +197,27 @@ type crawlObject struct {
 
 type crawlTable struct {
 	input                  api.TableInput
+	catalog                *catalogCrawlTarget
 	folders                map[string][]string
 	objects, records, size int64
 }
 
-func customOptions(c *api.Classifier) *tabular.ClassifyOptions {
+func customOptions(c *api.Classifier) (*tabular.ClassifyOptions, error) {
+	if g := c.GrokClassifier; g != nil {
+		pattern, err := tabular.CompileGrok(common.Value(g.GrokPattern), common.Value(g.CustomPatterns))
+		if err != nil {
+			return nil, err
+		}
+
+		return &tabular.ClassifyOptions{Grok: pattern, Label: *g.Classification}, nil
+	}
+
+	if x := c.XMLClassifier; x != nil {
+		return &tabular.ClassifyOptions{XMLRowTag: *x.RowTag, Label: *x.Classification}, nil
+	}
+
 	if j := c.JsonClassifier; j != nil {
-		return &tabular.ClassifyOptions{Kind: tabular.JSON, JSONPath: common.Value(j.JsonPath)}
+		return &tabular.ClassifyOptions{Kind: tabular.JSON, JSONPath: common.Value(j.JsonPath)}, nil
 	}
 
 	v := c.CsvClassifier
@@ -214,14 +230,14 @@ func customOptions(c *api.Classifier) *tabular.ClassifyOptions {
 		Types:           v.CustomDatatypes,
 		DisableTrimming: common.Value(v.DisableValueTrimming),
 		SingleColumn:    common.Value(v.AllowSingleColumn),
-	}
+	}, nil
 }
 
 func (s *Service) crawlObjects(
 	ctx context.Context,
 	r *crawlerRecord,
 	target api.S3Target,
-	custom []*api.Classifier,
+	custom []*tabular.ClassifyOptions,
 ) ([]crawlObject, error) {
 	u, err := url.Parse(*target.Path)
 	if err != nil {
@@ -257,7 +273,10 @@ func (s *Service) crawlObjects(
 
 			key := common.Value(obj.Key)
 			base := path.Base(key)
-			folder := path.Dir(key) + "/"
+			folder := ""
+			if dir := path.Dir(key); dir != "." {
+				folder = dir + "/"
+			}
 			if strings.HasSuffix(key, "/") || strings.HasPrefix(base, "_") || strings.HasPrefix(base, ".") {
 				continue
 			}
@@ -289,7 +308,7 @@ func (s *Service) crawlObjects(
 
 			var c *tabular.Classification
 			for _, classifier := range custom {
-				c, err = tabular.Classify(body, customOptions(classifier))
+				c, err = tabular.Classify(body, classifier)
 				if err == nil {
 					break
 				}
@@ -342,6 +361,12 @@ func crawlStorage(c *tabular.Classification, location string) *api.StorageDescri
 		sd.SerdeInfo.Parameters = map[string]string{"separatorChar": c.Delimiter, "quoteChar": c.Quote}
 	case tabular.JSON:
 		sd.SerdeInfo.SerializationLibrary = new("org.openx.data.jsonserde.JsonSerDe")
+	case "grok":
+		sd.SerdeInfo.SerializationLibrary = new("com.amazonaws.glue.serde.GrokSerDe")
+		sd.SerdeInfo.Parameters = c.FormatParameters
+	case "xml":
+		sd.SerdeInfo.SerializationLibrary = new("com.amazonaws.glue.serde.XMLSerde")
+		sd.SerdeInfo.Parameters = c.FormatParameters
 	case tabular.Parquet:
 		sd.InputFormat = new("org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat")
 		sd.OutputFormat = new("org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat")
@@ -351,13 +376,14 @@ func crawlStorage(c *tabular.Classification, location string) *api.StorageDescri
 	return sd
 }
 
-func (s *Service) discoverTables(
+func (s *Service) discoverS3Tables(
 	ctx context.Context,
 	r *crawlerRecord,
-	custom []*api.Classifier,
+	custom []*tabular.ClassifyOptions,
+	targets []api.S3Target, fixedRoot bool,
 ) ([]*crawlTable, error) {
 	var tables []*crawlTable
-	for _, target := range r.Crawler.Targets.S3Targets {
+	for _, target := range targets {
 		objects, err := s.crawlObjects(ctx, r, target, custom)
 		if err != nil {
 			return nil, err
@@ -402,12 +428,12 @@ func (s *Service) discoverTables(
 				}
 			}
 
-			if firstHive > 0 {
+			if firstHive > 0 && !fixedRoot {
 				tableRoot += strings.Join(dirs[:firstHive], "/") + "/"
 				dirs = dirs[firstHive:]
 			}
 
-			if firstHive < 0 && splitFolders && len(dirs) > 0 {
+			if firstHive < 0 && splitFolders && len(dirs) > 0 && !fixedRoot {
 				tableRoot += dirs[0] + "/"
 				dirs = dirs[1:]
 			}
@@ -430,6 +456,7 @@ func (s *Service) discoverTables(
 			var group *crawlTable
 			for _, t := range tables {
 				if common.Value(t.input.StorageDescriptor.Location) == location &&
+					t.input.Parameters["classification"] == cmp.Or(c.Label, c.Kind) &&
 					compatibleCrawlSchema(t.input.StorageDescriptor, sd) &&
 					len(t.input.PartitionKeys) == len(keys) {
 					group = t
@@ -455,7 +482,7 @@ func (s *Service) discoverTables(
 				}
 
 				parameters := map[string]string{
-					"classification":                 c.Kind,
+					"classification":                 cmp.Or(c.Label, c.Kind),
 					"compressionType":                c.Compression,
 					"typeOfData":                     "file",
 					"CrawlerSchemaSerializerVersion": "1.0",
@@ -506,7 +533,7 @@ func (s *Service) discoverTables(
 func compatibleCrawlSchema(a, b *api.StorageDescriptor) bool {
 	if common.Value(a.InputFormat) != common.Value(b.InputFormat) ||
 		common.Value(a.SerdeInfo.SerializationLibrary) != common.Value(b.SerdeInfo.SerializationLibrary) ||
-		a.SerdeInfo.Parameters["separatorChar"] != b.SerdeInfo.Parameters["separatorChar"] ||
+		!maps.Equal(a.SerdeInfo.Parameters, b.SerdeInfo.Parameters) ||
 		len(a.Columns) != len(b.Columns) {
 		return false
 	}
@@ -523,7 +550,8 @@ func compatibleCrawlSchema(a, b *api.StorageDescriptor) bool {
 
 func (s *Service) executeCrawl(parent context.Context, scope request.Scope, r *crawlerRecord) {
 	ctx := request.WithMetadata(parent, r.Metadata)
-	var custom []*api.Classifier
+	var custom []*tabular.ClassifyOptions
+	var catalogTargets []catalogCrawlTarget
 	err := s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, n := range r.Crawler.Classifiers {
 			c, err := loadClassifier(tx, scope, n)
@@ -531,15 +559,22 @@ func (s *Service) executeCrawl(parent context.Context, scope request.Scope, r *c
 				return err
 			}
 
-			custom = append(custom, c)
+			opts, err := customOptions(c)
+			if err != nil {
+				return err
+			}
+
+			custom = append(custom, opts)
 		}
 
-		return nil
+		var err error
+		catalogTargets, err = catalogCrawlTargets(tx, scope, r.Crawler.Targets.CatalogTargets)
+		return err
 	})
 
 	var tables []*crawlTable
 	if err == nil {
-		tables, err = s.discoverTables(ctx, r, custom)
+		tables, err = s.discoverTables(ctx, r, custom, catalogTargets)
 	}
 
 	if parent.Err() != nil {
@@ -563,7 +598,7 @@ func (s *Service) executeCrawl(parent context.Context, scope request.Scope, r *c
 		message = logErr.Error()
 	}
 
-	_ = s.store.Update(ctx, func(tx storage.WriteTx) error {
+	finish := func(tx storage.WriteTx) error {
 		current, err := loadCrawler(tx, scope, *r.Crawler.Name)
 		if err != nil {
 			return err
@@ -586,7 +621,19 @@ func (s *Service) executeCrawl(parent context.Context, scope request.Scope, r *c
 		}
 
 		return s.finishCrawl(tx, scope, current, status, message, metrics)
-	})
+	}
+
+	if err := s.store.Update(ctx, finish); err != nil {
+		status, message = stateFailed, err.Error()
+		_ = s.logs.Append(
+			ctx,
+			scope,
+			"/aws-glue/crawlers",
+			*r.Crawler.Name,
+			[]string{r.CrawlID + " " + status + " " + message},
+		)
+		_ = s.store.Update(ctx, finish)
+	}
 }
 
 func (s *Service) applyCrawl(
@@ -596,6 +643,16 @@ func (s *Service) applyCrawl(
 	tables []*crawlTable,
 	m *api.CrawlerMetrics,
 ) error {
+	if len(r.Crawler.Targets.CatalogTargets) > 0 {
+		for _, t := range tables {
+			if err := s.applyCatalogTarget(tx, scope, r, t, m); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
 	db := *r.Crawler.DatabaseName
 	now := common.Unix(s.now())
 	if _, ok := tx.Get(databaseKey(scope, db)); !ok {
@@ -627,7 +684,7 @@ func (s *Service) applyCrawl(
 			created = common.Value(old.CreateTime)
 			version, _ = strconv.Atoi(common.Value(old.VersionId))
 			version++
-			write = common.Value(r.Crawler.SchemaChangePolicy.UpdateBehavior) == "UPDATE_IN_DATABASE"
+			write = common.Value(r.Crawler.SchemaChangePolicy.UpdateBehavior) == updateInDatabase
 		}
 
 		if write {
@@ -677,31 +734,8 @@ func (s *Service) applyCrawl(
 			}
 		}
 
-		for location, values := range t.folders {
-			r.SeenFolders[strings.TrimPrefix(location, "s3://")] = true
-			if len(values) == 0 {
-				continue
-			}
-
-			key := partitionKey(scope, db, n, values)
-			if _, exists := tx.Get(key); exists && !write {
-				continue
-			}
-
-			sd := common.Clone(t.input.StorageDescriptor)
-			sd.Location = new(location)
-			p := api.Partition{
-				DatabaseName:      new(db),
-				TableName:         new(n),
-				CatalogId:         new(scope.AccountID),
-				CreationTime:      new(now),
-				Values:            values,
-				StorageDescriptor: sd,
-			}
-
-			if err := storage.Write(tx, key, p); err != nil {
-				return err
-			}
+		if err := s.applyCrawlPartitions(tx, scope, r, t, db, n, write, now); err != nil {
+			return err
 		}
 	}
 
@@ -728,6 +762,34 @@ func (s *Service) applyCrawl(
 			if err := storage.Write(tx, tableKey(scope, db, *t.Name), t); err != nil {
 				return err
 			}
+		}
+	}
+
+	return nil
+}
+
+func (s *Service) applyCrawlPartitions(
+	tx storage.WriteTx, scope request.Scope, r *crawlerRecord, t *crawlTable, db, n string, write bool, now float64,
+) error {
+	for location, values := range t.folders {
+		r.SeenFolders[strings.TrimPrefix(location, "s3://")] = true
+		if len(values) == 0 {
+			continue
+		}
+
+		key := partitionKey(scope, db, n, values)
+		if _, exists := tx.Get(key); exists && !write {
+			continue
+		}
+
+		sd := common.Clone(t.input.StorageDescriptor)
+		sd.Location = new(location)
+		p := api.Partition{
+			DatabaseName: new(db), TableName: new(n), CatalogId: new(scope.AccountID),
+			CreationTime: new(now), Values: values, StorageDescriptor: sd,
+		}
+		if err := storage.Write(tx, key, p); err != nil {
+			return err
 		}
 	}
 

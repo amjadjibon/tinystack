@@ -13828,7 +13828,13 @@
       "StartCrawlerSchedule",
       "StopCrawlerSchedule",
       "GetCrawlerMetrics",
-      "ListCrawls"
+      "ListCrawls",
+      "CreateConnection",
+      "GetConnection",
+      "GetConnections",
+      "UpdateConnection",
+      "DeleteConnection",
+      "BatchDeleteConnection"
     ],
     "shapes": {
       "CreateDatabaseRequest": [
@@ -13978,8 +13984,7 @@
       "UpdateTableRequest": [
         "CatalogId",
         "DatabaseName",
-        "TableInput",
-        "SkipArchive"
+        "TableInput"
       ],
       "DeleteTableRequest": [
         "CatalogId",
@@ -14091,7 +14096,8 @@
         "GlueVersion",
         "NumberOfWorkers",
         "WorkerType",
-        "Tags"
+        "Tags",
+        "Connections"
       ],
       "Job": [
         "Name",
@@ -14108,7 +14114,8 @@
         "NumberOfWorkers",
         "WorkerType",
         "CreatedOn",
-        "LastModifiedOn"
+        "LastModifiedOn",
+        "Connections"
       ],
       "JobUpdate": [
         "Description",
@@ -14122,7 +14129,8 @@
         "MaxCapacity",
         "GlueVersion",
         "NumberOfWorkers",
-        "WorkerType"
+        "WorkerType",
+        "Connections"
       ],
       "JobCommand": [
         "Name",
@@ -14274,7 +14282,8 @@
         "Description",
         "Schedule",
         "Actions",
-        "Predicate"
+        "Predicate",
+        "EventBatchingCondition"
       ],
       "Predicate": [
         "Logical",
@@ -14313,7 +14322,8 @@
         "Status",
         "ErrorMessage",
         "Statistics",
-        "Graph"
+        "Graph",
+        "StartingEventBatchCondition"
       ],
       "WorkflowRunStatistics": [
         "TotalActions",
@@ -14447,7 +14457,8 @@
         "Description",
         "Schedule",
         "Actions",
-        "Predicate"
+        "Predicate",
+        "EventBatchingCondition"
       ],
       "ListTriggersResponse": [
         "TriggerNames",
@@ -14486,7 +14497,8 @@
         "Actions",
         "Description",
         "StartOnCreation",
-        "Tags"
+        "Tags",
+        "EventBatchingCondition"
       ],
       "EventBatchingCondition": [
         "BatchSize",
@@ -14494,7 +14506,9 @@
       ],
       "CreateClassifierRequest": [
         "CsvClassifier",
-        "JsonClassifier"
+        "JsonClassifier",
+        "GrokClassifier",
+        "XMLClassifier"
       ],
       "CreateClassifierResponse": [],
       "GetClassifierRequest": [
@@ -14513,7 +14527,9 @@
       ],
       "UpdateClassifierRequest": [
         "CsvClassifier",
-        "JsonClassifier"
+        "JsonClassifier",
+        "GrokClassifier",
+        "XMLClassifier"
       ],
       "UpdateClassifierResponse": [],
       "DeleteClassifierRequest": [
@@ -14625,7 +14641,9 @@
       ],
       "Classifier": [
         "CsvClassifier",
-        "JsonClassifier"
+        "JsonClassifier",
+        "GrokClassifier",
+        "XMLClassifier"
       ],
       "CsvClassifier": [
         "Name",
@@ -14699,15 +14717,14 @@
         "CatalogId"
       ],
       "CrawlerTargets": [
-        "S3Targets"
+        "S3Targets",
+        "DynamoDBTargets",
+        "CatalogTargets"
       ],
       "S3Target": [
         "Path",
         "Exclusions",
-        "ConnectionName",
-        "SampleSize",
-        "EventQueueArn",
-        "DlqEventQueueArn"
+        "SampleSize"
       ],
       "SchemaChangePolicy": [
         "UpdateBehavior",
@@ -14765,6 +14782,129 @@
         "ErrorMessage",
         "LogGroup",
         "LogStream"
+      ],
+      "CreateConnectionRequest": [
+        "CatalogId",
+        "ConnectionInput",
+        "Tags"
+      ],
+      "GetConnectionRequest": [
+        "CatalogId",
+        "Name",
+        "HidePassword"
+      ],
+      "GetConnectionResponse": [
+        "Connection"
+      ],
+      "GetConnectionsRequest": [
+        "CatalogId",
+        "Filter",
+        "HidePassword",
+        "NextToken",
+        "MaxResults"
+      ],
+      "GetConnectionsResponse": [
+        "ConnectionList",
+        "NextToken"
+      ],
+      "UpdateConnectionRequest": [
+        "CatalogId",
+        "Name",
+        "ConnectionInput"
+      ],
+      "DeleteConnectionRequest": [
+        "CatalogId",
+        "ConnectionName"
+      ],
+      "BatchDeleteConnectionRequest": [
+        "CatalogId",
+        "ConnectionNameList"
+      ],
+      "BatchDeleteConnectionResponse": [
+        "Succeeded",
+        "Errors"
+      ],
+      "ConnectionInput": [
+        "Name",
+        "Description",
+        "ConnectionType",
+        "MatchCriteria",
+        "ConnectionProperties",
+        "PhysicalConnectionRequirements"
+      ],
+      "Connection": [
+        "Name",
+        "Description",
+        "ConnectionType",
+        "MatchCriteria",
+        "ConnectionProperties",
+        "PhysicalConnectionRequirements",
+        "CreationTime",
+        "LastUpdatedTime",
+        "LastUpdatedBy"
+      ],
+      "PhysicalConnectionRequirements": [
+        "SubnetId",
+        "SecurityGroupIdList",
+        "AvailabilityZone"
+      ],
+      "GetConnectionsFilter": [
+        "MatchCriteria",
+        "ConnectionType"
+      ],
+      "ConnectionsList": [
+        "Connections"
+      ],
+      "DynamoDBTarget": [
+        "Path",
+        "scanAll"
+      ],
+      "CatalogTarget": [
+        "DatabaseName",
+        "Tables"
+      ],
+      "StartingEventBatchCondition": [
+        "BatchSize",
+        "BatchWindow"
+      ],
+      "CreateGrokClassifierRequest": [
+        "Classification",
+        "Name",
+        "GrokPattern",
+        "CustomPatterns"
+      ],
+      "UpdateGrokClassifierRequest": [
+        "Name",
+        "Classification",
+        "GrokPattern",
+        "CustomPatterns"
+      ],
+      "GrokClassifier": [
+        "Name",
+        "Classification",
+        "CreationTime",
+        "LastUpdated",
+        "Version",
+        "GrokPattern",
+        "CustomPatterns"
+      ],
+      "CreateXMLClassifierRequest": [
+        "Classification",
+        "Name",
+        "RowTag"
+      ],
+      "UpdateXMLClassifierRequest": [
+        "Name",
+        "Classification",
+        "RowTag"
+      ],
+      "XMLClassifier": [
+        "Name",
+        "Classification",
+        "CreationTime",
+        "LastUpdated",
+        "Version",
+        "RowTag"
       ]
     }
   },

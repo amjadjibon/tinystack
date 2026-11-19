@@ -23,6 +23,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/background"
+	"github.com/amjadjibon/tinystack/internal/services/dynamodb"
 	"github.com/amjadjibon/tinystack/internal/services/iam"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
@@ -44,6 +45,7 @@ type Service struct {
 	now     func() time.Time
 	roles   *iam.Service
 	buckets *s3.Service
+	dynamo  *dynamodb.Service
 	logs    *logs.Service
 	workers *background.Group
 	active  map[string]context.CancelFunc

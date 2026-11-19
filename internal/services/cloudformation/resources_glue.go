@@ -18,6 +18,7 @@ const (
 func init() {
 	registerGlue("AWS::Glue::Crawler", glueCrawler)
 	registerGlueClassifier()
+	registerGlueConnection()
 	registerGlue("AWS::Glue::Job", glueJob)
 	registerGlue("AWS::Glue::Trigger", glueTrigger)
 	registerGlue("AWS::Glue::Workflow", "Workflow")
@@ -45,6 +46,7 @@ func registerGlue(typeName, kind string) {
 			"Role",
 			"Command",
 			"DefaultArguments",
+			"Connections",
 			"NonOverridableArguments",
 			"ExecutionProperty",
 			"MaxRetries",
@@ -55,7 +57,8 @@ func registerGlue(typeName, kind string) {
 			"NumberOfWorkers",
 		)
 	case glueTrigger:
-		fields = append(fields, "Type", "Schedule", "Predicate", "Actions", "WorkflowName", "StartOnCreation")
+		fields = append(fields, "Type", "Schedule", "Predicate", "Actions", "WorkflowName", "StartOnCreation",
+			"EventBatchingCondition")
 	case "Workflow":
 		fields = append(fields, "DefaultRunProperties", "MaxConcurrentRuns")
 	}
@@ -245,6 +248,54 @@ func registerGlueClassifier() {
 		},
 		remove: func(ctx context.Context, c *client, r *resource) error {
 			_, err := c.call(ctx, "glue", "DeleteClassifier", map[string]any{memberName: r.Physical})
+			if gone(err, "EntityNotFoundException") {
+				return nil
+			}
+
+			return err
+		},
+	})
+}
+
+const (
+	glueConnectionResource = "AWS::Glue::Connection"
+	glueConnectionInput    = "ConnectionInput"
+	glueCatalogID          = "CatalogId"
+	glueConnectionName     = "ConnectionName"
+)
+
+func registerGlueConnection() {
+	register(glueConnectionResource, &resourceType{
+		properties: []string{glueCatalogID, glueConnectionInput},
+		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
+			configured, _ := p[glueConnectionInput].(map[string]any)
+			input := make(map[string]any, len(configured)+1)
+			maps.Copy(input, configured)
+			n, _ := input[memberName].(string)
+			if n == "" {
+				n = c.generate(255)
+				input[memberName] = n
+			}
+
+			params := glueParams(p, []string{glueCatalogID})
+			params[glueConnectionInput] = input
+			_, err := c.call(ctx, "glue", "CreateConnection", params)
+			return n, nil, err
+		},
+		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
+			params := glueParams(p, []string{glueCatalogID})
+			configured, _ := p[glueConnectionInput].(map[string]any)
+			input := make(map[string]any, len(configured)+1)
+			maps.Copy(input, configured)
+			input[memberName] = r.Physical
+			params[glueConnectionInput], params[memberName] = input, r.Physical
+			_, err := c.call(ctx, "glue", "UpdateConnection", params)
+			return r.Attributes, err
+		},
+		remove: func(ctx context.Context, c *client, r *resource) error {
+			params := glueParams(props(r.Properties), []string{glueCatalogID})
+			params[glueConnectionName] = r.Physical
+			_, err := c.call(ctx, "glue", "DeleteConnection", params)
 			if gone(err, "EntityNotFoundException") {
 				return nil
 			}

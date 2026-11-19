@@ -34,14 +34,8 @@ func (s *Schedule) location() *time.Location {
 	return s.loc
 }
 
-var (
-	// ErrInvalid reports an expression that is not a valid rate or cron
-	// expression.
-	ErrInvalid = errors.New("the schedule expression is not valid")
-	// ErrUnsupported reports L, W, or # in a cron expression, which AWS
-	// accepts but TinyStack does not evaluate.
-	ErrUnsupported = errors.New("TinyStack does not support L, W, or # in cron expressions")
-)
+// ErrInvalid reports an expression that is not a valid rate or cron expression.
+var ErrInvalid = errors.New("the schedule expression is not valid")
 
 var rateExpression = regexp.MustCompile(`^rate\((\d+) (minute|minutes|hour|hours|day|days)\)$`)
 
@@ -104,6 +98,7 @@ func (s *Schedule) After(due, now time.Time) (time.Time, bool) {
 // allows. Exactly one of the day-of-month and day-of-week fields is "?", and
 // that one is nil.
 type cron struct {
+	dayRule                                       func(time.Time) bool
 	minutes, hours, days, months, weekdays, years []bool
 }
 
@@ -147,6 +142,17 @@ func parseCron(body string) (*cron, error) {
 			continue
 		}
 
+		day := strings.ToUpper(f.text)
+		if (f.set == &c.days && strings.ContainsAny(day, "LW")) ||
+			(f.set == &c.weekdays && strings.ContainsAny(day, "L#")) {
+			c.dayRule, err = parseDayRule(day, f.set == &c.days)
+			if err != nil {
+				return nil, err
+			}
+
+			continue
+		}
+
 		if *f.set, err = cronField(f.text, f.names, f.low, f.high); err != nil {
 			return nil, err
 		}
@@ -155,30 +161,92 @@ func parseCron(body string) (*cron, error) {
 	return &c, nil
 }
 
+func cronNumber(s string, names []string, low, high int) (int, bool) {
+	for i, name := range names {
+		if strings.EqualFold(s, name) {
+			return low + i, true
+		}
+	}
+
+	n, err := strconv.Atoi(s)
+	return n, err == nil && n >= low && n <= high
+}
+
+func parseDayRule(text string, monthDay bool) (func(time.Time) bool, error) {
+	if monthDay {
+		if text == "L" {
+			return func(t time.Time) bool { return t.Day() == monthLength(t) }, nil
+		}
+
+		if value, ok := strings.CutSuffix(text, "W"); ok {
+			day, valid := cronNumber(value, nil, 1, 31)
+			if !valid {
+				return nil, ErrInvalid
+			}
+
+			return func(t time.Time) bool { return t.Day() == nearestWeekday(t, day) }, nil
+		}
+
+		return nil, ErrInvalid
+	}
+
+	if text == "L" {
+		return func(t time.Time) bool { return t.Weekday() == time.Saturday }, nil
+	}
+
+	if value, ok := strings.CutSuffix(text, "L"); ok {
+		day, valid := cronNumber(value, dayNames, 1, 7)
+		if !valid {
+			return nil, ErrInvalid
+		}
+
+		return func(t time.Time) bool { return int(t.Weekday())+1 == day && t.Day()+7 > monthLength(t) }, nil
+	}
+
+	if value, ordinal, ok := strings.Cut(text, "#"); ok {
+		day, dayValid := cronNumber(value, dayNames, 1, 7)
+		nth, nthValid := cronNumber(ordinal, nil, 1, 5)
+		if !dayValid || !nthValid {
+			return nil, ErrInvalid
+		}
+
+		return func(t time.Time) bool { return int(t.Weekday())+1 == day && (t.Day()-1)/7+1 == nth }, nil
+	}
+
+	return nil, ErrInvalid
+}
+
+func monthLength(t time.Time) int {
+	return time.Date(t.Year(), t.Month()+1, 0, 12, 0, 0, 0, time.UTC).Day()
+}
+
+func nearestWeekday(t time.Time, day int) int {
+	last := monthLength(t)
+	if day > last {
+		return 0
+	}
+
+	switch time.Date(t.Year(), t.Month(), day, 12, 0, 0, 0, time.UTC).Weekday() {
+	case time.Saturday:
+		if day == 1 {
+			return 3
+		}
+
+		return day - 1
+	case time.Sunday:
+		if day == last {
+			return day - 2
+		}
+
+		return day + 1
+	default:
+		return day
+	}
+}
+
 // cronField parses a comma-separated list of "*", values, ranges "a-b", and
 // increments "*/n", "a/n", or "a-b/n". names spell the values from low.
 func cronField(text string, names []string, low, high int) ([]bool, error) {
-	number := func(s string) (int, bool) {
-		for i, name := range names {
-			if strings.EqualFold(s, name) {
-				return low + i, true
-			}
-		}
-
-		n, err := strconv.Atoi(s)
-		return n, err == nil && n >= low && n <= high
-	}
-
-	// bad reports a value that is neither a number nor a name; L, W, and #
-	// are valid in AWS but not supported.
-	bad := func(s string) error {
-		if strings.ContainsAny(s, "LW#") {
-			return ErrUnsupported
-		}
-
-		return ErrInvalid
-	}
-
 	set := make([]bool, high+1)
 	for _, part := range strings.Split(text, ",") {
 		span, stepText, stepped := strings.Cut(part, "/")
@@ -194,8 +262,8 @@ func cronField(text string, names []string, low, high int) ([]bool, error) {
 		if span != "*" {
 			start, end, isRange := strings.Cut(span, "-")
 			var ok bool
-			if from, ok = number(start); !ok {
-				return nil, bad(start)
+			if from, ok = cronNumber(start, names, low, high); !ok {
+				return nil, ErrInvalid
 			}
 
 			// "a/n" runs from a to the end of the field.
@@ -205,14 +273,17 @@ func cronField(text string, names []string, low, high int) ([]bool, error) {
 			}
 
 			if isRange {
-				if to, ok = number(end); !ok || to < from {
-					return nil, bad(end)
+				if to, ok = cronNumber(end, names, low, high); !ok || to < from {
+					return nil, ErrInvalid
 				}
 			}
 		}
 
-		for v := from; v <= to; v += step {
+		for v := from; ; v += step {
 			set[v] = true
+			if step > to-v {
+				break
+			}
 		}
 	}
 
@@ -222,6 +293,10 @@ func cronField(text string, names []string, low, high int) ([]bool, error) {
 // matchesDay reports whether t falls on an allowed day of the month or of the
 // week, whichever the expression gives.
 func (c *cron) matchesDay(t time.Time) bool {
+	if c.dayRule != nil {
+		return c.dayRule(t)
+	}
+
 	if c.days != nil {
 		return c.days[t.Day()]
 	}

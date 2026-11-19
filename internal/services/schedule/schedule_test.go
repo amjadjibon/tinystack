@@ -22,9 +22,10 @@ func TestParseSchedule(t *testing.T) {
 		"cron(0 12 * * *)", "cron(0 12 * * * *)", "cron(0 12 ? * ? *)", "cron(60 * * * ? *)",
 		"cron(0 24 * * ? *)", "cron(0 0 32 * ? *)", "cron(0 0 ? * 8 *)", "cron(0 0 * 13 ? *)",
 		"cron(? 0 * * ? *)", "cron(0 0 5-1 * ? *)", "cron(0 0 */0 * ? *)", "cron(0 0 * * ? 2200)",
-		"cron(0 0 L * ? *)", "cron(0 0 ? * 6L *)", "cron(0 0 15W * ? *)", "cron(0 0 ? * 3#2 *)",
+		"cron(0 0 L-2 * ? *)", "cron(0 0 ? * 8L *)", "cron(0 0 15W,16 * ? *)", "cron(0 0 ? * 3#2,6#1 *)",
+		"cron(0 0 ? * MON#6 *)", "cron(0 0 0W * ? *)", "cron(L 0 ? * MON *)",
 	} {
-		if _, err := Parse(text); !errors.Is(err, ErrInvalid) && !errors.Is(err, ErrUnsupported) {
+		if _, err := Parse(text); !errors.Is(err, ErrInvalid) {
 			t.Errorf("%s: got %v", text, err)
 		}
 	}
@@ -101,5 +102,35 @@ func TestCronInTimeZone(t *testing.T) {
 	); !ok || !got.Equal(want) ||
 		got.Location() != time.UTC {
 		t.Fatalf("got %v, want %v", got, want)
+	}
+}
+
+func TestCronDayExtensions(t *testing.T) {
+	for _, tc := range []struct{ expression, after, want string }{
+		{"cron(0 0 L * ? *)", "2028-02-01", "2028-02-29"},
+		{"cron(0 0 ? * FRIL *)", "2026-03-01", "2026-03-27"},
+		{"cron(0 0 ? * 6L *)", "2026-03-01", "2026-03-27"},
+		{"cron(0 0 ? * L *)", "2026-03-01", "2026-03-07"},
+		{"cron(0 0 1W * ? *)", "2026-08-01", "2026-08-03"},
+		{"cron(0 0 31W * ? *)", "2026-04-01", "2026-05-29"},
+		{"cron(0 0 15W * ? *)", "2026-03-01", "2026-03-16"},
+		{"cron(0 0 ? * 3#2 *)", "2026-03-01", "2026-03-10"},
+		{"cron(0 0 ? * MON#5 *)", "2026-02-01", "2026-03-30"},
+	} {
+		t.Run(tc.expression+tc.after, func(t *testing.T) {
+			start, err := time.Parse(time.DateOnly, tc.after)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			s, err := Parse(tc.expression)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if got, ok := s.First(start); !ok || got.Format(time.DateOnly) != tc.want {
+				t.Fatalf("got %v, want %s", got, tc.want)
+			}
+		})
 	}
 }

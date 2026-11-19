@@ -19,11 +19,12 @@ const (
 )
 
 type triggerRecord struct {
-	Trigger  api.Trigger
-	Tags     map[string]string
-	Seen     map[string]bool
-	Metadata request.Metadata
-	Next     float64
+	Trigger      api.Trigger
+	Tags         map[string]string
+	Seen         map[string]bool
+	Metadata     request.Metadata
+	EventBatches []eventBatch
+	Next         float64
 }
 
 type triggerReference struct {
@@ -92,8 +93,12 @@ func validateTrigger(tx storage.ReadTx, scope request.Scope, t *api.Trigger) err
 	}
 
 	typ := common.Value(t.Type)
-	if typ != triggerOnDemand && typ != triggerScheduled && typ != triggerConditional {
+	if typ != triggerOnDemand && typ != triggerScheduled && typ != triggerConditional && typ != triggerEvent {
 		return invalid("Unsupported trigger Type")
+	}
+
+	if err := validateEventTrigger(t); err != nil {
+		return err
 	}
 
 	if len(t.Actions) == 0 {
@@ -208,15 +213,16 @@ func (s *Service) CreateTrigger(ctx context.Context, in *api.CreateTriggerReques
 	metadata, _ := request.FromContext(ctx)
 	err := s.update(ctx, nil, func(tx storage.WriteTx, scope request.Scope) error {
 		t := &api.Trigger{
-			Name:         in.Name,
-			WorkflowName: in.WorkflowName,
-			Type:         in.Type,
-			Schedule:     in.Schedule,
-			Predicate:    in.Predicate,
-			Actions:      in.Actions,
-			Description:  in.Description,
-			State:        new("CREATED"),
-			Id:           new(common.RandomID(32)),
+			Name:                   in.Name,
+			WorkflowName:           in.WorkflowName,
+			Type:                   in.Type,
+			Schedule:               in.Schedule,
+			Predicate:              in.Predicate,
+			Actions:                in.Actions,
+			Description:            in.Description,
+			EventBatchingCondition: in.EventBatchingCondition,
+			State:                  new("CREATED"),
+			Id:                     new(common.RandomID(32)),
 		}
 
 		if err := validateTrigger(tx, scope, t); err != nil {
@@ -228,8 +234,23 @@ func (s *Service) CreateTrigger(ctx context.Context, in *api.CreateTriggerReques
 			return alreadyExists("Trigger already exists")
 		}
 
+		if t.WorkflowName != nil && *t.Type != triggerConditional {
+			triggers, err := storage.Records[triggerRecord](tx, scope.Prefix(service, kindTrigger))
+			if err != nil {
+				return err
+			}
+
+			for _, other := range triggers {
+				if common.Value(other.Trigger.WorkflowName) == *t.WorkflowName &&
+					common.Value(other.Trigger.Type) != triggerConditional &&
+					(*t.Type == triggerEvent || common.Value(other.Trigger.Type) == triggerEvent) {
+					return invalid("A workflow with an EVENT trigger can have only one starting trigger")
+				}
+			}
+		}
+
 		r := &triggerRecord{Trigger: *t, Tags: in.Tags, Metadata: metadata, Seen: map[string]bool{}}
-		if common.Value(in.StartOnCreation) {
+		if common.Value(in.StartOnCreation) || *t.Type == triggerEvent {
 			s.activateTrigger(r)
 		}
 
@@ -290,6 +311,8 @@ func (s *Service) UpdateTrigger(ctx context.Context, in *api.UpdateTriggerReques
 
 		r.Trigger.Description, r.Trigger.Schedule = u.Description, u.Schedule
 		r.Trigger.Actions, r.Trigger.Predicate = u.Actions, u.Predicate
+		r.Trigger.EventBatchingCondition = u.EventBatchingCondition
+		r.EventBatches = nil
 		if err := validateTrigger(tx, scope, &r.Trigger); err != nil {
 			return err
 		}
@@ -349,6 +372,7 @@ func (s *Service) StopTrigger(ctx context.Context, in *api.StopTriggerRequest) (
 		}
 
 		r.Trigger.State = new("DEACTIVATED")
+		r.EventBatches = nil
 		return storage.Write(tx, orchestrationKey(scope, kindTrigger, *in.Name), r)
 	})
 	return &api.StopTriggerResponse{Name: in.Name}, err
@@ -480,6 +504,7 @@ func (s *Service) tickTriggers(ctx context.Context) {
 		return err
 	})
 	for _, ref := range refs {
+		event := false
 		_ = s.store.Update(ctx, func(tx storage.WriteTx) error {
 			r, err := loadTrigger(tx, ref.Scope, ref.Name)
 			if err != nil {
@@ -491,6 +516,11 @@ func (s *Service) tickTriggers(ctx context.Context) {
 			}
 
 			typ := common.Value(r.Trigger.Type)
+			if typ == triggerEvent {
+				event = len(r.EventBatches) > 0
+				return nil
+			}
+
 			if r.Trigger.WorkflowName != nil && typ == triggerConditional {
 				return nil
 			}
@@ -531,6 +561,9 @@ func (s *Service) tickTriggers(ctx context.Context) {
 
 			return storage.Write(tx, orchestrationKey(ref.Scope, kindTrigger, ref.Name), r)
 		})
+		if event {
+			s.tickEventTrigger(ctx, ref)
+		}
 	}
 
 	s.tickWorkflows(ctx)
@@ -610,7 +643,7 @@ func predicateMatch(
 // Starting a workflow's source trigger creates a run; downstream actions retain that run's identity.
 func (s *Service) startTriggerActions(tx storage.WriteTx, scope request.Scope, r *triggerRecord) error {
 	if r.Trigger.WorkflowName != nil {
-		_, err := s.startWorkflow(tx, scope, &api.StartWorkflowRunRequest{Name: r.Trigger.WorkflowName}, r)
+		_, err := s.startWorkflow(tx, scope, &api.StartWorkflowRunRequest{Name: r.Trigger.WorkflowName}, r, nil)
 		return err
 	}
 

@@ -95,6 +95,14 @@ func tagsMatch(tags, filter map[string]string) bool {
 }
 
 func (s *Service) validateJob(ctx context.Context, j *api.Job) error {
+	if j.Connections != nil {
+		for _, n := range j.Connections.Connections {
+			if err := orchestrationName(new(n)); err != nil {
+				return err
+			}
+		}
+	}
+
 	if err := orchestrationName(j.Name); err != nil {
 		return err
 	}
@@ -286,6 +294,7 @@ func (s *Service) CreateJob(ctx context.Context, in *api.CreateJobRequest) (*api
 		Role:                    in.Role,
 		ExecutionProperty:       in.ExecutionProperty,
 		Command:                 in.Command,
+		Connections:             in.Connections,
 		DefaultArguments:        in.DefaultArguments,
 		NonOverridableArguments: in.NonOverridableArguments,
 		MaxRetries:              in.MaxRetries,
@@ -328,6 +337,7 @@ func (s *Service) UpdateJob(ctx context.Context, in *api.UpdateJobRequest) (*api
 		Role:                    u.Role,
 		ExecutionProperty:       u.ExecutionProperty,
 		Command:                 u.Command,
+		Connections:             u.Connections,
 		DefaultArguments:        u.DefaultArguments,
 		NonOverridableArguments: u.NonOverridableArguments,
 		MaxRetries:              u.MaxRetries,

@@ -15,11 +15,18 @@ import (
 const kindClassifier = "classifier"
 
 func classifierName(c *api.Classifier) string {
-	if c.CsvClassifier != nil {
+	switch {
+	case c.CsvClassifier != nil:
 		return common.Value(c.CsvClassifier.Name)
+	case c.JsonClassifier != nil:
+		return common.Value(c.JsonClassifier.Name)
+	case c.GrokClassifier != nil:
+		return common.Value(c.GrokClassifier.Name)
+	case c.XMLClassifier != nil:
+		return common.Value(c.XMLClassifier.Name)
+	default:
+		return ""
 	}
-
-	return common.Value(c.JsonClassifier.Name)
 }
 
 func loadClassifier(tx storage.ReadTx, scope request.Scope, n string) (*api.Classifier, error) {
@@ -40,7 +47,12 @@ func loadClassifier(tx storage.ReadTx, scope request.Scope, n string) (*api.Clas
 }
 
 func validateClassifier(c *api.Classifier) error {
-	if (c.CsvClassifier == nil) == (c.JsonClassifier == nil) {
+	if !oneClassifier(
+		c.CsvClassifier != nil,
+		c.JsonClassifier != nil,
+		c.GrokClassifier != nil,
+		c.XMLClassifier != nil,
+	) {
 		return invalid("Exactly one classifier is required")
 	}
 
@@ -51,6 +63,27 @@ func validateClassifier(c *api.Classifier) error {
 	if j := c.JsonClassifier; j != nil {
 		if !tabular.ValidJSONPath(common.Value(j.JsonPath)) {
 			return invalid("Supported JsonPath: $, $[*], or $.member paths ending optionally in [*]")
+		}
+
+		return nil
+	}
+
+	if g := c.GrokClassifier; g != nil {
+		if strings.TrimSpace(common.Value(g.Classification)) == "" {
+			return invalid("Grok Classification is required")
+		}
+
+		if _, err := tabular.CompileGrok(common.Value(g.GrokPattern), common.Value(g.CustomPatterns)); err != nil {
+			return invalid("Invalid Grok classifier: %s", err)
+		}
+
+		return nil
+	}
+
+	if x := c.XMLClassifier; x != nil {
+		if strings.TrimSpace(common.Value(x.Classification)) == "" ||
+			!tabular.ValidXMLRowTag(common.Value(x.RowTag)) {
+			return invalid("XML classifiers require Classification and an unqualified XML RowTag")
 		}
 
 		return nil
@@ -91,6 +124,17 @@ func validateClassifier(c *api.Classifier) error {
 	return nil
 }
 
+func oneClassifier(kinds ...bool) bool {
+	count := 0
+	for _, present := range kinds {
+		if present {
+			count++
+		}
+	}
+
+	return count == 1
+}
+
 func (s *Service) CreateClassifier(
 	ctx context.Context,
 	in *api.CreateClassifierRequest,
@@ -119,6 +163,24 @@ func (s *Service) CreateClassifier(
 			CreationTime: new(now),
 			Version:      new(int64(1)),
 			JsonPath:     v.JsonPath,
+		}
+	}
+
+	if v := in.GrokClassifier; v != nil {
+		c.GrokClassifier = &api.GrokClassifier{
+			Name:           v.Name,
+			Classification: v.Classification,
+			GrokPattern:    v.GrokPattern,
+			CustomPatterns: v.CustomPatterns,
+			CreationTime:   new(now),
+			Version:        new(int64(1)),
+		}
+	}
+
+	if v := in.XMLClassifier; v != nil {
+		c.XMLClassifier = &api.XMLClassifier{
+			Name: v.Name, Classification: v.Classification, RowTag: v.RowTag,
+			CreationTime: new(now), Version: new(int64(1)),
 		}
 	}
 
@@ -181,15 +243,21 @@ func (s *Service) UpdateClassifier(
 	ctx context.Context,
 	in *api.UpdateClassifierRequest,
 ) (*api.UpdateClassifierResponse, error) {
-	if (in.CsvClassifier == nil) == (in.JsonClassifier == nil) {
+	csv, js, grok, xml := in.CsvClassifier, in.JsonClassifier, in.GrokClassifier, in.XMLClassifier
+	if !oneClassifier(csv != nil, js != nil, grok != nil, xml != nil) {
 		return nil, invalid("Exactly one classifier is required")
 	}
 
 	var n string
-	if in.CsvClassifier != nil {
-		n = common.Value(in.CsvClassifier.Name)
-	} else {
-		n = common.Value(in.JsonClassifier.Name)
+	switch {
+	case csv != nil:
+		n = common.Value(csv.Name)
+	case js != nil:
+		n = common.Value(js.Name)
+	case grok != nil:
+		n = common.Value(grok.Name)
+	case xml != nil:
+		n = common.Value(xml.Name)
 	}
 
 	err := s.update(ctx, nil, func(tx storage.WriteTx, scope request.Scope) error {
@@ -198,12 +266,15 @@ func (s *Service) UpdateClassifier(
 			return err
 		}
 
-		if (c.CsvClassifier == nil) != (in.CsvClassifier == nil) {
+		if (c.CsvClassifier == nil) != (csv == nil) || (c.JsonClassifier == nil) != (js == nil) ||
+			(c.GrokClassifier == nil) != (grok == nil) || (c.XMLClassifier == nil) != (xml == nil) {
 			return invalid("Classifier type cannot change")
 		}
 
 		now := common.Unix(s.now())
-		if v, u := c.CsvClassifier, in.CsvClassifier; v != nil {
+		switch {
+		case csv != nil:
+			v, u := c.CsvClassifier, csv
 			v.Delimiter = common.OrElse(u.Delimiter, v.Delimiter)
 			v.QuoteSymbol = common.OrElse(u.QuoteSymbol, v.QuoteSymbol)
 			v.ContainsHeader = common.OrElse(u.ContainsHeader, v.ContainsHeader)
@@ -220,9 +291,22 @@ func (s *Service) UpdateClassifier(
 
 			v.Version = new(common.Value(v.Version) + 1)
 			v.LastUpdated = new(now)
-		} else {
+		case js != nil:
 			v := c.JsonClassifier
-			v.JsonPath = common.OrElse(in.JsonClassifier.JsonPath, v.JsonPath)
+			v.JsonPath = common.OrElse(js.JsonPath, v.JsonPath)
+			v.Version = new(common.Value(v.Version) + 1)
+			v.LastUpdated = new(now)
+		case grok != nil:
+			v := c.GrokClassifier
+			v.Classification = common.OrElse(grok.Classification, v.Classification)
+			v.GrokPattern = common.OrElse(grok.GrokPattern, v.GrokPattern)
+			v.CustomPatterns = common.OrElse(grok.CustomPatterns, v.CustomPatterns)
+			v.Version = new(common.Value(v.Version) + 1)
+			v.LastUpdated = new(now)
+		case xml != nil:
+			v := c.XMLClassifier
+			v.Classification = common.OrElse(xml.Classification, v.Classification)
+			v.RowTag = common.OrElse(xml.RowTag, v.RowTag)
 			v.Version = new(common.Value(v.Version) + 1)
 			v.LastUpdated = new(now)
 		}

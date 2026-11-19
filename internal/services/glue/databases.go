@@ -188,7 +188,8 @@ func tagged(scope request.Scope, arn *string) (kind, n string, err error) {
 
 	kind, n, ok = strings.Cut(rest, "/")
 	if !ok || n == "" ||
-		(kind != kindDatabase && kind != kindJob && kind != kindTrigger && kind != kindWorkflow && kind != kindCrawler) {
+		(kind != kindDatabase && kind != kindJob && kind != kindTrigger &&
+			kind != kindWorkflow && kind != kindCrawler && kind != kindConnection) {
 		return "", "", invalid("Unsupported Glue resource ARN")
 	}
 
@@ -205,6 +206,13 @@ func loadTagged(
 	kind, n string,
 ) (record any, tags map[string]string, err error) {
 	switch kind {
+	case kindConnection:
+		r, err := loadConnection(tx, scope, n)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return r, r.Tags, nil
 	case kindCrawler:
 		r, err := loadCrawler(tx, scope, n)
 		if err != nil {
@@ -257,6 +265,8 @@ func (s *Service) retag(ctx context.Context, arn *string, fn func(map[string]str
 
 		tags = fn(common.CloneTags(tags))
 		switch record := r.(type) {
+		case *connectionRecord:
+			record.Tags = tags
 		case *crawlerRecord:
 			record.Tags = tags
 		case *jobRecord:

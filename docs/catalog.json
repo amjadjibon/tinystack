@@ -391,48 +391,58 @@
     "glue": {
       "title": "Glue",
       "category": "Analytics",
-      "summary": "Manage the Data Catalog, classify and crawl S3 data, and orchestrate local Python shell ETL jobs and workflows.",
+      "summary": "Manage the Data Catalog and connections, discover local S3 and DynamoDB schemas, and orchestrate local Python shell ETL jobs and workflows.",
       "features": [
         "Database CRUD, tags and pagination",
+        "Connection CRUD, batch deletion, pagination, type and MatchCriteria filters, HidePassword on reads, tags, resource inventory and AWS::Glue::Connection",
         "Dedicated account/Region-scoped console for databases, tables with schema details, partitions, crawlers with start/stop and last crawl, jobs with run history, triggers, workflows and tags; typed deletion confirmations and polling",
         "Table CRUD and batch deletion",
         "Partition CRUD, batch operations and partition listings",
         "Names are normalized to lowercase; deleting a database removes its tables and partitions",
-        "Job CRUD, batch reads, tag-filtered listings and whole-definition updates with IAM role validation; GlueVersion is retained if omitted from JobUpdate, as AWS documents",
+        "Job CRUD, batch reads, tag-filtered listings and whole-definition updates with IAM role validation and named connection references. Local job starts check that the referenced connections still exist",
         "Python shell jobs fetch scripts from TinyStack S3 and run with the selected Lambda local host executor",
         "Durable run states, merged arguments, non-overridable arguments, minute timeouts, process-group stop, retries and concurrency limits",
         "Complete stdout and stderr are published after each attempt to /aws-glue/python-jobs/output and /aws-glue/python-jobs/error, using JobRunId streams",
-        "ON_DEMAND, five-minute-or-slower UTC cron and job-state CONDITIONAL triggers, using the shared schedule parser",
-        "Workflows with on-demand and scheduled source triggers, conditional chains, run properties, graphs, statistics, stopping and concurrency limits",
+        "ON_DEMAND, five-minute-or-slower UTC cron, job-state CONDITIONAL and workflow EVENT triggers. The shared cron parser supports last-day and last-weekday rules, nearest weekdays and nth weekdays",
+        "Workflows with on-demand, scheduled and EVENT source triggers, conditional chains, run properties, graphs, statistics, stopping and concurrency limits",
+        "EventBridge workflow ARN targets deliver to active EVENT triggers; batches fire at the configured count or window and record event IDs and the starting condition",
         "Jobs, triggers and workflows support tags, resource inventory and CloudFormation",
-        "CSV and JSON custom classifier CRUD, versions, timestamps and pagination; custom classifiers run before built-ins in crawler order",
-        "S3 crawler CRUD, batches, tag-filtered listings, schedules, stop, history and metrics; IAM roles, S3 buckets and custom classifiers must exist",
+        "CSV, JSON, Grok and XML custom classifier CRUD with versions, timestamps and pagination. Crawlers try custom classifiers before built-ins in configured order",
+        "S3, DynamoDB and S3-backed Catalog crawler CRUD, batches, tag-filtered listings, schedules, stop, history and metrics",
+        "DynamoDB targets scan local tables with optional sampling, infer Glue column types and publish dynamodb classification and table ARN locations",
+        "Catalog targets recrawl existing S3-backed tables in place and add partitions while preserving table names and locations",
         "Shared tabular inference for CSV, TSV, pipe and semicolon text, JSON objects/lines with nested Hive types, Parquet and gzip text; Hive and unnamed folder partitions",
         "Crawlers publish tables and partitions to the same catalog Athena reads, with SerDes, classification and file statistics",
         "Schema update and table deletion/deprecation policies and incremental new-folder crawls; crawler conditions and actions participate in workflow graphs and statistics",
-        "Crawler tags, inventory, Resource Groups Tagging, AWS::Glue::Crawler and CSV/JSON AWS::Glue::Classifier CloudFormation resources"
+        "Crawler tags, inventory, Resource Groups Tagging, AWS::Glue::Crawler and AWS::Glue::Classifier CloudFormation resources"
       ],
       "gaps": [
         "Spark (glueetl/gluestreaming) and Ray (glueray) definitions are stored, but StartJobRun explicitly rejects execution because TinyStack has no Spark/Ray runtime",
-        "EVENT triggers, connections, Glue Studio and managed production engines are not implemented; unsupported members fail explicitly",
+        "Glue Studio and managed production engines are outside the implementation",
+        "Connection records support JDBC, NETWORK, MONGODB, KAFKA, CUSTOM and MARKETPLACE. Credentials and networking properties are stored as supplied. Live connection testing, VPC networking, credential resolution, connection renaming, and newer authentication and compute-environment override members are unsupported",
+        "NotifyEvent is absent from the pinned Glue API. Workflow events arrive through same-account, same-Region EventBridge rules with a delivery role and no target input overrides",
         "Python scripts use the configured host python3 and its installed packages, not a managed Glue Python distribution; the awsglue library is unavailable and scripts must not import it",
         "Python shell execution is enabled only when the selected Lambda executor is local; otherwise runs fail with: Local execution is disabled: select the Lambda local executor (lambda.executor: local) to run Glue Python shell jobs",
         "Scripts execute with the TinyStack user privileges; this shares Lambda local execution settings and process-group lifecycle, not a sandbox",
         "Bookmarks are not emulated: GetJobBookmark and ResetJobBookmark are unsupported rather than returning invented progress",
         "A claimed RUNNING process is killed on shutdown; its durable run becomes FAILED with an explicit interrupted-execution error after restart, never silently SUCCEEDED; queued STARTING runs resume",
-        "Cron L/W/# extensions are explicitly unsupported by the shared parser; missed schedule times are skipped rather than replayed",
+        "Cron supports L and nW in day-of-month and L, weekdayL and weekday#n in day-of-week. Combining extensions with lists or ranges, using L offsets, and replaying missed times are unsupported",
         "StartWorkflowRun selects exactly one ON_DEMAND source trigger; scheduled or directly started source triggers also create workflow runs; trigger renaming is unsupported",
-        "Grok/XML classifiers and JDBC, MongoDB, DynamoDB, Catalog, Delta, Iceberg and Hudi crawler targets fail explicitly; Catalog and DynamoDB discovery are not implemented. S3 target connections and event-queue (S3 event mode) crawls fail explicitly when set",
+        "JDBC, MongoDB, Delta, Iceberg and Hudi crawler targets are unsupported. S3 and Catalog target connections and S3 event queues fail if supplied. Catalog targets accept only existing S3-backed tables and cannot be mixed with other target types",
+        "DynamoDB targets use full paginated scans by default or a sample of at most 100 items with scanAll=false. Read-capacity throttling (scanRate) and incremental folder crawls are unsupported for DynamoDB",
+        "Grok classification uses a single-line RE2 subset with named field declarations, optional type annotations and custom definitions. Built-ins cover words, whitespace, numbers, hostnames, IPv4, log levels and ISO timestamps. Unknown patterns, recursive definitions and unsupported regex syntax fail validation",
+        "XML classification requires an unqualified RowTag and parses UTF-8 rows with attributes, nested fields and repeated child elements. Athena does not read DynamoDB, Grok or XML crawler output",
         "Crawler Configuration accepts only Version 1.0; grouping overrides including CombineCompatibleSchemas and other configuration keys fail explicitly",
         "Custom JSONPath supports $, $[*] and dotted member paths with optional final [*]; other expressions fail explicitly. Athena retains its JSON-lines reader and does not interpret custom JSONPath",
         "CSV custom datatype overrides support bigint, double, boolean, string and timestamp; other types fail explicitly. Athena supports double-quoted CSV only",
         "Crawler grouping merges identical compatible schemas under a target folder; incompatible schemas sharing one root fail rather than inventing a table location. AWS proprietary probabilistic grouping and header heuristics are approximated",
         "Crawler exclusions support *, **, ?, and character classes; brace alternation fails explicitly. ListCrawls supports STATE EQ filters only. Estimated remaining time is unavailable (zero with StillEstimating while running)",
-        "A claimed crawl interrupted by shutdown becomes FAILED on restart with an explicit interruption message; an unclaimed RUNNING crawl resumes, and STOPPING completes CANCELLED. Crawl catalog writes commit atomically after S3 reads, so stopped crawls publish no tables",
+        "A claimed crawl interrupted by shutdown becomes FAILED on restart with an interruption message. Unclaimed RUNNING crawls resume and STOPPING completes CANCELLED. Catalog writes commit atomically after source reads, so stopped crawls publish no tables",
         "Crawl output messages use /aws-glue/crawlers with the crawler name as stream; crawling is available independently of the Python executor",
-        "Job logs become visible after each attempt finishes; ErrorMessage retains at most the last 8192 bytes of stderr"
+        "Job logs become visible after each attempt finishes. ErrorMessage retains at most the last 8192 bytes of stderr",
+        "Glue table version archives and UpdateTable.SkipArchive are unsupported"
       ],
-      "execution": "Records / local S3 crawling / optional local Python host execution",
+      "execution": "Records / local S3 and DynamoDB crawling / optional local Python host execution",
       "package": "glue"
     },
     "athena": {
@@ -516,7 +526,7 @@
       "features": [
         "Default and custom buses, rules, targets and input transformers",
         "Pattern matching shared with other event services",
-        "SQS, SNS and Lambda targets in the same account and region",
+        "SQS, SNS, Lambda and Glue workflow targets in the same account and Region. Glue workflow targets require RoleArn and authorize glue:NotifyEvent against the target workflow",
         "Connections (API key, Basic and OAuth client credentials, with invocation header, query string and body parameters) and API destinations; Describe never returns secrets, and DeauthorizeConnection removes the credentials as AWS does",
         "API destination targets make a real HTTP request with the rendered event as the body: the target's HttpParameters fill the endpoint's * wildcards and add headers and query string parameters, the connection adds its parameters (which win) and its authorization, OAuth access tokens are cached until they expire, and a response other than 2xx fails the delivery into the retry and dead-letter path (5xx, 401, 407, 409 and 429 are retried, other statuses go to the dead-letter queue at once)",
         "Scheduled rules, durable retry records and SQS dead-letter queues",
@@ -532,7 +542,6 @@
         "API destination deliveries are synchronous (PutEvents waits up to 5 seconds for each endpoint), are not authorized against the target's RoleArn, and send the event as the body for every method; HttpParameters values that are JSONPath references such as $.detail.id are rejected, and the OAuth token request is a form POST (or GET with query parameters) with Basic client authentication",
         "Organization conditions and unsupported IAM policy elements are rejected; archive/replay management does not evaluate bus policies",
         "Replays run synchronously and cannot be cancelled",
-        "Cron does not support L, W or #",
         "Verify mode exposes bus/rule/target inventory and deliveries; management and event publication require signed CLI/SDK requests",
         "Bus permissions, archives and replay management use the AWS API rather than console forms",
         "With IAM authorization, conditions on events:source and events:detail-type fail closed for PutRule patterns with operators in those fields or a top-level $or"
@@ -1172,13 +1181,13 @@
       "features": [
         "Secret lifecycle, binary/string values, version IDs and staging labels",
         "Batch reads, tags and resource policy metadata",
-        "Four-step Lambda rotation with background scheduling",
+        "Four-step Lambda rotation with background scheduling, including last-day and nth-weekday cron rules",
         "Customer-managed KMS key usability checks",
         "AWS-style console for scoped secret creation, key/value or plaintext and binary values, explicit retrieve/hide/copy, password generation, versions and staging labels, metadata and KMS key edits, tags, resource policies, Lambda rotation configuration and immediate rotation, and scheduled deletion with restore or permanent deletion",
         "Gateway secret resource policy enforcement, cross-account secret ARN resolution and owning-root Get/Put/DeleteResourcePolicy recovery"
       ],
       "gaps": [
-        "No replication, managed/external rotation or enforced rotation windows",
+        "No replication, managed/external rotation or enforced rotation windows. Secrets Manager rotation schedules reject the W cron extension",
         "BlockPublicPolicy rejects unconditional wildcard-principal grants; any nonempty Condition is treated as restricting, without AWS automated policy reasoning",
         "Values remain local store data; KMS validation does not imply AWS at-rest encryption",
         "Verify mode exposes secret metadata inventory; values, versions, policies, rotation and management require signed AWS CLI or SDK requests"
@@ -1746,7 +1755,7 @@
         "Records only: no schedule execution, resource membership scan, IAM role existence/trust or permission checks, KMS lookup/key creation/encryption, data protection, backup/restore/copy jobs or recovery points",
         "StartBackupJob and job/recovery-point List/Get APIs, vault locks, notifications and access policies, reports, legal holds, organization policies, cross-account runtime and scheduling previews are absent",
         "Plans reject AdvancedBackupSettings, ScanSettings, copy/index/scan actions, continuous backups, air-gapped targets, timezone and archive-opt-in lifecycle members; unsupported members fail explicitly even when set to false or empty arrays",
-        "Cron metadata uses the existing parser: six UTC fields with ranges/lists/steps; rate expressions and L/W/# cron syntax are rejected. Omitted schedules default to cron(0 5 ? * * *)",
+        "Cron metadata accepts six UTC fields with ranges, lists, steps and the shared day-field extensions. Rate expressions are rejected. Omitted schedules default to cron(0 5 ? * * *)",
         "Lifecycle supports days 1-36500 with cold storage at least 90 days before deletion; omit DeleteAfterDays for indefinite retention. Start windows support 60-52560000 minutes, completion windows 1-52560000",
         "Selections reject wildcards, NotResources and Conditions; role/resource ARNs are shape-validated commercial references only and are not resolved; ListOfTags is stored OR-selector metadata without matching resources",
         "Plan names are unique among active plans and support 1-200 alphanumeric/dash/underscore/dot characters; vault names 2-50 without dots, rule/selection/token names 1-50. Plans retain up to 2000 versions; at most 300 vaults and 300 active plans per account/Region",
@@ -2156,7 +2165,7 @@
       "gaps": [
         "No capacity adjustments, referenced resource existence checks, IAM role creation/evaluation, CloudWatch alarms, metric evaluation, scaling activities, forecasts or runtime; omitted RoleARN uses conventional service-linked ARN metadata (EMR requires an explicit role)",
         "Predictive scaling and customized metric math/Metrics are excluded and reject explicitly; custom metrics support only MetricName, Namespace, Dimensions, Statistic and Unit. Predefined metric names are validated but metric-to-resource eligibility is not evaluated. Excluded member names reject with ValidationException through the existing shared AWS JSON decoder (REST JSON uses NotImplemented).",
-        "Cron L/W/# expressions are explicitly unsupported by the shared schedule parser; actions never run. PutScheduledAction updates retain omitted members and replace supplied ScalableTargetAction/configuration objects",
+        "Scheduled actions are stored without execution. PutScheduledAction updates retain omitted members and replace supplied ScalableTargetAction and configuration objects",
         "Tags apply only to scalable target ARNs, at most 50 keys; RegisterScalableTarget tags are create-only and existing targets must use TagResource",
         "CloudFormation ScheduledActions, tags and undocumented ScalableTarget GetAtt attributes are excluded; removing an explicit CF RoleARN rejects (supply the desired role). Suspension omission resets false in CF; other target identity changes replace resources. CF does not implement service-specific live-state compensation beyond the shared template rollback"
       ]

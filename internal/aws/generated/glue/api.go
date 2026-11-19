@@ -189,7 +189,6 @@ type UpdateTableRequest struct {
 	CatalogId    *string     `json:"CatalogId,omitempty"`
 	DatabaseName *string     `json:"DatabaseName,omitempty"`
 	TableInput   *TableInput `json:"TableInput,omitempty"`
-	SkipArchive  *bool       `json:"SkipArchive,omitempty"`
 }
 
 type UpdateTableResponse struct {
@@ -337,6 +336,10 @@ type JobCommand struct {
 	Runtime        *string `json:"Runtime,omitempty"`
 }
 
+type ConnectionsList struct {
+	Connections []string `json:"Connections,omitempty"`
+}
+
 type CreateJobRequest struct {
 	Name                    *string            `json:"Name,omitempty"`
 	Description             *string            `json:"Description,omitempty"`
@@ -352,6 +355,7 @@ type CreateJobRequest struct {
 	NumberOfWorkers         *int64             `json:"NumberOfWorkers,omitempty"`
 	WorkerType              *string            `json:"WorkerType,omitempty"`
 	Tags                    map[string]string  `json:"Tags,omitempty"`
+	Connections             *ConnectionsList   `json:"Connections,omitempty"`
 }
 
 type CreateJobResponse struct {
@@ -378,6 +382,7 @@ type Job struct {
 	WorkerType              *string            `json:"WorkerType,omitempty"`
 	CreatedOn               *float64           `json:"CreatedOn,omitempty"`
 	LastModifiedOn          *float64           `json:"LastModifiedOn,omitempty"`
+	Connections             *ConnectionsList   `json:"Connections,omitempty"`
 }
 
 type GetJobResponse struct {
@@ -418,6 +423,7 @@ type JobUpdate struct {
 	GlueVersion             *string            `json:"GlueVersion,omitempty"`
 	NumberOfWorkers         *int64             `json:"NumberOfWorkers,omitempty"`
 	WorkerType              *string            `json:"WorkerType,omitempty"`
+	Connections             *ConnectionsList   `json:"Connections,omitempty"`
 }
 
 type UpdateJobRequest struct {
@@ -539,16 +545,22 @@ type Action struct {
 	Timeout     *int64            `json:"Timeout,omitempty"`
 }
 
+type EventBatchingCondition struct {
+	BatchSize   *int64 `json:"BatchSize,omitempty"`
+	BatchWindow *int64 `json:"BatchWindow,omitempty"`
+}
+
 type CreateTriggerRequest struct {
-	Name            *string           `json:"Name,omitempty"`
-	WorkflowName    *string           `json:"WorkflowName,omitempty"`
-	Type            *string           `json:"Type,omitempty"`
-	Schedule        *string           `json:"Schedule,omitempty"`
-	Predicate       *Predicate        `json:"Predicate,omitempty"`
-	Actions         []Action          `json:"Actions,omitempty"`
-	Description     *string           `json:"Description,omitempty"`
-	StartOnCreation *bool             `json:"StartOnCreation,omitempty"`
-	Tags            map[string]string `json:"Tags,omitempty"`
+	Name                   *string                 `json:"Name,omitempty"`
+	WorkflowName           *string                 `json:"WorkflowName,omitempty"`
+	Type                   *string                 `json:"Type,omitempty"`
+	Schedule               *string                 `json:"Schedule,omitempty"`
+	Predicate              *Predicate              `json:"Predicate,omitempty"`
+	Actions                []Action                `json:"Actions,omitempty"`
+	Description            *string                 `json:"Description,omitempty"`
+	StartOnCreation        *bool                   `json:"StartOnCreation,omitempty"`
+	Tags                   map[string]string       `json:"Tags,omitempty"`
+	EventBatchingCondition *EventBatchingCondition `json:"EventBatchingCondition,omitempty"`
 }
 
 type CreateTriggerResponse struct {
@@ -560,15 +572,16 @@ type GetTriggerRequest struct {
 }
 
 type Trigger struct {
-	Name         *string    `json:"Name,omitempty"`
-	WorkflowName *string    `json:"WorkflowName,omitempty"`
-	Id           *string    `json:"Id,omitempty"`
-	Type         *string    `json:"Type,omitempty"`
-	State        *string    `json:"State,omitempty"`
-	Description  *string    `json:"Description,omitempty"`
-	Schedule     *string    `json:"Schedule,omitempty"`
-	Actions      []Action   `json:"Actions,omitempty"`
-	Predicate    *Predicate `json:"Predicate,omitempty"`
+	Name                   *string                 `json:"Name,omitempty"`
+	WorkflowName           *string                 `json:"WorkflowName,omitempty"`
+	Id                     *string                 `json:"Id,omitempty"`
+	Type                   *string                 `json:"Type,omitempty"`
+	State                  *string                 `json:"State,omitempty"`
+	Description            *string                 `json:"Description,omitempty"`
+	Schedule               *string                 `json:"Schedule,omitempty"`
+	Actions                []Action                `json:"Actions,omitempty"`
+	Predicate              *Predicate              `json:"Predicate,omitempty"`
+	EventBatchingCondition *EventBatchingCondition `json:"EventBatchingCondition,omitempty"`
 }
 
 type GetTriggerResponse struct {
@@ -599,11 +612,12 @@ type ListTriggersResponse struct {
 }
 
 type TriggerUpdate struct {
-	Name        *string    `json:"Name,omitempty"`
-	Description *string    `json:"Description,omitempty"`
-	Schedule    *string    `json:"Schedule,omitempty"`
-	Actions     []Action   `json:"Actions,omitempty"`
-	Predicate   *Predicate `json:"Predicate,omitempty"`
+	Name                   *string                 `json:"Name,omitempty"`
+	Description            *string                 `json:"Description,omitempty"`
+	Schedule               *string                 `json:"Schedule,omitempty"`
+	Actions                []Action                `json:"Actions,omitempty"`
+	Predicate              *Predicate              `json:"Predicate,omitempty"`
+	EventBatchingCondition *EventBatchingCondition `json:"EventBatchingCondition,omitempty"`
 }
 
 type UpdateTriggerRequest struct {
@@ -714,17 +728,23 @@ type WorkflowGraph struct {
 	Edges []Edge `json:"Edges,omitempty"`
 }
 
+type StartingEventBatchCondition struct {
+	BatchSize   *int64 `json:"BatchSize,omitempty"`
+	BatchWindow *int64 `json:"BatchWindow,omitempty"`
+}
+
 type WorkflowRun struct {
-	Name                  *string                `json:"Name,omitempty"`
-	WorkflowRunId         *string                `json:"WorkflowRunId,omitempty"`
-	PreviousRunId         *string                `json:"PreviousRunId,omitempty"`
-	WorkflowRunProperties map[string]string      `json:"WorkflowRunProperties,omitempty"`
-	StartedOn             *float64               `json:"StartedOn,omitempty"`
-	CompletedOn           *float64               `json:"CompletedOn,omitempty"`
-	Status                *string                `json:"Status,omitempty"`
-	ErrorMessage          *string                `json:"ErrorMessage,omitempty"`
-	Statistics            *WorkflowRunStatistics `json:"Statistics,omitempty"`
-	Graph                 *WorkflowGraph         `json:"Graph,omitempty"`
+	Name                        *string                      `json:"Name,omitempty"`
+	WorkflowRunId               *string                      `json:"WorkflowRunId,omitempty"`
+	PreviousRunId               *string                      `json:"PreviousRunId,omitempty"`
+	WorkflowRunProperties       map[string]string            `json:"WorkflowRunProperties,omitempty"`
+	StartedOn                   *float64                     `json:"StartedOn,omitempty"`
+	CompletedOn                 *float64                     `json:"CompletedOn,omitempty"`
+	Status                      *string                      `json:"Status,omitempty"`
+	ErrorMessage                *string                      `json:"ErrorMessage,omitempty"`
+	Statistics                  *WorkflowRunStatistics       `json:"Statistics,omitempty"`
+	Graph                       *WorkflowGraph               `json:"Graph,omitempty"`
+	StartingEventBatchCondition *StartingEventBatchCondition `json:"StartingEventBatchCondition,omitempty"`
 }
 
 type Workflow struct {
@@ -855,9 +875,24 @@ type CreateJsonClassifierRequest struct {
 	JsonPath *string `json:"JsonPath,omitempty"`
 }
 
+type CreateGrokClassifierRequest struct {
+	Classification *string `json:"Classification,omitempty"`
+	Name           *string `json:"Name,omitempty"`
+	GrokPattern    *string `json:"GrokPattern,omitempty"`
+	CustomPatterns *string `json:"CustomPatterns,omitempty"`
+}
+
+type CreateXMLClassifierRequest struct {
+	Classification *string `json:"Classification,omitempty"`
+	Name           *string `json:"Name,omitempty"`
+	RowTag         *string `json:"RowTag,omitempty"`
+}
+
 type CreateClassifierRequest struct {
 	CsvClassifier  *CreateCsvClassifierRequest  `json:"CsvClassifier,omitempty"`
 	JsonClassifier *CreateJsonClassifierRequest `json:"JsonClassifier,omitempty"`
+	GrokClassifier *CreateGrokClassifierRequest `json:"GrokClassifier,omitempty"`
+	XMLClassifier  *CreateXMLClassifierRequest  `json:"XMLClassifier,omitempty"`
 }
 
 type CreateClassifierResponse struct {
@@ -890,9 +925,30 @@ type JsonClassifier struct {
 	JsonPath     *string  `json:"JsonPath,omitempty"`
 }
 
+type GrokClassifier struct {
+	Name           *string  `json:"Name,omitempty"`
+	Classification *string  `json:"Classification,omitempty"`
+	CreationTime   *float64 `json:"CreationTime,omitempty"`
+	LastUpdated    *float64 `json:"LastUpdated,omitempty"`
+	Version        *int64   `json:"Version,omitempty"`
+	GrokPattern    *string  `json:"GrokPattern,omitempty"`
+	CustomPatterns *string  `json:"CustomPatterns,omitempty"`
+}
+
+type XMLClassifier struct {
+	Name           *string  `json:"Name,omitempty"`
+	Classification *string  `json:"Classification,omitempty"`
+	CreationTime   *float64 `json:"CreationTime,omitempty"`
+	LastUpdated    *float64 `json:"LastUpdated,omitempty"`
+	Version        *int64   `json:"Version,omitempty"`
+	RowTag         *string  `json:"RowTag,omitempty"`
+}
+
 type Classifier struct {
 	CsvClassifier  *CsvClassifier  `json:"CsvClassifier,omitempty"`
 	JsonClassifier *JsonClassifier `json:"JsonClassifier,omitempty"`
+	GrokClassifier *GrokClassifier `json:"GrokClassifier,omitempty"`
+	XMLClassifier  *XMLClassifier  `json:"XMLClassifier,omitempty"`
 }
 
 type GetClassifierResponse struct {
@@ -926,9 +982,24 @@ type UpdateJsonClassifierRequest struct {
 	JsonPath *string `json:"JsonPath,omitempty"`
 }
 
+type UpdateGrokClassifierRequest struct {
+	Name           *string `json:"Name,omitempty"`
+	Classification *string `json:"Classification,omitempty"`
+	GrokPattern    *string `json:"GrokPattern,omitempty"`
+	CustomPatterns *string `json:"CustomPatterns,omitempty"`
+}
+
+type UpdateXMLClassifierRequest struct {
+	Name           *string `json:"Name,omitempty"`
+	Classification *string `json:"Classification,omitempty"`
+	RowTag         *string `json:"RowTag,omitempty"`
+}
+
 type UpdateClassifierRequest struct {
 	CsvClassifier  *UpdateCsvClassifierRequest  `json:"CsvClassifier,omitempty"`
 	JsonClassifier *UpdateJsonClassifierRequest `json:"JsonClassifier,omitempty"`
+	GrokClassifier *UpdateGrokClassifierRequest `json:"GrokClassifier,omitempty"`
+	XMLClassifier  *UpdateXMLClassifierRequest  `json:"XMLClassifier,omitempty"`
 }
 
 type UpdateClassifierResponse struct {
@@ -942,16 +1013,25 @@ type DeleteClassifierResponse struct {
 }
 
 type S3Target struct {
-	Path             *string  `json:"Path,omitempty"`
-	Exclusions       []string `json:"Exclusions,omitempty"`
-	ConnectionName   *string  `json:"ConnectionName,omitempty"`
-	SampleSize       *int64   `json:"SampleSize,omitempty"`
-	EventQueueArn    *string  `json:"EventQueueArn,omitempty"`
-	DlqEventQueueArn *string  `json:"DlqEventQueueArn,omitempty"`
+	Path       *string  `json:"Path,omitempty"`
+	Exclusions []string `json:"Exclusions,omitempty"`
+	SampleSize *int64   `json:"SampleSize,omitempty"`
+}
+
+type DynamoDBTarget struct {
+	Path    *string `json:"Path,omitempty"`
+	ScanAll *bool   `json:"scanAll,omitempty"`
+}
+
+type CatalogTarget struct {
+	DatabaseName *string  `json:"DatabaseName,omitempty"`
+	Tables       []string `json:"Tables,omitempty"`
 }
 
 type CrawlerTargets struct {
-	S3Targets []S3Target `json:"S3Targets,omitempty"`
+	S3Targets       []S3Target       `json:"S3Targets,omitempty"`
+	DynamoDBTargets []DynamoDBTarget `json:"DynamoDBTargets,omitempty"`
+	CatalogTargets  []CatalogTarget  `json:"CatalogTargets,omitempty"`
 }
 
 type SchemaChangePolicy struct {
@@ -1167,6 +1247,98 @@ type ListCrawlsResponse struct {
 	NextToken *string          `json:"NextToken,omitempty"`
 }
 
+type PhysicalConnectionRequirements struct {
+	SubnetId            *string  `json:"SubnetId,omitempty"`
+	SecurityGroupIdList []string `json:"SecurityGroupIdList,omitempty"`
+	AvailabilityZone    *string  `json:"AvailabilityZone,omitempty"`
+}
+
+type ConnectionInput struct {
+	Name                           *string                         `json:"Name,omitempty"`
+	Description                    *string                         `json:"Description,omitempty"`
+	ConnectionType                 *string                         `json:"ConnectionType,omitempty"`
+	MatchCriteria                  []string                        `json:"MatchCriteria,omitempty"`
+	ConnectionProperties           map[string]string               `json:"ConnectionProperties,omitempty"`
+	PhysicalConnectionRequirements *PhysicalConnectionRequirements `json:"PhysicalConnectionRequirements,omitempty"`
+}
+
+type CreateConnectionRequest struct {
+	CatalogId       *string           `json:"CatalogId,omitempty"`
+	ConnectionInput *ConnectionInput  `json:"ConnectionInput,omitempty"`
+	Tags            map[string]string `json:"Tags,omitempty"`
+}
+
+type CreateConnectionResponse struct {
+	CreateConnectionStatus *string `json:"CreateConnectionStatus,omitempty"`
+}
+
+type GetConnectionRequest struct {
+	CatalogId    *string `json:"CatalogId,omitempty"`
+	Name         *string `json:"Name,omitempty"`
+	HidePassword *bool   `json:"HidePassword,omitempty"`
+}
+
+type Connection struct {
+	Name                           *string                         `json:"Name,omitempty"`
+	Description                    *string                         `json:"Description,omitempty"`
+	ConnectionType                 *string                         `json:"ConnectionType,omitempty"`
+	MatchCriteria                  []string                        `json:"MatchCriteria,omitempty"`
+	ConnectionProperties           map[string]string               `json:"ConnectionProperties,omitempty"`
+	PhysicalConnectionRequirements *PhysicalConnectionRequirements `json:"PhysicalConnectionRequirements,omitempty"`
+	CreationTime                   *float64                        `json:"CreationTime,omitempty"`
+	LastUpdatedTime                *float64                        `json:"LastUpdatedTime,omitempty"`
+	LastUpdatedBy                  *string                         `json:"LastUpdatedBy,omitempty"`
+}
+
+type GetConnectionResponse struct {
+	Connection *Connection `json:"Connection,omitempty"`
+}
+
+type GetConnectionsFilter struct {
+	MatchCriteria  []string `json:"MatchCriteria,omitempty"`
+	ConnectionType *string  `json:"ConnectionType,omitempty"`
+}
+
+type GetConnectionsRequest struct {
+	CatalogId    *string               `json:"CatalogId,omitempty"`
+	Filter       *GetConnectionsFilter `json:"Filter,omitempty"`
+	HidePassword *bool                 `json:"HidePassword,omitempty"`
+	NextToken    *string               `json:"NextToken,omitempty"`
+	MaxResults   *int64                `json:"MaxResults,omitempty"`
+}
+
+type GetConnectionsResponse struct {
+	ConnectionList []Connection `json:"ConnectionList,omitempty"`
+	NextToken      *string      `json:"NextToken,omitempty"`
+}
+
+type UpdateConnectionRequest struct {
+	CatalogId       *string          `json:"CatalogId,omitempty"`
+	Name            *string          `json:"Name,omitempty"`
+	ConnectionInput *ConnectionInput `json:"ConnectionInput,omitempty"`
+}
+
+type UpdateConnectionResponse struct {
+}
+
+type DeleteConnectionRequest struct {
+	CatalogId      *string `json:"CatalogId,omitempty"`
+	ConnectionName *string `json:"ConnectionName,omitempty"`
+}
+
+type DeleteConnectionResponse struct {
+}
+
+type BatchDeleteConnectionRequest struct {
+	CatalogId          *string  `json:"CatalogId,omitempty"`
+	ConnectionNameList []string `json:"ConnectionNameList,omitempty"`
+}
+
+type BatchDeleteConnectionResponse struct {
+	Succeeded []string               `json:"Succeeded,omitempty"`
+	Errors    map[string]ErrorDetail `json:"Errors,omitempty"`
+}
+
 type API interface {
 	CreateDatabase(context.Context, *CreateDatabaseRequest) (*CreateDatabaseResponse, error)
 	GetDatabase(context.Context, *GetDatabaseRequest) (*GetDatabaseResponse, error)
@@ -1238,6 +1410,12 @@ type API interface {
 	StopCrawlerSchedule(context.Context, *StopCrawlerScheduleRequest) (*StopCrawlerScheduleResponse, error)
 	GetCrawlerMetrics(context.Context, *GetCrawlerMetricsRequest) (*GetCrawlerMetricsResponse, error)
 	ListCrawls(context.Context, *ListCrawlsRequest) (*ListCrawlsResponse, error)
+	CreateConnection(context.Context, *CreateConnectionRequest) (*CreateConnectionResponse, error)
+	GetConnection(context.Context, *GetConnectionRequest) (*GetConnectionResponse, error)
+	GetConnections(context.Context, *GetConnectionsRequest) (*GetConnectionsResponse, error)
+	UpdateConnection(context.Context, *UpdateConnectionRequest) (*UpdateConnectionResponse, error)
+	DeleteConnection(context.Context, *DeleteConnectionRequest) (*DeleteConnectionResponse, error)
+	BatchDeleteConnection(context.Context, *BatchDeleteConnectionRequest) (*BatchDeleteConnectionResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1441,6 +1619,24 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListCrawls": {Name: "ListCrawls", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:ListCrawls", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.ListCrawls", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListCrawlsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListCrawls(ctx, input.(*ListCrawlsRequest))
+		}},
+		"CreateConnection": {Name: "CreateConnection", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:CreateConnection", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.CreateConnection", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateConnectionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateConnection(ctx, input.(*CreateConnectionRequest))
+		}},
+		"GetConnection": {Name: "GetConnection", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetConnection", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetConnection", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetConnectionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetConnection(ctx, input.(*GetConnectionRequest))
+		}},
+		"GetConnections": {Name: "GetConnections", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetConnections", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetConnections", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetConnectionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetConnections(ctx, input.(*GetConnectionsRequest))
+		}},
+		"UpdateConnection": {Name: "UpdateConnection", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:UpdateConnection", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.UpdateConnection", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateConnectionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateConnection(ctx, input.(*UpdateConnectionRequest))
+		}},
+		"DeleteConnection": {Name: "DeleteConnection", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:DeleteConnection", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.DeleteConnection", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteConnectionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteConnection(ctx, input.(*DeleteConnectionRequest))
+		}},
+		"BatchDeleteConnection": {Name: "BatchDeleteConnection", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:BatchDeleteConnection", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.BatchDeleteConnection", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchDeleteConnectionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.BatchDeleteConnection(ctx, input.(*BatchDeleteConnectionRequest))
 		}},
 	}}
 }

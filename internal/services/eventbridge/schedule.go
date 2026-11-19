@@ -3,7 +3,6 @@ package eventbridge
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -25,10 +24,7 @@ var scheduleInterval = time.Second
 // does.
 func parseSchedule(text string) (*schedule.Schedule, error) {
 	s, err := schedule.Parse(text)
-	switch {
-	case errors.Is(err, schedule.ErrUnsupported):
-		return nil, invalid("TinyStack does not support L, W, or # in cron expressions.")
-	case err != nil:
+	if err != nil {
 		return nil, invalid("Parameter ScheduleExpression is not valid.")
 	}
 

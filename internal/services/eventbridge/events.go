@@ -321,7 +321,7 @@ func (s *Service) authorize(ctx context.Context, rule, targetARN string) error {
 
 // authorizeRole checks that the target's role trusts events.amazonaws.com and lets it make the delivery.
 func (s *Service) authorizeRole(ctx context.Context, rule string, t *target, payload []byte) error {
-	var svc, op string
+	var svc, op, resourceARN string
 	var params map[string]any
 	switch strings.SplitN(t.ARN, ":", 4)[2] {
 	case serviceSQS:
@@ -335,12 +335,15 @@ func (s *Service) authorizeRole(ctx context.Context, rule string, t *target, pay
 		svc, op, params = serviceLambda, "Invoke", map[string]any{
 			"FunctionName": t.ARN, "InvocationType": "Event", "Payload": string(payload),
 		}
+	case serviceGlue:
+		svc, op, resourceARN = serviceGlue, "NotifyEvent", t.ARN
 	}
 
 	return s.authorizer.Authorize(ctx, catalog.ServiceDelivery{
 		Principal:     "events.amazonaws.com",
 		SourceARN:     rule,
 		SourceAccount: strings.Split(rule, ":")[4],
+		Target:        resourceARN,
 		Role: &catalog.DeliveryRole{
 			ARN: t.RoleARN, Session: rule[strings.LastIndex(rule, "/")+1:], Service: svc, Operation: op, Params: params,
 		},
@@ -380,6 +383,12 @@ func (s *Service) send(ctx context.Context, rule string, t *target, eventID stri
 		_, err = s.topics.Publish(ctx, &snsapi.PublishInput{TopicArn: new(t.ARN), Message: new(string(payload))})
 	case serviceLambda:
 		err = s.functions.InvokeAsync(ctx, t.ARN, payload)
+	case serviceGlue:
+		if s.glueEvent == nil {
+			return invalid("Glue workflow targets are unavailable.")
+		}
+
+		err = s.glueEvent(ctx, t.ARN, eventID)
 	}
 
 	return err

@@ -23,7 +23,7 @@ When IAM authorization is enabled, secret-scoped actions evaluate the stored res
 
 ## Limitations and future work
 
-- No replication, managed/external rotation or enforced rotation windows.
+- No replication, managed/external rotation or enforced rotation windows. Secrets Manager rotation schedules reject the W cron extension.
 - BlockPublicPolicy rejects unconditional wildcard-principal grants; any nonempty Condition is treated as restricting, without AWS automated policy reasoning.
 - Values remain local store data; KMS validation does not imply AWS at-rest encryption.
 - Verify mode exposes secret metadata inventory; values, versions, policies, rotation and management require signed AWS CLI or SDK requests.

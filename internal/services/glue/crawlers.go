@@ -66,16 +66,24 @@ func (s *Service) validateCrawler(ctx context.Context, c *api.Crawler) error {
 		return err
 	}
 
-	if c.DatabaseName == nil {
-		return invalid("DatabaseName is required for S3 targets")
+	if c.Targets == nil || len(c.Targets.S3Targets)+len(c.Targets.DynamoDBTargets)+len(c.Targets.CatalogTargets) == 0 {
+		return invalid("At least one S3, DynamoDB or Catalog target is required")
 	}
 
-	db, err := name("database", c.DatabaseName)
-	if err != nil {
-		return err
+	catalogOnly := len(c.Targets.CatalogTargets) > 0
+	if catalogOnly && len(c.Targets.S3Targets)+len(c.Targets.DynamoDBTargets) > 0 {
+		return invalid("Catalog targets cannot be mixed with other target types")
 	}
 
-	c.DatabaseName = new(db)
+	if !catalogOnly || c.DatabaseName != nil {
+		db, err := name("database", c.DatabaseName)
+		if err != nil {
+			return err
+		}
+
+		c.DatabaseName = new(db)
+	}
+
 	if c.Description != nil && len(*c.Description) > 2048 {
 		return invalid("Description exceeds 2048 bytes")
 	}
@@ -84,20 +92,16 @@ func (s *Service) validateCrawler(ctx context.Context, c *api.Crawler) error {
 		return invalid("TablePrefix exceeds 128 bytes")
 	}
 
-	if c.Targets == nil || len(c.Targets.S3Targets) == 0 {
-		return invalid("At least one S3 target is required")
+	for _, target := range c.Targets.DynamoDBTargets {
+		if _, err := s.describeDynamoTarget(ctx, target); err != nil {
+			return err
+		}
 	}
 
 	for _, t := range c.Targets.S3Targets {
 		u, err := url.Parse(common.Value(t.Path))
 		if err != nil || u.Scheme != "s3" || u.Host == "" || u.RawQuery != "" || u.Fragment != "" {
 			return invalid("S3 target Path must be s3://bucket/prefix")
-		}
-
-		// Terraform sends these as empty strings when unset; connections and S3 event crawls are not emulated.
-		if common.Value(t.ConnectionName) != "" || common.Value(t.EventQueueArn) != "" ||
-			common.Value(t.DlqEventQueueArn) != "" {
-			return invalid("S3 target connections and event queues are not supported")
 		}
 
 		if t.SampleSize != nil && (*t.SampleSize < 1 || *t.SampleSize > 249) {
@@ -127,16 +131,23 @@ func (s *Service) validateCrawler(ctx context.Context, c *api.Crawler) error {
 
 	p := c.SchemaChangePolicy
 	if p.UpdateBehavior == nil {
-		p.UpdateBehavior = new("UPDATE_IN_DATABASE")
+		p.UpdateBehavior = new(updateInDatabase)
 	}
 
 	if p.DeleteBehavior == nil {
 		p.DeleteBehavior = new(deprecateInDatabase)
+		if catalogOnly {
+			p.DeleteBehavior = new(behaviorLog)
+		}
 	}
 
-	if !slices.Contains([]string{behaviorLog, "UPDATE_IN_DATABASE"}, *p.UpdateBehavior) ||
+	if !slices.Contains([]string{behaviorLog, updateInDatabase}, *p.UpdateBehavior) ||
 		!slices.Contains([]string{behaviorLog, deleteFromDatabase, deprecateInDatabase}, *p.DeleteBehavior) {
 		return invalid("Invalid SchemaChangePolicy")
+	}
+
+	if catalogOnly && *p.DeleteBehavior != behaviorLog {
+		return invalid("Catalog targets require LOG delete behavior")
 	}
 
 	if c.RecrawlPolicy == nil {
@@ -153,6 +164,10 @@ func (s *Service) validateCrawler(ctx context.Context, c *api.Crawler) error {
 	if *c.RecrawlPolicy.RecrawlBehavior == recrawlNewFolders &&
 		(*p.UpdateBehavior != behaviorLog || *p.DeleteBehavior != behaviorLog) {
 		return invalid("CRAWL_NEW_FOLDERS_ONLY requires LOG update and delete policies")
+	}
+
+	if len(c.Targets.DynamoDBTargets) > 0 && *c.RecrawlPolicy.RecrawlBehavior == recrawlNewFolders {
+		return invalid("CRAWL_NEW_FOLDERS_ONLY is unavailable for DynamoDB targets")
 	}
 
 	if c.Configuration != nil {
@@ -174,6 +189,10 @@ func (s *Service) validateCrawler(ctx context.Context, c *api.Crawler) error {
 	}
 
 	return s.view(ctx, nil, func(tx storage.ReadTx, scope request.Scope) error {
+		if _, err := catalogCrawlTargets(tx, scope, c.Targets.CatalogTargets); err != nil {
+			return err
+		}
+
 		for _, n := range c.Classifiers {
 			if _, err := loadClassifier(tx, scope, n); err != nil {
 				return err

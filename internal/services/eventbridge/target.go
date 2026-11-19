@@ -16,8 +16,7 @@ import (
 )
 
 // targetService returns the service of a target ARN in the caller's account
-// and region. TinyStack delivers only to SQS queues, SNS topics, Lambda
-// functions, and API destinations there.
+// and region.
 func targetService(scope request.Scope, arn string) (string, error) {
 	parts := strings.SplitN(arn, ":", 6)
 	if len(parts) != 6 || parts[0] != "arn" || parts[1] == "" || parts[5] == "" || !accountID.MatchString(parts[4]) {
@@ -26,6 +25,11 @@ func targetService(scope request.Scope, arn string) (string, error) {
 
 	switch parts[2] {
 	case serviceSQS, serviceSNS, serviceLambda:
+	case serviceGlue:
+		if n, ok := strings.CutPrefix(parts[5], "workflow/"); parts[1] != "aws" || !ok || n == "" {
+			return "", invalid("Glue targets must be workflow ARNs.")
+		}
+
 	case serviceEvents:
 		if !strings.HasPrefix(parts[5], "api-destination/") {
 			return "", invalid("TinyStack delivers events targets only to API destinations.")
@@ -57,6 +61,16 @@ func newTarget(scope request.Scope, in *api.Target) (target, error) {
 	service, err := targetService(scope, t.ARN)
 	if err != nil {
 		return t, err
+	}
+
+	if service == serviceGlue {
+		if t.RoleARN == "" {
+			return t, invalid("RoleArn is required for Glue workflow targets.")
+		}
+
+		if in.Input != nil || in.InputPath != nil || in.InputTransformer != nil {
+			return t, invalid("Input overrides are unsupported for Glue workflow targets.")
+		}
 	}
 
 	if (in.Input != nil && in.InputPath != nil) || (in.InputTransformer != nil && (in.Input != nil ||

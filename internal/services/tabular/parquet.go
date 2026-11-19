@@ -354,7 +354,7 @@ func nodeFor(kind string) (parquet.Node, error) {
 		}
 
 		return group, nil
-	case k == "string", k == "varchar", k == "char",
+	case k == hiveString, k == "varchar", k == "char",
 		strings.HasPrefix(k, "varchar("), strings.HasPrefix(k, "char("):
 		return parquet.String(), nil
 	}

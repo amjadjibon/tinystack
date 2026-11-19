@@ -383,7 +383,6 @@ func TestGluecrawlPoliciesAndErrors(t *testing.T) {
 		},
 	)
 	code(t, err, "InvalidInputException")
-	// Terraform sends unset connection and queue members as empty strings; only set values are unsupported.
 	path := input.Targets.S3Targets[0].Path
 	_, err = c.UpdateCrawler(
 		ctx,
@@ -392,9 +391,7 @@ func TestGluecrawlPoliciesAndErrors(t *testing.T) {
 			Targets: &gt.CrawlerTargets{S3Targets: []gt.S3Target{{Path: path, ConnectionName: new("")}}},
 		},
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
+	code(t, err, "ValidationException")
 
 	_, err = c.UpdateCrawler(
 		ctx,
@@ -403,7 +400,7 @@ func TestGluecrawlPoliciesAndErrors(t *testing.T) {
 			Targets: &gt.CrawlerTargets{S3Targets: []gt.S3Target{{Path: path, EventQueueArn: new("arn:aws:sqs:x")}}},
 		},
 	)
-	code(t, err, "InvalidInputException")
+	code(t, err, "ValidationException")
 	_, err = c.UpdateCrawlerSchedule(
 		ctx,
 		&glue.UpdateCrawlerScheduleInput{CrawlerName: new("policy"), Schedule: new("cron(* * * * ? *)")},

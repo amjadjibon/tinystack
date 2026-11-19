@@ -401,7 +401,7 @@ func (s *Service) StartWorkflowRun(
 
 	out := &api.StartWorkflowRunResponse{}
 	err := s.update(ctx, nil, func(tx storage.WriteTx, scope request.Scope) error {
-		id, err := s.startWorkflow(tx, scope, in, nil)
+		id, err := s.startWorkflow(tx, scope, in, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -413,7 +413,7 @@ func (s *Service) StartWorkflowRun(
 }
 
 func (s *Service) startWorkflow(tx storage.WriteTx, scope request.Scope, in *api.StartWorkflowRunRequest,
-	start *triggerRecord,
+	start *triggerRecord, cause *api.StartingEventBatchCondition,
 ) (string, error) {
 	w, err := loadWorkflow(tx, scope, common.Value(in.Name))
 	if err != nil {
@@ -469,7 +469,7 @@ func (s *Service) startWorkflow(tx storage.WriteTx, scope request.Scope, in *api
 	maps.Copy(props, in.RunProperties)
 	r := &workflowRunRecord{Run: api.WorkflowRun{
 		Name: in.Name, WorkflowRunId: new(id), WorkflowRunProperties: props,
-		StartedOn: new(common.Unix(s.now())), Status: new(stateRunning),
+		StartedOn: new(common.Unix(s.now())), Status: new(stateRunning), StartingEventBatchCondition: cause,
 	}, Fired: map[string]bool{*start.Trigger.Name: true}}
 	if err := s.fireTrigger(tx, scope, start, *in.Name, id); err != nil {
 		return "", err

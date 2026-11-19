@@ -46,6 +46,7 @@ const (
 	serviceSQS    = "sqs"
 	serviceSNS    = "sns"
 	serviceLambda = "lambda"
+	serviceGlue   = "glue"
 	// serviceEvents is the service of an API destination's ARN, the only events target TinyStack delivers to.
 	serviceEvents = "events"
 )
@@ -62,6 +63,7 @@ type Service struct {
 	topics     *sns.Service
 	now        func() time.Time
 	authorizer catalog.ServiceAuthorizer
+	glueEvent  func(context.Context, string, string) error
 	bg         *background.Group
 	client     *http.Client
 	queues     *sqs.Service
@@ -77,6 +79,7 @@ func New(
 	functions *lambda.Service,
 	deliveries *delivery.Log,
 	secrets *secretsmanager.Service,
+	glueEvent func(context.Context, string, string) error,
 ) *Service {
 	s := &Service{
 		store:      store,
@@ -85,6 +88,7 @@ func New(
 		functions:  functions,
 		deliveries: deliveries,
 		secrets:    secrets,
+		glueEvent:  glueEvent,
 		logger:     slog.Default(),
 		now:        time.Now,
 		bg:         background.New(),

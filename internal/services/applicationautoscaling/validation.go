@@ -386,13 +386,6 @@ func checkAction(a *api.ScheduledAction) error {
 			return awserror.Validation("Invalid at schedule")
 		}
 	} else if _, err := schedule.Parse(*a.Schedule); err != nil {
-		if errors.Is(err, schedule.ErrUnsupported) {
-			return awserror.New(
-				"NotImplemented",
-				"Cron L, W and # expressions are outside the selected schedule subset",
-			)
-		}
-
 		return awserror.Validation("Invalid rate or cron schedule")
 	}
 

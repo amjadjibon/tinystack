@@ -44,6 +44,8 @@ func formatOf(t *glueapi.Table) (*rowFormat, error) {
 
 	classification := strings.ToLower(t.Parameters["classification"])
 	switch {
+	case classification == "dynamodb", strings.Contains(lib, "grokserde"), strings.Contains(lib, "xmlserde"):
+		return nil, fmt.Errorf("NOT_SUPPORTED: TinyStack does not read %s tables", classification)
 	case strings.EqualFold(t.Parameters["table_type"], "iceberg") || strings.Contains(lib, "iceberg"):
 		return nil, fmt.Errorf("NOT_SUPPORTED: TinyStack does not read Iceberg tables")
 	case strings.Contains(lib, formatParquet) || strings.Contains(input, formatParquet) || classification == formatParquet:

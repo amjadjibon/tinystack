@@ -247,6 +247,12 @@ func (t *resourceType) replaces(old, p props) bool {
 		return bedrockDataSourceReplaces(old, p)
 	}
 
+	if t == types[glueConnectionResource] {
+		a, _ := old[glueConnectionInput].(map[string]any)
+		b, _ := p[glueConnectionInput].(map[string]any)
+		return p.changed(old, glueCatalogID) || props(b).changed(props(a), memberName)
+	}
+
 	if t == types[glueClassifierType] {
 		return glueClassifierReplaces(old, p)
 	}

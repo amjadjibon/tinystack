@@ -124,7 +124,7 @@ func TestSecretsRotation(t *testing.T) {
 	for _, rules := range []*smtypes.RotationRulesType{
 		{AutomaticallyAfterDays: aws.Int64(30), ScheduleExpression: aws.String("rate(10 days)")},
 		{ScheduleExpression: aws.String("rate(1 hour)")},
-		{ScheduleExpression: aws.String("cron(0 0 L * ? *)")},
+		{ScheduleExpression: aws.String("cron(0 0 15W * ? *)")},
 		{AutomaticallyAfterDays: aws.Int64(0)},
 		{AutomaticallyAfterDays: aws.Int64(30), Duration: aws.String("25h")},
 	} {

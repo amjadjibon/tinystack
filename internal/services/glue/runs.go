@@ -133,6 +133,14 @@ func (s *Service) startRun(tx storage.WriteTx, scope request.Scope, in *api.Star
 		return nil, invalid("TinyStack has no Spark or Ray runtime; only pythonshell jobs can run")
 	}
 
+	if j.Job.Connections != nil {
+		for _, n := range j.Job.Connections.Connections {
+			if _, loadErr := loadConnection(tx, scope, n); loadErr != nil {
+				return nil, loadErr
+			}
+		}
+	}
+
 	rows, err := storage.Records[runRecord](tx, scope.Key(service, "run", url.PathEscape(*in.JobName)+"/"))
 	if err != nil {
 		return nil, err

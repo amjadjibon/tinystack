@@ -69,12 +69,20 @@ func TestEventBridgeScheduledRules(t *testing.T) {
 
 	for _, expression := range []string{
 		"rate(1 minutes)", "rate(0 hours)", "rate(5 weeks)", "cron(0 3 * * * *)", "cron(0 3 * *)",
-		"cron(0 3 ? * 6L *)", "every day",
+		"cron(0 3 ? * 6L,MON *)", "every day",
 	} {
 		_, err = c.PutRule(ctx, &eventbridge.PutRuleInput{
 			Name: aws.String("bad"), ScheduleExpression: aws.String(expression),
 		})
 		code(t, err, "ValidationException")
+	}
+
+	_, err = c.PutRule(ctx, &eventbridge.PutRuleInput{
+		Name: aws.String("last-friday"), ScheduleExpression: aws.String("cron(0 3 ? * 6L *)"),
+		State: ebtypes.RuleStateDisabled,
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	// Only the default bus has scheduled rules.
