@@ -10,37 +10,51 @@ import (
 	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
 )
 
+const (
+	contextRequestID        = "requestId"
+	contextAPIID            = "apiId"
+	contextStage            = "stage"
+	contextDomainName       = "domainName"
+	contextHTTPMethod       = "httpMethod"
+	contextRouteKey         = "routeKey"
+	contextRequestTime      = "requestTime"
+	contextRequestTimeEpoch = "requestTimeEpoch"
+)
+
 // contextVariable returns a $context variable's value for a request and, once
 // it is known, its response, or "" for one TinyStack does not report.
 func contextVariable(c *call, resp *execute.Response, name string) string {
 	r := c.req
 	switch name {
-	case "requestId", "extendedRequestId":
+	case contextRequestID, "extendedRequestId":
 		return c.requestID
-	case "apiId":
+	case contextAPIID:
 		return common.Value(c.api.ApiId)
 	case "accountId":
 		return c.scope.AccountID
-	case "stage":
+	case contextStage:
 		if c.stage != nil {
 			return common.Value(c.stage.StageName)
 		}
-	case "domainName":
+	case "domainPrefix":
+		host, _, _ := strings.Cut(r.Host, ".")
+		return host
+	case contextDomainName:
 		host, _, _ := strings.Cut(r.Host, ":")
 		return host
-	case "httpMethod":
+	case contextHTTPMethod:
 		return r.Method
 	case "path":
 		return r.Path
 	case "protocol":
 		return r.Protocol
-	case "routeKey":
+	case contextRouteKey:
 		if c.route != nil {
 			return common.Value(c.route.RouteKey)
 		}
-	case "requestTime":
+	case contextRequestTime:
 		return r.Time.Format("02/Jan/2006:15:04:05 -0700")
-	case "requestTimeEpoch":
+	case contextRequestTimeEpoch:
 		return strconv.FormatInt(r.Time.UnixMilli(), 10)
 	case "identity.sourceIp":
 		return r.SourceIP

@@ -323,25 +323,28 @@ func Structured(payload []byte) (*execute.Response, bool) {
 // response when it has a statusCode, or else a 200 whose JSON body is the
 // function's result.
 func ResponseV2(payload []byte, functionError bool) *execute.Response {
-	if functionError {
-		return execute.Message(http.StatusInternalServerError, "Internal Server Error")
+	if !functionError {
+		if out, ok := DecodeResponseV2(payload); ok {
+			return out
+		}
 	}
 
+	return execute.Message(http.StatusInternalServerError, "Internal Server Error")
+}
+
+// DecodeResponseV2 distinguishes a backend response from an invalid Lambda proxy envelope.
+func DecodeResponseV2(payload []byte) (*execute.Response, bool) {
 	trimmed := bytes.TrimSpace(payload)
 	if len(trimmed) > 0 && trimmed[0] == '{' {
 		var probe map[string]json.RawMessage
 		if json.Unmarshal(trimmed, &probe) == nil && probe["statusCode"] != nil {
-			if out, ok := Structured(trimmed); ok {
-				return out
-			}
-
-			return execute.Message(http.StatusInternalServerError, "Internal Server Error")
+			return Structured(trimmed)
 		}
 	}
 
 	return &execute.Response{
 		Status: http.StatusOK, Header: http.Header{"Content-Type": {"application/json"}}, Body: trimmed,
-	}
+	}, true
 }
 
 // ResponseV1 maps a function's payload format 1.0 response, which must be
@@ -437,6 +440,10 @@ func forward(
 	}
 
 	req.Header = header.Clone()
+	if host := req.Header.Get("Host"); host != "" {
+		req.Host = host
+	}
+
 	for _, h := range hopHeaders {
 		req.Header.Del(h)
 	}

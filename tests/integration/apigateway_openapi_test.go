@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"testing"
 
@@ -217,5 +218,110 @@ func TestAPIGatewayOpenAPIWarningsRollback(t *testing.T) {
 	resources, err := c.GetResources(ctx, &rest.GetResourcesInput{RestApiId: a.Id})
 	if err != nil || len(resources.Items) != 2 {
 		t.Fatalf("failed overwrite changed resources: %+v %v", resources, err)
+	}
+}
+
+func TestHTTPAPIOpenAPIWarningsAndDefaultRoute(t *testing.T) {
+	s := server(t)
+	c := apigwClient(s)
+	ctx := t.Context()
+	backend := startServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/backend" {
+			http.NotFound(w, r)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer backend.Close()
+	spec := `openapi: 3.0.1
+info:
+  title: default-route
+  version: "1"
+  description: default route example
+paths:
+  /$default:
+    x-amazon-apigateway-any-method:
+      isDefaultRoute: true
+      operationId: CatchAll
+      x-amazon-apigateway-integration:
+        type: http_proxy
+        httpMethod: GET
+        uri: ` + backend.URL + `/backend
+        payloadFormatVersion: "1.0"
+        timeoutInMillis: 1500
+  /private:
+    get:
+      security:
+        - sigv4: []
+components:
+  securitySchemes:
+    sigv4:
+      type: apiKey
+      name: Authorization
+      in: header
+      x-amazon-apigateway-authtype: awsSigv4
+`
+
+	_, err := c.ImportApi(ctx, &httpapi.ImportApiInput{Body: &spec, FailOnWarnings: new(true)})
+	code(t, err, "BadRequestException")
+	all, err := c.GetApis(ctx, &httpapi.GetApisInput{})
+	if err != nil || len(all.Items) != 0 {
+		t.Fatalf("import warnings leaked resources: %+v %v", all, err)
+	}
+
+	a, err := c.ImportApi(ctx, &httpapi.ImportApiInput{Body: &spec})
+	if err != nil || len(a.Warnings) != 1 || !strings.Contains(a.Warnings[0], "GET /private") {
+		t.Fatalf("ImportApi = %+v %v", a, err)
+	}
+
+	_, err = c.CreateStage(
+		ctx,
+		&httpapi.CreateStageInput{ApiId: a.ApiId, StageName: new("$default"), AutoDeploy: new(true)},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = c.ReimportApi(ctx, &httpapi.ReimportApiInput{
+		ApiId: a.ApiId, Body: &spec, FailOnWarnings: new(true),
+	})
+	code(t, err, "BadRequestException")
+
+	export, err := c.ExportApi(ctx, &httpapi.ExportApiInput{
+		ApiId: a.ApiId, Specification: new("OAS30"), OutputType: new("JSON"), StageName: new("$default"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, fragment := range []string{`"isDefaultRoute":true`, `"timeoutInMillis":1500`, `"awsSigv4"`, `"CatchAll"`} {
+		if !strings.Contains(string(export.Body), fragment) {
+			t.Fatalf("export missing %s: %s", fragment, export.Body)
+		}
+	}
+
+	if _, err = c.ReimportApi(
+		ctx,
+		&httpapi.ReimportApiInput{ApiId: a.ApiId, Body: new(string(export.Body))},
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	if status, _, body := call(t, s, http.MethodGet, *a.ApiId, "/anything", nil, ""); status != http.StatusNoContent {
+		t.Fatalf("default route = %d %s", status, body)
+	}
+
+	if status, _, body := call(t, s, http.MethodGet, *a.ApiId, "/private", nil, ""); status != http.StatusForbidden {
+		t.Fatalf("IAM route = %d %s", status, body)
+	}
+
+	empty := `{"openapi":"3.0.1","info":{"title":"empty","version":"1"},"paths":{}}`
+	if _, err = c.ReimportApi(ctx, &httpapi.ReimportApiInput{ApiId: a.ApiId, Body: &empty}); err != nil {
+		t.Fatal(err)
+	}
+
+	if status, _, body := call(t, s, http.MethodGet, *a.ApiId, "/anything", nil, ""); status != http.StatusNotFound {
+		t.Fatalf("empty reimport left a deployed route: %d %s", status, body)
 	}
 }

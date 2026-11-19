@@ -245,6 +245,10 @@ func (s *Service) applyDefinition(
 	}
 
 	for _, op := range d.Operations {
+		if _, present := op.Body["isDefaultRoute"]; present {
+			return nil, openapi.Invalid("isDefaultRoute is only supported for HTTP APIs")
+		}
+
 		parent, path := paths["/"], ""
 		if op.Path != "/" {
 			for part := range strings.SplitSeq(strings.TrimPrefix(op.Path, "/"), "/") {

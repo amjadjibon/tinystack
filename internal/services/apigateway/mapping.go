@@ -5,18 +5,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"maps"
 	"mime"
 	"net/http"
 	"net/url"
-	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
+	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy/jsonpath"
 	"github.com/amjadjibon/tinystack/internal/services/vtl"
 )
 
@@ -36,87 +34,6 @@ const (
 	locationPath        = "path"
 	contentTypeHeader   = "Content-Type"
 )
-
-// Only definite paths are supported. An index is represented as an int, a property as a string.
-var pathSegment = regexp.MustCompile(`^(?:\.([a-zA-Z0-9_-]+)|\[([0-9]+)\]|\['((?:[^'\\]|\\['\\])*)'\])`)
-
-func jsonPath(path string) ([]any, error) {
-	rest, ok := strings.CutPrefix(path, "$")
-	if !ok {
-		return nil, fmt.Errorf("JSONPath must start with $: %q", path)
-	}
-
-	var parts []any
-	for rest != "" {
-		m := pathSegment.FindStringSubmatch(rest)
-		if m == nil {
-			return nil, fmt.Errorf("unsupported JSONPath %q", path)
-		}
-
-		switch {
-		case m[1] != "":
-			parts = append(parts, m[1])
-		case m[2] != "":
-			i, err := strconv.Atoi(m[2])
-			if err != nil {
-				return nil, fmt.Errorf("invalid JSONPath index in %q", path)
-			}
-
-			parts = append(parts, i)
-		default:
-			parts = append(parts, strings.NewReplacer(`\'`, "'", `\\`, `\`).Replace(m[3]))
-		}
-
-		rest = rest[len(m[0]):]
-	}
-
-	return parts, nil
-}
-
-func jsonAt(body []byte, path string) (json.RawMessage, error) {
-	parts, err := jsonPath(path)
-	if err != nil {
-		return nil, err
-	}
-
-	if !json.Valid(body) {
-		return nil, errors.New("mapping input is not valid JSON")
-	}
-
-	value := json.RawMessage(bytes.TrimSpace(body))
-	for _, part := range parts {
-		switch p := part.(type) {
-		case string:
-			var fields map[string]json.RawMessage
-			if len(value) == 0 || value[0] != '{' {
-				return nil, nil
-			}
-
-			if err := json.Unmarshal(value, &fields); err != nil {
-				return nil, err
-			}
-
-			value = fields[p]
-		case int:
-			var items []json.RawMessage
-			if len(value) == 0 || value[0] != '[' {
-				return nil, nil
-			}
-
-			if err := json.Unmarshal(value, &items); err != nil {
-				return nil, err
-			}
-
-			if p >= len(items) {
-				return nil, nil
-			}
-
-			value = items[p]
-		}
-	}
-
-	return value, nil
-}
 
 func parseTemplateJSON(data []byte) (any, error) {
 	var value any
@@ -196,7 +113,7 @@ func bodyLookup(body []byte, asJSON bool) vtl.Func {
 			return nil, errors.New("$input.json and $input.path expect one JSONPath argument")
 		}
 
-		value, err := jsonAt(body, vtl.String(args[0]))
+		value, err := jsonpath.Select(body, vtl.String(args[0]))
 		if err != nil {
 			return nil, err
 		}
@@ -363,21 +280,6 @@ func bodyMapping(expr, prefix string) (string, bool) {
 	return "$." + suffix, true
 }
 
-func bodyParameter(body []byte, path string) (text string, found bool, err error) {
-	value, err := jsonAt(body, path)
-	if err != nil || value == nil {
-		return "", false, err
-	}
-
-	var str string
-	if len(value) > 0 && value[0] == '"' {
-		err = json.Unmarshal(value, &str)
-		return str, true, err
-	}
-
-	return string(value), true, nil
-}
-
 func (c *call) mappingContext(authorizer map[string]any) map[string]any {
 	context := proxy.RequestContextV1(c.req, c.proxyContext(authorizer))
 	if _, ok := context["authorizer"]; !ok {
@@ -414,8 +316,7 @@ func variableSourceValid(expr string) bool {
 
 func bodySourceValid(expr, prefix string) bool {
 	if path, ok := bodyMapping(expr, prefix); ok {
-		_, err := jsonPath(path)
-		return err == nil
+		return jsonpath.Validate(path) == nil
 	}
 
 	return false
@@ -456,7 +357,7 @@ func (c *call) mappedValue(expr string, context map[string]any) (text string, fo
 	}
 
 	if path, ok := bodyMapping(expr, methodRequest+"body"); ok {
-		return bodyParameter(c.req.Body, path)
+		return jsonpath.Text(c.req.Body, path)
 	}
 
 	v, found := c.mappingVariable(expr, context)
@@ -487,7 +388,7 @@ func (c *call) responseValue(
 	}
 
 	if path, ok := bodyMapping(expr, responseBody); ok {
-		return bodyParameter(body, path)
+		return jsonpath.Text(body, path)
 	}
 
 	v, found := c.mappingVariable(expr, context)

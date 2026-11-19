@@ -4,6 +4,7 @@ import (
 	"context"
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
@@ -13,7 +14,17 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-const openAPIType = "type"
+const (
+	openAPIType           = "type"
+	defaultOpenAPIPath    = "/$default"
+	openAPIAuthType       = "x-amazon-apigateway-authtype"
+	openAPISigV4          = "awsSigv4"
+	openAPIPayloadFormat  = "payloadFormatVersion"
+	openAPIIdentitySource = "identitySource"
+	openAPITTL            = "authorizerResultTtlInSeconds"
+	openAPITimeout        = "timeoutInMillis"
+	openAPIConnectionType = "connectionType"
+)
 
 func (s *Service) ImportApi(ctx context.Context, in *api.ImportApiRequest) (*api.ImportApiResponse, error) {
 	a, err := s.importDefinition(ctx, nil, common.Value(in.Body), in.Basepath, common.Value(in.FailOnWarnings))
@@ -91,10 +102,18 @@ func (s *Service) importDefinition(
 			return scopeErr
 		}
 
-		return store.Update(
-			ctx,
-			func(tx storage.WriteTx) error { return storage.Write(tx, apiKey(m.Scope, *out.ApiId), out) },
-		)
+		return store.Update(ctx, func(tx storage.WriteTx) error {
+			if writeErr := storage.Write(tx, apiKey(m.Scope, *out.ApiId), out); writeErr != nil {
+				return writeErr
+			}
+
+			// An empty reimport has no child write to deploy the cleared API.
+			if id != nil && len(d.Operations) == 0 && len(d.Schemes) == 0 {
+				return staged.deploy(tx, m.Scope, *id, staged.now().UTC())
+			}
+
+			return nil
+		})
 	})
 	return out, err
 }
@@ -169,9 +188,19 @@ func (s *Service) applyDefinition(ctx context.Context, id *string, d *openapi.Do
 	}
 
 	authors := map[string]*api.CreateAuthorizerResponse{}
+	iamSchemes := map[string]bool{}
 	for _, name := range slices.Sorted(maps.Keys(d.Schemes)) {
 		scheme := openapi.Map(d.Schemes[name])
 		ext := openapi.Map(scheme["x-amazon-apigateway-authorizer"])
+		if openapi.Text(scheme[openAPIAuthType]) == openAPISigV4 {
+			if _, hasAuthorizer := scheme["x-amazon-apigateway-authorizer"]; hasAuthorizer {
+				return nil, badRequest("IAM security scheme %s cannot include a custom authorizer", name)
+			}
+
+			iamSchemes[name] = true
+			continue
+		}
+
 		if ext == nil {
 			return nil, badRequest("Unsupported security scheme %s", name)
 		}
@@ -179,19 +208,33 @@ func (s *Service) applyDefinition(ctx context.Context, id *string, d *openapi.Do
 		if decodeErr := openapi.Check(
 			ext,
 			openAPIType,
-			"identitySource",
+			openAPIIdentitySource,
 			"jwtConfiguration",
 			"authorizerUri",
 			"authorizerPayloadFormatVersion",
-			"authorizerResultTtlInSeconds",
+			openAPITTL,
 			"enableSimpleResponses",
 		); decodeErr != nil {
 			return nil, decodeErr
 		}
 
 		ext = maps.Clone(ext)
-		if source, ok := ext["identitySource"].(string); ok {
-			ext["identitySource"] = []string{source}
+		if source, ok := ext[openAPIIdentitySource].(string); ok {
+			sources := strings.Split(source, ",")
+			for i, value := range sources {
+				sources[i] = strings.TrimSpace(value)
+			}
+
+			ext[openAPIIdentitySource] = sources
+		}
+
+		if ttl, ok := ext[openAPITTL].(string); ok {
+			value, err := strconv.ParseInt(ttl, 10, 64)
+			if err != nil {
+				return nil, badRequest("Invalid authorizerResultTtlInSeconds %q", ttl)
+			}
+
+			ext[openAPITTL] = value
 		}
 
 		in := &api.CreateAuthorizerRequest{ApiId: id, Name: new(name)}
@@ -213,14 +256,27 @@ func (s *Service) applyDefinition(ctx context.Context, id *string, d *openapi.Do
 			return nil, badRequest("HTTP API request parameters are unsupported")
 		}
 
-		if len(op.Bodies) > 0 || op.Body["x-amazon-apigateway-request-validator"] != nil {
+		if _, hasBody := op.Body["requestBody"]; hasBody || op.Body["x-amazon-apigateway-request-validator"] != nil {
 			return nil, badRequest("HTTP APIs do not support request models or validators")
 		}
 
+		routeKey := op.Method + " " + op.Path
+		if raw, present := op.Body["isDefaultRoute"]; present {
+			isDefault, ok := raw.(bool)
+			if !ok || op.Method != methodAny || (isDefault && op.Path != defaultOpenAPIPath) {
+				return nil, badRequest("isDefaultRoute must be a boolean on the ANY operation for /$default")
+			}
+
+			if isDefault {
+				routeKey = defaultRoute
+			}
+		}
+
 		route := &api.CreateRouteRequest{
-			ApiId:             id,
-			RouteKey:          new(op.Method + " " + op.Path),
-			AuthorizationType: new("NONE"),
+			ApiId: id, RouteKey: &routeKey, AuthorizationType: new(authNone),
+		}
+		if name := openapi.Text(op.Body["operationId"]); name != "" {
+			route.OperationName = &name
 		}
 
 		security, err := d.Security(op)
@@ -229,7 +285,24 @@ func (s *Service) applyDefinition(ctx context.Context, id *string, d *openapi.Do
 		}
 
 		for _, requirement := range security {
+			if len(requirement) > 1 {
+				return nil, badRequest("HTTP API operations can have only one authorization scheme")
+			}
+
 			for name, scopes := range requirement {
+				if decodeErr := openapi.Decode(scopes, &route.AuthorizationScopes); decodeErr != nil {
+					return nil, decodeErr
+				}
+
+				if iamSchemes[name] {
+					if len(route.AuthorizationScopes) > 0 {
+						return nil, badRequest("IAM authorization does not accept authorization scopes")
+					}
+
+					route.AuthorizationType = new(authIAM)
+					continue
+				}
+
 				author := authors[name]
 				if author == nil {
 					return nil, badRequest("Unknown security scheme %s", name)
@@ -237,12 +310,8 @@ func (s *Service) applyDefinition(ctx context.Context, id *string, d *openapi.Do
 
 				route.AuthorizerId = author.AuthorizerId
 				route.AuthorizationType = author.AuthorizerType
-				if common.Value(route.AuthorizationType) == "REQUEST" {
-					route.AuthorizationType = new("CUSTOM")
-				}
-
-				if decodeErr := openapi.Decode(scopes, &route.AuthorizationScopes); decodeErr != nil {
-					return nil, decodeErr
+				if common.Value(route.AuthorizationType) == typeRequest {
+					route.AuthorizationType = new(authCustom)
 				}
 			}
 		}
@@ -258,9 +327,9 @@ func (s *Service) applyDefinition(ctx context.Context, id *string, d *openapi.Do
 				openAPIType,
 				"uri",
 				"httpMethod",
-				"payloadFormatVersion",
-				"connectionType",
-				"timeoutInMillis",
+				openAPIPayloadFormat,
+				openAPIConnectionType,
+				openAPITimeout,
 			); checkErr != nil {
 				return nil, checkErr
 			}
@@ -317,7 +386,12 @@ func (s *Service) ExportApi(ctx context.Context, in *api.ExportApiRequest) (*api
 	}
 
 	root := openapi.New(common.Value(a.Name), common.Value(a.Version), false)
-	if common.Value(in.IncludeExtensions) && a.CorsConfiguration != nil {
+	if a.Description != nil {
+		root["info"].(openapi.Object)["description"] = *a.Description
+	}
+
+	includeExtensions := in.IncludeExtensions == nil || *in.IncludeExtensions
+	if includeExtensions && a.CorsConfiguration != nil {
 		root["x-amazon-apigateway-cors"] = a.CorsConfiguration
 	}
 
@@ -362,20 +436,24 @@ func (s *Service) ExportApi(ctx context.Context, in *api.ExportApiRequest) (*api
 	}
 
 	names := map[string]string{}
-	if common.Value(in.IncludeExtensions) {
-		schemes := openapi.Object{}
+	schemes := openapi.Object{}
+	if includeExtensions {
 		for _, author := range snapshotData.Authorizers {
 			name := common.Value(author.Name)
+			var sources any
+			if len(author.IdentitySource) > 0 {
+				sources = strings.Join(author.IdentitySource, ", ")
+			}
 			names[common.Value(author.AuthorizerId)] = name
 			schemes[name] = openapi.Object{
 				openAPIType: "apiKey", "name": "Authorization", "in": "header",
 				"x-amazon-apigateway-authorizer": openapi.Object{
 					openAPIType:                      strings.ToLower(common.Value(author.AuthorizerType)),
-					"identitySource":                 author.IdentitySource,
+					openAPIIdentitySource:            sources,
 					"authorizerUri":                  author.AuthorizerUri,
 					"jwtConfiguration":               author.JwtConfiguration,
 					"authorizerPayloadFormatVersion": author.AuthorizerPayloadFormatVersion,
-					"authorizerResultTtlInSeconds":   author.AuthorizerResultTtlInSeconds,
+					openAPITTL:                       author.AuthorizerResultTtlInSeconds,
 					"enableSimpleResponses":          author.EnableSimpleResponses,
 				},
 			}
@@ -384,28 +462,50 @@ func (s *Service) ExportApi(ctx context.Context, in *api.ExportApiRequest) (*api
 		root["components"] = openapi.Object{"securitySchemes": schemes}
 	}
 
+	iamSchemeName := openAPISigV4
+	for suffix := 1; schemes[iamSchemeName] != nil; suffix++ {
+		iamSchemeName = openAPISigV4 + strconv.Itoa(suffix)
+	}
+
 	for _, r := range snapshotData.Routes {
+		op := openapi.Object{"responses": openapi.Object{"200": openapi.Object{"description": "Success"}}}
 		method, path, ok := strings.Cut(common.Value(r.RouteKey), " ")
+		if common.Value(r.RouteKey) == defaultRoute {
+			method, path, ok = methodAny, defaultOpenAPIPath, true
+			op["isDefaultRoute"] = true
+		}
+
 		if !ok {
 			return nil, badRequest("Cannot export route %s", common.Value(r.RouteKey))
 		}
 
-		op := openapi.Object{"responses": openapi.Object{"200": openapi.Object{"description": "Success"}}}
-		if name := names[common.Value(r.AuthorizerId)]; name != "" {
-			op["security"] = []openapi.Object{{name: r.AuthorizationScopes}}
+		if r.OperationName != nil {
+			op["operationId"] = *r.OperationName
 		}
 
-		if common.Value(in.IncludeExtensions) && r.Target != nil {
+		if includeExtensions && common.Value(r.AuthorizationType) == authIAM {
+			schemes[iamSchemeName] = openapi.Object{
+				openAPIType: "apiKey", "name": "Authorization", "in": "header", openAPIAuthType: openAPISigV4,
+			}
+			op["security"] = []openapi.Object{{iamSchemeName: []string{}}}
+		} else if name := names[common.Value(r.AuthorizerId)]; name != "" {
+			scopes := append([]string{}, r.AuthorizationScopes...)
+			op["security"] = []openapi.Object{{name: scopes}}
+		}
+
+		if includeExtensions && r.Target != nil {
 			i, ok := snapshotData.Integrations[integrationID(*r.Target)]
 			if !ok {
 				return nil, badRequest("Integration not found")
 			}
 
 			op["x-amazon-apigateway-integration"] = openapi.Object{
-				openAPIType:            strings.ToLower(common.Value(i.IntegrationType)),
-				"uri":                  i.IntegrationUri,
-				"httpMethod":           i.IntegrationMethod,
-				"payloadFormatVersion": i.PayloadFormatVersion,
+				openAPIType:           strings.ToLower(common.Value(i.IntegrationType)),
+				"uri":                 i.IntegrationUri,
+				"httpMethod":          i.IntegrationMethod,
+				openAPIPayloadFormat:  i.PayloadFormatVersion,
+				openAPIConnectionType: i.ConnectionType,
+				openAPITimeout:        i.TimeoutInMillis,
 			}
 		}
 

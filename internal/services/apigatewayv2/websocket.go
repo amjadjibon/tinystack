@@ -58,8 +58,12 @@ func (s *Service) Stop() {
 	s.connectionGroup.Wait()
 }
 
-// Reset closes connections before the backing store is reset.
+// Reset clears runtime state before the backing store is reset.
 func (s *Service) Reset(context.Context) {
+	s.runtimeMu.Lock()
+	clear(s.authorizerCaches)
+	clear(s.buckets)
+	s.runtimeMu.Unlock()
 	s.connectionsMu.Lock()
 	defer s.connectionsMu.Unlock()
 	for id, conn := range s.connections {

@@ -181,6 +181,7 @@ func Parse(body []byte) (*Document, error) {
 				"produces",
 				"requestBody",
 				"x-amazon-apigateway-integration",
+				"isDefaultRoute",
 				"x-amazon-apigateway-request-validator",
 			); err != nil {
 				return nil, err
@@ -298,8 +299,18 @@ func swaggerBody(root, op Object, p Parameter, bodies map[string]any) error {
 }
 
 func (d *Document) Integration(op Operation) (Object, error) {
-	m := Map(op.Body["x-amazon-apigateway-integration"])
-	if ref := Text(m["$ref"]); ref != "" {
+	raw, present := op.Body["x-amazon-apigateway-integration"]
+	m := Map(raw)
+	if present && m == nil {
+		return nil, Invalid("Integration must be an object")
+	}
+
+	if rawRef, present := m["$ref"]; present {
+		ref := Text(rawRef)
+		if len(m) != 1 {
+			return nil, Invalid("Integration reference %q cannot have other properties", ref)
+		}
+
 		prefix := "#/components/x-amazon-apigateway-integrations/"
 		if !strings.HasPrefix(ref, prefix) {
 			return nil, Invalid("Unsupported integration reference %q", ref)

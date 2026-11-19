@@ -1,6 +1,7 @@
 package apigatewayv2
 
 import (
+	"strings"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/execute"
@@ -49,12 +50,28 @@ func (s *Service) publish(c *call, resp *execute.Response, started time.Time, in
 		})
 	}
 
-	all := make([]awsmetrics.Datum, 0, 2*len(data))
+	var routeDimensions []awsmetrics.Dimension
+	if c.route != nil && common.Value(c.routeSettings().DetailedMetricsEnabled) {
+		method, resource, ok := strings.Cut(*c.route.RouteKey, " ")
+		if !ok {
+			method, resource = c.req.Method, defaultRoute
+		}
+
+		routeDimensions = []awsmetrics.Dimension{
+			apiDim, stage, {Name: "Method", Value: method}, {Name: "Resource", Value: resource},
+		}
+	}
+
+	all := make([]awsmetrics.Datum, 0, 3*len(data))
 	for _, d := range data {
 		d.Dimensions = []awsmetrics.Dimension{apiDim}
 		all = append(all, d)
 		d.Dimensions = []awsmetrics.Dimension{apiDim, stage}
 		all = append(all, d)
+		if routeDimensions != nil {
+			d.Dimensions = routeDimensions
+			all = append(all, d)
+		}
 	}
 
 	s.metrics.Publish(c.scope, metricNamespace, all...)

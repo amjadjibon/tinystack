@@ -4,6 +4,14 @@ import (
 	"context"
 )
 
+const (
+	httpIntegrationKind      = "Integration"
+	httpResponseParameters   = "ResponseParameters"
+	httpRequestParameters    = "RequestParameters"
+	httpDefaultRouteSettings = "DefaultRouteSettings"
+	httpRouteSettings        = "RouteSettings"
+)
+
 var (
 	// httpAPIProperties are the AWS::ApiGatewayV2::Api properties CreateApi
 	// and UpdateApi take by the same names, but for ProtocolType, which only
@@ -14,7 +22,7 @@ var (
 	}
 	httpIntegrationProperties = []string{
 		"IntegrationType", "IntegrationUri", "IntegrationMethod", propertyPayloadFormatVersion, propertyTimeoutInMillis,
-		"ConnectionType", memberDescription,
+		"ConnectionType", memberDescription, httpRequestParameters, httpResponseParameters,
 	}
 	httpRouteProperties = []string{
 		propertyRouteKey,
@@ -27,7 +35,7 @@ var (
 	}
 	httpStageProperties = []string{
 		"AutoDeploy", memberDeploymentID, memberDescription, "StageVariables", "AccessLogSettings",
-		"DefaultRouteSettings", "RouteSettings",
+		httpDefaultRouteSettings, httpRouteSettings,
 	}
 	httpAuthorizerProperties = []string{
 		memberName, "AuthorizerType", memberAuthorizerURI, memberIdentitySource, "JwtConfiguration",
@@ -107,7 +115,7 @@ func init() {
 			return ignoreNotFound(err)
 		},
 	})
-	registerHTTPChild("AWS::ApiGatewayV2::Integration", "Integration", "IntegrationId", httpIntegrationProperties)
+	registerHTTPChild("AWS::ApiGatewayV2::Integration", httpIntegrationKind, "IntegrationId", httpIntegrationProperties)
 	registerHTTPChild("AWS::ApiGatewayV2::Route", "Route", "RouteId", httpRouteProperties)
 	registerHTTPChild("AWS::ApiGatewayV2::Authorizer", "Authorizer", memberAuthorizerID, httpAuthorizerProperties)
 	register("AWS::ApiGatewayV2::Deployment", &resourceType{
@@ -150,6 +158,12 @@ func init() {
 		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
 			api := p.str(memberAPIID)
 			params := pick(map[string]any{memberAPIID: api, memberStageName: r.Physical}, p, httpStageProperties...)
+			for _, property := range []string{httpDefaultRouteSettings, httpRouteSettings} {
+				if !p.has(property) && props(r.Properties).has(property) {
+					params[property] = map[string]any{}
+				}
+			}
+
 			if _, err := c.call(ctx, "apigatewayv2", "UpdateStage", params); err != nil {
 				return nil, err
 			}
@@ -175,8 +189,14 @@ func registerHTTPChild(name, kind, id string, properties []string) {
 		attributes: []string{id},
 		replace:    []string{memberAPIID},
 		create: func(ctx context.Context, c *client, p props) (string, map[string]any, error) {
-			out, err := c.call(ctx, "apigatewayv2", "Create"+kind,
-				pick(map[string]any{}, p, append([]string{memberAPIID}, properties...)...))
+			params := pick(map[string]any{}, p, append([]string{memberAPIID}, properties...)...)
+			if kind == httpIntegrationKind {
+				if err := httpIntegrationResponses(params); err != nil {
+					return "", nil, err
+				}
+			}
+
+			out, err := c.call(ctx, "apigatewayv2", "Create"+kind, params)
 			if err != nil {
 				return "", nil, err
 			}
@@ -186,6 +206,23 @@ func registerHTTPChild(name, kind, id string, properties []string) {
 		},
 		update: func(ctx context.Context, c *client, r *resource, p props) (map[string]any, error) {
 			params := pick(map[string]any{memberAPIID: p.str(memberAPIID), id: r.Physical}, p, properties...)
+			if kind == httpIntegrationKind {
+				if err := httpIntegrationResponses(params); err != nil {
+					return nil, err
+				}
+
+				for _, property := range []string{httpRequestParameters, httpResponseParameters} {
+					if !p.has(property) && props(r.Properties).has(property) {
+						params[property] = map[string]any{}
+					}
+				}
+			}
+
+			if kind == "Authorizer" && !p.has(memberAuthorizerResultTTL) &&
+				props(r.Properties).has(memberAuthorizerResultTTL) {
+				params[memberAuthorizerResultTTL] = float64(0)
+			}
+
 			_, err := c.call(ctx, "apigatewayv2", "Update"+kind, params)
 			return r.Attributes, err
 		},
@@ -196,4 +233,56 @@ func registerHTTPChild(name, kind, id string, properties []string) {
 			return ignoreNotFound(err)
 		},
 	})
+}
+
+// httpIntegrationResponses converts CloudFormation's list of destinations and sources
+// per status code to the service's nested map.
+func httpIntegrationResponses(params map[string]any) error {
+	raw, present := params[httpResponseParameters]
+	if !present {
+		return nil
+	}
+
+	statuses, ok := raw.(map[string]any)
+	if !ok {
+		return validation("ResponseParameters must be an object keyed by HTTP status code")
+	}
+
+	responses := make(map[string]any, len(statuses))
+	for status, value := range statuses {
+		group, ok := value.(map[string]any)
+		if !ok || len(group) != 1 {
+			return validation("ResponseParameters entry must contain a ResponseParameters list")
+		}
+
+		parameters, ok := group[httpResponseParameters].([]any)
+		if !ok {
+			return validation("ResponseParameters entry must contain a ResponseParameters list")
+		}
+
+		rules := make(map[string]any, len(parameters))
+		for _, rawRule := range parameters {
+			rule, _ := rawRule.(map[string]any)
+			destination, ok := rule["Destination"].(string)
+			if !ok || destination == "" {
+				return validation("ResponseParameters requires a Destination string")
+			}
+
+			source, ok := rule["Source"].(string)
+			if _, present := rule["Source"]; (present && !ok) || (len(rule) > 1 && !present) || len(rule) > 2 {
+				return validation("ResponseParameters accepts only Destination and Source strings")
+			}
+
+			if _, duplicate := rules[destination]; duplicate {
+				return validation("ResponseParameters contains a duplicate Destination")
+			}
+
+			rules[destination] = source
+		}
+
+		responses[status] = rules
+	}
+
+	params[httpResponseParameters] = responses
+	return nil
 }

@@ -50,6 +50,10 @@ func checkProtocolIntegration(a *api.Api, i *api.Integration) error {
 		return checkIntegration(i)
 	}
 
+	if i.RequestParameters != nil || i.ResponseParameters != nil {
+		return badRequest("Integration parameter mappings are only supported for HTTP APIs.")
+	}
+
 	if i.PayloadFormatVersion != nil {
 		return badRequest("PayloadFormatVersion is only supported for HTTP APIs.")
 	}

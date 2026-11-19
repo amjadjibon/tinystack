@@ -77,7 +77,7 @@ func checkIntegration(i *api.Integration) error {
 		return badRequest("TimeoutInMillis must be between %d and %d.", minTimeout, maxTimeout)
 	}
 
-	return nil
+	return checkMappings(i)
 }
 
 func (s *Service) CreateIntegration(
@@ -92,6 +92,7 @@ func (s *Service) CreateIntegration(
 	i := &api.Integration{
 		IntegrationId: new(common.RandomID(7)), IntegrationType: in.IntegrationType, IntegrationUri: in.IntegrationUri,
 		IntegrationMethod: in.IntegrationMethod, Description: in.Description,
+		RequestParameters: in.RequestParameters, ResponseParameters: in.ResponseParameters,
 		ConnectionType:       common.OrElse(in.ConnectionType, new(connectionInternet)),
 		TimeoutInMillis:      common.OrElse(in.TimeoutInMillis, new(int64(maxTimeout))),
 		PayloadFormatVersion: common.OrElse(in.PayloadFormatVersion, new(payload1)),
@@ -271,6 +272,13 @@ func (s *Service) UpdateIntegration(
 			)
 			i.TimeoutInMillis = common.OrElse(in.TimeoutInMillis, i.TimeoutInMillis)
 			i.PayloadFormatVersion = common.OrElse(in.PayloadFormatVersion, i.PayloadFormatVersion)
+			if in.RequestParameters != nil {
+				i.RequestParameters = in.RequestParameters
+			}
+
+			if in.ResponseParameters != nil {
+				i.ResponseParameters = in.ResponseParameters
+			}
 			a, loadErr := loadAPI(tx, scope, in.ApiId)
 			if loadErr != nil {
 				return false, loadErr

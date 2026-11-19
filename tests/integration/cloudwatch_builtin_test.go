@@ -631,6 +631,30 @@ func TestBuiltinAPIGatewayMetrics(t *testing.T) {
 	if quickLatency.unit != "Milliseconds" {
 		t.Fatalf("%+v", quickLatency)
 	}
+
+	quickRoute := dimensions("ApiId", *quick.ApiId, "Method", "GET", "Resource", "$default", "Stage", "$default")
+	if b := builtinMetric(
+		t,
+		c,
+		"AWS/ApiGateway",
+		"Count",
+		quickRoute,
+		func(builtin) bool { return true },
+	); b.count != 0 {
+		t.Fatalf("detailed HTTP API metric published when disabled: %+v", b)
+	}
+
+	_, err = http2.UpdateStage(ctx, &apigw.UpdateStageInput{
+		ApiId: quick.ApiId, StageName: new("$default"), RouteSettings: map[string]apigwtypes.RouteSettings{
+			"$default": {DetailedMetricsEnabled: new(true)},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	call(t, s, "GET", *quick.ApiId, "/anything", nil, "")
+	expectBuiltin(t, c, "AWS/ApiGateway", "Count", "Count", quickRoute, 1)
 }
 
 func TestBuiltinSNSAndKinesisMetrics(t *testing.T) {

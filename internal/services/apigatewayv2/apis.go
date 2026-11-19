@@ -409,6 +409,7 @@ func (s *Service) DeleteApi(ctx context.Context, in *api.DeleteApiRequest) (*api
 		return nil, err
 	}
 
+	s.discardStageRuntime(*in.ApiId, nil)
 	return &api.DeleteApiOutput{}, nil
 }
 

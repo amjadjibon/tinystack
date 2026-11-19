@@ -2,10 +2,12 @@ package apigatewayv2
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"maps"
 	"net/http"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -130,6 +132,14 @@ func (s *Service) run(ctx context.Context, c *call) *execute.Response {
 	c.route, c.params = matchRoute(c.snapshot.Routes, r.Method, c.path)
 	if c.route == nil {
 		return withCors(c.api.CorsConfiguration, origin, execute.Message(http.StatusNotFound, "Not Found"))
+	}
+
+	if !s.allowRequest(c) {
+		return withCors(
+			c.api.CorsConfiguration,
+			origin,
+			execute.Message(http.StatusTooManyRequests, "Too Many Requests"),
+		)
 	}
 
 	authorizer, denied := s.authorize(ctx, c)
@@ -327,13 +337,12 @@ func (s *Service) authorize(ctx context.Context, c *call) (map[string]any, *exec
 	return nil, nil
 }
 
-// lambdaAuthorize runs a Lambda REQUEST authorizer. Its results are not
-// cached: the function runs for every request.
+// lambdaAuthorize checks identity sources and evaluates a fresh or cached Lambda response.
 func (s *Service) lambdaAuthorize(ctx context.Context, c *call) (map[string]any, *execute.Response) {
 	a := c.snapshot.Authorizers[common.Value(c.route.AuthorizerId)]
 	var sources []string
 	for _, source := range a.IdentitySource {
-		v := identityValue(c, source)
+		v := c.mappingValue(source[1:], nil, nil)
 		if v == "" {
 			c.authorizerError = "missing identity source " + source
 			return nil, execute.Message(http.StatusUnauthorized, "Unauthorized")
@@ -343,52 +352,89 @@ func (s *Service) lambdaAuthorize(ctx context.Context, c *call) (map[string]any,
 	}
 
 	routeARN := execute.APIResource(c.scope, *c.api.ApiId, *c.stage.StageName, c.req.Method, c.path).ARN
-	pc := c.proxyContext(nil)
-	var event map[string]any
-	var err error
-	if common.Value(a.AuthorizerPayloadFormatVersion) == payload2 {
-		event, err = eventObject(proxy.EventV2(c.req, pc, c.params, c.stage.StageVariables))
-		event["type"], event["routeArn"], event["identitySource"] = typeRequest, routeARN, sources
-		delete(event, "body")
-		delete(event, "isBase64Encoded")
-	} else {
-		event, err = eventObject(proxy.EventV1(c.req, pc, c.params, c.stage.StageVariables))
-		event["type"], event["methodArn"] = typeRequest, routeARN
-		event["identitySource"] = strings.Join(sources, ",")
-	}
-
-	failed := execute.Message(http.StatusInternalServerError, "Internal Server Error")
-	if err != nil {
-		return nil, failed
-	}
-
-	payload, _ := json.Marshal(event)
-	arn, _ := proxy.LambdaARN(common.Value(a.AuthorizerUri))
-	// HTTP API authorizers cannot name credentials, so the function's resource policy must allow API Gateway.
-	err = s.authorizer.Authorize(ctx, execute.AuthorizerInvocation(
-		c.scope, *c.api.ApiId, common.Value(a.AuthorizerId), "", arn))
+	ttl := time.Duration(common.Value(a.AuthorizerResultTtlInSeconds)) * time.Second
+	var cache *authorizerCache
+	var key [sha256.Size]byte
 	var out []byte
-	var functionError bool
-	if err == nil {
-		out, functionError, err = s.invoke(ctx, c, arn, payload, maxTimeout*time.Millisecond)
+	if ttl > 0 {
+		cache, key, out = s.cachedAuthorizer(c, *a.AuthorizerId, sources)
 	}
 
-	if err != nil || functionError {
-		c.authorizerError = "authorizer function failed"
-		return nil, failed
+	fresh := out == nil
+	failed := execute.Message(http.StatusInternalServerError, "Internal Server Error")
+	if fresh {
+		var err error
+		out, err = s.invokeAuthorizer(ctx, c, &a, routeARN, sources)
+		if err != nil {
+			c.authorizerError = err.Error()
+			return nil, failed
+		}
 	}
 
+	// Policies must be evaluated against the current route ARN even on a cache hit.
 	allowed, authContext, ok := authorizerResult(out, common.Value(a.EnableSimpleResponses), routeARN)
-	switch {
-	case !ok:
+	if !ok {
 		c.authorizerError = "invalid authorizer response"
 		return nil, failed
-	case !allowed:
+	}
+
+	if fresh && cache != nil {
+		s.cacheAuthorizer(cache, key, out, ttl)
+	}
+
+	if !allowed {
 		c.authorizerError = "denied"
 		return nil, execute.Message(http.StatusForbidden, "Forbidden")
 	}
 
 	return map[string]any{"lambda": authContext}, nil
+}
+
+func (s *Service) invokeAuthorizer(ctx context.Context, c *call, a *api.Authorizer,
+	routeARN string, sources []string,
+) ([]byte, error) {
+	pc := c.proxyContext(nil)
+	var event map[string]any
+	var err error
+	if common.Value(a.AuthorizerPayloadFormatVersion) == payload2 {
+		event, err = eventObject(proxy.EventV2(c.req, pc, c.params, c.stage.StageVariables))
+	} else {
+		event, err = eventObject(proxy.EventV1(c.req, pc, c.params, c.stage.StageVariables))
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	event["type"] = typeRequest
+	if common.Value(a.AuthorizerPayloadFormatVersion) == payload2 {
+		event["routeArn"], event["identitySource"] = routeARN, sources
+		delete(event, "body")
+		delete(event, "isBase64Encoded")
+	} else {
+		token := strings.Join(sources, ",")
+		event["methodArn"], event["identitySource"], event["authorizationToken"] = routeARN, token, token
+	}
+
+	payload, err := json.Marshal(event)
+	if err != nil {
+		return nil, err
+	}
+
+	arn, _ := proxy.LambdaARN(common.Value(a.AuthorizerUri))
+	// HTTP API authorizers cannot name credentials, so the function's resource policy must allow API Gateway.
+	err = s.authorizer.Authorize(ctx, execute.AuthorizerInvocation(
+		c.scope, *c.api.ApiId, *a.AuthorizerId, "", arn))
+	if err != nil {
+		return nil, err
+	}
+
+	out, functionError, err := s.invoke(ctx, c, arn, payload, maxTimeout*time.Millisecond)
+	if err != nil || functionError {
+		return nil, errors.New("authorizer function failed")
+	}
+
+	return out, nil
 }
 
 func eventObject(data []byte, err error) (map[string]any, error) {
@@ -467,43 +513,67 @@ func (s *Service) integrate(ctx context.Context, c *call, authorizer map[string]
 		return failed
 	}
 
+	r, path, err := c.mapRequest(i.RequestParameters, authorizer)
+	if err != nil {
+		c.integrationError = err.Error()
+		return failed
+	}
+
 	timeout := time.Duration(common.Value(i.TimeoutInMillis)) * time.Millisecond
 	uri := proxy.Substitute(common.Value(i.IntegrationUri), c.stage.StageVariables)
 	if common.Value(i.IntegrationType) == typeHTTP {
 		method := common.Value(i.IntegrationMethod)
 		if method == methodAny {
-			method = c.req.Method
+			method = r.Method
 		}
 
 		for name, v := range c.params {
 			uri = strings.ReplaceAll(strings.ReplaceAll(uri, "{"+name+"+}", v), "{"+name+"}", v)
 		}
 
-		if c.req.RawQuery != "" {
-			uri += map[bool]string{true: "&", false: "?"}[strings.Contains(uri, "?")] + c.req.RawQuery
+		backend, parseErr := url.Parse(uri)
+		if parseErr != nil {
+			c.integrationError = parseErr.Error()
+			return failed
 		}
 
-		resp := proxy.Forward(ctx, method, uri, c.req.Header, c.req.Body, timeout)
+		if path != nil {
+			backend.Path, backend.RawPath = *path, ""
+		}
+
+		if r.RawQuery != "" {
+			if backend.RawQuery != "" {
+				backend.RawQuery += "&"
+			}
+
+			backend.RawQuery += r.RawQuery
+		}
+
+		resp, forwardErr := proxy.RoundTrip(ctx, method, backend.String(), r.Header, r.Body, timeout)
+		if forwardErr != nil {
+			c.integrationError = forwardErr.Error()
+			return resp
+		}
+
 		c.integrationCode = resp.Status
-		return resp
+		return c.mapResponse(resp, i.ResponseParameters, authorizer)
 	}
 
 	// Payload format 2.0 reports JWT claims under "jwt" and 1.0 at the top.
 	var event []byte
-	var err error
 	pc := c.proxyContext(authorizer)
 	if common.Value(i.PayloadFormatVersion) == payload2 {
 		if authorizer != nil && authorizer["claims"] != nil {
 			pc.Authorizer = map[string]any{"jwt": authorizer}
 		}
 
-		event, err = proxy.EventV2(c.req, pc, c.params, c.stage.StageVariables)
+		event, err = proxy.EventV2(r, pc, c.params, c.stage.StageVariables)
 	} else {
 		if lambdaContext, isLambda := authorizer["lambda"].(map[string]any); isLambda {
 			pc.Authorizer = maps.Clone(lambdaContext)
 		}
 
-		event, err = proxy.EventV1(c.req, pc, c.params, c.stage.StageVariables)
+		event, err = proxy.EventV1(r, pc, c.params, c.stage.StageVariables)
 	}
 
 	if err != nil {
@@ -534,11 +604,24 @@ func (s *Service) integrate(ctx context.Context, c *call, authorizer map[string]
 	}
 
 	c.integrationCode = http.StatusOK
-	if common.Value(i.PayloadFormatVersion) == payload2 {
-		return proxy.ResponseV2(out, functionError)
+	if functionError {
+		c.integrationError = "integration function failed"
+		return failed
 	}
 
-	return proxy.ResponseV1(out, functionError, http.StatusInternalServerError)
+	var resp *execute.Response
+	if common.Value(i.PayloadFormatVersion) == payload2 {
+		resp, ok = proxy.DecodeResponseV2(out)
+	} else {
+		resp, ok = proxy.Structured(out)
+	}
+
+	if !ok {
+		c.integrationError = "invalid Lambda proxy response"
+		return failed
+	}
+
+	return c.mapResponse(resp, i.ResponseParameters, authorizer)
 }
 
 // invoke runs a Lambda function synchronously in its own account and region.

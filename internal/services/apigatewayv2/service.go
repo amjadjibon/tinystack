@@ -52,16 +52,19 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	connections map[string]*connection
-	store       storage.Store
-	functions   *lambda.Service
-	logs        *logs.Service
-	verifier    *proxy.Verifier
-	now         func() time.Time
+	authorizerCaches map[stageRuntimeKey]*authorizerCache
+	buckets          map[stageRuntimeKey]map[string]throttleBucket
+	connections      map[string]*connection
+	store            storage.Store
+	functions        *lambda.Service
+	logs             *logs.Service
+	verifier         *proxy.Verifier
+	now              func() time.Time
 	// authorizer checks Lambda proxy integrations against the function's resource policy;
 	// see UseServiceAuthorizer.
 	authorizer      catalog.ServiceAuthorizer
 	metrics         awsmetrics.Meter
+	runtimeMu       sync.Mutex
 	connectionsMu   sync.Mutex
 	connectionGroup sync.WaitGroup
 	stopped         bool
@@ -69,12 +72,14 @@ type Service struct {
 
 func New(store storage.Store, functions *lambda.Service, logGroups *logs.Service) *Service {
 	return &Service{
-		connections: map[string]*connection{},
-		store:       store,
-		functions:   functions,
-		logs:        logGroups,
-		verifier:    proxy.NewVerifier(),
-		now:         time.Now,
+		authorizerCaches: map[stageRuntimeKey]*authorizerCache{},
+		buckets:          map[stageRuntimeKey]map[string]throttleBucket{},
+		connections:      map[string]*connection{},
+		store:            store,
+		functions:        functions,
+		logs:             logGroups,
+		verifier:         proxy.NewVerifier(),
+		now:              time.Now,
 	}
 }
 

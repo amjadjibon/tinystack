@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	httpapi "github.com/aws/aws-sdk-go-v2/service/apigatewayv2"
 	cfn "github.com/aws/aws-sdk-go-v2/service/cloudformation"
 	cfntypes "github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 )
@@ -77,6 +78,25 @@ Resources:
       IntegrationType: AWS_PROXY
       IntegrationUri: !GetAtt Function.Arn
       PayloadFormatVersion: "2.0"
+      RequestParameters:
+        "overwrite:header.X-Stack": !Ref AWS::StackName
+      ResponseParameters:
+        "201":
+          ResponseParameters:
+            - Destination: "overwrite:statuscode"
+              Source: "202"
+            - Destination: "append:header.X-Stack"
+              Source: !Ref AWS::StackName
+  Authorizer:
+    Type: AWS::ApiGatewayV2::Authorizer
+    Properties:
+      ApiId: !Ref Http
+      Name: cached
+      AuthorizerType: REQUEST
+      AuthorizerUri: !GetAtt Function.Arn
+      AuthorizerPayloadFormatVersion: "2.0"
+      IdentitySource: ["$request.header.X-Token"]
+      AuthorizerResultTtlInSeconds: 60
   Route:
     Type: AWS::ApiGatewayV2::Route
     Properties:
@@ -89,6 +109,12 @@ Resources:
       ApiId: !Ref Http
       StageName: $default
       AutoDeploy: true
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 1
+        ThrottlingRateLimit: 0
+      RouteSettings:
+        "GET /orders":
+          ThrottlingBurstLimit: 2
   Invoke:
     Type: AWS::Lambda::Permission
     Properties:
@@ -135,6 +161,11 @@ func TestCloudFormationAPIs(t *testing.T) {
 
 	st := deploy(false)
 	outputs := outputsOf(&st)
+	authors, err := apigwClient(s).GetAuthorizers(ctx, &httpapi.GetAuthorizersInput{ApiId: new(outputs["Http"])})
+	if err != nil || len(authors.Items) != 1 || aws.ToInt32(authors.Items[0].AuthorizerResultTtlInSeconds) != 60 {
+		t.Fatalf("HTTP API authorizer = %+v %v", authors, err)
+	}
+
 	if !strings.HasPrefix(outputs["Endpoint"], "http") {
 		t.Fatalf("outputs = %v", outputs)
 	}
@@ -144,9 +175,16 @@ func TestCloudFormationAPIs(t *testing.T) {
 		t.Fatalf("REST API = %d %v %s", status, header, body)
 	}
 
-	status, _, body = call(t, s, http.MethodGet, outputs["Http"], "/orders", nil, "")
-	if status != http.StatusCreated || !strings.Contains(body, `"GET /orders"`) {
-		t.Fatalf("HTTP API = %d %s", status, body)
+	status, header, body = call(t, s, http.MethodGet, outputs["Http"], "/orders", nil, "")
+	if status != http.StatusAccepted || header.Get("X-Stack") != "apis" ||
+		!strings.Contains(body, `"GET /orders"`) || !strings.Contains(body, `"x-stack":"apis"`) {
+		t.Fatalf("HTTP API = %d %v %s", status, header, body)
+	}
+
+	for _, want := range []int{http.StatusAccepted, http.StatusTooManyRequests} {
+		if status, _, body = call(t, s, http.MethodGet, outputs["Http"], "/orders", nil, ""); status != want {
+			t.Fatalf("HTTP API throttle = %d %s, want %d", status, body, want)
+		}
 	}
 
 	// A new path moves the resource and the route; a new deployment
@@ -166,11 +204,11 @@ func TestCloudFormationAPIs(t *testing.T) {
 		t.Fatalf("old REST path = %d", status)
 	}
 
-	if status, _, _ = call(t, s, http.MethodGet, outputs["Http"], "/invoices", nil, ""); status != http.StatusCreated {
+	if status, _, _ = call(t, s, http.MethodGet, outputs["Http"], "/invoices", nil, ""); status != http.StatusAccepted {
 		t.Fatalf("HTTP API = %d", status)
 	}
 
-	_, err := c.DeleteStack(ctx, &cfn.DeleteStackInput{StackName: aws.String("apis")})
+	_, err = c.DeleteStack(ctx, &cfn.DeleteStackInput{StackName: aws.String("apis")})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,7 +218,7 @@ func TestCloudFormationAPIs(t *testing.T) {
 		return describeErr != nil
 	})
 
-	if status, _, _ = call(t, s, http.MethodGet, outputs["Http"], "/invoices", nil, ""); status == http.StatusCreated {
+	if status, _, _ = call(t, s, http.MethodGet, outputs["Http"], "/invoices", nil, ""); status == http.StatusAccepted {
 		t.Fatal("the HTTP API outlived its stack")
 	}
 }

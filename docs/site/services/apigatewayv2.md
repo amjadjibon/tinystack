@@ -13,7 +13,7 @@ Manage and invoke HTTP and WebSocket APIs with routes, stages, deployments and L
 | API version | `2018-11-29` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 42 of 103 in the pinned model |
+| Selected operations | 43 of 103 in the pinned model |
 
 ## Implemented behavior
 
@@ -21,16 +21,17 @@ See the [implemented feature catalogue](catalogue.md#api-gateway-http-and-websoc
 
 ## Limitations and future work
 
-- No VPC links, parameter mappings, throttling, caching or authorizer caching.
-- Only the selected HTTP API management members are supported.
-- Custom domains and API mappings use the AWS API rather than console forms.
+- HTTP API private integrations, VPC links, integration TLS configuration, AWS service integration subtypes and backend response caching are unsupported.
+- HTTP API custom domains and API mappings are unsupported.
+- HTTP API throttling applies to configured routes in each stage. Shared account and Region quotas are not enforced.
+- HTTP API integration mappings support the execute request context and authorizer values exposed by TinyStack. Body selections support definite object properties and array indexes within the first 100 KiB. Reserved header destinations and Lambda proxy path overwrite are rejected.
 - In verify mode, console management requires an authenticated root console session; without a session only resource inventory is available.
 - Console test requests execute deployed snapshots; automatic stages publish draft changes immediately, manual stages require a new deployment. AWS_IAM tests require signed execute-api CLI/SDK requests. Console action JSON is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64.
-- HTTP API metrics have no Route dimension or DataProcessed; requests to a missing stage report nothing.
+- HTTP API metrics include Method and Resource dimensions when detailed metrics are enabled. DataProcessed and metrics for missing stages are unsupported.
 - WebSocket support is text-only: no binary input, API keys, IAM/JWT/Lambda route authorizers, access logs, metrics, throttling, integration response mappings, mapping templates or non-Lambda AWS/HTTP integrations; unsupported members and expressions fail explicitly.
 - WebSocket MOCK integrations are limited to empty successful responses; route responses support only $default; message selection supports dotted object fields, without array indexes or expression interpolation; message size is limited to 128 KiB, without AWS frame-level quota emulation.
 - WebSocket APIs use the AWS SDK/CLI for configuration; the console API Gateway forms remain focused on HTTP APIs.
-- OpenAPI schemas, request bodies and validators, request parameter mappings, external references and base-path transformations are unsupported; CreateApi Body is absent from the pinned model.
+- OpenAPI schemas, request bodies and validators, integration parameter mappings, external references and base-path transformations are unsupported. Configure mappings through integration operations or CloudFormation. CreateApi Body is absent from the pinned model.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -77,6 +78,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `GetTags` | `GET /v2/tags/{ResourceArn}` |
 | `ImportApi` | `PUT /v2/apis` |
 | `ReimportApi` | `PUT /v2/apis/{ApiId}` |
+| `ResetAuthorizersCache` | `DELETE /v2/apis/{ApiId}/stages/{StageName}/cache/authorizers` |
 | `TagResource` | `POST /v2/tags/{ResourceArn}` |
 | `UntagResource` | `DELETE /v2/tags/{ResourceArn}` |
 | `UpdateApi` | `PATCH /v2/apis/{ApiId}` |
@@ -89,7 +91,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "61 modeled operations outside the implementation"
+??? info "60 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -144,7 +146,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `PublishPortal`
     - `PutPortalProductSharingPolicy`
     - `PutRoutingRule`
-    - `ResetAuthorizersCache`
     - `UpdateApiMapping`
     - `UpdateDomainName`
     - `UpdateIntegrationResponse`
@@ -160,5 +161,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/apigatewayv2)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/apigatewayv2/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/apigatewayv2.json) at `6b78958e867baa77281399bf984144de7936b86e`.
-- SDK integration examples: [apigatewayv2_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigatewayv2_test.go), [apigatewayv2_websocket_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigatewayv2_websocket_test.go).
+- SDK integration examples: [apigatewayv2_runtime_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigatewayv2_runtime_test.go), [apigatewayv2_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigatewayv2_test.go), [apigatewayv2_websocket_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigatewayv2_websocket_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

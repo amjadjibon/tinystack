@@ -842,19 +842,24 @@
         "WebSocket execute-api endpoints support host-style and /_aws/execute-api/<api-id>/<stage> addressing, auto/manual deployment snapshots, 10-minute idle and 2-hour lifetime limits; connections are memory-only and close on shutdown/reset",
         "API key selection expressions accept $request.header.x-api-key (the default) or $context.authorizer.usageIdentifierKey and are stored for both protocols",
         "HTTP-only CORS, quick-create and IP address settings are rejected on WebSocket APIs; WebSocket-only route responses and ApiKeyRequired=true are rejected on HTTP APIs",
-        "HTTP API OpenAPI 3.0 JSON/YAML import, transactional reimport and JSON/YAML export with integration references, JWT/Lambda authorizers, CORS and payload formats"
+        "HTTP API OpenAPI 3.0 JSON/YAML import, transactional reimport and JSON/YAML export with integration references, IAM, JWT and Lambda authorizers, CORS, default routes and payload formats",
+        "HTTP API integration request header and query string mappings for HTTP and Lambda proxies, path overwrite for HTTP proxies, and response header and status mappings keyed by backend status",
+        "HTTP API stage defaults and per-route throttling overrides use a token bucket for each route in each stage and return 429 when exhausted",
+        "HTTP API Lambda REQUEST authorizers cache by identity source values and stage when their TTL is positive, and support ResetAuthorizersCache. Cached IAM policies are evaluated against each incoming route ARN",
+        "CloudFormation HTTP API integrations accept RequestParameters and ResponseParameters, stages accept throttling settings, and authorizers accept a cache TTL"
       ],
       "gaps": [
-        "No VPC links, parameter mappings, throttling, caching or authorizer caching",
-        "Only the selected HTTP API management members are supported",
-        "Custom domains and API mappings use the AWS API rather than console forms",
+        "HTTP API private integrations, VPC links, integration TLS configuration, AWS service integration subtypes and backend response caching are unsupported",
+        "HTTP API custom domains and API mappings are unsupported",
+        "HTTP API throttling applies to configured routes in each stage. Shared account and Region quotas are not enforced",
+        "HTTP API integration mappings support the execute request context and authorizer values exposed by TinyStack. Body selections support definite object properties and array indexes within the first 100 KiB. Reserved header destinations and Lambda proxy path overwrite are rejected",
         "In verify mode, console management requires an authenticated root console session; without a session only resource inventory is available",
         "Console test requests execute deployed snapshots; automatic stages publish draft changes immediately, manual stages require a new deployment. AWS_IAM tests require signed execute-api CLI/SDK requests. Console action JSON is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64",
-        "HTTP API metrics have no Route dimension or DataProcessed; requests to a missing stage report nothing",
+        "HTTP API metrics include Method and Resource dimensions when detailed metrics are enabled. DataProcessed and metrics for missing stages are unsupported",
         "WebSocket support is text-only: no binary input, API keys, IAM/JWT/Lambda route authorizers, access logs, metrics, throttling, integration response mappings, mapping templates or non-Lambda AWS/HTTP integrations; unsupported members and expressions fail explicitly",
         "WebSocket MOCK integrations are limited to empty successful responses; route responses support only $default; message selection supports dotted object fields, without array indexes or expression interpolation; message size is limited to 128 KiB, without AWS frame-level quota emulation",
         "WebSocket APIs use the AWS SDK/CLI for configuration; the console API Gateway forms remain focused on HTTP APIs",
-        "OpenAPI schemas, request bodies and validators, request parameter mappings, external references and base-path transformations are unsupported; CreateApi Body is absent from the pinned model"
+        "OpenAPI schemas, request bodies and validators, integration parameter mappings, external references and base-path transformations are unsupported. Configure mappings through integration operations or CloudFormation. CreateApi Body is absent from the pinned model"
       ],
       "execution": "Local behavior",
       "package": "apigatewayv2"

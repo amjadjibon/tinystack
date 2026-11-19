@@ -2,7 +2,9 @@ package apigatewayv2
 
 import (
 	"context"
+	"maps"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -173,6 +175,21 @@ func checkStage(tx storage.ReadTx, scope request.Scope, apiID string, st *api.St
 			(common.Value(settings.DetailedMetricsEnabled) || settings.ThrottlingBurstLimit != nil ||
 				settings.ThrottlingRateLimit != nil)) {
 			return badRequest("WebSocket access logs, metrics and throttling settings are not supported.")
+		}
+	}
+
+	if err := checkThrottling(st.DefaultRouteSettings); err != nil {
+		return err
+	}
+
+	for _, route := range slices.Sorted(maps.Keys(st.RouteSettings)) {
+		if err := checkRouteKey(route); err != nil {
+			return err
+		}
+
+		settings := st.RouteSettings[route]
+		if err := checkThrottling(&settings); err != nil {
+			return err
 		}
 	}
 
@@ -422,6 +439,7 @@ func (s *Service) DeleteStage(ctx context.Context, in *api.DeleteStageRequest) (
 		return nil, err
 	}
 
+	s.discardStageRuntime(*in.ApiId, in.StageName)
 	return &api.DeleteStageOutput{}, nil
 }
 

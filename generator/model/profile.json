@@ -2123,7 +2123,8 @@
       "DeleteRouteResponse",
       "ImportApi",
       "ReimportApi",
-      "ExportApi"
+      "ExportApi",
+      "ResetAuthorizersCache"
     ],
     "shapes": {
       "CreateApiRequest": [
@@ -2182,6 +2183,8 @@
         "IntegrationType",
         "IntegrationUri",
         "PayloadFormatVersion",
+        "RequestParameters",
+        "ResponseParameters",
         "TimeoutInMillis"
       ],
       "UpdateIntegrationRequest": [
@@ -2193,6 +2196,8 @@
         "IntegrationType",
         "IntegrationUri",
         "PayloadFormatVersion",
+        "RequestParameters",
+        "ResponseParameters",
         "TimeoutInMillis"
       ],
       "CreateStageRequest": [
@@ -2316,6 +2321,10 @@
       ],
       "ExportApiResponse": [
         "body"
+      ],
+      "ResetAuthorizersCacheRequest": [
+        "ApiId",
+        "StageName"
       ]
     }
   },

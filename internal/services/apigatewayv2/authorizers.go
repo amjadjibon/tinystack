@@ -29,7 +29,8 @@ func checkAuthorizer(a *api.Authorizer) error {
 	}
 
 	for _, source := range a.IdentitySource {
-		if !identitySource.MatchString(source) {
+		if !identitySource.MatchString(source) ||
+			(strings.HasPrefix(source, "$context.") && !validMappingContext(strings.TrimPrefix(source, "$context."))) {
 			return badRequest("Invalid identity source %s.", source)
 		}
 	}
@@ -45,6 +46,8 @@ func checkAuthorizer(a *api.Authorizer) error {
 			return badRequest("A JWT authorizer needs a JwtConfiguration with an issuer URL.")
 		case len(a.IdentitySource) != 1 || !strings.HasPrefix(a.IdentitySource[0], "$request."):
 			return badRequest("A JWT authorizer needs one identity source: a request header or query string.")
+		case a.AuthorizerResultTtlInSeconds != nil:
+			return badRequest("AuthorizerResultTtlInSeconds is only supported for REQUEST authorizers.")
 		case a.AuthorizerUri != nil || a.AuthorizerPayloadFormatVersion != nil || a.EnableSimpleResponses != nil:
 			return badRequest("AuthorizerUri, AuthorizerPayloadFormatVersion, and EnableSimpleResponses are " +
 				"only for REQUEST authorizers.")
@@ -267,10 +270,6 @@ func (s *Service) UpdateAuthorizer(
 			a.JwtConfiguration = common.OrElse(in.JwtConfiguration, a.JwtConfiguration)
 			if in.IdentitySource != nil {
 				a.IdentitySource = in.IdentitySource
-			}
-
-			if common.Value(a.AuthorizerType) == typeJWT {
-				a.EnableSimpleResponses, a.AuthorizerResultTtlInSeconds = nil, nil
 			}
 
 			return true, checkAuthorizer(a)
