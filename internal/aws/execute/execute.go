@@ -5,6 +5,7 @@ package execute
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -58,6 +59,8 @@ type Caller struct {
 
 // Response is an API's answer.
 type Response struct {
+	// Stream starts one HTTP response after the integration has its response metadata.
+	Stream func(send func(status int, headers http.Header, body io.Reader) error) error
 	Header http.Header
 	Body   []byte
 	Status int

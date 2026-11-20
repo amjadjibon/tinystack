@@ -9,6 +9,7 @@ package lambda
 import (
 	"archive/zip"
 	"bytes"
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
@@ -226,21 +227,26 @@ func (s *Service) Reset(ctx context.Context) {
 // function is the stored configuration of one function: $LATEST, or a
 // published version, which never changes.
 type function struct {
-	ImageConfig   *api.ImageConfig  `json:",omitempty"`
-	Environment   map[string]string `json:",omitempty"`
-	Tags          map[string]string `json:",omitempty"`
-	Name          string
-	Runtime       string `json:",omitempty"`
-	Role          string
-	DeadLetterARN string `json:",omitempty"`
-	Handler       string `json:",omitempty"`
-	Description   string `json:",omitempty"`
-	PackageType   string
-	ImageURI      string `json:",omitempty"`
-	HotReloadPath string `json:",omitempty"`
-	Architecture  string `json:",omitempty"`
-	CodeSha256    string
-	LastModified  string
+	RuntimeVersionARN    *string           `json:",omitempty"`
+	RuntimeUpdateMode    string            `json:",omitempty"`
+	RecursiveLoop        string            `json:",omitempty"`
+	CodeSigningConfigARN string            `json:",omitempty"`
+	SnapStart            string            `json:",omitempty"`
+	ImageConfig          *api.ImageConfig  `json:",omitempty"`
+	Environment          map[string]string `json:",omitempty"`
+	Tags                 map[string]string `json:",omitempty"`
+	Name                 string
+	Runtime              string `json:",omitempty"`
+	Role                 string
+	DeadLetterARN        string `json:",omitempty"`
+	Handler              string `json:",omitempty"`
+	Description          string `json:",omitempty"`
+	PackageType          string
+	ImageURI             string `json:",omitempty"`
+	HotReloadPath        string `json:",omitempty"`
+	Architecture         string `json:",omitempty"`
+	CodeSha256           string
+	LastModified         string
 	// Version is the number of a published version, or empty for $LATEST.
 	Version string `json:",omitempty"`
 	// Source is the $LATEST revision a version was published from.
@@ -456,6 +462,21 @@ func (fn *function) configuration(scope request.Scope) api.FunctionConfiguration
 		Architectures:    []string{archX86},
 	}
 
+	if fn.PackageType == packageZip {
+		optimization := "Off"
+		if fn.Version != "" && fn.SnapStart == snapStartPublished {
+			optimization = "On"
+		}
+
+		cfg.SnapStart = &api.SnapStartResponse{
+			ApplyOn: new(cmp.Or(fn.SnapStart, snapStartNone)), OptimizationStatus: new(optimization),
+		}
+	}
+
+	if fn.RuntimeVersionARN != nil {
+		cfg.RuntimeVersionConfig = &api.RuntimeVersionConfig{RuntimeVersionArn: fn.RuntimeVersionARN}
+	}
+
 	if fn.ImageConfig != nil {
 		cfg.ImageConfigResponse = &api.ImageConfigResponse{ImageConfig: fn.ImageConfig}
 	}
@@ -546,6 +567,7 @@ func checkZip(code []byte) error {
 // settings are the configuration fields CreateFunction and
 // UpdateFunctionConfiguration share; a nil field keeps its current value.
 type settings struct {
+	SnapStart        *api.SnapStart
 	ImageConfig      *api.ImageConfig
 	Environment      *api.Environment
 	DeadLetterConfig *api.DeadLetterConfig
@@ -619,6 +641,10 @@ func (fn *function) configure(c *settings) error {
 
 	if c.Handler != nil {
 		fn.Handler = *c.Handler
+	}
+
+	if err := fn.configureSnapStart(c.SnapStart); err != nil {
+		return err
 	}
 
 	if fn.PackageType == packageImage {
@@ -720,6 +746,7 @@ func newFunction(in *api.CreateFunctionRequest, zipFile []byte, directory string
 
 	err := fn.configure(&settings{
 		ImageConfig:      in.ImageConfig,
+		SnapStart:        in.SnapStart,
 		DeadLetterConfig: in.DeadLetterConfig,
 		Role:             in.Role,
 		Handler:          in.Handler,
@@ -793,6 +820,17 @@ func (s *Service) CreateFunction(
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, exists := tx.Get(key); exists {
 			return conflict("Function already exist: " + fn.Name)
+		}
+
+		if in.CodeSigningConfigArn != nil {
+			if *in.CodeSigningConfigArn == "" {
+				return invalid("CodeSigningConfigArn must not be empty")
+			}
+
+			fn.CodeSigningConfigARN = *in.CodeSigningConfigArn
+			if signingErr := checkDeploymentSigning(tx, m.Scope, fn); signingErr != nil {
+				return signingErr
+			}
 		}
 
 		if code != nil {

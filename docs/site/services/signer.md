@@ -24,7 +24,7 @@ See the [implemented feature catalogue](catalogue.md#aws-signer) for this servic
 - Artifacts append a TinyStack signature envelope to source bytes. Signatures are not cryptographically verifiable by AWS tooling; ZIP files are not actually signed.
 - SignPayload, GetRevocationStatus, Notation registry signing, platform overrides and signing parameters are unsupported.
 - Permissions are stored policy metadata; cross-account delegation is not executed. GetSigningProfile has no policy revision field in the AWS model; ListProfilePermissions returns revisions.
-- Lambda CodeSigningConfig is not implemented; Lambda currently reports no code signing configuration. No Lambda profile validation integration.
+- Lambda code signing configurations store signing profile version ARNs. Signer artifacts and profile status are not used to verify Lambda deployments.
 - Jobs finish synchronously; S3 failures are retained as Failed jobs. Revocation is metadata only and does not modify S3 output. Interrupted jobs remain InProgress; no restart worker.
 - No certificate key-usage or algorithm validation, trust verification, IAM permission enforcement by Signer, CloudFormation provider or AWS cryptographic signing.
 

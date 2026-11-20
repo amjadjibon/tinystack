@@ -24,8 +24,12 @@ import (
 )
 
 const (
-	maxSyncPayload  = 6 << 20
-	maxAsyncPayload = 1 << 20
+	logNone               = "None"
+	logTail               = "Tail"
+	invokeRequestResponse = "RequestResponse"
+	invokeDryRun          = "DryRun"
+	maxSyncPayload        = 6 << 20
+	maxAsyncPayload       = 1 << 20
 	// asyncAttempts is how often an asynchronous invocation runs before it is
 	// dropped: the first attempt and two retries, as in Lambda.
 	asyncAttempts = 3
@@ -153,40 +157,67 @@ func (s *Service) run(
 		return Result{}, "", "", err
 	}
 
+	invoke, err := s.beginInvocation(ctx, scope, fn, qualifier)
+	if err != nil {
+		return Result{}, "", "", err
+	}
+
+	result, log, err = invoke(payload, nil)
+	if err != nil {
+		return Result{}, "", "", err
+	}
+
+	return result, log, fn.Version, nil
+}
+
+type invokeFunction func(payload []byte, stream StreamResponse) (Result, string, error)
+
+func (s *Service) beginInvocation(
+	ctx context.Context, scope request.Scope, fn *Function, qualifier string,
+) (invokeFunction, error) {
 	if fn.HotReloadPath != "" {
 		runtime, ok := s.runtime.(DirectoryRuntime)
 		if !ok || !runtime.SupportsDirectories() {
-			return Result{}, "", "", invalid("Hot reload invocation requires a directory-capable runtime; " +
+			return nil, invalid("Hot reload invocation requires a directory-capable runtime; " +
 				"the in-process runtime does not support host directories")
 		}
 	}
 
 	release, concurrency, err := s.acquire(ctx, scope, fn)
 	if err != nil {
-		s.publish(scope, name, qualifier, counter(metricThrottles, 1))
-		return Result{}, "", "", err
+		s.publish(scope, fn.Name, qualifier, counter(metricThrottles, 1))
+		return nil, err
 	}
 
-	defer release()
-	queued, async := ctx.Value(asyncArrivalKey{}).(time.Time)
-	if async {
-		s.publishAsyncAge(scope, name, qualifier, queued)
-	}
+	return func(payload []byte, stream StreamResponse) (Result, string, error) {
+		defer release()
+		queued, async := ctx.Value(asyncArrivalKey{}).(time.Time)
+		if async {
+			s.publishAsyncAge(scope, fn.Name, qualifier, queued)
+		}
 
-	s.publishConcurrency(scope, name, qualifier, fn, concurrency)
-	started := time.Now()
-	result, err = s.runtime.Invoke(ctx, fn, payload)
-	duration := time.Since(started)
-	if async && ctx.Err() != nil {
-		err = ctx.Err()
-	}
+		s.publishConcurrency(scope, fn.Name, qualifier, fn, concurrency)
+		started := time.Now()
+		var result Result
+		var err error
+		if runtime, ok := s.runtime.(StreamingRuntime); stream != nil && ok {
+			result, err = runtime.InvokeStream(ctx, fn, payload, stream)
+		} else {
+			result, err = s.runtime.Invoke(ctx, fn, payload)
+		}
 
-	s.publishInvocation(scope, name, qualifier, duration, concurrency.function, err != nil || result.Error)
-	if err != nil {
-		return Result{}, "", "", awserror.New("ServiceException", "The function could not be run: "+err.Error())
-	}
+		duration := time.Since(started)
+		if async && ctx.Err() != nil {
+			err = ctx.Err()
+		}
 
-	return result, s.record(ctx, scope, fn, duration, result.Log), fn.Version, nil
+		s.publishInvocation(scope, fn.Name, qualifier, duration, concurrency.function, err != nil || result.Error)
+		if err != nil {
+			return Result{}, "", awserror.New("ServiceException", "The function could not be run: "+err.Error())
+		}
+
+		return result, s.record(ctx, scope, fn, duration, result.Log), nil
+	}, nil
 }
 
 // record writes an invocation's log, the function's output between START and
@@ -262,6 +293,28 @@ func checkPayload(payload []byte, limit int) ([]byte, error) {
 	return payload, nil
 }
 
+func invocationClientContext(ctx context.Context, input *string) (context.Context, error) {
+	if input == nil {
+		return ctx, nil
+	}
+
+	if len(*input) > 3583 {
+		return ctx, invalid("ClientContext must be at most 3583 base64 bytes")
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(*input)
+	if err != nil || !json.Valid(decoded) {
+		return ctx, invalid("ClientContext must be base64-encoded JSON")
+	}
+
+	var document map[string]json.RawMessage
+	if json.Unmarshal(decoded, &document) != nil || document == nil {
+		return ctx, invalid("ClientContext must contain a JSON object")
+	}
+
+	return context.WithValue(ctx, clientContextKey{}, string(decoded)), nil
+}
+
 func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.InvocationResponse, error) {
 	m, err := request.Regional(ctx)
 	if err != nil {
@@ -284,40 +337,27 @@ func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.I
 
 	tail := false
 	switch common.Value(in.LogType) {
-	case "", "None":
-	case "Tail":
+	case "", logNone:
+	case logTail:
 		tail = true
 	default:
 		return nil, invalid("LogType must be None or Tail")
 	}
 
-	if tail && common.Value(in.InvocationType) != "" && common.Value(in.InvocationType) != "RequestResponse" {
+	if tail && common.Value(in.InvocationType) != "" && common.Value(in.InvocationType) != invokeRequestResponse {
 		return nil, invalid("LogType Tail is only supported for RequestResponse invocations")
 	}
 
 	switch common.Value(in.InvocationType) {
-	case "", "RequestResponse":
+	case "", invokeRequestResponse:
 		payload, checkErr := checkPayload(in.Payload, maxSyncPayload)
 		if checkErr != nil {
 			return nil, checkErr
 		}
 
-		if in.ClientContext != nil {
-			if len(*in.ClientContext) > 3583 {
-				return nil, invalid("ClientContext must be at most 3583 base64 bytes")
-			}
-
-			decoded, decodeErr := base64.StdEncoding.DecodeString(*in.ClientContext)
-			if decodeErr != nil || !json.Valid(decoded) {
-				return nil, invalid("ClientContext must be base64-encoded JSON")
-			}
-
-			var document map[string]json.RawMessage
-			if json.Unmarshal(decoded, &document) != nil || document == nil {
-				return nil, invalid("ClientContext must contain a JSON object")
-			}
-
-			ctx = context.WithValue(ctx, clientContextKey{}, string(decoded))
+		ctx, err = invocationClientContext(ctx, in.ClientContext)
+		if err != nil {
+			return nil, err
 		}
 
 		result, log, version, runErr := s.run(ctx, m.Scope, name, q, payload)
@@ -332,7 +372,7 @@ func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.I
 		}
 
 		if tail {
-			out.LogResult = new(base64.StdEncoding.EncodeToString([]byte(log[max(0, len(log)-maxLogTail):])))
+			out.LogResult = new(encodedLogTail(log))
 		}
 
 		if result.Error {
@@ -355,7 +395,7 @@ func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.I
 		}
 
 		return &api.InvocationResponse{StatusCode: new(int64(http.StatusAccepted)), ExecutedVersion: &fn.Version}, nil
-	case "DryRun":
+	case invokeDryRun:
 		if in.ClientContext != nil {
 			return nil, invalid("ClientContext is only supported for RequestResponse invocations")
 		}
@@ -364,6 +404,10 @@ func (s *Service) Invoke(ctx context.Context, in *api.InvocationRequest) (*api.I
 	default:
 		return nil, invalid("InvocationType must be RequestResponse, Event, or DryRun")
 	}
+}
+
+func encodedLogTail(log string) string {
+	return base64.StdEncoding.EncodeToString([]byte(log[max(0, len(log)-maxLogTail):]))
 }
 
 // functionOfARN resolves the function, version, or alias a full ARN names in its own account and Region.

@@ -27,10 +27,10 @@ type flushRecorder struct {
 func (w *flushRecorder) Flush() { w.frames++; w.ResponseRecorder.Flush() }
 
 func TestWriteEventStream(t *testing.T) {
-	stream := eventstream.Stream{
+	stream := eventstream.Stream{Messages: []eventstream.Message{
 		eventstream.Event("event", "delta", []byte(`{"text":"hello"}`)),
 		eventstream.Event("exception", "modelStreamErrorException", []byte(`{"message":"failed"}`)),
-	}
+	}}
 	output := &struct{ Body *eventstream.Stream }{Body: &stream}
 	binding := &catalog.Binding{
 		StatusCode: 200,
@@ -44,7 +44,7 @@ func TestWriteEventStream(t *testing.T) {
 	}
 
 	decoder := sdk.NewDecoder()
-	for _, want := range stream {
+	for _, want := range stream.Messages {
 		got, err := decoder.Decode(recorder.Body, nil)
 		if err != nil || !bytes.Equal(got.Payload, want.Payload) ||
 			got.Headers.Get(":message-type").String() != want.Headers.Get(":message-type").String() {

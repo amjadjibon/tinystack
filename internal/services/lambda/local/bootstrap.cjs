@@ -1,6 +1,8 @@
 const http = require('node:http');
 const path = require('node:path');
 const fs = require('node:fs');
+const { Writable } = require('node:stream');
+const { finished } = require('node:stream/promises');
 const { pathToFileURL } = require('node:url');
 const base = 'http://' + process.env.AWS_LAMBDA_RUNTIME_API + '/2018-06-01/runtime/';
 function request(route, value) {
@@ -21,6 +23,80 @@ const error = exc => ({ errorMessage: String(exc?.message ?? exc), errorType: ex
   stackTrace: String(exc?.stack ?? '').split('\n') });
 async function flush() {
   await Promise.all([process.stdout, process.stderr].map(stream => new Promise(resolve => stream.write('', resolve))));
+}
+const streamingHandler = Symbol('streamingHandler');
+const integrationResponse = 'application/vnd.aws.lambda.http-integration-response';
+const metadataPrelude = Symbol('metadataPrelude');
+globalThis.awslambda = {
+  streamifyResponse(handler) {
+    handler[streamingHandler] = true;
+    return handler;
+  },
+  HttpResponseStream: {
+    from(stream, metadata) {
+      stream.setContentType(integrationResponse);
+      stream[metadataPrelude] = Buffer.concat([Buffer.from(JSON.stringify(metadata)), Buffer.alloc(8)]);
+      return stream;
+    }
+  }
+};
+async function respondStreaming(prefix, handler, value, context) {
+  const req = http.request(base + prefix + '/response', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      'Transfer-Encoding': 'chunked',
+      'Lambda-Runtime-Function-Response-Mode': 'streaming',
+      'Trailer': 'Lambda-Runtime-Function-Error-Type, Lambda-Runtime-Function-Error-Body'
+    }
+  });
+  const response = new Promise(resolve => {
+    req.on('response', res => {
+      res.resume();
+      res.on('end', () => resolve(res.statusCode >= 400 ? new Error('Runtime API: ' + res.statusCode) : null));
+      res.on('error', resolve);
+    });
+    req.on('error', resolve);
+  });
+  let started = false;
+  function start() {
+    if (started) return;
+    started = true;
+    if (stream[metadataPrelude]) req.write(stream[metadataPrelude]);
+  }
+  const stream = new Writable({
+    write(chunk, encoding, callback) {
+      start();
+      req.write(chunk, encoding, callback);
+    },
+    final(callback) {
+      start();
+      callback();
+    }
+  });
+  stream.setContentType = type => req.setHeader('Content-Type', type);
+  const done = finished(stream).then(() => null, err => err);
+  try {
+    await handler(value, stream, context);
+    if (!stream.writableEnded) stream.end();
+    const writeError = await done;
+    if (writeError) throw writeError;
+  } catch (exc) {
+    stream.destroy();
+    if (!req.headersSent) {
+      req.destroy();
+      throw exc;
+    }
+    const failure = error(exc);
+    req.addTrailers({
+      'Lambda-Runtime-Function-Error-Type': failure.errorType,
+      'Lambda-Runtime-Function-Error-Body': Buffer.from(JSON.stringify(failure)).toString('base64')
+    });
+  }
+  await flush();
+  req.end();
+  const responseError = await response;
+  if (responseError) throw responseError;
 }
 async function main() {
   let handler;
@@ -56,6 +132,10 @@ async function main() {
     };
     const prefix = 'invocation/' + id;
     try {
+      if (handler[streamingHandler]) {
+        await respondStreaming(prefix, handler, value, context);
+        continue;
+      }
       const result = await new Promise((resolve, reject) => {
         const callback = (err, result) => err ? reject(err) : resolve(result);
         context.done = callback;

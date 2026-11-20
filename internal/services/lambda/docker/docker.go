@@ -14,6 +14,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -41,7 +42,7 @@ const (
 	invocations = "/2015-03-31/functions/function/invocations"
 )
 
-var _ lambda.Runtime = (*Runtime)(nil)
+var _ lambda.StreamingRuntime = (*Runtime)(nil)
 
 // Runtime runs functions in Docker containers.
 type Runtime struct {
@@ -429,6 +430,12 @@ func tarball(code []byte) (io.Reader, error) {
 
 // Invoke runs one invocation in a warm or new container.
 func (r *Runtime) Invoke(ctx context.Context, fn *lambda.Function, payload []byte) (lambda.Result, error) {
+	return r.InvokeStream(ctx, fn, payload, nil)
+}
+
+func (r *Runtime) InvokeStream(
+	ctx context.Context, fn *lambda.Function, payload []byte, sink lambda.StreamResponse,
+) (lambda.Result, error) {
 	if fn.HotReloadPath != "" {
 		stamp, err := fingerprint(fn.HotReloadPath)
 		if err != nil {
@@ -445,7 +452,7 @@ func (r *Runtime) Invoke(ctx context.Context, fn *lambda.Function, payload []byt
 		return lambda.Result{}, err
 	}
 
-	result, healthy, err := r.post(ctx, fn, c, payload)
+	result, healthy, err := r.post(ctx, fn, c, payload, sink)
 	if err == nil {
 		result.Log = c.output(ctx)
 	}
@@ -534,6 +541,7 @@ func (r *Runtime) post(
 	fn *lambda.Function,
 	c *container,
 	payload []byte,
+	sink lambda.StreamResponse,
 ) (result lambda.Result, healthy bool, err error) {
 	ctx, cancel := context.WithTimeout(ctx, fn.Timeout+grace)
 	defer cancel()
@@ -547,6 +555,10 @@ func (r *Runtime) post(
 		return result, false, err
 	}
 
+	if fn.ClientContext != "" {
+		req.Header.Set("X-Amz-Client-Context", base64.StdEncoding.EncodeToString([]byte(fn.ClientContext)))
+	}
+
 	resp, err := r.client.Do(req)
 	if err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
@@ -557,6 +569,21 @@ func (r *Runtime) post(
 	}
 
 	defer func() { _ = resp.Body.Close() }()
+	contentType := resp.Header.Get("Content-Type")
+	streamed := strings.EqualFold(resp.Header.Get(lambda.RuntimeResponseMode), "streaming") ||
+		contentType == lambda.HTTPIntegrationResponse
+	if sink != nil && resp.StatusCode == http.StatusOK && streamed {
+		if sinkErr := sink(contentType, resp.Body); sinkErr != nil {
+			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				return timedOut(fn), false, nil
+			}
+
+			return result, false, sinkErr
+		}
+
+		return lambda.ResponseStreamFailure(resp.Trailer), true, nil
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return result, false, err

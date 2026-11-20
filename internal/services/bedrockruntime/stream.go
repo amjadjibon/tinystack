@@ -25,7 +25,7 @@ func (b *streamBuilder) add(name string, value any) {
 		return
 	}
 
-	b.events = append(b.events, eventstream.Event("event", name, payload))
+	b.events.Messages = append(b.events.Messages, eventstream.Event("event", name, payload))
 }
 
 func deltas(text string) []string {

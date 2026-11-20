@@ -2,6 +2,7 @@ package lambda
 
 import (
 	"context"
+	"slices"
 	"uuid"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/lambda"
@@ -23,8 +24,12 @@ func (s *Service) UpdateFunctionCode(
 	}
 
 	return s.update(ctx, in.FunctionName, in.RevisionId, common.Value(in.DryRun), common.Value(in.Publish), nil, func(
-		fn *function,
+		tx storage.ReadTx, scope request.Scope, fn *function,
 	) ([]byte, error) {
+		if err := checkDeploymentSigning(tx, scope, fn); err != nil {
+			return nil, err
+		}
+
 		if err := fn.setArchitecture(in.Architectures); err != nil {
 			return nil, err
 		}
@@ -60,27 +65,46 @@ func (s *Service) UpdateFunctionConfiguration(
 		}
 	}
 
-	return s.update(ctx, in.FunctionName, in.RevisionId, false, false, check, func(fn *function) ([]byte, error) {
-		if in.Layers != nil {
-			if len(layers) > 0 && fn.PackageType == packageImage {
-				return nil, invalid("Layers are not supported for Image functions")
+	return s.update(
+		ctx,
+		in.FunctionName,
+		in.RevisionId,
+		false,
+		false,
+		check,
+		func(tx storage.ReadTx, scope request.Scope, fn *function) ([]byte, error) {
+			if in.Layers != nil {
+				if len(layers) > 0 && fn.PackageType == packageImage {
+					return nil, invalid("Layers are not supported for Image functions")
+				}
+
+				for _, layer := range layers {
+					if !slices.Contains(fn.Layers, layer) {
+						if err := checkDeploymentSigning(tx, scope, fn); err != nil {
+							return nil, err
+						}
+
+						break
+					}
+				}
+
+				fn.Layers = layers
 			}
 
-			fn.Layers = layers
-		}
-
-		return nil, fn.configure(&settings{
-			ImageConfig:      in.ImageConfig,
-			DeadLetterConfig: in.DeadLetterConfig,
-			Role:             in.Role,
-			Handler:          in.Handler,
-			Description:      in.Description,
-			Runtime:          in.Runtime,
-			Timeout:          in.Timeout,
-			MemorySize:       in.MemorySize,
-			Environment:      in.Environment,
-		})
-	})
+			return nil, fn.configure(&settings{
+				ImageConfig:      in.ImageConfig,
+				SnapStart:        in.SnapStart,
+				DeadLetterConfig: in.DeadLetterConfig,
+				Role:             in.Role,
+				Handler:          in.Handler,
+				Description:      in.Description,
+				Runtime:          in.Runtime,
+				Timeout:          in.Timeout,
+				MemorySize:       in.MemorySize,
+				Environment:      in.Environment,
+			})
+		},
+	)
 }
 
 // update applies change, which returns new code or nil, to the caller's
@@ -92,7 +116,7 @@ func (s *Service) update(
 	raw, revision *string,
 	dryRun, publishing bool,
 	check func(*function) error,
-	change func(*function) ([]byte, error),
+	change func(storage.ReadTx, request.Scope, *function) ([]byte, error),
 ) (*api.FunctionConfiguration, error) {
 	m, err := request.Regional(ctx)
 	if err != nil {
@@ -131,14 +155,15 @@ func (s *Service) update(
 		viewErr := s.store.View(ctx, func(tx storage.ReadTx) error {
 			var readErr error
 			fn, readErr = load(tx)
+			if readErr != nil {
+				return readErr
+			}
+
+			_, readErr = change(tx, m.Scope, fn)
 			return readErr
 		})
 		if viewErr != nil {
 			return nil, viewErr
-		}
-
-		if _, changeErr := change(fn); changeErr != nil {
-			return nil, changeErr
 		}
 
 		if checkErr := check(fn); checkErr != nil {
@@ -155,7 +180,7 @@ func (s *Service) update(
 			return readErr
 		}
 
-		code, changeErr := change(fn)
+		code, changeErr := change(tx, m.Scope, fn)
 		if changeErr != nil || dryRun {
 			return changeErr
 		}

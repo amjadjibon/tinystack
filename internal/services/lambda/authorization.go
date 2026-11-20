@@ -38,9 +38,33 @@ func (s *Service) AuthorizationResources(
 		return s.layerAuthorization(ctx, scope, name, version, operation)
 	}
 
+	signing := catalog.InputString(input, "CodeSigningConfigArn")
+	resource := catalog.InputString(input, "Resource")
+	if isSigningARN(resource) {
+		signing = resource
+	}
+
 	ref := catalog.InputString(input, "FunctionName")
 	if ref == "" {
-		ref = catalog.InputString(input, "Resource")
+		if signing != "" {
+			target := catalog.AuthorizationResource{ARN: signing, TagsKnown: true}
+			key, keyErr := signingKey(m.Scope, signing)
+			if keyErr != nil {
+				return nil, keyErr
+			}
+
+			err = s.store.View(ctx, func(tx storage.ReadTx) error {
+				cfg, found, readErr := storage.Read[signingConfig](tx, key)
+				if found {
+					target.OwnerAccount, target.Tags = m.AccountID, common.CloneTags(cfg.Tags)
+				}
+
+				return readErr
+			})
+			return []catalog.AuthorizationResource{target}, err
+		}
+
+		ref = resource
 	}
 
 	if ref == "" {

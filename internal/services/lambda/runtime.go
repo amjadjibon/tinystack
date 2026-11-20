@@ -2,6 +2,10 @@ package lambda
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
+	"io"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
@@ -76,6 +80,44 @@ type Runtime interface {
 	Release(arn string)
 	// Close discards every environment.
 	Close()
+}
+
+// StreamResponse consumes a streaming Runtime API response synchronously.
+type StreamResponse func(contentType string, body io.Reader) error
+
+// StreamingRuntime can forward response bytes as they become available. Ordinary
+// handler results are returned as Result.Payload.
+type StreamingRuntime interface {
+	Runtime
+	InvokeStream(context.Context, *Function, []byte, StreamResponse) (Result, error)
+}
+
+const (
+	// HTTPIntegrationResponse identifies Lambda's JSON metadata and eight-NUL prelude.
+	HTTPIntegrationResponse = "application/vnd.aws.lambda.http-integration-response"
+	RuntimeResponseMode     = "Lambda-Runtime-Function-Response-Mode"
+	StreamErrorType         = "Lambda-Runtime-Function-Error-Type"
+	StreamErrorBody         = "Lambda-Runtime-Function-Error-Body"
+)
+
+// ResponseStreamFailure decodes errors the runtime wrote after the stream started.
+func ResponseStreamFailure(headers http.Header) Result {
+	kind := headers.Get(StreamErrorType)
+	if kind == "" {
+		return Result{}
+	}
+
+	body, _ := base64.StdEncoding.DecodeString(headers.Get(StreamErrorBody))
+	var message struct {
+		ErrorMessage string `json:"errorMessage"`
+	}
+	_ = json.Unmarshal(body, &message)
+	if message.ErrorMessage == "" {
+		message.ErrorMessage = string(body)
+	}
+
+	payload, _ := json.Marshal(map[string]string{"errorType": kind, "errorMessage": message.ErrorMessage})
+	return Result{Payload: payload, Error: true}
 }
 
 // WarmRuntime pre-starts reusable environments without invoking the handler.

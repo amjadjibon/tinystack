@@ -17951,7 +17951,20 @@
       "ListFunctionEventInvokeConfigs",
       "AddLayerVersionPermission",
       "RemoveLayerVersionPermission",
-      "GetLayerVersionPolicy"
+      "GetLayerVersionPolicy",
+      "InvokeWithResponseStream",
+      "GetFunctionRecursionConfig",
+      "PutFunctionRecursionConfig",
+      "GetRuntimeManagementConfig",
+      "PutRuntimeManagementConfig",
+      "CreateCodeSigningConfig",
+      "GetCodeSigningConfig",
+      "ListCodeSigningConfigs",
+      "UpdateCodeSigningConfig",
+      "DeleteCodeSigningConfig",
+      "PutFunctionCodeSigningConfig",
+      "DeleteFunctionCodeSigningConfig",
+      "ListFunctionsByCodeSigningConfig"
     ],
     "shapes": {
       "CreateFunctionRequest": [
@@ -17970,7 +17983,9 @@
         "Publish",
         "Layers",
         "DeadLetterConfig",
-        "ImageConfig"
+        "ImageConfig",
+        "CodeSigningConfigArn",
+        "SnapStart"
       ],
       "FunctionCode": [
         "ZipFile",
@@ -18003,7 +18018,9 @@
         "LastUpdateStatus",
         "Layers",
         "DeadLetterConfig",
-        "ImageConfigResponse"
+        "ImageConfigResponse",
+        "SnapStart",
+        "RuntimeVersionConfig"
       ],
       "EnvironmentResponse": [
         "Variables"
@@ -18168,7 +18185,8 @@
         "RevisionId",
         "Layers",
         "DeadLetterConfig",
-        "ImageConfig"
+        "ImageConfig",
+        "SnapStart"
       ],
       "PublishVersionRequest": [
         "FunctionName",
@@ -18590,6 +18608,133 @@
       "ProvisionedPollerConfig": [
         "MinimumPollers",
         "MaximumPollers"
+      ],
+      "InvokeWithResponseStreamRequest": [
+        "FunctionName",
+        "LogType",
+        "ClientContext",
+        "Qualifier",
+        "Payload",
+        "InvocationType"
+      ],
+      "InvokeWithResponseStreamResponse": [
+        "StatusCode",
+        "ExecutedVersion",
+        "EventStream",
+        "ResponseStreamContentType"
+      ],
+      "GetFunctionRecursionConfigRequest": [
+        "FunctionName"
+      ],
+      "GetFunctionRecursionConfigResponse": [
+        "RecursiveLoop"
+      ],
+      "PutFunctionRecursionConfigRequest": [
+        "FunctionName",
+        "RecursiveLoop"
+      ],
+      "PutFunctionRecursionConfigResponse": [
+        "RecursiveLoop"
+      ],
+      "GetRuntimeManagementConfigRequest": [
+        "FunctionName",
+        "Qualifier"
+      ],
+      "GetRuntimeManagementConfigResponse": [
+        "UpdateRuntimeOn",
+        "FunctionArn",
+        "RuntimeVersionArn"
+      ],
+      "PutRuntimeManagementConfigRequest": [
+        "FunctionName",
+        "Qualifier",
+        "UpdateRuntimeOn",
+        "RuntimeVersionArn"
+      ],
+      "PutRuntimeManagementConfigResponse": [
+        "UpdateRuntimeOn",
+        "FunctionArn",
+        "RuntimeVersionArn"
+      ],
+      "CreateCodeSigningConfigRequest": [
+        "Description",
+        "AllowedPublishers",
+        "CodeSigningPolicies",
+        "Tags"
+      ],
+      "CreateCodeSigningConfigResponse": [
+        "CodeSigningConfig"
+      ],
+      "GetCodeSigningConfigRequest": [
+        "CodeSigningConfigArn"
+      ],
+      "GetCodeSigningConfigResponse": [
+        "CodeSigningConfig"
+      ],
+      "ListCodeSigningConfigsRequest": [
+        "Marker",
+        "MaxItems"
+      ],
+      "ListCodeSigningConfigsResponse": [
+        "NextMarker",
+        "CodeSigningConfigs"
+      ],
+      "UpdateCodeSigningConfigRequest": [
+        "CodeSigningConfigArn",
+        "Description",
+        "AllowedPublishers",
+        "CodeSigningPolicies"
+      ],
+      "UpdateCodeSigningConfigResponse": [
+        "CodeSigningConfig"
+      ],
+      "DeleteCodeSigningConfigRequest": [
+        "CodeSigningConfigArn"
+      ],
+      "DeleteCodeSigningConfigResponse": [],
+      "PutFunctionCodeSigningConfigRequest": [
+        "CodeSigningConfigArn",
+        "FunctionName"
+      ],
+      "PutFunctionCodeSigningConfigResponse": [
+        "CodeSigningConfigArn",
+        "FunctionName"
+      ],
+      "DeleteFunctionCodeSigningConfigRequest": [
+        "FunctionName"
+      ],
+      "ListFunctionsByCodeSigningConfigRequest": [
+        "CodeSigningConfigArn",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListFunctionsByCodeSigningConfigResponse": [
+        "NextMarker",
+        "FunctionArns"
+      ],
+      "AllowedPublishers": [
+        "SigningProfileVersionArns"
+      ],
+      "CodeSigningConfig": [
+        "CodeSigningConfigId",
+        "CodeSigningConfigArn",
+        "Description",
+        "AllowedPublishers",
+        "CodeSigningPolicies",
+        "LastModified"
+      ],
+      "CodeSigningPolicies": [
+        "UntrustedArtifactOnDeployment"
+      ],
+      "SnapStart": [
+        "ApplyOn"
+      ],
+      "SnapStartResponse": [
+        "ApplyOn",
+        "OptimizationStatus"
+      ],
+      "RuntimeVersionConfig": [
+        "RuntimeVersionArn"
       ]
     }
   },

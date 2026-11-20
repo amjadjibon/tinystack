@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -1129,12 +1130,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if c.payload != nil && c.payload.Body != nil {
 			response := restbindings.Encode(w, &binding, output)
 			w.WriteHeader(response.Status)
-			copyFlushing(w, c.payload.Body)
+			_ = copyFlushing(w, c.payload.Body)
 
 			return
 		}
 
-		restjson.Write(w, &binding, output)
+		if err := restjson.Write(w, &binding, output); err != nil {
+			s.fail(w, c, err)
+		}
+
 		return
 	case catalog.RPCV2CBOR:
 		rpcv2cbor.Write(w, status, output)
@@ -1240,21 +1244,27 @@ func (s *Server) record(r *http.Request, c *call, start time.Time, body *capturi
 
 // copyFlushing copies a streamed response body, flushing after each chunk so that server-sent events reach the
 // client as the service produces them.
-func copyFlushing(w http.ResponseWriter, body io.Reader) {
+func copyFlushing(w http.ResponseWriter, body io.Reader) error {
 	flush := http.NewResponseController(w)
 	buffer := make([]byte, 32<<10)
 	for {
 		n, err := body.Read(buffer)
 		if n > 0 {
 			if _, writeErr := w.Write(buffer[:n]); writeErr != nil {
-				return
+				return writeErr
 			}
 
-			_ = flush.Flush()
+			if flushErr := flush.Flush(); flushErr != nil && !errors.Is(flushErr, http.ErrNotSupported) {
+				return flushErr
+			}
+		}
+
+		if errors.Is(err, io.EOF) {
+			return nil
 		}
 
 		if err != nil {
-			return
+			return err
 		}
 	}
 }

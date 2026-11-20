@@ -59,18 +59,28 @@ func (p *provisioned) plan(tx storage.ReadTx, scope request.Scope, name string) 
 
 	if !found {
 		p.Versions = map[string]int64{p.Qualifier: p.Requested}
-		return nil
+	} else {
+		if a.Version == latest {
+			return invalid("Provisioned Concurrency Configs cannot be applied to unpublished function versions.")
+		}
+
+		p.Versions = map[string]int64{a.Version: p.Requested}
+		for version, weight := range a.Weights {
+			secondary := int64(math.Round(float64(p.Requested) * weight))
+			p.Versions[version] = secondary
+			p.Versions[a.Version] -= secondary
+		}
 	}
 
-	if a.Version == latest {
-		return invalid("Provisioned Concurrency Configs cannot be applied to unpublished function versions.")
-	}
+	for version := range p.Versions {
+		fn, _, err := resolve(tx, scope, name, version)
+		if err != nil {
+			return err
+		}
 
-	p.Versions = map[string]int64{a.Version: p.Requested}
-	for version, weight := range a.Weights {
-		secondary := int64(math.Round(float64(p.Requested) * weight))
-		p.Versions[version] = secondary
-		p.Versions[a.Version] -= secondary
+		if fn.SnapStart == snapStartPublished {
+			return invalid("Provisioned Concurrency is not supported for versions with SnapStart enabled")
+		}
 	}
 
 	return nil

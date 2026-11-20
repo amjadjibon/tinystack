@@ -56,14 +56,20 @@ func decodeJSON(body []byte, v any) error {
 }
 
 // Write encodes a successful response.
-func Write(w http.ResponseWriter, b *catalog.Binding, output any) {
+func Write(w http.ResponseWriter, b *catalog.Binding, output any) error {
 	resp := rest.Encode(w, b, output)
 	if stream, ok := resp.Structure.(*eventstream.Stream); ok {
+		if stream.Prepare != nil {
+			if err := stream.Prepare(); err != nil {
+				return err
+			}
+		}
+
 		w.Header().Set("Content-Type", "application/vnd.amazon.eventstream")
 		w.Header().Del("Content-Length")
 		w.WriteHeader(resp.Status)
 		_, _ = stream.WriteTo(w)
-		return
+		return nil
 	}
 
 	body := resp.Payload
@@ -75,8 +81,7 @@ func Write(w http.ResponseWriter, b *catalog.Binding, output any) {
 
 		encoded, err := json.Marshal(document)
 		if err != nil {
-			WriteError(w, awserror.From(err), "message")
-			return
+			return err
 		}
 
 		body = encoded
@@ -84,6 +89,7 @@ func Write(w http.ResponseWriter, b *catalog.Binding, output any) {
 	}
 
 	rest.Send(w, resp.Status, body, false)
+	return nil
 }
 
 // WriteError encodes a REST JSON error: the code in X-Amzn-ErrorType and the

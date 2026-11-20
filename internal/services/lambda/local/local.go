@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -84,7 +85,14 @@ type environmentProcess struct {
 	readyOnce   sync.Once
 }
 
+type runtimeStream struct {
+	body        *io.PipeReader
+	contentType string
+}
+
 type invocation struct {
+	ctx      context.Context
+	stream   chan runtimeStream
 	deadline time.Time
 	fn       *lambda.Function
 	result   chan lambda.Result
@@ -385,6 +393,12 @@ func errorResult(kind, message string) lambda.Result {
 }
 
 func (r *Runtime) Invoke(ctx context.Context, fn *lambda.Function, payload []byte) (lambda.Result, error) {
+	return r.InvokeStream(ctx, fn, payload, nil)
+}
+
+func (r *Runtime) InvokeStream(
+	ctx context.Context, fn *lambda.Function, payload []byte, sink lambda.StreamResponse,
+) (lambda.Result, error) {
 	_, managed := lambda.Image(fn.Runtime)
 	supported := managed && (strings.HasPrefix(fn.Runtime, "python3.") || strings.HasPrefix(fn.Runtime, "nodejs"))
 	if fn.PackageType == "Image" || !supported {
@@ -422,30 +436,58 @@ func (r *Runtime) Invoke(ctx context.Context, fn *lambda.Function, payload []byt
 	}
 
 	deadline, _ := invocationCtx.Deadline()
-	job := &invocation{fn: fn, payload: payload, id: id, deadline: deadline, result: make(chan lambda.Result, 1)}
+	job := &invocation{
+		ctx: invocationCtx, fn: fn, payload: payload, id: id, deadline: deadline, result: make(chan lambda.Result, 1),
+	}
+
+	if sink != nil {
+		job.stream = make(chan runtimeStream)
+	}
+
 	e.jobs <- job
+	streams := job.stream
 	var result lambda.Result
 	healthy := false
-	select {
-	case result = <-job.result:
-		healthy = true
-	case result = <-e.initError:
-	case <-e.done:
+wait:
+	for {
 		select {
-		case result = <-e.initError:
+		case stream := <-streams:
+			stop := context.AfterFunc(invocationCtx, func() {
+				_ = stream.body.CloseWithError(invocationCtx.Err())
+			})
+			err := sink(stream.contentType, stream.body)
+			stop()
+			_ = stream.body.Close()
+			if err != nil && invocationCtx.Err() == nil {
+				r.release(fn, e, false)
+				return lambda.Result{}, err
+			}
+
+			streams = nil
 		case result = <-job.result:
-		default:
-			result = errorResult("Runtime.ExitError", "Runtime exited without providing a response")
-		}
+			healthy = true
+			break wait
+		case result = <-e.initError:
+			break wait
+		case <-e.done:
+			select {
+			case result = <-e.initError:
+			case result = <-job.result:
+			default:
+				result = errorResult("Runtime.ExitError", "Runtime exited without providing a response")
+			}
 
-	case <-invocationCtx.Done():
-		e.kill()
-		if ctx.Err() != nil {
-			r.release(fn, e, false)
-			return lambda.Result{}, ctx.Err()
-		}
+			break wait
+		case <-invocationCtx.Done():
+			e.kill()
+			if ctx.Err() != nil {
+				r.release(fn, e, false)
+				return lambda.Result{}, ctx.Err()
+			}
 
-		result = errorResult("Sandbox.Timedout", fmt.Sprintf("Task timed out after %.2f seconds", fn.Timeout.Seconds()))
+			result = errorResult("Sandbox.Timedout", fmt.Sprintf("Task timed out after %.2f seconds", fn.Timeout.Seconds()))
+			break wait
+		}
 	}
 
 	e.mu.Lock()
@@ -529,6 +571,11 @@ func (e *environmentProcess) serve(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if strings.EqualFold(req.Header.Get(lambda.RuntimeResponseMode), "streaming") {
+		e.serveStream(w, req, route)
+		return
+	}
+
 	body := http.MaxBytesReader(w, req.Body, 6<<20)
 	defer func() { _ = body.Close() }()
 	var payload json.RawMessage
@@ -569,6 +616,44 @@ func (e *environmentProcess) serve(w http.ResponseWriter, req *http.Request) {
 	}
 
 	e.active = nil
+	job.result <- result
+	w.WriteHeader(http.StatusAccepted)
+}
+
+func (e *environmentProcess) serveStream(w http.ResponseWriter, req *http.Request, route string) {
+	e.mu.Lock()
+	job := e.active
+	if job == nil || route != "invocation/"+job.id+"/response" {
+		e.mu.Unlock()
+		http.NotFound(w, req)
+		return
+	}
+
+	e.active = nil
+	e.mu.Unlock()
+	result := lambda.Result{}
+	var err error
+	if job.stream == nil {
+		result.Payload, err = io.ReadAll(http.MaxBytesReader(w, req.Body, 6<<20))
+	} else {
+		reader, writer := io.Pipe()
+		defer func() { _ = writer.Close() }()
+		select {
+		case job.stream <- runtimeStream{body: reader, contentType: req.Header.Get("Content-Type")}:
+			_, err = io.Copy(writer, req.Body)
+			_ = writer.CloseWithError(err)
+		case <-job.ctx.Done():
+			_ = reader.Close()
+			return
+		}
+	}
+
+	if err != nil {
+		result = errorResult("Runtime.StreamError", err.Error())
+	} else if failure := lambda.ResponseStreamFailure(req.Trailer); failure.Error {
+		result = failure
+	}
+
 	job.result <- result
 	w.WriteHeader(http.StatusAccepted)
 }

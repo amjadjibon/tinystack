@@ -13,7 +13,7 @@ Manage functions and execute Python/Node locally or managed runtimes in Docker.
 | API version | `2015-03-31` |
 | Scope | Account and region |
 | Execution | Local processes or Docker runtime |
-| Selected operations | 54 of 91 in the pinned model |
+| Selected operations | 67 of 91 in the pinned model |
 
 ## Implemented behavior
 
@@ -36,7 +36,11 @@ When IAM authorization is enabled, function-scoped SDK actions and AWS_IAM funct
 - Reset ends event source and async workers, clears queued events and removes warm execution environments.
 - DLQ and asynchronous destination configuration checks do not simulate AWS destination-specific KMS policies. A completed delivery failure is recorded and the delivery is discarded.
 - Invocation metrics do not count requests rejected before runtime admission by validation, authorization or resource lookup. Account and storage quotas reported by GetAccountSettings are informational. Weighted provisioned allocations round the secondary share to the nearest whole environment and give the remainder to the primary.
-- Runtime-management and recursion configuration, streaming responses, code-signing management, durability workflows, VPC networking, and SnapStart are outside the implemented profile.
+- Ordinary handler returns are buffered. The Docker executor relays chunks from streaming-enabled Runtime Interface Emulators, while stock AWS Runtime Interface Emulators may buffer before returning bytes, omit streaming headers or error trailers, and apply their own size limits. Local managed Python handlers return buffered JSON.
+- Recursion settings are stored only. TinyStack does not track recursive invocation chains or terminate them. Runtime management settings round-trip without changing the host interpreter or Docker image.
+- Code signing validates configuration fields and publisher ARN syntax only. It does not check Signer profile existence or cryptographic signatures. Warn accepts unverified artifacts without emitting AWS signing metrics, and Enforce rejects all unverified deployments.
+- SnapStart reports simulated optimization status without snapshotting or restoring execution environments. SnapStart on non-Java runtimes and container images, durability workflows and VPC networking are unsupported.
+- TinyStack exposes the new configuration settings through the Lambda API. Its CloudFormation Lambda resources and SAM transform do not expose these settings as template properties.
 - Layer OrganizationId conditions are stored and fail closed without trusted organization context; existing functions retain their attached layers after permission removal.
 - Broker mappings support plaintext MSK endpoints and self-managed Kafka BASIC_AUTH/SASL SCRAM credentials; ActiveMQ, Kafka TLS/mTLS, VPC source access settings, virtual hosts, timestamp starting positions and provisioned poller scaling are unavailable. ProvisionedPollerConfig stores validated bounds but does not scale local consumers. Kafka partial failures use topic-partition strings and retry only the identified records. RabbitMQ retries failed invocations until success or disable/delete; MQ does not support FilterCriteria or Lambda retry/destination controls and uses broker-side dead-lettering. Broker read permissions are checked through in-process service calls; there is no Kafka data-plane IAM emulation.
 
@@ -55,12 +59,15 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `AddLayerVersionPermission` | `POST /2018-10-31/layers/{LayerName}/versions/{VersionNumber}/policy` |
 | `AddPermission` | `POST /2015-03-31/functions/{FunctionName}/policy` |
 | `CreateAlias` | `POST /2015-03-31/functions/{FunctionName}/aliases` |
+| `CreateCodeSigningConfig` | `POST /2020-04-22/code-signing-configs` |
 | `CreateEventSourceMapping` | `POST /2015-03-31/event-source-mappings` |
 | `CreateFunction` | `POST /2015-03-31/functions` |
 | `CreateFunctionUrlConfig` | `POST /2021-10-31/functions/{FunctionName}/url` |
 | `DeleteAlias` | `DELETE /2015-03-31/functions/{FunctionName}/aliases/{Name}` |
+| `DeleteCodeSigningConfig` | `DELETE /2020-04-22/code-signing-configs/{CodeSigningConfigArn}` |
 | `DeleteEventSourceMapping` | `DELETE /2015-03-31/event-source-mappings/{UUID}` |
 | `DeleteFunction` | `DELETE /2015-03-31/functions/{FunctionName}` |
+| `DeleteFunctionCodeSigningConfig` | `DELETE /2020-06-30/functions/{FunctionName}/code-signing-config` |
 | `DeleteFunctionConcurrency` | `DELETE /2017-10-31/functions/{FunctionName}/concurrency` |
 | `DeleteFunctionEventInvokeConfig` | `DELETE /2019-09-25/functions/{FunctionName}/event-invoke-config` |
 | `DeleteFunctionUrlConfig` | `DELETE /2021-10-31/functions/{FunctionName}/url` |
@@ -68,24 +75,30 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `DeleteProvisionedConcurrencyConfig` | `DELETE /2019-09-30/functions/{FunctionName}/provisioned-concurrency` |
 | `GetAccountSettings` | `GET /2016-08-19/account-settings` |
 | `GetAlias` | `GET /2015-03-31/functions/{FunctionName}/aliases/{Name}` |
+| `GetCodeSigningConfig` | `GET /2020-04-22/code-signing-configs/{CodeSigningConfigArn}` |
 | `GetEventSourceMapping` | `GET /2015-03-31/event-source-mappings/{UUID}` |
 | `GetFunction` | `GET /2015-03-31/functions/{FunctionName}` |
 | `GetFunctionCodeSigningConfig` | `GET /2020-06-30/functions/{FunctionName}/code-signing-config` |
 | `GetFunctionConcurrency` | `GET /2019-09-30/functions/{FunctionName}/concurrency` |
 | `GetFunctionConfiguration` | `GET /2015-03-31/functions/{FunctionName}/configuration` |
 | `GetFunctionEventInvokeConfig` | `GET /2019-09-25/functions/{FunctionName}/event-invoke-config` |
+| `GetFunctionRecursionConfig` | `GET /2024-08-31/functions/{FunctionName}/recursion-config` |
 | `GetFunctionUrlConfig` | `GET /2021-10-31/functions/{FunctionName}/url` |
 | `GetLayerVersion` | `GET /2018-10-31/layers/{LayerName}/versions/{VersionNumber}` |
 | `GetLayerVersionByArn` | `GET /2018-10-31/layers?find=LayerVersion` |
 | `GetLayerVersionPolicy` | `GET /2018-10-31/layers/{LayerName}/versions/{VersionNumber}/policy` |
 | `GetPolicy` | `GET /2015-03-31/functions/{FunctionName}/policy` |
 | `GetProvisionedConcurrencyConfig` | `GET /2019-09-30/functions/{FunctionName}/provisioned-concurrency` |
+| `GetRuntimeManagementConfig` | `GET /2021-07-20/functions/{FunctionName}/runtime-management-config` |
 | `Invoke` | `POST /2015-03-31/functions/{FunctionName}/invocations` |
+| `InvokeWithResponseStream` | `POST /2021-11-15/functions/{FunctionName}/response-streaming-invocations` |
 | `ListAliases` | `GET /2015-03-31/functions/{FunctionName}/aliases` |
+| `ListCodeSigningConfigs` | `GET /2020-04-22/code-signing-configs` |
 | `ListEventSourceMappings` | `GET /2015-03-31/event-source-mappings` |
 | `ListFunctionEventInvokeConfigs` | `GET /2019-09-25/functions/{FunctionName}/event-invoke-config/list` |
 | `ListFunctionUrlConfigs` | `GET /2021-10-31/functions/{FunctionName}/urls` |
 | `ListFunctions` | `GET /2015-03-31/functions` |
+| `ListFunctionsByCodeSigningConfig` | `GET /2020-04-22/code-signing-configs/{CodeSigningConfigArn}/functions` |
 | `ListLayerVersions` | `GET /2018-10-31/layers/{LayerName}/versions` |
 | `ListLayers` | `GET /2018-10-31/layers` |
 | `ListProvisionedConcurrencyConfigs` | `GET /2019-09-30/functions/{FunctionName}/provisioned-concurrency?List=ALL` |
@@ -93,14 +106,18 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `ListVersionsByFunction` | `GET /2015-03-31/functions/{FunctionName}/versions` |
 | `PublishLayerVersion` | `POST /2018-10-31/layers/{LayerName}/versions` |
 | `PublishVersion` | `POST /2015-03-31/functions/{FunctionName}/versions` |
+| `PutFunctionCodeSigningConfig` | `PUT /2020-06-30/functions/{FunctionName}/code-signing-config` |
 | `PutFunctionConcurrency` | `PUT /2017-10-31/functions/{FunctionName}/concurrency` |
 | `PutFunctionEventInvokeConfig` | `PUT /2019-09-25/functions/{FunctionName}/event-invoke-config` |
+| `PutFunctionRecursionConfig` | `PUT /2024-08-31/functions/{FunctionName}/recursion-config` |
 | `PutProvisionedConcurrencyConfig` | `PUT /2019-09-30/functions/{FunctionName}/provisioned-concurrency` |
+| `PutRuntimeManagementConfig` | `PUT /2021-07-20/functions/{FunctionName}/runtime-management-config` |
 | `RemoveLayerVersionPermission` | `DELETE /2018-10-31/layers/{LayerName}/versions/{VersionNumber}/policy/{StatementId}` |
 | `RemovePermission` | `DELETE /2015-03-31/functions/{FunctionName}/policy/{StatementId}` |
 | `TagResource` | `POST /2017-03-31/tags/{Resource}` |
 | `UntagResource` | `DELETE /2017-03-31/tags/{Resource}` |
 | `UpdateAlias` | `PUT /2015-03-31/functions/{FunctionName}/aliases/{Name}` |
+| `UpdateCodeSigningConfig` | `PUT /2020-04-22/code-signing-configs/{CodeSigningConfigArn}` |
 | `UpdateEventSourceMapping` | `PUT /2015-03-31/event-source-mappings/{UUID}` |
 | `UpdateFunctionCode` | `PUT /2015-03-31/functions/{FunctionName}/code` |
 | `UpdateFunctionConfiguration` | `PUT /2015-03-31/functions/{FunctionName}/configuration` |
@@ -109,52 +126,39 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "37 modeled operations outside the implementation"
+??? info "24 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
     - `CheckpointDurableExecution`
     - `CreateCapacityProvider`
-    - `CreateCodeSigningConfig`
     - `DeleteCapacityProvider`
-    - `DeleteCodeSigningConfig`
     - `DeleteDurableExecution`
-    - `DeleteFunctionCodeSigningConfig`
     - `DeleteResourcePolicy`
     - `GetCapacityProvider`
-    - `GetCodeSigningConfig`
     - `GetDurableExecution`
     - `GetDurableExecutionHistory`
     - `GetDurableExecutionState`
-    - `GetFunctionRecursionConfig`
     - `GetFunctionScalingConfig`
     - `GetResourcePolicy`
-    - `GetRuntimeManagementConfig`
     - `InvokeAsync`
-    - `InvokeWithResponseStream`
     - `ListCapacityProviders`
-    - `ListCodeSigningConfigs`
     - `ListDurableExecutionsByFunction`
     - `ListFunctionVersionsByCapacityProvider`
-    - `ListFunctionsByCodeSigningConfig`
     - `PauseDurableExecution`
-    - `PutFunctionCodeSigningConfig`
-    - `PutFunctionRecursionConfig`
     - `PutFunctionScalingConfig`
     - `PutResourcePolicy`
-    - `PutRuntimeManagementConfig`
     - `ResumeDurableExecution`
     - `SendDurableExecutionCallbackFailure`
     - `SendDurableExecutionCallbackHeartbeat`
     - `SendDurableExecutionCallbackSuccess`
     - `StopDurableExecution`
     - `UpdateCapacityProvider`
-    - `UpdateCodeSigningConfig`
 
 ## Source and examples
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/lambda)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/lambda/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/lambda.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
-- SDK integration examples: [lambda_async_restart_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_async_restart_test.go), [lambda_broker_docker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_broker_docker_test.go), [lambda_broker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_broker_test.go), [lambda_concurrency_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_concurrency_test.go), [lambda_deadletter_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_deadletter_test.go), [lambda_destinations_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_destinations_test.go), [lambda_hotreload_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_hotreload_test.go), [lambda_imageconfig_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_imageconfig_test.go), [lambda_kafka_destinations_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_kafka_destinations_test.go), [lambda_layer_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_layer_policy_test.go), [lambda_layers_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_layers_test.go), [lambda_local_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_local_test.go), [lambda_mapping_options_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_mapping_options_test.go), [lambda_mapping_update_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_mapping_update_test.go), [lambda_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_policy_test.go), [lambda_s3_code_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_s3_code_test.go), [lambda_secrets_resource_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_secrets_resource_policy_test.go), [lambda_stream_failure_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_stream_failure_test.go), [lambda_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_test.go), [lambda_update_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_update_test.go), [lambda_urls_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_urls_test.go), [lambda_versions_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_versions_test.go), [lambda_warm_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_warm_test.go).
+- SDK integration examples: [lambda_async_restart_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_async_restart_test.go), [lambda_broker_docker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_broker_docker_test.go), [lambda_broker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_broker_test.go), [lambda_concurrency_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_concurrency_test.go), [lambda_config_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_config_test.go), [lambda_deadletter_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_deadletter_test.go), [lambda_destinations_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_destinations_test.go), [lambda_hotreload_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_hotreload_test.go), [lambda_imageconfig_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_imageconfig_test.go), [lambda_kafka_destinations_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_kafka_destinations_test.go), [lambda_layer_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_layer_policy_test.go), [lambda_layers_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_layers_test.go), [lambda_local_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_local_test.go), [lambda_mapping_options_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_mapping_options_test.go), [lambda_mapping_update_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_mapping_update_test.go), [lambda_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_policy_test.go), [lambda_responsestream_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_responsestream_test.go), [lambda_s3_code_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_s3_code_test.go), [lambda_secrets_resource_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_secrets_resource_policy_test.go), [lambda_stream_failure_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_stream_failure_test.go), [lambda_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_test.go), [lambda_update_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_update_test.go), [lambda_urls_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_urls_test.go), [lambda_versions_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_versions_test.go), [lambda_warm_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_warm_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

@@ -569,30 +569,40 @@ func (h urls) Execute(ctx context.Context, id string, r *execute.Request) (*exec
 	}
 
 	scope := request.Scope{AccountID: target.Account, Region: target.Region}
+	if u.InvokeMode == streaming {
+		return s.streamURL(ctx, scope, target.Name, qualifier, event, u.Cors, origin), true, nil
+	}
+
 	result, _, _, err := s.run(ctx, scope, target.Name, qualifier, event)
-	var resp *execute.Response
+	resp := s.urlResponse(result, err)
+	applyURLCors(resp.Header, u.Cors, origin)
+	return resp, true, nil
+}
+
+func (s *Service) urlResponse(result Result, err error) *execute.Response {
 	switch e, ok := errors.AsType[*awserror.Error](err); {
 	case ok && e.Code == "TooManyRequestsException":
-		resp = execute.Message(http.StatusTooManyRequests, "Rate Exceeded.")
+		return execute.Message(http.StatusTooManyRequests, "Rate Exceeded.")
 	case err != nil:
-		s.logger.Warn("function URL invocation failed", "url", id, "error", err)
-		resp = execute.Message(http.StatusBadGateway, "Internal Server Error")
+		s.logger.Warn("function URL invocation failed", "error", err)
+		return execute.Message(http.StatusBadGateway, "Internal Server Error")
 	case result.Error:
-		resp = execute.Message(http.StatusBadGateway, "Internal Server Error")
+		return execute.Message(http.StatusBadGateway, "Internal Server Error")
 	default:
-		resp = proxy.ResponseV2(result.Payload, false)
-	}
+		resp := proxy.ResponseV2(result.Payload, false)
+		if resp.Header == nil {
+			resp.Header = http.Header{}
+		}
 
-	if resp.Header == nil {
-		resp.Header = http.Header{}
+		return resp
 	}
+}
 
+func applyURLCors(header http.Header, cors *api.Cors, origin string) {
 	// CORS headers the function set itself take precedence.
-	for k, v := range corsHeaders(u.Cors, origin, false) {
-		if resp.Header.Get(k) == "" {
-			resp.Header[k] = v
+	for k, v := range corsHeaders(cors, origin, false) {
+		if header.Get(k) == "" {
+			header[k] = v
 		}
 	}
-
-	return resp, true, nil
 }

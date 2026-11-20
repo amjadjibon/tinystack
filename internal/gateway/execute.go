@@ -360,6 +360,22 @@ func (s *Server) caller(w http.ResponseWriter, r *http.Request) *execute.Caller 
 }
 
 func writeExecute(w http.ResponseWriter, resp *execute.Response) {
+	if resp.Stream != nil {
+		err := resp.Stream(func(status int, headers http.Header, body io.Reader) error {
+			for k, v := range headers {
+				w.Header()[k] = v
+			}
+
+			w.WriteHeader(status)
+			return copyFlushing(w, body)
+		})
+		if err != nil {
+			panic(http.ErrAbortHandler)
+		}
+
+		return
+	}
+
 	for k, v := range resp.Header {
 		w.Header()[k] = v
 	}

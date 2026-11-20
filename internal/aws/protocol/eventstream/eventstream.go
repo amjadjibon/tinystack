@@ -16,23 +16,39 @@ import (
 // Message contains typed headers and an opaque payload.
 type Message = sdk.Message
 
-// Stream is an ordered sequence of event-stream messages.
-type Stream []Message
+// Stream supplies either a fixed sequence of frames or a producer that runs while the response is open.
+type Stream struct {
+	Prepare  func() error
+	Produce  func(func(Message) error) error
+	Messages []Message
+}
 
 // WriteTo writes complete frames and flushes each frame to the client.
 func (s *Stream) WriteTo(w io.Writer) (int64, error) {
 	counter := &countWriter{writer: w}
-	for _, message := range *s {
+	send := func(message Message) error {
 		if err := Encode(counter, message); err != nil {
-			return counter.n, err
+			return err
 		}
 
 		if response, ok := w.(http.ResponseWriter); ok {
-			if err := http.NewResponseController(response).Flush(); err != nil &&
-				!errors.Is(err, http.ErrNotSupported) {
-				return counter.n, err
+			if err := http.NewResponseController(response).Flush(); !errors.Is(err, http.ErrNotSupported) {
+				return err
 			}
 		}
+
+		return nil
+	}
+
+	for _, message := range s.Messages {
+		if err := send(message); err != nil {
+			return counter.n, err
+		}
+	}
+
+	if s.Produce != nil {
+		err := s.Produce(send)
+		return counter.n, err
 	}
 
 	return counter.n, nil
@@ -51,6 +67,15 @@ func (w *countWriter) Write(p []byte) (int, error) {
 
 // Event constructs a JSON event or exception with the standard typed headers.
 func Event(kind, name string, payload []byte) Message {
+	return event(kind, name, "application/json", payload)
+}
+
+// BinaryEvent carries an opaque event payload.
+func BinaryEvent(name string, payload []byte) Message {
+	return event("event", name, "application/octet-stream", payload)
+}
+
+func event(kind, name, contentType string, payload []byte) Message {
 	header := ":event-type"
 	if kind == "exception" {
 		header = ":exception-type"
@@ -59,7 +84,7 @@ func Event(kind, name string, payload []byte) Message {
 	return Message{Headers: sdk.Headers{
 		{Name: ":message-type", Value: sdk.StringValue(kind)},
 		{Name: header, Value: sdk.StringValue(name)},
-		{Name: ":content-type", Value: sdk.StringValue("application/json")},
+		{Name: ":content-type", Value: sdk.StringValue(contentType)},
 	}, Payload: payload}
 }
 

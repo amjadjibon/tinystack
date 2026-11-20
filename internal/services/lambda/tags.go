@@ -11,20 +11,6 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-// GetFunctionCodeSigningConfig reports that the function has no code signing
-// configuration; TinyStack does not model them.
-func (s *Service) GetFunctionCodeSigningConfig(
-	ctx context.Context,
-	in *api.GetFunctionCodeSigningConfigRequest,
-) (*api.GetFunctionCodeSigningConfigResponse, error) {
-	_, fn, err := s.load(ctx, in.FunctionName)
-	if err != nil {
-		return nil, err
-	}
-
-	return &api.GetFunctionCodeSigningConfigResponse{CodeSigningConfigArn: new(""), FunctionName: new(fn.Name)}, nil
-}
-
 // taggedFunction returns the name of the function a tagging ARN names. Only
 // unqualified function ARNs carry tags.
 func taggedFunction(m *request.Metadata, arn *string) (string, error) {
@@ -43,6 +29,15 @@ func (s *Service) retag(
 	arn *string,
 	fn func(map[string]string) (map[string]string, error),
 ) error {
+	if isSigningARN(common.Value(arn)) {
+		_, err := s.signingSetting(ctx, arn, func(cfg *signingConfig) error {
+			tags, err := fn(cfg.Tags)
+			cfg.Tags = tags
+			return err
+		})
+		return err
+	}
+
 	m, err := request.Regional(ctx)
 	if err != nil {
 		return err
@@ -102,6 +97,15 @@ func (s *Service) UntagResource(ctx context.Context, in *api.UntagResourceReques
 }
 
 func (s *Service) ListTags(ctx context.Context, in *api.ListTagsRequest) (*api.ListTagsResponse, error) {
+	if isSigningARN(common.Value(in.Resource)) {
+		cfg, err := s.signingSetting(ctx, in.Resource, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		return &api.ListTagsResponse{Tags: cfg.Tags}, nil
+	}
+
 	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err

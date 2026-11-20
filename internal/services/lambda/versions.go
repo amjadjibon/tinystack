@@ -111,6 +111,7 @@ func publish(
 
 	v := *fn
 	v.Tags, v.Published = nil, 0
+	v.CodeSigningConfigARN, v.RecursiveLoop = "", ""
 	v.Version = strconv.FormatInt(fn.Published+1, 10)
 	v.Source, v.RevisionID, v.LastModified = fn.RevisionID, uuid.NewV4().String(), now
 	if description != nil {

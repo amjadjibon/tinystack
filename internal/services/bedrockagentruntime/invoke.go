@@ -183,7 +183,7 @@ func (s *Service) InvokeAgent(ctx context.Context, in *api.InvokeAgentRequest) (
 				return nil, marshalErr
 			}
 
-			stream = append(stream, eventstream.Event("event", "returnControl", payload))
+			stream.Messages = append(stream.Messages, eventstream.Event("event", "returnControl", payload))
 			return &api.InvokeAgentResponse{
 				Completion:  new(stream),
 				ContentType: new("application/json"),
@@ -256,7 +256,7 @@ func (s *Service) InvokeAgent(ctx context.Context, in *api.InvokeAgentRequest) (
 		return nil, err
 	}
 
-	stream = append(stream, eventstream.Event("event", "chunk", payload))
+	stream.Messages = append(stream.Messages, eventstream.Event("event", "chunk", payload))
 	if common.Value(in.EndSession) {
 		state.Ended = true
 		if checkErr1 := s.recordMemory(ctx, scope, in, agent, state); checkErr1 != nil {

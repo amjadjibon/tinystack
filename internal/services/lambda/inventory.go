@@ -32,6 +32,14 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 				res.Type, res.Name, res.ARN = kindFunction, name, functionARN(scope, name)
 				res.Tags, res.Details = fn.Tags, fn.configuration(scope)
+			case kindCodeSigning:
+				cfg, _, err := storage.Read[signingConfig](tx, key)
+				if err != nil {
+					return err
+				}
+
+				res.Type, res.Name, res.ARN = kindCodeSigning, name, *cfg.Config.CodeSigningConfigArn
+				res.Tags, res.Details = cfg.Tags, cfg.Config
 			case kindMapping:
 				mp, _, err := loadMapping(tx, key)
 				if err != nil {
