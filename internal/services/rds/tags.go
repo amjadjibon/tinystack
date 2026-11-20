@@ -43,12 +43,13 @@ func (s *Service) resourceTags(
 		return nil, err
 	}
 
-	parts := strings.Split(resource, ":")
+	parts := strings.SplitN(resource, ":", 7)
 	if len(parts) != 7 || parts[0] != "arn" || parts[1] != "aws" || parts[2] != serviceName ||
 		parts[3] != scope.Region ||
 		parts[4] != scope.AccountID ||
 		(parts[5] != kindClusterSnapshot && parts[5] != kindSnapshot && parts[5] != kindDB && parts[5] != kindCluster &&
-			parts[5] != kindSubnet && parts[5] != kindParameter && parts[5] != kindClusterParameter) {
+			parts[5] != kindSubnet && parts[5] != kindParameter && parts[5] != kindClusterParameter &&
+			parts[5] != kindOption) {
 		return nil, invalid("ResourceName must be an RDS ARN in the request account and Region")
 	}
 
@@ -62,6 +63,10 @@ func (s *Service) resourceTags(
 		}
 
 		if change != nil {
+			if strings.HasPrefix(r.Name, defaultOptionPrefix) {
+				return invalid("Default option groups are immutable")
+			}
+
 			if strings.HasPrefix(r.Name, "default.") {
 				return invalid("Default parameter groups are immutable")
 			}

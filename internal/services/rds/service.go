@@ -39,6 +39,8 @@ const (
 	EngineMySQL    = "mysql"
 	EngineMariaDB  = "mariadb"
 	actionStart    = "start"
+	actionStop     = "stop"
+	actionRestart  = "restart"
 	subnetType     = "db-subnet-group"
 )
 
@@ -48,12 +50,13 @@ var (
 	sqlName            = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]*$`)
 )
 
-// Records live at <account>/<region>/rds/<db|snapshot|cluster|subgrp|pg>/<name>.
+// Records live at <account>/<region>/rds/<db|snapshot|cluster|subgrp|pg|og>/<name>.
 // SQL passwords are private storage fields.
 // Credentials never appear in inventory or API output.
 type record struct {
 	Since            time.Time
 	ReadyAt          time.Time
+	MaintenanceAt    time.Time
 	ClusterSnapshot  *api.DBClusterSnapshot
 	Snapshot         *api.DBSnapshot
 	SourceTags       map[string]string
@@ -65,6 +68,7 @@ type record struct {
 	Subnet           *api.DBSubnetGroup
 	Parameter        *api.DBParameterGroup
 	ClusterParameter *api.DBClusterParameterGroup
+	OptionGroup      *api.OptionGroup
 	Parameters       map[string]api.Parameter
 	Password         string
 	RootPassword     string
@@ -104,6 +108,8 @@ func resourceError(kind, suffix, name string) error {
 		shape = "DBParameterGroup"
 	case kindParameter:
 		shape = "DBParameterGroup"
+	case kindOption:
+		shape = "OptionGroup"
 	}
 
 	return awserror.New(shape+suffix+"Fault", fmt.Sprintf("%s %s", shape, name))
@@ -121,6 +127,14 @@ func validName(name string, maximum int) bool {
 func readRecord(tx storage.ReadTx, scope request.Scope, kind, name string) (*record, error) {
 	if (kind == kindParameter || kind == kindClusterParameter) && strings.HasPrefix(strings.ToLower(name), "default.") {
 		return defaultParameterGroup(scope, kind, strings.ToLower(name))
+	}
+
+	if kind == kindOption && strings.HasPrefix(strings.ToLower(name), defaultOptionPrefix) {
+		for _, r := range defaultOptionGroups(scope) {
+			if strings.EqualFold(name, r.Name) {
+				return r, nil
+			}
+		}
 	}
 
 	r, found, err := storage.Read[record](tx, scope.Key(serviceName, kind, strings.ToLower(name)))
@@ -152,6 +166,10 @@ func (s *Service) insert(ctx context.Context, scope request.Scope, r *record) er
 			return err
 		}
 
+		if err := recordEvent(tx, scope, r, eventCreation, "Created "+eventSources[r.Kind]); err != nil {
+			return err
+		}
+
 		switch r.Kind {
 		case kindDB:
 			return storage.Write(tx, indexPrefix+scope.AccountID+"/"+scope.Region+"/"+r.Name, true)
@@ -168,6 +186,16 @@ func (s *Service) insert(ctx context.Context, scope request.Scope, r *record) er
 func instance(r *record) *api.DBInstance {
 	out := common.Clone(r.Instance)
 	out.TagList = tagList(r.Tags)
+	if out.DBClusterIdentifier == nil {
+		out.PreferredMaintenanceWindow = common.OrElse(out.PreferredMaintenanceWindow, new(defaultMaintenanceWindow))
+		out.BackupRetentionPeriod = common.OrElse(out.BackupRetentionPeriod, new(int64(1)))
+		if len(out.OptionGroupMemberships) == 0 {
+			out.OptionGroupMemberships = optionMembership(optionGroupName(
+				common.Value(out.Engine), common.Value(out.EngineVersion),
+			))
+		}
+	}
+
 	if !r.ReadyAt.IsZero() && !time.Now().Before(r.ReadyAt) {
 		out.DBInstanceStatus = new(available)
 	}
@@ -175,10 +203,19 @@ func instance(r *record) *api.DBInstance {
 	return out
 }
 
-func pageRecords(items []*record, marker *string, maximum *int64) ([]*record, *string, error) {
+func recordLimit(maximum *int64) (int, error) {
 	limit := int(common.Value(common.OrElse(maximum, new(int64(100)))))
 	if limit < 20 || limit > 100 {
-		return nil, nil, invalid("MaxRecords must be between 20 and 100")
+		return 0, invalid("MaxRecords must be between 20 and 100")
+	}
+
+	return limit, nil
+}
+
+func pageRecords(items []*record, marker *string, maximum *int64) ([]*record, *string, error) {
+	limit, err := recordLimit(maximum)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	return common.Page(items, func(r *record) string { return r.Name }, marker, limit, invalid("Invalid Marker"))

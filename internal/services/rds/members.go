@@ -28,7 +28,8 @@ func (s *Service) createClusterInstance(
 	}
 
 	if in.MasterUsername != nil || in.MasterUserPassword != nil || in.DBName != nil || in.AllocatedStorage != nil ||
-		in.DBSubnetGroupName != nil || in.EngineVersion != nil || in.CopyTagsToSnapshot != nil {
+		in.DBSubnetGroupName != nil || in.EngineVersion != nil || in.CopyTagsToSnapshot != nil ||
+		in.PreferredMaintenanceWindow != nil || in.BackupRetentionPeriod != nil || in.OptionGroupName != nil {
 		return nil, invalid(
 			"Cluster members inherit database settings; specify only identifier, class, engine, cluster and tags",
 		)
@@ -101,7 +102,7 @@ func (s *Service) createClusterInstance(
 		}
 
 		result = instance(r)
-		return nil
+		return recordEvent(tx, scope, r, eventCreation, "DB instance created")
 	})
 
 	if writeErr != nil {
@@ -133,7 +134,8 @@ func deleteClusterMember(tx storage.WriteTx, scope request.Scope, r *record) err
 	}
 
 	tx.Delete(scope.Key(serviceName, kindDB, r.Name))
-	return nil
+	tx.Delete(maintenanceKey(scope, kindDB, r.Name))
+	return recordEvent(tx, scope, r, eventDeletion, "DB instance deleted")
 }
 
 func (s *Service) changeClusterMember(ctx context.Context, scope request.Scope, r *record,
@@ -143,8 +145,9 @@ func (s *Service) changeClusterMember(ctx context.Context, scope request.Scope, 
 		return nil, awserror.New("InvalidDBInstanceStateFault", "Cluster member start/stop/reboot is unsupported")
 	}
 
-	if in.CopyTagsToSnapshot != nil {
-		return nil, invalid("Cluster member snapshots are unsupported")
+	if in.CopyTagsToSnapshot != nil || in.AllocatedStorage != nil || in.BackupRetentionPeriod != nil ||
+		in.PreferredMaintenanceWindow != nil || in.OptionGroupName != nil {
+		return nil, invalid("Cluster members inherit storage, backup, maintenance window and option settings")
 	}
 
 	if in.MasterUserPassword != nil {
@@ -156,7 +159,15 @@ func (s *Service) changeClusterMember(ctx context.Context, scope request.Scope, 
 			return nil, invalid("Invalid DBInstanceClass")
 		}
 
-		r.Instance.DBInstanceClass = in.DBInstanceClass
+		if aurora(common.Value(r.Instance.Engine)) {
+			r.Instance.PendingModifiedValues = &api.PendingModifiedValues{DBInstanceClass: in.DBInstanceClass}
+		} else {
+			r.Instance.DBInstanceClass = in.DBInstanceClass
+		}
+	}
+
+	if common.Value(in.ApplyImmediately) {
+		applyInstancePending(r.Instance)
 	}
 
 	if in.DBParameterGroupName != nil && common.Value(r.Instance.Engine) != EngineNeptune {
@@ -164,12 +175,13 @@ func (s *Service) changeClusterMember(ctx context.Context, scope request.Scope, 
 	}
 
 	if err := s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if in.DBParameterGroupName != nil {
-			parent, err := readRecord(tx, scope, kindCluster, common.Value(r.Instance.DBClusterIdentifier))
-			if err != nil {
-				return err
-			}
+		parent, err := readRecord(tx, scope, kindCluster, common.Value(r.Instance.DBClusterIdentifier))
+		if err != nil {
+			return err
+		}
 
+		r.Instance.PreferredMaintenanceWindow = parent.Cluster.PreferredMaintenanceWindow
+		if in.DBParameterGroupName != nil {
 			if r.Instance.DBParameterGroups, err = memberParameterGroup(
 				tx, scope, parent.Cluster, in.DBParameterGroupName,
 			); err != nil {
@@ -177,7 +189,7 @@ func (s *Service) changeClusterMember(ctx context.Context, scope request.Scope, 
 			}
 		}
 
-		return writeRecord(tx, scope, r)
+		return saveModification(tx, scope, r, eventChange, "DB instance modified")
 	}); err != nil {
 		return nil, err
 	}

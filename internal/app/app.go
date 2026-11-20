@@ -1060,6 +1060,8 @@ func build(
 		}
 	}
 
+	databases.StartMaintenance()
+
 	if cfg.MemoryDB.Clusters == config.CachesDocker {
 		dir, dirErr := cfg.DataDir()
 		if dirErr != nil {

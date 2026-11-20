@@ -198,6 +198,7 @@ func clusterGroups(ids []string) []api.VpcSecurityGroupMembership {
 func cluster(r *record) *api.DBCluster {
 	out := common.Clone(r.Cluster)
 	out.TagList = tagList(r.Tags)
+	out.PreferredMaintenanceWindow = common.OrElse(out.PreferredMaintenanceWindow, new(defaultMaintenanceWindow))
 	if !r.ReadyAt.IsZero() && !time.Now().Before(r.ReadyAt) {
 		out.Status = new(available)
 	}
@@ -264,6 +265,11 @@ func (s *Service) CreateDBCluster(
 		return nil, scalingErr
 	}
 
+	window, _, windowErr := maintenanceWindow(in.PreferredMaintenanceWindow, time.Now())
+	if windowErr != nil {
+		return nil, windowErr
+	}
+
 	id := strings.ToLower(common.Value(in.DBClusterIdentifier))
 	c := &api.DBCluster{
 		DBClusterIdentifier:              new(id),
@@ -277,6 +283,7 @@ func (s *Service) CreateDBCluster(
 		DBSubnetGroup:                    in.DBSubnetGroupName,
 		DBClusterParameterGroup:          in.DBClusterParameterGroupName,
 		VpcSecurityGroups:                clusterGroups(in.VpcSecurityGroupIds),
+		PreferredMaintenanceWindow:       new(window),
 		BackupRetentionPeriod:            common.OrElse(in.BackupRetentionPeriod, new(int64(1))),
 		StorageEncrypted:                 common.OrElse(in.StorageEncrypted, new(false)),
 		KmsKeyId:                         in.KmsKeyId,
@@ -340,7 +347,15 @@ func (s *Service) CreateDBCluster(
 			}
 		}
 
-		return writeRecord(tx, scope, r)
+		if err := writeRecord(tx, scope, r); err != nil {
+			return err
+		}
+
+		if common.Value(in.ManageMasterUserPassword) {
+			return nil
+		}
+
+		return recordEvent(tx, scope, r, eventCreation, "DB cluster created")
 	})
 
 	if writeErr != nil {

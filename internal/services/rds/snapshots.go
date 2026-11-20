@@ -326,7 +326,7 @@ func (s *Service) DeleteDBSnapshot(
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		tx.Delete(scope.Key(serviceName, kindSnapshot, r.Name))
-		return nil
+		return recordEvent(tx, scope, r, eventDeletion, "DB snapshot deleted")
 	})
 	if err != nil {
 		return nil, err
@@ -431,6 +431,9 @@ func (s *Service) RestoreDBInstanceFromDBSnapshot(
 	db.DbiResourceId, db.InstanceCreateTime = new("db-"+common.RandomID(26)), new(r.Since)
 	db.DBInstanceStatus, db.CopyTagsToSnapshot = new(creating), in.CopyTagsToSnapshot
 	db.DBParameterGroups = nil
+	db.PendingModifiedValues = nil
+	db.ReadReplicaSourceDBInstanceIdentifier, db.ReadReplicaDBInstanceIdentifiers = nil, nil
+	db.BackupRetentionPeriod, db.PreferredMaintenanceWindow = new(int64(1)), new(defaultMaintenanceWindow)
 	if in.DBInstanceClass != nil {
 		if !strings.HasPrefix(*in.DBInstanceClass, "db.") || len(*in.DBInstanceClass) < 4 {
 			return nil, invalid("Invalid DBInstanceClass")
@@ -488,7 +491,7 @@ func (s *Service) RestoreDBInstanceFromDBSnapshot(
 			}}
 		}
 
-		return nil
+		return s.setOptionGroup(tx, scope, db, nil)
 	})
 	if err != nil {
 		return nil, err

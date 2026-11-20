@@ -60,12 +60,13 @@ func (s *Service) RestoreDBClusterFromSnapshot(
 			in.DBClusterParameterGroupName,
 			new("default."+clusterFamily(engine, version)),
 		),
-		VpcSecurityGroups:     clusterGroups(in.VpcSecurityGroupIds),
-		BackupRetentionPeriod: common.OrElse(in.BackupRetentionPeriod, source.Cluster.BackupRetentionPeriod),
-		StorageEncrypted:      snap.StorageEncrypted,
-		KmsKeyId:              snap.KmsKeyId,
-		DeletionProtection:    common.OrElse(in.DeletionProtection, new(false)),
-		Status:                new(creating),
+		VpcSecurityGroups:          clusterGroups(in.VpcSecurityGroupIds),
+		BackupRetentionPeriod:      common.OrElse(in.BackupRetentionPeriod, source.Cluster.BackupRetentionPeriod),
+		PreferredMaintenanceWindow: new(defaultMaintenanceWindow),
+		StorageEncrypted:           snap.StorageEncrypted,
+		KmsKeyId:                   snap.KmsKeyId,
+		DeletionProtection:         common.OrElse(in.DeletionProtection, new(false)),
+		Status:                     new(creating),
 	}
 	setClusterIdentity(scope, c, id, engine, now)
 	if in.DBSubnetGroupName != nil {

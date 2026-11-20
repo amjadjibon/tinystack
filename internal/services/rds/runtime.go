@@ -106,6 +106,21 @@ func (s *Service) UseRuntime(rt Runtime) error {
 				return readErr
 			}
 
+			if r.Instance.ReadReplicaSourceDBInstanceIdentifier != nil {
+				return invalid("Promote or delete read replicas before enabling RDS Docker mode")
+			}
+
+			for _, membership := range r.Instance.OptionGroupMemberships {
+				group, groupErr := readRecord(tx, scope, kindOption, common.Value(membership.OptionGroupName))
+				if groupErr != nil {
+					return groupErr
+				}
+
+				if len(group.OptionGroup.Options) > 0 {
+					return invalid("Detach configured option groups before enabling RDS Docker mode")
+				}
+			}
+
 			r.Container = ""
 			r.ReadyAt = time.Time{}
 			r.Instance.Endpoint = nil
@@ -170,6 +185,13 @@ func (s *Service) Stop() {
 func (s *Service) Reset(ctx context.Context) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	_ = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		for _, key := range tx.Keys(maintenanceIndex) {
+			tx.Delete(key)
+		}
+
+		return nil
+	})
 	if s.runtime == nil {
 		return
 	}
@@ -181,8 +203,8 @@ func (s *Service) Reset(ctx context.Context) {
 
 	_ = s.store.View(ctx, func(tx storage.ReadTx) error {
 		for _, key := range tx.Keys("") {
-			account, region, _, ok := storage.Scoped(key, serviceName)
-			if !ok {
+			account, region, rest, ok := storage.Scoped(key, serviceName)
+			if !ok || strings.HasPrefix(rest, kindEvent+"/") {
 				continue
 			}
 

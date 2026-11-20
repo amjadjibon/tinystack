@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	cfn "github.com/aws/aws-sdk-go-v2/service/cloudformation"
@@ -188,7 +189,7 @@ func TestRDSUnsupportedInputs(t *testing.T) {
 		func(in *rds.CreateDBInstanceInput) { in.MultiAZ = new(true) },
 		func(in *rds.CreateDBInstanceInput) { in.EnableIAMDatabaseAuthentication = new(true) },
 		func(in *rds.CreateDBInstanceInput) { in.ManageMasterUserPassword = new(true) },
-		func(in *rds.CreateDBInstanceInput) { in.OptionGroupName = new("options") },
+		func(in *rds.CreateDBInstanceInput) { in.BackupRetentionPeriod = new(int32(36)) },
 		func(in *rds.CreateDBInstanceInput) { in.DBClusterIdentifier = new("cluster") },
 	}
 
@@ -213,7 +214,7 @@ func TestRDSUnsupportedInputs(t *testing.T) {
 
 	_, err = c.ModifyDBInstance(
 		ctx,
-		&rds.ModifyDBInstanceInput{DBInstanceIdentifier: new("good"), ApplyImmediately: new(false)},
+		&rds.ModifyDBInstanceInput{DBInstanceIdentifier: new("good"), AllocatedStorage: new(int32(10))},
 	)
 	code(t, err, "InvalidParameterValue")
 	_, err = c.ModifyDBInstance(ctx, &rds.ModifyDBInstanceInput{DBInstanceIdentifier: new("good"), MultiAZ: new(true)})
@@ -415,20 +416,41 @@ func TestRDSPersistentRestart(t *testing.T) {
 	dir := t.TempDir()
 	s, stop := persistent(t, dir, &fakeRuntime{})
 	c := rdsClient(s, "test", "us-east-1")
-	if _, err := c.CreateDBInstance(ctx, rdsInput("persisted")); err != nil {
+	in := rdsInput("persisted")
+	start := time.Now().UTC().Add(24 * time.Hour)
+	in.PreferredMaintenanceWindow = new(start.Format("Mon:15:04") + "-" + start.Add(time.Hour).Format("Mon:15:04"))
+	if _, err := c.CreateDBInstance(ctx, in); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := c.ModifyDBInstance(ctx, &rds.ModifyDBInstanceInput{
+		DBInstanceIdentifier: in.DBInstanceIdentifier,
+		DBInstanceClass:      new("db.t3.small"),
+		ApplyImmediately:     new(false),
+	})
+	if err != nil {
 		t.Fatal(err)
 	}
 
 	stop()
 	s, stop = persistent(t, dir, &fakeRuntime{})
 	defer stop()
-	out, err := rdsClient(
-		s,
-		"test",
-		"us-east-1",
-	).DescribeDBInstances(ctx, &rds.DescribeDBInstancesInput{DBInstanceIdentifier: new("persisted")})
+	c = rdsClient(s, "test", "us-east-1")
+	out, err := c.DescribeDBInstances(ctx, &rds.DescribeDBInstancesInput{DBInstanceIdentifier: in.DBInstanceIdentifier})
 	if err != nil || len(out.DBInstances) != 1 || aws.ToString(out.DBInstances[0].DBInstanceStatus) != "available" {
 		t.Fatalf("restart: %v %+v", err, out)
+	}
+
+	pending := out.DBInstances[0].PendingModifiedValues
+	if pending == nil || aws.ToString(pending.DBInstanceClass) != "db.t3.small" {
+		t.Fatalf("restart lost pending settings: %+v", pending)
+	}
+
+	events, err := c.DescribeEvents(ctx, &rds.DescribeEventsInput{
+		SourceType: types.SourceTypeDbInstance, SourceIdentifier: in.DBInstanceIdentifier,
+	})
+	if err != nil || len(events.Events) != 2 {
+		t.Fatal(events, err)
 	}
 }
 

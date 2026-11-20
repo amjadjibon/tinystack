@@ -75,7 +75,13 @@ func (s *Service) createClusterSecret(ctx context.Context, scope request.Scope, 
 	}
 
 	r.Cluster.MasterUserSecret = &api.MasterUserSecret{SecretArn: new(secretARN), SecretStatus: new("active")}
-	return s.store.Update(ctx, func(tx storage.WriteTx) error { return writeRecord(tx, scope, r) })
+	return s.store.Update(ctx, func(tx storage.WriteTx) error {
+		if err := writeRecord(tx, scope, r); err != nil {
+			return err
+		}
+
+		return recordEvent(tx, scope, r, eventCreation, "DB cluster created")
+	})
 }
 
 func (s *Service) clusterSpec(ctx context.Context, scope request.Scope, r *record) *Spec {
@@ -255,10 +261,6 @@ func (s *Service) modifyCluster(ctx context.Context, in *api.ModifyDBClusterMess
 		c.DBClusterParameterGroup = in.DBClusterParameterGroupName
 	}
 
-	if (aurora(common.Value(c.Engine)) || s.runtime != nil) && in.ApplyImmediately != nil && !*in.ApplyImmediately {
-		return nil, invalid("Deferred modifications are unsupported")
-	}
-
 	if in.EngineVersion != nil && *in.EngineVersion != common.Value(c.EngineVersion) {
 		return nil, invalid("EngineVersion changes are unsupported")
 	}
@@ -282,12 +284,41 @@ func (s *Service) modifyCluster(ctx context.Context, in *api.ModifyDBClusterMess
 		return nil, invalid("Password is managed by Secrets Manager")
 	}
 
+	if in.MasterUserPassword != nil && common.Value(c.Engine) == EngineDocDB &&
+		in.ApplyImmediately != nil && !*in.ApplyImmediately {
+		return nil, invalid("Deferred DocumentDB password changes are unsupported")
+	}
+
 	if passwordErr := checkClusterPassword(common.Value(c.Engine), in.MasterUserPassword, false); passwordErr != nil {
 		return nil, passwordErr
 	}
 
 	if in.BackupRetentionPeriod != nil {
-		c.BackupRetentionPeriod = in.BackupRetentionPeriod
+		if *in.BackupRetentionPeriod < 1 || *in.BackupRetentionPeriod > 35 {
+			return nil, invalid("BackupRetentionPeriod must be between 1 and 35")
+		}
+
+		if aurora(common.Value(c.Engine)) {
+			c.PendingModifiedValues = &api.ClusterPendingModifiedValues{
+				BackupRetentionPeriod: in.BackupRetentionPeriod,
+			}
+		} else {
+			c.BackupRetentionPeriod = in.BackupRetentionPeriod
+		}
+	}
+
+	if common.Value(in.ApplyImmediately) {
+		applyClusterPending(c)
+	}
+
+	if in.PreferredMaintenanceWindow != nil {
+		window, _, windowErr := maintenanceWindow(in.PreferredMaintenanceWindow, time.Now())
+		if windowErr != nil {
+			return nil, windowErr
+		}
+
+		c.PreferredMaintenanceWindow = new(window)
+		r.MaintenanceAt = time.Time{}
 	}
 
 	if in.Port != nil && s.runtime == nil {
@@ -344,7 +375,9 @@ func (s *Service) modifyCluster(ctx context.Context, in *api.ModifyDBClusterMess
 		}
 	}
 
-	if err := s.store.Update(ctx, func(tx storage.WriteTx) error { return writeCluster(tx, scope, r) }); err != nil {
+	if err := s.store.Update(ctx, func(tx storage.WriteTx) error {
+		return saveModification(tx, scope, r, eventChange, "DB cluster modified")
+	}); err != nil {
 		return nil, err
 	}
 
@@ -365,7 +398,7 @@ func (s *Service) changeCluster(ctx context.Context, id, action string) (*api.DB
 	}
 
 	if !aurora(common.Value(r.Cluster.Engine)) && s.runtime == nil {
-		return nil, invalid("Start/stop requires Aurora")
+		return nil, invalid("Cluster lifecycle action requires Aurora or Docker")
 	}
 
 	expected := available
@@ -384,15 +417,47 @@ func (s *Service) changeCluster(ctx context.Context, id, action string) (*api.DB
 	}
 
 	r.ReadyAt, r.Since = time.Time{}, time.Now().UTC()
-	r.Cluster.Status = new(stopped)
-	if action == actionStart {
+	message := "DB cluster " + action
+	switch action {
+	case actionStop:
+		r.Cluster.Status = new(stopped)
+	case actionStart, actionRestart:
 		r.Cluster.Status = new(creating)
 		if s.runtime == nil {
 			r.ReadyAt = time.Now().Add(snapshotDelay)
 		}
 	}
 
-	if err := s.store.Update(ctx, func(tx storage.WriteTx) error { return writeCluster(tx, scope, r) }); err != nil {
+	if action == actionRestart {
+		applyClusterPending(r.Cluster)
+		message = "DB cluster restarted"
+	}
+
+	if err := s.store.Update(ctx, func(tx storage.WriteTx) error {
+		if action == actionRestart {
+			for _, member := range r.Cluster.DBClusterMembers {
+				db, err := readRecord(tx, scope, kindDB, common.Value(member.DBInstanceIdentifier))
+				if err != nil {
+					return err
+				}
+
+				if db.Instance.PendingModifiedValues != nil {
+					applyInstancePending(db.Instance)
+					if err := saveModification(
+						tx,
+						scope,
+						db,
+						eventMaintenance,
+						"Applied pending modifications",
+					); err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		return saveModification(tx, scope, r, eventAvailable, message)
+	}); err != nil {
 		return nil, err
 	}
 
@@ -407,11 +472,23 @@ func (s *Service) StartDBCluster(
 	return &api.StartDBClusterResult{DBCluster: out}, err
 }
 
+func (s *Service) RebootDBCluster(
+	ctx context.Context,
+	in *api.RebootDBClusterMessage,
+) (*api.RebootDBClusterResult, error) {
+	out, err := s.changeCluster(ctx, common.Value(in.DBClusterIdentifier), actionRestart)
+	if err == nil && s.dataClosed != nil {
+		s.dataClosed(common.Value(out.DBClusterArn))
+	}
+
+	return &api.RebootDBClusterResult{DBCluster: out}, err
+}
+
 // UseDataCloser closes ephemeral Data API sessions after lifecycle changes, outside the RDS lock.
 func (s *Service) UseDataCloser(closeCluster func(string)) { s.dataClosed = closeCluster }
 
 func (s *Service) StopDBCluster(ctx context.Context, in *api.StopDBClusterMessage) (*api.StopDBClusterResult, error) {
-	out, err := s.changeCluster(ctx, common.Value(in.DBClusterIdentifier), "stop")
+	out, err := s.changeCluster(ctx, common.Value(in.DBClusterIdentifier), actionStop)
 	if err == nil && s.dataClosed != nil {
 		s.dataClosed(common.Value(out.DBClusterArn))
 	}
@@ -498,7 +575,8 @@ func (s *Service) deleteCluster(ctx context.Context, in *api.DeleteDBClusterMess
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		tx.Delete(scope.Key(serviceName, kindCluster, r.Name))
 		tx.Delete(clusterIndex + scope.AccountID + "/" + scope.Region + "/" + r.Name)
-		return nil
+		tx.Delete(maintenanceKey(scope, kindCluster, r.Name))
+		return recordEvent(tx, scope, r, eventDeletion, "DB cluster deleted")
 	})
 	if err != nil {
 		return nil, err

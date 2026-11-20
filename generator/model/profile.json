@@ -23334,7 +23334,16 @@
       "DescribeDBSnapshotAttributes",
       "ModifyDBSnapshotAttribute",
       "DescribeDBClusterSnapshotAttributes",
-      "ModifyDBClusterSnapshotAttribute"
+      "ModifyDBClusterSnapshotAttribute",
+      "RebootDBCluster",
+      "CreateDBInstanceReadReplica",
+      "PromoteReadReplica",
+      "DescribeEvents",
+      "DescribeEventCategories",
+      "CreateOptionGroup",
+      "DescribeOptionGroups",
+      "DeleteOptionGroup",
+      "ModifyOptionGroup"
     ],
     "shapes": {
       "CreateDBInstanceMessage": [
@@ -23350,7 +23359,10 @@
         "DBParameterGroupName",
         "Tags",
         "DBClusterIdentifier",
-        "CopyTagsToSnapshot"
+        "CopyTagsToSnapshot",
+        "PreferredMaintenanceWindow",
+        "BackupRetentionPeriod",
+        "OptionGroupName"
       ],
       "DescribeDBInstancesMessage": [
         "DBInstanceIdentifier",
@@ -23369,7 +23381,11 @@
         "MasterUserPassword",
         "ApplyImmediately",
         "CopyTagsToSnapshot",
-        "DBParameterGroupName"
+        "DBParameterGroupName",
+        "PreferredMaintenanceWindow",
+        "BackupRetentionPeriod",
+        "AllocatedStorage",
+        "OptionGroupName"
       ],
       "StopDBInstanceMessage": [
         "DBInstanceIdentifier"
@@ -23444,7 +23460,13 @@
         "TagList",
         "DBClusterIdentifier",
         "CopyTagsToSnapshot",
-        "DbiResourceId"
+        "DbiResourceId",
+        "PreferredMaintenanceWindow",
+        "BackupRetentionPeriod",
+        "PendingModifiedValues",
+        "ReadReplicaSourceDBInstanceIdentifier",
+        "ReadReplicaDBInstanceIdentifiers",
+        "OptionGroupMemberships"
       ],
       "Endpoint": [
         "Address",
@@ -23494,7 +23516,8 @@
         "ManageMasterUserPassword",
         "EnableHttpEndpoint",
         "ServerlessV2ScalingConfiguration",
-        "DBClusterParameterGroupName"
+        "DBClusterParameterGroupName",
+        "PreferredMaintenanceWindow"
       ],
       "DescribeDBClustersMessage": [
         "DBClusterIdentifier",
@@ -23513,7 +23536,8 @@
         "ApplyImmediately",
         "EnableHttpEndpoint",
         "ServerlessV2ScalingConfiguration",
-        "DBClusterParameterGroupName"
+        "DBClusterParameterGroupName",
+        "PreferredMaintenanceWindow"
       ],
       "DeleteDBClusterMessage": [
         "DBClusterIdentifier",
@@ -23544,7 +23568,9 @@
         "MasterUserSecret",
         "HttpEndpointEnabled",
         "ServerlessV2ScalingConfiguration",
-        "DBClusterParameterGroup"
+        "DBClusterParameterGroup",
+        "PreferredMaintenanceWindow",
+        "PendingModifiedValues"
       ],
       "DBClusterMember": [
         "DBInstanceIdentifier",
@@ -23814,6 +23840,105 @@
       "DBClusterSnapshotAttribute": [
         "AttributeName",
         "AttributeValues"
+      ],
+      "PendingModifiedValues": [
+        "DBInstanceClass",
+        "AllocatedStorage",
+        "BackupRetentionPeriod"
+      ],
+      "ClusterPendingModifiedValues": [
+        "BackupRetentionPeriod"
+      ],
+      "RebootDBClusterMessage": [
+        "DBClusterIdentifier"
+      ],
+      "CreateDBInstanceReadReplicaMessage": [
+        "DBInstanceIdentifier",
+        "SourceDBInstanceIdentifier",
+        "DBInstanceClass",
+        "AllocatedStorage",
+        "DBParameterGroupName",
+        "DBSubnetGroupName",
+        "CopyTagsToSnapshot",
+        "Tags",
+        "OptionGroupName"
+      ],
+      "PromoteReadReplicaMessage": [
+        "DBInstanceIdentifier",
+        "BackupRetentionPeriod"
+      ],
+      "DescribeEventsMessage": [
+        "SourceIdentifier",
+        "SourceType",
+        "StartTime",
+        "EndTime",
+        "Duration",
+        "EventCategories",
+        "Marker",
+        "MaxRecords"
+      ],
+      "Event": [
+        "Date",
+        "EventCategories",
+        "Message",
+        "SourceArn",
+        "SourceIdentifier",
+        "SourceType"
+      ],
+      "DescribeEventCategoriesMessage": [
+        "SourceType"
+      ],
+      "EventCategoriesMap": [
+        "SourceType",
+        "EventCategories"
+      ],
+      "CreateOptionGroupMessage": [
+        "EngineName",
+        "MajorEngineVersion",
+        "OptionGroupDescription",
+        "OptionGroupName",
+        "Tags"
+      ],
+      "DescribeOptionGroupsMessage": [
+        "EngineName",
+        "MajorEngineVersion",
+        "OptionGroupName",
+        "Marker",
+        "MaxRecords"
+      ],
+      "DeleteOptionGroupMessage": [
+        "OptionGroupName"
+      ],
+      "ModifyOptionGroupMessage": [
+        "ApplyImmediately",
+        "OptionGroupName",
+        "OptionsToInclude",
+        "OptionsToRemove"
+      ],
+      "OptionConfiguration": [
+        "OptionName",
+        "OptionSettings"
+      ],
+      "OptionSetting": [
+        "Name",
+        "Value"
+      ],
+      "Option": [
+        "OptionName",
+        "OptionSettings"
+      ],
+      "OptionGroup": [
+        "AllowsVpcAndNonVpcInstanceMemberships",
+        "EngineName",
+        "MajorEngineVersion",
+        "OptionGroupArn",
+        "OptionGroupDescription",
+        "OptionGroupName",
+        "Options"
+      ],
+      "OptionGroupMembership": [
+        "OptionGroupName",
+        "Status"
       ]
     }
   },

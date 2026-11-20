@@ -201,7 +201,7 @@ func (s *Service) DeleteDBClusterSnapshot(
 
 	if err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		tx.Delete(scope.Key(serviceName, kindClusterSnapshot, r.Name))
-		return nil
+		return recordEvent(tx, scope, r, eventDeletion, "DB cluster snapshot deleted")
 	}); err != nil {
 		return nil, err
 	}

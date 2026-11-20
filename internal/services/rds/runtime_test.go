@@ -411,3 +411,41 @@ func TestRuntimeOwnerIsolation(t *testing.T) {
 		t.Fatal("stores share database resources")
 	}
 }
+
+func TestRuntimeMaintenanceRestartsInstance(t *testing.T) {
+	rt := &fakeRuntime{ready: true}
+	s := New(&memory.Store{})
+	s.runtime = rt
+	ctx := runtimeContext()
+	runtimeCreate(t, s, "maintenance-db")
+	s.visit(ctx)
+
+	now := time.Now().UTC()
+	window := now.Add(-time.Minute).Format("Mon:15:04") + "-" + now.Add(time.Hour).Format("Mon:15:04")
+	out, err := s.ModifyDBInstance(ctx, &api.ModifyDBInstanceMessage{
+		DBInstanceIdentifier: new("maintenance-db"), DBInstanceClass: new("db.t3.small"),
+		PreferredMaintenanceWindow: new(window), ApplyImmediately: new(false),
+	})
+	if err != nil || out.DBInstance.PendingModifiedValues == nil || len(rt.actions) != 0 {
+		t.Fatal(out, rt.actions, err)
+	}
+
+	s.visitMaintenance(ctx)
+	if len(rt.actions) != 1 || rt.actions[0] != "restart" {
+		t.Fatal(rt.actions)
+	}
+
+	s.visit(ctx)
+	described, err := s.DescribeDBInstances(ctx, &api.DescribeDBInstancesMessage{
+		DBInstanceIdentifier: new("maintenance-db"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	db := described.DBInstances[0]
+	if db.PendingModifiedValues != nil || common.Value(db.DBInstanceStatus) != available ||
+		common.Value(db.DBInstanceClass) != "db.t3.small" {
+		t.Fatal(db)
+	}
+}

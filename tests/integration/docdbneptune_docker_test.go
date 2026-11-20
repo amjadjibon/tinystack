@@ -117,7 +117,10 @@ func TestRDSDockerDocumentDB(t *testing.T) {
 	_, err = c.ModifyDBCluster(ctx, &docdb.ModifyDBClusterInput{
 		DBClusterIdentifier: new(id), ApplyImmediately: new(false),
 	})
-	code(t, err, "InvalidParameterValue")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	_, err = c.ModifyDBCluster(ctx, &docdb.ModifyDBClusterInput{
 		DBClusterIdentifier: new(id), Port: new(int32(27018)),
 	})
