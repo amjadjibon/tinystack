@@ -13770,6 +13770,10 @@
       "UpdateTable",
       "DeleteTable",
       "BatchDeleteTable",
+      "GetTableVersion",
+      "GetTableVersions",
+      "DeleteTableVersion",
+      "BatchDeleteTableVersion",
       "CreatePartition",
       "BatchCreatePartition",
       "GetPartition",
@@ -13834,7 +13838,21 @@
       "GetConnections",
       "UpdateConnection",
       "DeleteConnection",
-      "BatchDeleteConnection"
+      "BatchDeleteConnection",
+      "CreateRegistry",
+      "GetRegistry",
+      "ListRegistries",
+      "DeleteRegistry",
+      "CreateSchema",
+      "GetSchema",
+      "ListSchemas",
+      "DeleteSchema",
+      "RegisterSchemaVersion",
+      "GetSchemaVersion",
+      "ListSchemaVersions",
+      "GetSchemaByDefinition",
+      "PutSchemaVersionMetadata",
+      "QuerySchemaVersionMetadata"
     ],
     "shapes": {
       "CreateDatabaseRequest": [
@@ -13984,7 +14002,8 @@
       "UpdateTableRequest": [
         "CatalogId",
         "DatabaseName",
-        "TableInput"
+        "TableInput",
+        "SkipArchive"
       ],
       "DeleteTableRequest": [
         "CatalogId",
@@ -14001,6 +14020,50 @@
       ],
       "TableError": [
         "TableName",
+        "ErrorDetail"
+      ],
+      "GetTableVersionRequest": [
+        "CatalogId",
+        "DatabaseName",
+        "TableName",
+        "VersionId"
+      ],
+      "GetTableVersionResponse": [
+        "TableVersion"
+      ],
+      "GetTableVersionsRequest": [
+        "CatalogId",
+        "DatabaseName",
+        "TableName",
+        "NextToken",
+        "MaxResults"
+      ],
+      "GetTableVersionsResponse": [
+        "TableVersions",
+        "NextToken"
+      ],
+      "TableVersion": [
+        "Table",
+        "VersionId"
+      ],
+      "DeleteTableVersionRequest": [
+        "CatalogId",
+        "DatabaseName",
+        "TableName",
+        "VersionId"
+      ],
+      "BatchDeleteTableVersionRequest": [
+        "CatalogId",
+        "DatabaseName",
+        "TableName",
+        "VersionIds"
+      ],
+      "BatchDeleteTableVersionResponse": [
+        "Errors"
+      ],
+      "TableVersionError": [
+        "TableName",
+        "VersionId",
         "ErrorDetail"
       ],
       "ErrorDetail": [
@@ -14905,6 +14968,222 @@
         "LastUpdated",
         "Version",
         "RowTag"
+      ],
+      "CreateRegistryInput": [
+        "RegistryName",
+        "Description",
+        "Tags"
+      ],
+      "CreateRegistryResponse": [
+        "RegistryArn",
+        "RegistryName",
+        "Description",
+        "Tags"
+      ],
+      "GetRegistryInput": [
+        "RegistryId"
+      ],
+      "GetRegistryResponse": [
+        "RegistryName",
+        "RegistryArn",
+        "Description",
+        "Status",
+        "CreatedTime",
+        "UpdatedTime"
+      ],
+      "ListRegistriesInput": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListRegistriesResponse": [
+        "Registries",
+        "NextToken"
+      ],
+      "DeleteRegistryInput": [
+        "RegistryId"
+      ],
+      "DeleteRegistryResponse": [
+        "RegistryName",
+        "RegistryArn",
+        "Status"
+      ],
+      "CreateSchemaInput": [
+        "RegistryId",
+        "SchemaName",
+        "DataFormat",
+        "Compatibility",
+        "Description",
+        "Tags",
+        "SchemaDefinition"
+      ],
+      "CreateSchemaResponse": [
+        "RegistryName",
+        "RegistryArn",
+        "SchemaName",
+        "SchemaArn",
+        "Description",
+        "DataFormat",
+        "Compatibility",
+        "SchemaCheckpoint",
+        "LatestSchemaVersion",
+        "NextSchemaVersion",
+        "SchemaStatus",
+        "Tags",
+        "SchemaVersionId",
+        "SchemaVersionStatus"
+      ],
+      "GetSchemaInput": [
+        "SchemaId"
+      ],
+      "GetSchemaResponse": [
+        "RegistryName",
+        "RegistryArn",
+        "SchemaName",
+        "SchemaArn",
+        "Description",
+        "DataFormat",
+        "Compatibility",
+        "SchemaCheckpoint",
+        "LatestSchemaVersion",
+        "NextSchemaVersion",
+        "SchemaStatus",
+        "CreatedTime",
+        "UpdatedTime"
+      ],
+      "ListSchemasInput": [
+        "RegistryId",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListSchemasResponse": [
+        "Schemas",
+        "NextToken"
+      ],
+      "DeleteSchemaInput": [
+        "SchemaId"
+      ],
+      "DeleteSchemaResponse": [
+        "SchemaArn",
+        "SchemaName",
+        "Status"
+      ],
+      "RegisterSchemaVersionInput": [
+        "SchemaId",
+        "SchemaDefinition"
+      ],
+      "RegisterSchemaVersionResponse": [
+        "SchemaVersionId",
+        "VersionNumber",
+        "Status"
+      ],
+      "GetSchemaVersionInput": [
+        "SchemaId",
+        "SchemaVersionId",
+        "SchemaVersionNumber"
+      ],
+      "GetSchemaVersionResponse": [
+        "SchemaVersionId",
+        "SchemaDefinition",
+        "DataFormat",
+        "SchemaArn",
+        "VersionNumber",
+        "Status",
+        "CreatedTime"
+      ],
+      "ListSchemaVersionsInput": [
+        "SchemaId",
+        "MaxResults",
+        "NextToken"
+      ],
+      "ListSchemaVersionsResponse": [
+        "Schemas",
+        "NextToken"
+      ],
+      "GetSchemaByDefinitionInput": [
+        "SchemaId",
+        "SchemaDefinition"
+      ],
+      "GetSchemaByDefinitionResponse": [
+        "SchemaVersionId",
+        "SchemaArn",
+        "DataFormat",
+        "Status",
+        "CreatedTime"
+      ],
+      "PutSchemaVersionMetadataInput": [
+        "SchemaId",
+        "SchemaVersionNumber",
+        "SchemaVersionId",
+        "MetadataKeyValue"
+      ],
+      "PutSchemaVersionMetadataResponse": [
+        "SchemaArn",
+        "SchemaName",
+        "RegistryName",
+        "LatestVersion",
+        "VersionNumber",
+        "SchemaVersionId",
+        "MetadataKey",
+        "MetadataValue"
+      ],
+      "QuerySchemaVersionMetadataInput": [
+        "SchemaId",
+        "SchemaVersionNumber",
+        "SchemaVersionId",
+        "MetadataList",
+        "MaxResults",
+        "NextToken"
+      ],
+      "QuerySchemaVersionMetadataResponse": [
+        "MetadataInfoMap",
+        "SchemaVersionId",
+        "NextToken"
+      ],
+      "RegistryId": [
+        "RegistryName",
+        "RegistryArn"
+      ],
+      "RegistryListItem": [
+        "RegistryName",
+        "RegistryArn",
+        "Description",
+        "Status",
+        "CreatedTime",
+        "UpdatedTime"
+      ],
+      "SchemaId": [
+        "SchemaArn",
+        "SchemaName",
+        "RegistryName"
+      ],
+      "SchemaListItem": [
+        "RegistryName",
+        "SchemaName",
+        "SchemaArn",
+        "Description",
+        "SchemaStatus",
+        "CreatedTime",
+        "UpdatedTime"
+      ],
+      "SchemaVersionNumber": [
+        "LatestVersion",
+        "VersionNumber"
+      ],
+      "SchemaVersionListItem": [
+        "SchemaArn",
+        "SchemaVersionId",
+        "VersionNumber",
+        "Status",
+        "CreatedTime"
+      ],
+      "MetadataKeyValuePair": [
+        "MetadataKey",
+        "MetadataValue"
+      ],
+      "MetadataInfo": [
+        "MetadataValue",
+        "CreatedTime",
+        "OtherMetadataValueList"
       ]
     }
   },

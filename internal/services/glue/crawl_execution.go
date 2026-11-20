@@ -688,6 +688,12 @@ func (s *Service) applyCrawl(
 		}
 
 		if write {
+			if ok {
+				if err := archiveTable(tx, scope, db, n, old); err != nil {
+					return err
+				}
+			}
+
 			if err := storage.Write(
 				tx,
 				tableKey(scope, db, n),

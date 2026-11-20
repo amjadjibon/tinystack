@@ -4,10 +4,11 @@
 //
 //	<scope>/glue/database/<name>                  (with its tags)
 //	<scope>/glue/table/<database>/<name>
+//	<scope>/glue/table-version/<escaped database>/<escaped table>/<reverse ordinal>
 //	<scope>/glue/partition/<database>/<table>/<path-escaped values joined by />
 //
 // Deleting a database deletes its tables, and deleting a table its
-// partitions. Athena reads tables through this package's operations.
+// partitions and archived versions. Athena reads tables through this package's operations.
 package glue
 
 import (

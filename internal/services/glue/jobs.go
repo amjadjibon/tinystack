@@ -273,7 +273,7 @@ func validateTimeout(timeout *int64) error {
 func validateArguments(args map[string]string) error {
 	size := 0
 	for k, v := range args {
-		if k == "" || strings.ContainsRune(k, 0) || strings.ContainsRune(v, 0) {
+		if k == "" || strings.ContainsAny(k, "=\x00") || strings.ContainsRune(v, 0) {
 			return invalid("Invalid job argument")
 		}
 

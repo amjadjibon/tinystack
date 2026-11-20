@@ -364,6 +364,10 @@ func (s *Service) applyCatalogTarget(
 
 	now := common.Unix(s.now())
 	if write {
+		if err := archiveTable(tx, scope, db, n, table); err != nil {
+			return err
+		}
+
 		sd, inferred := table.StorageDescriptor, t.input.StorageDescriptor
 		sd.Columns = inferred.Columns
 		sd.InputFormat = common.OrElse(sd.InputFormat, inferred.InputFormat)

@@ -24,9 +24,13 @@ func loadTable(tx storage.ReadTx, scope request.Scope, db, n string) (*api.Table
 	return t, nil
 }
 
-// deleteTable deletes a table and its partitions.
+// deleteTable deletes a table, its partitions, and its archived versions.
 func deleteTable(tx storage.WriteTx, scope request.Scope, db, n string) {
 	for _, key := range tx.Keys(partitionPrefix(scope, db, n)) {
+		tx.Delete(key)
+	}
+
+	for _, key := range tx.Keys(tableVersionPrefix(scope, db, n)) {
 		tx.Delete(key)
 	}
 
@@ -164,6 +168,12 @@ func (s *Service) UpdateTable(ctx context.Context, in *api.UpdateTableRequest) (
 		}
 
 		version, _ := strconv.Atoi(common.Value(t.VersionId))
+		if !common.Value(in.SkipArchive) {
+			if archiveErr := archiveTable(tx, scope, db, n, t); archiveErr != nil {
+				return archiveErr
+			}
+		}
+
 		updated := tableOf(scope, db, n, input, common.Value(t.CreateTime), common.Unix(s.now()), version+1)
 		return storage.Write(tx, tableKey(scope, db, n), updated)
 	})

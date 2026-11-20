@@ -189,7 +189,8 @@ func tagged(scope request.Scope, arn *string) (kind, n string, err error) {
 	kind, n, ok = strings.Cut(rest, "/")
 	if !ok || n == "" ||
 		(kind != kindDatabase && kind != kindJob && kind != kindTrigger &&
-			kind != kindWorkflow && kind != kindCrawler && kind != kindConnection) {
+			kind != kindWorkflow && kind != kindCrawler && kind != kindConnection &&
+			kind != kindRegistry && kind != kindSchema) {
 		return "", "", invalid("Unsupported Glue resource ARN")
 	}
 
@@ -197,7 +198,15 @@ func tagged(scope request.Scope, arn *string) (kind, n string, err error) {
 		n = strings.ToLower(n)
 	}
 
-	return kind, n, nil
+	if kind == kindRegistry {
+		n, err = registryIdentifier(scope, &api.RegistryId{RegistryArn: arn})
+	}
+
+	if kind == kindSchema {
+		n, err = schemaIdentifier(scope, &api.SchemaId{SchemaArn: arn})
+	}
+
+	return kind, n, err
 }
 
 func loadTagged(
@@ -206,6 +215,20 @@ func loadTagged(
 	kind, n string,
 ) (record any, tags map[string]string, err error) {
 	switch kind {
+	case kindRegistry:
+		r, err := loadRegistry(tx, scope, n)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return r, r.Tags, nil
+	case kindSchema:
+		r, err := loadSchema(tx, scope, n)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return r, r.Tags, nil
 	case kindConnection:
 		r, err := loadConnection(tx, scope, n)
 		if err != nil {
@@ -265,6 +288,14 @@ func (s *Service) retag(ctx context.Context, arn *string, fn func(map[string]str
 
 		tags = fn(common.CloneTags(tags))
 		switch record := r.(type) {
+		case *registryRecord:
+			if *record.RegistryArn != *arn {
+				return notFound("Registry %s not found.", *arn)
+			}
+
+			record.Tags = tags
+		case *schemaRecord:
+			record.Tags = tags
 		case *connectionRecord:
 			record.Tags = tags
 		case *crawlerRecord:
@@ -283,8 +314,8 @@ func (s *Service) retag(ctx context.Context, arn *string, fn func(map[string]str
 			return err
 		}
 
-		key := databaseKey(scope, n)
-		if kind != kindDatabase {
+		key := scope.Key(service, kind, n)
+		if kind != kindDatabase && kind != kindRegistry && kind != kindSchema {
 			key = orchestrationKey(scope, kind, n)
 		}
 
@@ -327,9 +358,13 @@ func (s *Service) GetTags(ctx context.Context, in *api.GetTagsRequest) (*api.Get
 			return err
 		}
 
-		_, tags, err := loadTagged(tx, scope, kind, n)
+		record, tags, err := loadTagged(tx, scope, kind, n)
 		if err != nil {
 			return err
+		}
+
+		if registry, ok := record.(*registryRecord); ok && *registry.RegistryArn != *in.ResourceArn {
+			return notFound("Registry %s not found.", *in.ResourceArn)
 		}
 
 		if tags != nil {

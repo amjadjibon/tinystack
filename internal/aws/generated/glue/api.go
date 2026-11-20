@@ -189,6 +189,7 @@ type UpdateTableRequest struct {
 	CatalogId    *string     `json:"CatalogId,omitempty"`
 	DatabaseName *string     `json:"DatabaseName,omitempty"`
 	TableInput   *TableInput `json:"TableInput,omitempty"`
+	SkipArchive  *bool       `json:"SkipArchive,omitempty"`
 }
 
 type UpdateTableResponse struct {
@@ -221,6 +222,62 @@ type TableError struct {
 
 type BatchDeleteTableResponse struct {
 	Errors []TableError `json:"Errors,omitempty"`
+}
+
+type GetTableVersionRequest struct {
+	CatalogId    *string `json:"CatalogId,omitempty"`
+	DatabaseName *string `json:"DatabaseName,omitempty"`
+	TableName    *string `json:"TableName,omitempty"`
+	VersionId    *string `json:"VersionId,omitempty"`
+}
+
+type TableVersion struct {
+	Table     *Table  `json:"Table,omitempty"`
+	VersionId *string `json:"VersionId,omitempty"`
+}
+
+type GetTableVersionResponse struct {
+	TableVersion *TableVersion `json:"TableVersion,omitempty"`
+}
+
+type GetTableVersionsRequest struct {
+	CatalogId    *string `json:"CatalogId,omitempty"`
+	DatabaseName *string `json:"DatabaseName,omitempty"`
+	TableName    *string `json:"TableName,omitempty"`
+	NextToken    *string `json:"NextToken,omitempty"`
+	MaxResults   *int64  `json:"MaxResults,omitempty"`
+}
+
+type GetTableVersionsResponse struct {
+	TableVersions []TableVersion `json:"TableVersions,omitempty"`
+	NextToken     *string        `json:"NextToken,omitempty"`
+}
+
+type DeleteTableVersionRequest struct {
+	CatalogId    *string `json:"CatalogId,omitempty"`
+	DatabaseName *string `json:"DatabaseName,omitempty"`
+	TableName    *string `json:"TableName,omitempty"`
+	VersionId    *string `json:"VersionId,omitempty"`
+}
+
+type DeleteTableVersionResponse struct {
+}
+
+type BatchDeleteTableVersionRequest struct {
+	CatalogId    *string  `json:"CatalogId,omitempty"`
+	DatabaseName *string  `json:"DatabaseName,omitempty"`
+	TableName    *string  `json:"TableName,omitempty"`
+	VersionIds   []string `json:"VersionIds,omitempty"`
+}
+
+type TableVersionError struct {
+	TableName   *string      `json:"TableName,omitempty"`
+	VersionId   *string      `json:"VersionId,omitempty"`
+	ErrorDetail *ErrorDetail `json:"ErrorDetail,omitempty"`
+}
+
+type BatchDeleteTableVersionResponse struct {
+	Errors []TableVersionError `json:"Errors,omitempty"`
 }
 
 type PartitionInput struct {
@@ -1339,6 +1396,263 @@ type BatchDeleteConnectionResponse struct {
 	Errors    map[string]ErrorDetail `json:"Errors,omitempty"`
 }
 
+type CreateRegistryInput struct {
+	RegistryName *string           `json:"RegistryName,omitempty"`
+	Description  *string           `json:"Description,omitempty"`
+	Tags         map[string]string `json:"Tags,omitempty"`
+}
+
+type CreateRegistryResponse struct {
+	RegistryArn  *string           `json:"RegistryArn,omitempty"`
+	RegistryName *string           `json:"RegistryName,omitempty"`
+	Description  *string           `json:"Description,omitempty"`
+	Tags         map[string]string `json:"Tags,omitempty"`
+}
+
+type RegistryId struct {
+	RegistryName *string `json:"RegistryName,omitempty"`
+	RegistryArn  *string `json:"RegistryArn,omitempty"`
+}
+
+type GetRegistryInput struct {
+	RegistryId *RegistryId `json:"RegistryId,omitempty"`
+}
+
+type GetRegistryResponse struct {
+	RegistryName *string `json:"RegistryName,omitempty"`
+	RegistryArn  *string `json:"RegistryArn,omitempty"`
+	Description  *string `json:"Description,omitempty"`
+	Status       *string `json:"Status,omitempty"`
+	CreatedTime  *string `json:"CreatedTime,omitempty"`
+	UpdatedTime  *string `json:"UpdatedTime,omitempty"`
+}
+
+type ListRegistriesInput struct {
+	MaxResults *int64  `json:"MaxResults,omitempty"`
+	NextToken  *string `json:"NextToken,omitempty"`
+}
+
+type RegistryListItem struct {
+	RegistryName *string `json:"RegistryName,omitempty"`
+	RegistryArn  *string `json:"RegistryArn,omitempty"`
+	Description  *string `json:"Description,omitempty"`
+	Status       *string `json:"Status,omitempty"`
+	CreatedTime  *string `json:"CreatedTime,omitempty"`
+	UpdatedTime  *string `json:"UpdatedTime,omitempty"`
+}
+
+type ListRegistriesResponse struct {
+	Registries []RegistryListItem `json:"Registries,omitempty"`
+	NextToken  *string            `json:"NextToken,omitempty"`
+}
+
+type DeleteRegistryInput struct {
+	RegistryId *RegistryId `json:"RegistryId,omitempty"`
+}
+
+type DeleteRegistryResponse struct {
+	RegistryName *string `json:"RegistryName,omitempty"`
+	RegistryArn  *string `json:"RegistryArn,omitempty"`
+	Status       *string `json:"Status,omitempty"`
+}
+
+type CreateSchemaInput struct {
+	RegistryId       *RegistryId       `json:"RegistryId,omitempty"`
+	SchemaName       *string           `json:"SchemaName,omitempty"`
+	DataFormat       *string           `json:"DataFormat,omitempty"`
+	Compatibility    *string           `json:"Compatibility,omitempty"`
+	Description      *string           `json:"Description,omitempty"`
+	Tags             map[string]string `json:"Tags,omitempty"`
+	SchemaDefinition *string           `json:"SchemaDefinition,omitempty"`
+}
+
+type CreateSchemaResponse struct {
+	RegistryName        *string           `json:"RegistryName,omitempty"`
+	RegistryArn         *string           `json:"RegistryArn,omitempty"`
+	SchemaName          *string           `json:"SchemaName,omitempty"`
+	SchemaArn           *string           `json:"SchemaArn,omitempty"`
+	Description         *string           `json:"Description,omitempty"`
+	DataFormat          *string           `json:"DataFormat,omitempty"`
+	Compatibility       *string           `json:"Compatibility,omitempty"`
+	SchemaCheckpoint    *int64            `json:"SchemaCheckpoint,omitempty"`
+	LatestSchemaVersion *int64            `json:"LatestSchemaVersion,omitempty"`
+	NextSchemaVersion   *int64            `json:"NextSchemaVersion,omitempty"`
+	SchemaStatus        *string           `json:"SchemaStatus,omitempty"`
+	Tags                map[string]string `json:"Tags,omitempty"`
+	SchemaVersionId     *string           `json:"SchemaVersionId,omitempty"`
+	SchemaVersionStatus *string           `json:"SchemaVersionStatus,omitempty"`
+}
+
+type SchemaId struct {
+	SchemaArn    *string `json:"SchemaArn,omitempty"`
+	SchemaName   *string `json:"SchemaName,omitempty"`
+	RegistryName *string `json:"RegistryName,omitempty"`
+}
+
+type GetSchemaInput struct {
+	SchemaId *SchemaId `json:"SchemaId,omitempty"`
+}
+
+type GetSchemaResponse struct {
+	RegistryName        *string `json:"RegistryName,omitempty"`
+	RegistryArn         *string `json:"RegistryArn,omitempty"`
+	SchemaName          *string `json:"SchemaName,omitempty"`
+	SchemaArn           *string `json:"SchemaArn,omitempty"`
+	Description         *string `json:"Description,omitempty"`
+	DataFormat          *string `json:"DataFormat,omitempty"`
+	Compatibility       *string `json:"Compatibility,omitempty"`
+	SchemaCheckpoint    *int64  `json:"SchemaCheckpoint,omitempty"`
+	LatestSchemaVersion *int64  `json:"LatestSchemaVersion,omitempty"`
+	NextSchemaVersion   *int64  `json:"NextSchemaVersion,omitempty"`
+	SchemaStatus        *string `json:"SchemaStatus,omitempty"`
+	CreatedTime         *string `json:"CreatedTime,omitempty"`
+	UpdatedTime         *string `json:"UpdatedTime,omitempty"`
+}
+
+type ListSchemasInput struct {
+	RegistryId *RegistryId `json:"RegistryId,omitempty"`
+	MaxResults *int64      `json:"MaxResults,omitempty"`
+	NextToken  *string     `json:"NextToken,omitempty"`
+}
+
+type SchemaListItem struct {
+	RegistryName *string `json:"RegistryName,omitempty"`
+	SchemaName   *string `json:"SchemaName,omitempty"`
+	SchemaArn    *string `json:"SchemaArn,omitempty"`
+	Description  *string `json:"Description,omitempty"`
+	SchemaStatus *string `json:"SchemaStatus,omitempty"`
+	CreatedTime  *string `json:"CreatedTime,omitempty"`
+	UpdatedTime  *string `json:"UpdatedTime,omitempty"`
+}
+
+type ListSchemasResponse struct {
+	Schemas   []SchemaListItem `json:"Schemas,omitempty"`
+	NextToken *string          `json:"NextToken,omitempty"`
+}
+
+type DeleteSchemaInput struct {
+	SchemaId *SchemaId `json:"SchemaId,omitempty"`
+}
+
+type DeleteSchemaResponse struct {
+	SchemaArn  *string `json:"SchemaArn,omitempty"`
+	SchemaName *string `json:"SchemaName,omitempty"`
+	Status     *string `json:"Status,omitempty"`
+}
+
+type RegisterSchemaVersionInput struct {
+	SchemaId         *SchemaId `json:"SchemaId,omitempty"`
+	SchemaDefinition *string   `json:"SchemaDefinition,omitempty"`
+}
+
+type RegisterSchemaVersionResponse struct {
+	SchemaVersionId *string `json:"SchemaVersionId,omitempty"`
+	VersionNumber   *int64  `json:"VersionNumber,omitempty"`
+	Status          *string `json:"Status,omitempty"`
+}
+
+type SchemaVersionNumber struct {
+	LatestVersion *bool  `json:"LatestVersion,omitempty"`
+	VersionNumber *int64 `json:"VersionNumber,omitempty"`
+}
+
+type GetSchemaVersionInput struct {
+	SchemaId            *SchemaId            `json:"SchemaId,omitempty"`
+	SchemaVersionId     *string              `json:"SchemaVersionId,omitempty"`
+	SchemaVersionNumber *SchemaVersionNumber `json:"SchemaVersionNumber,omitempty"`
+}
+
+type GetSchemaVersionResponse struct {
+	SchemaVersionId  *string `json:"SchemaVersionId,omitempty"`
+	SchemaDefinition *string `json:"SchemaDefinition,omitempty"`
+	DataFormat       *string `json:"DataFormat,omitempty"`
+	SchemaArn        *string `json:"SchemaArn,omitempty"`
+	VersionNumber    *int64  `json:"VersionNumber,omitempty"`
+	Status           *string `json:"Status,omitempty"`
+	CreatedTime      *string `json:"CreatedTime,omitempty"`
+}
+
+type ListSchemaVersionsInput struct {
+	SchemaId   *SchemaId `json:"SchemaId,omitempty"`
+	MaxResults *int64    `json:"MaxResults,omitempty"`
+	NextToken  *string   `json:"NextToken,omitempty"`
+}
+
+type SchemaVersionListItem struct {
+	SchemaArn       *string `json:"SchemaArn,omitempty"`
+	SchemaVersionId *string `json:"SchemaVersionId,omitempty"`
+	VersionNumber   *int64  `json:"VersionNumber,omitempty"`
+	Status          *string `json:"Status,omitempty"`
+	CreatedTime     *string `json:"CreatedTime,omitempty"`
+}
+
+type ListSchemaVersionsResponse struct {
+	Schemas   []SchemaVersionListItem `json:"Schemas,omitempty"`
+	NextToken *string                 `json:"NextToken,omitempty"`
+}
+
+type GetSchemaByDefinitionInput struct {
+	SchemaId         *SchemaId `json:"SchemaId,omitempty"`
+	SchemaDefinition *string   `json:"SchemaDefinition,omitempty"`
+}
+
+type GetSchemaByDefinitionResponse struct {
+	SchemaVersionId *string `json:"SchemaVersionId,omitempty"`
+	SchemaArn       *string `json:"SchemaArn,omitempty"`
+	DataFormat      *string `json:"DataFormat,omitempty"`
+	Status          *string `json:"Status,omitempty"`
+	CreatedTime     *string `json:"CreatedTime,omitempty"`
+}
+
+type MetadataKeyValuePair struct {
+	MetadataKey   *string `json:"MetadataKey,omitempty"`
+	MetadataValue *string `json:"MetadataValue,omitempty"`
+}
+
+type PutSchemaVersionMetadataInput struct {
+	SchemaId            *SchemaId             `json:"SchemaId,omitempty"`
+	SchemaVersionNumber *SchemaVersionNumber  `json:"SchemaVersionNumber,omitempty"`
+	SchemaVersionId     *string               `json:"SchemaVersionId,omitempty"`
+	MetadataKeyValue    *MetadataKeyValuePair `json:"MetadataKeyValue,omitempty"`
+}
+
+type PutSchemaVersionMetadataResponse struct {
+	SchemaArn       *string `json:"SchemaArn,omitempty"`
+	SchemaName      *string `json:"SchemaName,omitempty"`
+	RegistryName    *string `json:"RegistryName,omitempty"`
+	LatestVersion   *bool   `json:"LatestVersion,omitempty"`
+	VersionNumber   *int64  `json:"VersionNumber,omitempty"`
+	SchemaVersionId *string `json:"SchemaVersionId,omitempty"`
+	MetadataKey     *string `json:"MetadataKey,omitempty"`
+	MetadataValue   *string `json:"MetadataValue,omitempty"`
+}
+
+type QuerySchemaVersionMetadataInput struct {
+	SchemaId            *SchemaId              `json:"SchemaId,omitempty"`
+	SchemaVersionNumber *SchemaVersionNumber   `json:"SchemaVersionNumber,omitempty"`
+	SchemaVersionId     *string                `json:"SchemaVersionId,omitempty"`
+	MetadataList        []MetadataKeyValuePair `json:"MetadataList,omitempty"`
+	MaxResults          *int64                 `json:"MaxResults,omitempty"`
+	NextToken           *string                `json:"NextToken,omitempty"`
+}
+
+type OtherMetadataValueListItem struct {
+	CreatedTime   *string `json:"CreatedTime,omitempty"`
+	MetadataValue *string `json:"MetadataValue,omitempty"`
+}
+
+type MetadataInfo struct {
+	MetadataValue          *string                      `json:"MetadataValue,omitempty"`
+	CreatedTime            *string                      `json:"CreatedTime,omitempty"`
+	OtherMetadataValueList []OtherMetadataValueListItem `json:"OtherMetadataValueList,omitempty"`
+}
+
+type QuerySchemaVersionMetadataResponse struct {
+	MetadataInfoMap map[string]MetadataInfo `json:"MetadataInfoMap,omitempty"`
+	SchemaVersionId *string                 `json:"SchemaVersionId,omitempty"`
+	NextToken       *string                 `json:"NextToken,omitempty"`
+}
+
 type API interface {
 	CreateDatabase(context.Context, *CreateDatabaseRequest) (*CreateDatabaseResponse, error)
 	GetDatabase(context.Context, *GetDatabaseRequest) (*GetDatabaseResponse, error)
@@ -1351,6 +1665,10 @@ type API interface {
 	UpdateTable(context.Context, *UpdateTableRequest) (*UpdateTableResponse, error)
 	DeleteTable(context.Context, *DeleteTableRequest) (*DeleteTableResponse, error)
 	BatchDeleteTable(context.Context, *BatchDeleteTableRequest) (*BatchDeleteTableResponse, error)
+	GetTableVersion(context.Context, *GetTableVersionRequest) (*GetTableVersionResponse, error)
+	GetTableVersions(context.Context, *GetTableVersionsRequest) (*GetTableVersionsResponse, error)
+	DeleteTableVersion(context.Context, *DeleteTableVersionRequest) (*DeleteTableVersionResponse, error)
+	BatchDeleteTableVersion(context.Context, *BatchDeleteTableVersionRequest) (*BatchDeleteTableVersionResponse, error)
 	CreatePartition(context.Context, *CreatePartitionRequest) (*CreatePartitionResponse, error)
 	BatchCreatePartition(context.Context, *BatchCreatePartitionRequest) (*BatchCreatePartitionResponse, error)
 	GetPartition(context.Context, *GetPartitionRequest) (*GetPartitionResponse, error)
@@ -1416,10 +1734,24 @@ type API interface {
 	UpdateConnection(context.Context, *UpdateConnectionRequest) (*UpdateConnectionResponse, error)
 	DeleteConnection(context.Context, *DeleteConnectionRequest) (*DeleteConnectionResponse, error)
 	BatchDeleteConnection(context.Context, *BatchDeleteConnectionRequest) (*BatchDeleteConnectionResponse, error)
+	CreateRegistry(context.Context, *CreateRegistryInput) (*CreateRegistryResponse, error)
+	GetRegistry(context.Context, *GetRegistryInput) (*GetRegistryResponse, error)
+	ListRegistries(context.Context, *ListRegistriesInput) (*ListRegistriesResponse, error)
+	DeleteRegistry(context.Context, *DeleteRegistryInput) (*DeleteRegistryResponse, error)
+	CreateSchema(context.Context, *CreateSchemaInput) (*CreateSchemaResponse, error)
+	GetSchema(context.Context, *GetSchemaInput) (*GetSchemaResponse, error)
+	ListSchemas(context.Context, *ListSchemasInput) (*ListSchemasResponse, error)
+	DeleteSchema(context.Context, *DeleteSchemaInput) (*DeleteSchemaResponse, error)
+	RegisterSchemaVersion(context.Context, *RegisterSchemaVersionInput) (*RegisterSchemaVersionResponse, error)
+	GetSchemaVersion(context.Context, *GetSchemaVersionInput) (*GetSchemaVersionResponse, error)
+	ListSchemaVersions(context.Context, *ListSchemaVersionsInput) (*ListSchemaVersionsResponse, error)
+	GetSchemaByDefinition(context.Context, *GetSchemaByDefinitionInput) (*GetSchemaByDefinitionResponse, error)
+	PutSchemaVersionMetadata(context.Context, *PutSchemaVersionMetadataInput) (*PutSchemaVersionMetadataResponse, error)
+	QuerySchemaVersionMetadata(context.Context, *QuerySchemaVersionMetadataInput) (*QuerySchemaVersionMetadataResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "glue", SigningName: "glue", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "glue", TargetPrefix: "AWSGlue", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"AlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ConcurrentRunsExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "CrawlerNotRunningException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "CrawlerRunningException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "CrawlerStoppingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "EntityNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "FederatedResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "FederationSourceException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "FederationSourceRetryableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "GlueEncryptionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "IdempotentParameterMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "IllegalWorkflowStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InternalServiceException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 500}, "InvalidInputException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "NoScheduleException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "OperationTimeoutException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNotReadyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNumberLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "SchedulerNotRunningException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "SchedulerRunningException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "SchedulerTransitioningException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "VersionMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "glue", SigningName: "glue", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "glue", TargetPrefix: "AWSGlue", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"AccessDeniedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "AlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ConcurrentRunsExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "CrawlerNotRunningException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "CrawlerRunningException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "CrawlerStoppingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "EntityNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "FederatedResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "FederationSourceException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "FederationSourceRetryableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "GlueEncryptionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "IdempotentParameterMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "IllegalWorkflowStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InternalServiceException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 500}, "InvalidInputException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "NoScheduleException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "OperationTimeoutException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNotReadyException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNumberLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "SchedulerNotRunningException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "SchedulerRunningException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "SchedulerTransitioningException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "VersionMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateDatabase": {Name: "CreateDatabase", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:CreateDatabase", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.CreateDatabase", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateDatabaseRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateDatabase(ctx, input.(*CreateDatabaseRequest))
 		}},
@@ -1450,6 +1782,18 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"BatchDeleteTable": {Name: "BatchDeleteTable", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:BatchDeleteTable", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.BatchDeleteTable", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchDeleteTableRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.BatchDeleteTable(ctx, input.(*BatchDeleteTableRequest))
+		}},
+		"GetTableVersion": {Name: "GetTableVersion", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetTableVersion", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetTableVersion", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetTableVersionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetTableVersion(ctx, input.(*GetTableVersionRequest))
+		}},
+		"GetTableVersions": {Name: "GetTableVersions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetTableVersions", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetTableVersions", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetTableVersionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetTableVersions(ctx, input.(*GetTableVersionsRequest))
+		}},
+		"DeleteTableVersion": {Name: "DeleteTableVersion", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:DeleteTableVersion", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.DeleteTableVersion", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteTableVersionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteTableVersion(ctx, input.(*DeleteTableVersionRequest))
+		}},
+		"BatchDeleteTableVersion": {Name: "BatchDeleteTableVersion", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:BatchDeleteTableVersion", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.BatchDeleteTableVersion", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchDeleteTableVersionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.BatchDeleteTableVersion(ctx, input.(*BatchDeleteTableVersionRequest))
 		}},
 		"CreatePartition": {Name: "CreatePartition", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:CreatePartition", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.CreatePartition", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreatePartitionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreatePartition(ctx, input.(*CreatePartitionRequest))
@@ -1637,6 +1981,46 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"BatchDeleteConnection": {Name: "BatchDeleteConnection", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:BatchDeleteConnection", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.BatchDeleteConnection", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchDeleteConnectionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.BatchDeleteConnection(ctx, input.(*BatchDeleteConnectionRequest))
+		}},
+		"CreateRegistry": {Name: "CreateRegistry", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:CreateRegistry", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.CreateRegistry", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateRegistryInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateRegistry(ctx, input.(*CreateRegistryInput))
+		}},
+		"GetRegistry": {Name: "GetRegistry", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetRegistry", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetRegistry", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetRegistryInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetRegistry(ctx, input.(*GetRegistryInput))
+		}},
+		"ListRegistries": {Name: "ListRegistries", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:ListRegistries", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.ListRegistries", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListRegistriesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListRegistries(ctx, input.(*ListRegistriesInput))
+		}},
+		"DeleteRegistry": {Name: "DeleteRegistry", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:DeleteRegistry", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.DeleteRegistry", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteRegistryInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteRegistry(ctx, input.(*DeleteRegistryInput))
+		}},
+		"CreateSchema": {Name: "CreateSchema", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:CreateSchema", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.CreateSchema", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateSchemaInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateSchema(ctx, input.(*CreateSchemaInput))
+		}},
+		"GetSchema": {Name: "GetSchema", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetSchema", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetSchema", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetSchemaInput{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.GetSchema(ctx, input.(*GetSchemaInput)) }},
+		"ListSchemas": {Name: "ListSchemas", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:ListSchemas", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.ListSchemas", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListSchemasInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListSchemas(ctx, input.(*ListSchemasInput))
+		}},
+		"DeleteSchema": {Name: "DeleteSchema", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:DeleteSchema", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.DeleteSchema", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteSchemaInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteSchema(ctx, input.(*DeleteSchemaInput))
+		}},
+		"RegisterSchemaVersion": {Name: "RegisterSchemaVersion", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:RegisterSchemaVersion", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.RegisterSchemaVersion", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &RegisterSchemaVersionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RegisterSchemaVersion(ctx, input.(*RegisterSchemaVersionInput))
+		}},
+		"GetSchemaVersion": {Name: "GetSchemaVersion", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetSchemaVersion", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetSchemaVersion", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetSchemaVersionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetSchemaVersion(ctx, input.(*GetSchemaVersionInput))
+		}},
+		"ListSchemaVersions": {Name: "ListSchemaVersions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:ListSchemaVersions", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.ListSchemaVersions", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListSchemaVersionsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListSchemaVersions(ctx, input.(*ListSchemaVersionsInput))
+		}},
+		"GetSchemaByDefinition": {Name: "GetSchemaByDefinition", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:GetSchemaByDefinition", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.GetSchemaByDefinition", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetSchemaByDefinitionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetSchemaByDefinition(ctx, input.(*GetSchemaByDefinitionInput))
+		}},
+		"PutSchemaVersionMetadata": {Name: "PutSchemaVersionMetadata", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:PutSchemaVersionMetadata", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.PutSchemaVersionMetadata", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutSchemaVersionMetadataInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutSchemaVersionMetadata(ctx, input.(*PutSchemaVersionMetadataInput))
+		}},
+		"QuerySchemaVersionMetadata": {Name: "QuerySchemaVersionMetadata", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "glue:QuerySchemaVersionMetadata", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSGlue.QuerySchemaVersionMetadata", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &QuerySchemaVersionMetadataInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.QuerySchemaVersionMetadata(ctx, input.(*QuerySchemaVersionMetadataInput))
 		}},
 	}}
 }

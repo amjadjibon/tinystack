@@ -3,6 +3,7 @@ package glue
 import (
 	"bufio"
 	"context"
+	"embed"
 	"errors"
 	"fmt"
 	"maps"
@@ -28,6 +29,9 @@ import (
 )
 
 const runIndex = "aws/glue/index/run/"
+
+//go:embed awsglue/*.py
+var pythonGlueLibrary embed.FS
 
 type runRecord struct {
 	Run         api.JobRun
@@ -169,6 +173,24 @@ func (s *Service) startRun(tx storage.WriteTx, scope request.Scope, in *api.Star
 	}
 	if err := validateArguments(args); err != nil {
 		return nil, err
+	}
+
+	for key, value := range args {
+		switch strings.TrimPrefix(key, "--") {
+		case "job-bookmark-option":
+			if value == "job-bookmark-disable" {
+				continue
+			}
+		case "continuation-option":
+			if value == "continuation-ignore" {
+				continue
+			}
+		case "job-bookmark-from", "job-bookmark-to":
+		default:
+			continue
+		}
+
+		return nil, invalid("TinyStack Python shell does not support bookmark processing: %s=%s", key, value)
 	}
 
 	id := "jr_" + common.RandomID(64, "0123456789abcdef")
@@ -477,6 +499,10 @@ func (s *Service) runPython(ctx context.Context, r *runRecord) (stdout, stderr, 
 	}
 
 	defer func() { _ = os.RemoveAll(root) }()
+	if copyErr := os.CopyFS(root, pythonGlueLibrary); copyErr != nil {
+		return "", "", "Failed to prepare the TinyStack awsglue library: " + copyErr.Error()
+	}
+
 	path := filepath.Join(root, "job.py")
 	if writeErr := os.WriteFile(path, script, 0o600); writeErr != nil {
 		return "", "", writeErr.Error()
@@ -495,11 +521,12 @@ func (s *Service) runPython(ctx context.Context, r *runRecord) (stdout, stderr, 
 	args := []string{path, "--JOB_NAME", *r.Run.JobName, "--JOB_RUN_ID", *r.Run.Id}
 	keys := slices.Sorted(maps.Keys(r.Run.Arguments))
 	for _, k := range keys {
-		if k == "--JOB_NAME" || k == "--JOB_RUN_ID" {
+		key := strings.TrimPrefix(k, "--")
+		if key == "JOB_NAME" || key == "JOB_RUN_ID" {
 			continue
 		}
 
-		args = append(args, "--"+strings.TrimPrefix(k, "--"), r.Run.Arguments[k])
+		args = append(args, "--"+key, r.Run.Arguments[k])
 	}
 
 	// #nosec G204 -- executable is the configured local interpreter; scripts are explicitly enabled host code.
@@ -524,7 +551,8 @@ func (s *Service) runPython(ctx context.Context, r *runRecord) (stdout, stderr, 
 
 	cmd.Env = append(cmd.Env, "AWS_ACCESS_KEY_ID="+access, "AWS_SECRET_ACCESS_KEY="+secret,
 		"AWS_REGION="+r.Scope.Region, "AWS_DEFAULT_REGION="+r.Scope.Region, "AWS_ENDPOINT_URL="+r.Endpoint,
-		"AWS_EC2_METADATA_DISABLED=true", "PYTHONUNBUFFERED=1", "PYTHONDONTWRITEBYTECODE=1", "PYTHONNOUSERSITE=1")
+		"AWS_EC2_METADATA_DISABLED=true", "PYTHONUNBUFFERED=1", "PYTHONDONTWRITEBYTECODE=1", "PYTHONNOUSERSITE=1",
+		"PYTHONPATH="+root)
 	hostprocess.Configure(cmd)
 	cmd.Cancel = func() error { hostprocess.Kill(cmd); return nil }
 	cmd.WaitDelay = time.Second

@@ -157,6 +157,66 @@ print('glue stderr',file=sys.stderr)
 	}
 }
 
+func TestGlueJobPythonGlueLibrary(t *testing.T) {
+	gluejobPython(t, false)
+	ctx := context.Background()
+	s := serverWith(t, local.New(local.Options{}))
+	c := gluejobSetup(t, s, "glue-python-shim", `import importlib
+import json
+import sys
+from awsglue.utils import GlueArgumentError, getResolvedOptions
+
+options = getResolvedOptions(sys.argv, ['JOB_NAME', 'JOB_RUN_ID', 'value', 'locked', 'my_option'])
+assert options['JOB_NAME'] == 'glue-python-shim', options
+assert options['JOB_RUN_ID'].startswith('jr_'), options
+assert options['value'] == 'run value' and options['locked'] == 'fixed', options
+assert options['my_option'] == 'custom' and 'unknown' not in options, options
+assert options['TempDir'] == options['RedshiftTempDir'] == 's3://temp/', options
+assert options['job_bookmark_option'] == 'job-bookmark-disable', options
+assert options['JOB_ID'] == 'job-123' and options['SECURITY_CONFIGURATION'] == 'example', options
+assert options['encryption_type'] == 'sse-s3' and options['enable_data_lineage'] == 'false', options
+
+try:
+    getResolvedOptions(['script', '--require', 'x'], ['required'])
+except GlueArgumentError as exc:
+    assert '--required' in str(exc), exc
+else:
+    raise AssertionError('missing argument was accepted')
+
+for module in ('context', 'dynamicframe', 'job'):
+    try:
+        importlib.import_module('awsglue.' + module)
+    except ImportError as exc:
+        assert 'TinyStack' in str(exc), exc
+    else:
+        raise AssertionError('unexpected Spark module: ' + module)
+
+print(json.dumps(options))
+`)
+	id := gluejobStart(t, c, "glue-python-shim", map[string]string{
+		"--value": "run value", "--locked": "override", "--my_option": "custom", "--unknown": "ignored",
+		"--JOB_NAME": "invalid", "JOB_RUN_ID": "invalid", "--RedshiftTempDir": "s3://temp/",
+		"--JOB_ID": "job-123", "--SECURITY_CONFIGURATION": "example",
+		"--encryption-type": "sse-s3", "--enable-data-lineage": "false",
+	})
+	r := gluejobWait(t, c, "glue-python-shim", id, gt.JobRunStateSucceeded, gt.JobRunStateFailed)
+	if r.JobRunState != gt.JobRunStateSucceeded {
+		t.Fatalf("awsglue job failed: %v", r.ErrorMessage)
+	}
+
+	output, err := logsClient(s, "test").GetLogEvents(ctx, &cloudwatchlogs.GetLogEventsInput{
+		LogGroupName: new("/aws-glue/python-jobs/output"), LogStreamName: new(id),
+	})
+	if err != nil || len(output.Events) != 1 || !strings.Contains(*output.Events[0].Message, id) {
+		t.Fatalf("job output did not contain its real run ID: %+v, %v", output, err)
+	}
+
+	_, err = c.StartJobRun(ctx, &glue.StartJobRunInput{
+		JobName: new("glue-python-shim"), Arguments: map[string]string{"--job-bookmark-option": "job-bookmark-enable"},
+	})
+	code(t, err, "InvalidInputException")
+}
+
 func TestGlueJobStopRetryFailureAndValidation(t *testing.T) {
 	gluejobPython(t, false)
 	ctx := context.Background()

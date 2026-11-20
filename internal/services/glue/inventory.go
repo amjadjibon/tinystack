@@ -25,6 +25,19 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 			arn := "arn:aws:glue:" + region + ":" + account + ":" + kind + "/" + n
 			switch kind {
+			case kindRegistry, kindSchema:
+				record, tags, err := loadTagged(tx, request.Scope{AccountID: account, Region: region}, kind, n)
+				if err != nil {
+					return err
+				}
+
+				if registry, ok := record.(*registryRecord); ok {
+					arn = *registry.RegistryArn
+				}
+
+				out = append(out, catalog.Resource{
+					Type: kind, Account: account, Region: region, Name: n, ARN: arn, Tags: tags,
+				})
 			case kindClassifier:
 				decoded, err := url.PathUnescape(n)
 				if err != nil {
