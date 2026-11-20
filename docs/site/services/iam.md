@@ -13,7 +13,7 @@ Store account-wide identities and optionally evaluate their permission policies.
 | API version | `2010-05-08` |
 | Scope | Account-wide |
 | Execution | Local behavior |
-| Selected operations | 90 of 180 in the pinned model |
+| Selected operations | 90 of 181 in the pinned model |
 
 ## Implemented behavior
 
@@ -137,7 +137,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "90 modeled operations outside the implementation"
+??? info "91 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -223,6 +223,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `UpdateAccountPasswordPolicy`
     - `UpdateDelegationRequest`
     - `UpdateLoginProfile`
+    - `UpdateOpenIDConnectProvider`
     - `UpdateSAMLProvider`
     - `UpdateSSHPublicKey`
     - `UpdateServerCertificate`
@@ -236,6 +237,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/iam)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/iam/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/iam.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/iam.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [iam_authorization_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_authorization_test.go), [iam_boundaries_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_boundaries_test.go), [iam_groups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_groups_test.go), [iam_oidc_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_oidc_test.go), [iam_passrole_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_passrole_test.go), [iam_review_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_review_test.go), [iam_service_linked_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_service_linked_test.go), [iam_simulate_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_simulate_test.go), [iam_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_test.go), [iam_users_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_users_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

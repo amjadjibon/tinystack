@@ -9,11 +9,11 @@ Store Network Firewall rule groups, policies, firewalls, and logging configurati
 | --- | --- |
 | Service ID | `networkfirewall` |
 | Signing name | `network-firewall` |
-| Wire protocol | AWS JSON 1.0 |
+| Wire protocol | AWS JSON 1.0, Smithy RPC v2 CBOR |
 | API version | `2020-11-12` |
 | Scope | Account and region |
 | Execution | Records only |
-| Selected operations | 31 of 85 in the pinned model |
+| Selected operations | 31 of 72 in the pinned model |
 
 ## Implemented behavior
 
@@ -73,48 +73,39 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "54 modeled operations outside the implementation"
+??? info "41 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
     - `AcceptNetworkFirewallTransitGatewayAttachment`
     - `AssociateAvailabilityZones`
-    - `AttachRuleGroupsToProxyConfiguration`
     - `CreateContainerAssociation`
-    - `CreateProxy`
-    - `CreateProxyConfiguration`
-    - `CreateProxyRuleGroup`
-    - `CreateProxyRules`
+    - `CreateFirewallPolicyV2`
     - `CreateTLSInspectionConfiguration`
     - `CreateVpcEndpointAssociation`
     - `DeleteContainerAssociation`
+    - `DeleteFirewallPolicyV2`
     - `DeleteNetworkFirewallTransitGatewayAttachment`
     - `DeleteProxy`
-    - `DeleteProxyConfiguration`
-    - `DeleteProxyRuleGroup`
-    - `DeleteProxyRules`
     - `DeleteTLSInspectionConfiguration`
     - `DeleteVpcEndpointAssociation`
     - `DescribeContainerAssociation`
     - `DescribeFirewallMetadata`
+    - `DescribeFirewallPolicyV2`
     - `DescribeFlowOperation`
     - `DescribeProxy`
-    - `DescribeProxyConfiguration`
-    - `DescribeProxyRule`
-    - `DescribeProxyRuleGroup`
     - `DescribeRuleGroupSummary`
     - `DescribeTLSInspectionConfiguration`
     - `DescribeVpcEndpointAssociation`
-    - `DetachRuleGroupsFromProxyConfiguration`
     - `DisassociateAvailabilityZones`
     - `GetAnalysisReportResults`
     - `ListAnalysisReports`
     - `ListContainerAssociations`
+    - `ListContextStores`
+    - `ListFirewallPoliciesV2`
     - `ListFlowOperationResults`
     - `ListFlowOperations`
-    - `ListProxies`
-    - `ListProxyConfigurations`
-    - `ListProxyRuleGroups`
+    - `ListResourcesInContextStore`
     - `ListTLSInspectionConfigurations`
     - `ListVpcEndpointAssociations`
     - `RejectNetworkFirewallTransitGatewayAttachment`
@@ -124,11 +115,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `UpdateAvailabilityZoneChangeProtection`
     - `UpdateContainerAssociation`
     - `UpdateFirewallAnalysisSettings`
-    - `UpdateProxy`
-    - `UpdateProxyConfiguration`
-    - `UpdateProxyRule`
-    - `UpdateProxyRuleGroupPriorities`
-    - `UpdateProxyRulePriorities`
+    - `UpdateFirewallPolicyV2`
     - `UpdateProxySettings`
     - `UpdateTLSInspectionConfiguration`
 
@@ -136,6 +123,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/networkfirewall)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/networkfirewall/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/networkfirewall.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/networkfirewall.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [networkfirewall_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/networkfirewall_test.go), [networkfirewall_tls_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/networkfirewall_tls_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

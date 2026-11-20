@@ -9,7 +9,7 @@ Create local S3 transcription job output exclusively from registered URI/languag
 | --- | --- |
 | Service ID | `transcribe` |
 | Signing name | `transcribe` |
-| Wire protocol | AWS JSON 1.1 |
+| Wire protocol | AWS JSON 1.1, Smithy RPC v2 CBOR |
 | API version | `2017-10-26` |
 | Scope | Account and region |
 | Execution | Fixture-backed local S3 transcript writes; no speech inference |
@@ -97,6 +97,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/transcribe)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/transcribe/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/transcribe.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/transcribe.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [transcribe_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/transcribe_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

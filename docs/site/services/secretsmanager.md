@@ -13,7 +13,7 @@ Manage secret versions, staging labels, deletion windows, and Lambda rotation.
 | API version | `2017-10-17` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 20 of 23 in the pinned model |
+| Selected operations | 20 of 26 in the pinned model |
 
 ## Implemented behavior
 
@@ -63,10 +63,13 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "3 modeled operations outside the implementation"
+??? info "6 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
+    - `AssociateCrossAccountReplica`
+    - `DisassociateCrossAccountReplica`
+    - `ListResourcePolicies`
     - `RemoveRegionsFromReplication`
     - `ReplicateSecretToRegions`
     - `StopReplicationToReplica`
@@ -75,6 +78,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/secretsmanager)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/secretsmanager/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/secretsmanager.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/secretsmanager.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [secretsmanager_batch_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/secretsmanager_batch_test.go), [secretsmanager_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/secretsmanager_policy_test.go), [secretsmanager_rotation_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/secretsmanager_rotation_test.go), [secretsmanager_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/secretsmanager_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

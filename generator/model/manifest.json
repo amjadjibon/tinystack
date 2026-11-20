@@ -1,11 +1,11 @@
 {
   "repository": "https://github.com/aws/aws-sdk-go-v2",
-  "commit": "6b78958e867baa77281399bf984144de7936b86e",
+  "commit": "b260587e158655c930bbe98087f7386e3c3f4331",
   "license": "LICENSE.aws-sdk-go-v2",
   "models": {
-    "kinesisanalyticsv2": {
-      "path": "codegen/sdk-codegen/aws-models/kinesis-analytics-v2.json",
-      "sha256": "3cb699ee91c98393c266c812ac1934007409b75f4aab9bd73955cbdda6f13890"
+    "accessanalyzer": {
+      "path": "codegen/sdk-codegen/aws-models/accessanalyzer.json",
+      "sha256": "c7ae963d24ffe9fc916302fbf2733bb5f9d1ca9b27adccabb0a16ada75972d37"
     },
     "account": {
       "path": "codegen/sdk-codegen/aws-models/account.json",
@@ -13,15 +13,27 @@
     },
     "acm": {
       "path": "codegen/sdk-codegen/aws-models/acm.json",
-      "sha256": "fa93fbde7850011b26052855a3dfe18729f049029df9b59cabd8161c309035dc"
+      "sha256": "4e36bdcbe96d559db63b60584eafae28babbb9b3e63f9d1a5c7b249dd693ea7f"
     },
     "acmpca": {
       "path": "codegen/sdk-codegen/aws-models/acm-pca.json",
-      "sha256": "c7b3d0f1b98cd004ac33ed58e45b27ae0ca67a656ee89304bbbac88825bd0e47"
+      "sha256": "cdc93bf2c7bb968c3227bfe7a5cbdd0b5cc234a9f92b3b9800c538b67df9ecf0"
+    },
+    "amp": {
+      "path": "codegen/sdk-codegen/aws-models/amp.json",
+      "sha256": "832452e973e57e7d957313e84c4c0f11bd37d2fcc489b242282f4b471e1902e6"
+    },
+    "amplify": {
+      "path": "codegen/sdk-codegen/aws-models/amplify.json",
+      "sha256": "51d9dd3eb171a6f651877d966f696a3ec0ad66b88fef8104e2cef9840718abd5"
     },
     "apigateway": {
       "path": "codegen/sdk-codegen/aws-models/api-gateway.json",
-      "sha256": "51f7bb0a8c434669394c0887bacefaefdae66994122229fbac87e6d0f1da859a"
+      "sha256": "4ea7431630834e1af2830c41cc13f2314d3bb5b998f44bcd73c530ba2ce2d455"
+    },
+    "apigatewaymanagementapi": {
+      "path": "codegen/sdk-codegen/aws-models/apigatewaymanagementapi.json",
+      "sha256": "0db05e9213885f101f0b25f6ff69d9452aac1397473934b06eef1688506d9d79"
     },
     "apigatewayv2": {
       "path": "codegen/sdk-codegen/aws-models/apigatewayv2.json",
@@ -29,7 +41,7 @@
     },
     "appconfig": {
       "path": "codegen/sdk-codegen/aws-models/appconfig.json",
-      "sha256": "2d468eca10b726a87b4f2bc293ca4e5811593e97e75cf2365bb7b997bf23821f"
+      "sha256": "22d2691567e6ae23f66ba95bb0b1fd35df8d74d97a962e31aa474ce48db71e5a"
     },
     "appconfigdata": {
       "path": "codegen/sdk-codegen/aws-models/appconfigdata.json",
@@ -37,7 +49,11 @@
     },
     "applicationautoscaling": {
       "path": "codegen/sdk-codegen/aws-models/application-auto-scaling.json",
-      "sha256": "c92a9b567ff43cbc0a32d1579aa1be3f382eb9c3ff146e8252de5a58e0d375ea"
+      "sha256": "dd26245012d448d789b0b493c3f49f2e1faa50a655eb0cc249b6c2b7116b303d"
+    },
+    "apprunner": {
+      "path": "codegen/sdk-codegen/aws-models/apprunner.json",
+      "sha256": "ad06dbb74aab104a64d3e08cf1a755e2dbaed8be7f9d700c4326f0067477e2fc"
     },
     "appsync": {
       "path": "codegen/sdk-codegen/aws-models/appsync.json",
@@ -45,19 +61,43 @@
     },
     "athena": {
       "path": "codegen/sdk-codegen/aws-models/athena.json",
-      "sha256": "64bc66f6d0c82e219320a7cd48fe4d1796f1108208a4063bf4730c0bd404f834"
+      "sha256": "0d32fe026bec712d06ca95ec4bdb402e992b3aafb860a9a1f35b662bf1f946bd"
     },
     "autoscaling": {
       "path": "codegen/sdk-codegen/aws-models/auto-scaling.json",
-      "sha256": "a99be352817555cab17666710b0f383b7ab0157714255a6930da3998369ca217"
+      "sha256": "5537fbfc77cb98321d0a5a5170b47e355e716a61700955411ea4bb4de8e35b19"
     },
     "backup": {
       "path": "codegen/sdk-codegen/aws-models/backup.json",
-      "sha256": "90435200c25b574c152eb1df691927396a002b9378e00d90a5c749fe60b7973d"
+      "sha256": "80fef62425edd849a859387820d67497d04541b8f68d9f61444eba5bfb45f042"
     },
     "batch": {
       "path": "codegen/sdk-codegen/aws-models/batch.json",
-      "sha256": "e1b89247b861859dc54cbff160bb38ac4c9479dadb1c9c7b06b607e08c102708"
+      "sha256": "27175c160ffaba6794453130f9e6c017173513656162944da08678a2385200cd"
+    },
+    "bedrock": {
+      "path": "codegen/sdk-codegen/aws-models/bedrock.json",
+      "sha256": "f1cee520c9f934ca6d503970ff75c86ccff5365fa46d85c1d2e7515de53e5926"
+    },
+    "bedrockagent": {
+      "path": "codegen/sdk-codegen/aws-models/bedrock-agent.json",
+      "sha256": "1d611ed0bde7893bbf2692a6942a0bf939e12c71e55f3de8d8015a5ad316cdfc"
+    },
+    "bedrockagentcore": {
+      "path": "codegen/sdk-codegen/aws-models/bedrock-agentcore.json",
+      "sha256": "998c9df92a4ecde81002af1f1d4dba7e9b2485a24a2b2d5b2324b485f2fd596d"
+    },
+    "bedrockagentcorecontrol": {
+      "path": "codegen/sdk-codegen/aws-models/bedrock-agentcore-control.json",
+      "sha256": "77ad5d83dc37b5dd603bc3349f58dc8fe9a1fce174f83969c2d9d620a80cfc44"
+    },
+    "bedrockagentruntime": {
+      "path": "codegen/sdk-codegen/aws-models/bedrock-agent-runtime.json",
+      "sha256": "72224a48b504f955566eb9723f87d73153816083bc934114fe0b6abb98e83bf0"
+    },
+    "bedrockruntime": {
+      "path": "codegen/sdk-codegen/aws-models/bedrock-runtime.json",
+      "sha256": "8f55e75faf50a50f75fade0282d52e16c12b4249fec9754ca6ea109ac5b1ddad"
     },
     "budgets": {
       "path": "codegen/sdk-codegen/aws-models/budgets.json",
@@ -69,11 +109,15 @@
     },
     "cloudformation": {
       "path": "codegen/sdk-codegen/aws-models/cloudformation.json",
-      "sha256": "3de1f8d8357291665ddbced1780998a84d15b0df2264c2aedd98fc09a9189f7d"
+      "sha256": "58e1538044d1e792c27bc7792f65376eda3b9da78addc8c815de7675351c0591"
     },
     "cloudfront": {
       "path": "codegen/sdk-codegen/aws-models/cloudfront.json",
-      "sha256": "f82d5851098bb2461eb8d18798fcd4eed6d6d46344d1e35a581d10eb775d9058"
+      "sha256": "fab6f0ea1959cba1ed6be7f1d5379b59100c3de576dbeffb859e2c401c451c13"
+    },
+    "cloudfrontkeyvaluestore": {
+      "path": "codegen/sdk-codegen/aws-models/cloudfront-keyvaluestore.json",
+      "sha256": "c68940a8cdb7fc57b6a9105e2b9357b64ef674196636595dbc4065a5063895ab"
     },
     "cloudtrail": {
       "path": "codegen/sdk-codegen/aws-models/cloudtrail.json",
@@ -81,7 +125,7 @@
     },
     "cloudwatch": {
       "path": "codegen/sdk-codegen/aws-models/cloudwatch.json",
-      "sha256": "b1abe105489d574be25364ad5cc4a67f5782f4cc6bcf6439a587625bacc9c62a"
+      "sha256": "0a0007841c4959d0b97af3c28f512afe2015f3ea5d2919e14b5f9e12ad856eb2"
     },
     "codeartifact": {
       "path": "codegen/sdk-codegen/aws-models/codeartifact.json",
@@ -89,23 +133,23 @@
     },
     "codebuild": {
       "path": "codegen/sdk-codegen/aws-models/codebuild.json",
-      "sha256": "1ce14cc44bc93ad4f6624780bc31449af06f37f118ee51d618d00d6714ab95da"
+      "sha256": "d198e78b8798210ead3a10675cd1199980c9e0d976cae8497b6673a0eed913c2"
     },
     "codecommit": {
       "path": "codegen/sdk-codegen/aws-models/codecommit.json",
-      "sha256": "08eda03cefa002e8b35b28fd4b6afb3be58b9e195d69de7fea229175b69d0eb0"
+      "sha256": "963d49e972338020ee67d8389fbf918336a1d4f3e0fdcfbd3e711b290842f804"
     },
     "codeconnections": {
       "path": "codegen/sdk-codegen/aws-models/codeconnections.json",
-      "sha256": "8dfdfcccf4156255b5e85cc50013c9ebca73a74a024cdaa550de3b32879da0a3"
+      "sha256": "41f32e372f6fd419d67fe4395a65fe69eaa67d372cd22a2caf03c9f488d33dd4"
     },
     "codedeploy": {
       "path": "codegen/sdk-codegen/aws-models/codedeploy.json",
-      "sha256": "764874cf47021991642794b6744331e90390cb606d6e9fd435f5bce959aef5c0"
+      "sha256": "5186d0d0d058a8e5d3428335638cc7dd4d855ea12ce794a9aec8fd733e6a3381"
     },
     "codepipeline": {
       "path": "codegen/sdk-codegen/aws-models/codepipeline.json",
-      "sha256": "8ac61eba1387c6a3d99afa12c29efa05bde3427dd56e2e2ddb26928b3d8298bc"
+      "sha256": "b513073205506975a86bcfae9b41d6a721607b33579343fd8b7e409db807b966"
     },
     "cognitoidentity": {
       "path": "codegen/sdk-codegen/aws-models/cognito-identity.json",
@@ -113,67 +157,87 @@
     },
     "cognitoidp": {
       "path": "codegen/sdk-codegen/aws-models/cognito-identity-provider.json",
-      "sha256": "3379f96d8708b44b7181cfcd64bb024aed20edc8b79e7e739753691751232ca4"
+      "sha256": "41874b1a91f6d5f80eadd37e94a899f59e501c5b8b625623692ed3711680d0d9"
+    },
+    "comprehend": {
+      "path": "codegen/sdk-codegen/aws-models/comprehend.json",
+      "sha256": "1363e9568ee0e1db93f05e8313603c8932335ddafe7fb234a05e410ed70a997e"
     },
     "config": {
       "path": "codegen/sdk-codegen/aws-models/config-service.json",
-      "sha256": "66e1706ad7d4481ba51aa54f17d3df9f249e290293a6cd141e3903a2eb5e1782"
+      "sha256": "ff511a37a255eea020d893ecc1134eab0a661c5f9c954425abed0263376f2db5"
     },
     "costandusagereportservice": {
       "path": "codegen/sdk-codegen/aws-models/cost-and-usage-report-service.json",
-      "sha256": "0a1885967beb8d517ae219ed83915aca1bec0738d3835f842613ceb1332c363d"
+      "sha256": "b80722eeca37e639c25b2f28a436e38525837d0fe172ed34dfe80ee318903ad0"
     },
     "costexplorer": {
       "path": "codegen/sdk-codegen/aws-models/cost-explorer.json",
-      "sha256": "1aaa6395a8ecf1de9f1715711fb2d6b86ed47eaf0ecc822de753d68cd767f03c"
+      "sha256": "f5718ad56fa4b6cef53dcc14ab1f256d2dff268d180625e9d5a726ee6607f224"
     },
     "databasemigrationservice": {
       "path": "codegen/sdk-codegen/aws-models/database-migration-service.json",
-      "sha256": "0e656a1065b35119e67b412532672867ee5911dfe959dc93c418cf7eb7998291"
+      "sha256": "623ccb301e1c1eaa328c7c70f33fbf57b8d001506da1d16b986984ce47a755e8"
+    },
+    "datasync": {
+      "path": "codegen/sdk-codegen/aws-models/datasync.json",
+      "sha256": "42fda132df2d3dde2f01e2a4ce6727f7fc48857472c0cce51434c54efd46493f"
+    },
+    "dsql": {
+      "path": "codegen/sdk-codegen/aws-models/dsql.json",
+      "sha256": "bf426615c43efe7a5e2d299637c1eac4d267e5649fb4c9ff0f23525043a113c8"
     },
     "dynamodb": {
       "path": "codegen/sdk-codegen/aws-models/dynamodb.json",
-      "sha256": "889458e11643e5f4b240af1d2f1fd0271d06ebf44d88fb571853aa5c8e1ae438"
+      "sha256": "4bded9c8465fc30f0d522ce78ec1c506e8506a0f155214c131b94a5f506dd8c7"
     },
     "dynamodbstreams": {
       "path": "codegen/sdk-codegen/aws-models/dynamodb-streams.json",
-      "sha256": "c4ff064d1b2533430669bd0fdd085efabc378fd6210f7646953d984468e26689"
+      "sha256": "fc371922cdefb57b2b7c1463dec3bf4b631997f9bc28a782d836bf6f442fe538"
     },
     "ec2": {
       "path": "codegen/sdk-codegen/aws-models/ec2.json",
-      "sha256": "e233aadc33c799f5ad66975cff1649feb95e987c7a0f1a398a994e8c80357e90"
+      "sha256": "06ab2afd443451ea3a99c4a93730421e9a52bf5e62d2c0703a76a681b08ff106"
     },
     "ecr": {
       "path": "codegen/sdk-codegen/aws-models/ecr.json",
-      "sha256": "2dd2775a9298dc4c1546d49ea3ba20be8a2075b3941cbf2f7ddc0063336c3566"
+      "sha256": "226237e7a32ac3ca80e5f8284320841efd479c8f5b508a24dbd9e2f0e53e5abd"
     },
     "ecs": {
       "path": "codegen/sdk-codegen/aws-models/ecs.json",
-      "sha256": "b66c352b2df9d1007429c157f036aee781f4736b9757b877e37fb51eb61856a7"
+      "sha256": "6c5726beb85c40a0db9a0cb5473b4ac60d83c63e8df365768f1f3cedfd01bd72"
     },
     "efs": {
       "path": "codegen/sdk-codegen/aws-models/efs.json",
-      "sha256": "c4cd724b07e79cc458cbe8ceb790af6569e299c69aee029650ac931d7ae7f8e8"
+      "sha256": "d09357ac8ca759f3ebbbcaa8d52c2b764ee1be5e7acbe1d22bb2a16a16234c36"
     },
     "eks": {
       "path": "codegen/sdk-codegen/aws-models/eks.json",
-      "sha256": "6e2d0639b82525a20ba814e52b0d4ac5ffb36e4f7ec100e7164498cdf78b8a56"
+      "sha256": "94504963445e220df501a6d7cd76f3f7f8e6d13c9b1c5e7a27811cb63dbfe44d"
     },
     "elasticache": {
       "path": "codegen/sdk-codegen/aws-models/elasticache.json",
-      "sha256": "ce148a82d179361fe511f058c8da388cfa7d6a01843e67ab78a544f2a35f4b58"
+      "sha256": "03b3d7abdc3b9e3ecd904404f5bd200c162daf2eda9ed2ffde65308988c6c176"
+    },
+    "elasticbeanstalk": {
+      "path": "codegen/sdk-codegen/aws-models/elastic-beanstalk.json",
+      "sha256": "db21c11b17e700e20df1460fae39323d8581da0adaa3d52425fba35e4d197084"
     },
     "elb": {
       "path": "codegen/sdk-codegen/aws-models/elastic-load-balancing.json",
-      "sha256": "34cc3bd9a7042e010b153c9e04d8673c66018179065cc8f2333f7e5c9a26e588"
+      "sha256": "ae1e98960b1aa0fe79049f2e54e5d7943f58265ec13a4091ca8b234af27fabf8"
     },
     "elbv2": {
       "path": "codegen/sdk-codegen/aws-models/elastic-load-balancing-v2.json",
-      "sha256": "34547fbf1a15abc429406c1ebfe20672022fa7a9b43bdb6df73d10c345a746dc"
+      "sha256": "3f673dc8eae7a7a23d98ac181902b32a484e40ae5e68e3e3253025290f127d43"
+    },
+    "emr": {
+      "path": "codegen/sdk-codegen/aws-models/emr.json",
+      "sha256": "b7d0010b2bd34399da9015e461229fa43075846d4e7d695cbc8fdc28bcaa675b"
     },
     "emrserverless": {
       "path": "codegen/sdk-codegen/aws-models/emr-serverless.json",
-      "sha256": "458dfa585d2845e9635021801a51504364ae237412a8a9c183ce123542331d23"
+      "sha256": "442f252e1d2edabb15c04d475850c1c94be327f54742c38aa95e80ef267a3be9"
     },
     "eventbridge": {
       "path": "codegen/sdk-codegen/aws-models/eventbridge.json",
@@ -183,25 +247,37 @@
       "path": "codegen/sdk-codegen/aws-models/firehose.json",
       "sha256": "ae58605d392b6571983abec05ebd3aa2884d3ab43d1b7d1dda6f30f03815f35e"
     },
+    "fis": {
+      "path": "codegen/sdk-codegen/aws-models/fis.json",
+      "sha256": "5bdd1bef3a7c8a7d5dcf94c41ebc04ccfe6cabd50249947c2524ce3ade45241a"
+    },
     "glacier": {
       "path": "codegen/sdk-codegen/aws-models/glacier.json",
-      "sha256": "ef7ce872bcf7741fa0b739e503c590dbc6db84653daa71179f6886b066c19ce0"
+      "sha256": "ba1784ea1944df1b25436c5641e754f754b64012333f6edf1651c1e67b69f04c"
+    },
+    "globalaccelerator": {
+      "path": "codegen/sdk-codegen/aws-models/global-accelerator.json",
+      "sha256": "6cbda1096fc2bfdb413a74d0e1cc24a8298d869610df8de95f4582edf137ca73"
     },
     "glue": {
       "path": "codegen/sdk-codegen/aws-models/glue.json",
-      "sha256": "0872a9745bf405a84c119ff4d4cfacaec24bc1919740f1d5a264563e3bbc9c55"
+      "sha256": "6ce97e6356749131baa27b2912cf712c3256cd6e0c3c59ca406663a4f1dcbad8"
     },
     "iam": {
       "path": "codegen/sdk-codegen/aws-models/iam.json",
-      "sha256": "c0cec5eeceeffdf03f310ae41c30d072041dbc274bc5a388cad525847de1bec2"
+      "sha256": "8c260af9e01ca7f31a52d05b224113de66f3c957f9d160c53cf54de825732ca5"
     },
     "identitystore": {
       "path": "codegen/sdk-codegen/aws-models/identitystore.json",
-      "sha256": "0e34a86506baa1241ebb058605633523c87c2bcf3e18b261135969850ba015c9"
+      "sha256": "957887de79a5e83bd39506301df09812daf80bce9b0495f7bfec4ecbf9fcc67a"
+    },
+    "inspector2": {
+      "path": "codegen/sdk-codegen/aws-models/inspector2.json",
+      "sha256": "47662e9614cb69012b4e3dd039386c8a0894448c1f3975ca1f0276760bc36ef4"
     },
     "iot": {
       "path": "codegen/sdk-codegen/aws-models/iot.json",
-      "sha256": "b844c77e44c5fa65fc0666fd4085e65338c150adbdf0e88b201f2fe1f5a48568"
+      "sha256": "eee264b1e01cb3ea2964e939ad9a538853d156561539817586fe132349232047"
     },
     "iotdataplane": {
       "path": "codegen/sdk-codegen/aws-models/iot-data-plane.json",
@@ -211,25 +287,37 @@
       "path": "codegen/sdk-codegen/aws-models/iot-jobs-data-plane.json",
       "sha256": "1d0bb33a614079680209994902fe734ad68f30be2a026fd618f329a7264d4622"
     },
+    "iotwireless": {
+      "path": "codegen/sdk-codegen/aws-models/iot-wireless.json",
+      "sha256": "0792d25768fe2c80a33b77f8cce3c431a89273403fca9672e2a31b0b0cb79637"
+    },
     "kafka": {
       "path": "codegen/sdk-codegen/aws-models/kafka.json",
-      "sha256": "26a7e667ad7c2ce3d32dafcb2f6bf9cf8677d8f07c5e07f5e7adec8dc7c068ca"
+      "sha256": "96b61646f71fe3ffec3d443c90169a72e6d2dc2d0fd78e965320ce33472cace8"
+    },
+    "keyspaces": {
+      "path": "codegen/sdk-codegen/aws-models/keyspaces.json",
+      "sha256": "4f8277a96b4e690fc289796be3ed89b33194325ad9871b357c6484c7fd3bb820"
     },
     "kinesis": {
       "path": "codegen/sdk-codegen/aws-models/kinesis.json",
-      "sha256": "b3cd88f396f3591df7f1a809957379a9c8afba1e593e3eb38ee7d99afb689636"
+      "sha256": "e24c74a7f9aa1307b21626fae2db4564f42e222123f16d7d96ff63462b5347a0"
+    },
+    "kinesisanalyticsv2": {
+      "path": "codegen/sdk-codegen/aws-models/kinesis-analytics-v2.json",
+      "sha256": "2710e5f6fdaca3151663b7d3f296870388388c2ddf483db51da9a6e8254addd4"
     },
     "kms": {
       "path": "codegen/sdk-codegen/aws-models/kms.json",
-      "sha256": "82e414ec6095a69dabe0e7de071a5b9704c413d3277ed1b293d3cbcd8dd6ce5f"
+      "sha256": "42ce5f7a9dc2407eb3bbd93f6098d176b0e3652800bef735c191e88f7cd9bbe6"
     },
     "lakeformation": {
       "path": "codegen/sdk-codegen/aws-models/lakeformation.json",
-      "sha256": "b3d189f24f5e871364d39d5af0b1391f685d449ff5041c8263cb988adca304a0"
+      "sha256": "ca9b067225b1cf3ae3a80a7712f82341285d2034aac08fbd3f269d8b07f2e55c"
     },
     "lambda": {
       "path": "codegen/sdk-codegen/aws-models/lambda.json",
-      "sha256": "bc9d8903e0192d3e05d141e7b350c05d385fa301c367003077ad8e8f7a0bd99c"
+      "sha256": "69b1219477d3423c3ba838cecc467c4d7949cf1e8f5a42ad80ba1853549c7dc4"
     },
     "location": {
       "path": "codegen/sdk-codegen/aws-models/location.json",
@@ -237,11 +325,19 @@
     },
     "logs": {
       "path": "codegen/sdk-codegen/aws-models/cloudwatch-logs.json",
-      "sha256": "308aa3e4d27c48f1233a6c286e970948a64a9eb157ee446b8227364eb7d8c49b"
+      "sha256": "0cae9379e79d7caa54d58590c36c94b9dddb2d8aa0d571c01ad4e443650f3f30"
+    },
+    "mediaconnect": {
+      "path": "codegen/sdk-codegen/aws-models/mediaconnect.json",
+      "sha256": "c3ac0e7b127ec14d30996615520b79e28a5fafcba37a7243fc6298234c4ec0ae"
+    },
+    "mediaconvert": {
+      "path": "codegen/sdk-codegen/aws-models/mediaconvert.json",
+      "sha256": "c34219c2d457da12318ea77c59a36bffd03d8643dcfe2d0836ff3bcee63c9930"
     },
     "memorydb": {
       "path": "codegen/sdk-codegen/aws-models/memorydb.json",
-      "sha256": "7d9cdba2389201c80c8112fbc39d2bf61ce2c33cae1d435fbcff1adbb39cb973"
+      "sha256": "f5e68d835e0736a74db3cf8352d0f15a8184e164cf308a2ad609deb470b65542"
     },
     "mq": {
       "path": "codegen/sdk-codegen/aws-models/mq.json",
@@ -249,31 +345,63 @@
     },
     "mwaa": {
       "path": "codegen/sdk-codegen/aws-models/mwaa.json",
-      "sha256": "a2211dca4ba8ef2d62ea1a00d69813099069ffb9d986d63b56e1c20c7eaa0353"
+      "sha256": "de2041e403ad01bf60a6721e030e02363b3d96fe2c50295244c7ac8387004c52"
+    },
+    "networkfirewall": {
+      "path": "codegen/sdk-codegen/aws-models/network-firewall.json",
+      "sha256": "5e0477c703d56c5ced0ae6491a7bb77dd0728ebbbba082893708cacd19384d6d"
     },
     "opensearch": {
       "path": "codegen/sdk-codegen/aws-models/opensearch.json",
-      "sha256": "97c3c77e7531f163132aac79b8f0589e596d591a4f8564b8a1dc590bc28e7093"
+      "sha256": "4165d39f1bec53fc9a412b3ff785d6e757d7165353b32ecfc0d0c7c86558e1ff"
+    },
+    "opensearchserverless": {
+      "path": "codegen/sdk-codegen/aws-models/opensearchserverless.json",
+      "sha256": "a422a0a8a5d70669fa4e18288c3ed8f6b2cfb79d870e8d54510a42129f5344e6"
     },
     "organizations": {
       "path": "codegen/sdk-codegen/aws-models/organizations.json",
-      "sha256": "895ce464aaefe314645c311bf19712755144af4a6c8c3931fe3fb95a5e0850af"
+      "sha256": "7b8c5a48be2d70a3035f12e2111e0960ce0a63d297a0ea12d9da4df20d15d428"
     },
     "pipes": {
       "path": "codegen/sdk-codegen/aws-models/pipes.json",
       "sha256": "bb7d3031f9252fd8d9f935873105f1ee1182594213204b000aa457b6ab49f2e3"
     },
+    "polly": {
+      "path": "codegen/sdk-codegen/aws-models/polly.json",
+      "sha256": "02c159482443d1f02e5a2dabb8c87830786608e46a3b7c308f50bff956b270a0"
+    },
     "ram": {
       "path": "codegen/sdk-codegen/aws-models/ram.json",
-      "sha256": "90d464170a4b3bd07e2dd8b088be54d5206dc2fd7071f37164a4201023fda1b6"
+      "sha256": "903227f584d068354ec9f755cdef94b24968a03c930cc75408a0cae8c452a0ef"
     },
     "rds": {
       "path": "codegen/sdk-codegen/aws-models/rds.json",
-      "sha256": "95d7e865d920e45ce621242bc4aa44dbd386fa096550011b6b67b28b40063853"
+      "sha256": "8791a296db8a59490a9e358fdb5cf889b9b8754ab9e05009812b8925529ba745"
+    },
+    "rdsdata": {
+      "path": "codegen/sdk-codegen/aws-models/rds-data.json",
+      "sha256": "a12dcb92728cacec7533d846d9d1ac3618ed1a6f69186b3b6b425530784200cf"
     },
     "redshift": {
       "path": "codegen/sdk-codegen/aws-models/redshift.json",
       "sha256": "84ddb5e87015ded06f389c13343f1c30c3172f1b680c8db328306de0f94d5b0f"
+    },
+    "redshiftdata": {
+      "path": "codegen/sdk-codegen/aws-models/redshift-data.json",
+      "sha256": "e3ae9ddf78702b4c6a4be790abe06cdd25c72be1e511a697bd77a498b8c7d25a"
+    },
+    "redshiftserverless": {
+      "path": "codegen/sdk-codegen/aws-models/redshift-serverless.json",
+      "sha256": "e224019b802277cb155501e8a241193b2ebafaacad28ec21aa6c2e0b36e640f5"
+    },
+    "rekognition": {
+      "path": "codegen/sdk-codegen/aws-models/rekognition.json",
+      "sha256": "efdc4b3a8a9a7917163d02121406623bd2ac7c681a919d1d9a77bb5d66f11f78"
+    },
+    "resourceexplorer2": {
+      "path": "codegen/sdk-codegen/aws-models/resource-explorer-2.json",
+      "sha256": "da0468629f8b369c648bf9e962c5237dbad4c8d78b947ed254fd006c05461d30"
     },
     "resourcegroups": {
       "path": "codegen/sdk-codegen/aws-models/resource-groups.json",
@@ -281,35 +409,51 @@
     },
     "resourcegroupstaggingapi": {
       "path": "codegen/sdk-codegen/aws-models/resource-groups-tagging-api.json",
-      "sha256": "e29f2eb712bc3f803dca480fed1caf0aa7582d08a41607116feda022c53e156e"
+      "sha256": "621909ec4c7a6add4d6bdb642b947ec9cdbc704464aed11d353a5161cd6fdc52"
     },
     "route53": {
       "path": "codegen/sdk-codegen/aws-models/route-53.json",
-      "sha256": "49310b259a022b7f59fee7ec292ae482761aca40c61dc073f189b9170ab552d9"
+      "sha256": "8eeabe4938d553774645fb6ad2d1f956ad5c56220769b160f319aa248e58e3f3"
     },
     "route53resolver": {
       "path": "codegen/sdk-codegen/aws-models/route53resolver.json",
-      "sha256": "2f71da28bb668d385ea78d599339b957b54c6accf2d0dc7e7b29cfc1099aa166"
+      "sha256": "0b4a7b4020a0dbb1a39de70a4ea1200903ba303b3162dbc23118185c83776bc6"
     },
     "s3": {
       "path": "codegen/sdk-codegen/aws-models/s3.json",
-      "sha256": "57431518807d8565e103b9bcc8f2610950e725645e28374e746bdf8e300cc37a"
+      "sha256": "03057c5c88e044752953bb89d07107d58a7e910ac292631faf7c21af0bccc797"
+    },
+    "s3control": {
+      "path": "codegen/sdk-codegen/aws-models/s3-control.json",
+      "sha256": "eaeb3c61f57ca7edc9d5c389629d3fe6860d21eb592d7fd2ee3f2076579710ee"
+    },
+    "s3files": {
+      "path": "codegen/sdk-codegen/aws-models/s3files.json",
+      "sha256": "18beeb88df9d8c8ab4682e8ae9875aadbffe11fa4735faad87cc91cae7324011"
     },
     "s3tables": {
       "path": "codegen/sdk-codegen/aws-models/s3tables.json",
-      "sha256": "8b92d3d062c80f66dd9b2c600ff15230656e715cea567ddbfc750e446b20927d"
+      "sha256": "45d39c3eed9c7019eab8da77abc1ed64968bae87b3a9f63f2eb410e07fb7d007"
     },
     "scheduler": {
       "path": "codegen/sdk-codegen/aws-models/scheduler.json",
-      "sha256": "a6c0eddf260d68da0fd51213d0827d4eaaf24de80c5a8988fa86cdc9ffdbca0a"
+      "sha256": "9f0894b8581c746d6d719e56d3a29f8d8b5515539e742d70915025901b3c59b7"
     },
     "secretsmanager": {
       "path": "codegen/sdk-codegen/aws-models/secrets-manager.json",
-      "sha256": "b1bce4d92db3876e6811dd5900a26e4b6b9af15833425dc7a07a5e23886fa886"
+      "sha256": "c273c8a7ca0bc6c342c57145aee9bc014d69688dc133e3e0803bdc942b1f181a"
+    },
+    "securityhub": {
+      "path": "codegen/sdk-codegen/aws-models/securityhub.json",
+      "sha256": "e967fc6ae2312e3d4f7b2e8659394ad94ff376f8eb50ba6e75a5c1c8e4caf742"
+    },
+    "servicecatalog": {
+      "path": "codegen/sdk-codegen/aws-models/service-catalog.json",
+      "sha256": "cb5af2ea0be79cc26ea5a2823530ec281c43ca4ab3677bce9017e136969ac3aa"
     },
     "servicediscovery": {
       "path": "codegen/sdk-codegen/aws-models/servicediscovery.json",
-      "sha256": "f32a3c9282287dfb15aefc056a9018064c867d2dd70a41a4932826e465bf8455"
+      "sha256": "a0e0dcc280c54a5ab19ee378e17c4313a0ada7ba09bf079b1fc3068ffd63105d"
     },
     "servicequotas": {
       "path": "codegen/sdk-codegen/aws-models/service-quotas.json",
@@ -317,15 +461,23 @@
     },
     "ses": {
       "path": "codegen/sdk-codegen/aws-models/ses.json",
-      "sha256": "fe57af14c0cb78e4886218f5d39bb199bbe490a0dd3f35d2509523a3c1442239"
+      "sha256": "7706e23e7e28e4ebff84d782d7210fb2c0f22035b088a516c01b560b9af87f14"
     },
     "sesv2": {
       "path": "codegen/sdk-codegen/aws-models/sesv2.json",
-      "sha256": "a1c6416d94a352261635b50fc04552c617f29bd23a32c9a80100b9a08d027b0c"
+      "sha256": "7a7ebc630e5bb2115355c9cedfba40f236bf7d994d9244420518250a4b76b342"
     },
     "sfn": {
       "path": "codegen/sdk-codegen/aws-models/sfn.json",
-      "sha256": "2ef5bf10bf1b248a34d313f6bd6334e9f03e6eebf5c35784ab714ba01cca508a"
+      "sha256": "b4588dd9a96641549257757b318a89b9683cb1e72c4358d13ce84e92d0747108"
+    },
+    "shield": {
+      "path": "codegen/sdk-codegen/aws-models/shield.json",
+      "sha256": "491ccc1c463b119dd6f5480be0e38f0a1a91d524f7aa2e9271fce1bee3a8d8dc"
+    },
+    "signer": {
+      "path": "codegen/sdk-codegen/aws-models/signer.json",
+      "sha256": "d796609f10a5879b3ca7d68084f7799e35fd8155ac2b4d5bba1e183384000970"
     },
     "sns": {
       "path": "codegen/sdk-codegen/aws-models/sns.json",
@@ -337,219 +489,67 @@
     },
     "ssm": {
       "path": "codegen/sdk-codegen/aws-models/ssm.json",
-      "sha256": "8aac35e07b6511821a0704008decdc8a0b69bc8deeb6ab3efadc5426a3225ef7"
-    },
-    "ssoadmin": {
-      "path": "codegen/sdk-codegen/aws-models/sso-admin.json",
-      "sha256": "75ec61342df3973c1e7c1350199fa9074cf1542ed0edfb024f056c0d27b6a10b"
-    },
-    "sts": {
-      "path": "codegen/sdk-codegen/aws-models/sts.json",
-      "sha256": "3012bfe1c6d44b4348ed03888085fd0b7a506e4da3335250280537b85e834864"
-    },
-    "timestreamwrite": {
-      "path": "codegen/sdk-codegen/aws-models/timestream-write.json",
-      "sha256": "9fe14dcbd21e9e03bca48920a8a8dc7769dab51ee9ecc2e4fc65edc02824a268"
-    },
-    "transfer": {
-      "path": "codegen/sdk-codegen/aws-models/transfer.json",
-      "sha256": "dacf9d6638d8a4f4621ebc438aa8dab7589e757b16037ea8acf50cb292e1db83"
-    },
-    "verifiedpermissions": {
-      "path": "codegen/sdk-codegen/aws-models/verifiedpermissions.json",
-      "sha256": "53fb712d34ce2a48a238358e2057b019513c5d94cff8e84820aa61f3c6093123"
-    },
-    "wafv2": {
-      "path": "codegen/sdk-codegen/aws-models/wafv2.json",
-      "sha256": "0c5a241cea430b965f960950905f2c5a8b3814e10ae0da9ec7e9e2d05a3b5e8b"
-    },
-    "xray": {
-      "path": "codegen/sdk-codegen/aws-models/xray.json",
-      "sha256": "4ecfdc502234eb1ab83edf8950d1b4cb083b14565a30118e1e7ec783a751212a"
-    },
-    "opensearchserverless": {
-      "path": "codegen/sdk-codegen/aws-models/opensearchserverless.json",
-      "sha256": "a1be800018333d5e45e9ac11c15063edc29abb7c04eed9fa0ef36877acd7d52a"
-    },
-    "signer": {
-      "path": "codegen/sdk-codegen/aws-models/signer.json",
-      "sha256": "d796609f10a5879b3ca7d68084f7799e35fd8155ac2b4d5bba1e183384000970"
-    },
-    "waf": {
-      "path": "codegen/sdk-codegen/aws-models/waf.json",
-      "sha256": "86cf5e5dbb46b6cc5e57bc6a5f62b8abb85cbe7c9401f9dffb1649f260f6300c"
-    },
-    "emr": {
-      "path": "codegen/sdk-codegen/aws-models/emr.json",
-      "sha256": "b36a02dfcb9a4a1b21685491c889e6f55269aae189b29054448a38ccfda4ff81"
-    },
-    "bedrock": {
-      "path": "codegen/sdk-codegen/aws-models/bedrock.json",
-      "sha256": "d80e65bf14e8c6d2386084d3ed88582ef1e1344afb6656dc5602950b63164eb2"
-    },
-    "bedrockruntime": {
-      "path": "codegen/sdk-codegen/aws-models/bedrock-runtime.json",
-      "sha256": "8f55e75faf50a50f75fade0282d52e16c12b4249fec9754ca6ea109ac5b1ddad"
-    },
-    "elasticbeanstalk": {
-      "path": "codegen/sdk-codegen/aws-models/elastic-beanstalk.json",
-      "sha256": "e17a6e7bf75c49a96e0b856a9b225a58ef7eda3b40affa05d6b1afbe23b57069"
-    },
-    "rdsdata": {
-      "path": "codegen/sdk-codegen/aws-models/rds-data.json",
-      "sha256": "a12dcb92728cacec7533d846d9d1ac3618ed1a6f69186b3b6b425530784200cf"
-    },
-    "apigatewaymanagementapi": {
-      "path": "codegen/sdk-codegen/aws-models/apigatewaymanagementapi.json",
-      "sha256": "0db05e9213885f101f0b25f6ff69d9452aac1397473934b06eef1688506d9d79"
-    },
-    "amp": {
-      "path": "codegen/sdk-codegen/aws-models/amp.json",
-      "sha256": "e31b6eaa0de263a0a4c75626f3e041b520b7356281c9599cb59b79a8f1e7f98f"
-    },
-    "apprunner": {
-      "path": "codegen/sdk-codegen/aws-models/apprunner.json",
-      "sha256": "ad06dbb74aab104a64d3e08cf1a755e2dbaed8be7f9d700c4326f0067477e2fc"
-    },
-    "amplify": {
-      "path": "codegen/sdk-codegen/aws-models/amplify.json",
-      "sha256": "27cf0a1fc50ad8670a35cfb0144b018ebe1eb0608ae0e14287e8549790cb988f"
-    },
-    "accessanalyzer": {
-      "path": "codegen/sdk-codegen/aws-models/accessanalyzer.json",
-      "sha256": "737a1a50aac7c3224212ae075ccfa01b45e64491deb8d6a9bf68333f309e8b36"
-    },
-    "securityhub": {
-      "path": "codegen/sdk-codegen/aws-models/securityhub.json",
-      "sha256": "7c9d0465c505b8138f2b0e52ca78b367c1f11c89ae1cb1b3cfc69c3783e7b652"
-    },
-    "networkfirewall": {
-      "path": "codegen/sdk-codegen/aws-models/network-firewall.json",
-      "sha256": "b3fdd020de751c97b6245a5c7f0b9e8d71476330c8a0c41cd6093404f7e9637d"
-    },
-    "inspector2": {
-      "path": "codegen/sdk-codegen/aws-models/inspector2.json",
-      "sha256": "39187dfb12f7c36c73b4933acdb08c2e7cc1c3559d49c9a32b890f82ab12b428"
-    },
-    "resourceexplorer2": {
-      "path": "codegen/sdk-codegen/aws-models/resource-explorer-2.json",
-      "sha256": "da0468629f8b369c648bf9e962c5237dbad4c8d78b947ed254fd006c05461d30"
-    },
-    "servicecatalog": {
-      "path": "codegen/sdk-codegen/aws-models/service-catalog.json",
-      "sha256": "0e5e2f9eb8726eb0ada441b49b3382c81e152916d609033c0d16d7b939bac3f7"
-    },
-    "globalaccelerator": {
-      "path": "codegen/sdk-codegen/aws-models/global-accelerator.json",
-      "sha256": "6cbda1096fc2bfdb413a74d0e1cc24a8298d869610df8de95f4582edf137ca73"
-    },
-    "fis": {
-      "path": "codegen/sdk-codegen/aws-models/fis.json",
-      "sha256": "5bdd1bef3a7c8a7d5dcf94c41ebc04ccfe6cabd50249947c2524ce3ade45241a"
-    },
-    "datasync": {
-      "path": "codegen/sdk-codegen/aws-models/datasync.json",
-      "sha256": "6a70e3cfff842f15657a006845f382d2bd9cb8d0d0c9a0fca79dff0fdae88d50"
-    },
-    "shield": {
-      "path": "codegen/sdk-codegen/aws-models/shield.json",
-      "sha256": "5bab90bb091a18441e1e3a35f7a5dff33f1bbc6be8eeda96cbc54f3350b62635"
-    },
-    "swf": {
-      "path": "codegen/sdk-codegen/aws-models/swf.json",
-      "sha256": "bcbcdf119308ff6e3132790133d269edcd85c7fc2bdaa60deedc01ae7c34e245"
-    },
-    "dsql": {
-      "path": "codegen/sdk-codegen/aws-models/dsql.json",
-      "sha256": "ee674d9f2ac26be1b5af7d48e9235c85b001aecd5eeabfd75ee5a0ec5cd17f34"
-    },
-    "mediaconvert": {
-      "path": "codegen/sdk-codegen/aws-models/mediaconvert.json",
-      "sha256": "beebb2ba87a70b7976bb0caba2c4c691d17e468c11466669387a525e46086648"
-    },
-    "mediaconnect": {
-      "path": "codegen/sdk-codegen/aws-models/mediaconnect.json",
-      "sha256": "9c43ab63f22973308717e6127b1c3cd40c63237f0559de262ab772707d96c277"
-    },
-    "s3files": {
-      "path": "codegen/sdk-codegen/aws-models/s3files.json",
-      "sha256": "b538b511c203d050db7ba5ea07ded62cf6a285e63271251f14398a1b4f094fd4"
-    },
-    "iotwireless": {
-      "path": "codegen/sdk-codegen/aws-models/iot-wireless.json",
-      "sha256": "5dd34f4795ec9ee66b9d28e4d0e7f59ac11ef65ec87022ae09fb81b9c6998ac0"
-    },
-    "translate": {
-      "path": "codegen/sdk-codegen/aws-models/translate.json",
-      "sha256": "103c44c87ddc51b0b8048248c508653c98e9c4b9295fc1c2f211e63738d2e646"
-    },
-    "transcribe": {
-      "path": "codegen/sdk-codegen/aws-models/transcribe.json",
-      "sha256": "d530e27cd85dfce6fc14e96a0a7174a405e907518a3596cd18e957e292f451b7"
-    },
-    "bedrockagent": {
-      "path": "codegen/sdk-codegen/aws-models/bedrock-agent.json",
-      "sha256": "7d4b8ff0c8cfa3c49e9c9520fa0bf853d3560666d96e6a8db246700e584706b1"
-    },
-    "bedrockagentruntime": {
-      "path": "codegen/sdk-codegen/aws-models/bedrock-agent-runtime.json",
-      "sha256": "77fa0f809a1abdad81ebccc01cd681bd62b9e037ec654e81fe288d73a8a5566f"
-    },
-    "bedrockagentcorecontrol": {
-      "path": "codegen/sdk-codegen/aws-models/bedrock-agentcore-control.json",
-      "sha256": "25162232916f610d27eb5aaad05eb0f5a92b02c76c9e59359f1fdae2fde818a5"
-    },
-    "bedrockagentcore": {
-      "path": "codegen/sdk-codegen/aws-models/bedrock-agentcore.json",
-      "sha256": "ae45818de50255db523c923d86368798d5664a1dc8b8e0e4ea4bb151a48278be"
-    },
-    "s3control": {
-      "path": "codegen/sdk-codegen/aws-models/s3-control.json",
-      "sha256": "52274064e1a4357ead7a6c57f07c93efbdff2674a16741898aceb7f81dcd17b2"
-    },
-    "cloudfrontkeyvaluestore": {
-      "path": "codegen/sdk-codegen/aws-models/cloudfront-keyvaluestore.json",
-      "sha256": "cc14f46944bb1c3440f689b1a54a8c5d0c0ea8939eb370f36fe661a78c26d208"
-    },
-    "redshiftserverless": {
-      "path": "codegen/sdk-codegen/aws-models/redshift-serverless.json",
-      "sha256": "e224019b802277cb155501e8a241193b2ebafaacad28ec21aa6c2e0b36e640f5"
-    },
-    "redshiftdata": {
-      "path": "codegen/sdk-codegen/aws-models/redshift-data.json",
-      "sha256": "490eb86f020e950ef94c4d6dce4fff44c3a1ee2039a81a4a6b626aeb3a683f07"
-    },
-    "timestreamquery": {
-      "path": "codegen/sdk-codegen/aws-models/timestream-query.json",
-      "sha256": "e209f2ccf023f01ce7d2fcc1388519fe2583aaca344f6a395ad001a8d9af70aa"
+      "sha256": "74774ca92519e0a7bfa588116af7b47eba1ee85604c0fb31f1e57af1c32acb94"
     },
     "sso": {
       "path": "codegen/sdk-codegen/aws-models/sso.json",
       "sha256": "00d1e392ca5410c900a430edcaa52fc5f95c279aea180e8b2b1f2fbcf84f7967"
     },
+    "ssoadmin": {
+      "path": "codegen/sdk-codegen/aws-models/sso-admin.json",
+      "sha256": "3c5cf9c9f64b80d8948690a1c54e72e1135c443376adbfcc16ee170edd239c7d"
+    },
     "ssooidc": {
       "path": "codegen/sdk-codegen/aws-models/sso-oidc.json",
       "sha256": "c91f6c092ef06f7147b96e5fd7c204f37941b91f1fba54af8cba63cdca160c55"
     },
-    "comprehend": {
-      "path": "codegen/sdk-codegen/aws-models/comprehend.json",
-      "sha256": "5e71daa14e94074c344fb8b665ac6126e5217007bf60c499d69a637fb8f35af0"
+    "sts": {
+      "path": "codegen/sdk-codegen/aws-models/sts.json",
+      "sha256": "861ddb5ef9d6d6969386b6d415603f4b4004f23d4acfe421483c39fd6f742ad1"
+    },
+    "swf": {
+      "path": "codegen/sdk-codegen/aws-models/swf.json",
+      "sha256": "bcbcdf119308ff6e3132790133d269edcd85c7fc2bdaa60deedc01ae7c34e245"
     },
     "textract": {
       "path": "codegen/sdk-codegen/aws-models/textract.json",
-      "sha256": "655cd437e6a3f1a83679f625037ff5bb41baa83f52a389a8f0ea28da6195d77f"
+      "sha256": "7d9941d16513744a4ca5b27f1039d95b23c61045d700453644d6f9b43c9a2b3d"
     },
-    "rekognition": {
-      "path": "codegen/sdk-codegen/aws-models/rekognition.json",
-      "sha256": "0264a1bae0b00c8b1576c5e0d3652866323b53dd32731fd88615dfa4c0e4196f"
+    "timestreamquery": {
+      "path": "codegen/sdk-codegen/aws-models/timestream-query.json",
+      "sha256": "e209f2ccf023f01ce7d2fcc1388519fe2583aaca344f6a395ad001a8d9af70aa"
     },
-    "polly": {
-      "path": "codegen/sdk-codegen/aws-models/polly.json",
-      "sha256": "8da11df26b9ef2c9c79b2390780bd8d1cc2b661afabfc0e9d1787804c46be09b"
+    "timestreamwrite": {
+      "path": "codegen/sdk-codegen/aws-models/timestream-write.json",
+      "sha256": "9fe14dcbd21e9e03bca48920a8a8dc7769dab51ee9ecc2e4fc65edc02824a268"
     },
-    "keyspaces": {
-      "path": "codegen/sdk-codegen/aws-models/keyspaces.json",
-      "sha256": "4f8277a96b4e690fc289796be3ed89b33194325ad9871b357c6484c7fd3bb820"
+    "transcribe": {
+      "path": "codegen/sdk-codegen/aws-models/transcribe.json",
+      "sha256": "2dc97dfb03afbce3790497a366c0c317587cfffaa045a0ca77ce11a825db1896"
+    },
+    "transfer": {
+      "path": "codegen/sdk-codegen/aws-models/transfer.json",
+      "sha256": "6672dc4d6700c60d96bb889a5683c5ad63c3769e9b1782be18a865f0ecbb389b"
+    },
+    "translate": {
+      "path": "codegen/sdk-codegen/aws-models/translate.json",
+      "sha256": "103c44c87ddc51b0b8048248c508653c98e9c4b9295fc1c2f211e63738d2e646"
+    },
+    "verifiedpermissions": {
+      "path": "codegen/sdk-codegen/aws-models/verifiedpermissions.json",
+      "sha256": "2207e85c22b21c5b4776a8fe0498568e97310680f8ef3cd36574b5b3720b940e"
+    },
+    "waf": {
+      "path": "codegen/sdk-codegen/aws-models/waf.json",
+      "sha256": "295930b29d7a119c2fb44689b68725208a557fa2b4fe68c5482ba63ea7a8bc27"
+    },
+    "wafv2": {
+      "path": "codegen/sdk-codegen/aws-models/wafv2.json",
+      "sha256": "7bdf340965e4d59db76e5d78d1e65dd55986f91d3e7141edb7f28c6f3d8a4961"
+    },
+    "xray": {
+      "path": "codegen/sdk-codegen/aws-models/xray.json",
+      "sha256": "092319340af42424061f911b375f26ca2749595bd0e3fb04c9263a47d3d94650"
     }
   }
 }

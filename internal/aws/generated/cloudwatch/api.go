@@ -209,6 +209,16 @@ type CompositeAlarm struct {
 	StateTransitionedTimestamp         *float64 `json:"StateTransitionedTimestamp,omitempty" query:"StateTransitionedTimestamp,timestamp" cbor:"timestamp"`
 }
 
+type AlarmTagsPropagation struct {
+	Enabled         *bool    `json:"Enabled,omitempty" query:"Enabled"`
+	ExcludedTagKeys []string `json:"ExcludedTagKeys,omitempty" query:"ExcludedTagKeys"`
+	IncludedTagKeys []string `json:"IncludedTagKeys,omitempty" query:"IncludedTagKeys"`
+}
+
+type ActionConfiguration struct {
+	AlarmTagsPropagation *AlarmTagsPropagation `json:"AlarmTagsPropagation,omitempty" query:"AlarmTagsPropagation"`
+}
+
 type ScheduleConfiguration struct {
 	EndTimeOffset      *int64  `json:"EndTimeOffset,omitempty" query:"EndTimeOffset"`
 	ScheduleExpression *string `json:"ScheduleExpression,omitempty" query:"ScheduleExpression"`
@@ -231,6 +241,7 @@ type WarmUpConfiguration struct {
 }
 
 type LogAlarm struct {
+	ActionConfiguration                *ActionConfiguration         `json:"ActionConfiguration,omitempty" query:"ActionConfiguration"`
 	ActionLogLineCount                 *int64                       `json:"ActionLogLineCount,omitempty" query:"ActionLogLineCount"`
 	ActionLogLineRoleArn               *string                      `json:"ActionLogLineRoleArn,omitempty" query:"ActionLogLineRoleArn"`
 	ActionsEnabled                     *bool                        `json:"ActionsEnabled,omitempty" query:"ActionsEnabled"`

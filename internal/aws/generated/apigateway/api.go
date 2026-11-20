@@ -423,30 +423,62 @@ type DeleteStageRequest struct {
 	StageName *string `json:"-"`
 }
 
+type JwtAdditionalClaim struct {
+	ClaimName      *string  `json:"claimName,omitempty"`
+	ExpectedValues []string `json:"expectedValues,omitempty"`
+	Format         *string  `json:"format,omitempty"`
+	Required       *bool    `json:"required,omitempty"`
+}
+
+type JwtIssuerInput struct {
+	AdditionalClaims []JwtAdditionalClaim `json:"additionalClaims,omitempty"`
+	Audiences        []string             `json:"audiences,omitempty"`
+	Issuer           *string              `json:"issuer,omitempty"`
+}
+
+type JwtConfigurationInput struct {
+	DefaultAlgorithms []string         `json:"defaultAlgorithms,omitempty"`
+	Issuers           []JwtIssuerInput `json:"issuers,omitempty"`
+}
+
 type CreateAuthorizerRequest struct {
-	AuthType                     *string  `json:"authType,omitempty"`
-	AuthorizerCredentials        *string  `json:"authorizerCredentials,omitempty"`
-	AuthorizerResultTtlInSeconds *int64   `json:"authorizerResultTtlInSeconds,omitempty"`
-	AuthorizerUri                *string  `json:"authorizerUri,omitempty"`
-	IdentitySource               *string  `json:"identitySource,omitempty"`
-	IdentityValidationExpression *string  `json:"identityValidationExpression,omitempty"`
-	Name                         *string  `json:"name,omitempty"`
-	ProviderARNs                 []string `json:"providerARNs,omitempty"`
-	RestApiId                    *string  `json:"-"`
-	Type                         *string  `json:"type,omitempty"`
+	AuthType                     *string                `json:"authType,omitempty"`
+	AuthorizerCredentials        *string                `json:"authorizerCredentials,omitempty"`
+	AuthorizerResultTtlInSeconds *int64                 `json:"authorizerResultTtlInSeconds,omitempty"`
+	AuthorizerUri                *string                `json:"authorizerUri,omitempty"`
+	IdentitySource               *string                `json:"identitySource,omitempty"`
+	IdentityValidationExpression *string                `json:"identityValidationExpression,omitempty"`
+	JwtConfiguration             *JwtConfigurationInput `json:"jwtConfiguration,omitempty"`
+	Name                         *string                `json:"name,omitempty"`
+	ProviderARNs                 []string               `json:"providerARNs,omitempty"`
+	RestApiId                    *string                `json:"-"`
+	Type                         *string                `json:"type,omitempty"`
+}
+
+type JwtIssuer struct {
+	AdditionalClaims []JwtAdditionalClaim `json:"additionalClaims,omitempty"`
+	Audiences        []string             `json:"audiences,omitempty"`
+	Issuer           *string              `json:"issuer,omitempty"`
+	JwksUri          *string              `json:"jwksUri,omitempty"`
+}
+
+type JwtConfiguration struct {
+	DefaultAlgorithms []string    `json:"defaultAlgorithms,omitempty"`
+	Issuers           []JwtIssuer `json:"issuers,omitempty"`
 }
 
 type Authorizer struct {
-	AuthType                     *string  `json:"authType,omitempty"`
-	AuthorizerCredentials        *string  `json:"authorizerCredentials,omitempty"`
-	AuthorizerResultTtlInSeconds *int64   `json:"authorizerResultTtlInSeconds,omitempty"`
-	AuthorizerUri                *string  `json:"authorizerUri,omitempty"`
-	Id                           *string  `json:"id,omitempty"`
-	IdentitySource               *string  `json:"identitySource,omitempty"`
-	IdentityValidationExpression *string  `json:"identityValidationExpression,omitempty"`
-	Name                         *string  `json:"name,omitempty"`
-	ProviderARNs                 []string `json:"providerARNs,omitempty"`
-	Type                         *string  `json:"type,omitempty"`
+	AuthType                     *string           `json:"authType,omitempty"`
+	AuthorizerCredentials        *string           `json:"authorizerCredentials,omitempty"`
+	AuthorizerResultTtlInSeconds *int64            `json:"authorizerResultTtlInSeconds,omitempty"`
+	AuthorizerUri                *string           `json:"authorizerUri,omitempty"`
+	Id                           *string           `json:"id,omitempty"`
+	IdentitySource               *string           `json:"identitySource,omitempty"`
+	IdentityValidationExpression *string           `json:"identityValidationExpression,omitempty"`
+	JwtConfiguration             *JwtConfiguration `json:"jwtConfiguration,omitempty"`
+	Name                         *string           `json:"name,omitempty"`
+	ProviderARNs                 []string          `json:"providerARNs,omitempty"`
+	Type                         *string           `json:"type,omitempty"`
 }
 
 type GetAuthorizerRequest struct {
@@ -1041,16 +1073,16 @@ func Descriptor(api API) catalog.Service {
 		"DeleteStage": {Name: "DeleteStage", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "apigateway:DELETE", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}, "StageName": catalog.MemberBinding{Location: "label", Name: "stageName", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/restapis/{restApiId}/stages/{stageName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 202}}, NewInput: func() any { return &DeleteStageRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteStage(ctx, input.(*DeleteStageRequest))
 		}},
-		"CreateAuthorizer": {Name: "CreateAuthorizer", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:POST", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AuthType": catalog.MemberBinding{Location: "document", Name: "authType", Format: ""}, "AuthorizerCredentials": catalog.MemberBinding{Location: "document", Name: "authorizerCredentials", Format: ""}, "AuthorizerResultTtlInSeconds": catalog.MemberBinding{Location: "document", Name: "authorizerResultTtlInSeconds", Format: ""}, "AuthorizerUri": catalog.MemberBinding{Location: "document", Name: "authorizerUri", Format: ""}, "IdentitySource": catalog.MemberBinding{Location: "document", Name: "identitySource", Format: ""}, "IdentityValidationExpression": catalog.MemberBinding{Location: "document", Name: "identityValidationExpression", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "ProviderARNs": catalog.MemberBinding{Location: "document", Name: "providerARNs", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}, "Type": catalog.MemberBinding{Location: "document", Name: "type", Format: ""}}, Output: map[string]catalog.MemberBinding{"AuthType": catalog.MemberBinding{Location: "document", Name: "authType", Format: ""}, "AuthorizerCredentials": catalog.MemberBinding{Location: "document", Name: "authorizerCredentials", Format: ""}, "AuthorizerResultTtlInSeconds": catalog.MemberBinding{Location: "document", Name: "authorizerResultTtlInSeconds", Format: ""}, "AuthorizerUri": catalog.MemberBinding{Location: "document", Name: "authorizerUri", Format: ""}, "Id": catalog.MemberBinding{Location: "document", Name: "id", Format: ""}, "IdentitySource": catalog.MemberBinding{Location: "document", Name: "identitySource", Format: ""}, "IdentityValidationExpression": catalog.MemberBinding{Location: "document", Name: "identityValidationExpression", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "ProviderARNs": catalog.MemberBinding{Location: "document", Name: "providerARNs", Format: ""}, "Type": catalog.MemberBinding{Location: "document", Name: "type", Format: ""}}, Method: "POST", URI: "/restapis/{restApiId}/authorizers", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &CreateAuthorizerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"CreateAuthorizer": {Name: "CreateAuthorizer", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:POST", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AuthType": catalog.MemberBinding{Location: "document", Name: "authType", Format: ""}, "AuthorizerCredentials": catalog.MemberBinding{Location: "document", Name: "authorizerCredentials", Format: ""}, "AuthorizerResultTtlInSeconds": catalog.MemberBinding{Location: "document", Name: "authorizerResultTtlInSeconds", Format: ""}, "AuthorizerUri": catalog.MemberBinding{Location: "document", Name: "authorizerUri", Format: ""}, "IdentitySource": catalog.MemberBinding{Location: "document", Name: "identitySource", Format: ""}, "IdentityValidationExpression": catalog.MemberBinding{Location: "document", Name: "identityValidationExpression", Format: ""}, "JwtConfiguration": catalog.MemberBinding{Location: "document", Name: "jwtConfiguration", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "ProviderARNs": catalog.MemberBinding{Location: "document", Name: "providerARNs", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}, "Type": catalog.MemberBinding{Location: "document", Name: "type", Format: ""}}, Output: map[string]catalog.MemberBinding{"AuthType": catalog.MemberBinding{Location: "document", Name: "authType", Format: ""}, "AuthorizerCredentials": catalog.MemberBinding{Location: "document", Name: "authorizerCredentials", Format: ""}, "AuthorizerResultTtlInSeconds": catalog.MemberBinding{Location: "document", Name: "authorizerResultTtlInSeconds", Format: ""}, "AuthorizerUri": catalog.MemberBinding{Location: "document", Name: "authorizerUri", Format: ""}, "Id": catalog.MemberBinding{Location: "document", Name: "id", Format: ""}, "IdentitySource": catalog.MemberBinding{Location: "document", Name: "identitySource", Format: ""}, "IdentityValidationExpression": catalog.MemberBinding{Location: "document", Name: "identityValidationExpression", Format: ""}, "JwtConfiguration": catalog.MemberBinding{Location: "document", Name: "jwtConfiguration", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "ProviderARNs": catalog.MemberBinding{Location: "document", Name: "providerARNs", Format: ""}, "Type": catalog.MemberBinding{Location: "document", Name: "type", Format: ""}}, Method: "POST", URI: "/restapis/{restApiId}/authorizers", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &CreateAuthorizerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateAuthorizer(ctx, input.(*CreateAuthorizerRequest))
 		}},
-		"GetAuthorizer": {Name: "GetAuthorizer", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AuthorizerId": catalog.MemberBinding{Location: "label", Name: "authorizerId", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{"AuthType": catalog.MemberBinding{Location: "document", Name: "authType", Format: ""}, "AuthorizerCredentials": catalog.MemberBinding{Location: "document", Name: "authorizerCredentials", Format: ""}, "AuthorizerResultTtlInSeconds": catalog.MemberBinding{Location: "document", Name: "authorizerResultTtlInSeconds", Format: ""}, "AuthorizerUri": catalog.MemberBinding{Location: "document", Name: "authorizerUri", Format: ""}, "Id": catalog.MemberBinding{Location: "document", Name: "id", Format: ""}, "IdentitySource": catalog.MemberBinding{Location: "document", Name: "identitySource", Format: ""}, "IdentityValidationExpression": catalog.MemberBinding{Location: "document", Name: "identityValidationExpression", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "ProviderARNs": catalog.MemberBinding{Location: "document", Name: "providerARNs", Format: ""}, "Type": catalog.MemberBinding{Location: "document", Name: "type", Format: ""}}, Method: "GET", URI: "/restapis/{restApiId}/authorizers/{authorizerId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetAuthorizerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"GetAuthorizer": {Name: "GetAuthorizer", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AuthorizerId": catalog.MemberBinding{Location: "label", Name: "authorizerId", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{"AuthType": catalog.MemberBinding{Location: "document", Name: "authType", Format: ""}, "AuthorizerCredentials": catalog.MemberBinding{Location: "document", Name: "authorizerCredentials", Format: ""}, "AuthorizerResultTtlInSeconds": catalog.MemberBinding{Location: "document", Name: "authorizerResultTtlInSeconds", Format: ""}, "AuthorizerUri": catalog.MemberBinding{Location: "document", Name: "authorizerUri", Format: ""}, "Id": catalog.MemberBinding{Location: "document", Name: "id", Format: ""}, "IdentitySource": catalog.MemberBinding{Location: "document", Name: "identitySource", Format: ""}, "IdentityValidationExpression": catalog.MemberBinding{Location: "document", Name: "identityValidationExpression", Format: ""}, "JwtConfiguration": catalog.MemberBinding{Location: "document", Name: "jwtConfiguration", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "ProviderARNs": catalog.MemberBinding{Location: "document", Name: "providerARNs", Format: ""}, "Type": catalog.MemberBinding{Location: "document", Name: "type", Format: ""}}, Method: "GET", URI: "/restapis/{restApiId}/authorizers/{authorizerId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetAuthorizerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetAuthorizer(ctx, input.(*GetAuthorizerRequest))
 		}},
 		"GetAuthorizers": {Name: "GetAuthorizers", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Limit": catalog.MemberBinding{Location: "query", Name: "limit", Format: ""}, "Position": catalog.MemberBinding{Location: "query", Name: "position", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{"Items": catalog.MemberBinding{Location: "document", Name: "items", Format: ""}, "Position": catalog.MemberBinding{Location: "document", Name: "position", Format: ""}}, Method: "GET", URI: "/restapis/{restApiId}/authorizers", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetAuthorizersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetAuthorizers(ctx, input.(*GetAuthorizersRequest))
 		}},
-		"UpdateAuthorizer": {Name: "UpdateAuthorizer", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:PATCH", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AuthorizerId": catalog.MemberBinding{Location: "label", Name: "authorizerId", Format: ""}, "PatchOperations": catalog.MemberBinding{Location: "document", Name: "patchOperations", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{"AuthType": catalog.MemberBinding{Location: "document", Name: "authType", Format: ""}, "AuthorizerCredentials": catalog.MemberBinding{Location: "document", Name: "authorizerCredentials", Format: ""}, "AuthorizerResultTtlInSeconds": catalog.MemberBinding{Location: "document", Name: "authorizerResultTtlInSeconds", Format: ""}, "AuthorizerUri": catalog.MemberBinding{Location: "document", Name: "authorizerUri", Format: ""}, "Id": catalog.MemberBinding{Location: "document", Name: "id", Format: ""}, "IdentitySource": catalog.MemberBinding{Location: "document", Name: "identitySource", Format: ""}, "IdentityValidationExpression": catalog.MemberBinding{Location: "document", Name: "identityValidationExpression", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "ProviderARNs": catalog.MemberBinding{Location: "document", Name: "providerARNs", Format: ""}, "Type": catalog.MemberBinding{Location: "document", Name: "type", Format: ""}}, Method: "PATCH", URI: "/restapis/{restApiId}/authorizers/{authorizerId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateAuthorizerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UpdateAuthorizer": {Name: "UpdateAuthorizer", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:PATCH", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AuthorizerId": catalog.MemberBinding{Location: "label", Name: "authorizerId", Format: ""}, "PatchOperations": catalog.MemberBinding{Location: "document", Name: "patchOperations", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{"AuthType": catalog.MemberBinding{Location: "document", Name: "authType", Format: ""}, "AuthorizerCredentials": catalog.MemberBinding{Location: "document", Name: "authorizerCredentials", Format: ""}, "AuthorizerResultTtlInSeconds": catalog.MemberBinding{Location: "document", Name: "authorizerResultTtlInSeconds", Format: ""}, "AuthorizerUri": catalog.MemberBinding{Location: "document", Name: "authorizerUri", Format: ""}, "Id": catalog.MemberBinding{Location: "document", Name: "id", Format: ""}, "IdentitySource": catalog.MemberBinding{Location: "document", Name: "identitySource", Format: ""}, "IdentityValidationExpression": catalog.MemberBinding{Location: "document", Name: "identityValidationExpression", Format: ""}, "JwtConfiguration": catalog.MemberBinding{Location: "document", Name: "jwtConfiguration", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "ProviderARNs": catalog.MemberBinding{Location: "document", Name: "providerARNs", Format: ""}, "Type": catalog.MemberBinding{Location: "document", Name: "type", Format: ""}}, Method: "PATCH", URI: "/restapis/{restApiId}/authorizers/{authorizerId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateAuthorizerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.UpdateAuthorizer(ctx, input.(*UpdateAuthorizerRequest))
 		}},
 		"DeleteAuthorizer": {Name: "DeleteAuthorizer", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "apigateway:DELETE", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AuthorizerId": catalog.MemberBinding{Location: "label", Name: "authorizerId", Format: ""}, "RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/restapis/{restApiId}/authorizers/{authorizerId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 202}}, NewInput: func() any { return &DeleteAuthorizerRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {

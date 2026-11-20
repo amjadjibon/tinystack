@@ -1121,16 +1121,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Deletes the specified report. Any tags associated with the report are also\n      deleted.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To delete the AWS Cost and Usage report named ExampleReport.",
-                        "documentation": "The following example deletes the AWS Cost and Usage report named ExampleReport.",
-                        "input": {
-                            "ReportName": "ExampleReport"
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>Deletes the specified report. Any tags associated with the report are also\n      deleted.</p>"
             }
         },
         "com.amazonaws.costandusagereportservice#DeleteReportDefinitionRequest": {
@@ -1182,49 +1173,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Lists the Amazon Web Services Cost and Usage Report available to this account.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To list the AWS Cost and Usage reports for the account.",
-                        "documentation": "The following example lists the AWS Cost and Usage reports for the account.",
-                        "input": {
-                            "MaxResults": 5
-                        },
-                        "output": {
-                            "ReportDefinitions": [
-                                {
-                                    "AdditionalArtifacts": [
-                                        "QUICKSIGHT"
-                                    ],
-                                    "AdditionalSchemaElements": [
-                                        "RESOURCES"
-                                    ],
-                                    "Compression": "GZIP",
-                                    "Format": "textORcsv",
-                                    "ReportName": "ExampleReport",
-                                    "S3Bucket": "example-s3-bucket",
-                                    "S3Prefix": "exampleprefix",
-                                    "S3Region": "us-east-1",
-                                    "TimeUnit": "HOURLY"
-                                },
-                                {
-                                    "AdditionalArtifacts": [
-                                        "QUICKSIGHT"
-                                    ],
-                                    "AdditionalSchemaElements": [
-                                        "RESOURCES"
-                                    ],
-                                    "Compression": "GZIP",
-                                    "Format": "textORcsv",
-                                    "ReportName": "ExampleReport2",
-                                    "S3Bucket": "example-s3-bucket",
-                                    "S3Prefix": "exampleprefix",
-                                    "S3Region": "us-east-1",
-                                    "TimeUnit": "HOURLY"
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#paginated": {
                     "inputToken": "NextToken",
                     "outputToken": "NextToken",
@@ -1487,31 +1435,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Creates a new report using the description that you provide.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To create a report named ExampleReport.",
-                        "documentation": "The following example creates a AWS Cost and Usage report named ExampleReport.",
-                        "input": {
-                            "ReportDefinition": {
-                                "ReportName": "ExampleReport",
-                                "TimeUnit": "DAILY",
-                                "Format": "textORcsv",
-                                "Compression": "ZIP",
-                                "AdditionalSchemaElements": [
-                                    "RESOURCES"
-                                ],
-                                "S3Bucket": "example-s3-bucket",
-                                "S3Prefix": "exampleprefix",
-                                "S3Region": "us-east-1",
-                                "AdditionalArtifacts": [
-                                    "REDSHIFT",
-                                    "QUICKSIGHT"
-                                ]
-                            }
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>Creates a new report using the description that you provide.</p>"
             }
         },
         "com.amazonaws.costandusagereportservice#PutReportDefinitionRequest": {

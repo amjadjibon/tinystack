@@ -13,7 +13,7 @@ Record metrics, evaluate alarms, and exercise local monitoring integrations.
 | API version | `2010-08-01` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 26 of 55 in the pinned model |
+| Selected operations | 26 of 59 in the pinned model |
 
 ## Implemented behavior
 
@@ -77,7 +77,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "29 modeled operations outside the implementation"
+??? info "33 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -86,6 +86,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteAlarmMuteRule`
     - `DeleteAnomalyDetector`
     - `DeleteInsightRules`
+    - `DeleteMetricDataQueryDefinition`
     - `DeleteResourceMetricsConfiguration`
     - `DescribeAlarmContributors`
     - `DescribeAnomalyDetectors`
@@ -96,16 +97,19 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetAlarmMuteRule`
     - `GetDataset`
     - `GetInsightRuleReport`
+    - `GetMetricDataQueryDefinition`
     - `GetMetricWidgetImage`
     - `GetOTelEnrichment`
     - `GetResourceMetricsConfiguration`
     - `ListAlarmMuteRules`
     - `ListManagedInsightRules`
+    - `ListMetricDataQueryDefinitions`
     - `PutAlarmMuteRule`
     - `PutAnomalyDetector`
     - `PutInsightRule`
     - `PutLogAlarm`
     - `PutManagedInsightRules`
+    - `PutMetricDataQueryDefinition`
     - `StartOTelEnrichment`
     - `StopOTelEnrichment`
     - `UpdateOTelEnrichment`
@@ -115,6 +119,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/cloudwatch)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/cloudwatch/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/cloudwatch.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/cloudwatch.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [cloudwatch_billing_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_billing_test.go), [cloudwatch_builtin_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_builtin_test.go), [cloudwatch_streams_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_streams_test.go), [cloudwatch_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

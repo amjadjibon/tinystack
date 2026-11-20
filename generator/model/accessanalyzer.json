@@ -2402,69 +2402,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Checks whether the specified access isn't allowed by a policy.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "Passing check. Restrictive identity policy.",
-                        "input": {
-                            "access": [
-                                {
-                                    "actions": [
-                                        "s3:PutObject"
-                                    ]
-                                }
-                            ],
-                            "policyDocument": "{\"Version\":\"2012-10-17\",\"Id\":\"123\",\"Statement\":[{\"Sid\":\"AllowJohnDoe\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::123456789012:user/JohnDoe\"},\"Action\":\"s3:GetObject\",\"Resource\":\"*\"}]}",
-                            "policyType": "RESOURCE_POLICY"
-                        },
-                        "output": {
-                            "result": "PASS",
-                            "message": "The policy document does not grant access to perform the listed actions or resources."
-                        }
-                    },
-                    {
-                        "title": "Passing check. Restrictive S3 Bucket resource policy.",
-                        "input": {
-                            "access": [
-                                {
-                                    "resources": [
-                                        "arn:aws:s3:::sensitive-bucket/*"
-                                    ]
-                                }
-                            ],
-                            "policyDocument": "{\"Version\":\"2012-10-17\",\"Id\":\"123\",\"Statement\":[{\"Sid\":\"AllowJohnDoe\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::123456789012:user/JohnDoe\"},\"Action\":\"s3:PutObject\",\"Resource\":\"arn:aws:s3:::non-sensitive-bucket/*\"}]}",
-                            "policyType": "RESOURCE_POLICY"
-                        },
-                        "output": {
-                            "result": "PASS",
-                            "message": "The policy document does not grant access to perform the listed actions or resources."
-                        }
-                    },
-                    {
-                        "title": "Failing check. Permissive S3 Bucket resource policy.",
-                        "input": {
-                            "access": [
-                                {
-                                    "resources": [
-                                        "arn:aws:s3:::my-bucket/*"
-                                    ]
-                                }
-                            ],
-                            "policyDocument": "{\"Version\":\"2012-10-17\",\"Id\":\"123\",\"Statement\":[{\"Sid\":\"AllowJohnDoe\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::123456789012:user/JohnDoe\"},\"Action\":\"s3:PutObject\",\"Resource\":\"arn:aws:s3:::my-bucket/*\"}]}",
-                            "policyType": "RESOURCE_POLICY"
-                        },
-                        "output": {
-                            "result": "FAIL",
-                            "message": "The policy document grants access to perform one or more of the listed actions or resources.",
-                            "reasons": [
-                                {
-                                    "description": "One or more of the listed actions or resources in the statement with sid: AllowJohnDoe.",
-                                    "statementIndex": 0,
-                                    "statementId": "AllowJohnDoe"
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "uri": "/policy/check-access-not-granted",
                     "method": "POST",
@@ -2690,37 +2627,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Checks whether a resource policy can grant public access to the specified resource type.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "Passing check. S3 Bucket policy without public access.",
-                        "input": {
-                            "policyDocument": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"Bob\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:user/JohnDoe\"},\"Action\":[\"s3:GetObject\"]}]}",
-                            "resourceType": "AWS::S3::Bucket"
-                        },
-                        "output": {
-                            "result": "PASS",
-                            "message": "The resource policy does not grant public access for the given resource type."
-                        }
-                    },
-                    {
-                        "title": "Failing check. S3 Bucket policy with public access.",
-                        "input": {
-                            "policyDocument": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"Bob\",\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":[\"s3:GetObject\"]}]}",
-                            "resourceType": "AWS::S3::Bucket"
-                        },
-                        "output": {
-                            "result": "FAIL",
-                            "message": "The resource policy grants public access for the given resource type.",
-                            "reasons": [
-                                {
-                                    "description": "Public access granted in the following statement with sid: Bob.",
-                                    "statementIndex": 0,
-                                    "statementId": "Bob"
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "uri": "/policy/check-no-public-access",
                     "method": "POST",
@@ -4377,31 +4283,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Creates a recommendation for an unused permissions finding.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "Successfully started generating finding recommendation",
-                        "input": {
-                            "analyzerArn": "arn:aws:access-analyzer:us-east-1:111122223333:analyzer/a",
-                            "id": "finding-id"
-                        },
-                        "output": {}
-                    },
-                    {
-                        "title": "Failed field validation for id value",
-                        "input": {
-                            "analyzerArn": "arn:aws:access-analyzer:us-east-1:111122223333:analyzer/a",
-                            "id": "!"
-                        },
-                        "error": {
-                            "shapeId": "com.amazonaws.accessanalyzer#ValidationException",
-                            "content": {
-                                "reason": "fieldValidationFailed",
-                                "message": "Invalid id."
-                            }
-                        },
-                        "allowConstraintErrors": true
-                    }
-                ],
                 "smithy.api#http": {
                     "uri": "/recommendation/{id}",
                     "method": "POST",
@@ -4848,87 +4729,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Retrieves information about a finding recommendation for the specified analyzer.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "Successfully fetched finding recommendation",
-                        "input": {
-                            "analyzerArn": "arn:aws:access-analyzer:us-east-1:111122223333:analyzer/a",
-                            "id": "finding-id",
-                            "maxResults": 3,
-                            "nextToken": "token"
-                        },
-                        "output": {
-                            "startedAt": "2000-01-01T00:00:00Z",
-                            "completedAt": "2000-01-01T00:00:01Z",
-                            "resourceArn": "arn:aws:iam::111122223333:role/test",
-                            "recommendedSteps": [
-                                {
-                                    "unusedPermissionsRecommendedStep": {
-                                        "recommendedAction": "DETACH_POLICY",
-                                        "existingPolicyId": "policy-id"
-                                    }
-                                },
-                                {
-                                    "unusedPermissionsRecommendedStep": {
-                                        "recommendedAction": "CREATE_POLICY",
-                                        "existingPolicyId": "policy-id",
-                                        "recommendedPolicy": "policy-content"
-                                    }
-                                }
-                            ],
-                            "recommendationType": "UnusedPermissionRecommendation",
-                            "status": "SUCCEEDED"
-                        }
-                    },
-                    {
-                        "title": "In progress finding recommendation",
-                        "input": {
-                            "analyzerArn": "arn:aws:access-analyzer:us-east-1:111122223333:analyzer/a",
-                            "id": "finding-id",
-                            "maxResults": 3
-                        },
-                        "output": {
-                            "startedAt": "2000-01-01T00:00:00Z",
-                            "resourceArn": "arn:aws:iam::111122223333:role/test",
-                            "recommendationType": "UnusedPermissionRecommendation",
-                            "status": "IN_PROGRESS"
-                        }
-                    },
-                    {
-                        "title": "Failed finding recommendation",
-                        "input": {
-                            "analyzerArn": "arn:aws:access-analyzer:us-east-1:111122223333:analyzer/a",
-                            "id": "finding-id",
-                            "maxResults": 3
-                        },
-                        "output": {
-                            "startedAt": "2000-01-01T00:00:00Z",
-                            "completedAt": "2000-01-01T00:00:01Z",
-                            "error": {
-                                "code": "SERVICE_ERROR",
-                                "message": "Service error. Please try again."
-                            },
-                            "resourceArn": "arn:aws:iam::111122223333:role/test",
-                            "recommendationType": "UnusedPermissionRecommendation",
-                            "status": "FAILED"
-                        }
-                    },
-                    {
-                        "title": "Failed field validation for id value",
-                        "input": {
-                            "analyzerArn": "arn:aws:access-analyzer:us-east-1:111122223333:analyzer/a",
-                            "id": "!"
-                        },
-                        "error": {
-                            "shapeId": "com.amazonaws.accessanalyzer#ValidationException",
-                            "content": {
-                                "reason": "fieldValidationFailed",
-                                "message": "Invalid id."
-                            }
-                        },
-                        "allowConstraintErrors": true
-                    }
-                ],
                 "smithy.api#http": {
                     "uri": "/recommendation/{id}",
                     "method": "GET",

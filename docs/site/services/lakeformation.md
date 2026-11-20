@@ -13,7 +13,7 @@ Store data lake settings, S3 registrations, permission grants and LF-tags withou
 | API version | `2017-03-31` |
 | Scope | Account and region |
 | Execution | Records only |
-| Selected operations | 19 of 69 in the pinned model |
+| Selected operations | 19 of 71 in the pinned model |
 
 ## Implemented behavior
 
@@ -62,7 +62,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "50 modeled operations outside the implementation"
+??? info "52 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -88,12 +88,14 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetDataCellsFilter`
     - `GetDataLakePrincipal`
     - `GetEffectivePermissionsForPath`
+    - `GetGlueFunctionSessionContext`
     - `GetLFTagExpression`
     - `GetQueryState`
     - `GetQueryStatistics`
     - `GetRLSPolicy`
     - `GetTableObjects`
     - `GetTemporaryDataLocationCredentials`
+    - `GetTemporaryGlueFunctionCredentials`
     - `GetTemporaryGluePartitionCredentials`
     - `GetTemporaryGlueTableCredentials`
     - `GetWorkUnitResults`
@@ -121,6 +123,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/lakeformation)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/lakeformation/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/lakeformation.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/lakeformation.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [lakeformation_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lakeformation_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

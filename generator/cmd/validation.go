@@ -251,11 +251,13 @@ var re2Patterns = map[string]re2Pattern{
 	`(^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:(agent|agent-alias|knowledge-base|flow|prompt)` +
 		`/[A-Z0-9]{10}(?:/[A-Z0-9]{10})?$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:flow/([A-Z0-9]` +
 		`{10})/alias/([A-Z0-9]{10})$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:prompt/([A-Z0-9]{10` +
-		`})?(?::/d+)?$)`: {
+		`})?(?::/d+)?$|^arn:aws(-cn|-us-gov|-eusc|-iso(-[b-f])?)?:bedrock:[a-zA-Z0-9-]+:[0-9]{12}:` +
+		`retrieval-instruction/[a-z0-9]{10}$)`: {
 		match: `(^arn:aws:bedrock:[a-zA-Z0-9-]+:\d{12}:(agent|agent-alias|knowledge-base|flow|prompt)` +
 			`/[A-Z0-9]{10}(?:/[A-Z0-9]{10})?$|^arn:aws:bedrock:[a-zA-Z0-9-]+:\d{12}:flow/([A-Z0-9]` +
 			`{10})/alias/([A-Z0-9]{10})$|^arn:aws:bedrock:[a-zA-Z0-9-]+:\d{12}:prompt/([A-Z0-9]{10` +
-			`})?(?::\d+)?$)`,
+			`})?(?::\d+)?$|^arn:aws(-cn|-us-gov|-eusc|-iso(-[b-f])?)?:bedrock:[a-zA-Z0-9-]+:[0-9]{12}:` +
+			`retrieval-instruction/[a-z0-9]{10}$)`,
 	},
 	// Step Functions alias names require at least one nonnumeric character.
 	`^(?=.*[a-zA-Z_\-\.])[a-zA-Z0-9_\-\.]+$`: {

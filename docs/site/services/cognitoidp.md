@@ -13,7 +13,7 @@ Manage users and clients, authenticate locally, and issue pool-signed JWTs.
 | API version | `2016-04-18` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 86 of 132 in the pinned model |
+| Selected operations | 86 of 153 in the pinned model |
 
 ## Implemented behavior
 
@@ -199,7 +199,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "46 modeled operations outside the implementation"
+??? info "67 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -211,16 +211,23 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `AdminLinkProviderForUser`
     - `AdminListDevices`
     - `AdminListUserAuthEvents`
+    - `AdminListUserSessions`
+    - `AdminRevokeUserSession`
     - `AdminUpdateAuthEventFeedback`
     - `AdminUpdateDeviceStatus`
+    - `CancelPointInTimeRecovery`
     - `CompleteWebAuthnRegistration`
     - `ConfirmDevice`
+    - `CreateCIMDPolicy`
     - `CreateTerms`
     - `CreateUserImportJob`
     - `CreateUserPoolReplica`
+    - `DeleteCIMDPolicy`
     - `DeleteTerms`
     - `DeleteUserPoolReplica`
     - `DeleteWebAuthnCredential`
+    - `DescribeCIMDPolicy`
+    - `DescribePointInTimeRecovery`
     - `DescribeRiskConfiguration`
     - `DescribeTerms`
     - `DescribeTermsByClient`
@@ -228,23 +235,37 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ForgetDevice`
     - `GetCSVHeader`
     - `GetClientToken`
+    - `GetDerivedToken`
     - `GetDevice`
     - `GetLogDeliveryConfiguration`
     - `GetProvisionedLimit`
     - `GetSigningCertificate`
     - `GetUserAuthFactors`
+    - `GetUserPoolClientSessionConfiguration`
+    - `GetUserPoolSessionConfiguration`
+    - `InitiatePointInTimeRecovery`
+    - `ListCIMDPolicies`
+    - `ListClientMetadataURLs`
     - `ListDevices`
+    - `ListPointInTimeRecoveries`
     - `ListTerms`
     - `ListUserImportJobs`
     - `ListUserPoolReplicas`
+    - `ListUserSessions`
     - `ListWebAuthnCredentials`
+    - `RevokeUserSession`
     - `SetLogDeliveryConfiguration`
     - `SetRiskConfiguration`
+    - `SetUserPoolClientSessionConfiguration`
+    - `SetUserPoolSessionConfiguration`
     - `SetUserSettings`
+    - `StartPointInTimeRecovery`
     - `StartUserImportJob`
     - `StartWebAuthnRegistration`
     - `StopUserImportJob`
     - `UpdateAuthEventFeedback`
+    - `UpdateCIMDPolicy`
+    - `UpdateClientMetadataURLState`
     - `UpdateDeviceStatus`
     - `UpdateProvisionedLimit`
     - `UpdateTerms`
@@ -254,6 +275,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/cognitoidp)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/cognitoidp/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/cognitoidp.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/cognitoidp.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [cognito_auth_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_auth_test.go), [cognito_custom_auth_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_custom_auth_test.go), [cognito_hosted_federation_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_hosted_federation_test.go), [cognito_hosted_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_hosted_test.go), [cognito_mfa_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_mfa_test.go), [cognito_oauth_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_oauth_test.go), [cognito_rotation_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_rotation_test.go), [cognito_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_test.go), [cognito_triggers_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_triggers_test.go), [cognito_users_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cognito_users_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

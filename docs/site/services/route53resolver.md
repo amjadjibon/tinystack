@@ -13,7 +13,7 @@ Store Resolver endpoints, rules and VPC associations as records without allocati
 | API version | `2018-04-01` |
 | Scope | Account and region |
 | Execution | Configuration records only |
-| Selected operations | 17 of 72 in the pinned model |
+| Selected operations | 17 of 73 in the pinned model |
 
 ## Implemented behavior
 
@@ -61,7 +61,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "55 modeled operations outside the implementation"
+??? info "56 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -100,6 +100,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListFirewallConfigs`
     - `ListFirewallDomainLists`
     - `ListFirewallDomains`
+    - `ListFirewallRuleDomains`
     - `ListFirewallRuleGroupAssociations`
     - `ListFirewallRuleGroups`
     - `ListFirewallRuleTypes`
@@ -125,6 +126,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/route53resolver)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/route53resolver/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/route53resolver.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/route53resolver.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [route53resolver_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/route53resolver_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

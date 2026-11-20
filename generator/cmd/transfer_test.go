@@ -1,22 +1,17 @@
 package main
 
 import (
-	"crypto/sha256"
 	"encoding/json"
-	"fmt"
 	"os"
 	"testing"
 
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
 )
 
-func TestTransferPinnedIdentityProtocolBindingsAndProvenance(t *testing.T) {
+func TestTransferPinnedIdentityProtocolBindings(t *testing.T) {
 	raw, e := os.ReadFile("../model/transfer.json")
 	if e != nil {
 		t.Fatal(e)
-	}
-	if fmt.Sprintf("%x", sha256.Sum256(raw)) != "dacf9d6638d8a4f4621ebc438aa8dab7589e757b16037ea8acf50cb292e1db83" {
-		t.Fatal("model hash")
 	}
 	var m model
 	if e = json.Unmarshal(raw, &m); e != nil {

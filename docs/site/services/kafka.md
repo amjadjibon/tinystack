@@ -13,7 +13,7 @@ Manage provisioned MSK configuration, bootstrap brokers and nodes, with an optio
 | API version | `2018-11-14` |
 | Scope | Account and region |
 | Execution | Records by default; opt-in single-node Redpanda Docker runtime |
-| Selected operations | 23 of 64 in the pinned model |
+| Selected operations | 23 of 73 in the pinned model |
 
 ## Implemented behavior
 
@@ -66,31 +66,37 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "41 modeled operations outside the implementation"
+??? info "50 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
     - `BatchAssociateScramSecret`
     - `BatchDisassociateScramSecret`
+    - `CreateAssessment`
     - `CreateChannel`
     - `CreateClusterV2`
     - `CreateReplicator`
     - `CreateTopic`
     - `CreateVpcConnection`
+    - `DeleteAssessment`
     - `DeleteChannel`
     - `DeleteClusterPolicy`
     - `DeleteReplicator`
     - `DeleteTopic`
     - `DeleteVpcConnection`
+    - `DescribeAssessment`
     - `DescribeChannel`
     - `DescribeClusterOperation`
     - `DescribeClusterOperationV2`
     - `DescribeReplicator`
     - `DescribeTopic`
     - `DescribeTopicPartitions`
+    - `DescribeTopicReassignment`
     - `DescribeVpcConnection`
     - `GetClusterPolicy`
     - `GetCompatibleKafkaVersions`
+    - `ListAssessmentFindings`
+    - `ListAssessments`
     - `ListChannels`
     - `ListClientVpcConnections`
     - `ListClusterOperations`
@@ -98,11 +104,14 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListKafkaVersions`
     - `ListReplicators`
     - `ListScramSecrets`
+    - `ListTopicReassignments`
     - `ListTopics`
     - `ListVpcConnections`
     - `PutClusterPolicy`
     - `RebootBroker`
     - `RejectClientVpcConnection`
+    - `StartTopicReassignment`
+    - `StopTopicReassignment`
     - `UpdateBrokerType`
     - `UpdateChannel`
     - `UpdateConnectivity`
@@ -116,6 +125,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/kafka)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/kafka/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/kafka.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/kafka.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [integration suite](https://github.com/amjadjibon/tinystack/tree/main/tests/integration).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

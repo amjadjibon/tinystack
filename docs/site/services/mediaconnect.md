@@ -13,7 +13,7 @@ Store flows, sources, outputs, entitlements and VPC interfaces with durable loca
 | API version | `2018-11-14` |
 | Scope | Account and region |
 | Execution | Records only; deterministic local flow lifecycle worker |
-| Selected operations | 22 of 82 in the pinned model |
+| Selected operations | 22 of 96 in the pinned model |
 
 ## Implemented behavior
 
@@ -64,16 +64,19 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "60 modeled operations outside the implementation"
+??? info "74 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
     - `AddBridgeOutputs`
     - `AddBridgeSources`
     - `AddFlowMediaStreams`
+    - `BatchGetDestinationEndpoint`
     - `BatchGetRouterInput`
     - `BatchGetRouterNetworkInterface`
     - `BatchGetRouterOutput`
+    - `BatchGetSourceEndpoint`
+    - `ConnectEndpoints`
     - `CreateBridge`
     - `CreateGateway`
     - `CreateRouterInput`
@@ -84,7 +87,9 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteRouterInput`
     - `DeleteRouterNetworkInterface`
     - `DeleteRouterOutput`
+    - `DeregisterDestinationEndpoint`
     - `DeregisterGatewayInstance`
+    - `DeregisterSourceEndpoint`
     - `DescribeBridge`
     - `DescribeFlowSourceMetadata`
     - `DescribeFlowSourceThumbnail`
@@ -92,12 +97,16 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DescribeGatewayInstance`
     - `DescribeOffering`
     - `DescribeReservation`
+    - `DisconnectEndpoints`
+    - `GetDestinationEndpoint`
     - `GetRouterInput`
     - `GetRouterInputSourceMetadata`
     - `GetRouterInputThumbnail`
     - `GetRouterNetworkInterface`
     - `GetRouterOutput`
+    - `GetSourceEndpoint`
     - `ListBridges`
+    - `ListDestinationEndpoints`
     - `ListGatewayInstances`
     - `ListGateways`
     - `ListOfferings`
@@ -105,8 +114,11 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListRouterInputs`
     - `ListRouterNetworkInterfaces`
     - `ListRouterOutputs`
+    - `ListSourceEndpoints`
     - `ListTagsForGlobalResource`
     - `PurchaseOffering`
+    - `RegisterDestinationEndpoint`
+    - `RegisterSourceEndpoint`
     - `RemoveBridgeOutput`
     - `RemoveBridgeSource`
     - `RemoveFlowMediaStream`
@@ -123,16 +135,18 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `UpdateBridgeOutput`
     - `UpdateBridgeSource`
     - `UpdateBridgeState`
+    - `UpdateDestinationEndpoint`
     - `UpdateFlowMediaStream`
     - `UpdateGatewayInstance`
     - `UpdateRouterInput`
     - `UpdateRouterNetworkInterface`
     - `UpdateRouterOutput`
+    - `UpdateSourceEndpoint`
 
 ## Source and examples
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/mediaconnect)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/mediaconnect/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/mediaconnect.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/mediaconnect.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [mediaconnect_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/mediaconnect_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

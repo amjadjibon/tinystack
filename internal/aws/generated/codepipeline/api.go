@@ -93,8 +93,8 @@ type GetPipelineInput struct {
 
 type PipelineMetadata struct {
 	PipelineArn *string  `json:"pipelineArn,omitempty"`
-	Created     *float64 `json:"created,omitempty"`
-	Updated     *float64 `json:"updated,omitempty"`
+	Created     *float64 `json:"created,omitempty" cbor:"timestamp"`
+	Updated     *float64 `json:"updated,omitempty" cbor:"timestamp"`
 }
 
 type GetPipelineOutput struct {
@@ -115,14 +115,14 @@ type StageExecution struct {
 type TransitionState struct {
 	Enabled        *bool    `json:"enabled,omitempty"`
 	LastChangedBy  *string  `json:"lastChangedBy,omitempty"`
-	LastChangedAt  *float64 `json:"lastChangedAt,omitempty"`
+	LastChangedAt  *float64 `json:"lastChangedAt,omitempty" cbor:"timestamp"`
 	DisabledReason *string  `json:"disabledReason,omitempty"`
 }
 
 type ActionRevision struct {
 	RevisionId       *string  `json:"revisionId,omitempty"`
 	RevisionChangeId *string  `json:"revisionChangeId,omitempty"`
-	Created          *float64 `json:"created,omitempty"`
+	Created          *float64 `json:"created,omitempty" cbor:"timestamp"`
 }
 
 type ErrorDetails struct {
@@ -134,7 +134,7 @@ type ActionExecution struct {
 	ActionExecutionId    *string       `json:"actionExecutionId,omitempty"`
 	Status               *string       `json:"status,omitempty"`
 	Summary              *string       `json:"summary,omitempty"`
-	LastStatusChange     *float64      `json:"lastStatusChange,omitempty"`
+	LastStatusChange     *float64      `json:"lastStatusChange,omitempty" cbor:"timestamp"`
 	Token                *string       `json:"token,omitempty"`
 	LastUpdatedBy        *string       `json:"lastUpdatedBy,omitempty"`
 	ExternalExecutionId  *string       `json:"externalExecutionId,omitempty"`
@@ -165,8 +165,8 @@ type GetPipelineStateOutput struct {
 	PipelineName    *string      `json:"pipelineName,omitempty"`
 	PipelineVersion *int64       `json:"pipelineVersion,omitempty"`
 	StageStates     []StageState `json:"stageStates,omitempty"`
-	Created         *float64     `json:"created,omitempty"`
-	Updated         *float64     `json:"updated,omitempty"`
+	Created         *float64     `json:"created,omitempty" cbor:"timestamp"`
+	Updated         *float64     `json:"updated,omitempty" cbor:"timestamp"`
 }
 
 type ListPipelinesInput struct {
@@ -179,8 +179,8 @@ type PipelineSummary struct {
 	Version       *int64   `json:"version,omitempty"`
 	PipelineType  *string  `json:"pipelineType,omitempty"`
 	ExecutionMode *string  `json:"executionMode,omitempty"`
-	Created       *float64 `json:"created,omitempty"`
-	Updated       *float64 `json:"updated,omitempty"`
+	Created       *float64 `json:"created,omitempty" cbor:"timestamp"`
+	Updated       *float64 `json:"updated,omitempty" cbor:"timestamp"`
 }
 
 type ListPipelinesOutput struct {
@@ -258,7 +258,7 @@ type ArtifactRevision struct {
 	RevisionId               *string  `json:"revisionId,omitempty"`
 	RevisionChangeIdentifier *string  `json:"revisionChangeIdentifier,omitempty"`
 	RevisionSummary          *string  `json:"revisionSummary,omitempty"`
-	Created                  *float64 `json:"created,omitempty"`
+	Created                  *float64 `json:"created,omitempty" cbor:"timestamp"`
 	RevisionUrl              *string  `json:"revisionUrl,omitempty"`
 }
 
@@ -315,8 +315,8 @@ type PipelineExecutionSummary struct {
 	PipelineExecutionId *string                   `json:"pipelineExecutionId,omitempty"`
 	Status              *string                   `json:"status,omitempty"`
 	StatusSummary       *string                   `json:"statusSummary,omitempty"`
-	StartTime           *float64                  `json:"startTime,omitempty"`
-	LastUpdateTime      *float64                  `json:"lastUpdateTime,omitempty"`
+	StartTime           *float64                  `json:"startTime,omitempty" cbor:"timestamp"`
+	LastUpdateTime      *float64                  `json:"lastUpdateTime,omitempty" cbor:"timestamp"`
 	SourceRevisions     []SourceRevision          `json:"sourceRevisions,omitempty"`
 	Trigger             *ExecutionTrigger         `json:"trigger,omitempty"`
 	StopTrigger         *StopExecutionTrigger     `json:"stopTrigger,omitempty"`
@@ -392,8 +392,8 @@ type ActionExecutionDetail struct {
 	PipelineVersion     *int64                 `json:"pipelineVersion,omitempty"`
 	StageName           *string                `json:"stageName,omitempty"`
 	ActionName          *string                `json:"actionName,omitempty"`
-	StartTime           *float64               `json:"startTime,omitempty"`
-	LastUpdateTime      *float64               `json:"lastUpdateTime,omitempty"`
+	StartTime           *float64               `json:"startTime,omitempty" cbor:"timestamp"`
+	LastUpdateTime      *float64               `json:"lastUpdateTime,omitempty" cbor:"timestamp"`
 	UpdatedBy           *string                `json:"updatedBy,omitempty"`
 	Status              *string                `json:"status,omitempty"`
 	Input               *ActionExecutionInput  `json:"input,omitempty"`
@@ -419,7 +419,7 @@ type PutApprovalResultInput struct {
 }
 
 type PutApprovalResultOutput struct {
-	ApprovedAt *float64 `json:"approvedAt,omitempty"`
+	ApprovedAt *float64 `json:"approvedAt,omitempty" cbor:"timestamp"`
 }
 
 type RetryStageExecutionInput struct {
@@ -1538,141 +1538,141 @@ type API interface {
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "codepipeline", SigningName: "codepipeline", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "codepipeline", TargetPrefix: "CodePipeline_20150709", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"ActionNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ApprovalAlreadyCompletedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConcurrentPipelineExecutionsLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "DuplicatedStopRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidActionDeclarationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidApprovalTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidArnException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidBlockerDeclarationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidJobStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidNextTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStageDeclarationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStructureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "JobNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NotLatestPipelineExecutionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "OutputVariablesSizeExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineExecutionNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineExecutionNotStoppableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineNameInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineVersionNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "StageNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "StageNotRetryableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TooManyTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
-		"CreatePipeline": {Name: "CreatePipeline", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:CreatePipeline", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.CreatePipeline", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreatePipelineInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+	return catalog.Service{Name: "codepipeline", SigningName: "codepipeline", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "codepipeline", TargetPrefix: "CodePipeline_20150709", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1", "rpcv2Cbor"}, Errors: map[string]catalog.ErrorBinding{"ActionNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ApprovalAlreadyCompletedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConcurrentPipelineExecutionsLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "DuplicatedStopRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidActionDeclarationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidApprovalTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidArnException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidBlockerDeclarationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidJobStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidNextTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStageDeclarationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStructureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "JobNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NotLatestPipelineExecutionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "OutputVariablesSizeExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineExecutionNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineExecutionNotStoppableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineNameInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineVersionNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "StageNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "StageNotRetryableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TooManyTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+		"CreatePipeline": {Name: "CreatePipeline", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:CreatePipeline", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.CreatePipeline", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/CreatePipeline", Target: "CodePipeline_20150709.CreatePipeline", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &CreatePipelineInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*CreatePipelineInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.CreatePipeline(ctx, in)
 		}},
-		"GetPipeline": {Name: "GetPipeline", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:GetPipeline", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.GetPipeline", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetPipelineInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"GetPipeline": {Name: "GetPipeline", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:GetPipeline", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.GetPipeline", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/GetPipeline", Target: "CodePipeline_20150709.GetPipeline", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &GetPipelineInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*GetPipelineInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.GetPipeline(ctx, in)
 		}},
-		"GetPipelineState": {Name: "GetPipelineState", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:GetPipelineState", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.GetPipelineState", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetPipelineStateInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"GetPipelineState": {Name: "GetPipelineState", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:GetPipelineState", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.GetPipelineState", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/GetPipelineState", Target: "CodePipeline_20150709.GetPipelineState", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &GetPipelineStateInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*GetPipelineStateInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.GetPipelineState(ctx, in)
 		}},
-		"ListPipelines": {Name: "ListPipelines", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:ListPipelines", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.ListPipelines", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListPipelinesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListPipelines": {Name: "ListPipelines", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:ListPipelines", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.ListPipelines", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/ListPipelines", Target: "CodePipeline_20150709.ListPipelines", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListPipelinesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListPipelinesInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.ListPipelines(ctx, in)
 		}},
-		"UpdatePipeline": {Name: "UpdatePipeline", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:UpdatePipeline", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.UpdatePipeline", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdatePipelineInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UpdatePipeline": {Name: "UpdatePipeline", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:UpdatePipeline", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.UpdatePipeline", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/UpdatePipeline", Target: "CodePipeline_20150709.UpdatePipeline", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &UpdatePipelineInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*UpdatePipelineInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.UpdatePipeline(ctx, in)
 		}},
-		"DeletePipeline": {Name: "DeletePipeline", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:DeletePipeline", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.DeletePipeline", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeletePipelineInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DeletePipeline": {Name: "DeletePipeline", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:DeletePipeline", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.DeletePipeline", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/DeletePipeline", Target: "CodePipeline_20150709.DeletePipeline", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DeletePipelineInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DeletePipelineInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.DeletePipeline(ctx, in)
 		}},
-		"TagResource": {Name: "TagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:TagResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.TagResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &TagResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"TagResource": {Name: "TagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:TagResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.TagResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/TagResource", Target: "CodePipeline_20150709.TagResource", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &TagResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*TagResourceInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.TagResource(ctx, in)
 		}},
-		"UntagResource": {Name: "UntagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:UntagResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.UntagResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UntagResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UntagResource": {Name: "UntagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:UntagResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.UntagResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/UntagResource", Target: "CodePipeline_20150709.UntagResource", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &UntagResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*UntagResourceInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.UntagResource(ctx, in)
 		}},
-		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:ListTagsForResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.ListTagsForResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:ListTagsForResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.ListTagsForResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/ListTagsForResource", Target: "CodePipeline_20150709.ListTagsForResource", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListTagsForResourceInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.ListTagsForResource(ctx, in)
 		}},
-		"StartPipelineExecution": {Name: "StartPipelineExecution", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:StartPipelineExecution", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.StartPipelineExecution", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StartPipelineExecutionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"StartPipelineExecution": {Name: "StartPipelineExecution", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:StartPipelineExecution", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.StartPipelineExecution", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/StartPipelineExecution", Target: "CodePipeline_20150709.StartPipelineExecution", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &StartPipelineExecutionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*StartPipelineExecutionInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.StartPipelineExecution(ctx, in)
 		}},
-		"GetPipelineExecution": {Name: "GetPipelineExecution", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:GetPipelineExecution", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.GetPipelineExecution", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetPipelineExecutionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"GetPipelineExecution": {Name: "GetPipelineExecution", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:GetPipelineExecution", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.GetPipelineExecution", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/GetPipelineExecution", Target: "CodePipeline_20150709.GetPipelineExecution", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &GetPipelineExecutionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*GetPipelineExecutionInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.GetPipelineExecution(ctx, in)
 		}},
-		"ListPipelineExecutions": {Name: "ListPipelineExecutions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:ListPipelineExecutions", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.ListPipelineExecutions", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListPipelineExecutionsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListPipelineExecutions": {Name: "ListPipelineExecutions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:ListPipelineExecutions", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.ListPipelineExecutions", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/ListPipelineExecutions", Target: "CodePipeline_20150709.ListPipelineExecutions", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListPipelineExecutionsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListPipelineExecutionsInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.ListPipelineExecutions(ctx, in)
 		}},
-		"StopPipelineExecution": {Name: "StopPipelineExecution", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:StopPipelineExecution", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.StopPipelineExecution", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StopPipelineExecutionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"StopPipelineExecution": {Name: "StopPipelineExecution", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:StopPipelineExecution", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.StopPipelineExecution", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/StopPipelineExecution", Target: "CodePipeline_20150709.StopPipelineExecution", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &StopPipelineExecutionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*StopPipelineExecutionInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.StopPipelineExecution(ctx, in)
 		}},
-		"ListActionExecutions": {Name: "ListActionExecutions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:ListActionExecutions", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.ListActionExecutions", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListActionExecutionsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListActionExecutions": {Name: "ListActionExecutions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:ListActionExecutions", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.ListActionExecutions", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/ListActionExecutions", Target: "CodePipeline_20150709.ListActionExecutions", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListActionExecutionsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListActionExecutionsInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.ListActionExecutions(ctx, in)
 		}},
-		"PutApprovalResult": {Name: "PutApprovalResult", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:PutApprovalResult", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.PutApprovalResult", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutApprovalResultInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"PutApprovalResult": {Name: "PutApprovalResult", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:PutApprovalResult", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.PutApprovalResult", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/PutApprovalResult", Target: "CodePipeline_20150709.PutApprovalResult", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &PutApprovalResultInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*PutApprovalResultInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.PutApprovalResult(ctx, in)
 		}},
-		"RetryStageExecution": {Name: "RetryStageExecution", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:RetryStageExecution", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.RetryStageExecution", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &RetryStageExecutionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"RetryStageExecution": {Name: "RetryStageExecution", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:RetryStageExecution", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.RetryStageExecution", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/RetryStageExecution", Target: "CodePipeline_20150709.RetryStageExecution", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &RetryStageExecutionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*RetryStageExecutionInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.RetryStageExecution(ctx, in)
 		}},
-		"EnableStageTransition": {Name: "EnableStageTransition", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:EnableStageTransition", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.EnableStageTransition", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &EnableStageTransitionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"EnableStageTransition": {Name: "EnableStageTransition", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:EnableStageTransition", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.EnableStageTransition", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/EnableStageTransition", Target: "CodePipeline_20150709.EnableStageTransition", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &EnableStageTransitionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*EnableStageTransitionInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.EnableStageTransition(ctx, in)
 		}},
-		"DisableStageTransition": {Name: "DisableStageTransition", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:DisableStageTransition", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.DisableStageTransition", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DisableStageTransitionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DisableStageTransition": {Name: "DisableStageTransition", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:DisableStageTransition", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.DisableStageTransition", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/DisableStageTransition", Target: "CodePipeline_20150709.DisableStageTransition", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DisableStageTransitionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DisableStageTransitionInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.DisableStageTransition(ctx, in)
 		}},
-		"PutJobSuccessResult": {Name: "PutJobSuccessResult", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:PutJobSuccessResult", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.PutJobSuccessResult", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutJobSuccessResultInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"PutJobSuccessResult": {Name: "PutJobSuccessResult", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:PutJobSuccessResult", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.PutJobSuccessResult", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/PutJobSuccessResult", Target: "CodePipeline_20150709.PutJobSuccessResult", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &PutJobSuccessResultInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*PutJobSuccessResultInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.PutJobSuccessResult(ctx, in)
 		}},
-		"PutJobFailureResult": {Name: "PutJobFailureResult", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:PutJobFailureResult", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.PutJobFailureResult", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &PutJobFailureResultInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"PutJobFailureResult": {Name: "PutJobFailureResult", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:PutJobFailureResult", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.PutJobFailureResult", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/PutJobFailureResult", Target: "CodePipeline_20150709.PutJobFailureResult", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &PutJobFailureResultInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*PutJobFailureResultInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())

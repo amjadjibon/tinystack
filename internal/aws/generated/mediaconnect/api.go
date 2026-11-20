@@ -468,7 +468,7 @@ type ListTagsForResourceResponse struct {
 
 var pattern0 = regexp.MustCompile("^arn:.+:mediaconnect.+:flow:.+$")
 
-var enum0 = []string{"cdi", "fujitsu-qos", "ndi-speed-hq", "rist", "rtp", "rtp-fec", "srt-caller", "srt-listener", "st2110-jpegxs", "udp", "zixi-pull", "zixi-push"}
+var enum0 = []string{"cdi", "fujitsu-qos", "ndi-speed-hq", "rist", "rtmp-push", "rtp", "rtp-fec", "srt-caller", "srt-listener", "st2110-jpegxs", "udp", "zixi-pull", "zixi-push"}
 
 var enum1 = []string{"DISABLED", "ENABLED"}
 

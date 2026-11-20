@@ -9,7 +9,7 @@ Find and tag resources across services by tag, resource type, or ARN.
 | --- | --- |
 | Service ID | `resourcegroupstaggingapi` |
 | Signing name | `tagging` |
-| Wire protocol | AWS JSON 1.1 |
+| Wire protocol | AWS JSON 1.1, Smithy RPC v2 CBOR |
 | API version | `2017-01-26` |
 | Scope | Account and region |
 | Execution | Local behavior |
@@ -58,6 +58,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/resourcegroupstaggingapi)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/resourcegroupstaggingapi/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/resourcegroupstaggingapi.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/resourcegroupstaggingapi.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [resourcegroupstaggingapi_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/resourcegroupstaggingapi_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

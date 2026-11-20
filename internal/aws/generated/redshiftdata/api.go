@@ -78,17 +78,18 @@ type DescribeStatementRequest struct {
 }
 
 type SubStatementData struct {
-	CreatedAt       *float64 `json:"CreatedAt,omitempty"`
-	Duration        *int64   `json:"Duration,omitempty"`
-	Error           *string  `json:"Error,omitempty"`
-	HasResultSet    *bool    `json:"HasResultSet,omitempty"`
-	Id              *string  `json:"Id,omitempty"`
-	QueryString     *string  `json:"QueryString,omitempty"`
-	RedshiftQueryId *int64   `json:"RedshiftQueryId,omitempty"`
-	ResultRows      *int64   `json:"ResultRows,omitempty"`
-	ResultSize      *int64   `json:"ResultSize,omitempty"`
-	Status          *string  `json:"Status,omitempty"`
-	UpdatedAt       *float64 `json:"UpdatedAt,omitempty"`
+	CreatedAt         *float64 `json:"CreatedAt,omitempty"`
+	Duration          *int64   `json:"Duration,omitempty"`
+	Error             *string  `json:"Error,omitempty"`
+	HasResultSet      *bool    `json:"HasResultSet,omitempty"`
+	Id                *string  `json:"Id,omitempty"`
+	QueryString       *string  `json:"QueryString,omitempty"`
+	RedshiftQueryId   *int64   `json:"RedshiftQueryId,omitempty"`
+	RedshiftQueryUuid *string  `json:"RedshiftQueryUuid,omitempty"`
+	ResultRows        *int64   `json:"ResultRows,omitempty"`
+	ResultSize        *int64   `json:"ResultSize,omitempty"`
+	Status            *string  `json:"Status,omitempty"`
+	UpdatedAt         *float64 `json:"UpdatedAt,omitempty"`
 }
 
 type DescribeStatementResponse struct {
@@ -105,6 +106,7 @@ type DescribeStatementResponse struct {
 	QueryString       *string            `json:"QueryString,omitempty"`
 	RedshiftPid       *int64             `json:"RedshiftPid,omitempty"`
 	RedshiftQueryId   *int64             `json:"RedshiftQueryId,omitempty"`
+	RedshiftQueryUuid *string            `json:"RedshiftQueryUuid,omitempty"`
 	ResultFormat      *string            `json:"ResultFormat,omitempty"`
 	ResultRows        *int64             `json:"ResultRows,omitempty"`
 	ResultSize        *int64             `json:"ResultSize,omitempty"`

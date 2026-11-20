@@ -125,48 +125,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Associates one or more faces with an existing UserID. Takes an array of\n        <code>FaceIds</code>. Each <code>FaceId</code> that are present in the <code>FaceIds</code>\n      list is associated with the provided UserID. The number of FaceIds that can be used as input\n      in a single request is limited to 100.</p>\n         <p>Note that the total number of faces that can be associated with a single\n      <code>UserID</code> is also limited to 100. Once a <code>UserID</code> has 100 faces\n      associated with it, no additional faces can be added. If more API calls are made after the\n      limit is reached, a <code>ServiceQuotaExceededException</code> will result.</p>\n         <p>The <code>UserMatchThreshold</code> parameter specifies the minimum user match confidence\n      required for the face to be associated with a UserID that has at least one <code>FaceID</code>\n      already associated. This ensures that the <code>FaceIds</code> are associated with the right\n      UserID. The value ranges from 0-100 and default value is 75. </p>\n         <p>If successful, an array of <code>AssociatedFace</code> objects containing the associated\n        <code>FaceIds</code> is returned. If a given face is already associated with the given\n        <code>UserID</code>, it will be ignored and will not be returned in the response. If a given\n      face is already associated to a different <code>UserID</code>, isn't found in the collection,\n      doesn’t meet the <code>UserMatchThreshold</code>, or there are already 100 faces associated\n      with the <code>UserID</code>, it will be returned as part of an array of\n        <code>UnsuccessfulFaceAssociations.</code>\n         </p>\n         <p>The <code>UserStatus</code> reflects the status of an operation which updates a UserID\n      representation with a list of given faces. The <code>UserStatus</code> can be: </p>\n         <ul>\n            <li>\n               <p>ACTIVE - All associations or disassociations of FaceID(s) for a UserID are\n          complete.</p>\n            </li>\n            <li>\n               <p>CREATED - A UserID has been created, but has no FaceID(s) associated with it.</p>\n            </li>\n            <li>\n               <p>UPDATING - A UserID is being updated and there are current associations or\n          disassociations of FaceID(s) taking place.</p>\n            </li>\n         </ul>",
-                "smithy.api#examples": [
-                    {
-                        "title": "AssociateFaces",
-                        "documentation": "This operation associates one or more faces with an existing UserID.",
-                        "input": {
-                            "CollectionId": "MyCollection",
-                            "UserId": "DemoUser",
-                            "FaceIds": [
-                                "f5817d37-94f6-4335-bfee-6cf79a3d806e",
-                                "851cb847-dccc-4fea-9309-9f4805967855",
-                                "35ebbb41-7f67-4263-908d-dd0ecba05ab9"
-                            ],
-                            "UserMatchThreshold": 70,
-                            "ClientRequestToken": "550e8400-e29b-41d4-a716-446655440002"
-                        },
-                        "output": {
-                            "UnsuccessfulFaceAssociations": [
-                                {
-                                    "Reasons": [
-                                        "LOW_MATCH_CONFIDENCE"
-                                    ],
-                                    "FaceId": "f5817d37-94f6-4335-bfee-6cf79a3d806e",
-                                    "Confidence": 0.9375374913215637
-                                },
-                                {
-                                    "Reasons": [
-                                        "ASSOCIATED_TO_A_DIFFERENT_USER"
-                                    ],
-                                    "FaceId": "851cb847-dccc-4fea-9309-9f4805967855",
-                                    "UserId": "demoUser2"
-                                }
-                            ],
-                            "UserStatus": "UPDATING",
-                            "AssociatedFaces": [
-                                {
-                                    "FaceId": "35ebbb41-7f67-4263-908d-dd0ecba05ab9"
-                                }
-                            ]
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>Associates one or more faces with an existing UserID. Takes an array of\n        <code>FaceIds</code>. Each <code>FaceId</code> that are present in the <code>FaceIds</code>\n      list is associated with the provided UserID. The number of FaceIds that can be used as input\n      in a single request is limited to 100.</p>\n         <p>Note that the total number of faces that can be associated with a single\n      <code>UserID</code> is also limited to 100. Once a <code>UserID</code> has 100 faces\n      associated with it, no additional faces can be added. If more API calls are made after the\n      limit is reached, a <code>ServiceQuotaExceededException</code> will result.</p>\n         <p>The <code>UserMatchThreshold</code> parameter specifies the minimum user match confidence\n      required for the face to be associated with a UserID that has at least one <code>FaceID</code>\n      already associated. This ensures that the <code>FaceIds</code> are associated with the right\n      UserID. The value ranges from 0-100 and default value is 75. </p>\n         <p>If successful, an array of <code>AssociatedFace</code> objects containing the associated\n        <code>FaceIds</code> is returned. If a given face is already associated with the given\n        <code>UserID</code>, it will be ignored and will not be returned in the response. If a given\n      face is already associated to a different <code>UserID</code>, isn't found in the collection,\n      doesn’t meet the <code>UserMatchThreshold</code>, or there are already 100 faces associated\n      with the <code>UserID</code>, it will be returned as part of an array of\n        <code>UnsuccessfulFaceAssociations.</code>\n         </p>\n         <p>The <code>UserStatus</code> reflects the status of an operation which updates a UserID\n      representation with a list of given faces. The <code>UserStatus</code> can be: </p>\n         <ul>\n            <li>\n               <p>ACTIVE - All associations or disassociations of FaceID(s) for a UserID are\n          complete.</p>\n            </li>\n            <li>\n               <p>CREATED - A UserID has been created, but has no FaceID(s) associated with it.</p>\n            </li>\n            <li>\n               <p>UPDATING - A UserID is being updated and there are current associations or\n          disassociations of FaceID(s) taking place.</p>\n            </li>\n         </ul>"
             }
         },
         "com.amazonaws.rekognition#AssociateFacesRequest": {
@@ -831,53 +790,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Compares a face in the <i>source</i> input image with each of the 100\n      largest faces detected in the <i>target</i> input image. </p>\n         <p> If the source image contains multiple faces, the service detects the largest face and\n      compares it with each face detected in the target image. </p>\n         <note>\n            <p>CompareFaces uses machine learning algorithms, which are probabilistic. A false negative\n        is an incorrect prediction that a face in the target image has a low similarity confidence\n        score when compared to the face in the source image. To reduce the probability of false\n        negatives, we recommend that you compare the target image against multiple source images. If\n        you plan to use <code>CompareFaces</code> to make a decision that impacts an individual's\n        rights, privacy, or access to services, we recommend that you pass the result to a human for\n        review and further validation before taking action.</p>\n         </note>\n         <p>You pass the input and target images either as base64-encoded image bytes or as\n      references to images in an Amazon S3 bucket. If you use the\n      AWS\n      CLI to call Amazon Rekognition operations, passing image bytes isn't\n      supported. The image must be formatted as a PNG or JPEG file. </p>\n         <p>In response, the operation returns an array of face matches ordered by similarity score\n      in descending order. For each face match, the response provides a bounding box of the face,\n      facial landmarks, pose details (pitch, roll, and yaw), quality (brightness and sharpness), and\n      confidence value (indicating the level of confidence that the bounding box contains a face).\n      The response also provides a similarity score, which indicates how closely the faces match. </p>\n         <note>\n            <p>By default, only faces with a similarity score of greater than or equal to 80% are\n        returned in the response. You can change this value by specifying the\n          <code>SimilarityThreshold</code> parameter.</p>\n         </note>\n         <p>\n            <code>CompareFaces</code> also returns an array of faces that don't match the source\n      image. For each face, it returns a bounding box, confidence value, landmarks, pose details,\n      and quality. The response also returns information about the face in the source image,\n      including the bounding box of the face and confidence value.</p>\n         <p>The <code>QualityFilter</code> input parameter allows you to filter out detected faces\n      that don’t meet a required quality bar. The quality bar is based on a variety of common use\n      cases. Use <code>QualityFilter</code> to set the quality bar by specifying <code>LOW</code>,\n        <code>MEDIUM</code>, or <code>HIGH</code>. If you do not want to filter detected faces,\n      specify <code>NONE</code>. The default value is <code>NONE</code>. </p>\n         <p>If the image doesn't contain Exif metadata, <code>CompareFaces</code> returns\n      orientation information for the source and target images. Use these values to display the\n      images with the correct image orientation.</p>\n         <p>If no faces are detected in the source or target images, <code>CompareFaces</code>\n      returns an <code>InvalidParameterException</code> error. </p>\n         <note>\n            <p> This is a stateless API operation. That is, data returned by this operation doesn't\n        persist.</p>\n         </note>\n         <p>For an example, see Comparing Faces in Images in the Amazon Rekognition Developer\n      Guide.</p>\n         <p>This operation requires permissions to perform the\n        <code>rekognition:CompareFaces</code> action.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To compare two images",
-                        "documentation": "This operation compares the largest face detected in the source image with each face detected in the target image.",
-                        "input": {
-                            "SourceImage": {
-                                "S3Object": {
-                                    "Bucket": "mybucket",
-                                    "Name": "mysourceimage"
-                                }
-                            },
-                            "TargetImage": {
-                                "S3Object": {
-                                    "Bucket": "mybucket",
-                                    "Name": "mytargetimage"
-                                }
-                            },
-                            "SimilarityThreshold": 90
-                        },
-                        "output": {
-                            "FaceMatches": [
-                                {
-                                    "Face": {
-                                        "BoundingBox": {
-                                            "Width": 0.25,
-                                            "Top": 0.4933333396911621,
-                                            "Left": 0.31888890266418457,
-                                            "Height": 0.33481481671333313
-                                        },
-                                        "Confidence": 99.9991226196289
-                                    },
-                                    "Similarity": 100
-                                }
-                            ],
-                            "SourceImageFace": {
-                                "BoundingBox": {
-                                    "Width": 0.25,
-                                    "Top": 0.4933333396911621,
-                                    "Left": 0.31888890266418457,
-                                    "Height": 0.33481481671333313
-                                },
-                                "Confidence": 99.9991226196289
-                            }
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>Compares a face in the <i>source</i> input image with each of the 100\n      largest faces detected in the <i>target</i> input image. </p>\n         <p> If the source image contains multiple faces, the service detects the largest face and\n      compares it with each face detected in the target image. </p>\n         <note>\n            <p>CompareFaces uses machine learning algorithms, which are probabilistic. A false negative\n        is an incorrect prediction that a face in the target image has a low similarity confidence\n        score when compared to the face in the source image. To reduce the probability of false\n        negatives, we recommend that you compare the target image against multiple source images. If\n        you plan to use <code>CompareFaces</code> to make a decision that impacts an individual's\n        rights, privacy, or access to services, we recommend that you pass the result to a human for\n        review and further validation before taking action.</p>\n         </note>\n         <p>You pass the input and target images either as base64-encoded image bytes or as\n      references to images in an Amazon S3 bucket. If you use the\n      AWS\n      CLI to call Amazon Rekognition operations, passing image bytes isn't\n      supported. The image must be formatted as a PNG or JPEG file. </p>\n         <p>In response, the operation returns an array of face matches ordered by similarity score\n      in descending order. For each face match, the response provides a bounding box of the face,\n      facial landmarks, pose details (pitch, roll, and yaw), quality (brightness and sharpness), and\n      confidence value (indicating the level of confidence that the bounding box contains a face).\n      The response also provides a similarity score, which indicates how closely the faces match. </p>\n         <note>\n            <p>By default, only faces with a similarity score of greater than or equal to 80% are\n        returned in the response. You can change this value by specifying the\n          <code>SimilarityThreshold</code> parameter.</p>\n         </note>\n         <p>\n            <code>CompareFaces</code> also returns an array of faces that don't match the source\n      image. For each face, it returns a bounding box, confidence value, landmarks, pose details,\n      and quality. The response also returns information about the face in the source image,\n      including the bounding box of the face and confidence value.</p>\n         <p>The <code>QualityFilter</code> input parameter allows you to filter out detected faces\n      that don’t meet a required quality bar. The quality bar is based on a variety of common use\n      cases. Use <code>QualityFilter</code> to set the quality bar by specifying <code>LOW</code>,\n        <code>MEDIUM</code>, or <code>HIGH</code>. If you do not want to filter detected faces,\n      specify <code>NONE</code>. The default value is <code>NONE</code>. </p>\n         <p>If the image doesn't contain Exif metadata, <code>CompareFaces</code> returns\n      orientation information for the source and target images. Use these values to display the\n      images with the correct image orientation.</p>\n         <p>If no faces are detected in the source or target images, <code>CompareFaces</code>\n      returns an <code>InvalidParameterException</code> error. </p>\n         <note>\n            <p> This is a stateless API operation. That is, data returned by this operation doesn't\n        persist.</p>\n         </note>\n         <p>For an example, see Comparing Faces in Images in the Amazon Rekognition Developer\n      Guide.</p>\n         <p>This operation requires permissions to perform the\n        <code>rekognition:CompareFaces</code> action.</p>"
             }
         },
         "com.amazonaws.rekognition#CompareFacesMatch": {
@@ -1321,30 +1234,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Copies a version of an Amazon Rekognition Custom Labels model from a source project to a destination project. The source and\n         destination projects can be in different AWS accounts but must be in the same AWS Region.\n         You can't copy a model to another AWS service.\n        \n      </p>\n         <p>To copy a model version to a different AWS account, you need to create a resource-based policy known as a\n         <i>project policy</i>. You attach the project policy to the\n         source project by calling <a>PutProjectPolicy</a>. The project policy\n      gives permission to copy the model version from a trusting AWS account to a trusted account.</p>\n         <p>For more information creating and attaching a project policy, see Attaching a project policy (SDK)\n         in the <i>Amazon Rekognition Custom Labels Developer Guide</i>.\n      </p>\n         <p>If you are copying a model version to a project in the same AWS account, you don't need to create a project policy.</p>\n         <note>\n            <p>Copying project versions is supported only for Custom Labels models. </p>\n            <p>To copy a model, the destination project, source project, and source model version\n            must already exist.</p>\n         </note>\n         <p>Copying a model version takes a while to complete. To get the current status, call <a>DescribeProjectVersions</a> and check the value of <code>Status</code> in the\n            <a>ProjectVersionDescription</a> object. The copy operation has finished when\n         the value of <code>Status</code> is <code>COPYING_COMPLETED</code>.</p>\n         <p>This operation requires permissions to perform the <code>rekognition:CopyProjectVersion</code> action.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "CopyProjectVersion",
-                        "documentation": "Copies a version of an Amazon Rekognition Custom Labels model from a source project to a destination project.",
-                        "input": {
-                            "SourceProjectArn": "arn:aws:rekognition:us-east-1:111122223333:project/SourceProject/16565123456",
-                            "SourceProjectVersionArn": "arn:aws:rekognition:us-east-1:111122223333:project/SourceProject/version/model_1/1656611123456",
-                            "DestinationProjectArn": "arn:aws:rekognition:us-east-1:555555555555:project/DestinationProject/1656705098765",
-                            "VersionName": "DestinationVersionName_cross_account",
-                            "OutputConfig": {
-                                "S3Bucket": "bucket-name",
-                                "S3KeyPrefix": "path_to_folder"
-                            },
-                            "Tags": {
-                                "key1": "val1"
-                            },
-                            "KmsKeyId": "arn:1234abcd-12ab-34cd-56ef-1234567890ab"
-                        },
-                        "output": {
-                            "ProjectVersionArn": "arn:aws:rekognition:us-east-1:555555555555:project/DestinationProject/version/DestinationVersionName_cross_account/16567050987651"
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Copies a version of an Amazon Rekognition Custom Labels model from a source project to a destination project. The source and\n         destination projects can be in different AWS accounts but must be in the same AWS Region.\n         You can't copy a model to another AWS service.\n        \n      </p>\n         <p>To copy a model version to a different AWS account, you need to create a resource-based policy known as a\n         <i>project policy</i>. You attach the project policy to the\n         source project by calling <a>PutProjectPolicy</a>. The project policy\n      gives permission to copy the model version from a trusting AWS account to a trusted account.</p>\n         <p>For more information creating and attaching a project policy, see Attaching a project policy (SDK)\n         in the <i>Amazon Rekognition Custom Labels Developer Guide</i>.\n      </p>\n         <p>If you are copying a model version to a project in the same AWS account, you don't need to create a project policy.</p>\n         <note>\n            <p>Copying project versions is supported only for Custom Labels models. </p>\n            <p>To copy a model, the destination project, source project, and source model version\n            must already exist.</p>\n         </note>\n         <p>Copying a model version takes a while to complete. To get the current status, call <a>DescribeProjectVersions</a> and check the value of <code>Status</code> in the\n            <a>ProjectVersionDescription</a> object. The copy operation has finished when\n         the value of <code>Status</code> is <code>COPYING_COMPLETED</code>.</p>\n         <p>This operation requires permissions to perform the <code>rekognition:CopyProjectVersion</code> action.</p>"
             }
         },
         "com.amazonaws.rekognition#CopyProjectVersionRequest": {
@@ -1469,20 +1359,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Creates a collection in an AWS Region. You can add faces to the collection using the\n        <a>IndexFaces</a> operation. </p>\n         <p>For example, you might create collections, one for each of your application users. A\n      user can then index faces using the <code>IndexFaces</code> operation and persist results in a\n      specific collection. Then, a user can search the collection for faces in the user-specific\n      container. </p>\n         <p>When you create a collection, it is associated with the latest version of the face model\n      version.</p>\n         <note>\n            <p>Collection names are case-sensitive.</p>\n         </note>\n         <p>This operation requires permissions to perform the\n        <code>rekognition:CreateCollection</code> action. If you want to tag your collection, you\n      also require permission to perform the <code>rekognition:TagResource</code>\n      operation.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To create a collection",
-                        "documentation": "This operation creates a Rekognition collection for storing image data.",
-                        "input": {
-                            "CollectionId": "myphotos"
-                        },
-                        "output": {
-                            "StatusCode": 200,
-                            "CollectionArn": "aws:rekognition:us-west-2:123456789012:collection/myphotos"
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>Creates a collection in an AWS Region. You can add faces to the collection using the\n        <a>IndexFaces</a> operation. </p>\n         <p>For example, you might create collections, one for each of your application users. A\n      user can then index faces using the <code>IndexFaces</code> operation and persist results in a\n      specific collection. Then, a user can search the collection for faces in the user-specific\n      container. </p>\n         <p>When you create a collection, it is associated with the latest version of the face model\n      version.</p>\n         <note>\n            <p>Collection names are case-sensitive.</p>\n         </note>\n         <p>This operation requires permissions to perform the\n        <code>rekognition:CreateCollection</code> action. If you want to tag your collection, you\n      also require permission to perform the <code>rekognition:TagResource</code>\n      operation.</p>"
             }
         },
         "com.amazonaws.rekognition#CreateCollectionRequest": {
@@ -1570,28 +1447,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Creates a new Amazon Rekognition Custom Labels dataset. You can create a dataset by using\n   an Amazon Sagemaker format manifest file or by copying an existing Amazon Rekognition Custom Labels dataset.</p>\n         <p>To create a training dataset for a project, specify <code>TRAIN</code> for the value of \n      <code>DatasetType</code>. To create the test dataset for a project,\n      specify <code>TEST</code> for the value of <code>DatasetType</code>.\n    </p>\n         <p>The response from <code>CreateDataset</code> is the Amazon Resource Name (ARN) for the dataset.\n   Creating a dataset takes a while to complete. Use <a>DescribeDataset</a> to check the \n   current status. The dataset created successfully if the value of <code>Status</code> is\n   <code>CREATE_COMPLETE</code>. </p>\n         <p>To check if any non-terminal errors occurred, call <a>ListDatasetEntries</a>\nand check for the presence of <code>errors</code> lists in the JSON Lines.</p>\n         <p>Dataset creation fails if a terminal error occurs (<code>Status</code> = <code>CREATE_FAILED</code>). \n      Currently, you can't access the terminal error information.\n      \n   </p>\n         <p>For more information, see Creating dataset in the <i>Amazon Rekognition Custom Labels Developer Guide</i>.</p>\n         <p>This operation requires permissions to perform the <code>rekognition:CreateDataset</code> action.\n   If you want to copy an existing dataset, you also require permission to perform the <code>rekognition:ListDatasetEntries</code> action.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To create an Amazon Rekognition Custom Labels dataset",
-                        "documentation": "Creates an Amazon Rekognition Custom Labels dataset with a manifest file stored in an Amazon S3 bucket.",
-                        "input": {
-                            "DatasetSource": {
-                                "GroundTruthManifest": {
-                                    "S3Object": {
-                                        "Bucket": "my-bucket",
-                                        "Name": "datasets/flowers_training/manifests/output/output.manifest"
-                                    }
-                                }
-                            },
-                            "DatasetType": "TRAIN",
-                            "ProjectArn": "arn:aws:rekognition:us-east-1:111122223333:project/my-project/1690474772815"
-                        },
-                        "output": {
-                            "DatasetArn": "arn:aws:rekognition:us-east-1:111122223333:project/my-project/dataset/train/1690476084535"
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Creates a new Amazon Rekognition Custom Labels dataset. You can create a dataset by using\n   an Amazon Sagemaker format manifest file or by copying an existing Amazon Rekognition Custom Labels dataset.</p>\n         <p>To create a training dataset for a project, specify <code>TRAIN</code> for the value of \n      <code>DatasetType</code>. To create the test dataset for a project,\n      specify <code>TEST</code> for the value of <code>DatasetType</code>.\n    </p>\n         <p>The response from <code>CreateDataset</code> is the Amazon Resource Name (ARN) for the dataset.\n   Creating a dataset takes a while to complete. Use <a>DescribeDataset</a> to check the \n   current status. The dataset created successfully if the value of <code>Status</code> is\n   <code>CREATE_COMPLETE</code>. </p>\n         <p>To check if any non-terminal errors occurred, call <a>ListDatasetEntries</a>\nand check for the presence of <code>errors</code> lists in the JSON Lines.</p>\n         <p>Dataset creation fails if a terminal error occurs (<code>Status</code> = <code>CREATE_FAILED</code>). \n      Currently, you can't access the terminal error information.\n      \n   </p>\n         <p>For more information, see Creating dataset in the <i>Amazon Rekognition Custom Labels Developer Guide</i>.</p>\n         <p>This operation requires permissions to perform the <code>rekognition:CreateDataset</code> action.\n   If you want to copy an existing dataset, you also require permission to perform the <code>rekognition:ListDatasetEntries</code> action.</p>"
             }
         },
         "com.amazonaws.rekognition#CreateDatasetRequest": {
@@ -1771,19 +1627,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Creates a new Amazon Rekognition project. A project is a group of resources (datasets, model\n         versions) that you use to create and manage a Amazon Rekognition Custom Labels Model or custom adapter. You can\n         specify a feature to create the project with, if no feature is specified then Custom Labels\n         is used by default. For adapters, you can also choose whether or not to have the project\n         auto update by using the AutoUpdate argument. This operation requires permissions to\n         perform the <code>rekognition:CreateProject</code> action.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To create an Amazon Rekognition Custom Labels project",
-                        "documentation": "Creates an Amazon Rekognition Custom Labels project.",
-                        "input": {
-                            "ProjectName": "my-project"
-                        },
-                        "output": {
-                            "ProjectArn": "arn:aws:rekognition:us-east-1:111122223333:project/my-project/1690405809285"
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>Creates a new Amazon Rekognition project. A project is a group of resources (datasets, model\n         versions) that you use to create and manage a Amazon Rekognition Custom Labels Model or custom adapter. You can\n         specify a feature to create the project with, if no feature is specified then Custom Labels\n         is used by default. For adapters, you can also choose whether or not to have the project\n         auto update by using the AutoUpdate argument. This operation requires permissions to\n         perform the <code>rekognition:CreateProject</code> action.</p>"
             }
         },
         "com.amazonaws.rekognition#CreateProjectRequest": {
@@ -1871,24 +1715,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Creates a new version of Amazon Rekognition project (like a Custom Labels model or a custom adapter)\n         and begins training. Models and adapters are managed as part of a Rekognition project. The\n         response from <code>CreateProjectVersion</code> is an Amazon Resource Name (ARN) for the\n         project version. </p>\n         <p>The FeatureConfig operation argument allows you to configure specific model or adapter\n         settings. You can provide a description to the project version by using the\n         VersionDescription argment. Training can take a while to complete. You can get the current\n         status by calling <a>DescribeProjectVersions</a>. Training completed\n         successfully if the value of the <code>Status</code> field is\n            <code>TRAINING_COMPLETED</code>. Once training has successfully completed, call <a>DescribeProjectVersions</a> to get the training results and evaluate the\n         model.</p>\n         <p>This operation requires permissions to perform the\n            <code>rekognition:CreateProjectVersion</code> action.</p>\n         <note>\n            <p>\n               <i>The following applies only to projects with Amazon Rekognition Custom Labels as the chosen\n               feature:</i>\n            </p>\n            <p>You can train a model in a project that doesn't have associated datasets by specifying manifest files in the\n         <code>TrainingData</code> and <code>TestingData</code> fields.\n         </p>\n            <p>If you open the console after training a model with manifest files, Amazon Rekognition Custom Labels creates\n            the datasets for you using the most recent manifest files. You can no longer train\n            a model version for the project by specifying manifest files. </p>\n            <p>Instead of training with a project without associated datasets,\n            we recommend that you use the manifest\n            files to create training and test datasets for the project.</p>\n         </note>\n         <p></p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To train an Amazon Rekognition Custom Labels model",
-                        "documentation": "Trains a version of an Amazon Rekognition Custom Labels model.",
-                        "input": {
-                            "ProjectArn": "arn:aws:rekognition:us-east-1:111122223333:project/my-project/1690474772815",
-                            "VersionName": "1",
-                            "OutputConfig": {
-                                "S3Bucket": "output_bucket",
-                                "S3KeyPrefix": "output_folder"
-                            }
-                        },
-                        "output": {
-                            "ProjectVersionArn": "arn:aws:rekognition:us-east-1:111122223333:project/my-project/version/1/1690556751958"
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>Creates a new version of Amazon Rekognition project (like a Custom Labels model or a custom adapter)\n         and begins training. Models and adapters are managed as part of a Rekognition project. The\n         response from <code>CreateProjectVersion</code> is an Amazon Resource Name (ARN) for the\n         project version. </p>\n         <p>The FeatureConfig operation argument allows you to configure specific model or adapter\n         settings. You can provide a description to the project version by using the\n         VersionDescription argment. Training can take a while to complete. You can get the current\n         status by calling <a>DescribeProjectVersions</a>. Training completed\n         successfully if the value of the <code>Status</code> field is\n            <code>TRAINING_COMPLETED</code>. Once training has successfully completed, call <a>DescribeProjectVersions</a> to get the training results and evaluate the\n         model.</p>\n         <p>This operation requires permissions to perform the\n            <code>rekognition:CreateProjectVersion</code> action.</p>\n         <note>\n            <p>\n               <i>The following applies only to projects with Amazon Rekognition Custom Labels as the chosen\n               feature:</i>\n            </p>\n            <p>You can train a model in a project that doesn't have associated datasets by specifying manifest files in the\n         <code>TrainingData</code> and <code>TestingData</code> fields.\n         </p>\n            <p>If you open the console after training a model with manifest files, Amazon Rekognition Custom Labels creates\n            the datasets for you using the most recent manifest files. You can no longer train\n            a model version for the project by specifying manifest files. </p>\n            <p>Instead of training with a project without associated datasets,\n            we recommend that you use the manifest\n            files to create training and test datasets for the project.</p>\n         </note>\n         <p></p>"
             }
         },
         "com.amazonaws.rekognition#CreateProjectVersionRequest": {
@@ -2130,17 +1957,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Creates a new User within a collection specified by <code>CollectionId</code>. Takes\n        <code>UserId</code> as a parameter, which is a user provided ID which should be unique\n      within the collection. The provided <code>UserId</code> will alias the system generated UUID\n      to make the <code>UserId</code> more user friendly. </p>\n         <p>Uses a <code>ClientToken</code>, an idempotency token that ensures a call to\n        <code>CreateUser</code> completes only once. If the value is not supplied, the AWS SDK\n      generates an idempotency token for the requests. This prevents retries after a network error\n      results from making multiple <code>CreateUser</code> calls. </p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "CreateUser",
-                        "documentation": "Creates a new User within a collection specified by CollectionId.",
-                        "input": {
-                            "CollectionId": "MyCollection",
-                            "UserId": "DemoUser"
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>Creates a new User within a collection specified by <code>CollectionId</code>. Takes\n        <code>UserId</code> as a parameter, which is a user provided ID which should be unique\n      within the collection. The provided <code>UserId</code> will alias the system generated UUID\n      to make the <code>UserId</code> more user friendly. </p>\n         <p>Uses a <code>ClientToken</code>, an idempotency token that ensures a call to\n        <code>CreateUser</code> completes only once. If the value is not supplied, the AWS SDK\n      generates an idempotency token for the requests. This prevents retries after a network error\n      results from making multiple <code>CreateUser</code> calls. </p>"
             }
         },
         "com.amazonaws.rekognition#CreateUserRequest": {
@@ -2648,19 +2465,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Deletes the specified collection. Note that this operation removes all faces in the\n      collection. For an example, see <a href=\"https://docs.aws.amazon.com/rekognition/latest/dg/delete-collection-procedure.html\">Deleting a\n      collection</a>.</p>\n         <p>This operation requires permissions to perform the\n        <code>rekognition:DeleteCollection</code> action.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To delete a collection",
-                        "documentation": "This operation deletes a Rekognition collection.",
-                        "input": {
-                            "CollectionId": "myphotos"
-                        },
-                        "output": {
-                            "StatusCode": 200
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>Deletes the specified collection. Note that this operation removes all faces in the\n      collection. For an example, see <a href=\"https://docs.aws.amazon.com/rekognition/latest/dg/delete-collection-procedure.html\">Deleting a\n      collection</a>.</p>\n         <p>This operation requires permissions to perform the\n        <code>rekognition:DeleteCollection</code> action.</p>"
             }
         },
         "com.amazonaws.rekognition#DeleteCollectionRequest": {
@@ -2727,17 +2532,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Deletes an existing Amazon Rekognition Custom Labels dataset.\n   Deleting a dataset might take while. Use <a>DescribeDataset</a> to check the \n   current status. The dataset is still deleting if the value of <code>Status</code> is\n   <code>DELETE_IN_PROGRESS</code>. If you try to access the dataset after it is deleted, you get\n   a <code>ResourceNotFoundException</code> exception.\n\n</p>\n         <p>You can't delete a dataset while it is creating (<code>Status</code> =  <code>CREATE_IN_PROGRESS</code>)\n      or if the dataset is updating (<code>Status</code> =  <code>UPDATE_IN_PROGRESS</code>).</p>\n         <p>This operation requires permissions to perform the <code>rekognition:DeleteDataset</code> action.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To delete an Amazon Rekognition Custom Labels dataset",
-                        "documentation": "Deletes an Amazon Rekognition Custom Labels dataset.",
-                        "input": {
-                            "DatasetArn": "arn:aws:rekognition:us-east-1:111122223333:project/my-project/dataset/test/1690556733321"
-                        },
-                        "output": {}
-                    }
-                ]
+                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Deletes an existing Amazon Rekognition Custom Labels dataset.\n   Deleting a dataset might take while. Use <a>DescribeDataset</a> to check the \n   current status. The dataset is still deleting if the value of <code>Status</code> is\n   <code>DELETE_IN_PROGRESS</code>. If you try to access the dataset after it is deleted, you get\n   a <code>ResourceNotFoundException</code> exception.\n\n</p>\n         <p>You can't delete a dataset while it is creating (<code>Status</code> =  <code>CREATE_IN_PROGRESS</code>)\n      or if the dataset is updating (<code>Status</code> =  <code>UPDATE_IN_PROGRESS</code>).</p>\n         <p>This operation requires permissions to perform the <code>rekognition:DeleteDataset</code> action.</p>"
             }
         },
         "com.amazonaws.rekognition#DeleteDatasetRequest": {
@@ -2791,24 +2586,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Deletes faces from a collection. You specify a collection ID and an array of face IDs\n      to remove from the collection.</p>\n         <p>This operation requires permissions to perform the <code>rekognition:DeleteFaces</code>\n      action.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To delete a face",
-                        "documentation": "This operation deletes one or more faces from a Rekognition collection.",
-                        "input": {
-                            "CollectionId": "myphotos",
-                            "FaceIds": [
-                                "ff43d742-0c13-5d16-a3e8-03d3f58e980b"
-                            ]
-                        },
-                        "output": {
-                            "DeletedFaces": [
-                                "ff43d742-0c13-5d16-a3e8-03d3f58e980b"
-                            ]
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>Deletes faces from a collection. You specify a collection ID and an array of face IDs\n      to remove from the collection.</p>\n         <p>This operation requires permissions to perform the <code>rekognition:DeleteFaces</code>\n      action.</p>"
             }
         },
         "com.amazonaws.rekognition#DeleteFacesRequest": {
@@ -2885,19 +2663,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Deletes a Amazon Rekognition project. To delete a project you must first delete all models or\n         adapters associated with the project. To delete a model or adapter, see <a>DeleteProjectVersion</a>.</p>\n         <p>\n            <code>DeleteProject</code> is an asynchronous operation. To check if the project is\n         deleted, call <a>DescribeProjects</a>. The project is deleted when the project\n         no longer appears in the response. Be aware that deleting a given project will also delete\n         any <code>ProjectPolicies</code> associated with that project.</p>\n         <p>This operation requires permissions to perform the\n            <code>rekognition:DeleteProject</code> action. </p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To delete an Amazon Rekognition Custom Labels project",
-                        "documentation": "Deletes an Amazon Rekognition Custom Labels projects.",
-                        "input": {
-                            "ProjectArn": "arn:aws:rekognition:us-east-1:111122223333:project/my-project/1690405809285"
-                        },
-                        "output": {
-                            "Status": "DELETING"
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>Deletes a Amazon Rekognition project. To delete a project you must first delete all models or\n         adapters associated with the project. To delete a model or adapter, see <a>DeleteProjectVersion</a>.</p>\n         <p>\n            <code>DeleteProject</code> is an asynchronous operation. To check if the project is\n         deleted, call <a>DescribeProjects</a>. The project is deleted when the project\n         no longer appears in the response. Be aware that deleting a given project will also delete\n         any <code>ProjectPolicies</code> associated with that project.</p>\n         <p>This operation requires permissions to perform the\n            <code>rekognition:DeleteProject</code> action. </p>"
             }
         },
         "com.amazonaws.rekognition#DeleteProjectPolicy": {
@@ -2932,19 +2698,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Deletes an existing project policy.</p>\n         <p>To get a list of project policies attached to a project, call <a>ListProjectPolicies</a>. To attach a project policy to a project, call <a>PutProjectPolicy</a>.</p>\n         <p>This operation requires permissions to perform the <code>rekognition:DeleteProjectPolicy</code> action.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "DeleteProjectPolicy",
-                        "documentation": "This operation deletes a revision of an existing project policy from an Amazon Rekognition Custom Labels project.",
-                        "input": {
-                            "ProjectArn": "arn:aws:rekognition:us-east-1:111122223333:project/SourceProject/1656557123456",
-                            "PolicyName": "testPolicy1",
-                            "PolicyRevisionId": "3b274c25e9203a56a99e00e3ff205fbc"
-                        },
-                        "output": {}
-                    }
-                ]
+                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Deletes an existing project policy.</p>\n         <p>To get a list of project policies attached to a project, call <a>ListProjectPolicies</a>. To attach a project policy to a project, call <a>PutProjectPolicy</a>.</p>\n         <p>This operation requires permissions to perform the <code>rekognition:DeleteProjectPolicy</code> action.</p>"
             }
         },
         "com.amazonaws.rekognition#DeleteProjectPolicyRequest": {
@@ -3043,19 +2797,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Deletes a Rekognition project model or project version, like a Amazon Rekognition Custom Labels model or a custom\n         adapter.</p>\n         <p>You can't delete a project version if it is running or if it is training. To check\n         the status of a project version, use the Status field returned from <a>DescribeProjectVersions</a>. To stop a project version call <a>StopProjectVersion</a>. If the project version is training, wait until it\n         finishes.</p>\n         <p>This operation requires permissions to perform the\n         <code>rekognition:DeleteProjectVersion</code> action. </p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To delete an Amazon Rekognition Custom Labels model",
-                        "documentation": "Deletes a version of an Amazon Rekognition Custom Labels model.",
-                        "input": {
-                            "ProjectVersionArn": "arn:aws:rekognition:us-east-1:111122223333:project/my-project/version/1/1690556751958"
-                        },
-                        "output": {
-                            "Status": "DELETING"
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>Deletes a Rekognition project model or project version, like a Amazon Rekognition Custom Labels model or a custom\n         adapter.</p>\n         <p>You can't delete a project version if it is running or if it is training. To check\n         the status of a project version, use the Status field returned from <a>DescribeProjectVersions</a>. To stop a project version call <a>StopProjectVersion</a>. If the project version is training, wait until it\n         finishes.</p>\n         <p>This operation requires permissions to perform the\n         <code>rekognition:DeleteProjectVersion</code> action. </p>"
             }
         },
         "com.amazonaws.rekognition#DeleteProjectVersionRequest": {
@@ -3179,18 +2921,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Deletes the specified UserID within the collection. Faces that are associated with the\n      UserID are disassociated from the UserID before deleting the specified UserID. If the\n      specified <code>Collection</code> or <code>UserID</code> is already deleted or not found, a\n        <code>ResourceNotFoundException</code> will be thrown. If the action is successful with a\n      200 response, an empty HTTP body is returned. </p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "DeleteUser",
-                        "documentation": "Deletes the specified UserID within the collection.",
-                        "input": {
-                            "CollectionId": "MyCollection",
-                            "UserId": "DemoUser",
-                            "ClientRequestToken": "550e8400-e29b-41d4-a716-446655440001"
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>Deletes the specified UserID within the collection. Faces that are associated with the\n      UserID are disassociated from the UserID before deleting the specified UserID. If the\n      specified <code>Collection</code> or <code>UserID</code> is already deleted or not found, a\n        <code>ResourceNotFoundException</code> will be thrown. If the action is successful with a\n      200 response, an empty HTTP body is returned. </p>"
             }
         },
         "com.amazonaws.rekognition#DeleteUserRequest": {
@@ -3793,36 +3524,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Detects custom labels in a supplied image by using an Amazon Rekognition Custom Labels model. </p>\n         <p>You specify which version of a model version to use by using the <code>ProjectVersionArn</code> input\n      parameter. </p>\n         <p>You pass the input image as base64-encoded image bytes or as a reference to an image in\n         an Amazon S3 bucket. If you use the AWS CLI to call Amazon Rekognition operations, passing\n         image bytes is not supported. The image must be either a PNG or JPEG formatted file. </p>\n         <p> For each object that the model version detects on an image, the API returns a \n         (<code>CustomLabel</code>) object in an array (<code>CustomLabels</code>).\n         Each <code>CustomLabel</code> object provides the label name (<code>Name</code>), the level\n         of confidence that the image contains the object (<code>Confidence</code>), and \n         object location information, if it exists,  for the label on the image (<code>Geometry</code>). </p>\n         <p>To filter labels that are returned, specify a value for <code>MinConfidence</code>.\n         <code>DetectCustomLabelsLabels</code> only returns labels with a confidence that's higher than\n         the specified value.\n\n         The value of <code>MinConfidence</code> maps to the assumed threshold values\n         created during training. For more information, see <i>Assumed threshold</i>\n         in the Amazon Rekognition Custom Labels Developer Guide. \n         Amazon Rekognition Custom Labels metrics expresses an assumed threshold as a floating point value between 0-1. The range of\n         <code>MinConfidence</code> normalizes the threshold value to a percentage value (0-100). Confidence\n         responses from <code>DetectCustomLabels</code> are also returned as a percentage. \n         You can use <code>MinConfidence</code> to change the precision and recall or your model. \n         For more information, see \n         <i>Analyzing an image</i> in the Amazon Rekognition Custom Labels Developer Guide. </p>\n         <p>If you don't specify a value for <code>MinConfidence</code>,  <code>DetectCustomLabels</code>\n      returns labels based on the assumed threshold of each label.</p>\n         <p>This is a stateless API operation. That is, the operation does not persist any\n         data.</p>\n         <p>This operation requires permissions to perform the\n         <code>rekognition:DetectCustomLabels</code> action. </p>\n         <p>For more information, see \n      <i>Analyzing an image</i> in the Amazon Rekognition Custom Labels Developer Guide. </p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To detect custom labels in an image with an Amazon Rekognition Custom Labels model",
-                        "documentation": "Detects custom labels in an image with an Amazon Rekognition Custom Labels model",
-                        "input": {
-                            "ProjectVersionArn": "arn:aws:rekognition:us-east-1:111122223333:project/my-project/version/my-project.2023-07-31T11.49.37/1690829378219",
-                            "Image": {
-                                "S3Object": {
-                                    "Bucket": "custom-labels-console-us-east-1-1111111111",
-                                    "Name": "assets/flowers_1_test_dataset/camellia4.jpg"
-                                }
-                            },
-                            "MaxResults": 100,
-                            "MinConfidence": 50
-                        },
-                        "output": {
-                            "CustomLabels": [
-                                {
-                                    "Name": "with_leaves",
-                                    "Confidence": 67.56399536132812
-                                },
-                                {
-                                    "Name": "without_leaves",
-                                    "Confidence": 50.65699768066406
-                                }
-                            ]
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Detects custom labels in a supplied image by using an Amazon Rekognition Custom Labels model. </p>\n         <p>You specify which version of a model version to use by using the <code>ProjectVersionArn</code> input\n      parameter. </p>\n         <p>You pass the input image as base64-encoded image bytes or as a reference to an image in\n         an Amazon S3 bucket. If you use the AWS CLI to call Amazon Rekognition operations, passing\n         image bytes is not supported. The image must be either a PNG or JPEG formatted file. </p>\n         <p> For each object that the model version detects on an image, the API returns a \n         (<code>CustomLabel</code>) object in an array (<code>CustomLabels</code>).\n         Each <code>CustomLabel</code> object provides the label name (<code>Name</code>), the level\n         of confidence that the image contains the object (<code>Confidence</code>), and \n         object location information, if it exists,  for the label on the image (<code>Geometry</code>). </p>\n         <p>To filter labels that are returned, specify a value for <code>MinConfidence</code>.\n         <code>DetectCustomLabelsLabels</code> only returns labels with a confidence that's higher than\n         the specified value.\n\n         The value of <code>MinConfidence</code> maps to the assumed threshold values\n         created during training. For more information, see <i>Assumed threshold</i>\n         in the Amazon Rekognition Custom Labels Developer Guide. \n         Amazon Rekognition Custom Labels metrics expresses an assumed threshold as a floating point value between 0-1. The range of\n         <code>MinConfidence</code> normalizes the threshold value to a percentage value (0-100). Confidence\n         responses from <code>DetectCustomLabels</code> are also returned as a percentage. \n         You can use <code>MinConfidence</code> to change the precision and recall or your model. \n         For more information, see \n         <i>Analyzing an image</i> in the Amazon Rekognition Custom Labels Developer Guide. </p>\n         <p>If you don't specify a value for <code>MinConfidence</code>,  <code>DetectCustomLabels</code>\n      returns labels based on the assumed threshold of each label.</p>\n         <p>This is a stateless API operation. That is, the operation does not persist any\n         data.</p>\n         <p>This operation requires permissions to perform the\n         <code>rekognition:DetectCustomLabels</code> action. </p>\n         <p>For more information, see \n      <i>Analyzing an image</i> in the Amazon Rekognition Custom Labels Developer Guide. </p>"
             }
         },
         "com.amazonaws.rekognition#DetectCustomLabelsRequest": {
@@ -3907,71 +3609,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Detects faces within an image that is provided as input.</p>\n         <p>\n            <code>DetectFaces</code> detects the 100 largest faces in the image. For each face\n      detected, the operation returns face details. These details include a bounding box of the\n      face, a confidence value (that the bounding box contains a face), and a fixed set of\n      attributes such as facial landmarks (for example, coordinates of eye and mouth), pose,\n      presence of facial occlusion, and so on.</p>\n         <p>The face-detection algorithm is most effective on frontal faces. For non-frontal or\n      obscured faces, the algorithm might not detect the faces or might detect faces with lower\n      confidence. </p>\n         <p>You pass the input image either as base64-encoded image bytes or as a reference to an\n      image in an Amazon S3 bucket. If you use the AWS CLI to call Amazon Rekognition operations,\n      passing image bytes is not supported. The image must be either a PNG or JPEG formatted file. </p>\n         <note>\n            <p>This is a stateless API operation. That is, the operation does not persist any\n        data.</p>\n         </note>\n         <p>This operation requires permissions to perform the <code>rekognition:DetectFaces</code>\n      action. </p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To detect faces in an image",
-                        "documentation": "This operation detects faces in an image stored in an AWS S3 bucket.",
-                        "input": {
-                            "Image": {
-                                "S3Object": {
-                                    "Bucket": "mybucket",
-                                    "Name": "myphoto"
-                                }
-                            }
-                        },
-                        "output": {
-                            "FaceDetails": [
-                                {
-                                    "BoundingBox": {
-                                        "Width": 0.23999999463558197,
-                                        "Top": 0.33666667342185974,
-                                        "Left": 0.5555555820465088,
-                                        "Height": 0.18000000715255737
-                                    },
-                                    "Landmarks": [
-                                        {
-                                            "Y": 0.40819624066352844,
-                                            "X": 0.6394737362861633,
-                                            "Type": "eyeLeft"
-                                        },
-                                        {
-                                            "Y": 0.41039225459098816,
-                                            "X": 0.7266660928726196,
-                                            "Type": "eyeRight"
-                                        },
-                                        {
-                                            "Y": 0.44240960478782654,
-                                            "X": 0.6912462115287781,
-                                            "Type": "eyeRight"
-                                        },
-                                        {
-                                            "Y": 0.46700039505958557,
-                                            "X": 0.6306198239326477,
-                                            "Type": "mouthDown"
-                                        },
-                                        {
-                                            "Y": 0.47114261984825134,
-                                            "X": 0.7215608954429626,
-                                            "Type": "mouthUp"
-                                        }
-                                    ],
-                                    "Pose": {
-                                        "Yaw": 13.693790435791016,
-                                        "Roll": 0.9950747489929199,
-                                        "Pitch": 4.050806522369385
-                                    },
-                                    "Quality": {
-                                        "Sharpness": 80,
-                                        "Brightness": 37.60169982910156
-                                    },
-                                    "Confidence": 100
-                                }
-                            ],
-                            "OrientationCorrection": "ROTATE_0"
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>Detects faces within an image that is provided as input.</p>\n         <p>\n            <code>DetectFaces</code> detects the 100 largest faces in the image. For each face\n      detected, the operation returns face details. These details include a bounding box of the\n      face, a confidence value (that the bounding box contains a face), and a fixed set of\n      attributes such as facial landmarks (for example, coordinates of eye and mouth), pose,\n      presence of facial occlusion, and so on.</p>\n         <p>The face-detection algorithm is most effective on frontal faces. For non-frontal or\n      obscured faces, the algorithm might not detect the faces or might detect faces with lower\n      confidence. </p>\n         <p>You pass the input image either as base64-encoded image bytes or as a reference to an\n      image in an Amazon S3 bucket. If you use the AWS CLI to call Amazon Rekognition operations,\n      passing image bytes is not supported. The image must be either a PNG or JPEG formatted file. </p>\n         <note>\n            <p>This is a stateless API operation. That is, the operation does not persist any\n        data.</p>\n         </note>\n         <p>This operation requires permissions to perform the <code>rekognition:DetectFaces</code>\n      action. </p>"
             }
         },
         "com.amazonaws.rekognition#DetectFacesRequest": {
@@ -4050,35 +3688,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Detects instances of real-world entities within an image (JPEG or PNG) provided as\n      input. This includes objects like flower, tree, and table; events like wedding, graduation,\n      and birthday party; and concepts like landscape, evening, and nature. </p>\n         <p>For an example, see Analyzing images stored in an Amazon S3 bucket in the\n      Amazon Rekognition Developer Guide.</p>\n         <p>You pass the input image as base64-encoded image bytes or as a reference to an image in\n      an Amazon S3 bucket. If you use the\n      AWS\n      CLI to call Amazon Rekognition operations, passing image bytes is not\n      supported. The image must be either a PNG or JPEG formatted file. </p>\n         <p>\n            <b>Optional Parameters</b>\n         </p>\n         <p>You can specify one or both of the <code>GENERAL_LABELS</code> and\n        <code>IMAGE_PROPERTIES</code> feature types when calling the DetectLabels API. Including\n        <code>GENERAL_LABELS</code> will ensure the response includes the labels detected in the\n      input image, while including <code>IMAGE_PROPERTIES </code>will ensure the response includes\n      information about the image quality and color.</p>\n         <p>When using <code>GENERAL_LABELS</code> and/or <code>IMAGE_PROPERTIES</code> you can\n      provide filtering criteria to the Settings parameter. You can filter with sets of individual\n      labels or with label categories. You can specify inclusive filters, exclusive filters, or a\n      combination of inclusive and exclusive filters. For more information on filtering see <a href=\"https://docs.aws.amazon.com/rekognition/latest/dg/labels-detect-labels-image.html\">Detecting\n        Labels in an Image</a>.</p>\n         <p>When getting labels, you can specify <code>MinConfidence</code> to control the\n      confidence threshold for the labels returned. The default is 55%. You can also add the\n        <code>MaxLabels</code> parameter to limit the number of labels returned. The default and\n      upper limit is 1000 labels. These arguments are only valid when supplying GENERAL_LABELS as a\n      feature type.</p>\n         <p>\n            <b>Response Elements</b>\n         </p>\n         <p> For each object, scene, and concept the API returns one or more labels. The API\n      returns the following types of information about labels:</p>\n         <ul>\n            <li>\n               <p> Name - The name of the detected label. </p>\n            </li>\n            <li>\n               <p> Confidence - The level of confidence in the label assigned to a detected object.\n        </p>\n            </li>\n            <li>\n               <p> Parents - The ancestor labels for a detected label. DetectLabels returns a\n          hierarchical taxonomy of detected labels. For example, a detected car might be assigned\n          the label car. The label car has two parent labels: Vehicle (its parent) and\n          Transportation (its grandparent). The response includes the all ancestors for a label,\n          where every ancestor is a unique label. In the previous example, Car, Vehicle, and\n          Transportation are returned as unique labels in the response. </p>\n            </li>\n            <li>\n               <p> Aliases - Possible Aliases for the label. </p>\n            </li>\n            <li>\n               <p> Categories - The label categories that the detected label belongs to. </p>\n            </li>\n            <li>\n               <p> BoundingBox — Bounding boxes are described for all instances of detected common\n          object labels, returned in an array of Instance objects. An Instance object contains a\n          BoundingBox object, describing the location of the label on the input image. It also\n          includes the confidence for the accuracy of the detected bounding box. </p>\n            </li>\n         </ul>\n         <p> The API returns the following information regarding the image, as part of the\n      ImageProperties structure:</p>\n         <ul>\n            <li>\n               <p>Quality - Information about the Sharpness, Brightness, and Contrast of the input\n          image, scored between 0 to 100. Image quality is returned for the entire image, as well as\n          the background and the foreground. </p>\n            </li>\n            <li>\n               <p>Dominant Color - An array of the dominant colors in the image. </p>\n            </li>\n            <li>\n               <p>Foreground - Information about the sharpness, brightness, and dominant colors of the\n          input image’s foreground. </p>\n            </li>\n            <li>\n               <p>Background - Information about the sharpness, brightness, and dominant colors of the\n          input image’s background.</p>\n            </li>\n         </ul>\n         <p>The list of returned labels will include at least one label for every detected object,\n      along with information about that label. In the following example, suppose the input image has\n      a lighthouse, the sea, and a rock. The response includes all three labels, one for each\n      object, as well as the confidence in the label:</p>\n         <p>\n            <code>{Name: lighthouse, Confidence: 98.4629}</code>\n         </p>\n         <p>\n            <code>{Name: rock,Confidence: 79.2097}</code>\n         </p>\n         <p>\n            <code> {Name: sea,Confidence: 75.061}</code>\n         </p>\n         <p>The list of labels can include multiple labels for the same object. For example, if the\n      input image shows a flower (for example, a tulip), the operation might return the following\n      three labels. </p>\n         <p>\n            <code>{Name: flower,Confidence: 99.0562}</code>\n         </p>\n         <p>\n            <code>{Name: plant,Confidence: 99.0562}</code>\n         </p>\n         <p>\n            <code>{Name: tulip,Confidence: 99.0562}</code>\n         </p>\n         <p>In this example, the detection algorithm more precisely identifies the flower as a\n      tulip.</p>\n         <note>\n            <p>If the object detected is a person, the operation doesn't provide the same facial\n        details that the <a>DetectFaces</a> operation provides.</p>\n         </note>\n         <p>This is a stateless API operation that doesn't return any data.</p>\n         <p>This operation requires permissions to perform the\n        <code>rekognition:DetectLabels</code> action. </p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To detect labels",
-                        "documentation": "This operation detects labels in the supplied image",
-                        "input": {
-                            "Image": {
-                                "S3Object": {
-                                    "Bucket": "mybucket",
-                                    "Name": "myphoto"
-                                }
-                            },
-                            "MaxLabels": 123,
-                            "MinConfidence": 70
-                        },
-                        "output": {
-                            "Labels": [
-                                {
-                                    "Confidence": 99.25072479248047,
-                                    "Name": "People"
-                                },
-                                {
-                                    "Confidence": 99.25074005126953,
-                                    "Name": "Person"
-                                }
-                            ]
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>Detects instances of real-world entities within an image (JPEG or PNG) provided as\n      input. This includes objects like flower, tree, and table; events like wedding, graduation,\n      and birthday party; and concepts like landscape, evening, and nature. </p>\n         <p>For an example, see Analyzing images stored in an Amazon S3 bucket in the\n      Amazon Rekognition Developer Guide.</p>\n         <p>You pass the input image as base64-encoded image bytes or as a reference to an image in\n      an Amazon S3 bucket. If you use the\n      AWS\n      CLI to call Amazon Rekognition operations, passing image bytes is not\n      supported. The image must be either a PNG or JPEG formatted file. </p>\n         <p>\n            <b>Optional Parameters</b>\n         </p>\n         <p>You can specify one or both of the <code>GENERAL_LABELS</code> and\n        <code>IMAGE_PROPERTIES</code> feature types when calling the DetectLabels API. Including\n        <code>GENERAL_LABELS</code> will ensure the response includes the labels detected in the\n      input image, while including <code>IMAGE_PROPERTIES </code>will ensure the response includes\n      information about the image quality and color.</p>\n         <p>When using <code>GENERAL_LABELS</code> and/or <code>IMAGE_PROPERTIES</code> you can\n      provide filtering criteria to the Settings parameter. You can filter with sets of individual\n      labels or with label categories. You can specify inclusive filters, exclusive filters, or a\n      combination of inclusive and exclusive filters. For more information on filtering see <a href=\"https://docs.aws.amazon.com/rekognition/latest/dg/labels-detect-labels-image.html\">Detecting\n        Labels in an Image</a>.</p>\n         <p>When getting labels, you can specify <code>MinConfidence</code> to control the\n      confidence threshold for the labels returned. The default is 55%. You can also add the\n        <code>MaxLabels</code> parameter to limit the number of labels returned. The default and\n      upper limit is 1000 labels. These arguments are only valid when supplying GENERAL_LABELS as a\n      feature type.</p>\n         <p>\n            <b>Response Elements</b>\n         </p>\n         <p> For each object, scene, and concept the API returns one or more labels. The API\n      returns the following types of information about labels:</p>\n         <ul>\n            <li>\n               <p> Name - The name of the detected label. </p>\n            </li>\n            <li>\n               <p> Confidence - The level of confidence in the label assigned to a detected object.\n        </p>\n            </li>\n            <li>\n               <p> Parents - The ancestor labels for a detected label. DetectLabels returns a\n          hierarchical taxonomy of detected labels. For example, a detected car might be assigned\n          the label car. The label car has two parent labels: Vehicle (its parent) and\n          Transportation (its grandparent). The response includes the all ancestors for a label,\n          where every ancestor is a unique label. In the previous example, Car, Vehicle, and\n          Transportation are returned as unique labels in the response. </p>\n            </li>\n            <li>\n               <p> Aliases - Possible Aliases for the label. </p>\n            </li>\n            <li>\n               <p> Categories - The label categories that the detected label belongs to. </p>\n            </li>\n            <li>\n               <p> BoundingBox — Bounding boxes are described for all instances of detected common\n          object labels, returned in an array of Instance objects. An Instance object contains a\n          BoundingBox object, describing the location of the label on the input image. It also\n          includes the confidence for the accuracy of the detected bounding box. </p>\n            </li>\n         </ul>\n         <p> The API returns the following information regarding the image, as part of the\n      ImageProperties structure:</p>\n         <ul>\n            <li>\n               <p>Quality - Information about the Sharpness, Brightness, and Contrast of the input\n          image, scored between 0 to 100. Image quality is returned for the entire image, as well as\n          the background and the foreground. </p>\n            </li>\n            <li>\n               <p>Dominant Color - An array of the dominant colors in the image. </p>\n            </li>\n            <li>\n               <p>Foreground - Information about the sharpness, brightness, and dominant colors of the\n          input image’s foreground. </p>\n            </li>\n            <li>\n               <p>Background - Information about the sharpness, brightness, and dominant colors of the\n          input image’s background.</p>\n            </li>\n         </ul>\n         <p>The list of returned labels will include at least one label for every detected object,\n      along with information about that label. In the following example, suppose the input image has\n      a lighthouse, the sea, and a rock. The response includes all three labels, one for each\n      object, as well as the confidence in the label:</p>\n         <p>\n            <code>{Name: lighthouse, Confidence: 98.4629}</code>\n         </p>\n         <p>\n            <code>{Name: rock,Confidence: 79.2097}</code>\n         </p>\n         <p>\n            <code> {Name: sea,Confidence: 75.061}</code>\n         </p>\n         <p>The list of labels can include multiple labels for the same object. For example, if the\n      input image shows a flower (for example, a tulip), the operation might return the following\n      three labels. </p>\n         <p>\n            <code>{Name: flower,Confidence: 99.0562}</code>\n         </p>\n         <p>\n            <code>{Name: plant,Confidence: 99.0562}</code>\n         </p>\n         <p>\n            <code>{Name: tulip,Confidence: 99.0562}</code>\n         </p>\n         <p>In this example, the detection algorithm more precisely identifies the flower as a\n      tulip.</p>\n         <note>\n            <p>If the object detected is a person, the operation doesn't provide the same facial\n        details that the <a>DetectFaces</a> operation provides.</p>\n         </note>\n         <p>This is a stateless API operation that doesn't return any data.</p>\n         <p>This operation requires permissions to perform the\n        <code>rekognition:DetectLabels</code> action. </p>"
             }
         },
         "com.amazonaws.rekognition#DetectLabelsFeatureList": {
@@ -4684,39 +4294,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Removes the association between a <code>Face</code> supplied in an array of\n        <code>FaceIds</code> and the User. If the User is not present already, then a\n        <code>ResourceNotFound</code> exception is thrown. If successful, an array of faces that are\n      disassociated from the User is returned. If a given face is already disassociated from the\n      given UserID, it will be ignored and not be returned in the response. If a given face is\n      already associated with a different User or not found in the collection it will be returned as\n      part of <code>UnsuccessfulDisassociations</code>. You can remove 1 - 100 face IDs from a user\n      at one time.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "DisassociateFaces",
-                        "documentation": "Removes the association between a Face supplied in an array of FaceIds and the User.",
-                        "input": {
-                            "CollectionId": "MyCollection",
-                            "UserId": "DemoUser",
-                            "FaceIds": [
-                                "f5817d37-94f6-4335-bfee-6cf79a3d806e",
-                                "c92265d4-5f9c-43af-a58e-12be0ce02bc3"
-                            ],
-                            "ClientRequestToken": "550e8400-e29b-41d4-a716-446655440003"
-                        },
-                        "output": {
-                            "UserStatus": "UPDATING",
-                            "DisassociatedFaces": [
-                                {
-                                    "FaceId": "c92265d4-5f9c-43af-a58e-12be0ce02bc3"
-                                }
-                            ],
-                            "UnsuccessfulFaceDisassociations": [
-                                {
-                                    "Reasons": [
-                                        "ASSOCIATED_TO_A_DIFFERENT_USER"
-                                    ],
-                                    "FaceId": "f5817d37-94f6-4335-bfee-6cf79a3d806e",
-                                    "UserId": "demoUser1"
-                                }
-                            ]
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>Removes the association between a <code>Face</code> supplied in an array of\n        <code>FaceIds</code> and the User. If the User is not present already, then a\n        <code>ResourceNotFound</code> exception is thrown. If successful, an array of faces that are\n      disassociated from the User is returned. If a given face is already disassociated from the\n      given UserID, it will be ignored and not be returned in the response. If a given face is\n      already associated with a different User or not found in the collection it will be returned as\n      part of <code>UnsuccessfulDisassociations</code>. You can remove 1 - 100 face IDs from a user\n      at one time.</p>"
             }
         },
         "com.amazonaws.rekognition#DisassociateFacesRequest": {
@@ -4854,24 +4432,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Distributes the entries (images) in a training dataset across the training dataset and the test dataset for a project.\n         <code>DistributeDatasetEntries</code> moves 20% of the training dataset images to the test dataset.\n         An entry is a JSON Line that describes an image.\n      </p>\n         <p>You supply the Amazon Resource Names (ARN) of a project's training dataset and test dataset. \n         The training dataset must contain the images that you want to split. The test dataset \n      must be empty. The datasets must belong to the same project. To create training and test datasets for a project, call <a>CreateDataset</a>.</p>\n         <p>Distributing a dataset takes a while to complete. To check the status call <code>DescribeDataset</code>. The operation\n         is complete when the <code>Status</code> field for the training dataset and the test dataset is <code>UPDATE_COMPLETE</code>. \n         If the dataset split fails, the value of <code>Status</code> is <code>UPDATE_FAILED</code>.</p>\n         <p>This operation requires permissions to perform the <code>rekognition:DistributeDatasetEntries</code> action.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To distribute an Amazon Rekognition Custom Labels dataset",
-                        "documentation": "Distributes an Amazon Rekognition Custom Labels training dataset to a test dataset.",
-                        "input": {
-                            "Datasets": [
-                                {
-                                    "Arn": "arn:aws:rekognition:us-east-1:111122223333:project/my-proj-2/dataset/train/1690564858106"
-                                },
-                                {
-                                    "Arn": "arn:aws:rekognition:us-east-1:111122223333:project/my-proj-2/dataset/test/1690564858106"
-                                }
-                            ]
-                        },
-                        "output": {}
-                    }
-                ]
+                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Distributes the entries (images) in a training dataset across the training dataset and the test dataset for a project.\n         <code>DistributeDatasetEntries</code> moves 20% of the training dataset images to the test dataset.\n         An entry is a JSON Line that describes an image.\n      </p>\n         <p>You supply the Amazon Resource Names (ARN) of a project's training dataset and test dataset. \n         The training dataset must contain the images that you want to split. The test dataset \n      must be empty. The datasets must belong to the same project. To create training and test datasets for a project, call <a>CreateDataset</a>.</p>\n         <p>Distributing a dataset takes a while to complete. To check the status call <code>DescribeDataset</code>. The operation\n         is complete when the <code>Status</code> field for the training dataset and the test dataset is <code>UPDATE_COMPLETE</code>. \n         If the dataset split fails, the value of <code>Status</code> is <code>UPDATE_FAILED</code>.</p>\n         <p>This operation requires permissions to perform the <code>rekognition:DistributeDatasetEntries</code> action.</p>"
             }
         },
         "com.amazonaws.rekognition#DistributeDatasetEntriesRequest": {
@@ -7451,145 +7012,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Detects faces in the input image and adds them to the specified collection. </p>\n         <p>Amazon Rekognition doesn't save the actual faces that are detected. Instead, the underlying\n      detection algorithm first detects the faces in the input image. For each face, the algorithm\n      extracts facial features into a feature vector, and stores it in the backend database.\n      Amazon Rekognition uses feature vectors when it performs face match and search operations using the\n        <a>SearchFaces</a> and <a>SearchFacesByImage</a> operations.</p>\n         <p>For more information, see Adding faces to a collection in the Amazon Rekognition\n      Developer Guide.</p>\n         <p>To get the number of faces in a collection, call <a>DescribeCollection</a>. </p>\n         <p>If you're using version 1.0 of the face detection model, <code>IndexFaces</code>\n      indexes the 15 largest faces in the input image. Later versions of the face detection model\n      index the 100 largest faces in the input image. </p>\n         <p>If you're using version 4 or later of the face model, image orientation information is not\n      returned in the <code>OrientationCorrection</code> field. </p>\n         <p>To determine which version of the model you're using, call <a>DescribeCollection</a> and supply the collection ID. You can also get the model\n      version from the value of <code>FaceModelVersion</code> in the response from\n        <code>IndexFaces</code>\n         </p>\n         <p>For more information, see Model Versioning in the Amazon Rekognition Developer\n      Guide.</p>\n         <p>If you provide the optional <code>ExternalImageId</code> for the input image you\n      provided, Amazon Rekognition associates this ID with all faces that it detects. When you call the <a>ListFaces</a> operation, the response returns the external ID. You can use this\n      external image ID to create a client-side index to associate the faces with each image. You\n      can then use the index to find all faces in an image.</p>\n         <p>You can specify the maximum number of faces to index with the <code>MaxFaces</code> input\n      parameter. This is useful when you want to index the largest faces in an image and don't want\n      to index smaller faces, such as those belonging to people standing in the background.</p>\n         <p>The <code>QualityFilter</code> input parameter allows you to filter out detected faces\n      that don’t meet a required quality bar. The quality bar is based on a variety of common use\n      cases. By default, <code>IndexFaces</code> chooses the quality bar that's used to filter\n      faces. You can also explicitly choose the quality bar. Use <code>QualityFilter</code>, to set\n      the quality bar by specifying <code>LOW</code>, <code>MEDIUM</code>, or <code>HIGH</code>. If\n      you do not want to filter detected faces, specify <code>NONE</code>. </p>\n         <note>\n            <p>To use quality filtering, you need a collection associated with version 3 of the face\n        model or higher. To get the version of the face model associated with a collection, call\n          <a>DescribeCollection</a>. </p>\n         </note>\n         <p>Information about faces detected in an image, but not indexed, is returned in an array of\n        <a>UnindexedFace</a> objects, <code>UnindexedFaces</code>. Faces aren't indexed\n      for reasons such as:</p>\n         <ul>\n            <li>\n               <p>The number of faces detected exceeds the value of the <code>MaxFaces</code> request\n          parameter.</p>\n            </li>\n            <li>\n               <p>The face is too small compared to the image dimensions.</p>\n            </li>\n            <li>\n               <p>The face is too blurry.</p>\n            </li>\n            <li>\n               <p>The image is too dark.</p>\n            </li>\n            <li>\n               <p>The face has an extreme pose.</p>\n            </li>\n            <li>\n               <p>The face doesn’t have enough detail to be suitable for face search.</p>\n            </li>\n         </ul>\n         <p>In response, the <code>IndexFaces</code> operation returns an array of metadata for all\n      detected faces, <code>FaceRecords</code>. This includes: </p>\n         <ul>\n            <li>\n               <p>The bounding box, <code>BoundingBox</code>, of the detected face. </p>\n            </li>\n            <li>\n               <p>A confidence value, <code>Confidence</code>, which indicates the confidence that the\n          bounding box contains a face.</p>\n            </li>\n            <li>\n               <p>A face ID, <code>FaceId</code>, assigned by the service for each face that's detected\n          and stored.</p>\n            </li>\n            <li>\n               <p>An image ID, <code>ImageId</code>, assigned by the service for the input image.</p>\n            </li>\n         </ul>\n         <p>If you request <code>ALL</code> or specific facial attributes (e.g.,\n        <code>FACE_OCCLUDED</code>) by using the detectionAttributes parameter, Amazon Rekognition\n      returns detailed facial attributes, such as facial landmarks (for example, location of eye and\n      mouth), facial occlusion, and other facial attributes.</p>\n         <p>If you provide the same image, specify the same collection, and use the same external ID\n      in the <code>IndexFaces</code> operation, Amazon Rekognition doesn't save duplicate face\n      metadata.</p>\n         <p></p>\n         <p>The input image is passed either as base64-encoded image bytes, or as a reference to an\n      image in an Amazon S3 bucket. If you use the AWS CLI to call Amazon Rekognition operations,\n      passing image bytes isn't supported. The image must be formatted as a PNG or JPEG file. </p>\n         <p>This operation requires permissions to perform the <code>rekognition:IndexFaces</code>\n      action.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To add a face to a collection",
-                        "documentation": "This operation detects faces in an image and adds them to the specified Rekognition collection.",
-                        "input": {
-                            "CollectionId": "myphotos",
-                            "Image": {
-                                "S3Object": {
-                                    "Bucket": "mybucket",
-                                    "Name": "myphoto"
-                                }
-                            },
-                            "ExternalImageId": "myphotoid",
-                            "DetectionAttributes": []
-                        },
-                        "output": {
-                            "FaceRecords": [
-                                {
-                                    "FaceDetail": {
-                                        "BoundingBox": {
-                                            "Width": 0.25,
-                                            "Top": 0.4933333396911621,
-                                            "Left": 0.31888890266418457,
-                                            "Height": 0.33481481671333313
-                                        },
-                                        "Landmarks": [
-                                            {
-                                                "Y": 0.6248345971107483,
-                                                "X": 0.3976764678955078,
-                                                "Type": "eyeLeft"
-                                            },
-                                            {
-                                                "Y": 0.6317117214202881,
-                                                "X": 0.4810936450958252,
-                                                "Type": "eyeRight"
-                                            },
-                                            {
-                                                "Y": 0.7111940383911133,
-                                                "X": 0.41986238956451416,
-                                                "Type": "noseLeft"
-                                            },
-                                            {
-                                                "Y": 0.7497701048851013,
-                                                "X": 0.40525302290916443,
-                                                "Type": "mouthDown"
-                                            },
-                                            {
-                                                "Y": 0.7558549642562866,
-                                                "X": 0.4753248989582062,
-                                                "Type": "mouthUp"
-                                            }
-                                        ],
-                                        "Pose": {
-                                            "Yaw": -24.438663482666016,
-                                            "Roll": 4.707281112670898,
-                                            "Pitch": -9.713645935058594
-                                        },
-                                        "Quality": {
-                                            "Sharpness": 80,
-                                            "Brightness": 29.23358917236328
-                                        },
-                                        "Confidence": 99.9991226196289
-                                    },
-                                    "Face": {
-                                        "BoundingBox": {
-                                            "Width": 0.25,
-                                            "Top": 0.4933333396911621,
-                                            "Left": 0.31888890266418457,
-                                            "Height": 0.33481481671333313
-                                        },
-                                        "FaceId": "ff43d742-0c13-5d16-a3e8-03d3f58e980b",
-                                        "Confidence": 99.9991226196289,
-                                        "ImageId": "465f4e93-763e-51d0-b030-b9667a2d94b1"
-                                    }
-                                },
-                                {
-                                    "FaceDetail": {
-                                        "BoundingBox": {
-                                            "Width": 0.24444444477558136,
-                                            "Top": 0.15111111104488373,
-                                            "Left": 0.5144444704055786,
-                                            "Height": 0.32592591643333435
-                                        },
-                                        "Landmarks": [
-                                            {
-                                                "Y": 0.290842205286026,
-                                                "X": 0.6006892323493958,
-                                                "Type": "eyeLeft"
-                                            },
-                                            {
-                                                "Y": 0.29609042406082153,
-                                                "X": 0.6808141469955444,
-                                                "Type": "eyeRight"
-                                            },
-                                            {
-                                                "Y": 0.3522595763206482,
-                                                "X": 0.6395332217216492,
-                                                "Type": "noseLeft"
-                                            },
-                                            {
-                                                "Y": 0.38689887523651123,
-                                                "X": 0.5892083048820496,
-                                                "Type": "mouthDown"
-                                            },
-                                            {
-                                                "Y": 0.394125759601593,
-                                                "X": 0.674560010433197,
-                                                "Type": "mouthUp"
-                                            }
-                                        ],
-                                        "Pose": {
-                                            "Yaw": 6.716655254364014,
-                                            "Roll": 2.1029529571533203,
-                                            "Pitch": -4.683138370513916
-                                        },
-                                        "Quality": {
-                                            "Sharpness": 160,
-                                            "Brightness": 34.951698303222656
-                                        },
-                                        "Confidence": 99.99950408935547
-                                    },
-                                    "Face": {
-                                        "BoundingBox": {
-                                            "Width": 0.24444444477558136,
-                                            "Top": 0.15111111104488373,
-                                            "Left": 0.5144444704055786,
-                                            "Height": 0.32592591643333435
-                                        },
-                                        "FaceId": "8be04dba-4e58-520d-850e-9eae4af70eb2",
-                                        "Confidence": 99.99950408935547,
-                                        "ImageId": "465f4e93-763e-51d0-b030-b9667a2d94b1"
-                                    }
-                                }
-                            ],
-                            "OrientationCorrection": "ROTATE_0"
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>Detects faces in the input image and adds them to the specified collection. </p>\n         <p>Amazon Rekognition doesn't save the actual faces that are detected. Instead, the underlying\n      detection algorithm first detects the faces in the input image. For each face, the algorithm\n      extracts facial features into a feature vector, and stores it in the backend database.\n      Amazon Rekognition uses feature vectors when it performs face match and search operations using the\n        <a>SearchFaces</a> and <a>SearchFacesByImage</a> operations.</p>\n         <p>For more information, see Adding faces to a collection in the Amazon Rekognition\n      Developer Guide.</p>\n         <p>To get the number of faces in a collection, call <a>DescribeCollection</a>. </p>\n         <p>If you're using version 1.0 of the face detection model, <code>IndexFaces</code>\n      indexes the 15 largest faces in the input image. Later versions of the face detection model\n      index the 100 largest faces in the input image. </p>\n         <p>If you're using version 4 or later of the face model, image orientation information is not\n      returned in the <code>OrientationCorrection</code> field. </p>\n         <p>To determine which version of the model you're using, call <a>DescribeCollection</a> and supply the collection ID. You can also get the model\n      version from the value of <code>FaceModelVersion</code> in the response from\n        <code>IndexFaces</code>\n         </p>\n         <p>For more information, see Model Versioning in the Amazon Rekognition Developer\n      Guide.</p>\n         <p>If you provide the optional <code>ExternalImageId</code> for the input image you\n      provided, Amazon Rekognition associates this ID with all faces that it detects. When you call the <a>ListFaces</a> operation, the response returns the external ID. You can use this\n      external image ID to create a client-side index to associate the faces with each image. You\n      can then use the index to find all faces in an image.</p>\n         <p>You can specify the maximum number of faces to index with the <code>MaxFaces</code> input\n      parameter. This is useful when you want to index the largest faces in an image and don't want\n      to index smaller faces, such as those belonging to people standing in the background.</p>\n         <p>The <code>QualityFilter</code> input parameter allows you to filter out detected faces\n      that don’t meet a required quality bar. The quality bar is based on a variety of common use\n      cases. By default, <code>IndexFaces</code> chooses the quality bar that's used to filter\n      faces. You can also explicitly choose the quality bar. Use <code>QualityFilter</code>, to set\n      the quality bar by specifying <code>LOW</code>, <code>MEDIUM</code>, or <code>HIGH</code>. If\n      you do not want to filter detected faces, specify <code>NONE</code>. </p>\n         <note>\n            <p>To use quality filtering, you need a collection associated with version 3 of the face\n        model or higher. To get the version of the face model associated with a collection, call\n          <a>DescribeCollection</a>. </p>\n         </note>\n         <p>Information about faces detected in an image, but not indexed, is returned in an array of\n        <a>UnindexedFace</a> objects, <code>UnindexedFaces</code>. Faces aren't indexed\n      for reasons such as:</p>\n         <ul>\n            <li>\n               <p>The number of faces detected exceeds the value of the <code>MaxFaces</code> request\n          parameter.</p>\n            </li>\n            <li>\n               <p>The face is too small compared to the image dimensions.</p>\n            </li>\n            <li>\n               <p>The face is too blurry.</p>\n            </li>\n            <li>\n               <p>The image is too dark.</p>\n            </li>\n            <li>\n               <p>The face has an extreme pose.</p>\n            </li>\n            <li>\n               <p>The face doesn’t have enough detail to be suitable for face search.</p>\n            </li>\n         </ul>\n         <p>In response, the <code>IndexFaces</code> operation returns an array of metadata for all\n      detected faces, <code>FaceRecords</code>. This includes: </p>\n         <ul>\n            <li>\n               <p>The bounding box, <code>BoundingBox</code>, of the detected face. </p>\n            </li>\n            <li>\n               <p>A confidence value, <code>Confidence</code>, which indicates the confidence that the\n          bounding box contains a face.</p>\n            </li>\n            <li>\n               <p>A face ID, <code>FaceId</code>, assigned by the service for each face that's detected\n          and stored.</p>\n            </li>\n            <li>\n               <p>An image ID, <code>ImageId</code>, assigned by the service for the input image.</p>\n            </li>\n         </ul>\n         <p>If you request <code>ALL</code> or specific facial attributes (e.g.,\n        <code>FACE_OCCLUDED</code>) by using the detectionAttributes parameter, Amazon Rekognition\n      returns detailed facial attributes, such as facial landmarks (for example, location of eye and\n      mouth), facial occlusion, and other facial attributes.</p>\n         <p>If you provide the same image, specify the same collection, and use the same external ID\n      in the <code>IndexFaces</code> operation, Amazon Rekognition doesn't save duplicate face\n      metadata.</p>\n         <p></p>\n         <p>The input image is passed either as base64-encoded image bytes, or as a reference to an\n      image in an Amazon S3 bucket. If you use the AWS CLI to call Amazon Rekognition operations,\n      passing image bytes isn't supported. The image must be formatted as a PNG or JPEG file. </p>\n         <p>This operation requires permissions to perform the <code>rekognition:IndexFaces</code>\n      action.</p>"
             }
         },
         "com.amazonaws.rekognition#IndexFacesModelVersion": {
@@ -8486,17 +7909,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Returns list of collection IDs in your account. If the result is truncated, the\n      response also provides a <code>NextToken</code> that you can use in the subsequent request to\n      fetch the next set of collection IDs.</p>\n         <p>For an example, see Listing collections in the Amazon Rekognition Developer\n      Guide.</p>\n         <p>This operation requires permissions to perform the\n        <code>rekognition:ListCollections</code> action.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To list the collections",
-                        "documentation": "This operation returns a list of Rekognition collections.",
-                        "output": {
-                            "CollectionIds": [
-                                "myphotos"
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#paginated": {
                     "inputToken": "NextToken",
                     "outputToken": "NextToken",
@@ -8603,29 +8015,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>\nLists the entries (images) within a dataset. An entry is a\nJSON Line that contains the information for a single image, including\nthe image location, assigned labels, and object location bounding boxes. For \nmore information, see <a href=\"https://docs.aws.amazon.com/rekognition/latest/customlabels-dg/md-manifest-files.html\">Creating a manifest file</a>.</p>\n         <p>JSON Lines in the response include information about non-terminal\n   errors found in the dataset. \n   Non terminal errors are reported in <code>errors</code> lists within each JSON Line. The\n   same information is reported in the training and testing validation result manifests that\n   Amazon Rekognition Custom Labels creates during model training.\n </p>\n         <p>You can filter the response in variety of ways, such as choosing which labels to return and returning JSON Lines created after a specific date.\n</p>\n         <p>This operation requires permissions to perform the <code>rekognition:ListDatasetEntries</code> action.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To list the entries in an Amazon Rekognition Custom Labels dataset",
-                        "documentation": "Lists the JSON line entries in an Amazon Rekognition Custom Labels dataset.",
-                        "input": {
-                            "DatasetArn": "arn:aws:rekognition:us-east-1:111122223333:project/my-proj-2/dataset/train/1690564858106",
-                            "ContainsLabels": [
-                                "camellia"
-                            ],
-                            "Labeled": true,
-                            "SourceRefContains": "camellia4.jpg",
-                            "HasErrors": true,
-                            "NextToken": "",
-                            "MaxResults": 100
-                        },
-                        "output": {
-                            "DatasetEntries": [
-                                "{\"source-ref\":\"s3://custom-labels-console-us-east-1-1111111111/assets/flowers_1_train_dataset/camellia4.jpg\",\"camellia\":1,\"camellia-metadata\":{\"confidence\":1,\"job-name\":\"labeling-job/camellia\",\"class-name\":\"camellia\",\"human-annotated\":\"yes\",\"creation-date\":\"2021-07-11T03:32:13.456Z\",\"type\":\"groundtruth/image-classification\"},\"with_leaves\":1,\"with_leaves-metadata\":{\"confidence\":1,\"job-name\":\"labeling-job/with_leaves\",\"class-name\":\"with_leaves\",\"human-annotated\":\"yes\",\"creation-date\":\"2021-07-11T03:32:13.456Z\",\"type\":\"groundtruth/image-classification\"},\"cl-metadata\":{\"is_labeled\":true}}"
-                            ],
-                            "NextToken": ""
-                        }
-                    }
-                ],
                 "smithy.api#paginated": {
                     "inputToken": "NextToken",
                     "outputToken": "NextToken",
@@ -8753,39 +8142,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Lists the labels in a dataset. Amazon Rekognition Custom Labels uses labels to describe images. For more information, see \n   <a href=\"https://docs.aws.amazon.com/rekognition/latest/customlabels-dg/md-labeling-images.html\">Labeling images</a>.\n</p>\n         <p>\n      Lists the labels in a dataset. Amazon Rekognition Custom Labels uses labels to describe images. For more information, see Labeling images\n      in the <i>Amazon Rekognition Custom Labels Developer Guide</i>. </p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To list the entries in an Amazon Rekognition Custom Labels dataset",
-                        "documentation": "Lists the JSON line entries in an Amazon Rekognition Custom Labels dataset.",
-                        "input": {
-                            "DatasetArn": "arn:aws:rekognition:us-east-1:111122223333:project/my-proj-2/dataset/train/1690564858106",
-                            "NextToken": "",
-                            "MaxResults": 100
-                        },
-                        "output": {
-                            "DatasetLabelDescriptions": [
-                                {
-                                    "LabelName": "camellia",
-                                    "LabelStats": {
-                                        "EntryCount": 1
-                                    }
-                                },
-                                {
-                                    "LabelName": "with_leaves",
-                                    "LabelStats": {
-                                        "EntryCount": 2
-                                    }
-                                },
-                                {
-                                    "LabelName": "mediterranean_spurge",
-                                    "LabelStats": {
-                                        "EntryCount": 1
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#paginated": {
                     "inputToken": "NextToken",
                     "outputToken": "NextToken",
@@ -8883,58 +8239,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Returns metadata for faces in the specified collection. This metadata\n      includes information such as the bounding box coordinates, the confidence (that the bounding\n      box contains a face), and face ID. For an example, see Listing Faces in a Collection in the\n      Amazon Rekognition Developer Guide.</p>\n         <p>This operation requires permissions to perform the <code>rekognition:ListFaces</code>\n      action.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To list the faces in a collection",
-                        "documentation": "This operation lists the faces in a Rekognition collection.",
-                        "input": {
-                            "CollectionId": "myphotos",
-                            "MaxResults": 20
-                        },
-                        "output": {
-                            "FaceModelVersion": "6.0",
-                            "Faces": [
-                                {
-                                    "Confidence": 99.76940155029297,
-                                    "IndexFacesModelVersion": "6.0",
-                                    "UserId": "demoUser2",
-                                    "ImageId": "56a0ca74-1c83-39dd-b363-051a64168a65",
-                                    "BoundingBox": {
-                                        "Width": 0.03177810087800026,
-                                        "Top": 0.36568498611450195,
-                                        "Left": 0.3453829884529114,
-                                        "Height": 0.056759100407361984
-                                    },
-                                    "FaceId": "c92265d4-5f9c-43af-a58e-12be0ce02bc3"
-                                },
-                                {
-                                    "BoundingBox": {
-                                        "Width": 0.03254450112581253,
-                                        "Top": 0.6080359816551208,
-                                        "Left": 0.5160620212554932,
-                                        "Height": 0.06347999721765518
-                                    },
-                                    "IndexFacesModelVersion": "6.0",
-                                    "FaceId": "851cb847-dccc-4fea-9309-9f4805967855",
-                                    "Confidence": 99.94369506835938,
-                                    "ImageId": "a8aed589-ceec-35f7-9c04-82e0b546b024"
-                                },
-                                {
-                                    "BoundingBox": {
-                                        "Width": 0.03094629943370819,
-                                        "Top": 0.4218429923057556,
-                                        "Left": 0.6513839960098267,
-                                        "Height": 0.05266290158033371
-                                    },
-                                    "IndexFacesModelVersion": "6.0",
-                                    "FaceId": "c0eb3b65-24a0-41e1-b23a-1908b1aaeac1",
-                                    "Confidence": 99.82969665527344,
-                                    "ImageId": "56a0ca74-1c83-39dd-b363-051a64168a65"
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#paginated": {
                     "inputToken": "NextToken",
                     "outputToken": "NextToken",
@@ -9363,28 +8667,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Returns metadata of the User such as <code>UserID</code> in the specified collection.\n      Anonymous User (to reserve faces without any identity) is not returned as part of this\n      request. The results are sorted by system generated primary key ID. If the response is\n      truncated, <code>NextToken</code> is returned in the response that can be used in the\n      subsequent request to retrieve the next set of identities.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "ListUsers",
-                        "documentation": "Returns metadata of the User such as UserID in the specified collection.",
-                        "input": {
-                            "CollectionId": "MyCollection"
-                        },
-                        "output": {
-                            "NextToken": "MGYZLAHX1T5a....",
-                            "Users": [
-                                {
-                                    "UserId": "demoUser4",
-                                    "UserStatus": "CREATED"
-                                },
-                                {
-                                    "UserId": "demoUser2",
-                                    "UserStatus": "CREATED"
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#paginated": {
                     "inputToken": "NextToken",
                     "outputToken": "NextToken",
@@ -11004,22 +10286,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Attaches a project policy to a Amazon Rekognition Custom Labels project in a trusting AWS account. A\n         project policy specifies that a trusted AWS account can copy a model version from a\n         trusting AWS account to a project in the trusted AWS account. To copy a model version\n         you use the <a>CopyProjectVersion</a> operation. Only applies to Custom Labels\n         projects.</p>\n         <p>For more information about the format of a project policy document, see Attaching a project policy (SDK)\n         in the <i>Amazon Rekognition Custom Labels Developer Guide</i>.\n      </p>\n         <p>The response from <code>PutProjectPolicy</code> is a revision ID for the project policy.\n         You can attach multiple project policies to a project. You can also update an existing\n         project policy by specifying the policy revision ID of the existing policy.</p>\n         <p>To remove a project policy from a project, call <a>DeleteProjectPolicy</a>.\n         To get a list of project policies attached to a project, call <a>ListProjectPolicies</a>. </p>\n         <p>You copy a model version by calling <a>CopyProjectVersion</a>.</p>\n         <p>This operation requires permissions to perform the <code>rekognition:PutProjectPolicy</code> action.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "PutProjectPolicy",
-                        "documentation": "This operation attaches a project policy to a Amazon Rekognition Custom Labels project in a trusting AWS account.",
-                        "input": {
-                            "ProjectArn": "arn:aws:rekognition:us-east-1:111122223333:project/my-sdk-project/1656557051929",
-                            "PolicyName": "SamplePolicy",
-                            "PolicyRevisionId": "0123456789abcdef",
-                            "PolicyDocument": "'{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"ALLOW\",\"Principal\":{\"AWS\":\"principal\"},\"Action\":\"rekognition:CopyProjectVersion\",\"Resource\":\"arn:aws:rekognition:us-east-1:123456789012:project/my-sdk-project/version/DestinationVersionName/1627045542080\"}]}'"
-                        },
-                        "output": {
-                            "PolicyRevisionId": "0123456789abcdef"
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Attaches a project policy to a Amazon Rekognition Custom Labels project in a trusting AWS account. A\n         project policy specifies that a trusted AWS account can copy a model version from a\n         trusting AWS account to a project in the trusted AWS account. To copy a model version\n         you use the <a>CopyProjectVersion</a> operation. Only applies to Custom Labels\n         projects.</p>\n         <p>For more information about the format of a project policy document, see Attaching a project policy (SDK)\n         in the <i>Amazon Rekognition Custom Labels Developer Guide</i>.\n      </p>\n         <p>The response from <code>PutProjectPolicy</code> is a revision ID for the project policy.\n         You can attach multiple project policies to a project. You can also update an existing\n         project policy by specifying the policy revision ID of the existing policy.</p>\n         <p>To remove a project policy from a project, call <a>DeleteProjectPolicy</a>.\n         To get a list of project policies attached to a project, call <a>ListProjectPolicies</a>. </p>\n         <p>You copy a model version by calling <a>CopyProjectVersion</a>.</p>\n         <p>This operation requires permissions to perform the <code>rekognition:PutProjectPolicy</code> action.</p>"
             }
         },
         "com.amazonaws.rekognition#PutProjectPolicyRequest": {
@@ -12764,66 +12031,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>For a given input face ID, searches for matching faces in the collection the face\n      belongs to. You get a face ID when you add a face to the collection using the <a>IndexFaces</a> operation. The operation compares the features of the input face with\n      faces in the specified collection. </p>\n         <note>\n            <p>You can also search faces without indexing faces by using the\n          <code>SearchFacesByImage</code> operation.</p>\n         </note>\n         <p> The operation response returns an array of faces that match, ordered by similarity\n      score with the highest similarity first. More specifically, it is an array of metadata for\n      each face match that is found. Along with the metadata, the response also includes a\n        <code>confidence</code> value for each face match, indicating the confidence that the\n      specific face matches the input face. </p>\n         <p>For an example, see Searching for a face using its face ID in the Amazon Rekognition\n      Developer Guide.</p>\n         <p>This operation requires permissions to perform the <code>rekognition:SearchFaces</code>\n      action.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To delete a face",
-                        "documentation": "This operation searches for matching faces in the collection the supplied face belongs to.",
-                        "input": {
-                            "CollectionId": "myphotos",
-                            "FaceId": "70008e50-75e4-55d0-8e80-363fb73b3a14",
-                            "MaxFaces": 10,
-                            "FaceMatchThreshold": 90
-                        },
-                        "output": {
-                            "SearchedFaceId": "70008e50-75e4-55d0-8e80-363fb73b3a14",
-                            "FaceMatches": [
-                                {
-                                    "Face": {
-                                        "BoundingBox": {
-                                            "Width": 0.24444399774074554,
-                                            "Top": 0.15111100673675537,
-                                            "Left": 0.5144439935684204,
-                                            "Height": 0.3259260058403015
-                                        },
-                                        "FaceId": "8be04dba-4e58-520d-850e-9eae4af70eb2",
-                                        "Confidence": 99.99949645996094,
-                                        "ImageId": "465f4e93-763e-51d0-b030-b9667a2d94b1"
-                                    },
-                                    "Similarity": 99.97222137451172
-                                },
-                                {
-                                    "Face": {
-                                        "BoundingBox": {
-                                            "Width": 0.22074100375175476,
-                                            "Top": 0.7066670060157776,
-                                            "Left": 0.30963000655174255,
-                                            "Height": 0.16555599868297577
-                                        },
-                                        "FaceId": "29a75abe-397b-5101-ba4f-706783b2246c",
-                                        "Confidence": 100,
-                                        "ImageId": "147fdf82-7a71-52cf-819b-e786c7b9746e"
-                                    },
-                                    "Similarity": 97.04154968261719
-                                },
-                                {
-                                    "Face": {
-                                        "BoundingBox": {
-                                            "Width": 0.25222599506378174,
-                                            "Top": 0.2355560064315796,
-                                            "Left": 0.3783380091190338,
-                                            "Height": 0.18888899683952332
-                                        },
-                                        "FaceId": "908544ad-edc3-59df-8faf-6a87cc256cf5",
-                                        "Confidence": 99.9999008178711,
-                                        "ImageId": "3c731605-d772-541a-a5e7-0375dbc68a07"
-                                    },
-                                    "Similarity": 95.94520568847656
-                                }
-                            ]
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>For a given input face ID, searches for matching faces in the collection the face\n      belongs to. You get a face ID when you add a face to the collection using the <a>IndexFaces</a> operation. The operation compares the features of the input face with\n      faces in the specified collection. </p>\n         <note>\n            <p>You can also search faces without indexing faces by using the\n          <code>SearchFacesByImage</code> operation.</p>\n         </note>\n         <p> The operation response returns an array of faces that match, ordered by similarity\n      score with the highest similarity first. More specifically, it is an array of metadata for\n      each face match that is found. Along with the metadata, the response also includes a\n        <code>confidence</code> value for each face match, indicating the confidence that the\n      specific face matches the input face. </p>\n         <p>For an example, see Searching for a face using its face ID in the Amazon Rekognition\n      Developer Guide.</p>\n         <p>This operation requires permissions to perform the <code>rekognition:SearchFaces</code>\n      action.</p>"
             }
         },
         "com.amazonaws.rekognition#SearchFacesByImage": {
@@ -12864,49 +12072,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>For a given input image, first detects the largest face in the image, and then searches\n      the specified collection for matching faces. The operation compares the features of the input\n      face with faces in the specified collection. </p>\n         <note>\n            <p>To search for all faces in an input image, you might first call the <a>IndexFaces</a> operation, and then use the face IDs returned in subsequent calls\n        to the <a>SearchFaces</a> operation. </p>\n            <p> You can also call the <code>DetectFaces</code> operation and use the bounding boxes\n        in the response to make face crops, which then you can pass in to the\n          <code>SearchFacesByImage</code> operation. </p>\n         </note>\n         <p>You pass the input image either as base64-encoded image bytes or as a reference to an\n      image in an Amazon S3 bucket. If you use the\n      AWS\n      CLI to call Amazon Rekognition operations, passing image bytes is not\n      supported. The image must be either a PNG or JPEG formatted file. </p>\n         <p> The response returns an array of faces that match, ordered by similarity score with\n      the highest similarity first. More specifically, it is an array of metadata for each face\n      match found. Along with the metadata, the response also includes a <code>similarity</code>\n      indicating how similar the face is to the input face. In the response, the operation also\n      returns the bounding box (and a confidence level that the bounding box contains a face) of the\n      face that Amazon Rekognition used for the input image. </p>\n         <p>If no faces are detected in the input image, <code>SearchFacesByImage</code> returns an\n        <code>InvalidParameterException</code> error. </p>\n         <p>For an example, Searching for a Face Using an Image in the Amazon Rekognition\n      Developer Guide.</p>\n         <p>The <code>QualityFilter</code> input parameter allows you to filter out detected faces\n      that don’t meet a required quality bar. The quality bar is based on a variety of common use\n      cases. Use <code>QualityFilter</code> to set the quality bar for filtering by specifying\n        <code>LOW</code>, <code>MEDIUM</code>, or <code>HIGH</code>. If you do not want to filter\n      detected faces, specify <code>NONE</code>. The default value is <code>NONE</code>.</p>\n         <note>\n            <p>To use quality filtering, you need a collection associated with version 3 of the face\n        model or higher. To get the version of the face model associated with a collection, call\n          <a>DescribeCollection</a>. </p>\n         </note>\n         <p>This operation requires permissions to perform the\n        <code>rekognition:SearchFacesByImage</code> action.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To search for faces matching a supplied image",
-                        "documentation": "This operation searches for faces in a Rekognition collection that match the largest face in an S3 bucket stored image.",
-                        "input": {
-                            "CollectionId": "myphotos",
-                            "Image": {
-                                "S3Object": {
-                                    "Bucket": "mybucket",
-                                    "Name": "myphoto"
-                                }
-                            },
-                            "MaxFaces": 5,
-                            "FaceMatchThreshold": 95
-                        },
-                        "output": {
-                            "SearchedFaceBoundingBox": {
-                                "Width": 0.25,
-                                "Top": 0.4933333396911621,
-                                "Left": 0.31888890266418457,
-                                "Height": 0.33481481671333313
-                            },
-                            "SearchedFaceConfidence": 99.9991226196289,
-                            "FaceMatches": [
-                                {
-                                    "Face": {
-                                        "BoundingBox": {
-                                            "Width": 0.24222199618816376,
-                                            "Top": 0.5,
-                                            "Left": 0.3233329951763153,
-                                            "Height": 0.3234420120716095
-                                        },
-                                        "FaceId": "38271d79-7bc2-5efb-b752-398a8d575b85",
-                                        "Confidence": 99.99829864501953,
-                                        "ImageId": "d5631190-d039-54e4-b267-abd22c8647c5"
-                                    },
-                                    "Similarity": 99.97036743164062
-                                }
-                            ]
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>For a given input image, first detects the largest face in the image, and then searches\n      the specified collection for matching faces. The operation compares the features of the input\n      face with faces in the specified collection. </p>\n         <note>\n            <p>To search for all faces in an input image, you might first call the <a>IndexFaces</a> operation, and then use the face IDs returned in subsequent calls\n        to the <a>SearchFaces</a> operation. </p>\n            <p> You can also call the <code>DetectFaces</code> operation and use the bounding boxes\n        in the response to make face crops, which then you can pass in to the\n          <code>SearchFacesByImage</code> operation. </p>\n         </note>\n         <p>You pass the input image either as base64-encoded image bytes or as a reference to an\n      image in an Amazon S3 bucket. If you use the\n      AWS\n      CLI to call Amazon Rekognition operations, passing image bytes is not\n      supported. The image must be either a PNG or JPEG formatted file. </p>\n         <p> The response returns an array of faces that match, ordered by similarity score with\n      the highest similarity first. More specifically, it is an array of metadata for each face\n      match found. Along with the metadata, the response also includes a <code>similarity</code>\n      indicating how similar the face is to the input face. In the response, the operation also\n      returns the bounding box (and a confidence level that the bounding box contains a face) of the\n      face that Amazon Rekognition used for the input image. </p>\n         <p>If no faces are detected in the input image, <code>SearchFacesByImage</code> returns an\n        <code>InvalidParameterException</code> error. </p>\n         <p>For an example, Searching for a Face Using an Image in the Amazon Rekognition\n      Developer Guide.</p>\n         <p>The <code>QualityFilter</code> input parameter allows you to filter out detected faces\n      that don’t meet a required quality bar. The quality bar is based on a variety of common use\n      cases. Use <code>QualityFilter</code> to set the quality bar for filtering by specifying\n        <code>LOW</code>, <code>MEDIUM</code>, or <code>HIGH</code>. If you do not want to filter\n      detected faces, specify <code>NONE</code>. The default value is <code>NONE</code>.</p>\n         <note>\n            <p>To use quality filtering, you need a collection associated with version 3 of the face\n        model or higher. To get the version of the face model associated with a collection, call\n          <a>DescribeCollection</a>. </p>\n         </note>\n         <p>This operation requires permissions to perform the\n        <code>rekognition:SearchFacesByImage</code> action.</p>"
             }
         },
         "com.amazonaws.rekognition#SearchFacesByImageRequest": {
@@ -13070,34 +12236,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Searches for UserIDs within a collection based on a <code>FaceId</code> or\n        <code>UserId</code>. This API can be used to find the closest UserID (with a highest\n      similarity) to associate a face. The request must be provided with either <code>FaceId</code>\n      or <code>UserId</code>. The operation returns an array of UserID that match the\n        <code>FaceId</code> or <code>UserId</code>, ordered by similarity score with the highest\n      similarity first. </p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "SearchUsers",
-                        "documentation": "Searches for UserIDs within a collection based on a FaceId or UserId.",
-                        "input": {
-                            "CollectionId": "MyCollection",
-                            "UserId": "DemoUser",
-                            "MaxUsers": 2,
-                            "UserMatchThreshold": 70
-                        },
-                        "output": {
-                            "SearchedUser": {
-                                "UserId": "DemoUser"
-                            },
-                            "UserMatches": [
-                                {
-                                    "User": {
-                                        "UserId": "demoUser1",
-                                        "UserStatus": "ACTIVE"
-                                    },
-                                    "Similarity": 99.88186645507812
-                                }
-                            ],
-                            "FaceModelVersion": "6"
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>Searches for UserIDs within a collection based on a <code>FaceId</code> or\n        <code>UserId</code>. This API can be used to find the closest UserID (with a highest\n      similarity) to associate a face. The request must be provided with either <code>FaceId</code>\n      or <code>UserId</code>. The operation returns an array of UserID that match the\n        <code>FaceId</code> or <code>UserId</code>, ordered by similarity score with the highest\n      similarity first. </p>"
             }
         },
         "com.amazonaws.rekognition#SearchUsersByImage": {
@@ -13138,75 +12277,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<p>Searches for UserIDs using a supplied image. It first detects the largest face in the\n      image, and then searches a specified collection for matching UserIDs. </p>\n         <p>The operation returns an array of UserIDs that match the face in the supplied image,\n      ordered by similarity score with the highest similarity first. It also returns a bounding box\n      for the face found in the input image. </p>\n         <p>Information about faces detected in the supplied image, but not used for the search, is\n      returned in an array of <code>UnsearchedFace</code> objects. If no valid face is detected in\n      the image, the response will contain an empty <code>UserMatches</code> list and no\n        <code>SearchedFace</code> object. </p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "SearchUsersByImage",
-                        "documentation": "Searches for UserIDs using a supplied image.",
-                        "input": {
-                            "CollectionId": "MyCollection",
-                            "Image": {
-                                "S3Object": {
-                                    "Bucket": "bucket",
-                                    "Name": "input.jpg"
-                                }
-                            },
-                            "MaxUsers": 2,
-                            "UserMatchThreshold": 70,
-                            "QualityFilter": "MEDIUM"
-                        },
-                        "output": {
-                            "SearchedFace": {
-                                "FaceDetail": {
-                                    "BoundingBox": {
-                                        "Width": 0.03692837432026863,
-                                        "Top": 0.5391526818275452,
-                                        "Left": 0.3598678708076477,
-                                        "Height": 0.07510016113519669
-                                    }
-                                }
-                            },
-                            "UserMatches": [
-                                {
-                                    "User": {
-                                        "UserId": "demoUser1",
-                                        "UserStatus": "ACTIVE"
-                                    },
-                                    "Similarity": 99.88186645507812
-                                }
-                            ],
-                            "FaceModelVersion": "6",
-                            "UnsearchedFaces": [
-                                {
-                                    "FaceDetails": {
-                                        "BoundingBox": {
-                                            "Width": 0.031677018851041794,
-                                            "Top": 0.5593535900115967,
-                                            "Left": 0.6102562546730042,
-                                            "Height": 0.0682177022099495
-                                        }
-                                    },
-                                    "Reasons": [
-                                        "FACE_NOT_LARGEST"
-                                    ]
-                                },
-                                {
-                                    "FaceDetails": {
-                                        "BoundingBox": {
-                                            "Width": 0.03254449740052223,
-                                            "Top": 0.6080358028411865,
-                                            "Left": 0.516062319278717,
-                                            "Height": 0.06347997486591339
-                                        }
-                                    },
-                                    "Reasons": [
-                                        "FACE_NOT_LARGEST"
-                                    ]
-                                }
-                            ]
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<p>Searches for UserIDs using a supplied image. It first detects the largest face in the\n      image, and then searches a specified collection for matching UserIDs. </p>\n         <p>The operation returns an array of UserIDs that match the face in the supplied image,\n      ordered by similarity score with the highest similarity first. It also returns a bounding box\n      for the face found in the input image. </p>\n         <p>Information about faces detected in the supplied image, but not used for the search, is\n      returned in an array of <code>UnsearchedFace</code> objects. If no valid face is detected in\n      the image, the response will contain an empty <code>UserMatches</code> list and no\n        <code>SearchedFace</code> object. </p>"
             }
         },
         "com.amazonaws.rekognition#SearchUsersByImageRequest": {
@@ -14175,34 +13246,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<important>\n            <p>Service availability notice: Streaming Video and Bulk Image Analysis is no longer available to new customers. For more information, see\n<a href=\"https://docs.aws.amazon.com/rekognition/latest/dg/rekognition-availability-changes.html\">Rekognition feature availability changes</a>.</p>\n            <p>\n               <b>This change does not impact the availability of other Amazon Rekognition features.</b>\n            </p>\n         </important>\n         <p>Initiates a new media analysis job. Accepts a manifest file in an Amazon S3 bucket. The\n            output is a manifest file and a summary of the manifest stored in the Amazon S3 bucket.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "StartMediaAnalysisJob",
-                        "documentation": "Initiates a new media analysis job.",
-                        "input": {
-                            "JobName": "job-name",
-                            "OperationsConfig": {
-                                "DetectModerationLabels": {
-                                    "MinConfidence": 50,
-                                    "ProjectVersion": "arn:aws:rekognition:us-east-1:111122223333:project/my-project/version/1/1690556751958"
-                                }
-                            },
-                            "Input": {
-                                "S3Object": {
-                                    "Bucket": "input-bucket",
-                                    "Name": "input-manifest.json"
-                                }
-                            },
-                            "OutputConfig": {
-                                "S3Bucket": "output-bucket",
-                                "S3KeyPrefix": "output-location"
-                            }
-                        },
-                        "output": {
-                            "JobId": "861a0645d98ef88efb75477628c011c04942d9d5f58faf2703c393c8cf8c1537"
-                        }
-                    }
-                ],
                 "smithy.api#idempotent": {}
             }
         },
@@ -14393,21 +13436,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Starts the running of the version of a model. Starting a model takes a while to\n         complete. To check the current state of the model, use <a>DescribeProjectVersions</a>. </p>\n         <p>Once the model is running, you can detect custom labels in new images by calling \n         <a>DetectCustomLabels</a>.</p>\n         <note>\n            <p>You are charged for the amount of time that the model is running. To stop a running\n      model, call <a>StopProjectVersion</a>.</p>\n         </note>\n         <p>This operation requires permissions to perform the \n         <code>rekognition:StartProjectVersion</code> action.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To start an Amazon Rekognition Custom Labels model",
-                        "documentation": "Starts a version of an Amazon Rekognition Custom Labels model.",
-                        "input": {
-                            "ProjectVersionArn": "arn:aws:rekognition:us-east-1:111122223333:project/my-project/version/1/1690556751958",
-                            "MinInferenceUnits": 1,
-                            "MaxInferenceUnits": 1
-                        },
-                        "output": {
-                            "Status": "STARTING"
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Starts the running of the version of a model. Starting a model takes a while to\n         complete. To check the current state of the model, use <a>DescribeProjectVersions</a>. </p>\n         <p>Once the model is running, you can detect custom labels in new images by calling \n         <a>DetectCustomLabels</a>.</p>\n         <note>\n            <p>You are charged for the amount of time that the model is running. To stop a running\n      model, call <a>StopProjectVersion</a>.</p>\n         </note>\n         <p>This operation requires permissions to perform the \n         <code>rekognition:StartProjectVersion</code> action.</p>"
             }
         },
         "com.amazonaws.rekognition#StartProjectVersionRequest": {
@@ -14832,19 +13861,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Stops a running model. The operation might take a while to complete. To check the\n         current status, call <a>DescribeProjectVersions</a>. Only applies to Custom\n         Labels projects.</p>\n         <p>This operation requires permissions to perform the <code>rekognition:StopProjectVersion</code> action.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To stop an Amazon Rekognition Custom Labels model.",
-                        "documentation": "Stops a version of an Amazon Rekognition Custom Labels model.",
-                        "input": {
-                            "ProjectVersionArn": "arn:aws:rekognition:us-east-1:111122223333:project/my-project/version/1/1690556751958"
-                        },
-                        "output": {
-                            "Status": "STOPPING"
-                        }
-                    }
-                ]
+                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Stops a running model. The operation might take a while to complete. To check the\n         current status, call <a>DescribeProjectVersions</a>. Only applies to Custom\n         Labels projects.</p>\n         <p>This operation requires permissions to perform the <code>rekognition:StopProjectVersion</code> action.</p>"
             }
         },
         "com.amazonaws.rekognition#StopProjectVersionRequest": {
@@ -16012,20 +15029,7 @@
                 }
             ],
             "traits": {
-                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Adds or updates one or more entries (images) in a dataset. An entry is a JSON Line which contains the\n      information for a single image,  including\n      the image location, assigned labels, and object location bounding boxes.  For more information, \n      see Image-Level labels in manifest files and Object localization in manifest files in the <i>Amazon Rekognition Custom Labels Developer Guide</i>.\n     </p>\n         <p>If the <code>source-ref</code> field in the JSON line references an existing image, the existing image in the dataset\n      is updated. \n      If <code>source-ref</code> field doesn't reference an existing image, the image is added as a new image to the dataset. </p>\n         <p>You specify the changes that you want to make in the <code>Changes</code> input parameter. \n    There isn't a limit to the number JSON Lines that you can change, but the size of <code>Changes</code> must be less\nthan 5MB.</p>\n         <p>\n            <code>UpdateDatasetEntries</code> returns immediatly, but the dataset update might take a while to complete.\n      Use <a>DescribeDataset</a> to check the \n      current status. The dataset updated successfully if the value of <code>Status</code> is\n      <code>UPDATE_COMPLETE</code>. </p>\n         <p>To check if any non-terminal errors occured, call <a>ListDatasetEntries</a>\n      and check for the presence of <code>errors</code> lists in the JSON Lines.</p>\n         <p>Dataset update fails if a terminal error occurs (<code>Status</code> = <code>UPDATE_FAILED</code>). \n      Currently, you can't access the terminal error information from the Amazon Rekognition Custom Labels SDK.\n   </p>\n         <p>This operation requires permissions to perform the <code>rekognition:UpdateDatasetEntries</code> action.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To-add dataset entries to an Amazon Rekognition Custom Labels dataset",
-                        "documentation": "Adds dataset entries to an Amazon Rekognition Custom Labels dataset.",
-                        "input": {
-                            "DatasetArn": "arn:aws:rekognition:us-east-1:111122223333:project/my-proj-2/dataset/train/1690564858106",
-                            "Changes": {
-                                "GroundTruth": "{\"source-ref\":\"s3://custom-labels-console-us-east-1-111111111/assets/flowers_1_test_dataset/mediterranean_spurge4.jpg\",\"mediterranean_spurge\":1,\"mediterranean_spurge-metadata\":{\"confidence\":1,\"job-name\":\"labeling-job/mediterranean_spurge\",\"class-name\":\"mediterranean_spurge\",\"human-annotated\":\"yes\",\"creation-date\":\"2021-07-11T03:33:42.025Z\",\"type\":\"groundtruth/image-classification\"},\"with_leaves\":1,\"with_leaves-metadata\":{\"confidence\":1,\"job-name\":\"labeling-job/with_leaves\",\"class-name\":\"with_leaves\",\"human-annotated\":\"yes\",\"creation-date\":\"2021-07-11T03:33:42.025Z\",\"type\":\"groundtruth/image-classification\"}}"
-                            }
-                        },
-                        "output": {}
-                    }
-                ]
+                "smithy.api#documentation": "<note>\n            <p>This operation applies only to Amazon Rekognition Custom Labels.</p>\n         </note>\n         <p>Adds or updates one or more entries (images) in a dataset. An entry is a JSON Line which contains the\n      information for a single image,  including\n      the image location, assigned labels, and object location bounding boxes.  For more information, \n      see Image-Level labels in manifest files and Object localization in manifest files in the <i>Amazon Rekognition Custom Labels Developer Guide</i>.\n     </p>\n         <p>If the <code>source-ref</code> field in the JSON line references an existing image, the existing image in the dataset\n      is updated. \n      If <code>source-ref</code> field doesn't reference an existing image, the image is added as a new image to the dataset. </p>\n         <p>You specify the changes that you want to make in the <code>Changes</code> input parameter. \n    There isn't a limit to the number JSON Lines that you can change, but the size of <code>Changes</code> must be less\nthan 5MB.</p>\n         <p>\n            <code>UpdateDatasetEntries</code> returns immediatly, but the dataset update might take a while to complete.\n      Use <a>DescribeDataset</a> to check the \n      current status. The dataset updated successfully if the value of <code>Status</code> is\n      <code>UPDATE_COMPLETE</code>. </p>\n         <p>To check if any non-terminal errors occured, call <a>ListDatasetEntries</a>\n      and check for the presence of <code>errors</code> lists in the JSON Lines.</p>\n         <p>Dataset update fails if a terminal error occurs (<code>Status</code> = <code>UPDATE_FAILED</code>). \n      Currently, you can't access the terminal error information from the Amazon Rekognition Custom Labels SDK.\n   </p>\n         <p>This operation requires permissions to perform the <code>rekognition:UpdateDatasetEntries</code> action.</p>"
             }
         },
         "com.amazonaws.rekognition#UpdateDatasetEntriesRequest": {

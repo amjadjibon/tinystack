@@ -13,7 +13,7 @@ Query local S3 data through the Glue catalog using an in-memory SQLite SQL engin
 | API version | `2017-05-18` |
 | Scope | Account and region |
 | Execution | SQLite SQL engine with local S3 reads/writes and Glue catalog updates |
-| Selected operations | 25 of 70 in the pinned model |
+| Selected operations | 25 of 75 in the pinned model |
 
 ## Implemented behavior
 
@@ -65,7 +65,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "45 modeled operations outside the implementation"
+??? info "50 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -76,10 +76,12 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `CreateNotebook`
     - `CreatePreparedStatement`
     - `CreatePresignedNotebookUrl`
+    - `CreateSystemTableConfiguration`
     - `DeleteCapacityReservation`
     - `DeleteDataCatalog`
     - `DeleteNotebook`
     - `DeletePreparedStatement`
+    - `DeleteSystemTableConfiguration`
     - `ExportNotebook`
     - `GetCalculationExecution`
     - `GetCalculationExecutionCode`
@@ -93,6 +95,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetSession`
     - `GetSessionEndpoint`
     - `GetSessionStatus`
+    - `GetSystemTableConfiguration`
     - `ImportNotebook`
     - `ListApplicationDPUSizes`
     - `ListCalculationExecutions`
@@ -103,6 +106,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListNotebookSessions`
     - `ListPreparedStatements`
     - `ListSessions`
+    - `ListSystemTableStatuses`
     - `PutCapacityAssignmentConfiguration`
     - `StartCalculationExecution`
     - `StartSession`
@@ -114,11 +118,12 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `UpdateNotebook`
     - `UpdateNotebookMetadata`
     - `UpdatePreparedStatement`
+    - `UpdateSystemTableConfiguration`
 
 ## Source and examples
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/athena)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/athena/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/athena.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/athena.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [athena_formats_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/athena_formats_test.go), [athena_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/athena_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

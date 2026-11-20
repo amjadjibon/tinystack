@@ -13,7 +13,7 @@ Invoke AgentCore agent runtimes in Docker containers, one per runtime session, a
 | API version | `2024-02-28` |
 | Scope | Account and region |
 | Execution | Records events / optional Docker runtimes |
-| Selected operations | 8 of 67 in the pinned model |
+| Selected operations | 8 of 75 in the pinned model |
 
 ## Implemented behavior
 
@@ -55,7 +55,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "59 modeled operations outside the implementation"
+??? info "67 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -69,6 +69,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteABTest`
     - `DeleteBatchEvaluation`
     - `DeleteCapacityProviderSession`
+    - `DeleteDatasetGeneration`
     - `DeleteMemoryRecord`
     - `DeletePaymentInstrument`
     - `DeletePaymentSession`
@@ -76,9 +77,11 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `Evaluate`
     - `GetABTest`
     - `GetAgentCard`
+    - `GetAgentInsight`
     - `GetBatchEvaluation`
     - `GetBrowserSession`
     - `GetCodeInterpreterSession`
+    - `GetDatasetGeneration`
     - `GetMemoryRecord`
     - `GetPaymentInstrument`
     - `GetPaymentInstrumentBalance`
@@ -95,10 +98,13 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `InvokeBrowser`
     - `InvokeCodeInterpreter`
     - `InvokeHarness`
+    - `InvokeWebSearch`
     - `ListABTests`
+    - `ListAgentInsights`
     - `ListBatchEvaluations`
     - `ListBrowserSessions`
     - `ListCodeInterpreterSessions`
+    - `ListDatasetGenerations`
     - `ListMemoryExtractionJobs`
     - `ListMemoryRecords`
     - `ListPaymentInstruments`
@@ -111,18 +117,20 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `StartBatchEvaluation`
     - `StartBrowserSession`
     - `StartCodeInterpreterSession`
+    - `StartDatasetGeneration`
     - `StartMemoryExtractionJob`
     - `StartRecommendation`
     - `StopBatchEvaluation`
     - `StopBrowserSession`
     - `StopCodeInterpreterSession`
     - `UpdateABTest`
+    - `UpdateAgentInsight`
     - `UpdateBrowserStream`
 
 ## Source and examples
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/bedrockagentcore)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/bedrockagentcore/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/bedrockagentcore.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/bedrockagentcore.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [bedrockagentcore_docker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/bedrockagentcore_docker_test.go), [bedrockagentcore_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/bedrockagentcore_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

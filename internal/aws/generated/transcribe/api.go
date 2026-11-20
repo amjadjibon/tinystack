@@ -87,9 +87,9 @@ type TranscriptionJob struct {
 	MediaFormat               *string                       `json:"MediaFormat,omitempty"`
 	Media                     *Media                        `json:"Media,omitempty"`
 	Transcript                *Transcript                   `json:"Transcript,omitempty"`
-	StartTime                 *float64                      `json:"StartTime,omitempty"`
-	CreationTime              *float64                      `json:"CreationTime,omitempty"`
-	CompletionTime            *float64                      `json:"CompletionTime,omitempty"`
+	StartTime                 *float64                      `json:"StartTime,omitempty" cbor:"timestamp"`
+	CreationTime              *float64                      `json:"CreationTime,omitempty" cbor:"timestamp"`
+	CompletionTime            *float64                      `json:"CompletionTime,omitempty" cbor:"timestamp"`
 	FailureReason             *string                       `json:"FailureReason,omitempty"`
 	Settings                  *Settings                     `json:"Settings,omitempty"`
 	ModelSettings             *ModelSettings                `json:"ModelSettings,omitempty"`
@@ -127,9 +127,9 @@ type ListTranscriptionJobsRequest struct {
 
 type TranscriptionJobSummary struct {
 	TranscriptionJobName      *string                     `json:"TranscriptionJobName,omitempty"`
-	CreationTime              *float64                    `json:"CreationTime,omitempty"`
-	StartTime                 *float64                    `json:"StartTime,omitempty"`
-	CompletionTime            *float64                    `json:"CompletionTime,omitempty"`
+	CreationTime              *float64                    `json:"CreationTime,omitempty" cbor:"timestamp"`
+	StartTime                 *float64                    `json:"StartTime,omitempty" cbor:"timestamp"`
+	CompletionTime            *float64                    `json:"CompletionTime,omitempty" cbor:"timestamp"`
 	LanguageCode              *string                     `json:"LanguageCode,omitempty"`
 	TranscriptionJobStatus    *string                     `json:"TranscriptionJobStatus,omitempty"`
 	FailureReason             *string                     `json:"FailureReason,omitempty"`
@@ -167,7 +167,7 @@ type CreateVocabularyResponse struct {
 	VocabularyName   *string  `json:"VocabularyName,omitempty"`
 	LanguageCode     *string  `json:"LanguageCode,omitempty"`
 	VocabularyState  *string  `json:"VocabularyState,omitempty"`
-	LastModifiedTime *float64 `json:"LastModifiedTime,omitempty"`
+	LastModifiedTime *float64 `json:"LastModifiedTime,omitempty" cbor:"timestamp"`
 	FailureReason    *string  `json:"FailureReason,omitempty"`
 }
 
@@ -181,7 +181,7 @@ type UpdateVocabularyRequest struct {
 type UpdateVocabularyResponse struct {
 	VocabularyName   *string  `json:"VocabularyName,omitempty"`
 	LanguageCode     *string  `json:"LanguageCode,omitempty"`
-	LastModifiedTime *float64 `json:"LastModifiedTime,omitempty"`
+	LastModifiedTime *float64 `json:"LastModifiedTime,omitempty" cbor:"timestamp"`
 	VocabularyState  *string  `json:"VocabularyState,omitempty"`
 }
 
@@ -198,7 +198,7 @@ type GetVocabularyResponse struct {
 	VocabularyName          *string                  `json:"VocabularyName,omitempty"`
 	LanguageCode            *string                  `json:"LanguageCode,omitempty"`
 	VocabularyState         *string                  `json:"VocabularyState,omitempty"`
-	LastModifiedTime        *float64                 `json:"LastModifiedTime,omitempty"`
+	LastModifiedTime        *float64                 `json:"LastModifiedTime,omitempty" cbor:"timestamp"`
 	FailureReason           *string                  `json:"FailureReason,omitempty"`
 	DownloadUri             *string                  `json:"DownloadUri,omitempty"`
 	DataAccessRoleArn       *string                  `json:"DataAccessRoleArn,omitempty"`
@@ -215,7 +215,7 @@ type ListVocabulariesRequest struct {
 type VocabularyInfo struct {
 	VocabularyName   *string  `json:"VocabularyName,omitempty"`
 	LanguageCode     *string  `json:"LanguageCode,omitempty"`
-	LastModifiedTime *float64 `json:"LastModifiedTime,omitempty"`
+	LastModifiedTime *float64 `json:"LastModifiedTime,omitempty" cbor:"timestamp"`
 	VocabularyState  *string  `json:"VocabularyState,omitempty"`
 }
 
@@ -242,7 +242,7 @@ type CreateVocabularyFilterRequest struct {
 type CreateVocabularyFilterResponse struct {
 	VocabularyFilterName *string  `json:"VocabularyFilterName,omitempty"`
 	LanguageCode         *string  `json:"LanguageCode,omitempty"`
-	LastModifiedTime     *float64 `json:"LastModifiedTime,omitempty"`
+	LastModifiedTime     *float64 `json:"LastModifiedTime,omitempty" cbor:"timestamp"`
 }
 
 type UpdateVocabularyFilterRequest struct {
@@ -254,7 +254,7 @@ type UpdateVocabularyFilterRequest struct {
 type UpdateVocabularyFilterResponse struct {
 	VocabularyFilterName *string  `json:"VocabularyFilterName,omitempty"`
 	LanguageCode         *string  `json:"LanguageCode,omitempty"`
-	LastModifiedTime     *float64 `json:"LastModifiedTime,omitempty"`
+	LastModifiedTime     *float64 `json:"LastModifiedTime,omitempty" cbor:"timestamp"`
 }
 
 type GetVocabularyFilterRequest struct {
@@ -264,7 +264,7 @@ type GetVocabularyFilterRequest struct {
 type GetVocabularyFilterResponse struct {
 	VocabularyFilterName    *string                  `json:"VocabularyFilterName,omitempty"`
 	LanguageCode            *string                  `json:"LanguageCode,omitempty"`
-	LastModifiedTime        *float64                 `json:"LastModifiedTime,omitempty"`
+	LastModifiedTime        *float64                 `json:"LastModifiedTime,omitempty" cbor:"timestamp"`
 	DownloadUri             *string                  `json:"DownloadUri,omitempty"`
 	DataAccessRoleArn       *string                  `json:"DataAccessRoleArn,omitempty"`
 	EncryptionConfiguration *EncryptionConfiguration `json:"EncryptionConfiguration,omitempty"`
@@ -279,7 +279,7 @@ type ListVocabularyFiltersRequest struct {
 type VocabularyFilterInfo struct {
 	VocabularyFilterName *string  `json:"VocabularyFilterName,omitempty"`
 	LanguageCode         *string  `json:"LanguageCode,omitempty"`
-	LastModifiedTime     *float64 `json:"LastModifiedTime,omitempty"`
+	LastModifiedTime     *float64 `json:"LastModifiedTime,omitempty" cbor:"timestamp"`
 }
 
 type ListVocabularyFiltersResponse struct {
@@ -917,120 +917,120 @@ type API interface {
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "transcribe", SigningName: "transcribe", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "transcribe", TargetPrefix: "Transcribe", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"BadRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 409}, "InternalFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 500}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 429}, "NotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 404}}, Operations: map[string]catalog.Operation{
-		"StartTranscriptionJob": {Name: "StartTranscriptionJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:StartTranscriptionJob", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.StartTranscriptionJob", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StartTranscriptionJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+	return catalog.Service{Name: "transcribe", SigningName: "transcribe", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "transcribe", TargetPrefix: "Transcribe", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1", "rpcv2Cbor"}, Errors: map[string]catalog.ErrorBinding{"BadRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 409}, "InternalFailureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 500}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 429}, "NotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 404}}, Operations: map[string]catalog.Operation{
+		"StartTranscriptionJob": {Name: "StartTranscriptionJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:StartTranscriptionJob", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.StartTranscriptionJob", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/Transcribe/operation/StartTranscriptionJob", Target: "Transcribe.StartTranscriptionJob", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &StartTranscriptionJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*StartTranscriptionJobRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("BadRequestException", err.Error())
 			}
 			return api.StartTranscriptionJob(ctx, in)
 		}},
-		"GetTranscriptionJob": {Name: "GetTranscriptionJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:GetTranscriptionJob", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.GetTranscriptionJob", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetTranscriptionJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"GetTranscriptionJob": {Name: "GetTranscriptionJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:GetTranscriptionJob", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.GetTranscriptionJob", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/Transcribe/operation/GetTranscriptionJob", Target: "Transcribe.GetTranscriptionJob", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &GetTranscriptionJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*GetTranscriptionJobRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("BadRequestException", err.Error())
 			}
 			return api.GetTranscriptionJob(ctx, in)
 		}},
-		"ListTranscriptionJobs": {Name: "ListTranscriptionJobs", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:ListTranscriptionJobs", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.ListTranscriptionJobs", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListTranscriptionJobsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListTranscriptionJobs": {Name: "ListTranscriptionJobs", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:ListTranscriptionJobs", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.ListTranscriptionJobs", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/Transcribe/operation/ListTranscriptionJobs", Target: "Transcribe.ListTranscriptionJobs", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListTranscriptionJobsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListTranscriptionJobsRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("BadRequestException", err.Error())
 			}
 			return api.ListTranscriptionJobs(ctx, in)
 		}},
-		"DeleteTranscriptionJob": {Name: "DeleteTranscriptionJob", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "transcribe:DeleteTranscriptionJob", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.DeleteTranscriptionJob", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteTranscriptionJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DeleteTranscriptionJob": {Name: "DeleteTranscriptionJob", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "transcribe:DeleteTranscriptionJob", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.DeleteTranscriptionJob", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/Transcribe/operation/DeleteTranscriptionJob", Target: "Transcribe.DeleteTranscriptionJob", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DeleteTranscriptionJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DeleteTranscriptionJobRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("BadRequestException", err.Error())
 			}
 			return api.DeleteTranscriptionJob(ctx, in)
 		}},
-		"CreateVocabulary": {Name: "CreateVocabulary", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:CreateVocabulary", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.CreateVocabulary", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateVocabularyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"CreateVocabulary": {Name: "CreateVocabulary", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:CreateVocabulary", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.CreateVocabulary", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/Transcribe/operation/CreateVocabulary", Target: "Transcribe.CreateVocabulary", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &CreateVocabularyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*CreateVocabularyRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("BadRequestException", err.Error())
 			}
 			return api.CreateVocabulary(ctx, in)
 		}},
-		"UpdateVocabulary": {Name: "UpdateVocabulary", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:UpdateVocabulary", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.UpdateVocabulary", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateVocabularyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UpdateVocabulary": {Name: "UpdateVocabulary", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:UpdateVocabulary", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.UpdateVocabulary", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/Transcribe/operation/UpdateVocabulary", Target: "Transcribe.UpdateVocabulary", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &UpdateVocabularyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*UpdateVocabularyRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("BadRequestException", err.Error())
 			}
 			return api.UpdateVocabulary(ctx, in)
 		}},
-		"GetVocabulary": {Name: "GetVocabulary", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:GetVocabulary", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.GetVocabulary", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetVocabularyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"GetVocabulary": {Name: "GetVocabulary", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:GetVocabulary", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.GetVocabulary", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/Transcribe/operation/GetVocabulary", Target: "Transcribe.GetVocabulary", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &GetVocabularyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*GetVocabularyRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("BadRequestException", err.Error())
 			}
 			return api.GetVocabulary(ctx, in)
 		}},
-		"ListVocabularies": {Name: "ListVocabularies", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:ListVocabularies", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.ListVocabularies", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListVocabulariesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListVocabularies": {Name: "ListVocabularies", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:ListVocabularies", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.ListVocabularies", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/Transcribe/operation/ListVocabularies", Target: "Transcribe.ListVocabularies", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListVocabulariesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListVocabulariesRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("BadRequestException", err.Error())
 			}
 			return api.ListVocabularies(ctx, in)
 		}},
-		"DeleteVocabulary": {Name: "DeleteVocabulary", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "transcribe:DeleteVocabulary", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.DeleteVocabulary", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteVocabularyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DeleteVocabulary": {Name: "DeleteVocabulary", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "transcribe:DeleteVocabulary", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.DeleteVocabulary", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/Transcribe/operation/DeleteVocabulary", Target: "Transcribe.DeleteVocabulary", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DeleteVocabularyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DeleteVocabularyRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("BadRequestException", err.Error())
 			}
 			return api.DeleteVocabulary(ctx, in)
 		}},
-		"CreateVocabularyFilter": {Name: "CreateVocabularyFilter", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:CreateVocabularyFilter", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.CreateVocabularyFilter", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateVocabularyFilterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"CreateVocabularyFilter": {Name: "CreateVocabularyFilter", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:CreateVocabularyFilter", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.CreateVocabularyFilter", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/Transcribe/operation/CreateVocabularyFilter", Target: "Transcribe.CreateVocabularyFilter", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &CreateVocabularyFilterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*CreateVocabularyFilterRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("BadRequestException", err.Error())
 			}
 			return api.CreateVocabularyFilter(ctx, in)
 		}},
-		"UpdateVocabularyFilter": {Name: "UpdateVocabularyFilter", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:UpdateVocabularyFilter", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.UpdateVocabularyFilter", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateVocabularyFilterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UpdateVocabularyFilter": {Name: "UpdateVocabularyFilter", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:UpdateVocabularyFilter", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.UpdateVocabularyFilter", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/Transcribe/operation/UpdateVocabularyFilter", Target: "Transcribe.UpdateVocabularyFilter", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &UpdateVocabularyFilterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*UpdateVocabularyFilterRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("BadRequestException", err.Error())
 			}
 			return api.UpdateVocabularyFilter(ctx, in)
 		}},
-		"GetVocabularyFilter": {Name: "GetVocabularyFilter", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:GetVocabularyFilter", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.GetVocabularyFilter", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &GetVocabularyFilterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"GetVocabularyFilter": {Name: "GetVocabularyFilter", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:GetVocabularyFilter", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.GetVocabularyFilter", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/Transcribe/operation/GetVocabularyFilter", Target: "Transcribe.GetVocabularyFilter", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &GetVocabularyFilterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*GetVocabularyFilterRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("BadRequestException", err.Error())
 			}
 			return api.GetVocabularyFilter(ctx, in)
 		}},
-		"ListVocabularyFilters": {Name: "ListVocabularyFilters", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:ListVocabularyFilters", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.ListVocabularyFilters", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListVocabularyFiltersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListVocabularyFilters": {Name: "ListVocabularyFilters", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:ListVocabularyFilters", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.ListVocabularyFilters", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/Transcribe/operation/ListVocabularyFilters", Target: "Transcribe.ListVocabularyFilters", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListVocabularyFiltersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListVocabularyFiltersRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("BadRequestException", err.Error())
 			}
 			return api.ListVocabularyFilters(ctx, in)
 		}},
-		"DeleteVocabularyFilter": {Name: "DeleteVocabularyFilter", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "transcribe:DeleteVocabularyFilter", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.DeleteVocabularyFilter", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteVocabularyFilterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DeleteVocabularyFilter": {Name: "DeleteVocabularyFilter", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "transcribe:DeleteVocabularyFilter", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.DeleteVocabularyFilter", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/Transcribe/operation/DeleteVocabularyFilter", Target: "Transcribe.DeleteVocabularyFilter", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DeleteVocabularyFilterRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DeleteVocabularyFilterRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("BadRequestException", err.Error())
 			}
 			return api.DeleteVocabularyFilter(ctx, in)
 		}},
-		"TagResource": {Name: "TagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:TagResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.TagResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &TagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"TagResource": {Name: "TagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:TagResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.TagResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/Transcribe/operation/TagResource", Target: "Transcribe.TagResource", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &TagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*TagResourceRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("BadRequestException", err.Error())
 			}
 			return api.TagResource(ctx, in)
 		}},
-		"UntagResource": {Name: "UntagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:UntagResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.UntagResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UntagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UntagResource": {Name: "UntagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:UntagResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.UntagResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/Transcribe/operation/UntagResource", Target: "Transcribe.UntagResource", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &UntagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*UntagResourceRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("BadRequestException", err.Error())
 			}
 			return api.UntagResource(ctx, in)
 		}},
-		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:ListTagsForResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.ListTagsForResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "transcribe:ListTagsForResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "Transcribe.ListTagsForResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/Transcribe/operation/ListTagsForResource", Target: "Transcribe.ListTagsForResource", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListTagsForResourceRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("BadRequestException", err.Error())

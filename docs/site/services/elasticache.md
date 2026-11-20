@@ -13,7 +13,7 @@ Manage Redis, Valkey, and Memcached resources with an optional Docker cache runt
 | API version | `2015-02-02` |
 | Scope | Account and region |
 | Execution | Records / optional Docker |
-| Selected operations | 32 of 75 in the pinned model |
+| Selected operations | 32 of 77 in the pinned model |
 
 ## Implemented behavior
 
@@ -75,7 +75,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "43 modeled operations outside the implementation"
+??? info "45 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -117,16 +117,18 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ModifyReplicationGroupShardConfiguration`
     - `ModifyUser`
     - `ModifyUserGroup`
+    - `PrepareMigration`
     - `PurchaseReservedCacheNodesOffering`
     - `RebalanceSlotsInGlobalReplicationGroup`
     - `RevokeCacheSecurityGroupIngress`
     - `StartMigration`
+    - `StopMigration`
     - `TestMigration`
 
 ## Source and examples
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/elasticache)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/elasticache/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/elasticache.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/elasticache.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [elasticache_docker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/elasticache_docker_test.go), [elasticache_replication_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/elasticache_replication_test.go), [elasticache_serverless_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/elasticache_serverless_test.go), [elasticache_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/elasticache_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

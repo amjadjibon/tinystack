@@ -24,7 +24,6 @@ See the [implemented feature catalogue](catalogue.md#aws-codeconnections) for th
 - No provider is contacted: connections never become AVAILABLE and hosts stay PENDING, so pipelines cannot clone source through a connection.
 - Repository links, sync configurations, sync blockers and sync status operations are not implemented.
 - The codestar-connections service name and its ARN prefix are not served; only the codeconnections endpoint and ARNs work.
-- The SDK release that adds Smithy RPC v2 CBOR for this service needs a newer pinned model; the pinned model serves AWS JSON 1.0 only, which older SDK releases (v1.19.2 and earlier) use.
 - Connection names are not required to be unique, and no connection quota is enforced.
 - No CloudFormation resource: AWS::CodeConnections::Connection is not registered.
 
@@ -79,6 +78,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/codeconnections)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/codeconnections/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/codeconnections.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/codeconnections.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [codeconnections_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/codeconnections_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

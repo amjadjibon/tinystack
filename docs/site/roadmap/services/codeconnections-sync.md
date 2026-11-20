@@ -14,7 +14,6 @@ Extend connection and host records with repository links and sync configurations
 - [ ] `CreateSyncConfiguration`, `GetSyncConfiguration`, `ListSyncConfigurations`, `UpdateSyncConfiguration`, `DeleteSyncConfiguration`
 - [ ] Sync status and blocker operations
 - [ ] The codestar-connections service alias
-- [ ] RPC v2 CBOR with a newer pinned model
 - [ ] `AWS::CodeConnections::Connection`
 
 

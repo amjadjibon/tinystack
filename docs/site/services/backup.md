@@ -171,6 +171,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/backup)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/backup/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/backup.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/backup.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [backup_persistence_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/backup_persistence_test.go), [backup_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/backup_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

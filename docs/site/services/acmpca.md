@@ -9,7 +9,7 @@ Store private certificate authorities, their revocation settings and tags as rec
 | --- | --- |
 | Service ID | `acmpca` |
 | Signing name | `acm-pca` |
-| Wire protocol | AWS JSON 1.1 |
+| Wire protocol | AWS JSON 1.1, Smithy RPC v2 CBOR |
 | API version | `2017-08-22` |
 | Scope | Account and region |
 | Execution | Configuration records only |
@@ -75,6 +75,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/acmpca)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/acmpca/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/acmpca.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/acmpca.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [acmpca_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/acmpca_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

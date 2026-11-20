@@ -13,7 +13,7 @@ Manage RDS instances, Aurora, DocumentDB and Neptune clusters with optional Dock
 | API version | `2014-10-31` |
 | Scope | Account and region |
 | Execution | Records / optional Docker |
-| Selected operations | 52 of 164 in the pinned model |
+| Selected operations | 52 of 168 in the pinned model |
 
 ## Implemented behavior
 
@@ -116,7 +116,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "112 modeled operations outside the implementation"
+??? info "116 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -126,10 +126,12 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ApplyPendingMaintenanceAction`
     - `AuthorizeDBSecurityGroupIngress`
     - `BacktrackDBCluster`
+    - `CancelDBCapacityReservation`
     - `CancelExportTask`
     - `CopyOptionGroup`
     - `CreateBlueGreenDeployment`
     - `CreateCustomDBEngineVersion`
+    - `CreateDBCapacityReservation`
     - `CreateDBClusterEndpoint`
     - `CreateDBInstanceReadReplica`
     - `CreateDBProxy`
@@ -159,6 +161,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DescribeAccountAttributes`
     - `DescribeBlueGreenDeployments`
     - `DescribeCertificates`
+    - `DescribeDBCapacityReservations`
     - `DescribeDBClusterAutomatedBackups`
     - `DescribeDBClusterBacktracks`
     - `DescribeDBClusterEndpoints`
@@ -197,6 +200,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ModifyCertificates`
     - `ModifyCurrentDBClusterCapacity`
     - `ModifyCustomDBEngineVersion`
+    - `ModifyDBCapacityReservation`
     - `ModifyDBClusterEndpoint`
     - `ModifyDBProxy`
     - `ModifyDBProxyEndpoint`
@@ -237,6 +241,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/rds)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/rds/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/rds.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/rds.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [rds_cluster_snapshots_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_cluster_snapshots_test.go), [rds_docker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_docker_test.go), [rds_parameters_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_parameters_test.go), [rds_snapshots_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_snapshots_test.go), [rds_subnet_groups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_subnet_groups_test.go), [rds_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

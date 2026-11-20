@@ -2453,7 +2453,7 @@ func (v *LoRaWANDeviceProfile) Validate(path string) error {
 		}
 	}
 	if v.MaxEirp != nil {
-		if err := validation.Range(path+"MaxEirp", float64((*v.MaxEirp)), new(float64(0)), new(float64(15))); err != nil {
+		if err := validation.Range(path+"MaxEirp", float64((*v.MaxEirp)), new(float64(0)), new(float64(36))); err != nil {
 			return err
 		}
 	}

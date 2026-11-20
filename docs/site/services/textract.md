@@ -9,7 +9,7 @@ Return fixture blocks for synchronous document text and analysis requests.
 | --- | --- |
 | Service ID | `textract` |
 | Signing name | `textract` |
-| Wire protocol | AWS JSON 1.1 |
+| Wire protocol | AWS JSON 1.1, Smithy RPC v2 CBOR |
 | API version | `2018-06-27` |
 | Scope | Account and region |
 | Execution | Fixture-backed document analysis with local S3 reads |
@@ -23,7 +23,6 @@ See the [implemented feature catalogue](catalogue.md#amazon-textract) for this s
 
 - Asynchronous jobs, PDF and TIFF, queries, adapters, human loops, lending, expense and identity analyses are unsupported.
 - Missing or ambiguous fixtures return InvalidParameterException.
-- The pinned model (aws-sdk-go-v2 at 6b78958e) speaks AWS JSON 1.1; newer SDK releases that moved this service to RPC v2 CBOR (Go service/textract v1.50.0 and later) are rejected with UnknownOperationException until the models are re-pinned.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -74,6 +73,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/textract)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/textract/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/textract.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/textract.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [integration suite](https://github.com/amjadjibon/tinystack/tree/main/tests/integration).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

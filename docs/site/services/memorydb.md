@@ -9,7 +9,7 @@ Store MemoryDB subnet groups, users, ACLs and clusters, optionally serving a clu
 | --- | --- |
 | Service ID | `memorydb` |
 | Signing name | `memorydb` |
-| Wire protocol | AWS JSON 1.1 |
+| Wire protocol | AWS JSON 1.1, Smithy RPC v2 CBOR |
 | API version | `2021-01-01` |
 | Scope | Account and region |
 | Execution | Records by default; optional Docker Valkey/Redis cluster protocol with TLS and ACLs |
@@ -102,6 +102,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/memorydb)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/memorydb/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/memorydb.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/memorydb.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [memorydb_docker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/memorydb_docker_test.go), [memorydb_parameters_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/memorydb_parameters_test.go), [memorydb_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/memorydb_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

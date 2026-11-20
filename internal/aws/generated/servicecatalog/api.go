@@ -29,7 +29,7 @@ type PortfolioDetail struct {
 	ARN          *string  `json:"ARN,omitempty"`
 	DisplayName  *string  `json:"DisplayName,omitempty"`
 	Description  *string  `json:"Description,omitempty"`
-	CreatedTime  *float64 `json:"CreatedTime,omitempty"`
+	CreatedTime  *float64 `json:"CreatedTime,omitempty" cbor:"timestamp"`
 	ProviderName *string  `json:"ProviderName,omitempty"`
 }
 
@@ -136,7 +136,7 @@ type ProductViewDetail struct {
 	ProductViewSummary *ProductViewSummary `json:"ProductViewSummary,omitempty"`
 	Status             *string             `json:"Status,omitempty"`
 	ProductARN         *string             `json:"ProductARN,omitempty"`
-	CreatedTime        *float64            `json:"CreatedTime,omitempty"`
+	CreatedTime        *float64            `json:"CreatedTime,omitempty" cbor:"timestamp"`
 }
 
 type ProvisioningArtifactDetail struct {
@@ -144,7 +144,7 @@ type ProvisioningArtifactDetail struct {
 	Name        *string  `json:"Name,omitempty"`
 	Description *string  `json:"Description,omitempty"`
 	Type        *string  `json:"Type,omitempty"`
-	CreatedTime *float64 `json:"CreatedTime,omitempty"`
+	CreatedTime *float64 `json:"CreatedTime,omitempty" cbor:"timestamp"`
 	Active      *bool    `json:"Active,omitempty"`
 	Guidance    *string  `json:"Guidance,omitempty"`
 }
@@ -165,7 +165,7 @@ type ProvisioningArtifact struct {
 	Id          *string  `json:"Id,omitempty"`
 	Name        *string  `json:"Name,omitempty"`
 	Description *string  `json:"Description,omitempty"`
-	CreatedTime *float64 `json:"CreatedTime,omitempty"`
+	CreatedTime *float64 `json:"CreatedTime,omitempty" cbor:"timestamp"`
 	Guidance    *string  `json:"Guidance,omitempty"`
 }
 
@@ -191,7 +191,7 @@ type ProvisioningArtifactSummary struct {
 	Id                           *string           `json:"Id,omitempty"`
 	Name                         *string           `json:"Name,omitempty"`
 	Description                  *string           `json:"Description,omitempty"`
-	CreatedTime                  *float64          `json:"CreatedTime,omitempty"`
+	CreatedTime                  *float64          `json:"CreatedTime,omitempty" cbor:"timestamp"`
 	ProvisioningArtifactMetadata map[string]string `json:"ProvisioningArtifactMetadata,omitempty"`
 }
 
@@ -1572,197 +1572,197 @@ type API interface {
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "servicecatalog", SigningName: "servicecatalog", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "servicecatalog", TargetPrefix: "AWS242ServiceCatalogService", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"DuplicateResourceException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidParametersException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "TagOptionNotMigratedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
-		"CreatePortfolio": {Name: "CreatePortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:CreatePortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.CreatePortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreatePortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+	return catalog.Service{Name: "servicecatalog", SigningName: "servicecatalog", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "servicecatalog", TargetPrefix: "AWS242ServiceCatalogService", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1", "rpcv2Cbor"}, Errors: map[string]catalog.ErrorBinding{"DuplicateResourceException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InvalidParametersException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "TagOptionNotMigratedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+		"CreatePortfolio": {Name: "CreatePortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:CreatePortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.CreatePortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/CreatePortfolio", Target: "AWS242ServiceCatalogService.CreatePortfolio", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &CreatePortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*CreatePortfolioInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.CreatePortfolio(ctx, in)
 		}},
-		"DescribePortfolio": {Name: "DescribePortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DescribePortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DescribePortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribePortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DescribePortfolio": {Name: "DescribePortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DescribePortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DescribePortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/DescribePortfolio", Target: "AWS242ServiceCatalogService.DescribePortfolio", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DescribePortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DescribePortfolioInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.DescribePortfolio(ctx, in)
 		}},
-		"ListPortfolios": {Name: "ListPortfolios", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:ListPortfolios", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.ListPortfolios", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListPortfoliosInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListPortfolios": {Name: "ListPortfolios", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:ListPortfolios", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.ListPortfolios", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/ListPortfolios", Target: "AWS242ServiceCatalogService.ListPortfolios", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListPortfoliosInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListPortfoliosInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.ListPortfolios(ctx, in)
 		}},
-		"UpdatePortfolio": {Name: "UpdatePortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:UpdatePortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.UpdatePortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdatePortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UpdatePortfolio": {Name: "UpdatePortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:UpdatePortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.UpdatePortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/UpdatePortfolio", Target: "AWS242ServiceCatalogService.UpdatePortfolio", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &UpdatePortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*UpdatePortfolioInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.UpdatePortfolio(ctx, in)
 		}},
-		"DeletePortfolio": {Name: "DeletePortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DeletePortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DeletePortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeletePortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DeletePortfolio": {Name: "DeletePortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DeletePortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DeletePortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/DeletePortfolio", Target: "AWS242ServiceCatalogService.DeletePortfolio", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DeletePortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DeletePortfolioInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.DeletePortfolio(ctx, in)
 		}},
-		"CreateProduct": {Name: "CreateProduct", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:CreateProduct", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.CreateProduct", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateProductInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"CreateProduct": {Name: "CreateProduct", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:CreateProduct", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.CreateProduct", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/CreateProduct", Target: "AWS242ServiceCatalogService.CreateProduct", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &CreateProductInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*CreateProductInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.CreateProduct(ctx, in)
 		}},
-		"DescribeProduct": {Name: "DescribeProduct", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DescribeProduct", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DescribeProduct", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeProductInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DescribeProduct": {Name: "DescribeProduct", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DescribeProduct", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DescribeProduct", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/DescribeProduct", Target: "AWS242ServiceCatalogService.DescribeProduct", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DescribeProductInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DescribeProductInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.DescribeProduct(ctx, in)
 		}},
-		"DescribeProductAsAdmin": {Name: "DescribeProductAsAdmin", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DescribeProductAsAdmin", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DescribeProductAsAdmin", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeProductAsAdminInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DescribeProductAsAdmin": {Name: "DescribeProductAsAdmin", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DescribeProductAsAdmin", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DescribeProductAsAdmin", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/DescribeProductAsAdmin", Target: "AWS242ServiceCatalogService.DescribeProductAsAdmin", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DescribeProductAsAdminInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DescribeProductAsAdminInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.DescribeProductAsAdmin(ctx, in)
 		}},
-		"SearchProductsAsAdmin": {Name: "SearchProductsAsAdmin", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:SearchProductsAsAdmin", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.SearchProductsAsAdmin", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &SearchProductsAsAdminInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"SearchProductsAsAdmin": {Name: "SearchProductsAsAdmin", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:SearchProductsAsAdmin", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.SearchProductsAsAdmin", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/SearchProductsAsAdmin", Target: "AWS242ServiceCatalogService.SearchProductsAsAdmin", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &SearchProductsAsAdminInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*SearchProductsAsAdminInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.SearchProductsAsAdmin(ctx, in)
 		}},
-		"SearchProducts": {Name: "SearchProducts", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:SearchProducts", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.SearchProducts", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &SearchProductsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"SearchProducts": {Name: "SearchProducts", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:SearchProducts", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.SearchProducts", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/SearchProducts", Target: "AWS242ServiceCatalogService.SearchProducts", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &SearchProductsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*SearchProductsInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.SearchProducts(ctx, in)
 		}},
-		"UpdateProduct": {Name: "UpdateProduct", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:UpdateProduct", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.UpdateProduct", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateProductInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UpdateProduct": {Name: "UpdateProduct", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:UpdateProduct", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.UpdateProduct", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/UpdateProduct", Target: "AWS242ServiceCatalogService.UpdateProduct", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &UpdateProductInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*UpdateProductInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.UpdateProduct(ctx, in)
 		}},
-		"DeleteProduct": {Name: "DeleteProduct", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DeleteProduct", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DeleteProduct", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteProductInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DeleteProduct": {Name: "DeleteProduct", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DeleteProduct", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DeleteProduct", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/DeleteProduct", Target: "AWS242ServiceCatalogService.DeleteProduct", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DeleteProductInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DeleteProductInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.DeleteProduct(ctx, in)
 		}},
-		"CreateProvisioningArtifact": {Name: "CreateProvisioningArtifact", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:CreateProvisioningArtifact", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.CreateProvisioningArtifact", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateProvisioningArtifactInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"CreateProvisioningArtifact": {Name: "CreateProvisioningArtifact", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:CreateProvisioningArtifact", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.CreateProvisioningArtifact", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/CreateProvisioningArtifact", Target: "AWS242ServiceCatalogService.CreateProvisioningArtifact", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &CreateProvisioningArtifactInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*CreateProvisioningArtifactInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.CreateProvisioningArtifact(ctx, in)
 		}},
-		"DescribeProvisioningArtifact": {Name: "DescribeProvisioningArtifact", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DescribeProvisioningArtifact", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DescribeProvisioningArtifact", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeProvisioningArtifactInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DescribeProvisioningArtifact": {Name: "DescribeProvisioningArtifact", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DescribeProvisioningArtifact", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DescribeProvisioningArtifact", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/DescribeProvisioningArtifact", Target: "AWS242ServiceCatalogService.DescribeProvisioningArtifact", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DescribeProvisioningArtifactInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DescribeProvisioningArtifactInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.DescribeProvisioningArtifact(ctx, in)
 		}},
-		"ListProvisioningArtifacts": {Name: "ListProvisioningArtifacts", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:ListProvisioningArtifacts", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.ListProvisioningArtifacts", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListProvisioningArtifactsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListProvisioningArtifacts": {Name: "ListProvisioningArtifacts", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:ListProvisioningArtifacts", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.ListProvisioningArtifacts", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/ListProvisioningArtifacts", Target: "AWS242ServiceCatalogService.ListProvisioningArtifacts", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListProvisioningArtifactsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListProvisioningArtifactsInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.ListProvisioningArtifacts(ctx, in)
 		}},
-		"UpdateProvisioningArtifact": {Name: "UpdateProvisioningArtifact", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:UpdateProvisioningArtifact", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.UpdateProvisioningArtifact", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateProvisioningArtifactInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UpdateProvisioningArtifact": {Name: "UpdateProvisioningArtifact", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:UpdateProvisioningArtifact", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.UpdateProvisioningArtifact", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/UpdateProvisioningArtifact", Target: "AWS242ServiceCatalogService.UpdateProvisioningArtifact", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &UpdateProvisioningArtifactInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*UpdateProvisioningArtifactInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.UpdateProvisioningArtifact(ctx, in)
 		}},
-		"DeleteProvisioningArtifact": {Name: "DeleteProvisioningArtifact", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DeleteProvisioningArtifact", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DeleteProvisioningArtifact", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteProvisioningArtifactInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DeleteProvisioningArtifact": {Name: "DeleteProvisioningArtifact", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DeleteProvisioningArtifact", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DeleteProvisioningArtifact", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/DeleteProvisioningArtifact", Target: "AWS242ServiceCatalogService.DeleteProvisioningArtifact", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DeleteProvisioningArtifactInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DeleteProvisioningArtifactInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.DeleteProvisioningArtifact(ctx, in)
 		}},
-		"AssociateProductWithPortfolio": {Name: "AssociateProductWithPortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:AssociateProductWithPortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.AssociateProductWithPortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AssociateProductWithPortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"AssociateProductWithPortfolio": {Name: "AssociateProductWithPortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:AssociateProductWithPortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.AssociateProductWithPortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/AssociateProductWithPortfolio", Target: "AWS242ServiceCatalogService.AssociateProductWithPortfolio", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &AssociateProductWithPortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*AssociateProductWithPortfolioInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.AssociateProductWithPortfolio(ctx, in)
 		}},
-		"DisassociateProductFromPortfolio": {Name: "DisassociateProductFromPortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DisassociateProductFromPortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DisassociateProductFromPortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DisassociateProductFromPortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DisassociateProductFromPortfolio": {Name: "DisassociateProductFromPortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DisassociateProductFromPortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DisassociateProductFromPortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/DisassociateProductFromPortfolio", Target: "AWS242ServiceCatalogService.DisassociateProductFromPortfolio", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DisassociateProductFromPortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DisassociateProductFromPortfolioInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.DisassociateProductFromPortfolio(ctx, in)
 		}},
-		"ListPortfoliosForProduct": {Name: "ListPortfoliosForProduct", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:ListPortfoliosForProduct", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.ListPortfoliosForProduct", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListPortfoliosForProductInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListPortfoliosForProduct": {Name: "ListPortfoliosForProduct", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:ListPortfoliosForProduct", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.ListPortfoliosForProduct", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/ListPortfoliosForProduct", Target: "AWS242ServiceCatalogService.ListPortfoliosForProduct", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListPortfoliosForProductInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListPortfoliosForProductInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.ListPortfoliosForProduct(ctx, in)
 		}},
-		"AssociatePrincipalWithPortfolio": {Name: "AssociatePrincipalWithPortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:AssociatePrincipalWithPortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.AssociatePrincipalWithPortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &AssociatePrincipalWithPortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"AssociatePrincipalWithPortfolio": {Name: "AssociatePrincipalWithPortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:AssociatePrincipalWithPortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.AssociatePrincipalWithPortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/AssociatePrincipalWithPortfolio", Target: "AWS242ServiceCatalogService.AssociatePrincipalWithPortfolio", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &AssociatePrincipalWithPortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*AssociatePrincipalWithPortfolioInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.AssociatePrincipalWithPortfolio(ctx, in)
 		}},
-		"DisassociatePrincipalFromPortfolio": {Name: "DisassociatePrincipalFromPortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DisassociatePrincipalFromPortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DisassociatePrincipalFromPortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DisassociatePrincipalFromPortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DisassociatePrincipalFromPortfolio": {Name: "DisassociatePrincipalFromPortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DisassociatePrincipalFromPortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DisassociatePrincipalFromPortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/DisassociatePrincipalFromPortfolio", Target: "AWS242ServiceCatalogService.DisassociatePrincipalFromPortfolio", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DisassociatePrincipalFromPortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DisassociatePrincipalFromPortfolioInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.DisassociatePrincipalFromPortfolio(ctx, in)
 		}},
-		"ListPrincipalsForPortfolio": {Name: "ListPrincipalsForPortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:ListPrincipalsForPortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.ListPrincipalsForPortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListPrincipalsForPortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListPrincipalsForPortfolio": {Name: "ListPrincipalsForPortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:ListPrincipalsForPortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.ListPrincipalsForPortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/ListPrincipalsForPortfolio", Target: "AWS242ServiceCatalogService.ListPrincipalsForPortfolio", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListPrincipalsForPortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListPrincipalsForPortfolioInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.ListPrincipalsForPortfolio(ctx, in)
 		}},
-		"CreateConstraint": {Name: "CreateConstraint", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:CreateConstraint", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.CreateConstraint", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateConstraintInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"CreateConstraint": {Name: "CreateConstraint", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:CreateConstraint", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.CreateConstraint", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/CreateConstraint", Target: "AWS242ServiceCatalogService.CreateConstraint", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &CreateConstraintInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*CreateConstraintInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.CreateConstraint(ctx, in)
 		}},
-		"DescribeConstraint": {Name: "DescribeConstraint", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DescribeConstraint", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DescribeConstraint", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeConstraintInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DescribeConstraint": {Name: "DescribeConstraint", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DescribeConstraint", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DescribeConstraint", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/DescribeConstraint", Target: "AWS242ServiceCatalogService.DescribeConstraint", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DescribeConstraintInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DescribeConstraintInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.DescribeConstraint(ctx, in)
 		}},
-		"ListConstraintsForPortfolio": {Name: "ListConstraintsForPortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:ListConstraintsForPortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.ListConstraintsForPortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListConstraintsForPortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListConstraintsForPortfolio": {Name: "ListConstraintsForPortfolio", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:ListConstraintsForPortfolio", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.ListConstraintsForPortfolio", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/ListConstraintsForPortfolio", Target: "AWS242ServiceCatalogService.ListConstraintsForPortfolio", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListConstraintsForPortfolioInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListConstraintsForPortfolioInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.ListConstraintsForPortfolio(ctx, in)
 		}},
-		"UpdateConstraint": {Name: "UpdateConstraint", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:UpdateConstraint", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.UpdateConstraint", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateConstraintInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UpdateConstraint": {Name: "UpdateConstraint", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:UpdateConstraint", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.UpdateConstraint", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/UpdateConstraint", Target: "AWS242ServiceCatalogService.UpdateConstraint", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &UpdateConstraintInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*UpdateConstraintInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())
 			}
 			return api.UpdateConstraint(ctx, in)
 		}},
-		"DeleteConstraint": {Name: "DeleteConstraint", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DeleteConstraint", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DeleteConstraint", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteConstraintInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DeleteConstraint": {Name: "DeleteConstraint", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "servicecatalog:DeleteConstraint", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWS242ServiceCatalogService.DeleteConstraint", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/AWS242ServiceCatalogService/operation/DeleteConstraint", Target: "AWS242ServiceCatalogService.DeleteConstraint", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DeleteConstraintInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DeleteConstraintInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidParametersException", err.Error())

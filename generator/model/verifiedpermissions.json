@@ -213,123 +213,6 @@
                     }
                 },
                 "smithy.api#documentation": "<p>Retrieves information about a group (batch) of policies.</p> <note> <p>The <code>BatchGetPolicy</code> operation doesn't have its own IAM permission. To authorize this operation for Amazon Web Services principals, include the permission <code>verifiedpermissions:GetPolicy</code> in their IAM policies.</p> </note>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To retrieve details about a policy",
-                        "documentation": "The following example retrieves information about the specified policy contained in the specified policy store. In this example, the requested policy is a template-linked policy, so it returns the ID of the policy template, and the specific principal and resource used by this policy.",
-                        "input": {
-                            "requests": [
-                                {
-                                    "policyId": "PWv5M6d5HePx3gVVLKY1nK",
-                                    "policyStoreId": "ERZeDpRc34dkYZeb6FZRVC"
-                                },
-                                {
-                                    "policyId": "LzFn6KgLWvv4Mbegus35jn",
-                                    "policyStoreId": "ERZeDpRc34dkYZeb6FZRVC"
-                                },
-                                {
-                                    "policyId": "77gLjer8H5o3mvrnMGrSL5",
-                                    "policyStoreId": "ERZeDpRc34dkYZeb6FZRVC"
-                                }
-                            ]
-                        },
-                        "output": {
-                            "results": [
-                                {
-                                    "policyStoreId": "ERZeDpRc34dkYZeb6FZRVC",
-                                    "policyId": "PWv5M6d5HePx3gVVLKY1nK",
-                                    "policyType": "STATIC",
-                                    "name": "name/example-policy",
-                                    "definition": {
-                                        "static": {
-                                            "description": "Users can manage account resources in any account they own",
-                                            "statement": "permit (principal, action in PhotoFlash::Action::\"ManageAccount\",resource) when { resource in principal.Account };"
-                                        }
-                                    },
-                                    "createdDate": "2024-10-18T18:53:39.258153Z",
-                                    "lastUpdatedDate": "2024-10-18T18:53:39.258153Z"
-                                },
-                                {
-                                    "policyStoreId": "ERZeDpRc34dkYZeb6FZRVC",
-                                    "policyId": "LzFn6KgLWvv4Mbegus35jn",
-                                    "policyType": "STATIC",
-                                    "name": "name/example-policy-2",
-                                    "definition": {
-                                        "static": {
-                                            "description": "User alice can't delete any photos.",
-                                            "statement": "forbid (principal == PhotoFlash::User::\"alice\", action in [PhotoFlash::Action::\"DeletePhoto\"], resource);"
-                                        }
-                                    },
-                                    "createdDate": "2024-10-18T18:57:03.305027Z",
-                                    "lastUpdatedDate": "2024-10-18T18:57:03.305027Z"
-                                },
-                                {
-                                    "policyStoreId": "ERZeDpRc34dkYZeb6FZRVC",
-                                    "policyId": "77gLjer8H5o3mvrnMGrSL5",
-                                    "policyType": "STATIC",
-                                    "definition": {
-                                        "static": {
-                                            "description": "User alice can view and delete photos.",
-                                            "statement": "permit (principal == PhotoFlash::User::\"alice\", action in [PhotoFlash::Action::\"DeletePhoto\", PhotoFlash::Action::\"ViewPhoto\"], resource);"
-                                        }
-                                    },
-                                    "createdDate": "2024-10-18T18:57:48.005343Z",
-                                    "lastUpdatedDate": "2024-10-18T18:57:48.005343Z"
-                                }
-                            ],
-                            "errors": []
-                        }
-                    },
-                    {
-                        "title": "To retrieve policies by name",
-                        "documentation": "The following example retrieves information about policies using their names instead of their IDs.",
-                        "input": {
-                            "requests": [
-                                {
-                                    "policyId": "name/example-policy",
-                                    "policyStoreId": "ERZeDpRc34dkYZeb6FZRVC"
-                                },
-                                {
-                                    "policyId": "name/example-policy-2",
-                                    "policyStoreId": "ERZeDpRc34dkYZeb6FZRVC"
-                                }
-                            ]
-                        },
-                        "output": {
-                            "results": [
-                                {
-                                    "policyStoreId": "ERZeDpRc34dkYZeb6FZRVC",
-                                    "policyId": "PWv5M6d5HePx3gVVLKY1nK",
-                                    "policyType": "STATIC",
-                                    "name": "name/example-policy",
-                                    "definition": {
-                                        "static": {
-                                            "description": "Users can manage account resources in any account they own",
-                                            "statement": "permit (principal, action in PhotoFlash::Action::\"ManageAccount\",resource) when { resource in principal.Account };"
-                                        }
-                                    },
-                                    "createdDate": "2024-10-18T18:53:39.258153Z",
-                                    "lastUpdatedDate": "2024-10-18T18:53:39.258153Z"
-                                },
-                                {
-                                    "policyStoreId": "ERZeDpRc34dkYZeb6FZRVC",
-                                    "policyId": "LzFn6KgLWvv4Mbegus35jn",
-                                    "policyType": "STATIC",
-                                    "name": "name/example-policy-2",
-                                    "definition": {
-                                        "static": {
-                                            "description": "User alice can't delete any photos.",
-                                            "statement": "forbid (principal == PhotoFlash::User::\"alice\", action in [PhotoFlash::Action::\"DeletePhoto\"], resource);"
-                                        }
-                                    },
-                                    "createdDate": "2024-10-18T18:57:03.305027Z",
-                                    "lastUpdatedDate": "2024-10-18T18:57:03.305027Z"
-                                }
-                            ],
-                            "errors": []
-                        }
-                    }
-                ],
                 "smithy.api#readonly": {}
             }
         },
@@ -567,163 +450,6 @@
                     }
                 },
                 "smithy.api#documentation": "<p>Makes a series of decisions about multiple authorization requests for one principal or resource. Each request contains the equivalent content of an <code>IsAuthorized</code> request: principal, action, resource, and context. Either the <code>principal</code> or the <code>resource</code> parameter must be identical across all requests. For example, Verified Permissions won't evaluate a pair of requests where <code>bob</code> views <code>photo1</code> and <code>alice</code> views <code>photo2</code>. Authorization of <code>bob</code> to view <code>photo1</code> and <code>photo2</code>, or <code>bob</code> and <code>alice</code> to view <code>photo1</code>, are valid batches. </p> <p>The request is evaluated against all policies in the specified policy store that match the entities that you declare. The result of the decisions is a series of <code>Allow</code> or <code>Deny</code> responses, along with the IDs of the policies that produced each decision.</p> <p>The <code>entities</code> of a <code>BatchIsAuthorized</code> API request can contain up to 100 principals and up to 100 resources. The <code>requests</code> of a <code>BatchIsAuthorized</code> API request can contain up to 30 requests.</p> <note> <p>The <code>BatchIsAuthorized</code> operation doesn't have its own IAM permission. To authorize this operation for Amazon Web Services principals, include the permission <code>verifiedpermissions:IsAuthorized</code> in their IAM policies.</p> </note>",
-                "smithy.api#examples": [
-                    {
-                        "title": "Batch - Example 1",
-                        "documentation": "The following example requests two authorization decisions for two principals                     of type Usernamed Alice and Annalisa.",
-                        "input": {
-                            "requests": [
-                                {
-                                    "principal": {
-                                        "entityType": "PhotoFlash::User",
-                                        "entityId": "Alice"
-                                    },
-                                    "action": {
-                                        "actionType": "PhotoFlash::Action",
-                                        "actionId": "ViewPhoto"
-                                    },
-                                    "resource": {
-                                        "entityType": "PhotoFlash::Photo",
-                                        "entityId": "VacationPhoto94.jpg"
-                                    }
-                                },
-                                {
-                                    "principal": {
-                                        "entityType": "PhotoFlash::User",
-                                        "entityId": "Annalisa"
-                                    },
-                                    "action": {
-                                        "actionType": "PhotoFlash::Action",
-                                        "actionId": "DeletePhoto"
-                                    },
-                                    "resource": {
-                                        "entityType": "PhotoFlash::Photo",
-                                        "entityId": "VacationPhoto94.jpg"
-                                    }
-                                }
-                            ],
-                            "entities": {
-                                "entityList": [
-                                    {
-                                        "identifier": {
-                                            "entityType": "PhotoFlash::User",
-                                            "entityId": "Alice"
-                                        },
-                                        "attributes": {
-                                            "Account": {
-                                                "entityIdentifier": {
-                                                    "entityType": "PhotoFlash::Account",
-                                                    "entityId": "1234"
-                                                }
-                                            },
-                                            "Email": {
-                                                "string": ""
-                                            }
-                                        },
-                                        "parents": []
-                                    },
-                                    {
-                                        "identifier": {
-                                            "entityType": "PhotoFlash::User",
-                                            "entityId": "Annalisa"
-                                        },
-                                        "attributes": {
-                                            "Account": {
-                                                "entityIdentifier": {
-                                                    "entityType": "PhotoFlash::Account",
-                                                    "entityId": "5678"
-                                                }
-                                            },
-                                            "Email": {
-                                                "string": ""
-                                            }
-                                        },
-                                        "parents": []
-                                    },
-                                    {
-                                        "identifier": {
-                                            "entityType": "PhotoFlash::Photo",
-                                            "entityId": "VacationPhoto94.jpg"
-                                        },
-                                        "attributes": {
-                                            "IsPrivate": {
-                                                "boolean": false
-                                            },
-                                            "Name": {
-                                                "string": ""
-                                            }
-                                        },
-                                        "parents": [
-                                            {
-                                                "entityType": "PhotoFlash::Account",
-                                                "entityId": "1234"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "identifier": {
-                                            "entityType": "PhotoFlash::Account",
-                                            "entityId": "1234"
-                                        },
-                                        "attributes": {
-                                            "Name": {
-                                                "string": ""
-                                            }
-                                        },
-                                        "parents": []
-                                    }
-                                ]
-                            },
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        },
-                        "output": {
-                            "results": [
-                                {
-                                    "request": {
-                                        "principal": {
-                                            "entityType": "PhotoFlash::User",
-                                            "entityId": "alice"
-                                        },
-                                        "action": {
-                                            "actionType": "PhotoFlash::Action",
-                                            "actionId": "ViewPhoto"
-                                        },
-                                        "resource": {
-                                            "entityType": "PhotoFlash::Photo",
-                                            "entityId": "VacationPhoto94.jpg"
-                                        }
-                                    },
-                                    "decision": "ALLOW",
-                                    "determiningPolicies": [
-                                        {
-                                            "policyId": "9wYxMpljbbZQb5fcZHyJhY"
-                                        }
-                                    ],
-                                    "errors": []
-                                },
-                                {
-                                    "request": {
-                                        "principal": {
-                                            "entityType": "PhotoFlash::User",
-                                            "entityId": "annalisa"
-                                        },
-                                        "action": {
-                                            "actionType": "PhotoFlash::Action",
-                                            "actionId": "DeletePhoto"
-                                        },
-                                        "resource": {
-                                            "entityType": "PhotoFlash::Photo",
-                                            "entityId": "VacationPhoto94.jpg"
-                                        }
-                                    },
-                                    "decision": "DENY",
-                                    "determiningPolicies": [],
-                                    "errors": []
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#readonly": {}
             }
         },
@@ -880,137 +606,6 @@
                     }
                 },
                 "smithy.api#documentation": "<p>Makes a series of decisions about multiple authorization requests for one token. The principal in this request comes from an external identity source in the form of an identity or access token, formatted as a <a href=\"https://wikipedia.org/wiki/JSON_Web_Token\">JSON web token (JWT)</a>. The information in the parameters can also define additional context that Verified Permissions can include in the evaluations.</p> <p>The request is evaluated against all policies in the specified policy store that match the entities that you provide in the entities declaration and in the token. The result of the decisions is a series of <code>Allow</code> or <code>Deny</code> responses, along with the IDs of the policies that produced each decision.</p> <p>The <code>entities</code> of a <code>BatchIsAuthorizedWithToken</code> API request can contain up to 100 resources and up to 99 user groups. The <code>requests</code> of a <code>BatchIsAuthorizedWithToken</code> API request can contain up to 30 requests.</p> <note> <p>The <code>BatchIsAuthorizedWithToken</code> operation doesn't have its own IAM permission. To authorize this operation for Amazon Web Services principals, include the permission <code>verifiedpermissions:IsAuthorizedWithToken</code> in their IAM policies.</p> </note>",
-                "smithy.api#examples": [
-                    {
-                        "title": "Batch - Example 1",
-                        "documentation": "The following example requests three authorization decisions for two resources                     and two actions in different photo albums.",
-                        "input": {
-                            "identityToken": "eyJra12345EXAMPLE",
-                            "requests": [
-                                {
-                                    "action": {
-                                        "actionType": "PhotoFlash::Action",
-                                        "actionId": "ViewPhoto"
-                                    },
-                                    "resource": {
-                                        "entityType": "PhotoFlash::Photo",
-                                        "entityId": "VacationPhoto94.jpg"
-                                    }
-                                },
-                                {
-                                    "action": {
-                                        "actionType": "PhotoFlash::Action",
-                                        "actionId": "SharePhoto"
-                                    },
-                                    "resource": {
-                                        "entityType": "PhotoFlash::Photo",
-                                        "entityId": "VacationPhoto94.jpg"
-                                    }
-                                },
-                                {
-                                    "action": {
-                                        "actionType": "PhotoFlash::Action",
-                                        "actionId": "ViewPhoto"
-                                    },
-                                    "resource": {
-                                        "entityType": "PhotoFlash::Photo",
-                                        "entityId": "OfficePhoto94.jpg"
-                                    }
-                                }
-                            ],
-                            "entities": {
-                                "entityList": [
-                                    {
-                                        "identifier": {
-                                            "entityType": "PhotoFlash::Photo",
-                                            "entityId": "VacationPhoto94.jpg"
-                                        },
-                                        "parents": [
-                                            {
-                                                "entityType": "PhotoFlash::Album",
-                                                "entityId": "MyExampleAlbum1"
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        "identifier": {
-                                            "entityType": "PhotoFlash::Photo",
-                                            "entityId": "OfficePhoto94.jpg"
-                                        },
-                                        "parents": [
-                                            {
-                                                "entityType": "PhotoFlash::Album",
-                                                "entityId": "MyExampleAlbum2"
-                                            }
-                                        ]
-                                    }
-                                ]
-                            },
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        },
-                        "output": {
-                            "principal": {
-                                "entityType": "PhotoFlash::User",
-                                "entityId": "us-east-1_EXAMPLE|a1b2c3d4-5678-90ab-cdef-EXAMPLE11111"
-                            },
-                            "results": [
-                                {
-                                    "request": {
-                                        "action": {
-                                            "actionType": "PhotoFlash::Action",
-                                            "actionId": "ViewPhoto"
-                                        },
-                                        "resource": {
-                                            "entityType": "PhotoFlash::Photo",
-                                            "entityId": "VacationPhoto94.jpg"
-                                        }
-                                    },
-                                    "decision": "ALLOW",
-                                    "determiningPolicies": [
-                                        {
-                                            "policyId": "9wYixMplbbZQb5fcZHyJhY"
-                                        }
-                                    ],
-                                    "errors": []
-                                },
-                                {
-                                    "request": {
-                                        "action": {
-                                            "actionType": "PhotoFlash::Action",
-                                            "actionId": "SharePhoto"
-                                        },
-                                        "resource": {
-                                            "entityType": "PhotoFlash::Photo",
-                                            "entityId": "VacationPhoto94.jpg"
-                                        }
-                                    },
-                                    "decision": "ALLOW",
-                                    "determiningPolicies": [
-                                        {
-                                            "policyId": "9wYixMplbbZQb5fcZHyJhY"
-                                        }
-                                    ],
-                                    "errors": []
-                                },
-                                {
-                                    "request": {
-                                        "action": {
-                                            "actionType": "PhotoFlash::Action",
-                                            "actionId": "ViewPhoto"
-                                        },
-                                        "resource": {
-                                            "entityType": "PhotoFlash::Photo",
-                                            "entityId": "OfficePhoto94.jpg"
-                                        }
-                                    },
-                                    "decision": "DENY",
-                                    "determiningPolicies": [],
-                                    "errors": []
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#readonly": {}
             }
         },
@@ -1577,31 +1172,6 @@
                     "documentation": "Grants permission to create a reference to an external identity provider (IdP) that is compatible with OpenID Connect (OIDC) authentication protocol, such as Amazon Cognito"
                 },
                 "smithy.api#documentation": "<p>Adds an identity source to a policy store–an Amazon Cognito user pool or OpenID Connect (OIDC) identity provider (IdP). </p> <p>After you create an identity source, you can use the identities provided by the IdP as proxies for the principal in authorization queries that use the <a href=\"https://docs.aws.amazon.com/verifiedpermissions/latest/apireference/API_IsAuthorizedWithToken.html\">IsAuthorizedWithToken</a> or <a href=\"https://docs.aws.amazon.com/verifiedpermissions/latest/apireference/API_BatchIsAuthorizedWithToken.html\">BatchIsAuthorizedWithToken</a> API operations. These identities take the form of tokens that contain claims about the user, such as IDs, attributes and group memberships. Identity sources provide identity (ID) tokens and access tokens. Verified Permissions derives information about your user and session from token claims. Access tokens provide action <code>context</code> to your policies, and ID tokens provide principal <code>Attributes</code>.</p> <important> <p>Tokens from an identity source user continue to be usable until they expire. Token revocation and resource deletion have no effect on the validity of a token in your policy store</p> </important> <note> <p>To reference a user from this identity source in your Cedar policies, refer to the following syntax examples.</p> <ul> <li> <p>Amazon Cognito user pool: <code>Namespace::[Entity type]::[User pool ID]|[user principal attribute]</code>, for example <code>MyCorp::User::us-east-1_EXAMPLE|a1b2c3d4-5678-90ab-cdef-EXAMPLE11111</code>.</p> </li> <li> <p>OpenID Connect (OIDC) provider: <code>Namespace::[Entity type]::[entityIdPrefix]|[user principal attribute]</code>, for example <code>MyCorp::User::MyOIDCProvider|a1b2c3d4-5678-90ab-cdef-EXAMPLE22222</code>.</p> </li> </ul> </note> <note> <p>Verified Permissions is <i> <a href=\"https://wikipedia.org/wiki/Eventual_consistency\">eventually consistent</a> </i>. It can take a few seconds for a new or changed element to propagate through the service and be visible in the results of other Verified Permissions operations.</p> </note>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To create an identity source",
-                        "documentation": "The following ``create-identity-source`` example creates an identity source that lets you reference identities stored in the specified Amazon Cognito user pool. Those identities are available in Verified Permissions as entities of type ``User``. ",
-                        "input": {
-                            "configuration": {
-                                "cognitoUserPoolConfiguration": {
-                                    "userPoolArn": "arn:aws:cognito-idp:us-east-1:123456789012:userpool/us-east-1_1a2b3c4d5",
-                                    "clientIds": [
-                                        "a1b2c3d4e5f6g7h8i9j0kalbmc"
-                                    ]
-                                }
-                            },
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "principalEntityType": "User",
-                            "clientToken": "a1b2c3d4-e5f6-a1b2-c3d4-TOKEN1111111"
-                        },
-                        "output": {
-                            "createdDate": "2024-08-12T18:20:50.99Z",
-                            "identitySourceId": "ISEXAMPLEabcdefg111111",
-                            "lastUpdatedDate": "2024-08-12T18:20:50.99Z",
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        }
-                    }
-                ],
                 "smithy.api#idempotent": {}
             }
         },
@@ -1706,71 +1276,6 @@
                     }
                 },
                 "smithy.api#documentation": "<p>Creates a Cedar policy and saves it in the specified policy store. You can create either a static policy or a policy linked to a policy template.</p> <ul> <li> <p>To create a static policy, provide the Cedar policy text in the <code>StaticPolicy</code> section of the <code>PolicyDefinition</code>.</p> </li> <li> <p>To create a policy that is dynamically linked to a policy template, specify the policy template ID and the principal and resource to associate with this policy in the <code>templateLinked</code> section of the <code>PolicyDefinition</code>. If the policy template is ever updated, any policies linked to the policy template automatically use the updated template.</p> </li> </ul> <note> <p>Creating a policy causes it to be validated against the schema in the policy store. If the policy doesn't pass validation, the operation fails and the policy isn't stored.</p> </note> <note> <p>Verified Permissions is <i> <a href=\"https://wikipedia.org/wiki/Eventual_consistency\">eventually consistent</a> </i>. It can take a few seconds for a new or changed element to propagate through the service and be visible in the results of other Verified Permissions operations.</p> </note>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To create a static policy",
-                        "documentation": "The following example request creates a static policy with a policy scope that specifies both a principal and a resource. The response includes both the Principal and Resource elements because both were specified in the request policy scope.",
-                        "input": {
-                            "definition": {
-                                "static": {
-                                    "description": "Grant members of janeFriends UserGroup access to the vacationFolder Album",
-                                    "statement": "permit( principal in UserGroup::\"janeFriends\", action, resource in Album::\"vacationFolder\" );"
-                                }
-                            },
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "clientToken": "a1b2c3d4-e5f6-a1b2-c3d4-TOKEN1111111",
-                            "name": "name/example-policy"
-                        },
-                        "output": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "policyId": "9wYxMpljbbZQb5fcZHyJhY",
-                            "createdDate": "2024-08-12T18:20:50.99Z",
-                            "lastUpdatedDate": "2024-08-12T18:20:50.99Z",
-                            "policyType": "STATIC",
-                            "principal": {
-                                "entityId": "janeFriends",
-                                "entityType": "UserGroup"
-                            },
-                            "resource": {
-                                "entityId": "vacationFolder",
-                                "entityType": "Album"
-                            }
-                        }
-                    },
-                    {
-                        "title": "To create a template-linked policy",
-                        "documentation": "The following example creates a template-linked policy using the specified policy template and associates the specified principal to use with the new template-linked policy.",
-                        "input": {
-                            "definition": {
-                                "templateLinked": {
-                                    "policyTemplateId": "PTEXAMPLEabcdefg111111",
-                                    "principal": {
-                                        "entityType": "User",
-                                        "entityId": "alice"
-                                    }
-                                }
-                            },
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "clientToken": "a1b2c3d4-e5f6-a1b2-c3d4-TOKEN1111111",
-                            "name": "name/example-template-linked-policy"
-                        },
-                        "output": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "policyId": "Et9KxMplyaDdyurDw8TeFa",
-                            "policyType": "TEMPLATE_LINKED",
-                            "principal": {
-                                "entityType": "User",
-                                "entityId": "alice"
-                            },
-                            "resource": {
-                                "entityType": "Photo",
-                                "entityId": "VacationPhoto94.jpg"
-                            },
-                            "createdDate": "2024-08-12T18:20:50.99Z",
-                            "lastUpdatedDate": "2024-08-12T18:20:50.99Z"
-                        }
-                    }
-                ],
                 "smithy.api#idempotent": {}
             }
         },
@@ -1900,48 +1405,6 @@
                     "documentation": "Grants permission to create a Cedar policy and save it in the specified policy store"
                 },
                 "smithy.api#documentation": "<p>Creates a policy store. A policy store is a container for policy resources.</p> <note> <p>As of May 2026, Verified Permissions has aligned with Cedar and now supports multiple namespaces.</p> </note> <note> <p>Verified Permissions is <i> <a href=\"https://wikipedia.org/wiki/Eventual_consistency\">eventually consistent</a> </i>. It can take a few seconds for a new or changed element to propagate through the service and be visible in the results of other Verified Permissions operations.</p> </note>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To create policy store",
-                        "documentation": "The following example creates a new policy store with strict validation turned on.",
-                        "input": {
-                            "validationSettings": {
-                                "mode": "STRICT"
-                            },
-                            "clientToken": "a1b2c3d4-e5f6-a1b2-c3d4-TOKEN1111111"
-                        },
-                        "output": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "arn": "arn:aws:verifiedpermissions::123456789012:policy-store/C7v5xMplfFH3i3e4Jrzb1a",
-                            "createdDate": "2024-08-12T18:20:50.99Z",
-                            "lastUpdatedDate": "2024-08-12T18:20:50.99Z"
-                        }
-                    },
-                    {
-                        "title": "To create an encrypted policy store",
-                        "documentation": "The following example creates a new policy store with encryption settings based on a provided KMS key.",
-                        "input": {
-                            "validationSettings": {
-                                "mode": "STRICT"
-                            },
-                            "encryptionSettings": {
-                                "kmsEncryptionSettings": {
-                                    "key": "arn:aws:kms:us-east-1:123456789012:key/abcdefgh-ijkl-mnop-qrst-uvwxyz123456",
-                                    "encryptionContext": {
-                                        "policy_store_owner": "Tim"
-                                    }
-                                }
-                            },
-                            "clientToken": "a1b2c3d4-e5f6-a1b2-c3d4-TOKEN1111111"
-                        },
-                        "output": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "arn": "arn:aws:verifiedpermissions::123456789012:policy-store/C7v5xMplfFH3i3e4Jrzb1a",
-                            "createdDate": "2024-08-12T18:20:50.99Z",
-                            "lastUpdatedDate": "2024-08-12T18:20:50.99Z"
-                        }
-                    }
-                ],
                 "smithy.api#idempotent": {}
             }
         },
@@ -1969,22 +1432,6 @@
                     "documentation": "Grants permission to create an alias against a policy store"
                 },
                 "smithy.api#documentation": "<p>Creates a policy store alias for the specified policy store. A policy store alias is an alternative identifier that you can use to reference a policy store in API operations.</p> <p>This operation is idempotent. If multiple CreatePolicyStoreAlias requests are made where the <code>aliasName</code> and <code>policyStoreId</code> fields are the same between the requests, subsequent requests will be ignored. For each duplicate CreatePolicyStoreAlias request, a Success response will be returned and a new policy store alias will not be created.</p> <note> <p>Verified Permissions is <i> <a href=\"https://wikipedia.org/wiki/Eventual_consistency\">eventually consistent</a> </i>. It can take a few seconds for a new or changed element to propagate through the service and be visible in the results of other Verified Permissions operations.</p> </note>",
-                "smithy.api#examples": [
-                    {
-                        "title": "CreatePolicyStoreAlias",
-                        "documentation": "The following example creates a new policy store alias.",
-                        "input": {
-                            "aliasName": "policy-store-alias/example-policy-store",
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        },
-                        "output": {
-                            "aliasName": "policy-store-alias/example-policy-store",
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "aliasArn": "arn:aws:verifiedpermissions:us-east-1:123456789012:policy-store-alias/example-policy-store",
-                            "createdAt": "2024-01-15T12:30:00.52Z"
-                        }
-                    }
-                ],
                 "smithy.api#idempotent": {},
                 "smithy.api#tags": [
                     "exposeToTSClient"
@@ -2160,25 +1607,6 @@
                     "documentation": "Grants permission to create a policy template"
                 },
                 "smithy.api#documentation": "<p>Creates a policy template. A template can use placeholders for the principal and resource. A template must be instantiated into a policy by associating it with specific principals and resources to use for the placeholders. That instantiated policy can then be considered in authorization decisions. The instantiated policy works identically to any other policy, except that it is dynamically linked to the template. If the template changes, then any policies that are linked to that template are immediately updated as well.</p> <note> <p>Verified Permissions is <i> <a href=\"https://wikipedia.org/wiki/Eventual_consistency\">eventually consistent</a> </i>. It can take a few seconds for a new or changed element to propagate through the service and be visible in the results of other Verified Permissions operations.</p> </note>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To create a policy template",
-                        "documentation": "The following example creates a policy template that has a placeholder for the principal.",
-                        "input": {
-                            "description": "Template for research dept",
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "statement": "\"AccessVacation\"\npermit(\n    principal in ?principal,\n    action == Action::\"view\",\n    resource == Photo::\"VacationPhoto94.jpg\"\n)\nwhen {\n    principal has department && principal.department == \"research\"\n};",
-                            "clientToken": "a1b2c3d4-e5f6-a1b2-c3d4-TOKEN1111111",
-                            "name": "name/example-policy-template"
-                        },
-                        "output": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "policyTemplateId": "PTEXAMPLEabcdefg111111",
-                            "createdDate": "2024-08-12T18:20:50.99Z",
-                            "lastUpdatedDate": "2024-08-12T18:20:50.99Z"
-                        }
-                    }
-                ],
                 "smithy.api#idempotent": {}
             }
         },
@@ -2322,17 +1750,6 @@
                     "documentation": "Grants permission to delete an identity source that references an identity provider (IdP) such as Amazon Cognito"
                 },
                 "smithy.api#documentation": "<p>Deletes an identity source that references an identity provider (IdP) such as Amazon Cognito. After you delete the identity source, you can no longer use tokens for identities from that identity source to represent principals in authorization queries made using <a href=\"https://docs.aws.amazon.com/verifiedpermissions/latest/apireference/API_IsAuthorizedWithToken.html\">IsAuthorizedWithToken</a>. operations.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To delete an identity source",
-                        "documentation": "The following example request deletes the specified identity source.",
-                        "input": {
-                            "identitySourceId": "ISEXAMPLEabcdefg111111",
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        },
-                        "output": {}
-                    }
-                ],
                 "smithy.api#idempotent": {}
             }
         },
@@ -2386,17 +1803,6 @@
                     "documentation": "Grants permission to delete the specified policy from the policy store"
                 },
                 "smithy.api#documentation": "<p>Deletes the specified policy from the policy store.</p> <p>This operation is idempotent; if you specify a policy that doesn't exist, the request response returns a successful <code>HTTP 200</code> status code.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To delete a policy",
-                        "documentation": "The following example deletes the specified policy from its policy store.",
-                        "input": {
-                            "policyId": "9wYxMpljbbZQb5fcZHyJhY",
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        },
-                        "output": {}
-                    }
-                ],
                 "smithy.api#idempotent": {}
             }
         },
@@ -2447,16 +1853,6 @@
                     "documentation": "Grants permission to delete the specified policy store"
                 },
                 "smithy.api#documentation": "<p>Deletes the specified policy store.</p> <p>This operation is idempotent. If you specify a policy store that does not exist, the request response will still return a successful HTTP 200 status code.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To delete a policy store",
-                        "documentation": "The following example deletes the specified policy store.",
-                        "input": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        },
-                        "output": {}
-                    }
-                ],
                 "smithy.api#idempotent": {}
             }
         },
@@ -2478,25 +1874,6 @@
                     "documentation": "Grants permission to delete an alias for a policy store"
                 },
                 "smithy.api#documentation": "<p>Deletes the specified policy store alias.</p> <p>This operation is idempotent. If you specify a policy store alias that does not exist, the request response will still return a successful HTTP 200 status code.</p> <p>By default, when a policy store alias is deleted, it enters the <code>PendingDeletion</code> state. When a policy store alias is in the <code>PendingDeletion</code> state, new policy store aliases cannot be created with the same name. If the policy store alias is used in an API that has a <code>policyStoreId</code> field, the operation will fail with a <code>ResourceNotFound</code> exception.</p> <p>To immediately delete a policy store alias and bypass the <code>PendingDeletion</code> state, set the <code>deletionMode</code> parameter to <code>HardDelete</code>.</p> <important> <p>Verified Permissions is eventually consistent. If you hard delete a policy store alias and then immediately recreate it to be associated with a different policy store, requests that reference this alias may continue to be evaluated against the previously associated policy store for a short period of time.</p> </important>",
-                "smithy.api#examples": [
-                    {
-                        "title": "Soft delete a policy store alias",
-                        "documentation": "The following example soft deletes the policy store alias with name example-policy-store. The alias enters the PendingDeletion state.",
-                        "input": {
-                            "aliasName": "policy-store-alias/example-policy-store"
-                        },
-                        "output": {}
-                    },
-                    {
-                        "title": "Hard delete a policy store alias",
-                        "documentation": "The following example hard deletes the policy store alias with name example-policy-store. The alias is immediately deleted, bypassing the PendingDeletion state.",
-                        "input": {
-                            "aliasName": "policy-store-alias/example-policy-store",
-                            "deletionMode": "HardDelete"
-                        },
-                        "output": {}
-                    }
-                ],
                 "smithy.api#idempotent": {},
                 "smithy.api#tags": [
                     "exposeToTSClient"
@@ -2574,17 +1951,6 @@
                     "documentation": "Grants permission to delete the specified policy template from the policy store"
                 },
                 "smithy.api#documentation": "<p>Deletes the specified policy template from the policy store.</p> <important> <p>This operation also deletes any policies that were created from the specified policy template. Those policies are immediately removed from all future API responses, and are asynchronously deleted from the policy store.</p> </important>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To delete a policy template",
-                        "documentation": "The following example deletes a policy template. Before you can perform this operation, you must first delete any template-linked policies that were instantiated from this policy template. To delete them, use DeletePolicy.",
-                        "input": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "policyTemplateId": "PTEXAMPLEabcdefg111111"
-                        },
-                        "output": {}
-                    }
-                ],
                 "smithy.api#idempotent": {}
             }
         },
@@ -2964,31 +2330,6 @@
                     "documentation": "Grants permission to retrieve the details about the specified identity source"
                 },
                 "smithy.api#documentation": "<p>Retrieves the details about the specified identity source.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To retrieve details about an identity source",
-                        "documentation": "The following example retrieves the details for the specified identity source.",
-                        "input": {
-                            "identitySourceId": "ISEXAMPLEabcdefg111111",
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        },
-                        "output": {
-                            "createdDate": "2024-08-12T18:20:50.99Z",
-                            "details": {
-                                "clientIds": [
-                                    "a1b2c3d4e5f6g7h8i9j0kalbmc"
-                                ],
-                                "userPoolArn": "arn:aws:cognito-idp:us-east-1:123456789012:userpool/us-east-1_1a2b3c4d5",
-                                "discoveryUrl": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_1a2b3c4d5",
-                                "openIdIssuer": "COGNITO"
-                            },
-                            "identitySourceId": "ISEXAMPLEabcdefg111111",
-                            "lastUpdatedDate": "2024-08-12T18:20:50.99Z",
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "principalEntityType": "AWS::Cognito"
-                        }
-                    }
-                ],
                 "smithy.api#readonly": {}
             }
         },
@@ -3100,59 +2441,6 @@
                     }
                 },
                 "smithy.api#documentation": "<p>Retrieves information about the specified policy.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To retrieve details about a policy",
-                        "documentation": "The following example retrieves information about the specified policy contained in the specified policy store. In this example, the requested policy is a template-linked policy, so it returns the ID of the policy template, and the specific principal and resource used by this policy.",
-                        "input": {
-                            "policyId": "9wYixMplbbZQb5fcZHyJhY",
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        },
-                        "output": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "policyId": "9wYxMpljbbZQb5fcZHyJhY",
-                            "policyType": "STATIC",
-                            "resource": {
-                                "entityId": "publicFolder",
-                                "entityType": "Album"
-                            },
-                            "definition": {
-                                "static": {
-                                    "description": "Grant everyone of janeFriends UserGroup access to the vacationFolder Album",
-                                    "statement": "permit(principal, action, resource in Album::\"publicFolder\");"
-                                }
-                            },
-                            "createdDate": "2024-08-12T18:20:50.99Z",
-                            "lastUpdatedDate": "2024-08-12T18:20:50.99Z"
-                        }
-                    },
-                    {
-                        "title": "To retrieve a policy by name",
-                        "documentation": "The following example retrieves information about a policy using its name instead of its ID.",
-                        "input": {
-                            "policyId": "name/example-policy",
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        },
-                        "output": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "policyId": "9wYxMpljbbZQb5fcZHyJhY",
-                            "policyType": "STATIC",
-                            "name": "name/example-policy",
-                            "resource": {
-                                "entityId": "publicFolder",
-                                "entityType": "Album"
-                            },
-                            "definition": {
-                                "static": {
-                                    "description": "Grant everyone of janeFriends UserGroup access to the vacationFolder Album",
-                                    "statement": "permit(principal, action, resource in Album::\"publicFolder\");"
-                                }
-                            },
-                            "createdDate": "2024-08-12T18:20:50.99Z",
-                            "lastUpdatedDate": "2024-08-12T18:20:50.99Z"
-                        }
-                    }
-                ],
                 "smithy.api#readonly": {}
             }
         },
@@ -3286,51 +2574,6 @@
                     "documentation": "Grants permission to retrieve details about a policy store"
                 },
                 "smithy.api#documentation": "<p>Retrieves details about a policy store.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "GetPolicyStore",
-                        "documentation": "The following example retrieves details about the specified policy store.",
-                        "input": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        },
-                        "output": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "arn": "arn:aws:verifiedpermissions::123456789012:policy-store/C7v5xMplfFH3i3e4Jrzb1a",
-                            "validationSettings": {
-                                "mode": "STRICT"
-                            },
-                            "createdDate": "2024-08-12T18:20:50.99Z",
-                            "lastUpdatedDate": "2024-08-12T18:20:50.99Z",
-                            "encryptionState": {
-                                "default": {}
-                            }
-                        }
-                    },
-                    {
-                        "title": "GetPolicyStore that is encrypted",
-                        "documentation": "The following example retrieves details about the specified encrypted policy store.",
-                        "input": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        },
-                        "output": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "arn": "arn:aws:verifiedpermissions::123456789012:policy-store/C7v5xMplfFH3i3e4Jrzb1a",
-                            "validationSettings": {
-                                "mode": "STRICT"
-                            },
-                            "createdDate": "2024-08-12T18:20:50.99Z",
-                            "lastUpdatedDate": "2024-08-12T18:20:50.99Z",
-                            "encryptionState": {
-                                "kmsEncryptionState": {
-                                    "key": "arn:aws:kms:us-east-1:123456789012:key/abcdefgh-ijkl-mnop-qrst-uvwxyz123456",
-                                    "encryptionContext": {
-                                        "policy_store_owner": "Tim"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                ],
                 "smithy.api#readonly": {}
             }
         },
@@ -3352,22 +2595,6 @@
                     "documentation": "Grants permission to retrieve details about an alias for a policy store"
                 },
                 "smithy.api#documentation": "<p>Retrieves details about the specified policy store alias.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "GetPolicyStoreAlias",
-                        "documentation": "The following example retrieves details about the policy store alias with name example-policy-store.",
-                        "input": {
-                            "aliasName": "policy-store-alias/example-policy-store"
-                        },
-                        "output": {
-                            "aliasName": "policy-store-alias/example-policy-store",
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "aliasArn": "arn:aws:verifiedpermissions:us-east-1:123456789012:policy-store-alias/example-policy-store",
-                            "createdAt": "2024-01-15T12:30:00.52Z",
-                            "state": "Active"
-                        }
-                    }
-                ],
                 "smithy.api#readonly": {},
                 "smithy.api#tags": [
                     "exposeToTSClient"
@@ -3547,41 +2774,6 @@
                     "documentation": "Grants permission to retrieve the details for the specified policy template in the specified policy store"
                 },
                 "smithy.api#documentation": "<p>Retrieve the details for the specified policy template in the specified policy store.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "GetPolicyTemplate",
-                        "documentation": "The following example displays the details of the specified policy template.",
-                        "input": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "policyTemplateId": "PTEXAMPLEabcdefg111111"
-                        },
-                        "output": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "policyTemplateId": "PTEXAMPLEabcdefg111111",
-                            "description": "Template for research dept",
-                            "statement": "permit(\n  principal ?principal,\n  action == Action::\"view\",\n  resource in ?resource\n) when {\n  principal has department && principal.department == \"research\" \n};",
-                            "createdDate": "2024-08-12T18:20:50.99Z",
-                            "lastUpdatedDate": "2024-08-12T18:20:50.99Z"
-                        }
-                    },
-                    {
-                        "title": "To retrieve a policy template by name",
-                        "documentation": "The following example retrieves the details of a policy template using its name instead of its ID.",
-                        "input": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "policyTemplateId": "name/example-policy-template"
-                        },
-                        "output": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "policyTemplateId": "PTEXAMPLEabcdefg111111",
-                            "name": "name/example-policy-template",
-                            "description": "Template for research dept",
-                            "statement": "permit(\n  principal ?principal,\n  action == Action::\"view\",\n  resource in ?resource\n) when {\n  principal has department && principal.department == \"research\" \n};",
-                            "createdDate": "2024-08-12T18:20:50.99Z",
-                            "lastUpdatedDate": "2024-08-12T18:20:50.99Z"
-                        }
-                    }
-                ],
                 "smithy.api#readonly": {}
             }
         },
@@ -3685,21 +2877,6 @@
                     "documentation": "Grants permission to retrieve the details for the specified schema in the specified policy store"
                 },
                 "smithy.api#documentation": "<p>Retrieve the details for the specified schema in the specified policy store.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "GetSchema",
-                        "documentation": "The following example retrieves the current schema stored in the specified policy store.\n\nNote\nThe JSON in the parameters of this operation are strings that can contain embedded quotation marks (\") within the outermost quotation mark pair. This requires that you stringify the JSON object by preceding all embedded quotation marks with a backslash character ( \\\" ) and combining all lines into a single text line with no line breaks.\n\nExample strings might be displayed wrapped across multiple lines here for readability, but the operation requires the parameters be submitted as single line strings.",
-                        "input": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        },
-                        "output": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "schema": "{\n\"My::Application\": {\n\"actions\": {\n\"remoteAccess\": {\n\"appliesTo\": {\n\"principalTypes\":   [\"Employee\"]\n}\n}\n},\n\"entityTypes\":   {\n\"Employee\": {\n\"shape\": {\n\"attributes\": {\n\"jobLevel\": { \"type\": \"Long\" },\n\"name\": { \"type\":\"String\" }\n},\n\"type\": \"Record\"\n}\n}\n}\n}\n  }",
-                            "createdDate": "2024-08-12T18:20:50.99Z",
-                            "lastUpdatedDate": "2024-08-12T18:20:50.99Z"
-                        }
-                    }
-                ],
                 "smithy.api#readonly": {}
             }
         },
@@ -4068,60 +3245,6 @@
                     "documentation": "Grants permission to make authorization decisions about the service requests described in the parameters"
                 },
                 "smithy.api#documentation": "<p>Makes an authorization decision about a service request described in the parameters. The information in the parameters can also define additional context that Verified Permissions can include in the evaluation. The request is evaluated against all matching policies in the specified policy store. The result of the decision is either <code>Allow</code> or <code>Deny</code>, along with a list of the policies that resulted in the decision.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "IsAuthorized - Example 1",
-                        "documentation": "The following example requests an authorization decision for a principal of type User named Alice, who wants to perform the updatePhoto operation, on a resource of type Photo named VacationPhoto94.jpg.\n\nThe response shows that the request was allowed by one policy.",
-                        "input": {
-                            "principal": {
-                                "entityType": "User",
-                                "entityId": "alice"
-                            },
-                            "action": {
-                                "actionType": "Action",
-                                "actionId": "updatePhoto"
-                            },
-                            "resource": {
-                                "entityType": "Photo",
-                                "entityId": "VacationPhoto94.jpg"
-                            },
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        },
-                        "output": {
-                            "decision": "ALLOW",
-                            "determiningPolicies": [
-                                {
-                                    "policyId": "9wYxMpljbbZQb5fcZHyJhY"
-                                }
-                            ],
-                            "errors": []
-                        }
-                    },
-                    {
-                        "title": "IsAuthorized - Example 2",
-                        "documentation": "The following example is the same as the previous example, except that the principal is User::\"bob\", and the policy store doesn't contain any policy that allows that user access to Album::\"alice_folder\". The output infers that the Deny was implicit because the list of DeterminingPolicies is empty.",
-                        "input": {
-                            "principal": {
-                                "entityType": "User",
-                                "entityId": "bob"
-                            },
-                            "action": {
-                                "actionType": "Action",
-                                "actionId": "view"
-                            },
-                            "resource": {
-                                "entityType": "Photo",
-                                "entityId": "VacationPhoto94.jpg"
-                            },
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        },
-                        "output": {
-                            "decision": "DENY",
-                            "determiningPolicies": [],
-                            "errors": []
-                        }
-                    }
-                ],
                 "smithy.api#readonly": {}
             }
         },
@@ -4217,33 +3340,6 @@
                     "documentation": "Grants permission to make authorization decisions about the service requests described in the parameters. The principal in this request comes from an external identity source"
                 },
                 "smithy.api#documentation": "<p>Makes an authorization decision about a service request described in the parameters. The principal in this request comes from an external identity source in the form of an identity token formatted as a <a href=\"https://wikipedia.org/wiki/JSON_Web_Token\">JSON web token (JWT)</a>. The information in the parameters can also define additional context that Verified Permissions can include in the evaluation. The request is evaluated against all matching policies in the specified policy store. The result of the decision is either <code>Allow</code> or <code>Deny</code>, along with a list of the policies that resulted in the decision.</p> <p>Verified Permissions validates each token that is specified in a request by checking its expiration date and its signature.</p> <important> <p>Tokens from an identity source user continue to be usable until they expire. Token revocation and resource deletion have no effect on the validity of a token in your policy store</p> </important>",
-                "smithy.api#examples": [
-                    {
-                        "title": "IsAuthorizedWithToken - Example 1",
-                        "documentation": "The following example requests an authorization decision for a user who was authenticated by Amazon Cognito. The request uses the identity token provided by Amazon Cognito instead of the access token. In this example, the specified information store is configured to return principals as entities of type CognitoUser. The policy store contains a policy with the following statement.\n\npermit(\n    principal == CognitoUser::\"us-east-1_1a2b3c4d5|a1b2c3d4e5f6g7h8i9j0kalbmc\",\n    action,\n    resource == Photo::\"VacationPhoto94.jpg\"\n);",
-                        "input": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "action": {
-                                "actionId": "View",
-                                "actionType": "Action"
-                            },
-                            "resource": {
-                                "entityId": "vacationPhoto94.jpg",
-                                "entityType": "Photo"
-                            },
-                            "identityToken": "EgZjxMPlbWUyBggAEEUYOdIBCDM3NDlqMGo3qAIAsAIA"
-                        },
-                        "output": {
-                            "decision": "ALLOW",
-                            "determiningPolicies": [
-                                {
-                                    "policyId": "9wYxMpljbbZQb5fcZHyJhY"
-                                }
-                            ],
-                            "errors": []
-                        }
-                    }
-                ],
                 "smithy.api#readonly": {}
             }
         },
@@ -4410,34 +3506,6 @@
                     "documentation": "Grants permission to return a paginated list of all of the identity sources defined in the specified policy store"
                 },
                 "smithy.api#documentation": "<p>Returns a paginated list of all of the identity sources defined in the specified policy store.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "ListIdentitySources",
-                        "documentation": "The following example request creates lists the identity sources currently defined in the specified policy store.",
-                        "input": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        },
-                        "output": {
-                            "identitySources": [
-                                {
-                                    "createdDate": "2023-05-19T20:29:23.66812Z",
-                                    "details": {
-                                        "clientIds": [
-                                            "a1b2c3d4e5f6g7h8i9j0kalbmc"
-                                        ],
-                                        "userPoolArn": "arn:aws:cognito-idp:us-east-1:123456789012:userpool/us-east-1_1a2b3c4d5",
-                                        "discoveryUrl": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_1a2b3c4d5",
-                                        "openIdIssuer": "COGNITO"
-                                    },
-                                    "identitySourceId": "ISEXAMPLEabcdefg111111",
-                                    "lastUpdatedDate": "2023-05-19T20:29:23.66812Z",
-                                    "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                                    "principalEntityType": "User"
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#paginated": {
                     "inputToken": "nextToken",
                     "outputToken": "nextToken",
@@ -4527,156 +3595,6 @@
                     "documentation": "Grants permission to return a paginated list of all policies stored in the specified policy store"
                 },
                 "smithy.api#documentation": "<p>Returns a paginated list of all policies stored in the specified policy store.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "ListPolicies - Example 1",
-                        "documentation": "The following example lists all policies in the policy store.",
-                        "input": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        },
-                        "output": {
-                            "policies": [
-                                {
-                                    "createdDate": "2024-08-12T18:20:50.99Z",
-                                    "definition": {
-                                        "static": {
-                                            "description": "Grant members of janeFriends UserGroup access to the vacationFolder Album"
-                                        }
-                                    },
-                                    "lastUpdatedDate": "2024-08-12T18:20:50.99Z",
-                                    "policyId": "9wYxMpljbbZQb5fcZHyJhY",
-                                    "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                                    "policyType": "STATIC",
-                                    "name": "name/example-policy",
-                                    "principal": {
-                                        "entityId": "janeFriends",
-                                        "entityType": "UserGroup"
-                                    },
-                                    "resource": {
-                                        "entityId": "vacationFolder",
-                                        "entityType": "Album"
-                                    }
-                                },
-                                {
-                                    "createdDate": "2024-08-12T18:20:50.99Z",
-                                    "definition": {
-                                        "static": {
-                                            "description": "Grant everyone access to the publicFolder Album"
-                                        }
-                                    },
-                                    "lastUpdatedDate": "2024-08-12T18:20:50.99Z",
-                                    "policyId": "Et9KxMplyaDdyurDw8TeFa",
-                                    "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                                    "policyType": "STATIC",
-                                    "name": "name/example-policy-2",
-                                    "resource": {
-                                        "entityId": "publicFolder",
-                                        "entityType": "Album"
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        "title": "ListPolicies - Example 2",
-                        "documentation": "The following example lists all policies for a specified principal.",
-                        "input": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "filter": {
-                                "principal": {
-                                    "identifier": {
-                                        "entityType": "User",
-                                        "entityId": "alice"
-                                    }
-                                }
-                            }
-                        },
-                        "output": {
-                            "policies": [
-                                {
-                                    "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                                    "policyId": "Et9KxMplyaDdyurDw8TeFa",
-                                    "policyType": "STATIC",
-                                    "principal": {
-                                        "entityType": "User",
-                                        "entityId": "alice"
-                                    },
-                                    "resource": {
-                                        "entityType": "Album",
-                                        "entityId": "bob_folder"
-                                    },
-                                    "definition": {
-                                        "static": {
-                                            "description": "An example policy"
-                                        }
-                                    },
-                                    "createdDate": "2022-12-09T22:55:16.067533Z",
-                                    "lastUpdatedDate": "2022-12-09T22:55:16.067533Z"
-                                },
-                                {
-                                    "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                                    "policyId": "9wYxMpljbbZQb5fcZHyJhY",
-                                    "policyType": "STATIC",
-                                    "principal": {
-                                        "entityType": "User",
-                                        "entityId": "alice"
-                                    },
-                                    "resource": {
-                                        "entityType": "Album",
-                                        "entityId": "alice_folder"
-                                    },
-                                    "definition": {
-                                        "static": {}
-                                    },
-                                    "createdDate": "2022-12-09T23:00:24.66266Z",
-                                    "lastUpdatedDate": "2022-12-09T23:00:24.66266Z"
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        "title": "ListPolicies - Example 3",
-                        "documentation": "The following example uses the Filter parameter to list only the template-linked policies in the specified policy store.",
-                        "input": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "filter": {
-                                "policyType": "TEMPLATE_LINKED"
-                            }
-                        },
-                        "output": {
-                            "policies": [
-                                {
-                                    "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                                    "policyId": "9wYxMpljbbZQb5fcZHyJhY",
-                                    "policyType": "TEMPLATE_LINKED",
-                                    "principal": {
-                                        "entityType": "User",
-                                        "entityId": "alice"
-                                    },
-                                    "resource": {
-                                        "entityType": "Photo",
-                                        "entityId": "pic.jpg"
-                                    },
-                                    "definition": {
-                                        "templateLinked": {
-                                            "policyTemplateId": "PTEXAMPLEabcdefg111111",
-                                            "principal": {
-                                                "entityType": "User",
-                                                "entityId": "alice"
-                                            },
-                                            "resource": {
-                                                "entityType": "Photo",
-                                                "entityId": "pic.jpg"
-                                            }
-                                        }
-                                    },
-                                    "createdDate": "2023-06-13T16:03:07.620867Z",
-                                    "lastUpdatedDate": "2023-06-13T16:03:07.620867Z"
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#paginated": {
                     "inputToken": "nextToken",
                     "outputToken": "nextToken",
@@ -4753,64 +3671,6 @@
                     "documentation": "Grants permission to return a paginated list of all policy store aliases"
                 },
                 "smithy.api#documentation": "<p>Returns a paginated list of all policy store aliases in the calling Amazon Web Services account.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "ListPolicyStoreAliases - Example 1",
-                        "documentation": "The following example lists all policy store aliases in the AWS account in the AWS Region in which you call the operation.",
-                        "output": {
-                            "policyStoreAliases": [
-                                {
-                                    "aliasName": "policy-store-alias/example-policy-store",
-                                    "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                                    "aliasArn": "arn:aws:verifiedpermissions:us-east-1:123456789012:policy-store-alias/example-policy-store",
-                                    "createdAt": "2024-01-15T12:30:00.52Z",
-                                    "state": "Active"
-                                },
-                                {
-                                    "aliasName": "policy-store-alias/example-policy-store-2",
-                                    "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                                    "aliasArn": "arn:aws:verifiedpermissions:us-east-1:123456789012:policy-store-alias/example-policy-store-2",
-                                    "createdAt": "2024-01-16T09:15:00.52Z",
-                                    "state": "Active"
-                                },
-                                {
-                                    "aliasName": "policy-store-alias/example-policy-store-3",
-                                    "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                                    "aliasArn": "arn:aws:verifiedpermissions:us-east-1:123456789012:policy-store-alias/example-policy-store-3",
-                                    "createdAt": "2024-01-17T14:45:00.52Z",
-                                    "state": "Active"
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        "title": "ListPolicyStoreAliases - Example 2",
-                        "documentation": "The following example lists all policy store aliases associated with the policy store with ID C7v5xMplfFH3i3e4Jrzb1a",
-                        "input": {
-                            "filter": {
-                                "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                            }
-                        },
-                        "output": {
-                            "policyStoreAliases": [
-                                {
-                                    "aliasName": "policy-store-alias/example-policy-store",
-                                    "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                                    "aliasArn": "arn:aws:verifiedpermissions:us-east-1:123456789012:policy-store-alias/example-policy-store",
-                                    "createdAt": "2024-01-15T12:30:00.52Z",
-                                    "state": "Active"
-                                },
-                                {
-                                    "aliasName": "policy-store-alias/example-policy-store-2",
-                                    "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                                    "aliasArn": "arn:aws:verifiedpermissions:us-east-1:123456789012:policy-store-alias/example-policy-store-2",
-                                    "createdAt": "2024-01-16T09:15:00.52Z",
-                                    "state": "Active"
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#paginated": {
                     "inputToken": "nextToken",
                     "outputToken": "nextToken",
@@ -4884,26 +3744,6 @@
                     "documentation": "Grants permission to return a paginated list of all policy stores in the calling Amazon Web Services account"
                 },
                 "smithy.api#documentation": "<p>Returns a paginated list of all policy stores in the calling Amazon Web Services account.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "ListPolicyStores",
-                        "documentation": "The following example lists all policy stores in the AWS account in the AWS Region in which you call the operation.",
-                        "output": {
-                            "policyStores": [
-                                {
-                                    "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                                    "arn": "arn:aws:verifiedpermissions::123456789012:policy-store/C7v5xMplfFH3i3e4Jrzb1a",
-                                    "createdDate": "2023-05-16T17:41:29.103459Z"
-                                },
-                                {
-                                    "policyStoreId": "PSEXAMPLEabcdefg222222",
-                                    "arn": "arn:aws:verifiedpermissions::123456789012:policy-store/PSEXAMPLEabcdefg222222",
-                                    "createdDate": "2023-05-16T18:23:04.985521Z"
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#paginated": {
                     "inputToken": "nextToken",
                     "outputToken": "nextToken",
@@ -4972,35 +3812,6 @@
                     "documentation": "Grants permission to return a paginated list of all policy templates in the specified policy store"
                 },
                 "smithy.api#documentation": "<p>Returns a paginated list of all policy templates in the specified policy store.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "ListPolicyTemplates",
-                        "documentation": "The following example retrieves a list of all of the policy templates in the specified policy store.",
-                        "input": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        },
-                        "output": {
-                            "policyTemplates": [
-                                {
-                                    "createdDate": "2024-08-12T18:20:50.99Z",
-                                    "description": "Generic template",
-                                    "lastUpdatedDate": "2024-08-12T18:20:50.99Z",
-                                    "name": "name/example-policy-template",
-                                    "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                                    "policyTemplateId": "PTEXAMPLEabcdefg111111"
-                                },
-                                {
-                                    "createdDate": "2024-08-12T18:20:50.99Z",
-                                    "description": "Template for research dept",
-                                    "lastUpdatedDate": "2024-08-12T18:20:50.99Z",
-                                    "name": "name/example-policy-template-2",
-                                    "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                                    "policyTemplateId": "PTEXAMPLEabcdefg222222"
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#paginated": {
                     "inputToken": "nextToken",
                     "outputToken": "nextToken",
@@ -5085,21 +3896,6 @@
                     "aws:ResourceTag/${TagKey}"
                 ],
                 "smithy.api#documentation": "<p>Returns the tags associated with the specified Amazon Verified Permissions resource. In Verified Permissions, policy stores can be tagged.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "ListTagsForResource",
-                        "documentation": "The following example lists all the tags for the resource named in the API call.",
-                        "input": {
-                            "resourceArn": "C7v5xMplfFH3i3e4Jrzb1a"
-                        },
-                        "output": {
-                            "tags": {
-                                "key1": "value1",
-                                "key2": "value2"
-                            }
-                        }
-                    }
-                ],
                 "smithy.api#readonly": {}
             }
         },
@@ -6215,26 +5011,6 @@
                     "documentation": "Grants permission to create or update the policy schema in the specified policy store"
                 },
                 "smithy.api#documentation": "<p>Creates or updates the policy schema in the specified policy store. The schema is used to validate any Cedar policies and policy templates submitted to the policy store. Any changes to the schema validate only policies and templates submitted after the schema change. Existing policies and templates are not re-evaluated against the changed schema. If you later update a policy, then it is evaluated against the new schema at that time.</p> <note> <p>Verified Permissions is <i> <a href=\"https://wikipedia.org/wiki/Eventual_consistency\">eventually consistent</a> </i>. It can take a few seconds for a new or changed element to propagate through the service and be visible in the results of other Verified Permissions operations.</p> </note>",
-                "smithy.api#examples": [
-                    {
-                        "title": "PutSchema",
-                        "documentation": "The following example creates a new schema, or updates an existing schema, in the specified policy store. Note that the schema text is shown line wrapped for readability. You should submit the entire schema text as a single line of text.\n\nNote\nThe JSON in the parameters of this operation are strings that can contain embedded quotation marks (\") within the outermost quotation mark pair. This requires that you stringify the JSON object by preceding all embedded quotation marks with a backslash character ( \\\" ) and combining all lines into a single text line with no line breaks.\n\nExample strings might be displayed wrapped across multiple lines here for readability, but the operation requires the parameters be submitted as single line strings.",
-                        "input": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "definition": {
-                                "cedarJson": "{\"MySampleNamespace\": {\"actions\": {\"remoteAccess\": {\"appliesTo\": {\"principalTypes\": [\"Employee\"]}}},\"entityTypes\": {\"Employee\": {\"shape\": {\"attributes\": {\"jobLevel\": {\"type\": \"Long\"},\"name\": {\"type\": \"String\"}},\"type\": \"Record\"}}}}}"
-                            }
-                        },
-                        "output": {
-                            "createdDate": "2023-06-13T19:28:06.003726Z",
-                            "lastUpdatedDate": "2023-06-13T19:28:06.003726Z",
-                            "namespaces": [
-                                "My::Sample::Namespace"
-                            ],
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        }
-                    }
-                ],
                 "smithy.api#idempotent": {}
             }
         },
@@ -6625,21 +5401,7 @@
                     "aws:RequestTag/${TagKey}",
                     "aws:TagKeys"
                 ],
-                "smithy.api#documentation": "<p>Assigns one or more tags (key-value pairs) to the specified Amazon Verified Permissions resource. Tags can help you organize and categorize your resources. You can also use them to scope user permissions by granting a user permission to access or change only resources with certain tag values. In Verified Permissions, policy stores can be tagged.</p> <p>Tags don't have any semantic meaning to Amazon Web Services and are interpreted strictly as strings of characters.</p> <p>You can use the TagResource action with a resource that already has tags. If you specify a new tag key, this tag is appended to the list of tags associated with the resource. If you specify a tag key that is already associated with the resource, the new tag value that you specify replaces the previous value for that tag.</p> <p>You can associate as many as 50 tags with a resource.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "TagResource",
-                        "documentation": "The following example tags the resource.",
-                        "input": {
-                            "resourceArn": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "tags": {
-                                "key1": "value1",
-                                "key2": "value2"
-                            }
-                        },
-                        "output": {}
-                    }
-                ]
+                "smithy.api#documentation": "<p>Assigns one or more tags (key-value pairs) to the specified Amazon Verified Permissions resource. Tags can help you organize and categorize your resources. You can also use them to scope user permissions by granting a user permission to access or change only resources with certain tag values. In Verified Permissions, policy stores can be tagged.</p> <p>Tags don't have any semantic meaning to Amazon Web Services and are interpreted strictly as strings of characters.</p> <p>You can use the TagResource action with a resource that already has tags. If you specify a new tag key, this tag is appended to the list of tags associated with the resource. If you specify a tag key that is already associated with the resource, the new tag value that you specify replaces the previous value for that tag.</p> <p>You can associate as many as 50 tags with a resource.</p>"
             }
         },
         "com.amazonaws.verifiedpermissions#TagResourceInput": {
@@ -6860,21 +5622,7 @@
                     "aws:ResourceTag/${TagKey}",
                     "aws:TagKeys"
                 ],
-                "smithy.api#documentation": "<p>Removes one or more tags from the specified Amazon Verified Permissions resource. In Verified Permissions, policy stores can be tagged.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "UntagResource",
-                        "documentation": "The following example removes the listed tags from the resource.",
-                        "input": {
-                            "resourceArn": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "tagKeys": [
-                                "key1",
-                                "key2"
-                            ]
-                        },
-                        "output": {}
-                    }
-                ]
+                "smithy.api#documentation": "<p>Removes one or more tags from the specified Amazon Verified Permissions resource. In Verified Permissions, policy stores can be tagged.</p>"
             }
         },
         "com.amazonaws.verifiedpermissions#UntagResourceInput": {
@@ -6998,30 +5746,6 @@
                     "documentation": "Grants permission to update the specified identity source to use a new identity provider (IdP) source, or to change the mapping of identities from the IdP to a different principal entity type"
                 },
                 "smithy.api#documentation": "<p>Updates the specified identity source to use a new identity provider (IdP), or to change the mapping of identities from the IdP to a different principal entity type.</p> <note> <p>Verified Permissions is <i> <a href=\"https://wikipedia.org/wiki/Eventual_consistency\">eventually consistent</a> </i>. It can take a few seconds for a new or changed element to propagate through the service and be visible in the results of other Verified Permissions operations.</p> </note>",
-                "smithy.api#examples": [
-                    {
-                        "title": "UpdateIdentitySource",
-                        "documentation": "The following example updates the configuration of the specified identity source with a new configuration.",
-                        "input": {
-                            "identitySourceId": "ISEXAMPLEabcdefg111111",
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "updateConfiguration": {
-                                "cognitoUserPoolConfiguration": {
-                                    "userPoolArn": "arn:aws:cognito-idp:us-east-1:123456789012:userpool/us-east-1_1a2b3c4d5",
-                                    "clientIds": [
-                                        "a1b2c3d4e5f6g7h8i9j0kalbmc"
-                                    ]
-                                }
-                            }
-                        },
-                        "output": {
-                            "createdDate": "2023-05-19T20:30:28.173926Z",
-                            "identitySourceId": "ISEXAMPLEabcdefg111111",
-                            "lastUpdatedDate": "2023-05-22T20:45:59.962216Z",
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a"
-                        }
-                    }
-                ],
                 "smithy.api#idempotent": {}
             }
         },
@@ -7239,33 +5963,6 @@
                     "documentation": "Grants permission to modify the specified Cedar static policy in the specified policy store"
                 },
                 "smithy.api#documentation": "<p>Modifies a Cedar static policy in the specified policy store. You can change only certain elements of the <a href=\"https://docs.aws.amazon.com/verifiedpermissions/latest/apireference/API_UpdatePolicyInput.html#amazonverifiedpermissions-UpdatePolicy-request-UpdatePolicyDefinition\">UpdatePolicyDefinition</a> parameter. You can directly update only static policies. To change a template-linked policy, you must update the template instead, using <a href=\"https://docs.aws.amazon.com/verifiedpermissions/latest/apireference/API_UpdatePolicyTemplate.html\">UpdatePolicyTemplate</a>.</p> <note> <ul> <li> <p>If policy validation is enabled in the policy store, then updating a static policy causes Verified Permissions to validate the policy against the schema in the policy store. If the updated static policy doesn't pass validation, the operation fails and the update isn't stored.</p> </li> <li> <p>When you edit a static policy, you can change only certain elements of a static policy:</p> <ul> <li> <p>The action referenced by the policy. </p> </li> <li> <p>A condition clause, such as when and unless. </p> </li> </ul> <p>You can't change these elements of a static policy: </p> <ul> <li> <p>Changing a policy from a static policy to a template-linked policy. </p> </li> <li> <p>Changing the effect of a static policy from permit or forbid. </p> </li> <li> <p>The principal referenced by a static policy. </p> </li> <li> <p>The resource referenced by a static policy. </p> </li> </ul> </li> <li> <p>To update a template-linked policy, you must update the template instead. </p> </li> </ul> </note> <note> <p>Verified Permissions is <i> <a href=\"https://wikipedia.org/wiki/Eventual_consistency\">eventually consistent</a> </i>. It can take a few seconds for a new or changed element to propagate through the service and be visible in the results of other Verified Permissions operations.</p> </note>",
-                "smithy.api#examples": [
-                    {
-                        "title": "UpdatePolicy",
-                        "documentation": "The following example replaces the definition of the specified static policy with a new one.",
-                        "input": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "policyId": "9wYxMpljbbZQb5fcZHyJhY",
-                            "definition": {
-                                "static": {
-                                    "statement": "permit(principal, action, resource in Album::\"public_folder\");"
-                                }
-                            },
-                            "name": "name/example-policy-2"
-                        },
-                        "output": {
-                            "createdDate": "2024-08-12T18:20:50.99Z",
-                            "lastUpdatedDate": "2024-08-12T18:20:50.99Z",
-                            "policyId": "9wYxMpljbbZQb5fcZHyJhY",
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "policyType": "STATIC",
-                            "resource": {
-                                "entityType": "Album",
-                                "entityId": "public_folder"
-                            }
-                        }
-                    }
-                ],
                 "smithy.api#idempotent": {}
             }
         },
@@ -7409,24 +6106,6 @@
                     "documentation": "Grants permission to modify the validation setting for a policy store"
                 },
                 "smithy.api#documentation": "<p>Modifies the validation setting for a policy store.</p> <note> <p>Verified Permissions is <i> <a href=\"https://wikipedia.org/wiki/Eventual_consistency\">eventually consistent</a> </i>. It can take a few seconds for a new or changed element to propagate through the service and be visible in the results of other Verified Permissions operations.</p> </note>",
-                "smithy.api#examples": [
-                    {
-                        "title": "UpdatePolicyStore",
-                        "documentation": "The following example turns off the validation settings for a policy store.",
-                        "input": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "validationSettings": {
-                                "mode": "OFF"
-                            }
-                        },
-                        "output": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "arn": "arn:aws:verifiedpermissions::123456789012:policy-store/C7v5xMplfFH3i3e4Jrzb1a",
-                            "createdDate": "2023-05-17T18:36:10.134448Z",
-                            "lastUpdatedDate": "2023-05-23T18:18:12.443083Z"
-                        }
-                    }
-                ],
                 "smithy.api#idempotent": {}
             }
         },
@@ -7521,25 +6200,6 @@
                     "documentation": "Grants permission to update the specified policy template"
                 },
                 "smithy.api#documentation": "<p>Updates the specified policy template. You can update only the description and the some elements of the <a href=\"https://docs.aws.amazon.com/verifiedpermissions/latest/apireference/API_UpdatePolicyTemplate.html#amazonverifiedpermissions-UpdatePolicyTemplate-request-policyBody\">policyBody</a>. </p> <important> <p>Changes you make to the policy template content are immediately (within the constraints of eventual consistency) reflected in authorization decisions that involve all template-linked policies instantiated from this template.</p> </important> <note> <p>Verified Permissions is <i> <a href=\"https://wikipedia.org/wiki/Eventual_consistency\">eventually consistent</a> </i>. It can take a few seconds for a new or changed element to propagate through the service and be visible in the results of other Verified Permissions operations.</p> </note>",
-                "smithy.api#examples": [
-                    {
-                        "title": "UpdatePolicyTemplate",
-                        "documentation": "The following example updates a policy template with both a new description and a new policy body. The effect, principal, and resource are the same as the original policy template. Only the action in the head, and the when and unless clauses can be different.\n\nNote\nThe JSON in the parameters of this operation are strings that can contain embedded quotation marks (\") within the outermost quotation mark pair. This requires that you stringify the JSON object by preceding all embedded quotation marks with a backslash character ( \\\" ) and combining all lines into a single text line with no line breaks.\n\nExample strings might be displayed wrapped across multiple lines here for readability, but the operation requires the parameters be submitted as single line strings.",
-                        "input": {
-                            "description": "My updated template description",
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "policyTemplateId": "PTEXAMPLEabcdefg111111",
-                            "statement": "\"ResearchAccess\"\npermit(\nprincipal in ?principal,\naction == Action::\"view\",\nresource in ?resource\"\n)\nwhen {\nprincipal has department && principal.department == \"research\"\n};",
-                            "name": "name/example-policy-template-2"
-                        },
-                        "output": {
-                            "policyStoreId": "C7v5xMplfFH3i3e4Jrzb1a",
-                            "policyTemplateId": "PTEXAMPLEabcdefg111111",
-                            "createdDate": "2023-05-17T18:58:48.795411Z",
-                            "lastUpdatedDate": "2023-05-17T19:18:48.870209Z"
-                        }
-                    }
-                ],
                 "smithy.api#idempotent": {}
             }
         },

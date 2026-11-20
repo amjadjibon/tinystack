@@ -1133,7 +1133,7 @@ type ListTagsForResourceResponse struct {
 
 var enum0 = []string{"CODE_VULNERABILITY", "NETWORK_REACHABILITY", "PACKAGE_VULNERABILITY"}
 
-var enum1 = []string{"AWS_EC2_INSTANCE", "AWS_ECR_CONTAINER_IMAGE", "AWS_LAMBDA_FUNCTION", "CODE_REPOSITORY", "Microsoft.Compute/virtualMachines", "Microsoft.ContainerRegistry/registry/containerImage", "Microsoft.Web/sites"}
+var enum1 = []string{"AWS_EC2_INSTANCE", "AWS_ECR_CONTAINER_IMAGE", "AWS_LAMBDA_FUNCTION", "CODE_REPOSITORY", "Microsoft.Compute/virtualMachines", "Microsoft.ContainerRegistry/registry/containerImage", "Microsoft.Web/sites", "artifactregistry.googleapis.com/DockerImage", "cloudfunctions.googleapis.com/Function", "compute.googleapis.com/Instance"}
 
 var enum2 = []string{"ASC", "DESC"}
 
@@ -1709,7 +1709,7 @@ func (v *DisableRequest) Validate(path string) error {
 		}
 	}
 	if v.ResourceTypes != nil {
-		if err := validation.Length(path+"resourceTypes", len(v.ResourceTypes), new(int64(0)), new(int64(5))); err != nil {
+		if err := validation.Length(path+"resourceTypes", len(v.ResourceTypes), new(int64(0)), new(int64(6))); err != nil {
 			return err
 		}
 		for i0, e0 := range v.ResourceTypes {
@@ -1817,7 +1817,7 @@ func (v *EnableRequest) Validate(path string) error {
 		return err
 	}
 	if v.ResourceTypes != nil {
-		if err := validation.Length(path+"resourceTypes", len(v.ResourceTypes), new(int64(1)), new(int64(5))); err != nil {
+		if err := validation.Length(path+"resourceTypes", len(v.ResourceTypes), new(int64(1)), new(int64(6))); err != nil {
 			return err
 		}
 		for i0, e0 := range v.ResourceTypes {
@@ -2940,7 +2940,7 @@ type API interface {
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "inspector2", SigningName: "inspector2", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "inspector2", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"AccessDeniedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "BadRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InternalServerException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServiceQuotaExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 402}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "ValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "inspector2", SigningName: "inspector2", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "inspector2", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"AccessDeniedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "BadRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "InternalServerException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "ServiceQuotaExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 402}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}, "ValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"Enable": {Name: "Enable", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "inspector2:Enable", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccountIds": catalog.MemberBinding{Location: "document", Name: "accountIds", Format: ""}, "ClientToken": catalog.MemberBinding{Location: "document", Name: "clientToken", Format: ""}, "ResourceTypes": catalog.MemberBinding{Location: "document", Name: "resourceTypes", Format: ""}}, Output: map[string]catalog.MemberBinding{"Accounts": catalog.MemberBinding{Location: "document", Name: "accounts", Format: ""}, "FailedAccounts": catalog.MemberBinding{Location: "document", Name: "failedAccounts", Format: ""}}, Method: "POST", URI: "/enable", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &EnableRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*EnableRequest)
 			if err := in.Validate(""); err != nil {

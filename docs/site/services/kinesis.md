@@ -13,7 +13,7 @@ Write and read ordered shard records and feed local Lambda or Firehose consumers
 | API version | `2013-12-02` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 34 of 45 in the pinned model |
+| Selected operations | 34 of 57 in the pinned model |
 
 ## Implemented behavior
 
@@ -76,19 +76,31 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "11 modeled operations outside the implementation"
+??? info "23 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
+    - `AcknowledgeDeadLetterQueueRecords`
+    - `AcknowledgeQueueRecords`
     - `CreateChannel`
+    - `CreateQueue`
     - `DeleteChannel`
+    - `DeleteQueue`
     - `DescribeAccountSettings`
     - `DescribeChannel`
+    - `DescribeQueue`
     - `ListChannels`
+    - `ListQueues`
+    - `ReceiveDeadLetterQueueRecords`
+    - `ReceiveQueueRecords`
+    - `RestoreDeadLetterQueueRecords`
     - `SubscribeToShard`
     - `UpdateAccountSettings`
     - `UpdateChannel`
+    - `UpdateDeadLetterQueueRecordsVisibility`
     - `UpdateMaxRecordSize`
+    - `UpdateQueue`
+    - `UpdateQueueRecordsVisibility`
     - `UpdateStreamRecordDistributionStrategy`
     - `UpdateStreamWarmThroughput`
 
@@ -96,6 +108,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/kinesis)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/kinesis/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/kinesis.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/kinesis.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [kinesis_authorization_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/kinesis_authorization_test.go), [kinesis_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/kinesis_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

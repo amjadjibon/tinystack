@@ -40,7 +40,7 @@ type DescribeLocationS3Response struct {
 	LocationUri    *string   `json:"LocationUri,omitempty"`
 	S3StorageClass *string   `json:"S3StorageClass,omitempty"`
 	S3Config       *S3Config `json:"S3Config,omitempty"`
-	CreationTime   *float64  `json:"CreationTime,omitempty"`
+	CreationTime   *float64  `json:"CreationTime,omitempty" cbor:"timestamp"`
 }
 
 type UpdateLocationS3Request struct {
@@ -80,7 +80,7 @@ type DescribeLocationEfsResponse struct {
 	LocationArn             *string    `json:"LocationArn,omitempty"`
 	LocationUri             *string    `json:"LocationUri,omitempty"`
 	Ec2Config               *Ec2Config `json:"Ec2Config,omitempty"`
-	CreationTime            *float64   `json:"CreationTime,omitempty"`
+	CreationTime            *float64   `json:"CreationTime,omitempty" cbor:"timestamp"`
 	AccessPointArn          *string    `json:"AccessPointArn,omitempty"`
 	FileSystemAccessRoleArn *string    `json:"FileSystemAccessRoleArn,omitempty"`
 	InTransitEncryption     *string    `json:"InTransitEncryption,omitempty"`
@@ -189,7 +189,7 @@ type DescribeTaskResponse struct {
 	Schedule                *TaskSchedule `json:"Schedule,omitempty"`
 	ErrorCode               *string       `json:"ErrorCode,omitempty"`
 	ErrorDetail             *string       `json:"ErrorDetail,omitempty"`
-	CreationTime            *float64      `json:"CreationTime,omitempty"`
+	CreationTime            *float64      `json:"CreationTime,omitempty" cbor:"timestamp"`
 	Includes                []FilterRule  `json:"Includes,omitempty"`
 	TaskMode                *string       `json:"TaskMode,omitempty"`
 }
@@ -272,7 +272,7 @@ type DescribeTaskExecutionResponse struct {
 	Options                  *Options                   `json:"Options,omitempty"`
 	Excludes                 []FilterRule               `json:"Excludes,omitempty"`
 	Includes                 []FilterRule               `json:"Includes,omitempty"`
-	StartTime                *float64                   `json:"StartTime,omitempty"`
+	StartTime                *float64                   `json:"StartTime,omitempty" cbor:"timestamp"`
 	EstimatedFilesToTransfer *int64                     `json:"EstimatedFilesToTransfer,omitempty"`
 	EstimatedBytesToTransfer *int64                     `json:"EstimatedBytesToTransfer,omitempty"`
 	FilesTransferred         *int64                     `json:"FilesTransferred,omitempty"`
@@ -286,8 +286,8 @@ type DescribeTaskExecutionResponse struct {
 	EstimatedFilesToDelete   *int64                     `json:"EstimatedFilesToDelete,omitempty"`
 	TaskMode                 *string                    `json:"TaskMode,omitempty"`
 	FilesPrepared            *int64                     `json:"FilesPrepared,omitempty"`
-	LaunchTime               *float64                   `json:"LaunchTime,omitempty"`
-	EndTime                  *float64                   `json:"EndTime,omitempty"`
+	LaunchTime               *float64                   `json:"LaunchTime,omitempty" cbor:"timestamp"`
+	EndTime                  *float64                   `json:"EndTime,omitempty" cbor:"timestamp"`
 }
 
 type ListTaskExecutionsRequest struct {
@@ -1351,141 +1351,141 @@ type API interface {
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "datasync", SigningName: "datasync", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "datasync", TargetPrefix: "FmrsService", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"InternalException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
-		"CreateLocationS3": {Name: "CreateLocationS3", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:CreateLocationS3", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.CreateLocationS3", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateLocationS3Request{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+	return catalog.Service{Name: "datasync", SigningName: "datasync", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "datasync", TargetPrefix: "FmrsService", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1", "rpcv2Cbor"}, Errors: map[string]catalog.ErrorBinding{"InternalException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+		"CreateLocationS3": {Name: "CreateLocationS3", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:CreateLocationS3", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.CreateLocationS3", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/CreateLocationS3", Target: "FmrsService.CreateLocationS3", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &CreateLocationS3Request{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*CreateLocationS3Request)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())
 			}
 			return api.CreateLocationS3(ctx, in)
 		}},
-		"DescribeLocationS3": {Name: "DescribeLocationS3", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:DescribeLocationS3", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.DescribeLocationS3", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeLocationS3Request{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DescribeLocationS3": {Name: "DescribeLocationS3", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:DescribeLocationS3", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.DescribeLocationS3", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/DescribeLocationS3", Target: "FmrsService.DescribeLocationS3", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DescribeLocationS3Request{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DescribeLocationS3Request)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())
 			}
 			return api.DescribeLocationS3(ctx, in)
 		}},
-		"UpdateLocationS3": {Name: "UpdateLocationS3", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:UpdateLocationS3", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.UpdateLocationS3", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateLocationS3Request{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UpdateLocationS3": {Name: "UpdateLocationS3", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:UpdateLocationS3", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.UpdateLocationS3", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/UpdateLocationS3", Target: "FmrsService.UpdateLocationS3", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &UpdateLocationS3Request{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*UpdateLocationS3Request)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())
 			}
 			return api.UpdateLocationS3(ctx, in)
 		}},
-		"CreateLocationEfs": {Name: "CreateLocationEfs", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:CreateLocationEfs", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.CreateLocationEfs", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateLocationEfsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"CreateLocationEfs": {Name: "CreateLocationEfs", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:CreateLocationEfs", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.CreateLocationEfs", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/CreateLocationEfs", Target: "FmrsService.CreateLocationEfs", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &CreateLocationEfsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*CreateLocationEfsRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())
 			}
 			return api.CreateLocationEfs(ctx, in)
 		}},
-		"DescribeLocationEfs": {Name: "DescribeLocationEfs", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:DescribeLocationEfs", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.DescribeLocationEfs", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeLocationEfsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DescribeLocationEfs": {Name: "DescribeLocationEfs", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:DescribeLocationEfs", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.DescribeLocationEfs", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/DescribeLocationEfs", Target: "FmrsService.DescribeLocationEfs", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DescribeLocationEfsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DescribeLocationEfsRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())
 			}
 			return api.DescribeLocationEfs(ctx, in)
 		}},
-		"UpdateLocationEfs": {Name: "UpdateLocationEfs", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:UpdateLocationEfs", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.UpdateLocationEfs", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateLocationEfsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UpdateLocationEfs": {Name: "UpdateLocationEfs", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:UpdateLocationEfs", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.UpdateLocationEfs", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/UpdateLocationEfs", Target: "FmrsService.UpdateLocationEfs", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &UpdateLocationEfsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*UpdateLocationEfsRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())
 			}
 			return api.UpdateLocationEfs(ctx, in)
 		}},
-		"ListLocations": {Name: "ListLocations", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:ListLocations", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.ListLocations", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListLocationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListLocations": {Name: "ListLocations", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:ListLocations", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.ListLocations", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/ListLocations", Target: "FmrsService.ListLocations", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListLocationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListLocationsRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())
 			}
 			return api.ListLocations(ctx, in)
 		}},
-		"DeleteLocation": {Name: "DeleteLocation", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:DeleteLocation", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.DeleteLocation", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteLocationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DeleteLocation": {Name: "DeleteLocation", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:DeleteLocation", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.DeleteLocation", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/DeleteLocation", Target: "FmrsService.DeleteLocation", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DeleteLocationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DeleteLocationRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())
 			}
 			return api.DeleteLocation(ctx, in)
 		}},
-		"CreateTask": {Name: "CreateTask", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:CreateTask", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.CreateTask", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateTaskRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"CreateTask": {Name: "CreateTask", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:CreateTask", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.CreateTask", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/CreateTask", Target: "FmrsService.CreateTask", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &CreateTaskRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*CreateTaskRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())
 			}
 			return api.CreateTask(ctx, in)
 		}},
-		"DescribeTask": {Name: "DescribeTask", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:DescribeTask", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.DescribeTask", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeTaskRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DescribeTask": {Name: "DescribeTask", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:DescribeTask", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.DescribeTask", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/DescribeTask", Target: "FmrsService.DescribeTask", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DescribeTaskRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DescribeTaskRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())
 			}
 			return api.DescribeTask(ctx, in)
 		}},
-		"ListTasks": {Name: "ListTasks", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:ListTasks", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.ListTasks", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListTasksRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListTasks": {Name: "ListTasks", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:ListTasks", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.ListTasks", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/ListTasks", Target: "FmrsService.ListTasks", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListTasksRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListTasksRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())
 			}
 			return api.ListTasks(ctx, in)
 		}},
-		"UpdateTask": {Name: "UpdateTask", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:UpdateTask", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.UpdateTask", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateTaskRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UpdateTask": {Name: "UpdateTask", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:UpdateTask", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.UpdateTask", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/UpdateTask", Target: "FmrsService.UpdateTask", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &UpdateTaskRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*UpdateTaskRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())
 			}
 			return api.UpdateTask(ctx, in)
 		}},
-		"DeleteTask": {Name: "DeleteTask", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:DeleteTask", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.DeleteTask", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteTaskRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DeleteTask": {Name: "DeleteTask", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:DeleteTask", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.DeleteTask", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/DeleteTask", Target: "FmrsService.DeleteTask", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DeleteTaskRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DeleteTaskRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())
 			}
 			return api.DeleteTask(ctx, in)
 		}},
-		"StartTaskExecution": {Name: "StartTaskExecution", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:StartTaskExecution", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.StartTaskExecution", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StartTaskExecutionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"StartTaskExecution": {Name: "StartTaskExecution", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:StartTaskExecution", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.StartTaskExecution", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/StartTaskExecution", Target: "FmrsService.StartTaskExecution", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &StartTaskExecutionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*StartTaskExecutionRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())
 			}
 			return api.StartTaskExecution(ctx, in)
 		}},
-		"DescribeTaskExecution": {Name: "DescribeTaskExecution", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:DescribeTaskExecution", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.DescribeTaskExecution", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeTaskExecutionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DescribeTaskExecution": {Name: "DescribeTaskExecution", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:DescribeTaskExecution", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.DescribeTaskExecution", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/DescribeTaskExecution", Target: "FmrsService.DescribeTaskExecution", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DescribeTaskExecutionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DescribeTaskExecutionRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())
 			}
 			return api.DescribeTaskExecution(ctx, in)
 		}},
-		"ListTaskExecutions": {Name: "ListTaskExecutions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:ListTaskExecutions", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.ListTaskExecutions", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListTaskExecutionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListTaskExecutions": {Name: "ListTaskExecutions", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:ListTaskExecutions", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.ListTaskExecutions", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/ListTaskExecutions", Target: "FmrsService.ListTaskExecutions", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListTaskExecutionsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListTaskExecutionsRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())
 			}
 			return api.ListTaskExecutions(ctx, in)
 		}},
-		"CancelTaskExecution": {Name: "CancelTaskExecution", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:CancelTaskExecution", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.CancelTaskExecution", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CancelTaskExecutionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"CancelTaskExecution": {Name: "CancelTaskExecution", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:CancelTaskExecution", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.CancelTaskExecution", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/CancelTaskExecution", Target: "FmrsService.CancelTaskExecution", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &CancelTaskExecutionRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*CancelTaskExecutionRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())
 			}
 			return api.CancelTaskExecution(ctx, in)
 		}},
-		"TagResource": {Name: "TagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:TagResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.TagResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &TagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"TagResource": {Name: "TagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:TagResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.TagResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/TagResource", Target: "FmrsService.TagResource", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &TagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*TagResourceRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())
 			}
 			return api.TagResource(ctx, in)
 		}},
-		"UntagResource": {Name: "UntagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:UntagResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.UntagResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UntagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UntagResource": {Name: "UntagResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:UntagResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.UntagResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/UntagResource", Target: "FmrsService.UntagResource", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &UntagResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*UntagResourceRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())
 			}
 			return api.UntagResource(ctx, in)
 		}},
-		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:ListTagsForResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.ListTagsForResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListTagsForResource": {Name: "ListTagsForResource", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "datasync:ListTagsForResource", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "FmrsService.ListTagsForResource", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/FmrsService/operation/ListTagsForResource", Target: "FmrsService.ListTagsForResource", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListTagsForResourceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListTagsForResourceRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidRequestException", err.Error())

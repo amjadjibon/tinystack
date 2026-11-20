@@ -13,7 +13,7 @@ Store typed items and run expressions, transactions, streams, backups, exports, 
 | API version | `2012-08-10` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 41 of 58 in the pinned model |
+| Selected operations | 41 of 62 in the pinned model |
 
 ## Implemented behavior
 
@@ -88,11 +88,13 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "17 modeled operations outside the implementation"
+??? info "21 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
+    - `CancelBulkOperation`
     - `CreateGlobalTable`
+    - `DescribeBulkOperation`
     - `DescribeContributorInsights`
     - `DescribeEndpoints`
     - `DescribeGlobalTable`
@@ -101,10 +103,12 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DescribeLimits`
     - `DescribeTableReplicaAutoScaling`
     - `ImportTable`
+    - `ListBulkOperations`
     - `ListContributorInsights`
     - `ListGlobalTables`
     - `ListImports`
     - `SearchVectors`
+    - `StartBulkPutItems`
     - `UpdateContributorInsights`
     - `UpdateGlobalTable`
     - `UpdateGlobalTableSettings`
@@ -114,6 +118,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/dynamodb)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/dynamodb/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/dynamodb.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/dynamodb.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [dynamodb_backups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_backups_test.go), [dynamodb_exports_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_exports_test.go), [dynamodb_index_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_index_test.go), [dynamodb_kinesis_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_kinesis_test.go), [dynamodb_parallel_scan_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_parallel_scan_test.go), [dynamodb_partiql_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_partiql_test.go), [dynamodb_partiql_transaction_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_partiql_transaction_test.go), [dynamodb_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_policy_test.go), [dynamodb_query_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_query_test.go), [dynamodb_streams_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_streams_test.go), [dynamodb_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_test.go), [dynamodb_transact_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_transact_test.go), [dynamodb_update_table_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_update_table_test.go), [dynamodb_warm_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_warm_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

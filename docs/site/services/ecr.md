@@ -13,7 +13,7 @@ Manage repositories and push or pull images through a local Docker Registry API.
 | API version | `2015-09-21` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 26 of 58 in the pinned model |
+| Selected operations | 26 of 62 in the pinned model |
 
 ## Implemented behavior
 
@@ -67,7 +67,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "32 modeled operations outside the implementation"
+??? info "36 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -83,6 +83,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DescribeImageScanFindings`
     - `DescribeImageSigningStatus`
     - `DescribePullThroughCacheRules`
+    - `DescribeReplicationBackfillResults`
     - `DescribeRepositoryCreationTemplates`
     - `GetAccountSetting`
     - `GetLifecyclePolicyPreview`
@@ -91,6 +92,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetSigningConfiguration`
     - `ListImageReferrers`
     - `ListPullTimeUpdateExclusions`
+    - `ListReplicationBackfills`
     - `PutAccountSetting`
     - `PutRegistryPolicy`
     - `PutRegistryScanningConfiguration`
@@ -99,6 +101,8 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `RegisterPullTimeUpdateExclusion`
     - `StartImageScan`
     - `StartLifecyclePolicyPreview`
+    - `StartReplicationBackfill`
+    - `StopReplicationBackfill`
     - `UpdateImageStorageClass`
     - `UpdatePullThroughCacheRule`
     - `UpdateRepositoryCreationTemplate`
@@ -108,6 +112,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/ecr)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/ecr/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/ecr.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/ecr.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [ecr_registry_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ecr_registry_test.go), [ecr_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ecr_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

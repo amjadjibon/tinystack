@@ -13,7 +13,7 @@ Records-only scanning state, configuration and findings filters. No scanning is 
 | API version | `2020-06-08` |
 | Scope | Account and region |
 | Execution | Records only |
-| Selected operations | 18 of 81 in the pinned model |
+| Selected operations | 18 of 84 in the pinned model |
 
 ## Implemented behavior
 
@@ -62,7 +62,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "63 modeled operations outside the implementation"
+??? info "66 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -100,6 +100,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetEncryptionKey`
     - `GetFindingsReportStatus`
     - `GetMember`
+    - `GetOnDemandScanStatus`
     - `GetSbomExport`
     - `ListAccountPermissions`
     - `ListCisScanConfigurations`
@@ -113,12 +114,14 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListConnectors`
     - `ListDelegatedAdminAccounts`
     - `ListMembers`
+    - `ListOnDemandScans`
     - `ResetEncryptionKey`
     - `SearchVulnerabilities`
     - `SendCisSessionHealth`
     - `SendCisSessionTelemetry`
     - `StartCisSession`
     - `StartCodeSecurityScan`
+    - `StartOnDemandScan`
     - `StopCisSession`
     - `UpdateCisScanConfiguration`
     - `UpdateCodeSecurityIntegration`
@@ -134,6 +137,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/inspector2)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/inspector2/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/inspector2.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/inspector2.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [inspector2_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/inspector2_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

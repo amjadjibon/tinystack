@@ -83,8 +83,8 @@ type Project struct {
 	QueuedTimeoutInMinutes *int64              `json:"queuedTimeoutInMinutes,omitempty"`
 	Tags                   []Tag               `json:"tags,omitempty"`
 	Arn                    *string             `json:"arn,omitempty"`
-	Created                *float64            `json:"created,omitempty"`
-	LastModified           *float64            `json:"lastModified,omitempty"`
+	Created                *float64            `json:"created,omitempty" cbor:"timestamp"`
+	LastModified           *float64            `json:"lastModified,omitempty" cbor:"timestamp"`
 	LogsConfig             *LogsConfig         `json:"logsConfig,omitempty"`
 }
 
@@ -158,8 +158,8 @@ type PhaseContext struct {
 type BuildPhase struct {
 	PhaseType         *string        `json:"phaseType,omitempty"`
 	PhaseStatus       *string        `json:"phaseStatus,omitempty"`
-	StartTime         *float64       `json:"startTime,omitempty"`
-	EndTime           *float64       `json:"endTime,omitempty"`
+	StartTime         *float64       `json:"startTime,omitempty" cbor:"timestamp"`
+	EndTime           *float64       `json:"endTime,omitempty" cbor:"timestamp"`
 	DurationInSeconds *int64         `json:"durationInSeconds,omitempty"`
 	Contexts          []PhaseContext `json:"contexts,omitempty"`
 }
@@ -181,8 +181,8 @@ type Build struct {
 	Id                     *string             `json:"id,omitempty"`
 	Arn                    *string             `json:"arn,omitempty"`
 	BuildNumber            *int64              `json:"buildNumber,omitempty"`
-	StartTime              *float64            `json:"startTime,omitempty"`
-	EndTime                *float64            `json:"endTime,omitempty"`
+	StartTime              *float64            `json:"startTime,omitempty" cbor:"timestamp"`
+	EndTime                *float64            `json:"endTime,omitempty" cbor:"timestamp"`
 	CurrentPhase           *string             `json:"currentPhase,omitempty"`
 	BuildStatus            *string             `json:"buildStatus,omitempty"`
 	SourceVersion          *string             `json:"sourceVersion,omitempty"`
@@ -281,8 +281,8 @@ type ReportGroup struct {
 	Name         *string             `json:"name,omitempty"`
 	Type         *string             `json:"type,omitempty"`
 	ExportConfig *ReportExportConfig `json:"exportConfig,omitempty"`
-	Created      *float64            `json:"created,omitempty"`
-	LastModified *float64            `json:"lastModified,omitempty"`
+	Created      *float64            `json:"created,omitempty" cbor:"timestamp"`
+	LastModified *float64            `json:"lastModified,omitempty" cbor:"timestamp"`
 	Tags         []Tag               `json:"tags,omitempty"`
 	Status       *string             `json:"status,omitempty"`
 }
@@ -376,8 +376,8 @@ type Report struct {
 	ReportGroupArn *string             `json:"reportGroupArn,omitempty"`
 	ExecutionId    *string             `json:"executionId,omitempty"`
 	Status         *string             `json:"status,omitempty"`
-	Created        *float64            `json:"created,omitempty"`
-	Expired        *float64            `json:"expired,omitempty"`
+	Created        *float64            `json:"created,omitempty" cbor:"timestamp"`
+	Expired        *float64            `json:"expired,omitempty" cbor:"timestamp"`
 	ExportConfig   *ReportExportConfig `json:"exportConfig,omitempty"`
 	Truncated      *bool               `json:"truncated,omitempty"`
 	TestSummary    *TestReportSummary  `json:"testSummary,omitempty"`
@@ -408,7 +408,7 @@ type TestCase struct {
 	Status                *string  `json:"status,omitempty"`
 	DurationInNanoSeconds *int64   `json:"durationInNanoSeconds,omitempty"`
 	Message               *string  `json:"message,omitempty"`
-	Expired               *float64 `json:"expired,omitempty"`
+	Expired               *float64 `json:"expired,omitempty" cbor:"timestamp"`
 	TestSuiteName         *string  `json:"testSuiteName,omitempty"`
 }
 
@@ -1124,148 +1124,148 @@ type API interface {
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "codebuild", SigningName: "codebuild", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "codebuild", TargetPrefix: "CodeBuild_20161006", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1"}, Errors: map[string]catalog.ErrorBinding{"AccountLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidInputException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
-		"CreateProject": {Name: "CreateProject", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:CreateProject", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.CreateProject", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateProjectInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+	return catalog.Service{Name: "codebuild", SigningName: "codebuild", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "codebuild", TargetPrefix: "CodeBuild_20161006", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1", "rpcv2Cbor"}, Errors: map[string]catalog.ErrorBinding{"AccountLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidInputException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+		"CreateProject": {Name: "CreateProject", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:CreateProject", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.CreateProject", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/CreateProject", Target: "CodeBuild_20161006.CreateProject", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &CreateProjectInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*CreateProjectInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.CreateProject(ctx, in)
 		}},
-		"BatchGetProjects": {Name: "BatchGetProjects", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:BatchGetProjects", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.BatchGetProjects", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchGetProjectsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"BatchGetProjects": {Name: "BatchGetProjects", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:BatchGetProjects", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.BatchGetProjects", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/BatchGetProjects", Target: "CodeBuild_20161006.BatchGetProjects", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &BatchGetProjectsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*BatchGetProjectsInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.BatchGetProjects(ctx, in)
 		}},
-		"ListProjects": {Name: "ListProjects", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:ListProjects", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.ListProjects", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListProjectsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListProjects": {Name: "ListProjects", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:ListProjects", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.ListProjects", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/ListProjects", Target: "CodeBuild_20161006.ListProjects", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListProjectsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListProjectsInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.ListProjects(ctx, in)
 		}},
-		"UpdateProject": {Name: "UpdateProject", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:UpdateProject", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.UpdateProject", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateProjectInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UpdateProject": {Name: "UpdateProject", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:UpdateProject", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.UpdateProject", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/UpdateProject", Target: "CodeBuild_20161006.UpdateProject", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &UpdateProjectInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*UpdateProjectInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.UpdateProject(ctx, in)
 		}},
-		"DeleteProject": {Name: "DeleteProject", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:DeleteProject", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.DeleteProject", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteProjectInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DeleteProject": {Name: "DeleteProject", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:DeleteProject", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.DeleteProject", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/DeleteProject", Target: "CodeBuild_20161006.DeleteProject", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DeleteProjectInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DeleteProjectInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.DeleteProject(ctx, in)
 		}},
-		"StartBuild": {Name: "StartBuild", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:StartBuild", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.StartBuild", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StartBuildInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"StartBuild": {Name: "StartBuild", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:StartBuild", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.StartBuild", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/StartBuild", Target: "CodeBuild_20161006.StartBuild", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &StartBuildInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*StartBuildInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.StartBuild(ctx, in)
 		}},
-		"BatchGetBuilds": {Name: "BatchGetBuilds", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:BatchGetBuilds", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.BatchGetBuilds", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchGetBuildsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"BatchGetBuilds": {Name: "BatchGetBuilds", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:BatchGetBuilds", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.BatchGetBuilds", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/BatchGetBuilds", Target: "CodeBuild_20161006.BatchGetBuilds", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &BatchGetBuildsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*BatchGetBuildsInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.BatchGetBuilds(ctx, in)
 		}},
-		"StopBuild": {Name: "StopBuild", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:StopBuild", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.StopBuild", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &StopBuildInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"StopBuild": {Name: "StopBuild", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:StopBuild", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.StopBuild", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/StopBuild", Target: "CodeBuild_20161006.StopBuild", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &StopBuildInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*StopBuildInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.StopBuild(ctx, in)
 		}},
-		"ListBuilds": {Name: "ListBuilds", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:ListBuilds", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.ListBuilds", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListBuildsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListBuilds": {Name: "ListBuilds", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:ListBuilds", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.ListBuilds", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/ListBuilds", Target: "CodeBuild_20161006.ListBuilds", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListBuildsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListBuildsInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.ListBuilds(ctx, in)
 		}},
-		"ListBuildsForProject": {Name: "ListBuildsForProject", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:ListBuildsForProject", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.ListBuildsForProject", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListBuildsForProjectInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListBuildsForProject": {Name: "ListBuildsForProject", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:ListBuildsForProject", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.ListBuildsForProject", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/ListBuildsForProject", Target: "CodeBuild_20161006.ListBuildsForProject", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListBuildsForProjectInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListBuildsForProjectInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.ListBuildsForProject(ctx, in)
 		}},
-		"BatchDeleteBuilds": {Name: "BatchDeleteBuilds", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:BatchDeleteBuilds", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.BatchDeleteBuilds", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchDeleteBuildsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"BatchDeleteBuilds": {Name: "BatchDeleteBuilds", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:BatchDeleteBuilds", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.BatchDeleteBuilds", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/BatchDeleteBuilds", Target: "CodeBuild_20161006.BatchDeleteBuilds", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &BatchDeleteBuildsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*BatchDeleteBuildsInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.BatchDeleteBuilds(ctx, in)
 		}},
-		"RetryBuild": {Name: "RetryBuild", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:RetryBuild", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.RetryBuild", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &RetryBuildInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"RetryBuild": {Name: "RetryBuild", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:RetryBuild", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.RetryBuild", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/RetryBuild", Target: "CodeBuild_20161006.RetryBuild", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &RetryBuildInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*RetryBuildInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.RetryBuild(ctx, in)
 		}},
-		"CreateReportGroup": {Name: "CreateReportGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:CreateReportGroup", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.CreateReportGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &CreateReportGroupInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"CreateReportGroup": {Name: "CreateReportGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:CreateReportGroup", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.CreateReportGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/CreateReportGroup", Target: "CodeBuild_20161006.CreateReportGroup", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &CreateReportGroupInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*CreateReportGroupInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.CreateReportGroup(ctx, in)
 		}},
-		"UpdateReportGroup": {Name: "UpdateReportGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:UpdateReportGroup", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.UpdateReportGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &UpdateReportGroupInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UpdateReportGroup": {Name: "UpdateReportGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:UpdateReportGroup", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.UpdateReportGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/UpdateReportGroup", Target: "CodeBuild_20161006.UpdateReportGroup", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &UpdateReportGroupInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*UpdateReportGroupInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.UpdateReportGroup(ctx, in)
 		}},
-		"DeleteReportGroup": {Name: "DeleteReportGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:DeleteReportGroup", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.DeleteReportGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DeleteReportGroupInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DeleteReportGroup": {Name: "DeleteReportGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:DeleteReportGroup", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.DeleteReportGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/DeleteReportGroup", Target: "CodeBuild_20161006.DeleteReportGroup", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DeleteReportGroupInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DeleteReportGroupInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.DeleteReportGroup(ctx, in)
 		}},
-		"BatchGetReportGroups": {Name: "BatchGetReportGroups", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:BatchGetReportGroups", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.BatchGetReportGroups", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchGetReportGroupsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"BatchGetReportGroups": {Name: "BatchGetReportGroups", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:BatchGetReportGroups", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.BatchGetReportGroups", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/BatchGetReportGroups", Target: "CodeBuild_20161006.BatchGetReportGroups", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &BatchGetReportGroupsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*BatchGetReportGroupsInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.BatchGetReportGroups(ctx, in)
 		}},
-		"ListReportGroups": {Name: "ListReportGroups", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:ListReportGroups", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.ListReportGroups", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListReportGroupsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListReportGroups": {Name: "ListReportGroups", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:ListReportGroups", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.ListReportGroups", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/ListReportGroups", Target: "CodeBuild_20161006.ListReportGroups", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListReportGroupsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListReportGroupsInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.ListReportGroups(ctx, in)
 		}},
-		"ListReports": {Name: "ListReports", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:ListReports", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.ListReports", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListReportsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListReports": {Name: "ListReports", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:ListReports", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.ListReports", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/ListReports", Target: "CodeBuild_20161006.ListReports", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListReportsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListReportsInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.ListReports(ctx, in)
 		}},
-		"ListReportsForReportGroup": {Name: "ListReportsForReportGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:ListReportsForReportGroup", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.ListReportsForReportGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &ListReportsForReportGroupInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"ListReportsForReportGroup": {Name: "ListReportsForReportGroup", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:ListReportsForReportGroup", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.ListReportsForReportGroup", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/ListReportsForReportGroup", Target: "CodeBuild_20161006.ListReportsForReportGroup", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListReportsForReportGroupInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*ListReportsForReportGroupInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.ListReportsForReportGroup(ctx, in)
 		}},
-		"BatchGetReports": {Name: "BatchGetReports", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:BatchGetReports", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.BatchGetReports", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &BatchGetReportsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"BatchGetReports": {Name: "BatchGetReports", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:BatchGetReports", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.BatchGetReports", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/BatchGetReports", Target: "CodeBuild_20161006.BatchGetReports", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &BatchGetReportsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*BatchGetReportsInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())
 			}
 			return api.BatchGetReports(ctx, in)
 		}},
-		"DescribeTestCases": {Name: "DescribeTestCases", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:DescribeTestCases", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.DescribeTestCases", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}}, NewInput: func() any { return &DescribeTestCasesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"DescribeTestCases": {Name: "DescribeTestCases", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codebuild:DescribeTestCases", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodeBuild_20161006.DescribeTestCases", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodeBuild_20161006/operation/DescribeTestCases", Target: "CodeBuild_20161006.DescribeTestCases", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DescribeTestCasesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*DescribeTestCasesInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("InvalidInputException", err.Error())

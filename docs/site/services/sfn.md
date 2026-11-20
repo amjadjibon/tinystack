@@ -89,6 +89,6 @@ All operations in this pinned model are selected. Member and behavior limits sti
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/sfn)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/sfn/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/sfn.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/sfn.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [sfn_distributed_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_distributed_test.go), [sfn_jsonata_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_jsonata_test.go), [sfn_redrive_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_redrive_test.go), [sfn_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_test.go), [sfn_teststate_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_teststate_test.go), [sfn_variables_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_variables_test.go), [sfn_versions_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_versions_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

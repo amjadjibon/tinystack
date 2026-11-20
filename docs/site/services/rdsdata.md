@@ -57,6 +57,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/rdsdata)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/rdsdata/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/rdsdata.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/rdsdata.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [rdsdata_docker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rdsdata_docker_test.go), [rdsdata_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rdsdata_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

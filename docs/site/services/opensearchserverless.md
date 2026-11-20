@@ -13,7 +13,7 @@ Manage collection and security policy records; no search data plane is served.
 | API version | `2021-11-01` |
 | Scope | Account and region |
 | Execution | Records only |
-| Selected operations | 21 of 46 in the pinned model |
+| Selected operations | 21 of 54 in the pinned model |
 
 ## Implemented behavior
 
@@ -63,7 +63,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "25 modeled operations outside the implementation"
+??? info "33 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -71,19 +71,27 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `BatchGetEffectiveLifecyclePolicy`
     - `BatchGetLifecyclePolicy`
     - `BatchGetVpcEndpoint`
+    - `CancelIngestionJob`
     - `CreateCollectionGroup`
     - `CreateIndex`
+    - `CreateIngestionJob`
+    - `CreateIngestionStream`
     - `CreateLifecyclePolicy`
     - `CreateSecurityConfig`
     - `CreateVpcEndpoint`
     - `DeleteCollectionGroup`
     - `DeleteIndex`
+    - `DeleteIngestionStream`
     - `DeleteLifecyclePolicy`
     - `DeleteSecurityConfig`
     - `DeleteVpcEndpoint`
     - `GetIndex`
+    - `GetIngestionJob`
+    - `GetIngestionStream`
     - `GetSecurityConfig`
     - `ListCollectionGroups`
+    - `ListIngestionJobs`
+    - `ListIngestionStreams`
     - `ListLifecyclePolicies`
     - `ListSecurityConfigs`
     - `ListVpcEndpoints`
@@ -97,6 +105,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/opensearchserverless)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/opensearchserverless/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/opensearchserverless.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/opensearchserverless.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [opensearchserverless_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/opensearchserverless_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

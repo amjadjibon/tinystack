@@ -1898,17 +1898,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Cancels a job in an Batch job queue. Jobs that are in a <code>SUBMITTED</code>, <code>PENDING</code>, or <code>RUNNABLE</code> state are cancelled and the job status is updated to <code>FAILED</code>.</p>\n         <note>\n            <p>A <code>PENDING</code> job is cancelled after all dependency jobs are completed.\n        Therefore, it might take longer than expected to cancel a job in <code>PENDING</code>\n        status.</p>\n            <p>When you try to cancel an array parent job in <code>PENDING</code>, Batch attempts to\n        cancel all child jobs. The array parent job is cancelled when all child jobs are\n        completed.</p>\n         </note>\n         <p>Jobs that progressed to the <code>STARTING</code> or\n        <code>RUNNING</code> state aren't cancelled. However, the API operation still succeeds, even\n      if no job is cancelled. These jobs must be terminated with the <a>TerminateJob</a> or\n        <a>TerminateJobs</a> operation.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To cancel a job",
-                        "documentation": "This example cancels a job with the specified job ID.",
-                        "input": {
-                            "reason": "Cancelling job.",
-                            "jobId": "1d828f65-7a4d-42e8-996d-3b900ed59dc4"
-                        },
-                        "output": {}
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/canceljob",
@@ -1966,31 +1955,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Cancels up to 50 jobs in an Batch job queue. This is a bulk version of <a>CancelJob</a>. Jobs that are in a\n        <code>SUBMITTED</code>, <code>PENDING</code>, or <code>RUNNABLE</code> state are cancelled\n      and the job status is updated to <code>FAILED</code>.</p>\n         <note>\n            <p>A <code>PENDING</code> job is cancelled after all dependency jobs are completed.\n        Therefore, it might take longer than expected to cancel a job in <code>PENDING</code>\n        status.</p>\n            <p>When you try to cancel an array parent job in <code>PENDING</code>, Batch attempts to\n        cancel all child jobs. The array parent job is cancelled when all child jobs are\n        completed.</p>\n         </note>\n         <p>Jobs that progressed to the <code>STARTING</code> or <code>RUNNING</code> state aren't\n      cancelled. These jobs must be terminated with the <a>TerminateJob</a> or\n        <a>TerminateJobs</a> operation.</p>\n         <p>Batch reports the result for each job individually in the response. Jobs that\n      were processed successfully are reported in the <code>successful</code> list. Jobs that\n      encountered errors are reported in the <code>errors</code> list. The response returns an\n      HTTP status code of <code>200</code> even when some jobs encountered errors, so check the\n      <code>errors</code> list. Jobs that can't be found are treated as successfully\n      processed.</p>\n         <important>\n            <p>This operation requires <code>batch:CancelJob</code> permission for each job in the\n        request. There is no separate <code>batch:CancelJobs</code> IAM action. If a caller's IAM\n        policy grants <code>batch:CancelJob</code>, they can use both the singular\n        <a>CancelJob</a> and bulk <code>CancelJobs</code> operations.</p>\n         </important>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To cancel multiple jobs",
-                        "documentation": "This example cancels the jobs with the specified job IDs.",
-                        "input": {
-                            "jobs": [
-                                "1d828f65-7a4d-42e8-996d-3b900ed59dc4",
-                                "b3d0f26e-6d3a-4a5b-9c2e-7f4a1b2c3d4e"
-                            ],
-                            "reason": "Cancelling jobs."
-                        },
-                        "output": {
-                            "successful": [
-                                "1d828f65-7a4d-42e8-996d-3b900ed59dc4"
-                            ],
-                            "errors": [
-                                {
-                                    "job": "b3d0f26e-6d3a-4a5b-9c2e-7f4a1b2c3d4e",
-                                    "code": "ServerException",
-                                    "message": "Failed to read job state. Please retry this job."
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/canceljobs",
@@ -3129,201 +3093,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Creates an Batch compute environment. You can create <code>MANAGED</code> or\n        <code>UNMANAGED</code> compute environments. <code>MANAGED</code> compute environments can\n      use Amazon EC2 or Fargate resources. <code>UNMANAGED</code> compute environments can only use\n      EC2 resources.</p>\n         <p>In a managed compute environment, Batch manages the capacity and instance types of the\n      compute resources within the environment. This is based on the compute resource specification\n      that you define or the <a href=\"https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-launch-templates.html\">launch template</a> that you\n      specify when you create the compute environment. Either, you can choose to use EC2 On-Demand\n      Instances and EC2 Spot Instances. Or, you can use Fargate and Fargate Spot capacity in\n      your managed compute environment. You can optionally set a maximum price so that Spot\n      Instances only launch when the Spot Instance price is less than a specified percentage of the\n      On-Demand price.</p>\n         <p>In an unmanaged compute environment, you can manage your own EC2 compute resources and\n      have flexibility with how you configure your compute resources. For example, you can use\n      custom AMIs. However, you must verify that each of your AMIs meet the Amazon ECS container instance\n      AMI specification. For more information, see <a href=\"https://docs.aws.amazon.com/AmazonECS/latest/developerguide/container_instance_AMIs.html\">container instance AMIs</a> in the\n        <i>Amazon Elastic Container Service Developer Guide</i>. After you created your unmanaged compute environment,\n      you can use the <a>DescribeComputeEnvironments</a> operation to find the Amazon ECS\n      cluster that's associated with it. Then, launch your container instances into that Amazon ECS\n      cluster. For more information, see <a href=\"https://docs.aws.amazon.com/AmazonECS/latest/developerguide/launch_container_instance.html\">Launching an Amazon ECS container\n        instance</a> in the <i>Amazon Elastic Container Service Developer Guide</i>.</p>\n         <note>\n            <p>Batch doesn't automatically upgrade the AMIs in a compute environment after it's\n      created. For more information on how to update a compute environment's AMI, see <a href=\"https://docs.aws.amazon.com/batch/latest/userguide/updating-compute-environments.html\">Updating compute environments</a> in the <i>Batch User Guide</i>.</p>\n         </note>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To create a managed EC2 compute environment",
-                        "documentation": "This example creates a managed compute environment with specific C4 instance types that are launched on demand. The compute environment is called C4OnDemand.",
-                        "input": {
-                            "computeEnvironmentName": "C4OnDemand",
-                            "state": "ENABLED",
-                            "type": "MANAGED",
-                            "computeResources": {
-                                "subnets": [
-                                    "subnet-220c0e0a",
-                                    "subnet-1a95556d",
-                                    "subnet-978f6dce"
-                                ],
-                                "tags": {
-                                    "Name": "Batch Instance - C4OnDemand"
-                                },
-                                "desiredvCpus": 48,
-                                "minvCpus": 0,
-                                "instanceTypes": [
-                                    "c4.large",
-                                    "c4.xlarge",
-                                    "c4.2xlarge",
-                                    "c4.4xlarge",
-                                    "c4.8xlarge"
-                                ],
-                                "securityGroupIds": [
-                                    "sg-cf5093b2"
-                                ],
-                                "instanceRole": "ecsInstanceRole",
-                                "maxvCpus": 128,
-                                "type": "EC2",
-                                "ec2KeyPair": "id_rsa"
-                            },
-                            "serviceRole": "arn:aws:iam::012345678910:role/AWSBatchServiceRole"
-                        },
-                        "output": {
-                            "computeEnvironmentName": "C4OnDemand",
-                            "computeEnvironmentArn": "arn:aws:batch:us-east-1:012345678910:compute-environment/C4OnDemand"
-                        }
-                    },
-                    {
-                        "title": "To create a managed EC2 Spot compute environment",
-                        "documentation": "This example creates a managed compute environment with the M4 instance type that is launched when the Spot bid price is at or below 20% of the On-Demand price for the instance type. The compute environment is called M4Spot.",
-                        "input": {
-                            "computeEnvironmentName": "M4Spot",
-                            "state": "ENABLED",
-                            "type": "MANAGED",
-                            "computeResources": {
-                                "subnets": [
-                                    "subnet-220c0e0a",
-                                    "subnet-1a95556d",
-                                    "subnet-978f6dce"
-                                ],
-                                "type": "SPOT",
-                                "spotIamFleetRole": "arn:aws:iam::012345678910:role/aws-ec2-spot-fleet-role",
-                                "tags": {
-                                    "Name": "Batch Instance - M4Spot"
-                                },
-                                "desiredvCpus": 4,
-                                "minvCpus": 0,
-                                "instanceTypes": [
-                                    "m4"
-                                ],
-                                "securityGroupIds": [
-                                    "sg-cf5093b2"
-                                ],
-                                "instanceRole": "ecsInstanceRole",
-                                "maxvCpus": 128,
-                                "bidPercentage": 20,
-                                "ec2KeyPair": "id_rsa"
-                            },
-                            "serviceRole": "arn:aws:iam::012345678910:role/AWSBatchServiceRole"
-                        },
-                        "output": {
-                            "computeEnvironmentName": "M4Spot",
-                            "computeEnvironmentArn": "arn:aws:batch:us-east-1:012345678910:compute-environment/M4Spot"
-                        }
-                    },
-                    {
-                        "title": "To create an ECS Managed Instances compute environment with capacity reservations",
-                        "documentation": "This example creates an ECS Managed Instances compute environment that targets On-Demand Capacity Reservations for predictable capacity.",
-                        "input": {
-                            "computeEnvironmentName": "my-reserved-managed-instances-ce",
-                            "state": "ENABLED",
-                            "type": "MANAGED",
-                            "computeResources": {
-                                "type": "ECS_MANAGED_INSTANCES",
-                                "maxvCpus": 512,
-                                "managedInstancesProvider": {
-                                    "infrastructureRoleArn": "arn:aws:iam::123456789012:role/ecsInfrastructureRole",
-                                    "instanceLaunchTemplate": {
-                                        "ec2InstanceProfileArn": "arn:aws:iam::123456789012:instance-profile/ecsInstanceProfile",
-                                        "networkConfiguration": {
-                                            "subnets": [
-                                                "subnet-abcde012",
-                                                "subnet-bcde012a"
-                                            ],
-                                            "securityGroups": [
-                                                "sg-abcde012"
-                                            ]
-                                        },
-                                        "instanceRequirements": {
-                                            "allowedInstanceTypes": [
-                                                "m5.xlarge",
-                                                "m5.2xlarge"
-                                            ]
-                                        },
-                                        "capacityReservations": {
-                                            "reservationGroupArn": "arn:aws:ec2:us-east-1:123456789012:capacity-reservation-group/my-reservation-group",
-                                            "reservationPreference": "RESERVATIONS_FIRST"
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "output": {
-                            "computeEnvironmentName": "my-reserved-managed-instances-ce",
-                            "computeEnvironmentArn": "arn:aws:batch:us-east-1:123456789012:compute-environment/my-reserved-managed-instances-ce"
-                        }
-                    },
-                    {
-                        "title": "To create an ECS Managed Instances compute environment",
-                        "documentation": "This example creates a managed compute environment that uses ECS Managed Instances.",
-                        "input": {
-                            "computeEnvironmentName": "my-managed-instances-ce",
-                            "state": "ENABLED",
-                            "type": "MANAGED",
-                            "computeResources": {
-                                "type": "ECS_MANAGED_INSTANCES",
-                                "maxvCpus": 256,
-                                "managedInstancesProvider": {
-                                    "infrastructureRoleArn": "arn:aws:iam::123456789012:role/ecsInfrastructureRole",
-                                    "instanceLaunchTemplate": {
-                                        "ec2InstanceProfileArn": "arn:aws:iam::123456789012:instance-profile/ecsInstanceProfile",
-                                        "networkConfiguration": {
-                                            "subnets": [
-                                                "subnet-abcde012",
-                                                "subnet-bcde012a"
-                                            ],
-                                            "securityGroups": [
-                                                "sg-abcde012"
-                                            ]
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "output": {
-                            "computeEnvironmentName": "my-managed-instances-ce",
-                            "computeEnvironmentArn": "arn:aws:batch:us-east-1:123456789012:compute-environment/my-managed-instances-ce"
-                        }
-                    },
-                    {
-                        "title": "To create an ECS Managed Instances Spot compute environment",
-                        "documentation": "This example creates a Spot-backed ECS Managed Instances compute environment constrained to specific instance types.",
-                        "input": {
-                            "computeEnvironmentName": "my-spot-managed-instances-ce",
-                            "state": "ENABLED",
-                            "type": "MANAGED",
-                            "computeResources": {
-                                "type": "ECS_MANAGED_INSTANCES",
-                                "maxvCpus": 1000,
-                                "managedInstancesProvider": {
-                                    "infrastructureRoleArn": "arn:aws:iam::123456789012:role/ecsInfrastructureRole",
-                                    "instanceLaunchTemplate": {
-                                        "ec2InstanceProfileArn": "arn:aws:iam::123456789012:instance-profile/ecsInstanceProfile",
-                                        "networkConfiguration": {
-                                            "subnets": [
-                                                "subnet-abcde012",
-                                                "subnet-bcde012a"
-                                            ],
-                                            "securityGroups": [
-                                                "sg-abcde012"
-                                            ]
-                                        },
-                                        "instanceRequirements": {
-                                            "allowedInstanceTypes": [
-                                                "m5.large",
-                                                "m5.xlarge",
-                                                "m6i.large",
-                                                "m6i.xlarge"
-                                            ]
-                                        },
-                                        "capacityOptionType": "SPOT"
-                                    }
-                                }
-                            }
-                        },
-                        "output": {
-                            "computeEnvironmentName": "my-spot-managed-instances-ce",
-                            "computeEnvironmentArn": "arn:aws:batch:us-east-1:123456789012:compute-environment/my-spot-managed-instances-ce"
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/createcomputeenvironment",
@@ -3442,25 +3211,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Creates an Batch consumable resource.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To create a consumable resource",
-                        "documentation": "Creates a Batch consumable resource.",
-                        "input": {
-                            "consumableResourceName": "myConsumableResource",
-                            "totalQuantity": 123,
-                            "resourceType": "REPLENISHABLE",
-                            "tags": {
-                                "Department": "Engineering",
-                                "User": "JaneDoe"
-                            }
-                        },
-                        "output": {
-                            "consumableResourceName": "myConsumableResource",
-                            "consumableResourceArn": "arn:aws:batch:us-east-1:012345678910:consumable-resource/myConsumableResource"
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/createconsumableresource",
@@ -3544,92 +3294,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Creates an Batch job queue. When you create a job queue, you associate one or more\n      compute environments to the queue and assign an order of preference for the compute\n      environments.</p>\n         <p>You also set a priority to the job queue that determines the order that the Batch\n      scheduler places jobs onto its associated compute environments. For example, if a compute\n      environment is associated with more than one job queue, the job queue with a higher priority\n      is given preference for scheduling jobs to that compute environment.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To create a job queue with a single compute environment",
-                        "documentation": "This example creates a job queue called LowPriority that uses the M4Spot compute environment.",
-                        "input": {
-                            "priority": 1,
-                            "state": "ENABLED",
-                            "computeEnvironmentOrder": [
-                                {
-                                    "computeEnvironment": "M4Spot",
-                                    "order": 1
-                                }
-                            ],
-                            "jobQueueName": "LowPriority"
-                        },
-                        "output": {
-                            "jobQueueName": "LowPriority",
-                            "jobQueueArn": "arn:aws:batch:us-east-1:012345678910:job-queue/LowPriority"
-                        }
-                    },
-                    {
-                        "title": "To create a job queue with an ECS Managed Instances compute environment",
-                        "documentation": "This example creates a job queue called ManagedInstancesQueue that uses an ECS Managed Instances compute environment.",
-                        "input": {
-                            "priority": 10,
-                            "state": "ENABLED",
-                            "computeEnvironmentOrder": [
-                                {
-                                    "computeEnvironment": "my-managed-instances-ce",
-                                    "order": 1
-                                }
-                            ],
-                            "jobQueueName": "ManagedInstancesQueue"
-                        },
-                        "output": {
-                            "jobQueueName": "ManagedInstancesQueue",
-                            "jobQueueArn": "arn:aws:batch:us-east-1:123456789012:job-queue/ManagedInstancesQueue"
-                        }
-                    },
-                    {
-                        "title": "To create a job queue with multiple compute environments",
-                        "documentation": "This example creates a job queue called HighPriority that uses the C4OnDemand compute environment with an order of 1 and the M4Spot compute environment with an order of 2.",
-                        "input": {
-                            "priority": 10,
-                            "state": "ENABLED",
-                            "computeEnvironmentOrder": [
-                                {
-                                    "computeEnvironment": "C4OnDemand",
-                                    "order": 1
-                                },
-                                {
-                                    "computeEnvironment": "M4Spot",
-                                    "order": 2
-                                }
-                            ],
-                            "jobQueueName": "HighPriority"
-                        },
-                        "output": {
-                            "jobQueueName": "HighPriority",
-                            "jobQueueArn": "arn:aws:batch:us-east-1:012345678910:job-queue/HighPriority"
-                        }
-                    },
-                    {
-                        "title": "To create a job queue with On-Demand and Spot ECS Managed Instances compute environments",
-                        "documentation": "This example creates a job queue that uses both On-Demand and Spot ECS Managed Instances compute environments. On-Demand environments must be ordered before Spot environments.",
-                        "input": {
-                            "priority": 5,
-                            "state": "ENABLED",
-                            "computeEnvironmentOrder": [
-                                {
-                                    "computeEnvironment": "my-managed-instances-ce",
-                                    "order": 1
-                                },
-                                {
-                                    "computeEnvironment": "my-spot-managed-instances-ce",
-                                    "order": 2
-                                }
-                            ],
-                            "jobQueueName": "ManagedInstancesMixedQueue"
-                        },
-                        "output": {
-                            "jobQueueName": "ManagedInstancesMixedQueue",
-                            "jobQueueArn": "arn:aws:batch:us-east-1:123456789012:job-queue/ManagedInstancesMixedQueue"
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/createjobqueue",
@@ -4028,16 +3692,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Deletes an Batch compute environment.</p>\n         <p>Before you can delete a compute environment, you must set its state to\n        <code>DISABLED</code> with the <a>UpdateComputeEnvironment</a> API operation and\n      disassociate it from any job queues with the <a>UpdateJobQueue</a> API operation.\n      Compute environments that use Fargate resources must terminate all active jobs on that\n      compute environment before deleting the compute environment. If this isn't done, the compute\n      environment enters an invalid state.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To delete a compute environment",
-                        "documentation": "This example deletes the P2OnDemand compute environment.",
-                        "input": {
-                            "computeEnvironment": "P2OnDemand"
-                        },
-                        "output": {}
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/deletecomputeenvironment",
@@ -4087,16 +3741,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Deletes the specified consumable resource.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To delete a consumable resource",
-                        "documentation": "Deletes the specified consumable resource.",
-                        "input": {
-                            "consumableResource": "myConsumableResource"
-                        },
-                        "output": {}
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/deleteconsumableresource",
@@ -4145,16 +3789,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Deletes the specified job queue. You must first disable submissions for a queue with the\n        <a>UpdateJobQueue</a> operation. All jobs in the queue are eventually terminated\n      when you delete a job queue.</p>\n         <p>It's not necessary to disassociate compute environments from a queue before submitting a\n        <code>DeleteJobQueue</code> request.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To delete a job queue",
-                        "documentation": "This example deletes the GPGPU job queue.",
-                        "input": {
-                            "jobQueue": "GPGPU"
-                        },
-                        "output": {}
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/deletejobqueue",
@@ -4349,16 +3983,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Deregisters an Batch job definition. Job definitions are permanently deleted after 180\n      days.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To deregister a job definition",
-                        "documentation": "This example deregisters a job definition called sleep10.",
-                        "input": {
-                            "jobDefinition": "sleep10"
-                        },
-                        "output": {}
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/deregisterjobdefinition",
@@ -4407,53 +4031,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Describes one or more of your compute environments.</p>\n         <p>If you're using an unmanaged compute environment, you can use the\n        <code>DescribeComputeEnvironment</code> operation to determine the\n        <code>ecsClusterArn</code> that you launch your Amazon ECS container instances into.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To describe a compute environment",
-                        "documentation": "This example describes the P2OnDemand compute environment.",
-                        "input": {
-                            "computeEnvironments": [
-                                "P2OnDemand"
-                            ]
-                        },
-                        "output": {
-                            "computeEnvironments": [
-                                {
-                                    "computeEnvironmentName": "P2OnDemand",
-                                    "computeEnvironmentArn": "arn:aws:batch:us-east-1:012345678910:compute-environment/P2OnDemand",
-                                    "ecsClusterArn": "arn:aws:ecs:us-east-1:012345678910:cluster/P2OnDemand_Batch_2c06f29d-d1fe-3a49-879d-42394c86effc",
-                                    "type": "MANAGED",
-                                    "state": "ENABLED",
-                                    "status": "VALID",
-                                    "statusReason": "ComputeEnvironment Healthy",
-                                    "computeResources": {
-                                        "type": "EC2",
-                                        "minvCpus": 0,
-                                        "maxvCpus": 128,
-                                        "desiredvCpus": 48,
-                                        "instanceTypes": [
-                                            "p2"
-                                        ],
-                                        "subnets": [
-                                            "subnet-220c0e0a",
-                                            "subnet-1a95556d",
-                                            "subnet-978f6dce"
-                                        ],
-                                        "securityGroupIds": [
-                                            "sg-cf5093b2"
-                                        ],
-                                        "ec2KeyPair": "id_rsa",
-                                        "instanceRole": "ecsInstanceRole",
-                                        "tags": {
-                                            "Name": "Batch Instance - P2OnDemand"
-                                        }
-                                    },
-                                    "serviceRole": "arn:aws:iam::012345678910:role/AWSBatchServiceRole"
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/describecomputeenvironments",
@@ -4545,28 +4122,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Returns a description of the specified consumable resource.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To get a description of a consumable resource",
-                        "documentation": "Returns a description of the specified consumable resource.",
-                        "input": {
-                            "consumableResource": "myConsumableResource"
-                        },
-                        "output": {
-                            "consumableResourceName": "myConsumableResource",
-                            "consumableResourceArn": "arn:aws:batch:us-east-1:012345678910:consumable-resource/myConsumableResource",
-                            "totalQuantity": 123,
-                            "inUseQuantity": 123,
-                            "availableQuantity": 123,
-                            "resourceType": "REPLENISHABLE",
-                            "createdAt": 123,
-                            "tags": {
-                                "Department": "Engineering",
-                                "User": "JaneDoe"
-                            }
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/describeconsumableresource",
@@ -4668,47 +4223,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Describes a list of job definitions. You can specify a <code>status</code> (such as\n        <code>ACTIVE</code>) to only return job definitions that match that status.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To describe active job definitions",
-                        "documentation": "This example describes all of your active job definitions.",
-                        "input": {
-                            "status": "ACTIVE"
-                        },
-                        "output": {
-                            "jobDefinitions": [
-                                {
-                                    "jobDefinitionName": "sleep60",
-                                    "jobDefinitionArn": "arn:aws:batch:us-east-1:012345678910:job-definition/sleep60:1",
-                                    "revision": 1,
-                                    "status": "ACTIVE",
-                                    "type": "container",
-                                    "containerProperties": {
-                                        "image": "busybox",
-                                        "resourceRequirements": [
-                                            {
-                                                "type": "MEMORY",
-                                                "value": "128"
-                                            },
-                                            {
-                                                "type": "VCPU",
-                                                "value": "1"
-                                            }
-                                        ],
-                                        "command": [
-                                            "sleep",
-                                            "60"
-                                        ],
-                                        "volumes": [],
-                                        "environment": [],
-                                        "mountPoints": [],
-                                        "ulimits": []
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/describejobdefinitions",
@@ -4799,35 +4313,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Describes one or more of your job queues.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To describe a job queue",
-                        "documentation": "This example describes the HighPriority job queue.",
-                        "input": {
-                            "jobQueues": [
-                                "HighPriority"
-                            ]
-                        },
-                        "output": {
-                            "jobQueues": [
-                                {
-                                    "jobQueueName": "HighPriority",
-                                    "jobQueueArn": "arn:aws:batch:us-east-1:012345678910:job-queue/HighPriority",
-                                    "state": "ENABLED",
-                                    "status": "VALID",
-                                    "statusReason": "JobQueue Healthy",
-                                    "priority": 1,
-                                    "computeEnvironmentOrder": [
-                                        {
-                                            "order": 1,
-                                            "computeEnvironment": "arn:aws:batch:us-east-1:012345678910:compute-environment/C4OnDemand"
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/describejobqueues",
@@ -4906,48 +4391,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Describes a list of Batch jobs.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To describe a specific job",
-                        "documentation": "This example describes a job with the specified job ID.",
-                        "input": {
-                            "jobs": [
-                                "24fa2d7a-64c4-49d2-8b47-f8da4fbde8e9"
-                            ]
-                        },
-                        "output": {
-                            "jobs": [
-                                {
-                                    "jobName": "example",
-                                    "jobId": "24fa2d7a-64c4-49d2-8b47-f8da4fbde8e9",
-                                    "jobQueue": "arn:aws:batch:us-east-1:012345678910:job-queue/HighPriority",
-                                    "status": "SUCCEEDED",
-                                    "createdAt": 1480460782010,
-                                    "startedAt": 1480460816500,
-                                    "stoppedAt": 1480460880699,
-                                    "dependsOn": [],
-                                    "jobDefinition": "sleep60",
-                                    "parameters": {},
-                                    "container": {
-                                        "image": "busybox",
-                                        "vcpus": 1,
-                                        "memory": 128,
-                                        "command": [
-                                            "sleep",
-                                            "60"
-                                        ],
-                                        "volumes": [],
-                                        "environment": [],
-                                        "mountPoints": [],
-                                        "ulimits": [],
-                                        "exitCode": 0,
-                                        "containerInstanceArn": "arn:aws:ecs:us-east-1:012345678910:container-instance/5406d7cd-58bd-4b8f-9936-48d7c6b1526c"
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/describejobs",
@@ -6258,6 +5701,47 @@
                 "target": "com.amazonaws.batch#EksContainerEnvironmentVariable"
             }
         },
+        "com.amazonaws.batch#EksContainerLinuxCapabilities": {
+            "type": "structure",
+            "members": {
+                "add": {
+                    "target": "com.amazonaws.batch#EksContainerLinuxCapabilityList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The Linux capabilities to add to the default capability set for the container. This\n   parameter contains up to 64 values. Specify capability names without the <code>CAP_</code>\n   prefix.</p>"
+                    }
+                },
+                "drop": {
+                    "target": "com.amazonaws.batch#EksContainerLinuxCapabilityList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The Linux capabilities to remove from the default capability set for the container. This\n   parameter contains up to 64 values. Specify capability names without the <code>CAP_</code>\n   prefix.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>The Linux capabilities for the container. For more information, see <a href=\"https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-capabilities-for-a-container\">Set capabilities for a container</a> in the <i>Kubernetes\n   documentation</i>.</p>"
+            }
+        },
+        "com.amazonaws.batch#EksContainerLinuxCapability": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 128
+                }
+            }
+        },
+        "com.amazonaws.batch#EksContainerLinuxCapabilityList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazonaws.batch#EksContainerLinuxCapability"
+            },
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 64
+                }
+            }
+        },
         "com.amazonaws.batch#EksContainerOverride": {
             "type": "structure",
             "members": {
@@ -6334,13 +5818,13 @@
                 "runAsUser": {
                     "target": "com.amazonaws.batch#Long",
                     "traits": {
-                        "smithy.api#documentation": "<p>When this parameter is specified, the container is run as the specified user ID\n    (<code>uid</code>). If this parameter isn't specified, the default is the user that's specified\n   in the image metadata. This parameter maps to <code>RunAsUser</code> and <code>MustRanAs</code>\n   policy in the <a href=\"https://kubernetes.io/docs/concepts/security/pod-security-policy/#users-and-groups\">Users\n    and groups pod security policies</a> in the <i>Kubernetes\n   documentation</i>.</p>"
+                        "smithy.api#documentation": "<p>When this parameter is specified, the container is run as the specified user ID\n    (<code>uid</code>). If this parameter isn't specified, the default is the user that's specified\n   in the image metadata. The supported value range is <code>0</code> through\n    <code>2147483647</code>. This parameter maps to <code>RunAsUser</code> and\n    <code>MustRunAs</code> policy in the <a href=\"https://kubernetes.io/docs/concepts/security/pod-security-policy/#users-and-groups\">Users\n    and groups pod security policies</a> in the <i>Kubernetes\n   documentation</i>.</p>"
                     }
                 },
                 "runAsGroup": {
                     "target": "com.amazonaws.batch#Long",
                     "traits": {
-                        "smithy.api#documentation": "<p>When this parameter is specified, the container is run as the specified group ID\n    (<code>gid</code>). If this parameter isn't specified, the default is the group that's specified\n   in the image metadata. This parameter maps to <code>RunAsGroup</code> and <code>MustRunAs</code>\n   policy in the <a href=\"https://kubernetes.io/docs/concepts/security/pod-security-policy/#users-and-groups\">Users\n    and groups pod security policies</a> in the <i>Kubernetes\n   documentation</i>.</p>"
+                        "smithy.api#documentation": "<p>When this parameter is specified, the container is run as the specified group ID\n    (<code>gid</code>). If this parameter isn't specified, the default is the group that's specified\n   in the image metadata. The supported value range is <code>0</code> through\n    <code>2147483647</code>. This parameter maps to <code>RunAsGroup</code> and\n    <code>MustRunAs</code> policy in the <a href=\"https://kubernetes.io/docs/concepts/security/pod-security-policy/#users-and-groups\">Users\n    and groups pod security policies</a> in the <i>Kubernetes\n   documentation</i>.</p>"
                     }
                 },
                 "privileged": {
@@ -6365,6 +5849,18 @@
                     "target": "com.amazonaws.batch#Boolean",
                     "traits": {
                         "smithy.api#documentation": "<p>When this parameter is specified, the container is run as a user with a <code>uid</code>\n   other than 0. If this parameter isn't specified, so such rule is enforced. This parameter maps to\n    <code>RunAsUser</code> and <code>MustRunAsNonRoot</code> policy in the <a href=\"https://kubernetes.io/docs/concepts/security/pod-security-policy/#users-and-groups\">Users\n    and groups pod security policies</a> in the <i>Kubernetes\n   documentation</i>.</p>"
+                    }
+                },
+                "capabilities": {
+                    "target": "com.amazonaws.batch#EksContainerLinuxCapabilities",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Adds or removes Linux capabilities from the container's default capability set.\n   With Linux capabilities, you can grant specific privileges without granting full root\n   permissions.</p>"
+                    }
+                },
+                "seccompProfile": {
+                    "target": "com.amazonaws.batch#EksSeccompProfile",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The seccomp profile for the container. A container-level seccomp profile overrides the\n   profile in the pod security context, which defines security settings that apply to all\n   containers in the pod unless a container overrides them. If this parameter isn't specified,\n   the container uses the pod security context's seccomp profile when one is specified.</p>"
                     }
                 }
             },
@@ -6572,6 +6068,12 @@
                     "traits": {
                         "smithy.api#documentation": "<p>Indicates if the processes in a container are shared, or visible, to other containers in the\n   same pod. For more information, see <a href=\"https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/\">Share\n    Process Namespace between Containers in a Pod</a>.</p>"
                     }
+                },
+                "securityContext": {
+                    "target": "com.amazonaws.batch#EksPodSecurityContext",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The security context to apply to the pod. The settings apply to all containers in the\n   pod unless an individual container specifies an overriding value.</p>"
+                    }
                 }
             },
             "traits": {
@@ -6646,6 +6148,12 @@
                     "traits": {
                         "smithy.api#documentation": "<p>Indicates if the processes in a container are shared, or visible, to other containers in the\n   same pod. For more information, see <a href=\"https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/\">Share\n    Process Namespace between Containers in a Pod</a>.</p>"
                     }
+                },
+                "securityContext": {
+                    "target": "com.amazonaws.batch#EksPodSecurityContext",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The security context applied to the pod. The settings apply to all containers in the\n   pod unless an individual container specifies an overriding value.</p>"
+                    }
                 }
             },
             "traits": {
@@ -6676,6 +6184,44 @@
             },
             "traits": {
                 "smithy.api#documentation": "<p>An object that contains overrides for the Kubernetes pod properties of a job.</p>"
+            }
+        },
+        "com.amazonaws.batch#EksPodSecurityContext": {
+            "type": "structure",
+            "members": {
+                "runAsUser": {
+                    "target": "com.amazonaws.batch#Long",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The user ID that runs containers in the pod when a container does not specify its own\n   user ID. The supported value range is <code>0</code> through\n    <code>2147483647</code>.</p>"
+                    }
+                },
+                "runAsGroup": {
+                    "target": "com.amazonaws.batch#Long",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The primary group ID that runs containers in the pod when a container does not specify\n   its own group ID. The supported value range is <code>0</code> through\n    <code>2147483647</code>.</p>"
+                    }
+                },
+                "runAsNonRoot": {
+                    "target": "com.amazonaws.batch#Boolean",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Specifies whether Kubernetes validates that containers in the pod don't run as the root user\n   unless a container specifies an overriding value.</p>"
+                    }
+                },
+                "seccompProfile": {
+                    "target": "com.amazonaws.batch#EksSeccompProfile",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The default seccomp profile for containers in the pod. A container-level seccomp profile\n   overrides this value.</p>"
+                    }
+                },
+                "fsGroup": {
+                    "target": "com.amazonaws.batch#Long",
+                    "traits": {
+                        "smithy.api#documentation": "<p>A special supplemental group that is applied to all containers in the pod. Some volume\n   types allow Kubernetes to change the ownership and permissions of the volume contents to this group\n   when the volume is mounted. The supported value range is <code>0</code> through\n    <code>2147483647</code>.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>The security context for the pod. The settings apply to all containers in the pod when\n   the container does not specify an overriding value. For more information, see <a href=\"https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod\">Set the security context for a Pod</a> in the <i>Kubernetes\n   documentation</i>.</p>"
             }
         },
         "com.amazonaws.batch#EksProperties": {
@@ -6727,6 +6273,60 @@
             },
             "value": {
                 "target": "com.amazonaws.batch#Quantity"
+            }
+        },
+        "com.amazonaws.batch#EksSeccompLocalhostProfile": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 4095
+                }
+            }
+        },
+        "com.amazonaws.batch#EksSeccompProfile": {
+            "type": "structure",
+            "members": {
+                "type": {
+                    "target": "com.amazonaws.batch#EksSeccompProfileType",
+                    "traits": {
+                        "smithy.api#clientOptional": {},
+                        "smithy.api#documentation": "<p>The seccomp profile type can be one of the following values:</p>\n         <dl>\n            <dt>RuntimeDefault</dt>\n            <dd>\n               <p>The <code>RuntimeDefault</code> value uses the container runtime's default seccomp\n      profile.</p>\n            </dd>\n            <dt>Unconfined</dt>\n            <dd>\n               <p>The <code>Unconfined</code> value doesn't filter the container with seccomp.</p>\n            </dd>\n            <dt>Localhost</dt>\n            <dd>\n               <p>The <code>Localhost</code> value uses a custom profile at the path specified by\n       <code>localhostProfile</code>.</p>\n            </dd>\n         </dl>",
+                        "smithy.api#required": {}
+                    }
+                },
+                "localhostProfile": {
+                    "target": "com.amazonaws.batch#EksSeccompLocalhostProfile",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The path of the profile on the node, relative to the configured seccomp profile location.\n   You must specify this parameter when <code>type</code> is <code>Localhost</code>. Don't set this\n   parameter for any other type. You are responsible for ensuring that the profile exists on every\n   eligible worker node. For information about providing files to Amazon EKS nodes, see <a href=\"https://docs.aws.amazon.com/batch/latest/userguide/eks-launch-templates.html\">Use a launch template with\n    Batch on Amazon EKS</a> in the <i>Batch User Guide</i>.</p>"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>The Linux seccomp profile for a pod or container. For more information, see <a href=\"https://kubernetes.io/docs/tutorials/security/seccomp/\">Restrict a Container's\n    Syscalls with seccomp</a> in the <i>Kubernetes documentation</i>.</p>"
+            }
+        },
+        "com.amazonaws.batch#EksSeccompProfileType": {
+            "type": "enum",
+            "members": {
+                "RUNTIME_DEFAULT": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "RuntimeDefault"
+                    }
+                },
+                "LOCALHOST": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Localhost"
+                    }
+                },
+                "UNCONFINED": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "Unconfined"
+                    }
+                }
             }
         },
         "com.amazonaws.batch#EksSecret": {
@@ -7561,7 +7161,7 @@
                 "nodeProperties": {
                     "target": "com.amazonaws.batch#NodeProperties",
                     "traits": {
-                        "smithy.api#documentation": "<p>An object with properties that are specific to multi-node parallel jobs. When\n    <code>nodeProperties</code> is used in the job definition, it can't be used in addition to\n    <code>containerProperties</code>, <code>ecsProperties</code>, or\n   <code>eksProperties</code>.</p>\n         <note>\n            <p>If the job runs on Fargate resources, don't specify <code>nodeProperties</code>. Use\n     <code>containerProperties</code> instead.</p>\n         </note>"
+                        "smithy.api#documentation": "<p>An object with properties that are specific to multi-node parallel jobs. When\n    <code>nodeProperties</code> is used in the job definition, it can't be used in addition to\n    <code>containerProperties</code>, <code>ecsProperties</code>, or\n   <code>eksProperties</code>.</p>\n         <note>\n            <p>If the job runs on Fargate resources, don't specify <code>nodeProperties</code>. We\n    recommend <code>ecsProperties</code>, which supports both single-container and multi-container\n    jobs. <code>containerProperties</code> is also supported for single-container jobs.</p>\n         </note>"
                     }
                 },
                 "tags": {
@@ -8480,34 +8080,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Returns a list of Batch consumable resources.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To get a list of a consumable resources",
-                        "documentation": "Returns a list of the consumable resources for your account.",
-                        "input": {
-                            "filters": [
-                                {
-                                    "name": "CONSUMABLE_RESOURCE_NAME",
-                                    "values": [
-                                        "my*"
-                                    ]
-                                }
-                            ],
-                            "maxResults": 123
-                        },
-                        "output": {
-                            "consumableResources": [
-                                {
-                                    "consumableResourceArn": "arn:aws:batch:us-east-1:012345678910:consumable-resource/myConsumableResource",
-                                    "consumableResourceName": "myConsumableResource",
-                                    "inUseQuantity": 12,
-                                    "resourceType": "REPLENISHABLE",
-                                    "totalQuantity": 123
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/listconsumableresources",
@@ -8605,39 +8177,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Returns a list of Batch jobs.</p>\n         <p>You must specify only one of the following items:</p>\n         <ul>\n            <li>\n               <p>A job queue ID to return a list of jobs in that job queue</p>\n            </li>\n            <li>\n               <p>A multi-node parallel job ID to return a list of nodes for that job</p>\n            </li>\n            <li>\n               <p>An array job ID to return a list of the children for that job</p>\n            </li>\n         </ul>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To list running jobs",
-                        "documentation": "This example lists the running jobs in the HighPriority job queue.",
-                        "input": {
-                            "jobQueue": "HighPriority"
-                        },
-                        "output": {
-                            "jobSummaryList": [
-                                {
-                                    "jobId": "e66ff5fd-a1ff-4640-b1a2-0b0a142f49bb",
-                                    "jobName": "example"
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        "title": "To list submitted jobs",
-                        "documentation": "This example lists jobs in the HighPriority job queue that are in the SUBMITTED job status.",
-                        "input": {
-                            "jobQueue": "HighPriority",
-                            "jobStatus": "SUBMITTED"
-                        },
-                        "output": {
-                            "jobSummaryList": [
-                                {
-                                    "jobId": "68f0c163-fbd4-44e6-9fd1-25b14a434786",
-                                    "jobName": "example"
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/listjobs",
@@ -8669,45 +8208,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Returns a list of Batch jobs that require a specific consumable resource.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To get a list of Batch jobs by consumable resource",
-                        "documentation": "Returns a list of Batch jobs that require a specific consumable resource.",
-                        "input": {
-                            "consumableResource": "myConsumableResource",
-                            "filters": [
-                                {
-                                    "name": "CONSUMABLE_RESOURCE_NAME",
-                                    "values": [
-                                        "my*"
-                                    ]
-                                }
-                            ],
-                            "maxResults": 123
-                        },
-                        "output": {
-                            "jobs": [
-                                {
-                                    "consumableResourceProperties": {
-                                        "consumableResourceList": [
-                                            {
-                                                "consumableResource": "myConsumableResource",
-                                                "quantity": 123
-                                            }
-                                        ]
-                                    },
-                                    "createdAt": 1480460782010,
-                                    "jobArn": "arn:aws:batch:us-east-1:012345678910:job/myJob",
-                                    "jobDefinitionArn": "arn:aws:batch:us-east-1:012345678910:job-definition/myJobDef",
-                                    "jobName": "myJob",
-                                    "jobQueueArn": "arn:aws:batch:us-east-1:012345678910:job-queue/myJobQueue",
-                                    "jobStatus": "PENDING",
-                                    "quantity": 123
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/listjobsbyconsumableresource",
@@ -9216,22 +8716,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Lists the tags for an Batch resource. Batch resources that support tags are compute environments, jobs, job definitions, job queues,\n and scheduling policies. ARNs for child jobs of array and multi-node parallel (MNP) jobs aren't supported.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "ListTagsForResource Example",
-                        "documentation": "This demonstrates calling the ListTagsForResource action.",
-                        "input": {
-                            "resourceArn": "arn:aws:batch:us-east-1:123456789012:job-definition/sleep30:1"
-                        },
-                        "output": {
-                            "tags": {
-                                "Stage": "Alpha",
-                                "Department": "Engineering",
-                                "User": "JaneDoe"
-                            }
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "GET",
                     "uri": "/v1/tags/{resourceArn}",
@@ -10210,224 +9694,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Registers an Batch job definition.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "RegisterJobDefinition with tags",
-                        "documentation": "This demonstrates calling the RegisterJobDefinition action, including tags.",
-                        "input": {
-                            "jobDefinitionName": "sleep30",
-                            "type": "container",
-                            "containerProperties": {
-                                "image": "busybox",
-                                "command": [
-                                    "sleep",
-                                    "30"
-                                ],
-                                "resourceRequirements": [
-                                    {
-                                        "type": "MEMORY",
-                                        "value": "128"
-                                    },
-                                    {
-                                        "type": "VCPU",
-                                        "value": "1"
-                                    }
-                                ]
-                            },
-                            "tags": {
-                                "Department": "Engineering",
-                                "User": "JaneDoe"
-                            }
-                        },
-                        "output": {
-                            "jobDefinitionName": "sleep30",
-                            "jobDefinitionArn": "arn:aws:batch:us-east-1:012345678910:job-definition/sleep30:1",
-                            "revision": 1
-                        }
-                    },
-                    {
-                        "title": "To register a GPU job definition on ECS Managed Instances",
-                        "documentation": "This example registers a job definition that requests GPU resources on ECS Managed Instances.",
-                        "input": {
-                            "jobDefinitionName": "my-gpu-managed-instances-job-def",
-                            "type": "container",
-                            "platformCapabilities": [
-                                "MANAGED_INSTANCES"
-                            ],
-                            "ecsProperties": {
-                                "taskProperties": [
-                                    {
-                                        "containers": [
-                                            {
-                                                "image": "123456789012.dkr.ecr.us-east-1.amazonaws.com/my-gpu-image:latest",
-                                                "name": "main",
-                                                "command": [
-                                                    "nvidia-smi"
-                                                ],
-                                                "resourceRequirements": [
-                                                    {
-                                                        "type": "VCPU",
-                                                        "value": "4"
-                                                    },
-                                                    {
-                                                        "type": "MEMORY",
-                                                        "value": "16384"
-                                                    },
-                                                    {
-                                                        "type": "GPU",
-                                                        "value": "1"
-                                                    }
-                                                ]
-                                            }
-                                        ],
-                                        "executionRoleArn": "arn:aws:iam::123456789012:role/ecsTaskExecutionRole"
-                                    }
-                                ]
-                            }
-                        },
-                        "output": {
-                            "jobDefinitionName": "my-gpu-managed-instances-job-def",
-                            "jobDefinitionArn": "arn:aws:batch:us-east-1:123456789012:job-definition/my-gpu-managed-instances-job-def:1",
-                            "revision": 1
-                        }
-                    },
-                    {
-                        "title": "To register a job definition",
-                        "documentation": "This example registers a job definition for a simple container job.",
-                        "input": {
-                            "containerProperties": {
-                                "image": "busybox",
-                                "command": [
-                                    "sleep",
-                                    "10"
-                                ],
-                                "resourceRequirements": [
-                                    {
-                                        "type": "MEMORY",
-                                        "value": "128"
-                                    },
-                                    {
-                                        "type": "VCPU",
-                                        "value": "1"
-                                    }
-                                ]
-                            },
-                            "type": "container",
-                            "jobDefinitionName": "sleep10"
-                        },
-                        "output": {
-                            "jobDefinitionName": "sleep10",
-                            "jobDefinitionArn": "arn:aws:batch:us-east-1:012345678910:job-definition/sleep10:1",
-                            "revision": 1
-                        }
-                    },
-                    {
-                        "title": "To register a job definition on ECS Managed Instances",
-                        "documentation": "This example registers a job definition that runs on ECS Managed Instances using ecsProperties with the MANAGED_INSTANCES platform capability.",
-                        "input": {
-                            "jobDefinitionName": "my-managed-instances-job-def",
-                            "type": "container",
-                            "platformCapabilities": [
-                                "MANAGED_INSTANCES"
-                            ],
-                            "ecsProperties": {
-                                "taskProperties": [
-                                    {
-                                        "containers": [
-                                            {
-                                                "image": "public.ecr.aws/amazonlinux/amazonlinux:2023",
-                                                "name": "main",
-                                                "command": [
-                                                    "echo",
-                                                    "hello managed instances"
-                                                ],
-                                                "resourceRequirements": [
-                                                    {
-                                                        "type": "VCPU",
-                                                        "value": "1"
-                                                    },
-                                                    {
-                                                        "type": "MEMORY",
-                                                        "value": "1024"
-                                                    }
-                                                ]
-                                            }
-                                        ],
-                                        "executionRoleArn": "arn:aws:iam::123456789012:role/ecsTaskExecutionRole"
-                                    }
-                                ]
-                            }
-                        },
-                        "output": {
-                            "jobDefinitionName": "my-managed-instances-job-def",
-                            "jobDefinitionArn": "arn:aws:batch:us-east-1:123456789012:job-definition/my-managed-instances-job-def:1",
-                            "revision": 1
-                        }
-                    },
-                    {
-                        "title": "To register a multi-container job definition on ECS Managed Instances",
-                        "documentation": "This example registers a job definition with a main container and a sidecar logging container on ECS Managed Instances.",
-                        "input": {
-                            "jobDefinitionName": "my-sidecar-managed-instances-job-def",
-                            "type": "container",
-                            "platformCapabilities": [
-                                "MANAGED_INSTANCES"
-                            ],
-                            "ecsProperties": {
-                                "taskProperties": [
-                                    {
-                                        "containers": [
-                                            {
-                                                "image": "public.ecr.aws/amazonlinux/amazonlinux:2023",
-                                                "name": "main",
-                                                "command": [
-                                                    "echo",
-                                                    "processing data"
-                                                ],
-                                                "essential": true,
-                                                "resourceRequirements": [
-                                                    {
-                                                        "type": "VCPU",
-                                                        "value": "2"
-                                                    },
-                                                    {
-                                                        "type": "MEMORY",
-                                                        "value": "4096"
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "image": "public.ecr.aws/amazonlinux/amazonlinux:2023",
-                                                "name": "sidecar",
-                                                "command": [
-                                                    "echo",
-                                                    "logging sidecar"
-                                                ],
-                                                "essential": false,
-                                                "resourceRequirements": [
-                                                    {
-                                                        "type": "VCPU",
-                                                        "value": "1"
-                                                    },
-                                                    {
-                                                        "type": "MEMORY",
-                                                        "value": "512"
-                                                    }
-                                                ]
-                                            }
-                                        ],
-                                        "executionRoleArn": "arn:aws:iam::123456789012:role/ecsTaskExecutionRole"
-                                    }
-                                ]
-                            }
-                        },
-                        "output": {
-                            "jobDefinitionName": "my-sidecar-managed-instances-job-def",
-                            "jobDefinitionArn": "arn:aws:batch:us-east-1:123456789012:job-definition/my-sidecar-managed-instances-job-def:1",
-                            "revision": 1
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/registerjobdefinition",
@@ -10469,13 +9735,13 @@
                 "containerProperties": {
                     "target": "com.amazonaws.batch#ContainerProperties",
                     "traits": {
-                        "smithy.api#documentation": "<p>An object with properties specific to Amazon ECS-based single-node container-based jobs. If the\n      job definition's <code>type</code> parameter is <code>container</code>, then you must specify\n      either <code>containerProperties</code> or <code>nodeProperties</code>. This must not be\n      specified for Amazon EKS-based job definitions.</p>\n         <note>\n            <p>If the job runs on Fargate resources, then you must not specify\n          <code>nodeProperties</code>; use only <code>containerProperties</code>.</p>\n         </note>"
+                        "smithy.api#documentation": "<p>An object with properties specific to Amazon ECS-based single-node container-based jobs. If the\n      job definition's <code>type</code> parameter is <code>container</code>, then you must specify\n      either <code>containerProperties</code> or <code>nodeProperties</code>. This must not be\n      specified for Amazon EKS-based job definitions.</p>\n         <note>\n            <p>If the job runs on Fargate resources, then you must not specify\n          <code>nodeProperties</code>. We recommend <code>ecsProperties</code>, which supports both\n          single-container and multi-container jobs. <code>containerProperties</code> is also\n          supported for single-container jobs. For more information, see <a href=\"https://docs.aws.amazon.com/batch/latest/userguide/multi-container-jobs.html\">Multi-container jobs</a> in the\n            <i>Batch User Guide</i>.</p>\n         </note>"
                     }
                 },
                 "nodeProperties": {
                     "target": "com.amazonaws.batch#NodeProperties",
                     "traits": {
-                        "smithy.api#documentation": "<p>An object with properties specific to multi-node parallel jobs. If you specify node\n      properties for a job, it becomes a multi-node parallel job. For more information, see <a href=\"https://docs.aws.amazon.com/batch/latest/userguide/multi-node-parallel-jobs.html\">Multi-node Parallel\n        Jobs</a> in the <i>Batch User Guide</i>.</p>\n         <note>\n            <p>If the job runs on Fargate resources, then you must not specify\n          <code>nodeProperties</code>; use <code>containerProperties</code> instead.</p>\n         </note>\n         <note>\n            <p>If the job runs on Amazon EKS resources, then you must not specify\n          <code>nodeProperties</code>.</p>\n         </note>"
+                        "smithy.api#documentation": "<p>An object with properties specific to multi-node parallel jobs. If you specify node\n      properties for a job, it becomes a multi-node parallel job. For more information, see <a href=\"https://docs.aws.amazon.com/batch/latest/userguide/multi-node-parallel-jobs.html\">Multi-node Parallel\n        Jobs</a> in the <i>Batch User Guide</i>.</p>\n         <note>\n            <p>If the job runs on Fargate resources, then you must not specify\n          <code>nodeProperties</code>. We recommend <code>ecsProperties</code>, which supports both\n          single-container and multi-container jobs. <code>containerProperties</code> is also\n          supported for single-container jobs.</p>\n         </note>\n         <note>\n            <p>If the job runs on Amazon EKS resources, then you must not specify\n          <code>nodeProperties</code>.</p>\n         </note>"
                     }
                 },
                 "retryStrategy": {
@@ -11505,21 +10771,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Submits an Batch job from a job definition. Parameters that are specified during <a>SubmitJob</a> override parameters defined in the job definition. vCPU and memory\n      requirements that are specified in the <code>resourceRequirements</code> objects in the job\n      definition are the exception. They can't be overridden this way using the <code>memory</code>\n      and <code>vcpus</code> parameters. Rather, you must specify updates to job definition\n      parameters in a <code>resourceRequirements</code> object that's included in the\n        <code>containerOverrides</code> parameter.</p>\n         <note>\n            <p>Job queues with a scheduling policy are limited to 500 active share identifiers at\n        a time. </p>\n         </note>\n         <important>\n            <p>Jobs that run on Fargate resources can't be guaranteed to run for more than 14 days.\n        This is because, after 14 days, Fargate resources might become unavailable and job might be\n        terminated.</p>\n         </important>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To submit a job to a queue",
-                        "documentation": "This example submits a simple container job called example to the HighPriority job queue.",
-                        "input": {
-                            "jobName": "example",
-                            "jobQueue": "HighPriority",
-                            "jobDefinition": "sleep60"
-                        },
-                        "output": {
-                            "jobName": "example",
-                            "jobId": "876da822-4198-45f2-a252-6cea32512ea8"
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/submitjob",
@@ -11857,19 +11108,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Associates the specified tags to a resource with the specified <code>resourceArn</code>.\n      If existing tags on a resource aren't specified in the request parameters, they aren't\n      changed. When a resource is deleted, the tags that are associated with that resource are\n      deleted as well. Batch resources that support tags are compute environments, jobs, job definitions, job queues,\n and scheduling policies. ARNs for child jobs of array and multi-node parallel (MNP) jobs aren't supported.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "TagResource Example",
-                        "documentation": "This demonstrates calling the TagResource action.",
-                        "input": {
-                            "resourceArn": "arn:aws:batch:us-east-1:123456789012:job-definition/sleep30:1",
-                            "tags": {
-                                "Stage": "Alpha"
-                            }
-                        },
-                        "output": {}
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/tags/{resourceArn}",
@@ -12302,17 +11540,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Terminates a job in a job queue. Jobs that are in the <code>STARTING</code> or\n        <code>RUNNING</code> state are terminated, which causes them to transition to\n        <code>FAILED</code>. Jobs that have not progressed to the <code>STARTING</code> state are\n      cancelled.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To terminate a job",
-                        "documentation": "This example terminates a job with the specified job ID.",
-                        "input": {
-                            "reason": "Terminating job.",
-                            "jobId": "61e743ed-35e4-48da-b2de-5c8333821c84"
-                        },
-                        "output": {}
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/terminatejob",
@@ -12370,31 +11597,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Terminates up to 50 jobs in a job queue. This is a bulk version of <a>TerminateJob</a>. Jobs that are in the <code>STARTING</code> or\n        <code>RUNNING</code> state are terminated, which causes them to transition to\n        <code>FAILED</code>. Jobs that have not progressed to the <code>STARTING</code> state are\n      cancelled.</p>\n         <p>Batch reports the result for each job individually in the response. Jobs that\n      were processed successfully are reported in the <code>successful</code> list. Jobs that\n      encountered errors are reported in the <code>errors</code> list. The response returns an\n      HTTP status code of <code>200</code> even when some jobs encountered errors, so check the\n      <code>errors</code> list. Jobs that can't be found are treated as successfully\n      processed.</p>\n         <important>\n            <p>This operation requires <code>batch:TerminateJob</code> permission for each job in the\n        request. There is no separate <code>batch:TerminateJobs</code> IAM action. If a caller's IAM\n        policy grants <code>batch:TerminateJob</code>, they can use both the singular\n        <a>TerminateJob</a> and bulk <code>TerminateJobs</code> operations.</p>\n         </important>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To terminate multiple jobs",
-                        "documentation": "This example terminates the jobs with the specified job IDs.",
-                        "input": {
-                            "jobs": [
-                                "61e743ed-35e4-48da-b2de-5c8333821c84",
-                                "b3d0f26e-6d3a-4a5b-9c2e-7f4a1b2c3d4e"
-                            ],
-                            "reason": "Terminating jobs."
-                        },
-                        "output": {
-                            "successful": [
-                                "61e743ed-35e4-48da-b2de-5c8333821c84"
-                            ],
-                            "errors": [
-                                {
-                                    "job": "b3d0f26e-6d3a-4a5b-9c2e-7f4a1b2c3d4e",
-                                    "code": "ServerException",
-                                    "message": "Failed to read job state. Please retry this job."
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/terminatejobs",
@@ -12564,31 +11766,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Terminates up to 50 service jobs in a job queue. This is a bulk version of <a>TerminateServiceJob</a>.</p>\n         <p>Batch reports the result for each service job individually in the response. Service jobs that were processed successfully are reported in the <code>successful</code> list. Service jobs that encountered errors are reported in the <code>errors</code> list. The response returns an HTTP status code of <code>200</code> even when some service jobs encountered errors, so check the <code>errors</code> list. Service jobs that can't be found are treated as successfully processed.</p>\n         <important>\n            <p>This operation requires <code>batch:TerminateServiceJob</code> permission for each service job in the\n            request. There is no separate <code>batch:TerminateServiceJobs</code> IAM action. If a caller's IAM\n            policy grants <code>batch:TerminateServiceJob</code>, they can use both the singular\n            <code>TerminateServiceJob</code> and bulk <code>TerminateServiceJobs</code> operations.</p>\n         </important>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To terminate multiple service jobs",
-                        "documentation": "This example terminates the specified service jobs with a reason.",
-                        "input": {
-                            "jobs": [
-                                "a4d6c728-8ee8-4c65-8e2a-9a5e8f4b7c3d",
-                                "b3d0f26e-6d3a-4a5b-9c2e-7f4a1b2c3d4e"
-                            ],
-                            "reason": "Job terminated by user request"
-                        },
-                        "output": {
-                            "successful": [
-                                "a4d6c728-8ee8-4c65-8e2a-9a5e8f4b7c3d"
-                            ],
-                            "errors": [
-                                {
-                                    "job": "b3d0f26e-6d3a-4a5b-9c2e-7f4a1b2c3d4e",
-                                    "code": "ServerException",
-                                    "message": "Failed to read job state. Please retry this job."
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/terminateservicejobs",
@@ -12776,19 +11953,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Deletes specified tags from an Batch resource.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "UntagResource Example",
-                        "documentation": "This demonstrates calling the UntagResource action.",
-                        "input": {
-                            "resourceArn": "arn:aws:batch:us-east-1:123456789012:job-definition/sleep30:1",
-                            "tagKeys": [
-                                "Stage"
-                            ]
-                        },
-                        "output": {}
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "DELETE",
                     "uri": "/v1/tags/{resourceArn}",
@@ -12847,20 +12011,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Updates an Batch compute environment.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To update a compute environment",
-                        "documentation": "This example disables the P2OnDemand compute environment so it can be deleted.",
-                        "input": {
-                            "computeEnvironment": "P2OnDemand",
-                            "state": "DISABLED"
-                        },
-                        "output": {
-                            "computeEnvironmentName": "P2OnDemand",
-                            "computeEnvironmentArn": "arn:aws:batch:us-east-1:012345678910:compute-environment/P2OnDemand"
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/updatecomputeenvironment",
@@ -12971,22 +12121,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Updates a consumable resource.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To update a consumable resource",
-                        "documentation": "Updates a consumable resource.",
-                        "input": {
-                            "consumableResource": "myConsumableResource",
-                            "operation": "ADD",
-                            "quantity": 12
-                        },
-                        "output": {
-                            "consumableResourceName": "myConsumableResource",
-                            "consumableResourceArn": "arn:aws:batch:us-east-1:012345678910:consumable-resource/myConsumableResource",
-                            "totalQuantity": 135
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/updateconsumableresource",
@@ -13077,20 +12211,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Updates a job queue.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "To update a job queue",
-                        "documentation": "This example disables a job queue so that it can be deleted.",
-                        "input": {
-                            "state": "DISABLED",
-                            "jobQueue": "GPGPU"
-                        },
-                        "output": {
-                            "jobQueueName": "GPGPU",
-                            "jobQueueArn": "arn:aws:batch:us-east-1:012345678910:job-queue/GPGPU"
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "method": "POST",
                     "uri": "/v1/updatejobqueue",

@@ -9,7 +9,7 @@ Store portfolios, products, versions, associations and constraints through an AW
 | --- | --- |
 | Service ID | `servicecatalog` |
 | Signing name | `servicecatalog` |
-| Wire protocol | AWS JSON 1.1 |
+| Wire protocol | AWS JSON 1.1, Smithy RPC v2 CBOR |
 | API version | `2015-12-10` |
 | Scope | Account and region |
 | Execution | Records only |
@@ -142,6 +142,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/servicecatalog)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/servicecatalog/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/servicecatalog.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/servicecatalog.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [servicecatalog_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/servicecatalog_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

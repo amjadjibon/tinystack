@@ -13,7 +13,7 @@ Manage the Data Catalog and connections, discover local S3 and DynamoDB schemas,
 | API version | `2017-03-31` |
 | Scope | Account and region |
 | Execution | Records / local S3 and DynamoDB crawling / optional local Python host execution |
-| Selected operations | 76 of 306 in the pinned model |
+| Selected operations | 76 of 314 in the pinned model |
 
 ## Implemented behavior
 
@@ -137,7 +137,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "230 modeled operations outside the implementation"
+??? info "238 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -164,6 +164,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `CreateCatalog`
     - `CreateColumnStatisticsTaskSettings`
     - `CreateCustomEntityType`
+    - `CreateDataQualityEvaluationConfig`
     - `CreateDataQualityRuleset`
     - `CreateDevEndpoint`
     - `CreateGlossary`
@@ -192,6 +193,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteColumnStatisticsTaskSettings`
     - `DeleteConnectionType`
     - `DeleteCustomEntityType`
+    - `DeleteDataQualityEvaluationConfig`
     - `DeleteDataQualityRuleset`
     - `DeleteDevEndpoint`
     - `DeleteFormType`
@@ -235,6 +237,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetDashboardUrl`
     - `GetDataCatalogEncryptionSettings`
     - `GetDataCatalogExportConfiguration`
+    - `GetDataQualityEvaluationConfig`
     - `GetDataQualityModel`
     - `GetDataQualityModelResult`
     - `GetDataQualityResult`
@@ -253,6 +256,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetIntegrationResourceProperty`
     - `GetIntegrationTableProperties`
     - `GetJobBookmark`
+    - `GetJobUpgradeAnalysis`
     - `GetMLTaskRun`
     - `GetMLTaskRuns`
     - `GetMLTransform`
@@ -290,6 +294,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListColumnStatisticsTaskRuns`
     - `ListConnectionTypes`
     - `ListCustomEntityTypes`
+    - `ListDataQualityEvaluationConfigs`
     - `ListDataQualityResults`
     - `ListDataQualityResultsV2`
     - `ListDataQualityRuleRecommendationRuns`
@@ -341,11 +346,13 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `StartDataQualityRulesetEvaluationRun`
     - `StartExportLabelsTaskRun`
     - `StartImportLabelsTaskRun`
+    - `StartJobUpgradeAnalysis`
     - `StartMLEvaluationTaskRun`
     - `StartMLLabelingSetGenerationTaskRun`
     - `StartMaterializedViewRefreshTaskRun`
     - `StopColumnStatisticsTaskRun`
     - `StopColumnStatisticsTaskRunSchedule`
+    - `StopJobUpgradeAnalysis`
     - `StopMaterializedViewRefreshTaskRun`
     - `StopSession`
     - `TestConnection`
@@ -355,6 +362,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `UpdateColumnStatisticsForPartition`
     - `UpdateColumnStatisticsForTable`
     - `UpdateColumnStatisticsTaskSettings`
+    - `UpdateDataQualityEvaluationConfig`
     - `UpdateDataQualityRuleset`
     - `UpdateDevEndpoint`
     - `UpdateGlossary`
@@ -376,6 +384,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/glue)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/glue/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/glue.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/glue.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [glue_gaps_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/glue_gaps_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

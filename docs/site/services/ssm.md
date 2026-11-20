@@ -13,7 +13,7 @@ Store versioned parameters, publish documents, and send Run Command requests.
 | API version | `2014-11-06` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 28 of 152 in the pinned model |
+| Selected operations | 28 of 154 in the pinned model |
 
 ## Implemented behavior
 
@@ -73,7 +73,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "124 modeled operations outside the implementation"
+??? info "126 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -98,6 +98,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeletePatchBaseline`
     - `DeleteResourceDataSync`
     - `DeleteResourcePolicy`
+    - `DeregisterDefaultHostManagementConfiguration`
     - `DeregisterManagedInstance`
     - `DeregisterPatchBaselineForPatchGroup`
     - `DeregisterTargetFromMaintenanceWindow`
@@ -172,6 +173,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `PutComplianceItems`
     - `PutInventory`
     - `PutResourcePolicy`
+    - `RegisterDefaultHostManagementConfiguration`
     - `RegisterDefaultPatchBaseline`
     - `RegisterPatchBaselineForPatchGroup`
     - `RegisterTargetWithMaintenanceWindow`
@@ -206,6 +208,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/ssm)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/ssm/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/ssm.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/ssm.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [ssm_depth_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ssm_depth_test.go), [ssm_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ssm_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

@@ -1856,7 +1856,7 @@ func Descriptor(api API) catalog.Service {
 			}
 			return api.SendTaskFailure(ctx, in)
 		}},
-		"SendTaskHeartbeat": {Name: "SendTaskHeartbeat", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "states:SendTaskHeartbeat", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.SendTaskHeartbeat", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &SendTaskHeartbeatInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"SendTaskHeartbeat": {Name: "SendTaskHeartbeat", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "states:SendTaskHeartbeat", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AWSStepFunctions.SendTaskHeartbeat", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &SendTaskHeartbeatInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*SendTaskHeartbeatInput)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ValidationException", err.Error())

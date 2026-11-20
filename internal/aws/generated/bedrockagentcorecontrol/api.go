@@ -81,6 +81,8 @@ type NetworkConfiguration struct {
 }
 
 type ProtocolConfiguration struct {
+	Path           *string `json:"path,omitempty"`
+	Port           *int64  `json:"port,omitempty"`
 	ServerProtocol *string `json:"serverProtocol,omitempty"`
 }
 
@@ -830,7 +832,7 @@ var enum2 = []string{"STRING", "STRING_ARRAY"}
 
 var pattern9 = regexp.MustCompile("^[\\x21\\x23-\\x5B\\x5D-\\x7E]+$")
 
-var pattern10 = regexp.MustCompile("^.+/\\.well-known/openid-configuration$")
+var pattern10 = regexp.MustCompile("^[^\\s?#]+/\\.well-known/(openid-configuration|oauth-authorization-server)(/[^\\s?#]+)?$")
 
 var pattern11 = regexp.MustCompile("^[a-zA-Z0-9\\-_\\/]*(\\{[a-zA-Z][a-zA-Z0-9]*\\}[a-zA-Z0-9\\-_\\/]*)*$")
 
@@ -850,15 +852,17 @@ var enum5 = []string{"NUMBER", "STRING", "STRINGLIST"}
 
 var enum6 = []string{"PUBLIC", "VPC"}
 
+var pattern16 = regexp.MustCompile("^/[A-Za-z0-9\\-._~/%]*$")
+
 var enum7 = []string{"A2A", "AGUI", "HTTP", "MCP"}
 
 var enum8 = []string{"REMOVE"}
 
-var pattern16 = regexp.MustCompile("^[A-Za-z][A-Za-z0-9_-]{0,255}$")
+var pattern17 = regexp.MustCompile("^[A-Za-z][A-Za-z0-9_-]{0,255}$")
 
-var pattern17 = regexp.MustCompile("^sg-[0-9a-zA-Z]{8,17}$")
+var pattern18 = regexp.MustCompile("^sg-[0-9a-zA-Z]{8,17}$")
 
-var pattern18 = regexp.MustCompile("^subnet-[0-9a-zA-Z]{8,17}$")
+var pattern19 = regexp.MustCompile("^subnet-[0-9a-zA-Z]{8,17}$")
 
 func (v *AgentRuntimeArtifact) Validate(path string) error {
 	if v.CodeConfiguration != nil {
@@ -1161,7 +1165,7 @@ func (v *CreateMemoryInput) Validate(path string) error {
 		return err
 	}
 	if v.EventExpiryDuration != nil {
-		if err := validation.Range(path+"eventExpiryDuration", float64((*v.EventExpiryDuration)), new(float64(3)), new(float64(365))); err != nil {
+		if err := validation.Range(path+"eventExpiryDuration", float64((*v.EventExpiryDuration)), new(float64(3)), new(float64(3650))); err != nil {
 			return err
 		}
 	}
@@ -1343,7 +1347,7 @@ func (v *CustomJWTAuthorizerConfiguration) Validate(path string) error {
 		return err
 	}
 	if v.DiscoveryUrl != nil {
-		if err := validation.Pattern(path+"discoveryUrl", (*v.DiscoveryUrl), pattern10, nil, "^.+/\\.well-known/openid-configuration$"); err != nil {
+		if err := validation.Pattern(path+"discoveryUrl", (*v.DiscoveryUrl), pattern10, nil, "^[^\\s?#]+/\\.well-known/(openid-configuration|oauth-authorization-server)(/[^\\s?#]+)?$"); err != nil {
 			return err
 		}
 	}
@@ -2170,6 +2174,19 @@ func (v *NumberValidation) Validate(path string) error {
 }
 
 func (v *ProtocolConfiguration) Validate(path string) error {
+	if v.Path != nil {
+		if err := validation.Length(path+"path", utf8.RuneCountInString((*v.Path)), new(int64(1)), new(int64(2048))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"path", (*v.Path), pattern16, nil, "^/[A-Za-z0-9\\-._~/%]*$"); err != nil {
+			return err
+		}
+	}
+	if v.Port != nil {
+		if err := validation.Range(path+"port", float64((*v.Port)), new(float64(8000)), new(float64(12000))); err != nil {
+			return err
+		}
+	}
 	if err := validation.Required(path+"serverProtocol", v.ServerProtocol != nil); err != nil {
 		return err
 	}
@@ -2204,7 +2221,7 @@ func (v *RequestHeaderConfiguration) Validate(path string) error {
 			if err := validation.Length(validation.Index(path+"requestHeaderAllowlist", i0), utf8.RuneCountInString(e0), new(int64(1)), new(int64(256))); err != nil {
 				return err
 			}
-			if err := validation.Pattern(validation.Index(path+"requestHeaderAllowlist", i0), e0, pattern16, nil, "^[A-Za-z][A-Za-z0-9_-]{0,255}$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"requestHeaderAllowlist", i0), e0, pattern17, nil, "^[A-Za-z][A-Za-z0-9_-]{0,255}$"); err != nil {
 				return err
 			}
 		}
@@ -2720,7 +2737,7 @@ func (v *UpdateMemoryInput) Validate(path string) error {
 		}
 	}
 	if v.EventExpiryDuration != nil {
-		if err := validation.Range(path+"eventExpiryDuration", float64((*v.EventExpiryDuration)), new(float64(3)), new(float64(365))); err != nil {
+		if err := validation.Range(path+"eventExpiryDuration", float64((*v.EventExpiryDuration)), new(float64(3)), new(float64(3650))); err != nil {
 			return err
 		}
 	}
@@ -2868,7 +2885,7 @@ func (v *VpcConfig) Validate(path string) error {
 			return err
 		}
 		for i0, e0 := range v.SecurityGroups {
-			if err := validation.Pattern(validation.Index(path+"securityGroups", i0), e0, pattern17, nil, "^sg-[0-9a-zA-Z]{8,17}$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"securityGroups", i0), e0, pattern18, nil, "^sg-[0-9a-zA-Z]{8,17}$"); err != nil {
 				return err
 			}
 		}
@@ -2881,7 +2898,7 @@ func (v *VpcConfig) Validate(path string) error {
 			return err
 		}
 		for i0, e0 := range v.Subnets {
-			if err := validation.Pattern(validation.Index(path+"subnets", i0), e0, pattern18, nil, "^subnet-[0-9a-zA-Z]{8,17}$"); err != nil {
+			if err := validation.Pattern(validation.Index(path+"subnets", i0), e0, pattern19, nil, "^subnet-[0-9a-zA-Z]{8,17}$"); err != nil {
 				return err
 			}
 		}

@@ -13,7 +13,7 @@ Render and inspect email workflows without sending external mail.
 | API version | `2019-09-27` |
 | Scope | Account and region |
 | Execution | Recorded delivery |
-| Selected operations | 30 of 116 in the pinned model |
+| Selected operations | 30 of 117 in the pinned model |
 
 ## Implemented behavior
 
@@ -70,7 +70,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "86 modeled operations outside the implementation"
+??? info "87 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -135,6 +135,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListTenantResources`
     - `ListTenants`
     - `PutAccountDedicatedIpWarmupAttributes`
+    - `PutAccountDeliveryAttributes`
     - `PutAccountDetails`
     - `PutAccountPricingAttributes`
     - `PutAccountSendingAttributes`
@@ -165,6 +166,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/sesv2)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/sesv2/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/sesv2.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/sesv2.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [sesv2_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sesv2_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

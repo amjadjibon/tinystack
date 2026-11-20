@@ -13,7 +13,7 @@ Manage clusters, task definitions, tasks, and services with optional Docker exec
 | API version | `2014-11-13` |
 | Scope | Account and region |
 | Execution | Records / optional Docker |
-| Selected operations | 25 of 77 in the pinned model |
+| Selected operations | 25 of 88 in the pinned model |
 
 ## Implemented behavior
 
@@ -70,14 +70,16 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "52 modeled operations outside the implementation"
+??? info "63 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
+    - `AssociateGatewayWithCluster`
     - `ContinueServiceDeployment`
     - `CreateCapacityProvider`
     - `CreateDaemon`
     - `CreateExpressGatewayService`
+    - `CreateGateway`
     - `CreateTaskSet`
     - `DeleteAccountSetting`
     - `DeleteAttributes`
@@ -85,6 +87,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteDaemon`
     - `DeleteDaemonTaskDefinition`
     - `DeleteExpressGatewayService`
+    - `DeleteGateway`
     - `DeleteTaskSet`
     - `DeregisterContainerInstance`
     - `DescribeCapacityProviders`
@@ -94,9 +97,13 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DescribeDaemonRevisions`
     - `DescribeDaemonTaskDefinition`
     - `DescribeExpressGatewayService`
+    - `DescribeGateway`
+    - `DescribeGatewayResources`
+    - `DescribeGatewayRoute`
     - `DescribeServiceDeployments`
     - `DescribeServiceRevisions`
     - `DescribeTaskSets`
+    - `DisassociateGatewayFromCluster`
     - `DiscoverPollEndpoint`
     - `ExecuteCommand`
     - `GetTaskProtection`
@@ -106,6 +113,9 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListDaemonDeployments`
     - `ListDaemonTaskDefinitions`
     - `ListDaemons`
+    - `ListGatewayClusterAssociations`
+    - `ListGatewayRoutes`
+    - `ListGateways`
     - `ListServiceDeployments`
     - `ListServicesByNamespace`
     - `PutAccountSetting`
@@ -123,6 +133,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `UpdateContainerInstancesState`
     - `UpdateDaemon`
     - `UpdateExpressGatewayService`
+    - `UpdateGateway`
     - `UpdateServicePrimaryTaskSet`
     - `UpdateTaskProtection`
     - `UpdateTaskSet`
@@ -131,6 +142,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/ecs)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/ecs/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/ecs.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/ecs.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [ecs_containers_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ecs_containers_test.go), [ecs_depth_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ecs_depth_test.go), [ecs_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/ecs_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

@@ -425,7 +425,7 @@ func (v *BrokerNodeGroupInfo) Validate(path string) error {
 		return err
 	}
 	if v.InstanceType != nil {
-		if err := validation.Length(path+"InstanceType", utf8.RuneCountInString((*v.InstanceType)), new(int64(5)), new(int64(32))); err != nil {
+		if err := validation.Length(path+"InstanceType", utf8.RuneCountInString((*v.InstanceType)), new(int64(5)), new(int64(64))); err != nil {
 			return err
 		}
 	}

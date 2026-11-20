@@ -13,7 +13,7 @@ Manage AgentCore agent runtimes with their versions and endpoints, and short-ter
 | API version | `2023-06-05` |
 | Scope | Account and region |
 | Execution | Records |
-| Selected operations | 19 of 171 in the pinned model |
+| Selected operations | 19 of 175 in the pinned model |
 
 ## Implemented behavior
 
@@ -64,7 +64,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "152 modeled operations outside the implementation"
+??? info "156 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -123,6 +123,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteRegistryRecord`
     - `DeleteResourcePolicy`
     - `DeleteWorkloadIdentity`
+    - `GetAgentInsightStore`
     - `GetApiKeyCredentialProvider`
     - `GetBrowser`
     - `GetBrowserProfile`
@@ -155,6 +156,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `GetResourcePolicy`
     - `GetTokenVault`
     - `GetWorkloadIdentity`
+    - `ListAgentInsightStores`
     - `ListAgentRuntimeVersionsByCapacityProvider`
     - `ListApiKeyCredentialProviders`
     - `ListBrowserProfiles`
@@ -191,11 +193,13 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListRegistryRecords`
     - `ListWorkloadIdentities`
     - `PutResourcePolicy`
+    - `ResetTokenVaultKeyMaterial`
     - `RotatePaymentConnectorCredentials`
     - `SetTokenVaultCMK`
     - `StartPolicyGeneration`
     - `SubmitRegistryRecordForApproval`
     - `SynchronizeGatewayTargets`
+    - `UpdateAgentInsightStore`
     - `UpdateApiKeyCredentialProvider`
     - `UpdateCapacityProvider`
     - `UpdateConfigurationBundle`
@@ -225,6 +229,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/bedrockagentcorecontrol)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/bedrockagentcorecontrol/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/bedrockagentcorecontrol.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/bedrockagentcorecontrol.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [bedrockagentcorecontrol_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/bedrockagentcorecontrol_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

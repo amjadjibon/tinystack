@@ -13,7 +13,7 @@ Manage functions and execute Python/Node locally or managed runtimes in Docker.
 | API version | `2015-03-31` |
 | Scope | Account and region |
 | Execution | Local processes or Docker runtime |
-| Selected operations | 54 of 88 in the pinned model |
+| Selected operations | 54 of 91 in the pinned model |
 
 ## Implemented behavior
 
@@ -109,7 +109,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "34 modeled operations outside the implementation"
+??? info "37 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -118,6 +118,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `CreateCodeSigningConfig`
     - `DeleteCapacityProvider`
     - `DeleteCodeSigningConfig`
+    - `DeleteDurableExecution`
     - `DeleteFunctionCodeSigningConfig`
     - `DeleteResourcePolicy`
     - `GetCapacityProvider`
@@ -136,11 +137,13 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListDurableExecutionsByFunction`
     - `ListFunctionVersionsByCapacityProvider`
     - `ListFunctionsByCodeSigningConfig`
+    - `PauseDurableExecution`
     - `PutFunctionCodeSigningConfig`
     - `PutFunctionRecursionConfig`
     - `PutFunctionScalingConfig`
     - `PutResourcePolicy`
     - `PutRuntimeManagementConfig`
+    - `ResumeDurableExecution`
     - `SendDurableExecutionCallbackFailure`
     - `SendDurableExecutionCallbackHeartbeat`
     - `SendDurableExecutionCallbackSuccess`
@@ -152,6 +155,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/lambda)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/lambda/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/lambda.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/lambda.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [lambda_async_restart_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_async_restart_test.go), [lambda_broker_docker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_broker_docker_test.go), [lambda_broker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_broker_test.go), [lambda_concurrency_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_concurrency_test.go), [lambda_deadletter_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_deadletter_test.go), [lambda_destinations_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_destinations_test.go), [lambda_hotreload_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_hotreload_test.go), [lambda_imageconfig_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_imageconfig_test.go), [lambda_kafka_destinations_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_kafka_destinations_test.go), [lambda_layer_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_layer_policy_test.go), [lambda_layers_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_layers_test.go), [lambda_local_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_local_test.go), [lambda_mapping_options_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_mapping_options_test.go), [lambda_mapping_update_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_mapping_update_test.go), [lambda_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_policy_test.go), [lambda_s3_code_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_s3_code_test.go), [lambda_secrets_resource_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_secrets_resource_policy_test.go), [lambda_stream_failure_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_stream_failure_test.go), [lambda_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_test.go), [lambda_update_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_update_test.go), [lambda_urls_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_urls_test.go), [lambda_versions_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_versions_test.go), [lambda_warm_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/lambda_warm_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

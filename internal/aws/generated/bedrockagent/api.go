@@ -1025,7 +1025,7 @@ var enum11 = []string{"KENDRA", "MANAGED", "SQL", "VECTOR"}
 
 var pattern16 = regexp.MustCompile("^\\S*$")
 
-var pattern17 = regexp.MustCompile("(^arn:aws:bedrock:[a-zA-Z0-9-]+:\\d{12}:(agent|agent-alias|knowledge-base|flow|prompt)/[A-Z0-9]{10}(?:/[A-Z0-9]{10})?$|^arn:aws:bedrock:[a-zA-Z0-9-]+:\\d{12}:flow/([A-Z0-9]{10})/alias/([A-Z0-9]{10})$|^arn:aws:bedrock:[a-zA-Z0-9-]+:\\d{12}:prompt/([A-Z0-9]{10})?(?::\\d+)?$)")
+var pattern17 = regexp.MustCompile("(^arn:aws:bedrock:[a-zA-Z0-9-]+:\\d{12}:(agent|agent-alias|knowledge-base|flow|prompt)/[A-Z0-9]{10}(?:/[A-Z0-9]{10})?$|^arn:aws:bedrock:[a-zA-Z0-9-]+:\\d{12}:flow/([A-Z0-9]{10})/alias/([A-Z0-9]{10})$|^arn:aws:bedrock:[a-zA-Z0-9-]+:\\d{12}:prompt/([A-Z0-9]{10})?(?::\\d+)?$|^arn:aws(-cn|-us-gov|-eusc|-iso(-[b-f])?)?:bedrock:[a-zA-Z0-9-]+:[0-9]{12}:retrieval-instruction/[a-z0-9]{10}$)")
 
 var enum12 = []string{"SESSION_SUMMARY"}
 
@@ -2399,7 +2399,7 @@ func (v *ListTagsForResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"resourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(20)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern17, nil, "(^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:(agent|agent-alias|knowledge-base|flow|prompt)/[A-Z0-9]{10}(?:/[A-Z0-9]{10})?$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:flow/([A-Z0-9]{10})/alias/([A-Z0-9]{10})$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:prompt/([A-Z0-9]{10})?(?::/d+)?$)"); err != nil {
+		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern17, nil, "(^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:(agent|agent-alias|knowledge-base|flow|prompt)/[A-Z0-9]{10}(?:/[A-Z0-9]{10})?$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:flow/([A-Z0-9]{10})/alias/([A-Z0-9]{10})$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:prompt/([A-Z0-9]{10})?(?::/d+)?$|^arn:aws(-cn|-us-gov|-eusc|-iso(-[b-f])?)?:bedrock:[a-zA-Z0-9-]+:[0-9]{12}:retrieval-instruction/[a-z0-9]{10}$)"); err != nil {
 			return err
 		}
 	}
@@ -3265,7 +3265,7 @@ func (v *TagResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"resourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(20)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern17, nil, "(^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:(agent|agent-alias|knowledge-base|flow|prompt)/[A-Z0-9]{10}(?:/[A-Z0-9]{10})?$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:flow/([A-Z0-9]{10})/alias/([A-Z0-9]{10})$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:prompt/([A-Z0-9]{10})?(?::/d+)?$)"); err != nil {
+		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern17, nil, "(^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:(agent|agent-alias|knowledge-base|flow|prompt)/[A-Z0-9]{10}(?:/[A-Z0-9]{10})?$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:flow/([A-Z0-9]{10})/alias/([A-Z0-9]{10})$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:prompt/([A-Z0-9]{10})?(?::/d+)?$|^arn:aws(-cn|-us-gov|-eusc|-iso(-[b-f])?)?:bedrock:[a-zA-Z0-9-]+:[0-9]{12}:retrieval-instruction/[a-z0-9]{10}$)"); err != nil {
 			return err
 		}
 	}
@@ -3346,7 +3346,7 @@ func (v *UntagResourceRequest) Validate(path string) error {
 		if err := validation.Length(path+"resourceArn", utf8.RuneCountInString((*v.ResourceArn)), new(int64(20)), new(int64(1011))); err != nil {
 			return err
 		}
-		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern17, nil, "(^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:(agent|agent-alias|knowledge-base|flow|prompt)/[A-Z0-9]{10}(?:/[A-Z0-9]{10})?$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:flow/([A-Z0-9]{10})/alias/([A-Z0-9]{10})$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:prompt/([A-Z0-9]{10})?(?::/d+)?$)"); err != nil {
+		if err := validation.Pattern(path+"resourceArn", (*v.ResourceArn), pattern17, nil, "(^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:(agent|agent-alias|knowledge-base|flow|prompt)/[A-Z0-9]{10}(?:/[A-Z0-9]{10})?$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:flow/([A-Z0-9]{10})/alias/([A-Z0-9]{10})$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:prompt/([A-Z0-9]{10})?(?::/d+)?$|^arn:aws(-cn|-us-gov|-eusc|-iso(-[b-f])?)?:bedrock:[a-zA-Z0-9-]+:[0-9]{12}:retrieval-instruction/[a-z0-9]{10}$)"); err != nil {
 			return err
 		}
 	}

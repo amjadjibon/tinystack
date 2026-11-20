@@ -13,7 +13,7 @@ Store Managed Flink applications, configuration, versions and snapshots without 
 | API version | `2018-05-23` |
 | Scope | Account and region |
 | Execution | Records only |
-| Selected operations | 20 of 33 in the pinned model |
+| Selected operations | 20 of 41 in the pinned model |
 
 ## Implemented behavior
 
@@ -62,7 +62,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "13 modeled operations outside the implementation"
+??? info "21 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -71,12 +71,20 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `AddApplicationOutput`
     - `AddApplicationReferenceDataSource`
     - `CreateApplicationPresignedUrl`
+    - `CreateSnapshot`
     - `DeleteApplicationInputProcessingConfiguration`
     - `DeleteApplicationOutput`
     - `DeleteApplicationReferenceDataSource`
+    - `DeleteSnapshot`
     - `DescribeApplicationOperation`
+    - `DescribeSnapshot`
+    - `DescribeSnapshotOperation`
     - `DiscoverInputSchema`
+    - `ExportSnapshot`
+    - `ImportSnapshot`
     - `ListApplicationOperations`
+    - `ListSnapshotOperations`
+    - `ListSnapshots`
     - `RollbackApplication`
     - `UpdateApplicationMaintenanceConfiguration`
 
@@ -84,6 +92,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/kinesisanalyticsv2)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/kinesisanalyticsv2/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/kinesisanalyticsv2.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/kinesisanalyticsv2.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [kinesisanalyticsv2_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/kinesisanalyticsv2_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

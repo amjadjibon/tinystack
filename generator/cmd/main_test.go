@@ -568,13 +568,26 @@ func TestJSONIgnoresHTTPMemberBindings(t *testing.T) {
 }
 
 func TestBedrockTaggableResourcesARNPattern(t *testing.T) {
-	const source = `(^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:(agent|agent-alias|knowledge-base|flow|prompt)` +
-		`/[A-Z0-9]{10}(?:/[A-Z0-9]{10})?$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:flow/([A-Z0-9]` +
-		`{10})/alias/([A-Z0-9]{10})$|^arn:aws:bedrock:[a-zA-Z0-9-]+:/d{12}:prompt/([A-Z0-9]{10` +
-		`})?(?::/d+)?$)`
+	// The pinned model's own pattern, so a re-pin that changes it fails here instead of dropping the correction.
+	raw, err := os.ReadFile("../model/bedrockagent.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var m model
+	if err = json.Unmarshal(raw, &m); err != nil {
+		t.Fatal(err)
+	}
+
+	var source string
+	if err = json.Unmarshal(m.Shapes["com.amazonaws.bedrockagent#TaggableResourcesArn"].Traits[traitPattern],
+		&source); err != nil {
+		t.Fatal(err)
+	}
+
 	rendering, ok := re2Patterns[source]
 	if !ok {
-		t.Fatal("missing exact pinned-model correction")
+		t.Fatalf("missing exact pinned-model correction for %s", source)
 	}
 
 	pattern := regexp.MustCompile(rendering.match)
@@ -586,6 +599,7 @@ func TestBedrockTaggableResourcesARNPattern(t *testing.T) {
 		{"arn:aws:bedrock:us-east-1:123456789012:agent-alias/ABCDEFGHIJ/KLMNOPQRST", true},
 		{"arn:aws:bedrock:us-east-1:12345678901:agent/ABCDEFGHIJ", false},
 		{"arn:aws:bedrock:us-east-1:/dddddddddddd:agent/ABCDEFGHIJ", false},
+		{"arn:aws:bedrock:us-east-1:123456789012:retrieval-instruction/abcde12345", true},
 	} {
 		if got := pattern.MatchString(tc.arn); got != tc.want {
 			t.Errorf("%s: got %t", tc.arn, got)

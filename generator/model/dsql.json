@@ -293,17 +293,6 @@
                     "documentation": "Grants permission to create new clusters."
                 },
                 "smithy.api#documentation": "<p>The CreateCluster API allows you to create both single-Region clusters and multi-Region clusters. With the addition of the <i>multiRegionProperties</i> parameter, you can create a cluster with witness Region support and establish peer relationships with clusters in other Regions during creation.</p> <note> <p>Creating multi-Region clusters requires additional IAM permissions beyond those needed for single-Region clusters, as detailed in the <b>Required permissions</b> section below.</p> </note> <p> <b>Required permissions</b> </p> <dl> <dt>dsql:CreateCluster</dt> <dd> <p>Required to create a cluster.</p> <p>Resources: <code>arn:aws:dsql:region:account-id:cluster/*</code> </p> </dd> <dt>dsql:TagResource</dt> <dd> <p>Permission to add tags to a resource.</p> <p>Resources: <code>arn:aws:dsql:region:account-id:cluster/*</code> </p> </dd> <dt>dsql:PutMultiRegionProperties</dt> <dd> <p>Permission to configure multi-Region properties for a cluster.</p> <p>Resources: <code>arn:aws:dsql:region:account-id:cluster/*</code> </p> </dd> <dt>dsql:AddPeerCluster</dt> <dd> <p>When specifying <code>multiRegionProperties.clusters</code>, permission to add peer clusters.</p> <p>Resources:</p> <ul> <li> <p>Local cluster: <code>arn:aws:dsql:region:account-id:cluster/*</code> </p> </li> <li> <p>Each peer cluster: exact ARN of each specified peer cluster</p> </li> </ul> </dd> <dt>dsql:PutWitnessRegion</dt> <dd> <p>When specifying <code>multiRegionProperties.witnessRegion</code>, permission to set a witness Region. This permission is checked both in the cluster Region and in the witness Region.</p> <p>Resources: <code>arn:aws:dsql:region:account-id:cluster/*</code> </p> <p>Condition Keys: <code>dsql:WitnessRegion</code> (matching the specified witness region)</p> </dd> </dl> <important> <ul> <li> <p>The witness Region specified in <code>multiRegionProperties.witnessRegion</code> cannot be the same as the cluster's Region.</p> </li> </ul> </important>",
-                "smithy.api#examples": [
-                    {
-                        "title": "Create Cluster",
-                        "input": {
-                            "deletionProtectionEnabled": false,
-                            "tags": {
-                                "MyKey": "MyValue"
-                            }
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "code": 200,
                     "method": "POST",
@@ -353,6 +342,13 @@
                     "target": "com.amazonaws.dsql#PolicyDocument",
                     "traits": {
                         "smithy.api#documentation": "<p>An optional resource-based policy document in JSON format that defines access permissions for the cluster.</p>",
+                        "smithy.api#notProperty": {}
+                    }
+                },
+                "metricGroups": {
+                    "target": "com.amazonaws.dsql#MetricGroupRequestList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The metric groups to enable for advanced monitoring on the cluster. Advanced monitoring collects detailed, query-level database metrics to help you analyze and resolve performance issues. If you omit this parameter, no metric groups are enabled.</p>",
                         "smithy.api#notProperty": {}
                     }
                 },
@@ -425,6 +421,13 @@
                     "target": "com.amazonaws.dsql#Endpoint",
                     "traits": {
                         "smithy.api#documentation": "<p>The connection endpoint for the created cluster.</p>",
+                        "smithy.api#notProperty": {}
+                    }
+                },
+                "metricGroups": {
+                    "target": "com.amazonaws.dsql#MetricGroupResponseList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The metric groups that you enabled for advanced monitoring on the created cluster.</p>",
                         "smithy.api#notProperty": {}
                     }
                 }
@@ -998,14 +1001,6 @@
                     "documentation": "Grants permission to delete a cluster and all of its data."
                 },
                 "smithy.api#documentation": "<p>Deletes a cluster in Amazon Aurora DSQL.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "Delete Cluster",
-                        "input": {
-                            "identifier": "kiqenqglxyl2snyvkvnj2c3s2e"
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "code": 200,
                     "method": "DELETE",
@@ -1359,14 +1354,6 @@
                     "documentation": "Grants permission to get information about a cluster."
                 },
                 "smithy.api#documentation": "<p>Retrieves information about a cluster.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "Get Cluster",
-                        "input": {
-                            "identifier": "kiqenqglxyl2snyvkvnj2c3s2e"
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "code": 200,
                     "method": "GET",
@@ -1498,6 +1485,13 @@
                     "target": "com.amazonaws.dsql#Endpoint",
                     "traits": {
                         "smithy.api#documentation": "<p>The connection endpoint for the cluster.</p>",
+                        "smithy.api#notProperty": {}
+                    }
+                },
+                "metricGroups": {
+                    "target": "com.amazonaws.dsql#MetricGroupResponseList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The metric groups that you enabled for advanced monitoring on the cluster. If you haven't enabled any metric groups, the list is empty.</p>",
                         "smithy.api#notProperty": {}
                     }
                 }
@@ -1757,14 +1751,6 @@
                     "documentation": "Grants permission to get the VPC Endpoint Service Name for a cluster"
                 },
                 "smithy.api#documentation": "<p>Retrieves the VPC endpoint service name.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "Get VPC Endpoint Service Name",
-                        "input": {
-                            "identifier": "kiqenqglxyl2snyvkvnj2c3s2e"
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "code": 200,
                     "uri": "/clusters/{identifier}/vpc-endpoint-service-name",
@@ -1922,14 +1908,6 @@
                     "documentation": "Grants permission to get a list of cluster ARNs associated with the current endpoint and account."
                 },
                 "smithy.api#documentation": "<p>Retrieves information about a list of clusters.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "List Clusters",
-                        "input": {
-                            "maxResults": 20
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "code": 200,
                     "method": "GET",
@@ -2103,14 +2081,6 @@
                     "documentation": "Grants permission to list all tags for an ARN."
                 },
                 "smithy.api#documentation": "<p>Lists all of the tags for a resource.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "List Tags For Resource",
-                        "input": {
-                            "resourceArn": "arn:aws:dsql:us-east-1:111111222222:cluster/kiqenqglxyl2snyvkvnj2c3s2e"
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "uri": "/tags/{resourceArn}",
                     "method": "GET"
@@ -2155,6 +2125,76 @@
                 "smithy.api#range": {
                     "min": 1,
                     "max": 100
+                }
+            }
+        },
+        "com.amazonaws.dsql#MetricGroup": {
+            "type": "enum",
+            "members": {
+                "STATEMENT_STATISTICS": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#documentation": "<p>Shows which SQL statements run most often or take the most time. Collects execution count, execution time, and rows for each statement.</p>",
+                        "smithy.api#enumValue": "STATEMENT_STATISTICS"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>The name of an advanced monitoring metric group. Advanced monitoring collects detailed, query-level database metrics to help you analyze and resolve performance issues. You choose which metric groups to collect for each cluster.</p> <p>The following metric groups are available:</p> <dl> <dt>STATEMENT_STATISTICS</dt> <dd> <p>Shows which SQL statements run most often or take the most time. Collects execution count, execution time, and rows for each statement.</p> </dd> </dl>"
+            }
+        },
+        "com.amazonaws.dsql#MetricGroupRequest": {
+            "type": "structure",
+            "members": {
+                "metricGroup": {
+                    "target": "com.amazonaws.dsql#MetricGroup",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The name of the metric group to enable.</p>",
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>A metric group to enable for advanced monitoring.</p>"
+            }
+        },
+        "com.amazonaws.dsql#MetricGroupRequestList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazonaws.dsql#MetricGroupRequest"
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>A list of metric groups to enable for advanced monitoring. Each metric group can appear only once.</p>",
+                "smithy.api#length": {
+                    "max": 20
+                },
+                "smithy.api#uniqueItems": {}
+            }
+        },
+        "com.amazonaws.dsql#MetricGroupResponse": {
+            "type": "structure",
+            "members": {
+                "metricGroup": {
+                    "target": "com.amazonaws.dsql#MetricGroup",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The name of the metric group that you enabled.</p>",
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>A metric group that you enabled for advanced monitoring on a cluster.</p>"
+            }
+        },
+        "com.amazonaws.dsql#MetricGroupResponseList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazonaws.dsql#MetricGroupResponse"
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>A list of metric groups that you enabled for advanced monitoring on a cluster.</p>",
+                "smithy.api#length": {
+                    "max": 20
                 }
             }
         },
@@ -2725,17 +2765,6 @@
                     "documentation": "Grants permission to add tags to an ARN."
                 },
                 "smithy.api#documentation": "<p>Tags a resource with a map of key and value pairs.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "Tag Resource",
-                        "input": {
-                            "resourceArn": "arn:aws:dsql:us-east-1:111111222222:cluster/kiqenqglxyl2snyvkvnj2c3s2e",
-                            "tags": {
-                                "MyKey": "MyValue"
-                            }
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "uri": "/tags/{resourceArn}",
                     "method": "POST"
@@ -2848,18 +2877,6 @@
                     "documentation": "Grants permission to remove tags from an ARN."
                 },
                 "smithy.api#documentation": "<p>Removes a tag from a resource.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "Untag Resource",
-                        "input": {
-                            "resourceArn": "arn:aws:dsql:us-east-1:111111222222:cluster/kiqenqglxyl2snyvkvnj2c3s2e",
-                            "tagKeys": [
-                                "MyKeyA",
-                                "MyKeyB"
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "uri": "/tags/{resourceArn}",
                     "method": "DELETE"
@@ -2915,15 +2932,6 @@
                     "documentation": "Grants permission to modify the deletion protection status of a given cluster."
                 },
                 "smithy.api#documentation": "<p>The <i>UpdateCluster</i> API allows you to modify both single-Region and multi-Region cluster configurations. With the <i>multiRegionProperties</i> parameter, you can add or modify witness Region support and manage peer relationships with clusters in other Regions.</p> <note> <p>Note that updating multi-Region clusters requires additional IAM permissions beyond those needed for standard cluster updates, as detailed in the Permissions section.</p> </note> <p> <b>Required permissions</b> </p> <dl> <dt>dsql:UpdateCluster</dt> <dd> <p>Permission to update a DSQL cluster.</p> <p>Resources: <code>arn:aws:dsql:<i>region</i>:<i>account-id</i>:cluster/<i>cluster-id</i> </code> </p> </dd> </dl> <dl> <dt>dsql:PutMultiRegionProperties</dt> <dd> <p>Permission to configure multi-Region properties for a cluster.</p> <p>Resources: <code>arn:aws:dsql:<i>region</i>:<i>account-id</i>:cluster/<i>cluster-id</i> </code> </p> </dd> </dl> <dl> <dt>dsql:GetCluster</dt> <dd> <p>Permission to retrieve cluster information.</p> <p>Resources: <code>arn:aws:dsql:<i>region</i>:<i>account-id</i>:cluster/<i>cluster-id</i> </code> </p> </dd> <dt>dsql:AddPeerCluster</dt> <dd> <p>Permission to add peer clusters.</p> <p>Resources:</p> <ul> <li> <p>Local cluster: <code>arn:aws:dsql:<i>region</i>:<i>account-id</i>:cluster/<i>cluster-id</i> </code> </p> </li> <li> <p>Each peer cluster: exact ARN of each specified peer cluster</p> </li> </ul> </dd> <dt>dsql:RemovePeerCluster</dt> <dd> <p>Permission to remove peer clusters. When you list peer clusters in <code>multiRegionProperties.clusters</code>, you need this permission for each current peer cluster that your list omits.</p> <p>Resources:</p> <ul> <li> <p>Each removed peer cluster: exact ARN of each removed peer cluster, in its own Region</p> </li> </ul> </dd> </dl> <dl> <dt>dsql:PutWitnessRegion</dt> <dd> <p>Permission to set a witness Region.</p> <p>Resources: <code>arn:aws:dsql:<i>region</i>:<i>account-id</i>:cluster/<i>cluster-id</i> </code> </p> <p>Condition Keys: dsql:WitnessRegion (matching the specified witness Region)</p> <p> <b>This permission is checked both in the cluster Region and in the witness Region.</b> </p> </dd> </dl> <important> <ul> <li> <p>The witness Region specified in <code>multiRegionProperties.witnessRegion</code> cannot be the same as the cluster's Region.</p> </li> <li> <p>When you list peer clusters in <code>multiRegionProperties.clusters</code>, you need <code>dsql:AddPeerCluster</code> for every peer cluster in your request. You need <code>dsql:RemovePeerCluster</code> only for the peer clusters that the update removes.</p> </li> </ul> </important>",
-                "smithy.api#examples": [
-                    {
-                        "title": "Update Cluster",
-                        "input": {
-                            "identifier": "kiqenqglxyl2snyvkvnj2c3s2e",
-                            "deletionProtectionEnabled": false
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "code": 200,
                     "method": "POST",
@@ -2966,6 +2974,13 @@
                     "target": "com.amazonaws.dsql#MultiRegionProperties",
                     "traits": {
                         "smithy.api#documentation": "<p>The new multi-Region cluster configuration settings to be applied during an update operation.</p>",
+                        "smithy.api#notProperty": {}
+                    }
+                },
+                "metricGroups": {
+                    "target": "com.amazonaws.dsql#MetricGroupRequestList",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The complete set of metric groups to enable for advanced monitoring on the cluster. This list replaces the current set, so any metric group that you don't include is disabled. To disable all metric groups, specify an empty list (<code>[]</code>). If you omit this parameter, the current setting doesn't change.</p> <p>To view the metric groups enabled on a cluster, use <i>GetCluster</i>.</p>",
                         "smithy.api#notProperty": {}
                     }
                 }

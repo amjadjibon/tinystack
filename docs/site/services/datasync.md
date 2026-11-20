@@ -9,7 +9,7 @@ Store S3 and EFS locations and Basic tasks; execute persistent, queued local S3-
 | --- | --- |
 | Service ID | `datasync` |
 | Signing name | `datasync` |
-| Wire protocol | AWS JSON 1.1 |
+| Wire protocol | AWS JSON 1.1, Smithy RPC v2 CBOR |
 | API version | `2018-11-09` |
 | Scope | Account and region |
 | Execution | Background local S3-to-S3 copies; EFS locations and schedules are records only |
@@ -106,6 +106,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/datasync)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/datasync/api.go)
-- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/datasync.json) at `6b78958e867baa77281399bf984144de7936b86e`.
+- [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/datasync.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
 - SDK integration examples: [datasync_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/datasync_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

@@ -5182,33 +5182,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Deletes a batch of evaluation jobs. An evaluation job can only be deleted if it has following status <code>FAILED</code>, <code>COMPLETED</code>, and <code>STOPPED</code>. You can request up to 25 model evaluation jobs be deleted in a single request.</p>",
-                "smithy.api#examples": [
-                    {
-                        "title": "Delete evaluation jobs",
-                        "documentation": "The following example shows a request to delete two model evaluation jobs, where one of the jobs is not found.",
-                        "input": {
-                            "jobIdentifiers": [
-                                "arn:aws:bedrock:us-east-2:123456789012:evaluation-job/12rnxmplqv0v",
-                                "arn:aws:bedrock:us-east-2:123456789012:evaluation-job/rispxmpl12rn"
-                            ]
-                        },
-                        "output": {
-                            "evaluationJobs": [
-                                {
-                                    "jobIdentifier": "arn:aws:bedrock:us-east-2:123456789012:evaluation-job/12rnxmplqv0v",
-                                    "jobStatus": "Deleting"
-                                }
-                            ],
-                            "errors": [
-                                {
-                                    "message": "Unable to locate this job to delete.",
-                                    "code": "404",
-                                    "jobIdentifier": "arn:aws:bedrock:us-east-2:123456789012:evaluation-job/rispxmpl12rn"
-                                }
-                            ]
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "code": 202,
                     "method": "POST",
@@ -6152,35 +6125,6 @@
             ],
             "traits": {
                 "smithy.api#documentation": "<p>Creates a new custom model in Amazon Bedrock. After the model is active, you can use it for inference.</p> <p>You can provide the model data source in one of the following ways:</p> <ul> <li> <p> <code>customModelDataSource</code> — Specify a SageMaker AI model package ARN. Amazon Bedrock resolves the model package to retrieve the model artifacts. This is the preferred method for new SageMaker AI training outputs.</p> </li> <li> <p> <code>modelSourceConfig</code> — Specify an Amazon S3 URI pointing to the Amazon-managed Amazon S3 bucket containing your model artifacts.</p> </li> </ul> <p>To use the model for inference, you must purchase Provisioned Throughput for it. You can't use On-demand inference with these custom models. For more information about Provisioned Throughput, see <a href=\"https://docs.aws.amazon.com/bedrock/latest/userguide/prov-throughput.html\">Provisioned Throughput</a>.</p> <p>The model appears in <code>ListCustomModels</code> with a <code>customizationType</code> of <code>imported</code>. To track the status of the new model, you use the <code>GetCustomModel</code> API operation. The model can be in the following states:</p> <ul> <li> <p> <code>Creating</code> - Initial state during validation and registration</p> </li> <li> <p> <code>Active</code> - Model is ready for use in inference</p> </li> <li> <p> <code>Failed</code> - Creation process encountered an error</p> </li> </ul> <p> <b>Related APIs</b> </p> <ul> <li> <p> <a href=\"https://docs.aws.amazon.com/bedrock/latest/APIReference/API_GetCustomModel.html\">GetCustomModel</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/bedrock/latest/APIReference/API_ListCustomModels.html\">ListCustomModels</a> </p> </li> <li> <p> <a href=\"https://docs.aws.amazon.com/bedrock/latest/APIReference/API_DeleteCustomModel.html\">DeleteCustomModel</a> </p> </li> </ul>",
-                "smithy.api#examples": [
-                    {
-                        "title": "Successful CreateCustomModel API call",
-                        "input": {
-                            "modelName": "SampleModel",
-                            "modelSourceConfig": {
-                                "s3DataSource": {
-                                    "s3Uri": "s3://my-bucket/folder"
-                                }
-                            },
-                            "roleArn": "arn:aws:iam::123456789012:role/SampleRole",
-                            "modelKmsKeyArn": "arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab",
-                            "modelTags": [
-                                {
-                                    "key": "foo",
-                                    "value": "foo"
-                                },
-                                {
-                                    "key": "foo",
-                                    "value": "foo"
-                                }
-                            ],
-                            "clientRequestToken": "foo"
-                        },
-                        "output": {
-                            "modelArn": "arn:aws:bedrock:us-east-1:123456789012:custom-model/imported/abcdef123456"
-                        }
-                    }
-                ],
                 "smithy.api#http": {
                     "code": 202,
                     "method": "POST",
@@ -14459,6 +14403,12 @@
                         "smithy.api#documentation": "<p>The filter details for the guardrails contextual grounding policy.</p>",
                         "smithy.api#required": {}
                     }
+                },
+                "tier": {
+                    "target": "com.amazonaws.bedrock#GuardrailContextualGroundingTier",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The tier that your guardrail uses for contextual grounding.</p>"
+                    }
                 }
             },
             "traits": {
@@ -14474,10 +14424,66 @@
                         "smithy.api#documentation": "<p>The filter configuration details for the guardrails contextual grounding policy.</p>",
                         "smithy.api#required": {}
                     }
+                },
+                "tierConfig": {
+                    "target": "com.amazonaws.bedrock#GuardrailContextualGroundingTierConfig",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The tier that your guardrail uses for contextual grounding.</p>"
+                    }
                 }
             },
             "traits": {
                 "smithy.api#documentation": "<p>The policy configuration details for the guardrails contextual grounding policy.</p>"
+            }
+        },
+        "com.amazonaws.bedrock#GuardrailContextualGroundingTier": {
+            "type": "structure",
+            "members": {
+                "tierName": {
+                    "target": "com.amazonaws.bedrock#GuardrailContextualGroundingTierName",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The tier that your guardrail uses for contextual grounding. Valid values include:</p> <ul> <li> <p> <code>CLASSIC</code> tier – Provides established contextual grounding functionality supporting English, French, and Spanish languages.</p> </li> <li> <p> <code>STANDARD</code> tier – Provides a more robust solution than the <code>CLASSIC</code> tier, with support for reasoning, conversational content and more comprehensive language support. This tier requires that your guardrail use <a href=\"https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-cross-region.html\">cross-Region inference</a>.</p> </li> </ul>",
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>Specifies the tier that your guardrail uses for contextual grounding checks.</p>"
+            }
+        },
+        "com.amazonaws.bedrock#GuardrailContextualGroundingTierConfig": {
+            "type": "structure",
+            "members": {
+                "tierName": {
+                    "target": "com.amazonaws.bedrock#GuardrailContextualGroundingTierName",
+                    "traits": {
+                        "smithy.api#documentation": "<p>The tier that your guardrail uses for contextual grounding. Valid values include:</p> <ul> <li> <p> <code>CLASSIC</code> tier – Provides established contextual grounding functionality supporting English, French, and Spanish languages.</p> </li> <li> <p> <code>STANDARD</code> tier – Provides a more robust solution than the <code>CLASSIC</code> tier, with support for reasoning, conversational content and more comprehensive language support. This tier requires that your guardrail use <a href=\"https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-cross-region.html\">cross-Region inference</a>.</p> </li> </ul>",
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "<p>Specifies the tier that your guardrail uses for contextual grounding checks.</p>"
+            }
+        },
+        "com.amazonaws.bedrock#GuardrailContextualGroundingTierName": {
+            "type": "enum",
+            "members": {
+                "CLASSIC": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "CLASSIC"
+                    }
+                },
+                "STANDARD": {
+                    "target": "smithy.api#Unit",
+                    "traits": {
+                        "smithy.api#enumValue": "STANDARD"
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#sensitive": {}
             }
         },
         "com.amazonaws.bedrock#GuardrailCrossRegionConfig": {
@@ -15246,7 +15252,7 @@
             "traits": {
                 "smithy.api#length": {
                     "min": 1,
-                    "max": 10
+                    "max": 30
                 }
             }
         },

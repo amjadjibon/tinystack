@@ -92,6 +92,7 @@ type StreamDescriptionSummary struct {
 	KeyId                      *string               `json:"KeyId,omitempty"`
 	MaxRecordSizeInKiB         *int64                `json:"MaxRecordSizeInKiB,omitempty"`
 	OpenShardCount             *int64                `json:"OpenShardCount,omitempty"`
+	QueueCount                 *int64                `json:"QueueCount,omitempty"`
 	RecordDistributionStrategy *string               `json:"RecordDistributionStrategy,omitempty"`
 	RetentionPeriodHours       *int64                `json:"RetentionPeriodHours,omitempty"`
 	StreamARN                  *string               `json:"StreamARN,omitempty"`
