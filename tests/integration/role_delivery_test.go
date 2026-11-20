@@ -223,6 +223,13 @@ var roleDeliveries = []roleDelivery{
 					OnSuccess: &lambdatypes.OnSuccess{Destination: &queue},
 				},
 			})
+			// Under enforcement, Lambda checks the execution role when the destination is configured, as AWS does;
+			// the check it records is the one the test inspects.
+			if invalid, ok := errors.AsType[*lambdatypes.InvalidParameterValueException](err); ok &&
+				strings.Contains(*invalid.Message, "does not have permissions to call SendMessage") {
+				return
+			}
+
 			mustAuthorize(t, err)
 			_, err = c.Invoke(ctx, &sdklambda.InvokeInput{
 				FunctionName: new("worker"), InvocationType: lambdatypes.InvocationTypeEvent, Payload: []byte(`{}`),
