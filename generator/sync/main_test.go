@@ -249,3 +249,49 @@ func TestAdditiveManifestPreservesExistingOrder(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+func TestStripExamples(t *testing.T) {
+	const in = `{
+    "smithy": "2.0",
+    "shapes": {
+        "a#Op": {
+            "type": "operation",
+            "traits": {
+                "smithy.api#documentation": "<p>Caf\u00e9 \"smithy.api#examples\"</p>",
+                "smithy.api#examples": [
+                    {
+                        "title": "token",
+                        "output": {"accessToken": "aoa-secret"}
+                    }
+                ],
+                "smithy.api#http": {
+                    "code": 200
+                }
+            }
+        }
+    }
+}`
+	const want = `{
+    "smithy": "2.0",
+    "shapes": {
+        "a#Op": {
+            "type": "operation",
+            "traits": {
+                "smithy.api#documentation": "<p>Caf\u00e9 \"smithy.api#examples\"</p>",
+                "smithy.api#http": {
+                    "code": 200
+                }
+            }
+        }
+    }
+}`
+	got, err := stripExamples([]byte(in))
+	if err != nil || string(got) != want {
+		t.Fatalf("got %v:\n%s", err, got)
+	}
+
+	const compact = `{"smithy":"2.0","n":"sqs"}`
+	if got, err = stripExamples([]byte(compact)); err != nil || string(got) != compact {
+		t.Fatalf("unchanged model rewritten: %v %s", err, got)
+	}
+}

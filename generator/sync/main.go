@@ -1,6 +1,7 @@
 // Command sync vendors the Smithy models pinned in generator/model/manifest.json
 // from aws-sdk-go-v2 at one commit, with the repository's license, and records
-// that commit and each model's checksum in the manifest.
+// that commit and each model's checksum in the manifest. Documentation examples
+// are stripped from the models; the checksums cover the vendored files.
 package main
 
 import (
@@ -8,6 +9,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"encoding/json/jsontext"
 	"errors"
 	"flag"
 	"fmt"
@@ -221,6 +223,10 @@ func sync(ctx context.Context, client *http.Client, dir, ref string, adds []addi
 			return nil, fmt.Errorf("%s: %s is not a Smithy JSON model", name, pinned.Path)
 		}
 
+		if data, err = stripExamples(data); err != nil {
+			return nil, fmt.Errorf("%s: %w", name, err)
+		}
+
 		sum := fmt.Sprintf("%x", sha256.Sum256(data))
 		switch pinned.SHA256 {
 		case "":
@@ -264,6 +270,66 @@ func sync(ctx context.Context, client *http.Client, dir, ref string, adds []addi
 	}
 
 	return append(report, "commit: "+commit), nil
+}
+
+// examplesTrait holds AWS documentation examples. The generator never reads them, and their sample credentials and
+// tokens trip secret scanners, so vendored models leave them out.
+const examplesTrait = "smithy.api#examples"
+
+// stripExamples removes every examples trait from a model, keeping the rest of the file byte for byte in the
+// upstream layout (four-space indentation). A model without examples is returned unchanged.
+func stripExamples(data []byte) ([]byte, error) {
+	if !bytes.Contains(data, []byte(`"`+examplesTrait+`"`)) {
+		return data, nil
+	}
+
+	dec := jsontext.NewDecoder(bytes.NewReader(data))
+	var out bytes.Buffer
+	enc := jsontext.NewEncoder(&out, jsontext.WithIndent("    "), jsontext.PreserveRawStrings(true))
+	for dec.PeekKind() != 0 {
+		kind, length := dec.StackIndex(dec.StackDepth())
+		next := dec.PeekKind()
+		if (kind != '{' || length%2 != 0) && next != '{' && next != '[' && next != '}' && next != ']' {
+			// A scalar or member value: copy it as written.
+			value, err := dec.ReadValue()
+			if err != nil {
+				return nil, err
+			}
+
+			if err := enc.WriteValue(value); err != nil {
+				return nil, err
+			}
+
+			continue
+		}
+
+		tok, err := dec.ReadToken()
+		if err != nil {
+			return nil, err
+		}
+
+		if kind == '{' && length%2 == 0 && next == '"' && tok.String() == examplesTrait {
+			if err := dec.SkipValue(); err != nil {
+				return nil, err
+			}
+
+			continue
+		}
+
+		if err := enc.WriteToken(tok); err != nil {
+			return nil, err
+		}
+	}
+
+	if _, err := dec.ReadToken(); !errors.Is(err, io.EOF) {
+		return nil, fmt.Errorf("trailing data after the model: %w", err)
+	}
+
+	if !bytes.HasSuffix(data, []byte("\n")) {
+		return bytes.TrimSuffix(out.Bytes(), []byte("\n")), nil
+	}
+
+	return out.Bytes(), nil
 }
 
 // marshalManifest preserves existing entry order when adding models at the same pin.
