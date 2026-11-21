@@ -1176,6 +1176,7 @@ func run(root string) error {
 
 	sort.Strings(names)
 
+	patterns := map[string]bool{}
 	for _, name := range names {
 		pinned, ok := manifest.Models[name]
 		if !ok {
@@ -1190,6 +1191,10 @@ func run(root string) error {
 
 		if fmt.Sprintf("%x", sha256.Sum256(data)) != pinned.SHA256 {
 			return fmt.Errorf("%s: model checksum mismatch", name)
+		}
+
+		if guardErr := collectPatterns(data, patterns); guardErr != nil {
+			return fmt.Errorf("%s: %w", name, guardErr)
 		}
 
 		source, genErr := generate(name, data, profiles[name])
@@ -1208,7 +1213,7 @@ func run(root string) error {
 		}
 	}
 
-	return nil
+	return staleRE2Patterns(patterns)
 }
 
 func main() {

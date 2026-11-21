@@ -645,3 +645,30 @@ func TestPatternRewrites(t *testing.T) {
 		}
 	}
 }
+
+func TestStaleRE2Patterns(t *testing.T) {
+	patterns := map[string]bool{}
+	if err := collectPatterns([]byte(`{"shapes": {
+  "a#Name": {"type": "string", "traits": {"smithy.api#pattern": "^[a-z]+$"}},
+  "a#In": {"type": "structure", "members": {"Id": {"target": "a#Name", "traits": {"smithy.api#pattern": "^\\d+$"}}}}
+}}`), patterns); err != nil {
+		t.Fatal(err)
+	}
+
+	if !patterns[`^[a-z]+$`] || !patterns[`^\d+$`] || len(patterns) != 2 {
+		t.Fatalf("collected %v", patterns)
+	}
+
+	err := staleRE2Patterns(patterns)
+	if err == nil || !strings.Contains(err.Error(), `^[\p{Upper}\p{Digit}_]+$`) {
+		t.Fatalf("stale entries not reported: %v", err)
+	}
+
+	for source := range re2Patterns {
+		patterns[source] = true
+	}
+
+	if err = staleRE2Patterns(patterns); err != nil {
+		t.Fatal(err)
+	}
+}

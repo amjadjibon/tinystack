@@ -280,6 +280,72 @@ var re2Patterns = map[string]re2Pattern{
 	},
 }
 
+// collectPatterns adds every pattern trait in a Smithy JSON model, on shapes and their members, to patterns.
+func collectPatterns(data []byte, patterns map[string]bool) error {
+	type traits struct {
+		Traits map[string]json.RawMessage `json:"traits"`
+	}
+
+	var model struct {
+		Shapes map[string]struct {
+			Members map[string]traits `json:"members"`
+			traits
+		} `json:"shapes"`
+	}
+
+	if err := json.Unmarshal(data, &model); err != nil {
+		return err
+	}
+
+	add := func(t traits) error {
+		raw, ok := t.Traits[traitPattern]
+		if !ok {
+			return nil
+		}
+
+		var pattern string
+		if err := json.Unmarshal(raw, &pattern); err != nil {
+			return fmt.Errorf("pattern trait: %w", err)
+		}
+
+		patterns[pattern] = true
+		return nil
+	}
+
+	for _, shape := range model.Shapes {
+		if err := add(shape.traits); err != nil {
+			return err
+		}
+
+		for _, member := range shape.Members {
+			if err := add(member); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// staleRE2Patterns fails when an re2Patterns entry matches no pinned model pattern. A re-pin that changes a pattern
+// otherwise drops its rendering silently, and a model pattern that is valid RE2 but wrong is then used as is.
+func staleRE2Patterns(patterns map[string]bool) error {
+	var stale []string
+	for source := range re2Patterns {
+		if !patterns[source] {
+			stale = append(stale, source)
+		}
+	}
+
+	if len(stale) == 0 {
+		return nil
+	}
+
+	sort.Strings(stale)
+	return fmt.Errorf("re2Patterns entries match no pinned model pattern; update them to the new model text:\n%s",
+		strings.Join(stale, "\n"))
+}
+
 var (
 	unicodeEscape = regexp.MustCompile(`\\u([0-9A-Fa-f]{4})`)
 	lookahead     = regexp.MustCompile(`^\^\(\?!([^()\\.*+?\[\]{}|^$]+)\)`)
