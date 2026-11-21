@@ -13,7 +13,7 @@ Record metrics, evaluate alarms, and exercise local monitoring integrations.
 | API version | `2010-08-01` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 26 of 59 in the pinned model |
+| Selected operations | 29 of 59 in the pinned model |
 
 ## Implemented behavior
 
@@ -21,12 +21,13 @@ See the [implemented feature catalogue](catalogue.md#cloudwatch-metrics-and-alar
 
 ## Limitations and future work
 
-- No anomaly detection, Metrics Insights or insight rules.
+- Metrics Insights allows one query per request, up to 500 grouped series, regular-resolution periods, and up to two weeks of stored data (three hours for alarms). Grouped alarms, resource tag and account filters or groups, and Contributor Insights rules are unsupported.
+- Anomaly bands use the mean plus and minus the requested number of population standard deviations from the preceding 14 days, after excluding configured time ranges. Bounds require at least two earlier period values. The deterministic model differs from AWS machine learning, and metric math detector models, timezone and spike handling, and Auto Scaling actions on anomaly alarms are unsupported. Band inputs must reference a MetricStat query.
 - Metric streams reject OpenTelemetry formats and linked-account metrics; additional statistics support basic statistics and percentiles, not trimmed/winsorized statistics; no managed metric-stream monitoring metrics.
 - Metric streams claim completed minutes once, exclude datapoints older than two days, and record failed Firehose calls without replay; Firehose handles destination buffering and retry after accepting records.
 - No EC2/Systems Manager actions or alarm mute rules.
-- Only the metrics listed on the Lambda, SQS, DynamoDB, API Gateway, SNS and Kinesis pages and fixture-backed billing are published to AWS/ namespaces; other services publish none, and public PutMetricData still rejects AWS/ namespaces.
-- Published metrics are statistic sets, so percentile statistics (such as p99 Duration) return no datapoint for them; values appear up to one second after the request, and observations in memory are lost on a crash.
+- Published metrics are limited to those listed on the service pages and fixture-backed billing. Public PutMetricData rejects AWS/ namespaces.
+- Service metrics can take up to one second to appear and pending observations are lost on a crash. Older service metric points stored as statistic sets lack the sample frequencies required for percentiles.
 - Billing uses Unit None and Currency=USD, with ServiceName=AmazonS3 only for the verified S3 fixture label; other services contribute only to the total, with no linked-account series or real AWS bill calculation.
 - Billing samples use publish time, refresh on a one-second worker within minute slots, and emit one final zero after last-fixture deletion; periods below 60 seconds and AWS billing refresh delays are not reproduced.
 - Local retention is 15 days for datapoints and 30 days for alarm history.
@@ -49,11 +50,13 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | Operation | HTTP binding |
 | --- | --- |
 | `DeleteAlarms` | `POST /` |
+| `DeleteAnomalyDetector` | `POST /` |
 | `DeleteDashboards` | `POST /` |
 | `DeleteMetricStream` | `POST /` |
 | `DescribeAlarmHistory` | `POST /` |
 | `DescribeAlarms` | `POST /` |
 | `DescribeAlarmsForMetric` | `POST /` |
+| `DescribeAnomalyDetectors` | `POST /` |
 | `DisableAlarmActions` | `POST /` |
 | `EnableAlarmActions` | `POST /` |
 | `GetDashboard` | `POST /` |
@@ -64,6 +67,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `ListMetricStreams` | `POST /` |
 | `ListMetrics` | `POST /` |
 | `ListTagsForResource` | `POST /` |
+| `PutAnomalyDetector` | `POST /` |
 | `PutCompositeAlarm` | `POST /` |
 | `PutDashboard` | `POST /` |
 | `PutMetricAlarm` | `POST /` |
@@ -77,19 +81,17 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "33 modeled operations outside the implementation"
+??? info "30 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
     - `AssociateDatasetKmsKey`
     - `CreateResourceMetricsConfiguration`
     - `DeleteAlarmMuteRule`
-    - `DeleteAnomalyDetector`
     - `DeleteInsightRules`
     - `DeleteMetricDataQueryDefinition`
     - `DeleteResourceMetricsConfiguration`
     - `DescribeAlarmContributors`
-    - `DescribeAnomalyDetectors`
     - `DescribeInsightRules`
     - `DisableInsightRules`
     - `DisassociateDatasetKmsKey`
@@ -105,7 +107,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ListManagedInsightRules`
     - `ListMetricDataQueryDefinitions`
     - `PutAlarmMuteRule`
-    - `PutAnomalyDetector`
     - `PutInsightRule`
     - `PutLogAlarm`
     - `PutManagedInsightRules`
@@ -120,5 +121,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/cloudwatch)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/cloudwatch/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/cloudwatch.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
-- SDK integration examples: [cloudwatch_billing_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_billing_test.go), [cloudwatch_builtin_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_builtin_test.go), [cloudwatch_streams_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_streams_test.go), [cloudwatch_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_test.go).
+- SDK integration examples: [cloudwatch_anomaly_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_anomaly_test.go), [cloudwatch_billing_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_billing_test.go), [cloudwatch_builtin_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_builtin_test.go), [cloudwatch_insights_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_insights_test.go), [cloudwatch_service_metrics_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_service_metrics_test.go), [cloudwatch_streams_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_streams_test.go), [cloudwatch_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/cloudwatch_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

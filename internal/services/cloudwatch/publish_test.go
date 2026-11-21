@@ -37,7 +37,7 @@ func statistics(t *testing.T, s *Service, ctx context.Context, now time.Time) []
 		Namespace: new("AWS/SQS"), MetricName: new("NumberOfMessagesSent"), Period: new(int64(60)),
 		StartTime: new(common.Unix(now.Add(-time.Hour))), EndTime: new(common.Unix(now.Add(time.Hour))),
 		Dimensions: []api.Dimension{{Name: new("QueueName"), Value: new("jobs")}},
-		Statistics: []string{"Sum", "SampleCount", "Minimum", "Maximum", "Average"},
+		Statistics: []string{"Sum", "SampleCount", "Minimum", "Maximum"}, ExtendedStatistics: []string{"p50"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -51,7 +51,7 @@ func TestPublishAggregatesPerMinute(t *testing.T) {
 	s.Publish(publishScope, "AWS/SQS", sent(1), sent(4))
 	s.flushPublished(ctx)
 	// A later flush in the same minute extends the stored point.
-	s.Publish(publishScope, "AWS/SQS", sent(2))
+	s.Publish(publishScope, "AWS/SQS", sent(5))
 	s.flushPublished(ctx)
 	points := statistics(t, s, ctx, *now)
 	if len(points) != 1 {
@@ -59,8 +59,8 @@ func TestPublishAggregatesPerMinute(t *testing.T) {
 	}
 
 	p := points[0]
-	if common.Value(p.Sum) != 7 || common.Value(p.SampleCount) != 3 || common.Value(p.Minimum) != 1 ||
-		common.Value(p.Maximum) != 4 || common.Value(p.Unit) != "Count" {
+	if common.Value(p.Sum) != 10 || common.Value(p.SampleCount) != 3 || common.Value(p.Minimum) != 1 ||
+		common.Value(p.Maximum) != 5 || common.Value(p.Unit) != "Count" || p.ExtendedStatistics["p50"] != 4 {
 		t.Fatalf("%+v", p)
 	}
 

@@ -199,11 +199,14 @@ func (s *Service) failed(ctx context.Context, key string, d *pending, err error)
 // discard removes the delivery stored under key, if any, and sends its event
 // to the target's dead-letter queue with the reason it failed.
 func (s *Service) discard(ctx context.Context, key string, d *pending, condition string) {
+	scope := retryScope(key)
 	if err := s.store.Update(context.WithoutCancel(ctx), func(tx storage.WriteTx) error {
 		tx.Delete(key)
 		return nil
 	}); err != nil {
 		s.logger.Warn("remove EventBridge retry", "target", d.Target.ARN, "error", err)
+	} else if d.Target.DeadLetterARN == "" {
+		s.reportInvocation(scope, d.Rule, true)
 	}
 
 	if d.Target.DeadLetterARN == "" {
@@ -221,7 +224,7 @@ func (s *Service) discard(ctx context.Context, key string, d *pending, condition
 		attributes["EXHAUSTED_RETRY_CONDITION"] = stringAttribute(condition)
 	}
 
-	ctx = deliveryContext(ctx, retryScope(key), d)
+	ctx = deliveryContext(ctx, scope, d)
 	err := s.authorize(ctx, d.Rule, d.Target.DeadLetterARN)
 	if err == nil {
 		err = s.queues.Deliver(ctx, d.Target.DeadLetterARN, &sqsapi.SendMessageBatchRequestEntry{
@@ -292,7 +295,8 @@ func (s *Service) retryDue(ctx context.Context, now time.Time) error {
 		}
 
 		c.d.Attempts++
-		if err = s.attempt(ctx, retryScope(c.key), &c.d); err != nil {
+		scope := retryScope(c.key)
+		if err = s.attempt(ctx, scope, &c.d); err != nil {
 			s.failed(ctx, c.key, &c.d, err)
 			continue
 		}
@@ -303,6 +307,8 @@ func (s *Service) retryDue(ctx context.Context, now time.Time) error {
 		}); deleteErr != nil {
 			return deleteErr
 		}
+
+		s.reportInvocation(scope, c.d.Rule, false)
 	}
 
 	return nil

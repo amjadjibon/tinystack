@@ -30,6 +30,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
+	"github.com/amjadjibon/tinystack/internal/services/awsmetrics"
 	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/kinesis"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
@@ -58,6 +59,7 @@ var _ api.API = (*Service)(nil)
 
 type Service struct {
 	store      storage.Store
+	metrics    awsmetrics.Meter
 	streams    *kinesis.Service
 	caller     *catalog.Caller
 	authorizer catalog.ServiceAuthorizer
@@ -794,6 +796,9 @@ func (s *Service) put(ctx context.Context, name *string, records [][]byte) (ids 
 		ids, readErr = s.buffer(tx, m.Scope, st, records)
 		return readErr
 	})
+	if err == nil {
+		s.reportIngestion(m.Scope, *name, false, records)
+	}
 
 	return ids, encrypted, err
 }

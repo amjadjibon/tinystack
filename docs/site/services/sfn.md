@@ -22,6 +22,7 @@ See the [implemented feature catalogue](catalogue.md#step-functions) for this se
 ## Limitations and future work
 
 - No execution retention.
+- Step Functions metrics omit redrives, Map Run children, activity and integration metrics, and usage gauges.
 - Distributed Map does not support Map Run redrive, MANIFEST or Parquet readers, compressed inputs, ItemsPointer or LOAD_AND_FLATTEN; unsupported definition fields fail validation.
 - Distributed Map datasets and result exports are buffered in memory rather than streamed; MaxConcurrencyPath on Inline Map is outside the subset.
 - JSONPath filters and recursive descent are outside the subset.

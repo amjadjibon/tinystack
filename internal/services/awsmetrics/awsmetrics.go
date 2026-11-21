@@ -6,7 +6,11 @@
 // inside one. Publish must stay cheap: it only records the datum in memory.
 package awsmetrics
 
-import "github.com/amjadjibon/tinystack/internal/aws/request"
+import (
+	"sync/atomic"
+
+	"github.com/amjadjibon/tinystack/internal/aws/request"
+)
 
 // Units CloudWatch accepts for the built-in metrics.
 const (
@@ -39,12 +43,12 @@ type Sink interface {
 
 // Meter forwards to a Sink and discards observations until Use sets one. Use
 // it before serving requests.
-type Meter struct{ sink Sink }
+type Meter struct{ sink atomic.Pointer[Sink] }
 
-func (m *Meter) Use(sink Sink) { m.sink = sink }
+func (m *Meter) Use(sink Sink) { m.sink.Store(new(sink)) }
 
 func (m *Meter) Publish(scope request.Scope, namespace string, data ...Datum) {
-	if m.sink != nil {
-		m.sink.Publish(scope, namespace, data...)
+	if sink := m.sink.Load(); sink != nil && *sink != nil {
+		(*sink).Publish(scope, namespace, data...)
 	}
 }

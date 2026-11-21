@@ -3,6 +3,8 @@ package cloudwatch
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,6 +25,7 @@ const publishedSequence = 0
 
 // aggregate is the statistics of the observations of one series within one minute that no flush has written yet.
 type aggregate struct {
+	samples    map[float64]float64
 	scope      request.Scope
 	namespace  string
 	name       string
@@ -66,12 +69,13 @@ func (s *Service) Publish(scope request.Scope, namespace string, data ...awsmetr
 		if a == nil {
 			a = &aggregate{
 				scope: scope, namespace: namespace, name: d.Name, unit: d.Unit, dimensions: d.Dimensions,
-				minute: minute, min: d.Value, max: d.Value,
+				minute: minute, min: d.Value, max: d.Value, samples: map[float64]float64{},
 			}
 			s.pub.pending[key] = a
 		}
 
 		a.count++
+		a.samples[d.Value]++
 		a.sum += d.Value
 		a.min, a.max = min(a.min, d.Value), max(a.max, d.Value)
 	}
@@ -150,8 +154,9 @@ func (s *Service) storePublished(tx storage.WriteTx, a *aggregate, now time.Time
 	}
 
 	added := point{
-		Unit: a.unit, T: float64(a.minute), Count: a.count, Sum: a.sum, Min: a.min, Max: a.max, Summary: true,
+		Unit: a.unit, T: float64(a.minute), Count: a.count, Sum: a.sum, Min: a.min, Max: a.max,
 	}
+	added.Values, added.Counts = sampleDistribution(a.samples)
 	key := dataPrefix(a.scope, id) + fmt.Sprintf("%015d%010d", a.minute*1000, publishedSequence)
 	stored, found, err := storage.Read[point](tx, key)
 	if err != nil {
@@ -160,10 +165,15 @@ func (s *Service) storePublished(tx storage.WriteTx, a *aggregate, now time.Time
 
 	total := added
 	if found {
-		b := &bucket{}
-		b.add(stored)
-		b.add(&added)
-		total = point{Unit: b.unit, T: added.T, Count: b.count, Sum: b.sum, Min: b.min, Max: b.max, Summary: true}
+		total.Count += stored.Count
+		total.Sum += stored.Sum
+		total.Min, total.Max = min(total.Min, stored.Min), max(total.Max, stored.Max)
+		total.Summary = stored.Summary
+		for i, value := range stored.Values {
+			a.samples[value] += stored.Counts[i]
+		}
+
+		total.Values, total.Counts = sampleDistribution(a.samples)
 	} else {
 		prune(tx, dataPrefix(a.scope, id), now.Add(-retention))
 	}
@@ -173,6 +183,16 @@ func (s *Service) storePublished(tx storage.WriteTx, a *aggregate, now time.Time
 	}
 
 	return s.queueStreamPoint(tx, a.scope, rec, &added, now)
+}
+
+func sampleDistribution(samples map[float64]float64) (values, counts []float64) {
+	values = slices.Sorted(maps.Keys(samples))
+	counts = make([]float64, len(values))
+	for i, value := range values {
+		counts[i] = samples[value]
+	}
+
+	return values, counts
 }
 
 // Reset drops observations not yet stored, which the reset would otherwise bring back.

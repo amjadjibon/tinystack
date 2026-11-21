@@ -191,13 +191,7 @@ func (s *Service) run(ctx context.Context, scope request.Scope, r *replay) error
 		}
 
 		leafValues, _ := pattern.Flatten(encoded)
-		for j := range rules {
-			if rules[j].pattern.Matches(leafValues) {
-				for k := range rules[j].targets {
-					s.deliver(ctx, scope, &rules[j], &rules[j].targets[k], &e, encoded)
-				}
-			}
-		}
+		s.routeEvent(ctx, scope, r.Bus, rules, &e, encoded, leafValues)
 
 		at := strings.TrimPrefix(keys[i], archivedPrefix(scope, r.Archive))
 		r.LastReplayed, _ = strconv.ParseInt(at[:20], 10, 64)

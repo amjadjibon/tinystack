@@ -536,6 +536,7 @@
         "Connections (API key, Basic and OAuth client credentials, with invocation header, query string and body parameters) and API destinations; Describe never returns secrets, and DeauthorizeConnection removes the credentials as AWS does",
         "API destination targets make a real HTTP request with the rendered event as the body: the target's HttpParameters fill the endpoint's * wildcards and add headers and query string parameters, the connection adds its parameters (which win) and its authorization, OAuth access tokens are cached until they expire, and a response other than 2xx fails the delivery into the retry and dead-letter path (5xx, 401, 407, 409 and 429 are retried, other statuses go to the dead-letter queue at once)",
         "Scheduled rules, durable retry records and SQS dead-letter queues",
+        "AWS/Events metrics: MatchedEvents per matching rule, plus one observation per matching event for its bus and source. Invocations counts completed target deliveries and permanent failures regionally and per rule. FailedInvocations counts permanent failures without a dead-letter queue per rule. Default bus rules use RuleName and custom bus rules use EventBusName with RuleName",
         "Archives and synchronous replay",
         "AWS-style console for scoped event buses, rule patterns and schedules, nondelivering pattern tests, Lambda/SQS/SNS target selection and input/retry options, tags, explicit test-event publication and rule/bus delivery inspection",
         "Gateway bus and rule resource-policy enforcement, explicit Deny precedence, and same-region cross-account bus ARN publication and rule management",
@@ -548,6 +549,7 @@
         "API destination deliveries are synchronous (PutEvents waits up to 5 seconds for each endpoint), are not authorized against the target's RoleArn, and send the event as the body for every method; HttpParameters values that are JSONPath references such as $.detail.id are rejected, and the OAuth token request is a form POST (or GET with query parameters) with Basic client authentication",
         "Organization conditions and unsupported IAM policy elements are rejected; archive/replay management does not evaluate bus policies",
         "Replays run synchronously and cannot be cancelled",
+        "EventBridge metrics cover pattern matches, replay matches and settled target deliveries. Retry attempts, dead-letter deliveries and additional AWS/Events metrics are outside the subset",
         "Verify mode exposes bus/rule/target inventory and deliveries; management and event publication require signed CLI/SDK requests",
         "Bus permissions, archives and replay management use the AWS API rather than console forms",
         "With IAM authorization, conditions on events:source and events:detail-type fail closed for PutRule patterns with operators in those fields or a top-level $or"
@@ -610,6 +612,7 @@
         "Delivery streams, tags, direct puts and batch puts",
         "Background buffering and S3 output after size/time thresholds",
         "Kinesis source polling and Lambda processing through the shared caller",
+        "AWS/Firehose metrics use DeliveryStreamName: IncomingBytes and IncomingRecords for accepted direct puts; DataReadFromKinesisStream.Bytes and DataReadFromKinesisStream.Records for records buffered from Kinesis; DeliveryToS3.Success is 1 for a successful S3 write and 0 for a failed attempt",
         "With authorization on, S3 writes and Lambda processor calls assume the destination's role, whose trust policy must allow firehose.amazonaws.com for the delivery stream, and are decided by the role's policies; a denied processor call fails its records with Lambda.InvokeAccessDenied and a denied write is recorded as a failed delivery",
         "PutRecord and PutRecordBatch resolve delivery stream ARNs and tags for resource-scoped identity and delivery-role policies",
         "Dedicated console for DirectPut or Kinesis-source delivery stream creation, S3 destination updates, buffering hints, tags and record testing"
@@ -617,7 +620,8 @@
       "gaps": [
         "Only S3 destinations are implemented",
         "No HTTP, Redshift, OpenSearch, Splunk, Snowflake or Iceberg destinations",
-        "No MSK/database sources, dynamic partitioning, format conversion, encryption or S3 backup behavior"
+        "No MSK/database sources, dynamic partitioning, format conversion, encryption or S3 backup behavior",
+        "Firehose metrics omit S3 freshness, throttling and destination byte and record totals"
       ],
       "execution": "Local behavior",
       "package": "firehose"
@@ -1240,22 +1244,25 @@
       "summary": "Record metrics, evaluate alarms, and exercise local monitoring integrations.",
       "features": [
         "Metrics, statistics, percentile queries and a metric-math subset",
+        "Metrics Insights in GetMetricData supports SELECT AVG, COUNT, MAX, MIN and SUM, FROM namespace or SCHEMA, dimension filters, GROUP BY, ORDER BY and LIMIT; ungrouped queries also work in alarms",
+        "Single-metric anomaly detector create, describe, update and delete, ANOMALY_DETECTION_BAND in GetMetricData, and alarms with ThresholdMetricId and upper, lower or either-bound comparisons",
         "Metric/composite alarms, alarm history and dashboards",
         "Background evaluation and state-change EventBridge events",
         "SNS, Lambda and Auto Scaling actions through the caller",
         "JSON metric streams: CRUD, start/stop, tags, namespace/metric filters, per-minute aggregation and additional basic/percentile statistics; background delivery to Firehose under RoleArn with streams.metrics.cloudwatch.amazonaws.com trust and role permission checks; failures and delivered counts in inventory; AWS::CloudWatch::MetricStream lifecycle",
         "With authorization on, an SNS action needs the topic policy to allow cloudwatch.amazonaws.com, and a Lambda action the function policy to allow lambda.alarms.cloudwatch.amazonaws.com, with the alarm as aws:SourceArn and its account as aws:SourceAccount; a denied action is recorded in the alarm history as failed in enforce mode and as a would-deny check in soft mode",
         "Fixture-backed AWS/Billing EstimatedCharges in us-east-1: current UTC month USD total and verified AmazonS3 service dimension, sampled each minute and after fixture changes",
-        "Built-in AWS/* namespaces: services publish their metrics through an internal path that PutMetricData does not open; observations aggregate in memory per series and minute, are stored every second as one statistic-set point per series and minute, and flush on shutdown, so ListMetrics, GetMetricStatistics, GetMetricData, metric streams and alarms see them (AWS/Lambda, AWS/SQS, AWS/DynamoDB, AWS/ApiGateway, AWS/SNS and AWS/Kinesis, listed on those services; plus AWS/Billing)",
+        "Built-in AWS/* namespaces: observations aggregate in memory per series and minute, flush every second and on shutdown, and retain exact sample frequencies for percentile reads, streams and alarms. Supported namespaces are AWS/Lambda, AWS/SQS, AWS/DynamoDB, AWS/ApiGateway, AWS/SNS, AWS/Kinesis, AWS/States, AWS/Events, AWS/Firehose and AWS/Billing",
         "AWS-style console for scoped metric selection and graphs, explicit custom metric publication, metric/composite alarm creation and editing, actions and state tests, paginated history, tags, and dashboard JSON editing with metric/text previews"
       ],
       "gaps": [
-        "No anomaly detection, Metrics Insights or insight rules",
+        "Metrics Insights allows one query per request, up to 500 grouped series, regular-resolution periods, and up to two weeks of stored data (three hours for alarms). Grouped alarms, resource tag and account filters or groups, and Contributor Insights rules are unsupported",
+        "Anomaly bands use the mean plus and minus the requested number of population standard deviations from the preceding 14 days, after excluding configured time ranges. Bounds require at least two earlier period values. The deterministic model differs from AWS machine learning, and metric math detector models, timezone and spike handling, and Auto Scaling actions on anomaly alarms are unsupported. Band inputs must reference a MetricStat query",
         "Metric streams reject OpenTelemetry formats and linked-account metrics; additional statistics support basic statistics and percentiles, not trimmed/winsorized statistics; no managed metric-stream monitoring metrics",
         "Metric streams claim completed minutes once, exclude datapoints older than two days, and record failed Firehose calls without replay; Firehose handles destination buffering and retry after accepting records",
         "No EC2/Systems Manager actions or alarm mute rules",
-        "Only the metrics listed on the Lambda, SQS, DynamoDB, API Gateway, SNS and Kinesis pages and fixture-backed billing are published to AWS/ namespaces; other services publish none, and public PutMetricData still rejects AWS/ namespaces",
-        "Published metrics are statistic sets, so percentile statistics (such as p99 Duration) return no datapoint for them; values appear up to one second after the request, and observations in memory are lost on a crash",
+        "Published metrics are limited to those listed on the service pages and fixture-backed billing. Public PutMetricData rejects AWS/ namespaces",
+        "Service metrics can take up to one second to appear and pending observations are lost on a crash. Older service metric points stored as statistic sets lack the sample frequencies required for percentiles",
         "Billing uses Unit None and Currency=USD, with ServiceName=AmazonS3 only for the verified S3 fixture label; other services contribute only to the total, with no linked-account series or real AWS bill calculation",
         "Billing samples use publish time, refresh on a one-second worker within minute slots, and emit one final zero after last-fixture deletion; periods below 60 seconds and AWS billing refresh delays are not reproduced",
         "Local retention is 15 days for datapoints and 30 days for alarm history",
@@ -1306,6 +1313,7 @@
         "JSONPath and JSONata evaluation, supported state types, Retry/Catch and callbacks",
         "In-process AWS SDK integrations can call implemented operations",
         "TestState and redrive support",
+        "AWS/States reports top-level Standard and Express executions: ExecutionsStarted (1 at start and 0 on close), ExecutionsSucceeded, ExecutionsFailed, ExecutionsAborted, ExecutionsTimedOut, and ExecutionTime in milliseconds. Metrics are regional and available by StateMachineArn, with Version and Alias series for qualified executions",
         "Distributed Map Runs with Standard or Express child workflows, separate child histories, DescribeMapRun, ListMapRuns and live UpdateMapRun settings",
         "S3 JSON, JSONL and CSV ItemReader datasets, listObjectsV2 readers, ItemSelector, item batching and tolerated failure thresholds",
         "ResultWriter exports status files and manifests to S3, with JSON or JSONL output and NONE, COMPACT or FLATTEN transformations; WriterConfig-only output previews",
@@ -1315,6 +1323,7 @@
       ],
       "gaps": [
         "No execution retention",
+        "Step Functions metrics omit redrives, Map Run children, activity and integration metrics, and usage gauges",
         "Distributed Map does not support Map Run redrive, MANIFEST or Parquet readers, compressed inputs, ItemsPointer or LOAD_AND_FLATTEN; unsupported definition fields fail validation",
         "Distributed Map datasets and result exports are buffered in memory rather than streamed; MaxConcurrencyPath on Inline Map is outside the subset",
         "JSONPath filters and recursive descent are outside the subset",

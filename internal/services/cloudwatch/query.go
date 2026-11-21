@@ -36,7 +36,7 @@ type series struct {
 
 // checkQueries checks metric data queries. An alarm's queries must return
 // exactly one series; ReturnData defaults to true.
-func checkQueries(queries []api.MetricDataQuery, alarm bool) error {
+func checkQueries(queries []api.MetricDataQuery, alarm bool, thresholdID string) error {
 	switch {
 	case len(queries) == 0:
 		return missing("MetricDataQueries")
@@ -44,10 +44,11 @@ func checkQueries(queries []api.MetricDataQuery, alarm bool) error {
 		return invalidValue("At most %d metric data queries are allowed", maxQueries)
 	}
 
-	ids, returned := map[string]bool{}, 0
+	ids, returned, insights := map[string]bool{}, 0, 0
 	for i := range queries {
 		q := &queries[i]
 		id := common.Value(q.Id)
+		isInsight := insightExpression(common.Value(q.Expression))
 		switch {
 		case !queryID.MatchString(id) || len(id) > 255:
 			return invalidValue("The value %s for parameter MetricDataQueries.member.%d.Id is invalid.", id, i+1)
@@ -55,8 +56,10 @@ func checkQueries(queries []api.MetricDataQuery, alarm bool) error {
 			return invalidValue("The value %s for parameter MetricDataQueries.member.%d.Id is not unique.", id, i+1)
 		case (q.MetricStat == nil) == (q.Expression == nil):
 			return awserror.New(combinationCode, "Each query must have exactly one of MetricStat and Expression")
-		case q.Period != nil:
-			return invalidValue("TinyStack does not support Metrics Insights queries (Period on a query)")
+		case q.Expression != nil && (len(*q.Expression) > 2048 || strings.TrimSpace(*q.Expression) == ""):
+			return invalidValue("A metric data query expression must contain 1 to 2048 characters")
+		case q.Period != nil && !isInsight:
+			return invalidValue("Period on a query is supported for Metrics Insights expressions only")
 		}
 
 		ids[id] = true
@@ -69,6 +72,30 @@ func checkQueries(queries []api.MetricDataQuery, alarm bool) error {
 				return err
 			}
 		}
+
+		if isInsight {
+			insights++
+			if insights > 1 {
+				return invalidValue("Only one Metrics Insights query is allowed per request")
+			}
+
+			if p := insightQueryPeriod(q); p <= 0 || p%insightPeriod != 0 || p > int64(insightHistory/time.Second) {
+				return invalidValue("A Metrics Insights query period must be a multiple of 60 from 60 to 1209600")
+			}
+
+			parsed, err := parseInsight(*q.Expression)
+			if err != nil {
+				return err
+			}
+
+			if alarm && len(parsed.group) > 0 {
+				return invalidValue("TinyStack does not support grouped Metrics Insights alarms")
+			}
+		}
+	}
+
+	if thresholdID != "" {
+		return checkBandAlarm(queries, thresholdID)
 	}
 
 	if alarm && returned != 1 {
@@ -76,6 +103,14 @@ func checkQueries(queries []api.MetricDataQuery, alarm bool) error {
 	}
 
 	return nil
+}
+
+func insightQueryPeriod(q *api.MetricDataQuery) int64 {
+	if q.Period == nil {
+		return insightPeriod
+	}
+
+	return *q.Period
 }
 
 func checkStat(st *api.MetricStat, alarm bool) error {
@@ -110,7 +145,8 @@ func stat(tx storage.ReadTx, scope request.Scope, st *api.MetricStat, start, end
 
 	mt := st.Metric
 	id := metricID(common.Value(mt.Namespace), common.Value(mt.MetricName), mt.Dimensions)
-	got, err := buckets(tx, scope, id, *st.Period, common.Value(st.Unit), start, end)
+	_, distribution := percentile(*st.Stat)
+	got, err := buckets(tx, scope, id, *st.Period, common.Value(st.Unit), start, end, distribution)
 	if err != nil {
 		return nil, err
 	}
@@ -126,10 +162,10 @@ func stat(tx storage.ReadTx, scope request.Scope, st *api.MetricStat, start, end
 }
 
 // run evaluates checked queries over [start, end), keyed by query ID.
-func run(tx storage.ReadTx, scope request.Scope, queries []api.MetricDataQuery, start, end time.Time,
-) (map[string]*series, error) {
+func run(tx storage.ReadTx, scope request.Scope, queries []api.MetricDataQuery, start, end, cutoff time.Time,
+) (map[string]operand, error) {
 	byID := map[string]*api.MetricDataQuery{}
-	out := map[string]*series{}
+	out := map[string]operand{}
 	var metrics []*series
 	for i := range queries {
 		q := &queries[i]
@@ -138,49 +174,92 @@ func run(tx storage.ReadTx, scope request.Scope, queries []api.MetricDataQuery, 
 			continue
 		}
 
-		sr, err := stat(tx, scope, q.MetricStat, start, end)
-		if err != nil {
-			return nil, err
+		// A nil transaction checks query dependencies and types without reading metric data.
+		sr := &series{label: common.Value(q.MetricStat.Metric.MetricName)}
+		if tx != nil {
+			var err error
+			sr, err = stat(tx, scope, q.MetricStat, start, end)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		if q.Label != nil {
 			sr.label = *q.Label
 		}
 
-		out[*q.Id] = sr
+		out[*q.Id] = operand{list: []*series{sr}}
 		metrics = append(metrics, sr)
 	}
 
 	visiting := map[string]bool{}
-	var resolve func(id string) (*series, error)
-	resolve = func(id string) (*series, error) {
+	band := func(spec bandSpec) (operand, error) {
+		source := byID[spec.metricID]
+		if source == nil || source.MetricStat == nil {
+			return operand{}, invalidValue("An anomaly detection band requires a MetricStat query ID")
+		}
+
+		return buildBand(tx, scope, source.MetricStat, out[spec.metricID].list[0], start, end, spec.width)
+	}
+	var resolve func(id string) (operand, error)
+	resolve = func(id string) (operand, error) {
 		if sr, ok := out[id]; ok {
 			return sr, nil
 		}
 
 		q, ok := byID[id]
 		if !ok {
-			return nil, invalidValue("Unknown metric data query ID %s in an expression", id)
+			return operand{}, invalidValue("Unknown metric data query ID %s in an expression", id)
 		}
 
 		if visiting[id] {
-			return nil, invalidValue("The expression of %s refers to itself", id)
+			return operand{}, invalidValue("The expression of %s refers to itself", id)
 		}
 
 		visiting[id] = true
-		e := &expression{src: *q.Expression, resolve: resolve, metrics: metrics}
-		sr, err := e.evaluate()
+		var result operand
+		var err error
+		if insightExpression(*q.Expression) {
+			parsed, parseErr := parseInsight(*q.Expression)
+			if parseErr != nil {
+				return operand{}, parseErr
+			}
+
+			insightStart := start
+			if cutoff.After(start) {
+				insightStart = cutoff
+			}
+
+			if tx == nil {
+				result = operand{list: []*series{{label: parsed.metric}}}
+			} else {
+				result, err = parsed.run(tx, scope, insightQueryPeriod(q), insightStart, end)
+			}
+		} else {
+			e := &expression{src: *q.Expression, resolve: resolve, metrics: metrics, band: band}
+			result, err = e.evaluate()
+		}
+
 		if err != nil {
-			return nil, err
+			return operand{}, err
 		}
 
-		sr.label = id
-		if q.Label != nil {
-			sr.label = *q.Label
+		for i, sr := range result.list {
+			cloned := *sr
+			switch {
+			case q.Label != nil && result.array:
+				cloned.label = *q.Label + " " + cloned.label
+			case q.Label != nil:
+				cloned.label = *q.Label
+			case cloned.label == "":
+				cloned.label = id
+			}
+
+			result.list[i] = &cloned
 		}
 
-		out[id] = sr
-		return sr, nil
+		out[id] = result
+		return result, nil
 	}
 
 	for i := range queries {
@@ -214,13 +293,14 @@ func (s *Service) GetMetricData(ctx context.Context, in *api.GetMetricDataInput)
 		return nil, invalidValue("The parameter MaxDatapoints must be greater than 0.")
 	}
 
-	if checkErr := checkQueries(in.MetricDataQueries, false); checkErr != nil {
+	if checkErr := checkQueries(in.MetricDataQueries, false, ""); checkErr != nil {
 		return nil, checkErr
 	}
 
-	var got map[string]*series
+	var got map[string]operand
+	cutoff := insightCutoff(s.now(), false)
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		got, err = run(tx, m.Scope, in.MetricDataQueries, fromUnix(*in.StartTime), fromUnix(*in.EndTime))
+		got, err = run(tx, m.Scope, in.MetricDataQueries, fromUnix(*in.StartTime), fromUnix(*in.EndTime), cutoff)
 		return err
 	})
 	if err != nil {
@@ -239,27 +319,28 @@ func (s *Service) GetMetricData(ctx context.Context, in *api.GetMetricDataInput)
 			continue
 		}
 
-		sr := got[*q.Id]
-		times := slices.Sorted(maps.Keys(sr.points))
-		if scan != scanAscending {
-			slices.Reverse(times)
-		}
+		for _, sr := range got[*q.Id].list {
+			times := slices.Sorted(maps.Keys(sr.points))
+			if scan != scanAscending {
+				slices.Reverse(times)
+			}
 
-		status := statusComplete
-		if int64(len(times)) > limit {
-			times, status = times[:limit], statusPartial
-		}
+			status := statusComplete
+			if int64(len(times)) > limit {
+				times, status = times[:limit], statusPartial
+			}
 
-		limit -= int64(len(times))
-		r := api.MetricDataResult{
-			Id: q.Id, Label: new(sr.label), StatusCode: new(status), Timestamps: []float64{}, Values: []float64{},
-		}
-		for _, t := range times {
-			r.Timestamps = append(r.Timestamps, float64(t))
-			r.Values = append(r.Values, sr.points[t])
-		}
+			limit -= int64(len(times))
+			r := api.MetricDataResult{
+				Id: q.Id, Label: new(sr.label), StatusCode: new(status), Timestamps: []float64{}, Values: []float64{},
+			}
+			for _, t := range times {
+				r.Timestamps = append(r.Timestamps, float64(t))
+				r.Values = append(r.Values, sr.points[t])
+			}
 
-		out.MetricDataResults = append(out.MetricDataResults, r)
+			out.MetricDataResults = append(out.MetricDataResults, r)
+		}
 	}
 
 	return out, nil
@@ -269,7 +350,8 @@ func (s *Service) GetMetricData(ctx context.Context, in *api.GetMetricDataInput)
 // arithmetic operators, parentheses, [a, b] arrays, METRICS([filter]), and
 // SUM, AVG, MIN, MAX, and ABS.
 type expression struct {
-	resolve func(id string) (*series, error)
+	resolve func(id string) (operand, error)
+	band    func(bandSpec) (operand, error)
 	src     string
 	metrics []*series
 	pos     int
@@ -288,22 +370,27 @@ func (e *expression) fail(format string, args ...any) error {
 	return invalidValue("Invalid metric math expression %q: "+format, append([]any{e.src}, args...)...)
 }
 
-func (e *expression) evaluate() (*series, error) {
+func (e *expression) evaluate() (operand, error) {
 	v, err := e.sum()
 	if err != nil {
-		return nil, err
+		return operand{}, err
 	}
 
 	e.skip()
 	if e.pos != len(e.src) {
-		return nil, e.fail("unexpected %q", e.src[e.pos:])
+		return operand{}, e.fail("unexpected %q", e.src[e.pos:])
 	}
 
-	if v.isScalar() || len(v.list) != 1 {
-		return nil, e.fail("the expression must return one time series")
+	if v.isScalar() {
+		return operand{}, e.fail("the expression must return time series")
 	}
 
-	return &series{points: v.list[0].points}, nil
+	v.list = slices.Clone(v.list)
+	if !v.array {
+		v.list[0] = &series{points: v.list[0].points}
+	}
+
+	return v, nil
 }
 
 func (e *expression) skip() {
@@ -442,12 +529,7 @@ func (e *expression) primary() (operand, error) {
 			return e.call(name)
 		}
 
-		sr, err := e.resolve(name)
-		if err != nil {
-			return operand{}, err
-		}
-
-		return operand{list: []*series{sr}}, nil
+		return e.resolve(name)
 	}
 
 	return operand{}, e.fail("unexpected %q", string(c))
@@ -458,6 +540,16 @@ func isWord(c byte) bool {
 }
 
 func (e *expression) call(name string) (operand, error) {
+	if name == bandFunction {
+		spec, length, err := parseBandArguments(e.src[e.pos:])
+		if err != nil {
+			return operand{}, err
+		}
+
+		e.pos += length
+		return e.band(spec)
+	}
+
 	if name == "METRICS" {
 		filter := ""
 		if e.accept('"') {
@@ -504,6 +596,21 @@ func (e *expression) call(name string) (operand, error) {
 		fold = slices.Max[[]float64]
 	case "ABS":
 		return e.binary(arg, operand{scalar: 0}, 'a')
+	case "FIRST", "LAST":
+		if !arg.array {
+			return operand{}, e.fail("%s takes an array of time series", name)
+		}
+
+		if len(arg.list) == 0 {
+			return operand{list: []*series{{}}}, nil
+		}
+
+		index := 0
+		if name == "LAST" {
+			index = len(arg.list) - 1
+		}
+
+		return operand{list: []*series{arg.list[index]}}, nil
 	default:
 		return operand{}, e.fail("TinyStack does not support the function %s", name)
 	}
@@ -571,7 +678,7 @@ func (e *expression) binary(a, b operand, op byte) (operand, error) {
 	}
 
 	each := func(list []*series, f func(t int64, v float64) (float64, bool)) operand {
-		out := operand{list: make([]*series, len(list)), array: len(list) != 1}
+		out := operand{list: make([]*series, len(list)), array: a.array || b.array}
 		for i, sr := range list {
 			out.list[i] = &series{label: sr.label, points: map[int64]float64{}}
 			for t, v := range sr.points {

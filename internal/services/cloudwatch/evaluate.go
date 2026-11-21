@@ -104,8 +104,20 @@ func period(m *api.MetricAlarm) int64 {
 		return *m.Period
 	}
 
+	if m.ThresholdMetricId != nil {
+		band := findQuery(m.Metrics, *m.ThresholdMetricId)
+		spec, _ := parseBand(common.Value(band.Expression))
+		source := findQuery(m.Metrics, spec.metricID)
+		return *source.MetricStat.Period
+	}
+
 	for i := range m.Metrics {
-		if st := m.Metrics[i].MetricStat; st != nil {
+		q := &m.Metrics[i]
+		if insightExpression(common.Value(q.Expression)) {
+			return insightQueryPeriod(q)
+		}
+
+		if st := q.MetricStat; st != nil {
 			return common.Value(st.Period)
 		}
 	}
@@ -137,15 +149,28 @@ func decideMetric(tx storage.ReadTx, scope request.Scope, m *api.MetricAlarm, no
 	end := (now.Unix()/p + 1) * p
 	start := end - (n+1)*p
 	var got *series
+	var bounds []*series
 	if m.Metrics != nil {
-		all, runErr := run(tx, scope, m.Metrics, time.Unix(start, 0), time.Unix(end, 0))
+		all, runErr := run(tx, scope, m.Metrics, time.Unix(start, 0), time.Unix(end, 0), insightCutoff(now, true))
 		if runErr != nil {
 			return "", "", "", runErr
 		}
 
-		for i := range m.Metrics {
-			if q := &m.Metrics[i]; q.ReturnData == nil || *q.ReturnData {
-				got = all[*q.Id]
+		if m.ThresholdMetricId != nil {
+			id := *m.ThresholdMetricId
+			band := findQuery(m.Metrics, id)
+			spec, _ := parseBand(common.Value(band.Expression))
+			bounds, got = all[id].list, all[spec.metricID].list[0]
+		} else {
+			for i := range m.Metrics {
+				if q := &m.Metrics[i]; q.ReturnData == nil || *q.ReturnData {
+					out := all[*q.Id]
+					if out.array || len(out.list) != 1 {
+						return "", "", "", invalidValue("An alarm expression must return a single time series")
+					}
+
+					got = out.list[0]
+				}
 			}
 		}
 	} else {
@@ -179,11 +204,19 @@ func decideMetric(tx storage.ReadTx, scope request.Scope, m *api.MetricAlarm, no
 	var recent []float64
 	for t := start; t < end; t += p {
 		v, ok := got.points[t]
+		crossed := compareThreshold(op, v, threshold)
+		if bounds != nil {
+			lo, trained := bounds[0].points[t]
+			hi := bounds[1].points[t]
+			ok = ok && trained
+			crossed = op != opAboveBand && v < lo || op != opBelowBand && v > hi
+		}
+
 		switch {
 		case ok:
 			present++
 			recent = append(recent, v)
-			if compareThreshold(op, v, threshold) {
+			if crossed {
 				breaching++
 			}
 		case treat == treatBreaching:
@@ -194,16 +227,30 @@ func decideMetric(tx storage.ReadTx, scope request.Scope, m *api.MetricAlarm, no
 		}
 	}
 
-	detail, _ := json.Marshal(map[string]any{
+	details := map[string]any{
 		"version": "1.0", "queryDate": now.UTC().Format(isoMillis),
 		"startDate": time.Unix(start, 0).UTC().Format(isoMillis), "period": p,
-		"recentDatapoints": recent, "threshold": threshold,
-	})
+		"recentDatapoints": recent,
+	}
+	if bounds == nil {
+		details["threshold"] = threshold
+	} else {
+		details["thresholdMetricId"] = *m.ThresholdMetricId
+	}
+
+	detail, _ := json.Marshal(details)
 	switch {
 	case present == 0 && treat == treatIgnore:
 		return "", "", "", nil
 	case present == 0:
 		return stateNoData, fmt.Sprintf("Insufficient Data: %d datapoints were unknown.", n), string(detail), nil
+	case bounds != nil:
+		reason := fmt.Sprintf("Anomaly detection: %d out of the last %d datapoints breached the band.", breaching, n)
+		if breaching >= needed {
+			return stateAlarm, reason, string(detail), nil
+		}
+
+		return stateOK, reason, string(detail), nil
 	case breaching >= needed:
 		return stateAlarm, fmt.Sprintf("Threshold Crossed: %d out of the last %d datapoints were %s the threshold "+
 			"(%g).", breaching, n, words(op, true), threshold), string(detail), nil
@@ -369,13 +416,21 @@ func randomID() string {
 
 // configuration describes an alarm in state change events.
 func configuration(a *alarm) map[string]any {
+	const descriptionKey = "description"
 	if c := a.Composite; c != nil {
-		return map[string]any{"description": common.Value(c.AlarmDescription), "alarmRule": common.Value(c.AlarmRule)}
+		return map[string]any{descriptionKey: common.Value(c.AlarmDescription), "alarmRule": common.Value(c.AlarmRule)}
 	}
 
 	m := a.Metric
+	if m.ThresholdMetricId != nil {
+		return map[string]any{
+			descriptionKey: common.Value(m.AlarmDescription), "metrics": m.Metrics,
+			"comparisonOperator": common.Value(m.ComparisonOperator), "thresholdMetricId": *m.ThresholdMetricId,
+		}
+	}
+
 	return map[string]any{
-		"description": common.Value(m.AlarmDescription), "metricName": common.Value(m.MetricName),
+		descriptionKey: common.Value(m.AlarmDescription), "metricName": common.Value(m.MetricName),
 		"namespace": common.Value(m.Namespace), "threshold": common.Value(m.Threshold),
 		"comparisonOperator": common.Value(m.ComparisonOperator),
 	}

@@ -53,11 +53,18 @@ type Service struct {
 	// authorizer checks Lambda proxy integrations against the function's resource policy;
 	// see UseServiceAuthorizer.
 	authorizer catalog.ServiceAuthorizer
-	metrics    awsmetrics.Meter
+	metrics    *awsmetrics.Meter
 }
 
 func New(store storage.Store, functions *lambda.Service, logGroups *logs.Service, pools *cognitoidp.Service) *Service {
-	return &Service{store: store, functions: functions, logs: logGroups, pools: pools, now: time.Now}
+	return &Service{
+		store:     store,
+		functions: functions,
+		logs:      logGroups,
+		pools:     pools,
+		now:       time.Now,
+		metrics:   new(awsmetrics.Meter),
+	}
 }
 
 // UseServiceAuthorizer makes Lambda proxy integrations without a role require the function's resource policy to allow

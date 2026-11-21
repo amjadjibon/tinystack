@@ -187,15 +187,7 @@ func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api
 			}
 		}
 
-		for _, r := range rules {
-			if !r.pattern.Matches(leafValues) {
-				continue
-			}
-
-			for j := range r.targets {
-				s.deliver(ctx, owner.Scope, &r, &r.targets[j], e, encoded)
-			}
-		}
+		s.routeEvent(ctx, owner.Scope, bus, rules, e, encoded, leafValues)
 
 		out.Entries = append(out.Entries, api.PutEventsResultEntry{EventId: new(e.ID)})
 	}
@@ -207,6 +199,28 @@ func (s *Service) PutEvents(ctx context.Context, in *api.PutEventsRequest) (*api
 	}
 
 	return out, nil
+}
+
+func (s *Service) routeEvent(ctx context.Context, scope request.Scope, bus string, rules []compiledRule, e *event,
+	encoded []byte, leafValues pattern.Event,
+) {
+	matched := false
+	for i := range rules {
+		r := &rules[i]
+		if !r.pattern.Matches(leafValues) {
+			continue
+		}
+
+		matched = true
+		s.reportRuleMetric(scope, r.arn, matchedEvents)
+		for j := range r.targets {
+			s.deliver(ctx, scope, r, &r.targets[j], e, encoded)
+		}
+	}
+
+	if matched {
+		s.reportMatchedBus(scope, bus, e.Source)
+	}
 }
 
 type compiledRule struct {
@@ -306,6 +320,8 @@ func (s *Service) deliver(
 	}
 	if err := s.attempt(ctx, scope, d); err != nil {
 		s.failed(ctx, retryKey(scope), d, err)
+	} else {
+		s.reportInvocation(scope, d.Rule, false)
 	}
 }
 

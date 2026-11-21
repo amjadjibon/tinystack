@@ -27,6 +27,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
+	"github.com/amjadjibon/tinystack/internal/services/awsmetrics"
 	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/pattern"
@@ -55,6 +56,7 @@ var _ api.API = (*Service)(nil)
 
 type Service struct {
 	store      storage.Store
+	metrics    awsmetrics.Meter
 	limiters   rateLimiters
 	logger     *slog.Logger
 	functions  *lambda.Service

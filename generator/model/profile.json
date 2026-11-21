@@ -4530,6 +4530,9 @@
       "GetMetricData",
       "GetMetricStatistics",
       "ListMetrics",
+      "PutAnomalyDetector",
+      "DescribeAnomalyDetectors",
+      "DeleteAnomalyDetector",
       "PutMetricAlarm",
       "PutCompositeAlarm",
       "DescribeAlarms",
@@ -4584,6 +4587,40 @@
         "Label",
         "ReturnData",
         "Period"
+      ],
+      "PutAnomalyDetectorInput": [
+        "Namespace",
+        "MetricName",
+        "Dimensions",
+        "Stat",
+        "Configuration",
+        "SingleMetricAnomalyDetector"
+      ],
+      "DescribeAnomalyDetectorsInput": [
+        "AnomalyDetectorIds",
+        "NextToken",
+        "MaxResults",
+        "Namespace",
+        "MetricName",
+        "Dimensions",
+        "AnomalyDetectorTypes"
+      ],
+      "DeleteAnomalyDetectorInput": [
+        "AnomalyDetectorId",
+        "Namespace",
+        "MetricName",
+        "Dimensions",
+        "Stat",
+        "SingleMetricAnomalyDetector"
+      ],
+      "SingleMetricAnomalyDetector": [
+        "Namespace",
+        "MetricName",
+        "Dimensions",
+        "Stat"
+      ],
+      "AnomalyDetectorConfiguration": [
+        "ExcludedTimeRanges"
       ],
       "ListMetricsInput": [
         "Namespace",

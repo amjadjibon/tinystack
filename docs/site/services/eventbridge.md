@@ -28,6 +28,7 @@ With identity.authorization set to soft or enforce, bus and rule actions evaluat
 - API destination deliveries are synchronous (PutEvents waits up to 5 seconds for each endpoint), are not authorized against the target's RoleArn, and send the event as the body for every method; HttpParameters values that are JSONPath references such as $.detail.id are rejected, and the OAuth token request is a form POST (or GET with query parameters) with Basic client authentication.
 - Organization conditions and unsupported IAM policy elements are rejected; archive/replay management does not evaluate bus policies.
 - Replays run synchronously and cannot be cancelled.
+- EventBridge metrics cover pattern matches, replay matches and settled target deliveries. Retry attempts, dead-letter deliveries and additional AWS/Events metrics are outside the subset.
 - Verify mode exposes bus/rule/target inventory and deliveries; management and event publication require signed CLI/SDK requests.
 - Bus permissions, archives and replay management use the AWS API rather than console forms.
 - With IAM authorization, conditions on events:source and events:detail-type fail closed for PutRule patterns with operators in those fields or a top-level $or.

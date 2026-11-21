@@ -119,7 +119,8 @@ func (s *Service) pull(ctx context.Context, t target) error {
 		return nil
 	}
 
-	return s.store.Update(ctx, func(tx storage.WriteTx) error {
+	var bufferedRecords bool
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		current, found, readErr := storage.Read[deliveryStream](tx, streamKey(t.scope, t.name))
 		if readErr != nil || !found {
 			return readErr
@@ -134,8 +135,14 @@ func (s *Service) pull(ctx context.Context, t target) error {
 		}
 
 		_, bufferErr := s.buffer(tx, t.scope, current, records)
+		bufferedRecords = bufferErr == nil
 		return bufferErr
 	})
+	if err == nil && bufferedRecords && len(records) > 0 {
+		s.reportIngestion(t.scope, t.name, true, records)
+	}
+
+	return err
 }
 
 func parentsDone(sh *kinesis.Shard, cursors map[string]string, known map[string]bool) bool {
@@ -321,6 +328,7 @@ func (s *Service) putObject(
 	_, err := s.call(ctx, scope, st, "s3", "PutObject", map[string]any{
 		"Bucket": bucket, "Key": key, "Body": string(data),
 	})
+	s.reportS3Put(scope, st.Name, err == nil)
 	if s.deliveries != nil {
 		s.deliveries.Add(delivery.ViaFirehose, streamARN(scope, st.Name), "s3://"+bucket+"/"+key, data, err)
 	}

@@ -63,7 +63,7 @@ type Service struct {
 	// authorizer checks Lambda proxy integrations against the function's resource policy;
 	// see UseServiceAuthorizer.
 	authorizer      catalog.ServiceAuthorizer
-	metrics         awsmetrics.Meter
+	metrics         *awsmetrics.Meter
 	runtimeMu       sync.Mutex
 	connectionsMu   sync.Mutex
 	connectionGroup sync.WaitGroup
@@ -80,6 +80,7 @@ func New(store storage.Store, functions *lambda.Service, logGroups *logs.Service
 		logs:             logGroups,
 		verifier:         proxy.NewVerifier(),
 		now:              time.Now,
+		metrics:          new(awsmetrics.Meter),
 	}
 }
 

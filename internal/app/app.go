@@ -491,7 +491,7 @@ func build(
 	a.onReset(monitoring.Reset)
 	// The services above report their AWS/* metrics to CloudWatch, which is built after them.
 	for _, service := range []interface{ UseMetrics(awsmetrics.Sink) }{
-		functions, queues, tables, restAPIs, httpAPIs, topics, streams,
+		functions, queues, tables, restAPIs, httpAPIs, topics, streams, workflows, rules, firehoses,
 	} {
 		service.UseMetrics(monitoring)
 	}

@@ -92,6 +92,46 @@ func expectBuiltin(
 	return got
 }
 
+// Three or four observations make the nearest-rank p99 equal to the maximum.
+func checkBuiltinP99(t *testing.T, c *cloudwatch.Client, namespace, name string, dims []cwtypes.Dimension) {
+	t.Helper()
+	ctx := context.Background()
+	now := time.Now().UTC()
+	start, end := now.Add(-time.Hour), now.Add(time.Minute)
+	stats, err := c.GetMetricStatistics(ctx, &cloudwatch.GetMetricStatisticsInput{
+		Namespace: new(namespace), MetricName: new(name), Dimensions: dims, Period: new(int32(60)),
+		StartTime: &start, EndTime: &end, ExtendedStatistics: []string{"p99"},
+	})
+	if err != nil || len(stats.Datapoints) == 0 {
+		t.Fatalf("%s p99 statistics: %+v %v", name, stats, err)
+	}
+
+	queries := []cwtypes.MetricDataQuery{}
+	for _, st := range []string{"p99", "Maximum"} {
+		queries = append(queries, cwtypes.MetricDataQuery{
+			Id: new("stat" + st), MetricStat: &cwtypes.MetricStat{
+				Metric: &cwtypes.Metric{Namespace: new(namespace), MetricName: new(name), Dimensions: dims},
+				Period: new(int32(60)), Stat: new(st),
+			},
+		})
+	}
+
+	data, err := c.GetMetricData(ctx, &cloudwatch.GetMetricDataInput{
+		StartTime: &start, EndTime: &end, ScanBy: cwtypes.ScanByTimestampAscending, MetricDataQueries: queries,
+	})
+	if err != nil || len(data.MetricDataResults) != 2 ||
+		len(data.MetricDataResults[0].Values) != len(stats.Datapoints) ||
+		!slices.Equal(data.MetricDataResults[0].Values, data.MetricDataResults[1].Values) {
+		t.Fatalf("%s p99 metric data: %+v %v", name, data, err)
+	}
+
+	for i, pt := range stats.Datapoints {
+		if v, ok := pt.ExtendedStatistics["p99"]; !ok || v != data.MetricDataResults[0].Values[i] {
+			t.Fatalf("%s p99 datapoint: %+v", name, pt)
+		}
+	}
+}
+
 func TestBuiltinLambdaMetrics(t *testing.T) {
 	s := server(t)
 	c := cloudwatchClient(s)
@@ -137,6 +177,22 @@ func TestBuiltinLambdaMetrics(t *testing.T) {
 	if duration.unit != "Milliseconds" || duration.sum < 0 {
 		t.Fatalf("%+v", duration)
 	}
+
+	checkBuiltinP99(t, c, "AWS/Lambda", "Duration", good)
+	_, err = c.PutMetricAlarm(ctx, &cloudwatch.PutMetricAlarmInput{
+		AlarmName: new("duration-p99"), Namespace: new("AWS/Lambda"), MetricName: new("Duration"), Dimensions: good,
+		ExtendedStatistic: new("p99"), Period: new(int32(60)), EvaluationPeriods: new(int32(1)),
+		Threshold: new(0.0), ComparisonOperator: cwtypes.ComparisonOperatorGreaterThanOrEqualToThreshold,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	waitFor(
+		t,
+		"the p99 Duration alarm",
+		func() bool { return alarmState(t, c, "duration-p99") == cwtypes.StateValueAlarm },
+	)
 
 	// An alias reports under Resource as well as under the function.
 	version, err := functions.PublishVersion(ctx, &sdklambda.PublishVersionInput{FunctionName: new("good")})
@@ -412,6 +468,7 @@ func TestBuiltinDynamoDBMetrics(t *testing.T) {
 		t.Fatalf("%+v", latency)
 	}
 
+	checkBuiltinP99(t, c, "AWS/DynamoDB", "SuccessfulRequestLatency", put)
 	expectBuiltin(t, c, "AWS/DynamoDB", "ThrottledRequests", "Count", put, 0)
 
 	executeStatement := dimensions("TableName", "orders", "Operation", "ExecuteStatement")
@@ -532,6 +589,9 @@ func TestBuiltinAPIGatewayMetrics(t *testing.T) {
 	if latency.unit != "Milliseconds" || integration.unit != "Milliseconds" || integration.sum > latency.sum {
 		t.Fatalf("%+v %+v", latency, integration)
 	}
+
+	checkBuiltinP99(t, c, "AWS/ApiGateway", "Latency", stage)
+	checkBuiltinP99(t, c, "AWS/ApiGateway", "IntegrationLatency", stage)
 
 	// Detailed method metrics are not published when not enabled.
 	okMethod := dimensions("ApiName", "shop", "Method", "GET", "Resource", "/ok", "Stage", "prod")

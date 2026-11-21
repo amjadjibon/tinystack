@@ -427,6 +427,13 @@ func TestKinesisLambdaAndFirehose(t *testing.T) {
 		t.Fatalf("%q", body)
 	}
 
+	cw := cloudwatchClient(s)
+	const namespace = "AWS/Firehose"
+	sourceDims := dimensions("DeliveryStreamName", "from-kinesis")
+	expectBuiltin(t, cw, namespace, "DataReadFromKinesisStream.Records", "Count", sourceDims, 1)
+	expectBuiltin(t, cw, namespace, "DataReadFromKinesisStream.Bytes", "Bytes", sourceDims, 7)
+	expectBuiltin(t, cw, namespace, "DeliveryToS3.Success", "Count", sourceDims, 1)
+
 	// A direct-put delivery stream with a Lambda processor and GZIP.
 	if _, err = fh.CreateDeliveryStream(ctx, &firehose.CreateDeliveryStreamInput{
 		DeliveryStreamName: aws.String("logs"),
@@ -476,6 +483,11 @@ func TestKinesisLambdaAndFirehose(t *testing.T) {
 	) {
 		t.Fatalf("%q", body)
 	}
+
+	directDims := dimensions("DeliveryStreamName", "logs")
+	expectBuiltin(t, cw, namespace, "IncomingRecords", "Count", directDims, 4)
+	expectBuiltin(t, cw, namespace, "IncomingBytes", "Bytes", directDims, 19)
+	expectBuiltin(t, cw, namespace, "DeliveryToS3.Success", "Count", directDims, 2)
 
 	_, err = fh.PutRecord(ctx, &firehose.PutRecordInput{
 		DeliveryStreamName: aws.String("from-kinesis"), Record: &fhtypes.Record{Data: []byte("x")},

@@ -24,6 +24,7 @@ See the [implemented feature catalogue](catalogue.md#data-firehose) for this ser
 - Only S3 destinations are implemented.
 - No HTTP, Redshift, OpenSearch, Splunk, Snowflake or Iceberg destinations.
 - No MSK/database sources, dynamic partitioning, format conversion, encryption or S3 backup behavior.
+- Firehose metrics omit S3 freshness, throttling and destination byte and record totals.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.

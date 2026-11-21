@@ -31,6 +31,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sfn"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/awsmetrics"
 	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
@@ -79,10 +80,11 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	s3     *s3.Service
-	store  storage.Store
-	logs   *logs.Service
-	caller *catalog.Caller
+	s3      *s3.Service
+	store   storage.Store
+	metrics awsmetrics.Meter
+	logs    *logs.Service
+	caller  *catalog.Caller
 	// authorizer checks that each state machine's role may be assumed and may make each call; see
 	// UseServiceAuthorizer.
 	authorizer catalog.ServiceAuthorizer

@@ -261,16 +261,20 @@ type bucket struct {
 }
 
 func (b *bucket) add(p *point) {
-	if b.count == 0 {
-		b.min, b.max, b.unit = p.Min, p.Max, p.Unit
-	}
-
-	b.count += p.Count
-	b.sum += p.Sum
-	b.min, b.max = min(b.min, p.Min), max(b.max, p.Max)
+	b.addStats(p.Count, p.Sum, p.Min, p.Max, p.Unit)
 	b.values = append(b.values, p.Values...)
 	b.counts = append(b.counts, p.Counts...)
 	b.summary = b.summary || p.Summary
+}
+
+func (b *bucket) addStats(count, sum, minimum, maximum float64, unit string) {
+	if b.count == 0 {
+		b.min, b.max, b.unit = minimum, maximum, unit
+	}
+
+	b.count += count
+	b.sum += sum
+	b.min, b.max = min(b.min, minimum), max(b.max, maximum)
 }
 
 // statistic returns the function computing stat from a bucket, which reports
@@ -348,7 +352,7 @@ func compare(a, b float64) int {
 // buckets aggregates a metric's data points in [start, end) by period
 // (seconds, aligned to the epoch), keeping only unit's when unit is set.
 func buckets(tx storage.ReadTx, scope request.Scope, id string, period int64, unit string,
-	start, end time.Time,
+	start, end time.Time, distribution bool,
 ) (map[int64]*bucket, error) {
 	out := map[int64]*bucket{}
 	p := dataPrefix(scope, id)
@@ -374,7 +378,11 @@ func buckets(tx storage.ReadTx, scope request.Scope, id string, period int64, un
 			out[at] = b
 		}
 
-		b.add(pt)
+		if distribution {
+			b.add(pt)
+		} else {
+			b.addStats(pt.Count, pt.Sum, pt.Min, pt.Max, pt.Unit)
+		}
 	}
 
 	return out, nil
@@ -461,6 +469,7 @@ func (s *Service) GetMetricStatistics(
 			common.Value(in.Unit),
 			fromUnix(*in.StartTime),
 			fromUnix(*in.EndTime),
+			len(in.ExtendedStatistics) > 0,
 		)
 		return err
 	})

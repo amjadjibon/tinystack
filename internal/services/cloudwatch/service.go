@@ -6,6 +6,7 @@
 //	<scope>/cloudwatch/alarm/<name>
 //	<scope>/cloudwatch/history/<alarm>/<zero-padded ms><sequence>
 //	<scope>/cloudwatch/dashboard/<name>
+//	<scope>/cloudwatch/anomaly-detector/<detector ID>
 //
 // A metric's ID hashes its namespace, name, and dimensions. Data points
 // older than 15 days are deleted as new ones arrive. The evaluator (started
@@ -19,13 +20,9 @@
 // their own transactions commit. Writing every observation would put a store
 // transaction on hot paths such as an SQS send loop, so Publish only adds the
 // observation to an in-memory aggregate of its series (account, Region,
-// namespace, metric, dimensions, unit) and minute: a few nanoseconds under one
-// mutex. Every second one transaction flushes the aggregates that changed,
-// each extending its series' single statistic-set data point for that minute
-// (stored at the minute's start, under a fixed sequence), and Stop flushes
-// once more. Stored this way, the points are read, streamed and evaluated like
-// any others; the cost is that Percentile statistics cannot be answered for
-// them, and a value is visible up to one second after it was reported.
+// namespace, metric, dimensions, unit) and minute. Every second one
+// transaction extends each changed series' point for that minute, with
+// sample frequencies for percentile statistics. Stop flushes once more.
 package cloudwatch
 
 import (

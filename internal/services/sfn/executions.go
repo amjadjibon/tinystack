@@ -168,6 +168,10 @@ func (s *Service) execute(parent context.Context, r *run, def *machine) {
 			e.ExecutionRedrivenEventDetails = &api.ExecutionRedrivenEventDetails{RedriveCount: new(r.exec.Redrives)}
 		})
 	} else {
+		if !r.redrive && r.exec.MapRunARN == "" {
+			s.reportExecutionStart(r)
+		}
+
 		r.event(ctx, "ExecutionStarted", func(e *api.HistoryEvent) {
 			e.ExecutionStartedEventDetails = &api.ExecutionStartedEventDetails{
 				Input: new(r.exec.Input), RoleArn: new(r.machine.RoleArn),
@@ -221,9 +225,11 @@ func (s *Service) execute(parent context.Context, r *run, def *machine) {
 	}
 
 	if !r.record {
+		s.reportExecutionEnd(r)
 		return
 	}
 
+	var recorded bool
 	err = s.store.Update(context.WithoutCancel(parent), func(tx storage.WriteTx) error {
 		key := executionKey(r.scope, e.StateMachine, e.Name)
 		stored, found, readErr := storage.Read[execution](tx, key)
@@ -232,10 +238,13 @@ func (s *Service) execute(parent context.Context, r *run, def *machine) {
 		}
 
 		e.Events = stored.Events
+		recorded = true
 		return storage.Write(tx, key, e)
 	})
 	if err != nil {
 		s.logger.Warn("recording a step functions execution failed", "execution", e.ARN, "error", err)
+	} else if recorded {
+		s.reportExecutionEnd(r)
 	}
 }
 

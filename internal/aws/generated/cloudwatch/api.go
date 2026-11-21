@@ -135,6 +135,83 @@ type ListMetricsOutput struct {
 	OwningAccounts []string `json:"OwningAccounts,omitempty" query:"OwningAccounts"`
 }
 
+type Range struct {
+	EndTime   *float64 `json:"EndTime,omitempty" query:"EndTime,timestamp" cbor:"timestamp"`
+	StartTime *float64 `json:"StartTime,omitempty" query:"StartTime,timestamp" cbor:"timestamp"`
+}
+
+type AnomalyDetectorConfiguration struct {
+	ExcludedTimeRanges []Range `json:"ExcludedTimeRanges,omitempty" query:"ExcludedTimeRanges"`
+}
+
+type SingleMetricAnomalyDetector struct {
+	Namespace  *string     `json:"Namespace,omitempty" query:"Namespace"`
+	MetricName *string     `json:"MetricName,omitempty" query:"MetricName"`
+	Dimensions []Dimension `json:"Dimensions,omitempty" query:"Dimensions"`
+	Stat       *string     `json:"Stat,omitempty" query:"Stat"`
+}
+
+type PutAnomalyDetectorInput struct {
+	Namespace                   *string                       `json:"Namespace,omitempty" query:"Namespace"`
+	MetricName                  *string                       `json:"MetricName,omitempty" query:"MetricName"`
+	Dimensions                  []Dimension                   `json:"Dimensions,omitempty" query:"Dimensions"`
+	Stat                        *string                       `json:"Stat,omitempty" query:"Stat"`
+	Configuration               *AnomalyDetectorConfiguration `json:"Configuration,omitempty" query:"Configuration"`
+	SingleMetricAnomalyDetector *SingleMetricAnomalyDetector  `json:"SingleMetricAnomalyDetector,omitempty" query:"SingleMetricAnomalyDetector"`
+}
+
+type PutAnomalyDetectorOutput struct {
+	AnomalyDetectorId *string `json:"AnomalyDetectorId,omitempty" query:"AnomalyDetectorId"`
+}
+
+type DescribeAnomalyDetectorsInput struct {
+	AnomalyDetectorIds   []string    `json:"AnomalyDetectorIds,omitempty" query:"AnomalyDetectorIds"`
+	NextToken            *string     `json:"NextToken,omitempty" query:"NextToken"`
+	MaxResults           *int64      `json:"MaxResults,omitempty" query:"MaxResults"`
+	Namespace            *string     `json:"Namespace,omitempty" query:"Namespace"`
+	MetricName           *string     `json:"MetricName,omitempty" query:"MetricName"`
+	Dimensions           []Dimension `json:"Dimensions,omitempty" query:"Dimensions"`
+	AnomalyDetectorTypes []string    `json:"AnomalyDetectorTypes,omitempty" query:"AnomalyDetectorTypes"`
+}
+
+type MetricCharacteristics struct {
+	PeriodicSpikes *bool `json:"PeriodicSpikes,omitempty" query:"PeriodicSpikes"`
+}
+
+type MetricMathAnomalyDetector struct {
+	MetricDataQueries []MetricDataQuery `json:"MetricDataQueries,omitempty" query:"MetricDataQueries"`
+}
+
+type AnomalyDetector struct {
+	AnomalyDetectorId           *string                       `json:"AnomalyDetectorId,omitempty" query:"AnomalyDetectorId"`
+	Configuration               *AnomalyDetectorConfiguration `json:"Configuration,omitempty" query:"Configuration"`
+	Dimensions                  []Dimension                   `json:"Dimensions,omitempty" query:"Dimensions"`
+	MetricCharacteristics       *MetricCharacteristics        `json:"MetricCharacteristics,omitempty" query:"MetricCharacteristics"`
+	MetricMathAnomalyDetector   *MetricMathAnomalyDetector    `json:"MetricMathAnomalyDetector,omitempty" query:"MetricMathAnomalyDetector"`
+	MetricName                  *string                       `json:"MetricName,omitempty" query:"MetricName"`
+	Namespace                   *string                       `json:"Namespace,omitempty" query:"Namespace"`
+	SingleMetricAnomalyDetector *SingleMetricAnomalyDetector  `json:"SingleMetricAnomalyDetector,omitempty" query:"SingleMetricAnomalyDetector"`
+	Stat                        *string                       `json:"Stat,omitempty" query:"Stat"`
+	StateValue                  *string                       `json:"StateValue,omitempty" query:"StateValue"`
+}
+
+type DescribeAnomalyDetectorsOutput struct {
+	AnomalyDetectors []AnomalyDetector `json:"AnomalyDetectors,omitempty" query:"AnomalyDetectors"`
+	NextToken        *string           `json:"NextToken,omitempty" query:"NextToken"`
+}
+
+type DeleteAnomalyDetectorInput struct {
+	AnomalyDetectorId           *string                      `json:"AnomalyDetectorId,omitempty" query:"AnomalyDetectorId"`
+	Namespace                   *string                      `json:"Namespace,omitempty" query:"Namespace"`
+	MetricName                  *string                      `json:"MetricName,omitempty" query:"MetricName"`
+	Dimensions                  []Dimension                  `json:"Dimensions,omitempty" query:"Dimensions"`
+	Stat                        *string                      `json:"Stat,omitempty" query:"Stat"`
+	SingleMetricAnomalyDetector *SingleMetricAnomalyDetector `json:"SingleMetricAnomalyDetector,omitempty" query:"SingleMetricAnomalyDetector"`
+}
+
+type DeleteAnomalyDetectorOutput struct {
+}
+
 type PutMetricAlarmOutput struct{}
 
 type Tag struct {
@@ -540,6 +617,9 @@ type API interface {
 	GetMetricData(context.Context, *GetMetricDataInput) (*GetMetricDataOutput, error)
 	GetMetricStatistics(context.Context, *GetMetricStatisticsInput) (*GetMetricStatisticsOutput, error)
 	ListMetrics(context.Context, *ListMetricsInput) (*ListMetricsOutput, error)
+	PutAnomalyDetector(context.Context, *PutAnomalyDetectorInput) (*PutAnomalyDetectorOutput, error)
+	DescribeAnomalyDetectors(context.Context, *DescribeAnomalyDetectorsInput) (*DescribeAnomalyDetectorsOutput, error)
+	DeleteAnomalyDetector(context.Context, *DeleteAnomalyDetectorInput) (*DeleteAnomalyDetectorOutput, error)
 	PutMetricAlarm(context.Context, *PutMetricAlarmInput) (*PutMetricAlarmOutput, error)
 	PutCompositeAlarm(context.Context, *PutCompositeAlarmInput) (*PutCompositeAlarmOutput, error)
 	DescribeAlarms(context.Context, *DescribeAlarmsInput) (*DescribeAlarmsOutput, error)
@@ -565,7 +645,7 @@ type API interface {
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "cloudwatch", SigningName: "monitoring", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "cloudwatch", TargetPrefix: "GraniteServiceVersion20100801", QueryCompatible: true, XMLNamespace: "http://monitoring.amazonaws.com/doc/2010-08-01/", Protocols: []string{"awsJson1_0", "awsQuery", "rpcv2Cbor"}, Errors: map[string]catalog.ErrorBinding{"ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "ConcurrentModificationException", MessageMember: "Message", StatusCode: 429}, "ConflictException": catalog.ErrorBinding{QueryCode: "ConflictException", MessageMember: "Message", StatusCode: 409}, "DashboardInvalidInputError": catalog.ErrorBinding{QueryCode: "InvalidParameterInput", MessageMember: "message", StatusCode: 400}, "DashboardNotFoundError": catalog.ErrorBinding{QueryCode: "ResourceNotFound", MessageMember: "message", StatusCode: 404}, "InternalServiceFault": catalog.ErrorBinding{QueryCode: "InternalServiceError", MessageMember: "Message", StatusCode: 500}, "InvalidFormatFault": catalog.ErrorBinding{QueryCode: "InvalidFormat", MessageMember: "message", StatusCode: 400}, "InvalidNextToken": catalog.ErrorBinding{QueryCode: "InvalidNextToken", MessageMember: "message", StatusCode: 400}, "InvalidParameterCombinationException": catalog.ErrorBinding{QueryCode: "InvalidParameterCombination", MessageMember: "message", StatusCode: 400}, "InvalidParameterValueException": catalog.ErrorBinding{QueryCode: "InvalidParameterValue", MessageMember: "message", StatusCode: 400}, "LimitExceededFault": catalog.ErrorBinding{QueryCode: "LimitExceeded", MessageMember: "message", StatusCode: 400}, "MissingRequiredParameterException": catalog.ErrorBinding{QueryCode: "MissingParameter", MessageMember: "message", StatusCode: 400}, "ResourceConflict": catalog.ErrorBinding{QueryCode: "ResourceConflict", MessageMember: "message", StatusCode: 409}, "ResourceNotFound": catalog.ErrorBinding{QueryCode: "ResourceNotFound", MessageMember: "message", StatusCode: 404}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "ResourceNotFoundException", MessageMember: "Message", StatusCode: 404}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "cloudwatch", SigningName: "monitoring", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "cloudwatch", TargetPrefix: "GraniteServiceVersion20100801", QueryCompatible: true, XMLNamespace: "http://monitoring.amazonaws.com/doc/2010-08-01/", Protocols: []string{"awsJson1_0", "awsQuery", "rpcv2Cbor"}, Errors: map[string]catalog.ErrorBinding{"ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "ConcurrentModificationException", MessageMember: "Message", StatusCode: 429}, "ConflictException": catalog.ErrorBinding{QueryCode: "ConflictException", MessageMember: "Message", StatusCode: 409}, "DashboardInvalidInputError": catalog.ErrorBinding{QueryCode: "InvalidParameterInput", MessageMember: "message", StatusCode: 400}, "DashboardNotFoundError": catalog.ErrorBinding{QueryCode: "ResourceNotFound", MessageMember: "message", StatusCode: 404}, "InternalServiceFault": catalog.ErrorBinding{QueryCode: "InternalServiceError", MessageMember: "Message", StatusCode: 500}, "InvalidFormatFault": catalog.ErrorBinding{QueryCode: "InvalidFormat", MessageMember: "message", StatusCode: 400}, "InvalidNextToken": catalog.ErrorBinding{QueryCode: "InvalidNextToken", MessageMember: "message", StatusCode: 400}, "InvalidParameterCombinationException": catalog.ErrorBinding{QueryCode: "InvalidParameterCombination", MessageMember: "message", StatusCode: 400}, "InvalidParameterValueException": catalog.ErrorBinding{QueryCode: "InvalidParameterValue", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "LimitExceededException", MessageMember: "Message", StatusCode: 400}, "LimitExceededFault": catalog.ErrorBinding{QueryCode: "LimitExceeded", MessageMember: "message", StatusCode: 400}, "MissingRequiredParameterException": catalog.ErrorBinding{QueryCode: "MissingParameter", MessageMember: "message", StatusCode: 400}, "ResourceConflict": catalog.ErrorBinding{QueryCode: "ResourceConflict", MessageMember: "message", StatusCode: 409}, "ResourceNotFound": catalog.ErrorBinding{QueryCode: "ResourceNotFound", MessageMember: "message", StatusCode: 404}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "ResourceNotFoundException", MessageMember: "Message", StatusCode: 404}}, Operations: map[string]catalog.Operation{
 		"PutMetricData": {Name: "PutMetricData", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "cloudwatch:PutMetricData", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GraniteServiceVersion20100801.PutMetricData", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "PutMetricData", Version: "2010-08-01", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/GraniteServiceVersion20100801/operation/PutMetricData", Target: "GraniteServiceVersion20100801.PutMetricData", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &PutMetricDataInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.PutMetricData(ctx, input.(*PutMetricDataInput))
 		}},
@@ -577,6 +657,15 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ListMetrics": {Name: "ListMetrics", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudwatch:ListMetrics", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GraniteServiceVersion20100801.ListMetrics", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListMetrics", Version: "2010-08-01", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/GraniteServiceVersion20100801/operation/ListMetrics", Target: "GraniteServiceVersion20100801.ListMetrics", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &ListMetricsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListMetrics(ctx, input.(*ListMetricsInput))
+		}},
+		"PutAnomalyDetector": {Name: "PutAnomalyDetector", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudwatch:PutAnomalyDetector", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GraniteServiceVersion20100801.PutAnomalyDetector", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "PutAnomalyDetector", Version: "2010-08-01", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/GraniteServiceVersion20100801/operation/PutAnomalyDetector", Target: "GraniteServiceVersion20100801.PutAnomalyDetector", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &PutAnomalyDetectorInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutAnomalyDetector(ctx, input.(*PutAnomalyDetectorInput))
+		}},
+		"DescribeAnomalyDetectors": {Name: "DescribeAnomalyDetectors", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudwatch:DescribeAnomalyDetectors", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GraniteServiceVersion20100801.DescribeAnomalyDetectors", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeAnomalyDetectors", Version: "2010-08-01", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/GraniteServiceVersion20100801/operation/DescribeAnomalyDetectors", Target: "GraniteServiceVersion20100801.DescribeAnomalyDetectors", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DescribeAnomalyDetectorsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeAnomalyDetectors(ctx, input.(*DescribeAnomalyDetectorsInput))
+		}},
+		"DeleteAnomalyDetector": {Name: "DeleteAnomalyDetector", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "cloudwatch:DeleteAnomalyDetector", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GraniteServiceVersion20100801.DeleteAnomalyDetector", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteAnomalyDetector", Version: "2010-08-01", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/GraniteServiceVersion20100801/operation/DeleteAnomalyDetector", Target: "GraniteServiceVersion20100801.DeleteAnomalyDetector", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &DeleteAnomalyDetectorInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteAnomalyDetector(ctx, input.(*DeleteAnomalyDetectorInput))
 		}},
 		"PutMetricAlarm": {Name: "PutMetricAlarm", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "cloudwatch:PutMetricAlarm", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GraniteServiceVersion20100801.PutMetricAlarm", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}, "awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "PutMetricAlarm", Version: "2010-08-01", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/GraniteServiceVersion20100801/operation/PutMetricAlarm", Target: "GraniteServiceVersion20100801.PutMetricAlarm", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &PutMetricAlarmInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.PutMetricAlarm(ctx, input.(*PutMetricAlarmInput))

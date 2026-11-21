@@ -218,11 +218,11 @@ func checkMetricAlarm(in *api.PutMetricAlarmInput) error {
 	}
 
 	n := common.Value(in.EvaluationPeriods)
+	op, thresholdID := common.Value(in.ComparisonOperator), common.Value(in.ThresholdMetricId)
+	anomaly := anomalyOperator(op)
 	single := in.MetricName != nil || in.Namespace != nil || in.Statistic != nil || in.ExtendedStatistic != nil ||
 		in.Period != nil || in.Dimensions != nil || in.Unit != nil
 	switch {
-	case in.ThresholdMetricId != nil:
-		return invalidValue("TinyStack does not support anomaly detection alarms (ThresholdMetricId)")
 	case in.EvaluationPeriods == nil:
 		return missing("EvaluationPeriods")
 	case n < 1:
@@ -231,9 +231,15 @@ func checkMetricAlarm(in *api.PutMetricAlarmInput) error {
 		return invalidValue("DatapointsToAlarm must be between 1 and EvaluationPeriods")
 	case in.ComparisonOperator == nil:
 		return missing("ComparisonOperator")
-	case !operators[*in.ComparisonOperator]:
-		return invalidValue("TinyStack does not support the comparison operator %s", *in.ComparisonOperator)
-	case in.Threshold == nil:
+	case !operators[op] && !anomaly:
+		return invalidValue("TinyStack does not support the comparison operator %s", op)
+	case anomaly && (in.Threshold != nil || in.Metrics == nil):
+		return awserror.New(combinationCode, "Anomaly alarms require Metrics and do not use a static Threshold")
+	case anomaly && thresholdID == "":
+		return missing("ThresholdMetricId")
+	case !anomaly && in.ThresholdMetricId != nil:
+		return awserror.New(combinationCode, "ThresholdMetricId requires an anomaly comparison operator")
+	case !anomaly && in.Threshold == nil:
 		return missing("Threshold")
 	case in.TreatMissingData != nil && !treatments[*in.TreatMissingData]:
 		return invalidValue("The value %s for parameter TreatMissingData is invalid.", *in.TreatMissingData)
@@ -250,8 +256,31 @@ func checkMetricAlarm(in *api.PutMetricAlarmInput) error {
 		return err
 	}
 
+	if anomaly {
+		for _, arn := range slices.Concat(in.OKActions, in.AlarmActions, in.InsufficientDataActions) {
+			if strings.HasPrefix(arn, "arn:aws:autoscaling:") {
+				return invalidValue("Anomaly alarms do not support Auto Scaling actions")
+			}
+		}
+	}
+
 	if in.Metrics != nil {
-		return checkQueries(in.Metrics, true)
+		if err := checkQueries(in.Metrics, true, thresholdID); err != nil {
+			return err
+		}
+
+		results, err := run(nil, request.Scope{}, in.Metrics, time.Time{}, time.Time{}, time.Time{})
+		if err != nil {
+			return err
+		}
+
+		for _, q := range in.Metrics {
+			if !anomaly && (q.ReturnData == nil || *q.ReturnData) && results[*q.Id].array {
+				return invalidValue("An alarm expression must return a single time series")
+			}
+		}
+
+		return nil
 	}
 
 	st := &api.MetricStat{
@@ -312,6 +341,7 @@ func (s *Service) PutMetricAlarm(ctx context.Context, in *api.PutMetricAlarmInpu
 		EvaluationPeriods:                in.EvaluationPeriods,
 		DatapointsToAlarm:                in.DatapointsToAlarm,
 		Threshold:                        in.Threshold,
+		ThresholdMetricId:                in.ThresholdMetricId,
 		ComparisonOperator:               in.ComparisonOperator,
 		TreatMissingData:                 in.TreatMissingData,
 		EvaluateLowSampleCountPercentile: in.EvaluateLowSampleCountPercentile,
