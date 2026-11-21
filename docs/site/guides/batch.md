@@ -2,12 +2,12 @@
 
 AWS Batch stores compute environments, queues, definitions and jobs in the caller's account and Region.
 The default `batch.jobs: records` mode leaves jobs RUNNABLE without compute capacity. Set
-`batch.jobs: docker` to execute EC2 container jobs locally using the ECS Docker runtime implementation.
+`batch.jobs: docker` to execute EC2 and Linux Fargate container jobs locally using the ECS Docker runtime implementation.
 `VALID` describes local metadata; Batch does not provision EC2 instances or create an ECS cluster.
 
 ## Selected operations and members
 
-The [Batch service page](../services/batch.md) lists the 19 operations. Requests use the pinned
+The [Batch service page](../services/batch.md) lists the 24 operations. Requests use the pinned
 REST JSON model and the `batch` signing name. The following lists are exhaustive; omitted members
 fail explicitly, including unsupported values set to `false`, `null`, `{}` or `[]`.
 
@@ -17,18 +17,22 @@ fail explicitly, including unsupported values set to `false`, `null`, `{}` or `[
 | DescribeComputeEnvironments | computeEnvironments, maxResults, nextToken |
 | UpdateComputeEnvironment | computeEnvironment, state, computeResources, serviceRole |
 | DeleteComputeEnvironment | computeEnvironment |
-| CreateJobQueue | jobQueueName, state, priority, computeEnvironmentOrder, tags |
+| CreateJobQueue | jobQueueName, state, priority, computeEnvironmentOrder, schedulingPolicyArn, tags |
 | DescribeJobQueues | jobQueues, maxResults, nextToken |
-| UpdateJobQueue | jobQueue, state, priority, computeEnvironmentOrder |
+| UpdateJobQueue | jobQueue, state, priority, computeEnvironmentOrder, schedulingPolicyArn |
 | DeleteJobQueue | jobQueue |
+| CreateSchedulingPolicy | name, fairsharePolicy, tags |
+| DescribeSchedulingPolicies | arns |
+| ListSchedulingPolicies | maxResults, nextToken |
+| UpdateSchedulingPolicy | arn, fairsharePolicy |
+| DeleteSchedulingPolicy | arn |
 | RegisterJobDefinition | jobDefinitionName, type, parameters, containerProperties, platformCapabilities, retryStrategy, timeout, tags |
 | DescribeJobDefinitions | jobDefinitions, jobDefinitionName, status, maxResults, nextToken |
 | DeregisterJobDefinition | jobDefinition |
 | TagResource | resourceArn, tags |
 | UntagResource | resourceArn, tagKeys |
 | ListTagsForResource | resourceArn |
-
-| SubmitJob | jobName, jobQueue, jobDefinition, parameters, containerOverrides, retryStrategy, timeout, arrayProperties, dependsOn, tags |
+| SubmitJob | jobName, jobQueue, jobDefinition, parameters, containerOverrides, retryStrategy, timeout, arrayProperties, dependsOn, shareIdentifier, schedulingPriorityOverride, tags |
 | DescribeJobs | jobs |
 | ListJobs | jobQueue or arrayJobId, jobStatus, maxResults, nextToken, filters |
 | CancelJob / TerminateJob | jobId, reason |
@@ -105,8 +109,9 @@ Revisions are serialized in one storage transaction and remain monotonic after d
 restart and fixture import; sequences are independent in each account and Region.
 
 Container properties are exactly `image`, `command`, `vcpus`, `memory`, `resourceRequirements`,
-`environment`, `jobRoleArn`, `executionRoleArn`, `logConfiguration`, `networkConfiguration`,
-`fargatePlatformConfiguration` and `runtimePlatform`. The last three require FARGATE. Image requires 1–255 non-whitespace bytes.
+`environment`, `jobRoleArn`, `executionRoleArn`, `logConfiguration`, `secrets`, `volumes`, `mountPoints`,
+`networkConfiguration`, `fargatePlatformConfiguration` and `runtimePlatform`. The last three require FARGATE.
+Image requires 1–255 non-whitespace bytes.
 Use either positive integer `vcpus` and integer `memory >= 4` MiB, or one `VCPU` and one `MEMORY`
 resource requirement with canonical positive decimal integer string values. Mixing both forms,
 duplicate requirement types or GPU is rejected. Integers fit signed 32-bit values.
@@ -118,18 +123,33 @@ are rejected. CPU values are 0.25, 0.5, 1, 2, 4, 8, 16 or 32 with the correspond
 accepts LATEST, 1.3.0/1.4.0 (Linux) or 1.0.0 (Windows). Runtime platform accepts X86_64 or ARM64 with
 LINUX, or X86_64 with WINDOWS_SERVER_2019_CORE/FULL or WINDOWS_SERVER_2022_CORE/FULL.
 ARM64 and 8+ vCPUs require Linux 1.4.0/LATEST; Windows requires at least one vCPU.
-These settings are validated metadata. Docker-mode Fargate submissions fail explicitly with ClientException;
-queued Fargate records fail without execution if the store is switched to Docker. Records-mode jobs remain
-RUNNABLE or PENDING behind dependencies. Environments and queues are immediately VALID in records mode,
-because no infrastructure is provisioned. Submission requires a platform matching the queue's environments.
+Docker launches Linux Fargate images with the selected architecture, defaulting to `linux/amd64`.
+Docker reports image or architecture startup failures when the daemon cannot run the selected image.
+Windows Fargate definitions are available in records mode. In Docker mode Windows submissions are
+rejected, and previously queued Windows jobs fail at launch. Platform versions constrain AWS-compatible
+settings at registration and submission. The local runtime uses ordinary Docker networking and does
+not reproduce awsvpc, public IP assignment, AWS platform images or Spot interruptions.
+Submission requires a platform matching the queue's environments.
 
 Environment names follow `[A-Za-z_][A-Za-z0-9_]*`, are unique, at most 256 bytes and cannot begin
 with `AWS_BATCH`; values are required strings of at most 4096 bytes. At most 100 environment and
 100 command entries are stored; command entries are at most 4096 bytes and contain no NUL.
 Role fields require caller-account IAM role ARNs. Parameters are a string map of at most 100 keys,
 keys of 1–256 bytes and values at most 4096 bytes. All selected nested data is retained and returned.
-These finite local limits do not assert AWS quotas. Privileges, secrets, volumes,
+These finite local limits do not assert AWS quotas. Privileges, EFS, S3 Files, named Docker volumes,
 multinode, EKS and advanced ECS definitions are unsupported.
+
+Each `secrets` entry provides `name` and `valueFrom`. Use a same-account, same-Region Secrets Manager ARN
+(optionally suffixed by `:json-key`), or a Parameter Store name or ARN. The name must be distinct
+from other secret and plain environment names, including overrides. TinyStack resolves these references
+through the local services at the start of every attempt and fails the attempt with
+`ResourceInitializationError` if any value is unavailable. Descriptions contain the references.
+Execution roles remain metadata, and secret reads use the job's account and Region.
+
+Volumes have a distinct `name` and optional EC2-only `host.sourcePath`. A nonempty source binds a clean absolute
+path on the Docker daemon host. A volume without a source is anonymous Docker storage for one attempt
+and supports a single mount. Mount points reference `sourceVolume`, specify a clean absolute `containerPath`
+and can set `readOnly`. TinyStack removes anonymous volumes with their containers and retains host files.
 
 Deregistration requires `name:revision` or a revisioned ARN and marks that exact record `INACTIVE`.
 Repeating it succeeds; a missing revision returns ClientException. History remains indefinitely
@@ -152,8 +172,9 @@ Resource Groups Tagging API uses `batch:compute-environment`, `batch:job-queue` 
 `batch:job-definition`; inventory includes inactive definition revisions.
 
 CloudFormation supports `AWS::Batch::ComputeEnvironment`, `AWS::Batch::JobQueue` and
-`AWS::Batch::JobDefinition`. Selected properties are the API members above in CloudFormation
-PascalCase. Tag properties are maps. Ref returns the resource ARN; GetAtt supports
+`AWS::Batch::JobDefinition`. The supported properties use CloudFormation PascalCase.
+Queue scheduling policy associations and scheduling policy resources are available through the Batch API.
+Tag properties are maps. Ref returns the resource ARN; GetAtt supports
 ComputeEnvironmentArn, JobQueueArn and JobDefinitionArn respectively. Environment creation through
 CloudFormation requires ENABLED state. Configuration/role/type/name changes replace environments;
 queue name changes replace queues, while state/priority/association changes update in place.
@@ -215,14 +236,21 @@ be overridden at submission. Environment names beginning with AWS_BATCH are rese
 Jobs move from SUBMITTED to PENDING while dependencies remain, or to RUNNABLE. Records mode never
 fabricates STARTING, RUNNING or success. Docker mode schedules enabled valid queues by descending
 priority, oldest job first within a queue, and tries compute environments in their configured order.
-Only managed EC2 environments supply local capacity, limited by concurrent STARTING/RUNNING vCPUs.
-Unmanaged environments leave jobs RUNNABLE. Memory placement, min/desired capacity and instance type
-selection are not simulated.
+Managed EC2, FARGATE and FARGATE_SPOT environments supply local capacity up to their concurrent
+STARTING/RUNNING `maxvCpus`, including fractional units for Fargate. Docker also enforces each container's
+requested memory. Unmanaged environments leave jobs RUNNABLE. Placement by memory, min/desired capacity
+and EC2 instance type selection are outside the local scheduler.
 
 Each attempt starts one container and moves STARTING → RUNNING → SUCCEEDED/FAILED. The container gets
 AWS_BATCH_JOB_ID, AWS_BATCH_JQ_NAME, AWS_BATCH_CE_NAME and AWS_BATCH_JOB_ATTEMPT (starting at 1).
-Array children also receive AWS_BATCH_JOB_ARRAY_INDEX and AWS_BATCH_JOB_ARRAY_SIZE. JobRoleArn and
-executionRoleArn remain metadata; task credentials are not injected.
+Array children also receive AWS_BATCH_JOB_ARRAY_INDEX and AWS_BATCH_JOB_ARRAY_SIZE. With `jobRoleArn`,
+TinyStack supplies `AWS_CONTAINER_CREDENTIALS_FULL_URI` and `AWS_CONTAINER_AUTHORIZATION_TOKEN` using
+the ECS credential protocol. The endpoint checks the attempt token and issues one-hour STS credentials
+for a role that trusts `ecs-tasks.amazonaws.com`. TinyStack stops issuing credentials when the attempt
+ends. Jobs that use a role reserve the SDK container credential environment variables.
+`AWS_ENDPOINT_URL` defaults to the container-reachable TinyStack endpoint for jobs with a role.
+SDKs that restrict HTTP container credential URIs to loopback or AWS link-local addresses need an
+explicit endpoint credentials provider for the injected URI and token.
 
 Retry strategies allow 1–10 attempts, with ordered evaluateOnExit rules matching onExitCode,
 onReason and onStatusReason; all supplied conditions must match. RETRY/EXIT determines the action;
@@ -247,15 +275,42 @@ options. Background polling ships stdout/stderr while running and before final r
 EventBridge Batch Job State Change events are best effort; neither uses a durable delivery outbox.
 
 ListJobs defaults to RUNNING for queue queries. Array queries list children; explicit jobStatus
-filters them. Lists use storage key order and filter-bound opaque pagination. JOB_NAME matches
+filters them. Lists are sorted newest first, with job ID as the tie-breaker and filter-bound opaque
+pagination. JOB_NAME matches
 case-insensitively with an optional trailing wildcard. JOB_DEFINITION accepts a name/name prefix
-or exact revisioned ARN; BEFORE_CREATED_AT/AFTER_CREATED_AT take epoch milliseconds. Only one filter
-with one value is supported for queue queries; filters ignore jobStatus and array queries ignore filters.
-Filtered pages allow at most 100 results; otherwise
-pages allow 1–1000 results. Creation-time grouping/order differs from AWS. Fair-share filters,
-policies, consumable resources, Fargate, multinode and EKS properties are unsupported explicitly.
+or exact revisioned ARN. BEFORE_CREATED_AT and AFTER_CREATED_AT take epoch milliseconds.
+SHARE_IDENTIFIER performs an exact match and may be combined with `jobStatus`. Other filters ignore
+`jobStatus`, and array queries ignore filters. Queue queries allow one filter with one value and pages
+of at most 100 results. Unfiltered pages allow 1–1000 results. JOB_NAME results use the same creation
+order as other filters. AWS grouping by name and version is outside the local implementation.
 
 Shutdown removes containers and retains records. Persistent restart fails any interrupted attempt
 with `TinyStack restarted during job attempt` and applies its retry strategy. Startup cleans only
-orphan containers labeled for that store. Reset removes containers and job state. Job data volumes
-are not supported. Completed records and attempts remain until reset.
+orphan containers labeled for that store. Reset removes containers and job state.
+Completed records and attempts remain until reset.
+
+## Fair-share scheduling
+
+Create a scheduling policy with `name`, a `fairsharePolicy` object and optional tags. A fair-share
+policy accepts `shareDecaySeconds` (0–604800, with 0 or omission selecting 600), `computeReservation`
+(0–99, default 0) and up to 500 `shareDistribution` entries. Each distribution entry has a unique,
+nonoverlapping alphanumeric share identifier of 1–255 characters with an optional trailing `*`
+for prefix matching, and a `weightFactor` of 0.0001–999.9999. Unmatched shares and omitted weights
+use 1. Updates retain omitted policy fields, and an empty distribution clears the weights. A referenced
+policy cannot be deleted. Policy describes accept 1–100 scoped ARNs, and policy lists are paginated.
+
+Set a scoped `schedulingPolicyArn` when creating a fair-share queue. Updates can replace the policy
+on a fair-share queue. A queue retains the scheduling mode selected at creation. Fair-share submissions
+require a `shareIdentifier` and accept `schedulingPriorityOverride` from 0 to 9999 (default 0).
+A queue supports 500 distinct shares across nonterminal jobs. FIFO submissions exclude both fields.
+
+For local dispatch, queue priority still takes precedence. Within a fair-share queue, each share
+orders its runnable jobs by descending scheduling priority, then ascending creation time and job ID.
+The scheduler ranks those jobs across shares by ascending weighted CPU usage, using creation time and
+job ID to break ties. The score is the share weight times the sum of active CPU, the average CPU from
+completed attempts within the trailing decay window, and cumulative runnable CPU through that job.
+With compute reservation enabled, an environment holds a fraction of capacity for new shares in
+each queue. That fraction is `(computeReservation / 100)^activeShares`, where active shares count
+only that queue's starting and running attempts in the environment. The environment's total CPU
+limit always applies. This local approximation covers dispatch and omits AWS fair-share utilization
+reporting and quota-share policies.

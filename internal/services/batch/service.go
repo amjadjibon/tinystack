@@ -56,6 +56,7 @@ type Service struct {
 	busy      map[string]bool
 	caller    *catalog.Caller
 	owner     string
+	endpoint  string
 	lifecycle sync.RWMutex
 	mu        sync.Mutex
 }
@@ -71,11 +72,13 @@ type record struct {
 	CE                                                    *api.ComputeEnvironmentDetail
 	Queue                                                 *api.JobQueueDetail
 	Definition                                            *api.JobDefinition
+	Fairshare                                             *api.FairsharePolicy
 	Tags                                                  map[string]string
 	LogCursor                                             time.Time
 	Scope                                                 request.Scope
 	Parent, ContainerID, ComputeEnvironment, CancelReason string
 	EventStatus                                           string
+	CredentialToken                                       string
 	ID, ARN, Kind                                         string
 	Cancelled                                             bool
 }
@@ -228,6 +231,10 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 			if r.Definition != nil {
 				details["JobDefinition"] = definitionOutput(r)
+			}
+
+			if r.Fairshare != nil {
+				details["SchedulingPolicy"] = policyOutput(r)
 			}
 
 			out = append(

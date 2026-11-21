@@ -444,7 +444,8 @@ func build(
 	identities := cognitoidp.New(store, functions, deliveries)
 	registry := ecr.New(store)
 	containers := ecs.New(store)
-	containers.UseEndpoint("http://" + net.JoinHostPort("host.docker.internal", strconv.Itoa(cfg.Server.Port)))
+	containerEndpoint := "http://" + net.JoinHostPort("host.docker.internal", strconv.Itoa(cfg.Server.Port))
+	containers.UseEndpoint(containerEndpoint)
 	if cfg.ECS.Containers == config.ContainersDocker {
 		containers.UseRuntime(ecsdocker.New(), logGroups.Append, logger)
 	}
@@ -517,6 +518,7 @@ func build(
 	backupRecords := backup.New(store)
 	fileSystems := efs.New(store, network)
 	batchRecords := batch.New(store, network)
+	batchRecords.UseEndpoint(containerEndpoint)
 	a.onStop(batchRecords.Stop)
 	a.onReset(batchRecords.Reset)
 	if cfg.Batch.Jobs == config.ContainersDocker {
@@ -1154,6 +1156,7 @@ func build(
 	metaService := metadata.New(
 		network, containers,
 		metadata.WithAssumeRole(tokens.AssumeRoleForService),
+		metadata.WithBatchContainerRole(batchRecords.ContainerRole),
 		metadata.WithInstanceProfiles(roles.InstanceProfileOf),
 		metadata.WithDefaultInstanceID(cfg.Metadata.IMDS.DefaultInstanceID),
 		metadata.WithVerifyIdentity(cfg.Identity.Mode == config.IdentityVerify),

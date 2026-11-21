@@ -94,6 +94,7 @@ type CreateJobQueueRequest struct {
 	Priority                *int64                    `json:"priority,omitempty"`
 	ComputeEnvironmentOrder []ComputeEnvironmentOrder `json:"computeEnvironmentOrder,omitempty"`
 	Tags                    map[string]string         `json:"tags,omitempty"`
+	SchedulingPolicyArn     *string                   `json:"schedulingPolicyArn,omitempty"`
 }
 
 type CreateJobQueueResponse struct {
@@ -116,6 +117,7 @@ type JobQueueDetail struct {
 	Priority                *int64                    `json:"priority,omitempty"`
 	ComputeEnvironmentOrder []ComputeEnvironmentOrder `json:"computeEnvironmentOrder,omitempty"`
 	Tags                    map[string]string         `json:"tags,omitempty"`
+	SchedulingPolicyArn     *string                   `json:"schedulingPolicyArn,omitempty"`
 }
 
 type DescribeJobQueuesResponse struct {
@@ -128,6 +130,7 @@ type UpdateJobQueueRequest struct {
 	State                   *string                   `json:"state,omitempty"`
 	Priority                *int64                    `json:"priority,omitempty"`
 	ComputeEnvironmentOrder []ComputeEnvironmentOrder `json:"computeEnvironmentOrder,omitempty"`
+	SchedulingPolicyArn     *string                   `json:"schedulingPolicyArn,omitempty"`
 }
 
 type UpdateJobQueueResponse struct {
@@ -170,6 +173,26 @@ type RuntimePlatform struct {
 	OperatingSystemFamily *string `json:"operatingSystemFamily,omitempty"`
 }
 
+type Secret struct {
+	Name      *string `json:"name,omitempty"`
+	ValueFrom *string `json:"valueFrom,omitempty"`
+}
+
+type Host struct {
+	SourcePath *string `json:"sourcePath,omitempty"`
+}
+
+type Volume struct {
+	Name *string `json:"name,omitempty"`
+	Host *Host   `json:"host,omitempty"`
+}
+
+type MountPoint struct {
+	SourceVolume  *string `json:"sourceVolume,omitempty"`
+	ContainerPath *string `json:"containerPath,omitempty"`
+	ReadOnly      *bool   `json:"readOnly,omitempty"`
+}
+
 type ContainerProperties struct {
 	Image                        *string                       `json:"image,omitempty"`
 	Vcpus                        *int64                        `json:"vcpus,omitempty"`
@@ -183,6 +206,9 @@ type ContainerProperties struct {
 	NetworkConfiguration         *NetworkConfiguration         `json:"networkConfiguration,omitempty"`
 	FargatePlatformConfiguration *FargatePlatformConfiguration `json:"fargatePlatformConfiguration,omitempty"`
 	RuntimePlatform              *RuntimePlatform              `json:"runtimePlatform,omitempty"`
+	Secrets                      []Secret                      `json:"secrets,omitempty"`
+	Volumes                      []Volume                      `json:"volumes,omitempty"`
+	MountPoints                  []MountPoint                  `json:"mountPoints,omitempty"`
 }
 
 type EvaluateOnExit struct {
@@ -294,16 +320,18 @@ type ContainerOverrides struct {
 }
 
 type SubmitJobRequest struct {
-	JobName            *string             `json:"jobName,omitempty"`
-	JobQueue           *string             `json:"jobQueue,omitempty"`
-	ArrayProperties    *ArrayProperties    `json:"arrayProperties,omitempty"`
-	DependsOn          []JobDependency     `json:"dependsOn,omitempty"`
-	JobDefinition      *string             `json:"jobDefinition,omitempty"`
-	Parameters         map[string]string   `json:"parameters,omitempty"`
-	ContainerOverrides *ContainerOverrides `json:"containerOverrides,omitempty"`
-	RetryStrategy      *RetryStrategy      `json:"retryStrategy,omitempty"`
-	Timeout            *JobTimeout         `json:"timeout,omitempty"`
-	Tags               map[string]string   `json:"tags,omitempty"`
+	JobName                    *string             `json:"jobName,omitempty"`
+	JobQueue                   *string             `json:"jobQueue,omitempty"`
+	ArrayProperties            *ArrayProperties    `json:"arrayProperties,omitempty"`
+	DependsOn                  []JobDependency     `json:"dependsOn,omitempty"`
+	JobDefinition              *string             `json:"jobDefinition,omitempty"`
+	Parameters                 map[string]string   `json:"parameters,omitempty"`
+	ContainerOverrides         *ContainerOverrides `json:"containerOverrides,omitempty"`
+	RetryStrategy              *RetryStrategy      `json:"retryStrategy,omitempty"`
+	Timeout                    *JobTimeout         `json:"timeout,omitempty"`
+	Tags                       map[string]string   `json:"tags,omitempty"`
+	ShareIdentifier            *string             `json:"shareIdentifier,omitempty"`
+	SchedulingPriorityOverride *int64              `json:"schedulingPriorityOverride,omitempty"`
 }
 
 type SubmitJobResponse struct {
@@ -347,6 +375,9 @@ type ContainerDetail struct {
 	NetworkConfiguration         *NetworkConfiguration         `json:"networkConfiguration,omitempty"`
 	FargatePlatformConfiguration *FargatePlatformConfiguration `json:"fargatePlatformConfiguration,omitempty"`
 	RuntimePlatform              *RuntimePlatform              `json:"runtimePlatform,omitempty"`
+	Secrets                      []Secret                      `json:"secrets,omitempty"`
+	Volumes                      []Volume                      `json:"volumes,omitempty"`
+	MountPoints                  []MountPoint                  `json:"mountPoints,omitempty"`
 }
 
 type ArrayPropertiesDetail struct {
@@ -376,6 +407,8 @@ type JobDetail struct {
 	Timeout              *JobTimeout            `json:"timeout,omitempty"`
 	Tags                 map[string]string      `json:"tags,omitempty"`
 	PlatformCapabilities []string               `json:"platformCapabilities,omitempty"`
+	ShareIdentifier      *string                `json:"shareIdentifier,omitempty"`
+	SchedulingPriority   *int64                 `json:"schedulingPriority,omitempty"`
 }
 
 type DescribeJobsResponse struct {
@@ -420,6 +453,7 @@ type JobSummary struct {
 	Container       *ContainerSummary       `json:"container,omitempty"`
 	ArrayProperties *ArrayPropertiesSummary `json:"arrayProperties,omitempty"`
 	JobDefinition   *string                 `json:"jobDefinition,omitempty"`
+	ShareIdentifier *string                 `json:"shareIdentifier,omitempty"`
 }
 
 type ListJobsResponse struct {
@@ -441,6 +475,72 @@ type TerminateJobRequest struct {
 }
 
 type TerminateJobResponse struct {
+}
+
+type ShareAttributes struct {
+	ShareIdentifier *string  `json:"shareIdentifier,omitempty"`
+	WeightFactor    *float64 `json:"weightFactor,omitempty"`
+}
+
+type FairsharePolicy struct {
+	ShareDecaySeconds  *int64            `json:"shareDecaySeconds,omitempty"`
+	ComputeReservation *int64            `json:"computeReservation,omitempty"`
+	ShareDistribution  []ShareAttributes `json:"shareDistribution,omitempty"`
+}
+
+type CreateSchedulingPolicyRequest struct {
+	Name            *string           `json:"name,omitempty"`
+	FairsharePolicy *FairsharePolicy  `json:"fairsharePolicy,omitempty"`
+	Tags            map[string]string `json:"tags,omitempty"`
+}
+
+type CreateSchedulingPolicyResponse struct {
+	Name *string `json:"name,omitempty"`
+	Arn  *string `json:"arn,omitempty"`
+}
+
+type DescribeSchedulingPoliciesRequest struct {
+	Arns []string `json:"arns,omitempty"`
+}
+
+type SchedulingPolicyDetail struct {
+	Name            *string           `json:"name,omitempty"`
+	Arn             *string           `json:"arn,omitempty"`
+	FairsharePolicy *FairsharePolicy  `json:"fairsharePolicy,omitempty"`
+	Tags            map[string]string `json:"tags,omitempty"`
+}
+
+type DescribeSchedulingPoliciesResponse struct {
+	SchedulingPolicies []SchedulingPolicyDetail `json:"schedulingPolicies,omitempty"`
+}
+
+type ListSchedulingPoliciesRequest struct {
+	MaxResults *int64  `json:"maxResults,omitempty"`
+	NextToken  *string `json:"nextToken,omitempty"`
+}
+
+type SchedulingPolicyListingDetail struct {
+	Arn *string `json:"arn,omitempty"`
+}
+
+type ListSchedulingPoliciesResponse struct {
+	SchedulingPolicies []SchedulingPolicyListingDetail `json:"schedulingPolicies,omitempty"`
+	NextToken          *string                         `json:"nextToken,omitempty"`
+}
+
+type UpdateSchedulingPolicyRequest struct {
+	Arn             *string          `json:"arn,omitempty"`
+	FairsharePolicy *FairsharePolicy `json:"fairsharePolicy,omitempty"`
+}
+
+type UpdateSchedulingPolicyResponse struct {
+}
+
+type DeleteSchedulingPolicyRequest struct {
+	Arn *string `json:"arn,omitempty"`
+}
+
+type DeleteSchedulingPolicyResponse struct {
 }
 
 var enum0 = []string{"EC2", "ECS_MANAGED_INSTANCES", "FARGATE", "FARGATE_SPOT", "SPOT"}
@@ -566,6 +666,27 @@ func (v *ContainerProperties) Validate(path string) error {
 			return err
 		}
 	}
+	if v.Secrets != nil {
+		for i0, e0 := range v.Secrets {
+			if err := e0.Validate(validation.Index(path+"secrets", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.Volumes != nil {
+		for i0, e0 := range v.Volumes {
+			if err := e0.Validate(validation.Index(path+"volumes", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	if v.MountPoints != nil {
+		for i0, e0 := range v.MountPoints {
+			if err := e0.Validate(validation.Index(path+"mountPoints", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -642,6 +763,31 @@ func (v *CreateJobQueueRequest) Validate(path string) error {
 	return nil
 }
 
+func (v *CreateSchedulingPolicyRequest) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if v.FairsharePolicy != nil {
+		if err := (*v.FairsharePolicy).Validate(path + "fairsharePolicy" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Tags != nil {
+		if err := validation.Length(path+"tags", len(v.Tags), new(int64(1)), new(int64(50))); err != nil {
+			return err
+		}
+		for k0, e0 := range v.Tags {
+			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(k0), new(int64(1)), new(int64(128))); err != nil {
+				return err
+			}
+			if err := validation.Length(validation.Key(path+"tags", k0), utf8.RuneCountInString(e0), new(int64(0)), new(int64(256))); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (v *DeleteComputeEnvironmentRequest) Validate(path string) error {
 	if err := validation.Required(path+"computeEnvironment", v.ComputeEnvironment != nil); err != nil {
 		return err
@@ -651,6 +797,13 @@ func (v *DeleteComputeEnvironmentRequest) Validate(path string) error {
 
 func (v *DeleteJobQueueRequest) Validate(path string) error {
 	if err := validation.Required(path+"jobQueue", v.JobQueue != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *DeleteSchedulingPolicyRequest) Validate(path string) error {
+	if err := validation.Required(path+"arn", v.Arn != nil); err != nil {
 		return err
 	}
 	return nil
@@ -682,6 +835,13 @@ func (v *DescribeJobsRequest) Validate(path string) error {
 	return nil
 }
 
+func (v *DescribeSchedulingPoliciesRequest) Validate(path string) error {
+	if err := validation.Required(path+"arns", v.Arns != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (v *EvaluateOnExit) Validate(path string) error {
 	if err := validation.Required(path+"action", v.Action != nil); err != nil {
 		return err
@@ -694,7 +854,22 @@ func (v *EvaluateOnExit) Validate(path string) error {
 	return nil
 }
 
+func (v *FairsharePolicy) Validate(path string) error {
+	if v.ShareDistribution != nil {
+		for i0, e0 := range v.ShareDistribution {
+			if err := e0.Validate(validation.Index(path+"shareDistribution", i0) + "."); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (v *FargatePlatformConfiguration) Validate(path string) error {
+	return nil
+}
+
+func (v *Host) Validate(path string) error {
 	return nil
 }
 
@@ -735,6 +910,10 @@ func (v *ListJobsRequest) Validate(path string) error {
 	return nil
 }
 
+func (v *ListSchedulingPoliciesRequest) Validate(path string) error {
+	return nil
+}
+
 func (v *ListTagsForResourceRequest) Validate(path string) error {
 	if err := validation.Required(path+"resourceArn", v.ResourceArn != nil); err != nil {
 		return err
@@ -751,6 +930,10 @@ func (v *LogConfiguration) Validate(path string) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (v *MountPoint) Validate(path string) error {
 	return nil
 }
 
@@ -840,6 +1023,23 @@ func (v *RetryStrategy) Validate(path string) error {
 }
 
 func (v *RuntimePlatform) Validate(path string) error {
+	return nil
+}
+
+func (v *Secret) Validate(path string) error {
+	if err := validation.Required(path+"name", v.Name != nil); err != nil {
+		return err
+	}
+	if err := validation.Required(path+"valueFrom", v.ValueFrom != nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *ShareAttributes) Validate(path string) error {
+	if err := validation.Required(path+"shareIdentifier", v.ShareIdentifier != nil); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -985,6 +1185,27 @@ func (v *UpdateJobQueueRequest) Validate(path string) error {
 	return nil
 }
 
+func (v *UpdateSchedulingPolicyRequest) Validate(path string) error {
+	if err := validation.Required(path+"arn", v.Arn != nil); err != nil {
+		return err
+	}
+	if v.FairsharePolicy != nil {
+		if err := (*v.FairsharePolicy).Validate(path + "fairsharePolicy" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *Volume) Validate(path string) error {
+	if v.Host != nil {
+		if err := (*v.Host).Validate(path + "host" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type API interface {
 	CreateComputeEnvironment(context.Context, *CreateComputeEnvironmentRequest) (*CreateComputeEnvironmentResponse, error)
 	DescribeComputeEnvironments(context.Context, *DescribeComputeEnvironmentsRequest) (*DescribeComputeEnvironmentsResponse, error)
@@ -1005,6 +1226,11 @@ type API interface {
 	ListJobs(context.Context, *ListJobsRequest) (*ListJobsResponse, error)
 	CancelJob(context.Context, *CancelJobRequest) (*CancelJobResponse, error)
 	TerminateJob(context.Context, *TerminateJobRequest) (*TerminateJobResponse, error)
+	CreateSchedulingPolicy(context.Context, *CreateSchedulingPolicyRequest) (*CreateSchedulingPolicyResponse, error)
+	DescribeSchedulingPolicies(context.Context, *DescribeSchedulingPoliciesRequest) (*DescribeSchedulingPoliciesResponse, error)
+	ListSchedulingPolicies(context.Context, *ListSchedulingPoliciesRequest) (*ListSchedulingPoliciesResponse, error)
+	UpdateSchedulingPolicy(context.Context, *UpdateSchedulingPolicyRequest) (*UpdateSchedulingPolicyResponse, error)
+	DeleteSchedulingPolicy(context.Context, *DeleteSchedulingPolicyRequest) (*DeleteSchedulingPolicyResponse, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -1037,7 +1263,7 @@ func Descriptor(api API) catalog.Service {
 			}
 			return api.DeleteComputeEnvironment(ctx, in)
 		}},
-		"CreateJobQueue": {Name: "CreateJobQueue", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:CreateJobQueue", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ComputeEnvironmentOrder": catalog.MemberBinding{Location: "document", Name: "computeEnvironmentOrder", Format: ""}, "JobQueueName": catalog.MemberBinding{Location: "document", Name: "jobQueueName", Format: ""}, "Priority": catalog.MemberBinding{Location: "document", Name: "priority", Format: ""}, "State": catalog.MemberBinding{Location: "document", Name: "state", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobQueueArn": catalog.MemberBinding{Location: "document", Name: "jobQueueArn", Format: ""}, "JobQueueName": catalog.MemberBinding{Location: "document", Name: "jobQueueName", Format: ""}}, Method: "POST", URI: "/v1/createjobqueue", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateJobQueueRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"CreateJobQueue": {Name: "CreateJobQueue", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:CreateJobQueue", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ComputeEnvironmentOrder": catalog.MemberBinding{Location: "document", Name: "computeEnvironmentOrder", Format: ""}, "JobQueueName": catalog.MemberBinding{Location: "document", Name: "jobQueueName", Format: ""}, "Priority": catalog.MemberBinding{Location: "document", Name: "priority", Format: ""}, "SchedulingPolicyArn": catalog.MemberBinding{Location: "document", Name: "schedulingPolicyArn", Format: ""}, "State": catalog.MemberBinding{Location: "document", Name: "state", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobQueueArn": catalog.MemberBinding{Location: "document", Name: "jobQueueArn", Format: ""}, "JobQueueName": catalog.MemberBinding{Location: "document", Name: "jobQueueName", Format: ""}}, Method: "POST", URI: "/v1/createjobqueue", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateJobQueueRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*CreateJobQueueRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ClientException", err.Error())
@@ -1051,7 +1277,7 @@ func Descriptor(api API) catalog.Service {
 			}
 			return api.DescribeJobQueues(ctx, in)
 		}},
-		"UpdateJobQueue": {Name: "UpdateJobQueue", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:UpdateJobQueue", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ComputeEnvironmentOrder": catalog.MemberBinding{Location: "document", Name: "computeEnvironmentOrder", Format: ""}, "JobQueue": catalog.MemberBinding{Location: "document", Name: "jobQueue", Format: ""}, "Priority": catalog.MemberBinding{Location: "document", Name: "priority", Format: ""}, "State": catalog.MemberBinding{Location: "document", Name: "state", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobQueueArn": catalog.MemberBinding{Location: "document", Name: "jobQueueArn", Format: ""}, "JobQueueName": catalog.MemberBinding{Location: "document", Name: "jobQueueName", Format: ""}}, Method: "POST", URI: "/v1/updatejobqueue", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateJobQueueRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UpdateJobQueue": {Name: "UpdateJobQueue", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:UpdateJobQueue", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ComputeEnvironmentOrder": catalog.MemberBinding{Location: "document", Name: "computeEnvironmentOrder", Format: ""}, "JobQueue": catalog.MemberBinding{Location: "document", Name: "jobQueue", Format: ""}, "Priority": catalog.MemberBinding{Location: "document", Name: "priority", Format: ""}, "SchedulingPolicyArn": catalog.MemberBinding{Location: "document", Name: "schedulingPolicyArn", Format: ""}, "State": catalog.MemberBinding{Location: "document", Name: "state", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobQueueArn": catalog.MemberBinding{Location: "document", Name: "jobQueueArn", Format: ""}, "JobQueueName": catalog.MemberBinding{Location: "document", Name: "jobQueueName", Format: ""}}, Method: "POST", URI: "/v1/updatejobqueue", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateJobQueueRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*UpdateJobQueueRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ClientException", err.Error())
@@ -1107,7 +1333,7 @@ func Descriptor(api API) catalog.Service {
 			}
 			return api.ListTagsForResource(ctx, in)
 		}},
-		"SubmitJob": {Name: "SubmitJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:SubmitJob", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ArrayProperties": catalog.MemberBinding{Location: "document", Name: "arrayProperties", Format: ""}, "ContainerOverrides": catalog.MemberBinding{Location: "document", Name: "containerOverrides", Format: ""}, "DependsOn": catalog.MemberBinding{Location: "document", Name: "dependsOn", Format: ""}, "JobDefinition": catalog.MemberBinding{Location: "document", Name: "jobDefinition", Format: ""}, "JobName": catalog.MemberBinding{Location: "document", Name: "jobName", Format: ""}, "JobQueue": catalog.MemberBinding{Location: "document", Name: "jobQueue", Format: ""}, "Parameters": catalog.MemberBinding{Location: "document", Name: "parameters", Format: ""}, "RetryStrategy": catalog.MemberBinding{Location: "document", Name: "retryStrategy", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}, "Timeout": catalog.MemberBinding{Location: "document", Name: "timeout", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobArn": catalog.MemberBinding{Location: "document", Name: "jobArn", Format: ""}, "JobId": catalog.MemberBinding{Location: "document", Name: "jobId", Format: ""}, "JobName": catalog.MemberBinding{Location: "document", Name: "jobName", Format: ""}}, Method: "POST", URI: "/v1/submitjob", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &SubmitJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"SubmitJob": {Name: "SubmitJob", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:SubmitJob", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ArrayProperties": catalog.MemberBinding{Location: "document", Name: "arrayProperties", Format: ""}, "ContainerOverrides": catalog.MemberBinding{Location: "document", Name: "containerOverrides", Format: ""}, "DependsOn": catalog.MemberBinding{Location: "document", Name: "dependsOn", Format: ""}, "JobDefinition": catalog.MemberBinding{Location: "document", Name: "jobDefinition", Format: ""}, "JobName": catalog.MemberBinding{Location: "document", Name: "jobName", Format: ""}, "JobQueue": catalog.MemberBinding{Location: "document", Name: "jobQueue", Format: ""}, "Parameters": catalog.MemberBinding{Location: "document", Name: "parameters", Format: ""}, "RetryStrategy": catalog.MemberBinding{Location: "document", Name: "retryStrategy", Format: ""}, "SchedulingPriorityOverride": catalog.MemberBinding{Location: "document", Name: "schedulingPriorityOverride", Format: ""}, "ShareIdentifier": catalog.MemberBinding{Location: "document", Name: "shareIdentifier", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}, "Timeout": catalog.MemberBinding{Location: "document", Name: "timeout", Format: ""}}, Output: map[string]catalog.MemberBinding{"JobArn": catalog.MemberBinding{Location: "document", Name: "jobArn", Format: ""}, "JobId": catalog.MemberBinding{Location: "document", Name: "jobId", Format: ""}, "JobName": catalog.MemberBinding{Location: "document", Name: "jobName", Format: ""}}, Method: "POST", URI: "/v1/submitjob", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &SubmitJobRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*SubmitJobRequest)
 			if err := in.Validate(""); err != nil {
 				return nil, awserror.New("ClientException", err.Error())
@@ -1141,6 +1367,41 @@ func Descriptor(api API) catalog.Service {
 				return nil, awserror.New("ClientException", err.Error())
 			}
 			return api.TerminateJob(ctx, in)
+		}},
+		"CreateSchedulingPolicy": {Name: "CreateSchedulingPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:CreateSchedulingPolicy", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"FairsharePolicy": catalog.MemberBinding{Location: "document", Name: "fairsharePolicy", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}}, Output: map[string]catalog.MemberBinding{"Arn": catalog.MemberBinding{Location: "document", Name: "arn", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}}, Method: "POST", URI: "/v1/createschedulingpolicy", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &CreateSchedulingPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*CreateSchedulingPolicyRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.CreateSchedulingPolicy(ctx, in)
+		}},
+		"DescribeSchedulingPolicies": {Name: "DescribeSchedulingPolicies", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:DescribeSchedulingPolicies", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Arns": catalog.MemberBinding{Location: "document", Name: "arns", Format: ""}}, Output: map[string]catalog.MemberBinding{"SchedulingPolicies": catalog.MemberBinding{Location: "document", Name: "schedulingPolicies", Format: ""}}, Method: "POST", URI: "/v1/describeschedulingpolicies", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DescribeSchedulingPoliciesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*DescribeSchedulingPoliciesRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.DescribeSchedulingPolicies(ctx, in)
+		}},
+		"ListSchedulingPolicies": {Name: "ListSchedulingPolicies", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:ListSchedulingPolicies", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"MaxResults": catalog.MemberBinding{Location: "document", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"NextToken": catalog.MemberBinding{Location: "document", Name: "nextToken", Format: ""}, "SchedulingPolicies": catalog.MemberBinding{Location: "document", Name: "schedulingPolicies", Format: ""}}, Method: "POST", URI: "/v1/listschedulingpolicies", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &ListSchedulingPoliciesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*ListSchedulingPoliciesRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.ListSchedulingPolicies(ctx, in)
+		}},
+		"UpdateSchedulingPolicy": {Name: "UpdateSchedulingPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:UpdateSchedulingPolicy", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Arn": catalog.MemberBinding{Location: "document", Name: "arn", Format: ""}, "FairsharePolicy": catalog.MemberBinding{Location: "document", Name: "fairsharePolicy", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/v1/updateschedulingpolicy", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateSchedulingPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*UpdateSchedulingPolicyRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.UpdateSchedulingPolicy(ctx, in)
+		}},
+		"DeleteSchedulingPolicy": {Name: "DeleteSchedulingPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "batch:DeleteSchedulingPolicy", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"Arn": catalog.MemberBinding{Location: "document", Name: "arn", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/v1/deleteschedulingpolicy", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &DeleteSchedulingPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*DeleteSchedulingPolicyRequest)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ClientException", err.Error())
+			}
+			return api.DeleteSchedulingPolicy(ctx, in)
 		}},
 	}}
 }

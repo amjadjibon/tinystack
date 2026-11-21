@@ -26973,7 +26973,12 @@
       "DescribeJobs",
       "ListJobs",
       "CancelJob",
-      "TerminateJob"
+      "TerminateJob",
+      "CreateSchedulingPolicy",
+      "DescribeSchedulingPolicies",
+      "ListSchedulingPolicies",
+      "UpdateSchedulingPolicy",
+      "DeleteSchedulingPolicy"
     ],
     "shapes": {
       "CreateComputeEnvironmentRequest": [
@@ -27043,7 +27048,8 @@
         "state",
         "priority",
         "computeEnvironmentOrder",
-        "tags"
+        "tags",
+        "schedulingPolicyArn"
       ],
       "ComputeEnvironmentOrder": [
         "order",
@@ -27070,13 +27076,15 @@
         "statusReason",
         "priority",
         "computeEnvironmentOrder",
-        "tags"
+        "tags",
+        "schedulingPolicyArn"
       ],
       "UpdateJobQueueRequest": [
         "jobQueue",
         "state",
         "priority",
-        "computeEnvironmentOrder"
+        "computeEnvironmentOrder",
+        "schedulingPolicyArn"
       ],
       "UpdateJobQueueResponse": [
         "jobQueueName",
@@ -27108,7 +27116,10 @@
         "logConfiguration",
         "networkConfiguration",
         "fargatePlatformConfiguration",
-        "runtimePlatform"
+        "runtimePlatform",
+        "secrets",
+        "volumes",
+        "mountPoints"
       ],
       "KeyValuePair": [
         "name",
@@ -27177,7 +27188,9 @@
         "containerOverrides",
         "retryStrategy",
         "timeout",
-        "tags"
+        "tags",
+        "shareIdentifier",
+        "schedulingPriorityOverride"
       ],
       "JobDetail": [
         "jobArn",
@@ -27198,7 +27211,9 @@
         "arrayProperties",
         "timeout",
         "tags",
-        "platformCapabilities"
+        "platformCapabilities",
+        "shareIdentifier",
+        "schedulingPriority"
       ],
       "ContainerDetail": [
         "image",
@@ -27216,7 +27231,10 @@
         "logConfiguration",
         "networkConfiguration",
         "fargatePlatformConfiguration",
-        "runtimePlatform"
+        "runtimePlatform",
+        "secrets",
+        "volumes",
+        "mountPoints"
       ],
       "JobSummary": [
         "jobArn",
@@ -27229,7 +27247,8 @@
         "stoppedAt",
         "container",
         "arrayProperties",
-        "jobDefinition"
+        "jobDefinition",
+        "shareIdentifier"
       ],
       "ContainerOverrides": [
         "vcpus",
@@ -27336,6 +27355,72 @@
       "RuntimePlatform": [
         "cpuArchitecture",
         "operatingSystemFamily"
+      ],
+      "Secret": [
+        "name",
+        "valueFrom"
+      ],
+      "Volume": [
+        "name",
+        "host"
+      ],
+      "Host": [
+        "sourcePath"
+      ],
+      "MountPoint": [
+        "sourceVolume",
+        "containerPath",
+        "readOnly"
+      ],
+      "CreateSchedulingPolicyRequest": [
+        "name",
+        "fairsharePolicy",
+        "tags"
+      ],
+      "CreateSchedulingPolicyResponse": [
+        "name",
+        "arn"
+      ],
+      "DescribeSchedulingPoliciesRequest": [
+        "arns"
+      ],
+      "DescribeSchedulingPoliciesResponse": [
+        "schedulingPolicies"
+      ],
+      "SchedulingPolicyDetail": [
+        "name",
+        "arn",
+        "fairsharePolicy",
+        "tags"
+      ],
+      "ListSchedulingPoliciesRequest": [
+        "maxResults",
+        "nextToken"
+      ],
+      "ListSchedulingPoliciesResponse": [
+        "schedulingPolicies",
+        "nextToken"
+      ],
+      "SchedulingPolicyListingDetail": [
+        "arn"
+      ],
+      "UpdateSchedulingPolicyRequest": [
+        "arn",
+        "fairsharePolicy"
+      ],
+      "UpdateSchedulingPolicyResponse": [],
+      "DeleteSchedulingPolicyRequest": [
+        "arn"
+      ],
+      "DeleteSchedulingPolicyResponse": [],
+      "FairsharePolicy": [
+        "shareDecaySeconds",
+        "computeReservation",
+        "shareDistribution"
+      ],
+      "ShareAttributes": [
+        "shareIdentifier",
+        "weightFactor"
       ]
     },
     "validation": {

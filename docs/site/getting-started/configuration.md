@@ -228,15 +228,16 @@ batch:
 
 `batch.jobs` accepts `records` or `docker`. Docker mode reuses the ECS container runtime implementation
 with independent Batch ownership and lifecycle; `ecs.containers: docker` is not required. Docker must
-be available to TinyStack. Only ENABLED, VALID queues and managed compute environments schedule jobs;
-`maxvCpus` bounds the combined vCPUs of STARTING/RUNNING attempts. UNMANAGED environments do not provide
-local capacity. Records mode keeps jobs RUNNABLE until cancelled, or PENDING while dependencies remain.
+be available to TinyStack. ENABLED, VALID queues and managed EC2, FARGATE and FARGATE_SPOT environments
+schedule matching EC2 or Linux Fargate jobs. `maxvCpus` bounds the combined vCPUs of STARTING/RUNNING attempts.
+Records mode leaves ready jobs RUNNABLE and jobs waiting for dependencies PENDING.
 
 Shutdown removes containers and retains job records. On persistent restart, interrupted STARTING/RUNNING
 attempts fail with `TinyStack restarted during job attempt`; normal retry rules decide whether to queue
 another attempt. Startup removes orphan containers labeled for this store only. Reset removes Batch
-containers and records. Batch has no supported job data volumes. Job/execution roles remain metadata;
-Batch containers do not receive task-role credentials. See [Batch jobs](../guides/batch.md).
+containers and records. Docker jobs can receive job role credentials through the ECS credential
+endpoint, resolve scoped secrets at startup and mount host volumes or anonymous Docker storage.
+See [Batch jobs](../guides/batch.md).
 
 ## CodeBuild execution
 

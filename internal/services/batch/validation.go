@@ -291,6 +291,19 @@ func containerOK(scope request.Scope, c *api.ContainerProperties, platform strin
 		seen[name] = true
 	}
 
+	if err := secretsOK(scope, c.Secrets, seen); err != nil {
+		return err
+	}
+
+	if c.JobRoleArn != nil && (seen[roleEndpointEnv] || seen[roleAuthEnv] ||
+		seen["AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"] || seen["AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE"]) {
+		return invalid("Container credential environment variables are reserved for jobRoleArn")
+	}
+
+	if err := mountsOK(c, fargate); err != nil {
+		return err
+	}
+
 	for _, v := range c.Command {
 		if len(v) > 4096 || strings.ContainsRune(v, 0) {
 			return invalid("Invalid command entry")

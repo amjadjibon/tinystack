@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
+	"math"
 	"slices"
 	"strings"
 
@@ -50,7 +52,21 @@ func page[T any](
 }
 
 func jobPage(rows []*record, token *string, limit int, scope request.Scope, filter string) ([]*record, *string, error) {
-	sum := sha256.Sum256([]byte(scope.AccountID + "/" + scope.Region + "/" + filter))
+	key := func(r *record) string {
+		return fmt.Sprintf("%019d/%s", math.MaxInt64-max(0, common.Value(r.Job.CreatedAt)), r.ID)
+	}
+	slices.SortFunc(rows, func(a, b *record) int {
+		if createdA, createdB := common.Value(a.Job.CreatedAt), common.Value(b.Job.CreatedAt); createdA != createdB {
+			if createdA > createdB {
+				return -1
+			}
+
+			return 1
+		}
+
+		return strings.Compare(a.ID, b.ID)
+	})
+	sum := sha256.Sum256([]byte(scope.AccountID + "/" + scope.Region + "/created-at/" + filter))
 	prefix := hex.EncodeToString(sum[:]) + ":"
 	var inner *string
 	if token != nil {
@@ -64,7 +80,7 @@ func jobPage(rows []*record, token *string, limit int, scope request.Scope, filt
 
 	selected, next, err := common.Page(
 		rows,
-		func(r *record) string { return r.ID },
+		key,
 		inner,
 		limit,
 		invalid("Invalid NextToken"),

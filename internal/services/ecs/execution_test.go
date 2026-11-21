@@ -13,6 +13,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
+	"github.com/amjadjibon/tinystack/internal/services/containerenv"
 	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/secretsmanager"
 	"github.com/amjadjibon/tinystack/internal/services/ssm"
@@ -111,7 +112,7 @@ func TestSecretResolution(t *testing.T) {
 		{"arn:aws:ssm:us-east-1:123456789012:parameter/test/token", "parameter-value"},
 	}
 	for _, test := range tests {
-		value, resolveErr := service.secret(ctx, scope, test.ref)
+		value, resolveErr := containerenv.ResolveSecret(ctx, service.caller, scope, test.ref)
 		if resolveErr != nil || value != test.want {
 			t.Fatalf("resolve %s: %q, %v", test.ref, value, resolveErr)
 		}

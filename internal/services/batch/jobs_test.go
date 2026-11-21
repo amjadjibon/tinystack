@@ -327,7 +327,7 @@ func TestDefinitionExecutionOptionsAndResourceOverrides(t *testing.T) {
 	job := unitJob(t, s, *out.JobId)
 	if *job.RetryStrategy.Attempts != 3 || *job.Timeout.AttemptDurationSeconds != 60 ||
 		job.Container.Command[1] != "replaced" ||
-		jobCPU(job.Container) != 4 ||
+		jobCPUUnits(job.Container) != 4*cpuUnitsPerVCPU ||
 		jobMemory(job.Container) != 128 {
 		t.Fatalf("definition/override merge: %+v", job)
 	}

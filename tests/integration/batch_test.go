@@ -341,9 +341,11 @@ func TestBatchRawWireUnsupportedMembersAndLabels(t *testing.T) {
 		{"registerjobdefinition", `{"jobDefinitionName":"future","type":"container",
  "containerProperties":{"image":"busybox","vcpus":1,"memory":128,"privileged":false}}`},
 		{"registerjobdefinition", `{"jobDefinitionName":"future","type":"container",
- "containerProperties":{"image":"busybox","vcpus":1,"memory":128,"volumes":[]}}`},
+ "containerProperties":{"image":"busybox","vcpus":1,"memory":128,
+ "volumes":[{"name":"data","efsVolumeConfiguration":{}}]}}`},
 		{"registerjobdefinition", `{"jobDefinitionName":"future","type":"container","eksProperties":null}`},
-		{"createjobqueue", `{"jobQueueName":"future","priority":1,"computeEnvironmentOrder":[],"schedulingPolicyArn":""}`},
+		{"createjobqueue", `{"jobQueueName":"future","priority":1,"computeEnvironmentOrder":[],
+ "serviceEnvironmentOrder":[]}`},
 	} {
 		status, out = batchWire(t, s, "POST", "/v1/"+test.path, test.body)
 		if status != 501 {
@@ -794,8 +796,8 @@ func TestBatchFargateSDK(t *testing.T) {
 	code(t, err, "ClientException")
 }
 
-// Attach an in-memory Runtime to exercise Docker-mode rejection without invoking Docker.
-func TestBatchFargateRuntimeRejectionSDK(t *testing.T) {
+// Attach an in-memory Runtime to exercise Docker-mode dispatch without invoking Docker.
+func TestBatchFargateRuntimeSDK(t *testing.T) {
 	ctx := context.Background()
 	store := &memory.Store{}
 	network := ec2service.New(store)
@@ -849,7 +851,9 @@ func TestBatchFargateRuntimeRejectionSDK(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	d, err := c.RegisterJobDefinition(ctx, fargateDefinition())
+	definition := fargateDefinition()
+	definition.ContainerProperties.JobRoleArn = nil
+	d, err := c.RegisterJobDefinition(ctx, definition)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -864,18 +868,25 @@ func TestBatchFargateRuntimeRejectionSDK(t *testing.T) {
 		t.Fatal(err)
 	}
 	service.Start()
-	waitBatch(t, c, *queued.JobId, types.JobStatusFailed)
-	_, err = c.SubmitJob(
+	waitBatch(t, c, *queued.JobId, types.JobStatusRunning)
+	started, err := c.SubmitJob(
 		ctx,
 		&sdk.SubmitJobInput{JobName: new("fg"), JobQueue: q.JobQueueArn, JobDefinition: d.JobDefinitionArn},
 	)
-	code(t, err, "ClientException")
-	if !strings.Contains(err.Error(), "Fargate execution is unsupported") {
+	if err != nil {
 		t.Fatal(err)
 	}
+
+	waitBatch(t, c, *started.JobId, types.JobStatusRunning)
 	rt.mu.Lock()
 	defer rt.mu.Unlock()
-	if len(rt.containers) != 0 {
-		t.Fatal("Fargate invoked runtime")
+	if len(rt.containers) != 2 {
+		t.Fatalf("started %d containers, want 2", len(rt.containers))
+	}
+
+	for _, c := range rt.containers {
+		if c.spec.CPU != 256 || c.spec.Memory != 512 || c.spec.Platform != "linux/arm64" {
+			t.Fatalf("unexpected Fargate runtime specification: %+v", c.spec)
+		}
 	}
 }

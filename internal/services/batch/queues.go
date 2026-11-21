@@ -100,12 +100,13 @@ func (s *Service) CreateJobQueue(
 	r := &record{ID: *in.JobQueueName, Kind: kindQueue, Tags: maps.Clone(in.Tags)}
 	r.ARN = arn(scope, r.Kind, r.ID)
 	r.Queue = &api.JobQueueDetail{
-		JobQueueName: new(r.ID),
-		JobQueueArn:  new(r.ARN),
-		State:        common.OrElse(common.Clone(in.State), new(enabled)),
-		Status:       new(valid),
-		StatusReason: new(metadataReason),
-		Priority:     common.Clone(in.Priority),
+		JobQueueName:        new(r.ID),
+		JobQueueArn:         new(r.ARN),
+		State:               common.OrElse(common.Clone(in.State), new(enabled)),
+		Status:              new(valid),
+		StatusReason:        new(metadataReason),
+		Priority:            common.Clone(in.Priority),
+		SchedulingPolicyArn: common.Clone(in.SchedulingPolicyArn),
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -113,6 +114,12 @@ func (s *Service) CreateJobQueue(
 		r.Queue.ComputeEnvironmentOrder, e = queueOrder(tx, scope, in.ComputeEnvironmentOrder, true)
 		if e != nil {
 			return e
+		}
+
+		if in.SchedulingPolicyArn != nil {
+			if _, policyErr := readPolicy(tx, scope, in.SchedulingPolicyArn); policyErr != nil {
+				return policyErr
+			}
 		}
 
 		return unique(tx, scope, r)
@@ -161,6 +168,18 @@ func (s *Service) UpdateJobQueue(
 			}
 		}
 
+		if in.SchedulingPolicyArn != nil {
+			if r.Queue.SchedulingPolicyArn == nil {
+				return invalid("A FIFO queue cannot be converted to a fair-share queue")
+			}
+
+			if _, policyErr := readPolicy(tx, scope, in.SchedulingPolicyArn); policyErr != nil {
+				return policyErr
+			}
+
+			r.Queue.SchedulingPolicyArn = common.Clone(in.SchedulingPolicyArn)
+		}
+
 		out = &api.UpdateJobQueueResponse{JobQueueName: new(r.ID), JobQueueArn: new(r.ARN)}
 		return save(tx, scope, r)
 	})
@@ -201,7 +220,7 @@ func (s *Service) DescribeJobQueues(
 		return nil, err
 	}
 
-	refs, err := filters(scope, kindQueue, in.JobQueues, 100)
+	refs, err := filters(scope, kindQueue, in.JobQueues)
 	if err != nil {
 		return nil, err
 	}

@@ -31,6 +31,11 @@ func WithAssumeRole(fn AssumeRoleFunc) Option {
 	}
 }
 
+// WithBatchContainerRole looks up a Batch attempt's role for the ECS credentials protocol.
+func WithBatchContainerRole(lookup func(context.Context, string) (string, string, error)) Option {
+	return func(s *Service) { s.batchContainerRole = lookup }
+}
+
 // WithInstanceProfiles sets the IAM instance profile lookup helper.
 func WithInstanceProfiles(fn InstanceProfilesFunc) Option {
 	return func(s *Service) {
@@ -54,15 +59,16 @@ func WithNow(now func() time.Time) Option {
 
 // Service serves EC2 IMDS and ECS Task Metadata v4 / Container Credentials endpoints.
 type Service struct {
-	instances         *ec2.Service
-	containers        *ecs.Service
-	assumeRole        AssumeRoleFunc
-	instanceProfiles  InstanceProfilesFunc
-	now               func() time.Time
-	imdsTokens        map[string]time.Time
-	defaultInstanceID string
-	imdsMu            sync.RWMutex
-	verifyIdentity    bool
+	instances          *ec2.Service
+	containers         *ecs.Service
+	batchContainerRole func(context.Context, string) (string, string, error)
+	assumeRole         AssumeRoleFunc
+	instanceProfiles   InstanceProfilesFunc
+	now                func() time.Time
+	imdsTokens         map[string]time.Time
+	defaultInstanceID  string
+	imdsMu             sync.RWMutex
+	verifyIdentity     bool
 }
 
 // New returns an initialized metadata service.

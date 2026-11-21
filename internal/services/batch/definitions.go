@@ -149,7 +149,7 @@ func (s *Service) DescribeJobDefinitions(
 		return nil, invalid("Status must be ACTIVE or INACTIVE")
 	}
 
-	refs, err := filters(scope, kindDefinition, in.JobDefinitions, 100)
+	refs, err := filters(scope, kindDefinition, in.JobDefinitions)
 	if err != nil {
 		return nil, err
 	}

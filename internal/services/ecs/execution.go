@@ -2,17 +2,13 @@ package ecs
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"strings"
 	"time"
 
-	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ecs"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/containerenv"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -21,7 +17,8 @@ const (
 	healthUnhealthy = "UNHEALTHY"
 )
 
-// MountSpec mounts one task volume into a container.
+// MountSpec mounts a task volume by name. For standalone containers, Source is a host path
+// or empty for an anonymous volume.
 type MountSpec struct {
 	Source   string
 	Target   string
@@ -47,7 +44,7 @@ func (s *Service) resolveSecrets(ctx context.Context, scope request.Scope, specs
 	for i := range specs {
 		d := &def.Def.ContainerDefinitions[i]
 		for _, secret := range d.Secrets {
-			value, err := s.secret(ctx, scope, common.Value(secret.ValueFrom))
+			value, err := containerenv.ResolveSecret(ctx, s.caller, scope, common.Value(secret.ValueFrom))
 			if err != nil {
 				return fmt.Errorf(
 					"ResourceInitializationError: unable to resolve secret for %s",
@@ -61,106 +58,6 @@ func (s *Service) resolveSecrets(ctx context.Context, scope request.Scope, specs
 	}
 
 	return nil
-}
-
-func (s *Service) secret(ctx context.Context, scope request.Scope, ref string) (string, error) {
-	if s.caller == nil {
-		return "", fmt.Errorf("secret resolver unavailable")
-	}
-
-	ctx = request.WithMetadata(ctx, request.Metadata{Scope: scope})
-	if strings.HasPrefix(ref, "arn:") && strings.Contains(ref, ":secretsmanager:") {
-		parts := strings.Split(ref, ":")
-		if len(parts) < 7 || len(parts) > 8 {
-			return "", fmt.Errorf("invalid secret ARN")
-		}
-
-		ctx = request.WithMetadata(ctx, request.Metadata{Scope: request.Scope{Region: parts[3], AccountID: parts[4]}})
-		key := ""
-		if len(parts) == 8 {
-			key = parts[7]
-			ref = strings.Join(parts[:7], ":")
-		}
-
-		out, err := s.caller.Base64Blobs().
-			Call(ctx, "secretsmanager", "GetSecretValue", map[string]any{"SecretId": ref})
-		if err != nil {
-			return "", err
-		}
-
-		value, ok := out["SecretString"].(string)
-		if !ok {
-			if encoded, exists := out["SecretBinary"].(string); exists {
-				data, decodeErr := base64.StdEncoding.DecodeString(encoded)
-				if decodeErr != nil {
-					return "", decodeErr
-				}
-
-				value = string(data)
-			} else {
-				return "", fmt.Errorf("secret has no string value")
-			}
-		}
-
-		if key != "" {
-			var object map[string]json.RawMessage
-			if parseErr := json.Unmarshal([]byte(value), &object); parseErr != nil {
-				return "", parseErr
-			}
-
-			raw, found := object[key]
-			if !found {
-				return "", fmt.Errorf("JSON key missing")
-			}
-
-			value = string(raw)
-			if len(raw) > 0 && raw[0] == '"' {
-				if decodeErr := json.Unmarshal(raw, &value); decodeErr != nil {
-					return "", decodeErr
-				}
-			}
-		}
-
-		return value, nil
-	}
-
-	parameterARN := false
-	if strings.HasPrefix(ref, "arn:") {
-		parameterARN = true
-		parts := strings.SplitN(ref, ":", 6)
-		if len(parts) != 6 || parts[2] != "ssm" || !strings.HasPrefix(parts[5], "parameter/") {
-			return "", fmt.Errorf("invalid SSM parameter ARN")
-		}
-
-		scope = request.Scope{AccountID: parts[4], Region: parts[3]}
-		ctx = request.WithMetadata(ctx, request.Metadata{Scope: scope})
-		ref = "/" + strings.TrimPrefix(parts[5], "parameter/")
-	}
-
-	out, err := s.caller.Call(ctx, "ssm", "GetParameter", map[string]any{"Name": ref, "WithDecryption": true})
-	if err != nil && parameterARN {
-		var awsErr *awserror.Error
-		if errors.As(err, &awsErr) && awsErr.Code == "ParameterNotFound" {
-			out, err = s.caller.Call(ctx, "ssm", "GetParameter",
-				map[string]any{"Name": strings.TrimPrefix(ref, "/"), "WithDecryption": true})
-		}
-	}
-
-	if err != nil {
-		return "", err
-	}
-
-	parameter, ok := out["Parameter"].(map[string]any)
-	if !ok {
-		return "", fmt.Errorf("parameter has no value")
-	}
-
-	value, ok := parameter["Value"].(string)
-	if !ok {
-		return "", fmt.Errorf("parameter has no string value")
-	}
-
-	return value, nil
 }
 
 // startOrdered waits only outside storage transactions. A bounded startup also

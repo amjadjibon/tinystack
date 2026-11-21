@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	dependencyNToN = "N_TO_N"
-	resourceVCPU   = "VCPU"
+	dependencyNToN        = "N_TO_N"
+	resourceVCPU          = "VCPU"
+	shareIdentifierFilter = "SHARE_IDENTIFIER"
 )
 
 const (
@@ -145,7 +146,7 @@ func mergedContainer(scope request.Scope, d *api.ContainerProperties, o *api.Con
 		JobRoleArn: c.JobRoleArn, ExecutionRoleArn: c.ExecutionRoleArn, Environment: c.Environment,
 		ResourceRequirements: c.ResourceRequirements, LogConfiguration: c.LogConfiguration,
 		NetworkConfiguration: c.NetworkConfiguration, FargatePlatformConfiguration: c.FargatePlatformConfiguration,
-		RuntimePlatform: c.RuntimePlatform,
+		RuntimePlatform: c.RuntimePlatform, Secrets: c.Secrets, Volumes: c.Volumes, MountPoints: c.MountPoints,
 	}, nil
 }
 
@@ -178,6 +179,10 @@ func (s *Service) SubmitJob(ctx context.Context, in *api.SubmitJobRequest) (*api
 			return invalid("Job queue must be ENABLED and VALID")
 		}
 
+		if shareErr := submitShareOK(tx, scope, q.Queue, in); shareErr != nil {
+			return shareErr
+		}
+
 		d, e := resolveDefinition(tx, scope, in.JobDefinition)
 		if e != nil {
 			return e
@@ -189,7 +194,9 @@ func (s *Service) SubmitJob(ctx context.Context, in *api.SubmitJobRequest) (*api
 
 		platform := d.Definition.PlatformCapabilities[0]
 		if platform == fargatePlatform && s.runtime != nil {
-			return invalid("Fargate execution is unsupported in Docker mode; use records mode")
+			if _, platformErr := dockerPlatform(d.Definition.ContainerProperties.RuntimePlatform); platformErr != nil {
+				return platformErr
+			}
 		}
 
 		for _, order := range q.Queue.ComputeEnvironmentOrder {
@@ -272,6 +279,8 @@ func (s *Service) SubmitJob(ctx context.Context, in *api.SubmitJobRequest) (*api
 			DependsOn:            deps,
 			Tags:                 maps.Clone(in.Tags),
 			PlatformCapabilities: slices.Clone(d.Definition.PlatformCapabilities),
+			ShareIdentifier:      common.Clone(in.ShareIdentifier),
+			SchedulingPriority:   common.Clone(in.SchedulingPriorityOverride),
 			RetryStrategy: common.Clone(
 				common.OrElse(in.RetryStrategy, d.Definition.RetryStrategy),
 			),
@@ -334,6 +343,19 @@ func (s *Service) SubmitJob(ctx context.Context, in *api.SubmitJobRequest) (*api
 }
 
 func saveJob(tx storage.WriteTx, r *record) error {
+	if r.CredentialToken != "" {
+		key := jobRoleIndex + r.CredentialToken
+		switch common.Value(r.Job.Status) {
+		case statusStarting, statusRunning:
+			if err := storage.Write(tx, key, r.Scope.Key(serviceName, kindJob, r.ID)); err != nil {
+				return err
+			}
+		default:
+			tx.Delete(key)
+			r.CredentialToken = ""
+		}
+	}
+
 	if err := save(tx, r.Scope, r); err != nil {
 		return err
 	}
@@ -554,13 +576,17 @@ func (s *Service) ListJobs(ctx context.Context, in *api.ListJobsRequest) (*api.L
 
 	for _, f := range filters {
 		switch common.Value(f.Name) {
-		case "JOB_NAME", "JOB_DEFINITION", "BEFORE_CREATED_AT", "AFTER_CREATED_AT":
+		case "JOB_NAME", "JOB_DEFINITION", "BEFORE_CREATED_AT", "AFTER_CREATED_AT", shareIdentifierFilter:
 		default:
 			return nil, invalid("Unsupported ListJobs filter")
 		}
 
 		if len(f.Values) != 1 {
 			return nil, invalid("Filter requires one value")
+		}
+
+		if common.Value(f.Name) == shareIdentifierFilter && !sharePattern.MatchString(f.Values[0]) {
+			return nil, invalid("Invalid SHARE_IDENTIFIER filter")
 		}
 
 		if strings.HasSuffix(common.Value(f.Name), "CREATED_AT") {
@@ -589,6 +615,8 @@ func (s *Service) ListJobs(ctx context.Context, in *api.ListJobsRequest) (*api.L
 
 		selected := []*record{}
 		status := common.Value(common.OrElse(in.JobStatus, new(statusRunning)))
+		filterByStatus := len(filters) == 0 && (in.ArrayJobId == nil || in.JobStatus != nil) ||
+			len(filters) == 1 && common.Value(filters[0].Name) == shareIdentifierFilter && in.JobStatus != nil
 		for _, r := range all {
 			if in.ArrayJobId != nil {
 				if r.Parent != *in.ArrayJobId {
@@ -598,8 +626,7 @@ func (s *Service) ListJobs(ctx context.Context, in *api.ListJobsRequest) (*api.L
 				continue
 			}
 
-			if len(filters) == 0 && (in.ArrayJobId == nil || in.JobStatus != nil) &&
-				common.Value(r.Job.Status) != status {
+			if filterByStatus && common.Value(r.Job.Status) != status {
 				continue
 			}
 
@@ -607,6 +634,8 @@ func (s *Service) ListJobs(ctx context.Context, in *api.ListJobsRequest) (*api.L
 			for _, f := range filters {
 				v := f.Values[0]
 				switch common.Value(f.Name) {
+				case shareIdentifierFilter:
+					match = common.Value(r.Job.ShareIdentifier) == v
 				case "JOB_NAME":
 					match = wildcard(strings.ToLower(v), strings.ToLower(common.Value(r.Job.JobName)))
 				case "JOB_DEFINITION":
@@ -631,7 +660,7 @@ func (s *Service) ListJobs(ctx context.Context, in *api.ListJobsRequest) (*api.L
 			}
 		}
 
-		// Lists retain storage key order; AWS permits up to 1000 results.
+		// AWS permits up to 1000 results when no filters are specified.
 		limit := common.Value(common.OrElse(in.MaxResults, new(int64(100))))
 		if len(filters) > 0 && limit > 100 {
 			return invalid("Filters permit at most 100 results")
@@ -650,16 +679,17 @@ func (s *Service) ListJobs(ctx context.Context, in *api.ListJobsRequest) (*api.L
 		for _, r := range selected {
 			j := r.Job
 			summary := api.JobSummary{
-				JobArn:        j.JobArn,
-				JobId:         j.JobId,
-				JobName:       j.JobName,
-				CreatedAt:     j.CreatedAt,
-				Status:        j.Status,
-				StatusReason:  j.StatusReason,
-				StartedAt:     j.StartedAt,
-				StoppedAt:     j.StoppedAt,
-				JobDefinition: j.JobDefinition,
-				Container:     &api.ContainerSummary{ExitCode: j.Container.ExitCode, Reason: j.Container.Reason},
+				JobArn:          j.JobArn,
+				JobId:           j.JobId,
+				JobName:         j.JobName,
+				CreatedAt:       j.CreatedAt,
+				Status:          j.Status,
+				StatusReason:    j.StatusReason,
+				StartedAt:       j.StartedAt,
+				StoppedAt:       j.StoppedAt,
+				JobDefinition:   j.JobDefinition,
+				ShareIdentifier: j.ShareIdentifier,
+				Container:       &api.ContainerSummary{ExitCode: j.Container.ExitCode, Reason: j.Container.Reason},
 			}
 
 			if a := j.ArrayProperties; a != nil {

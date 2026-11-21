@@ -60,15 +60,6 @@ func (r *Runtime) Start(ctx context.Context, spec *ecs.ContainerSpec) (ecs.Start
 
 		networkID = task.anchor
 		args = append(args, "--network=container:"+networkID)
-		for _, mount := range spec.Mounts {
-			source := task.volumes[mount.Source]
-			option := source + ":" + mount.Target
-			if mount.ReadOnly {
-				option += ":ro"
-			}
-
-			args = append(args, "-v", option)
-		}
 
 		for _, from := range spec.VolumesFrom {
 			source := task.containers[common.Value(from.SourceContainer)]
@@ -84,6 +75,37 @@ func (r *Runtime) Start(ctx context.Context, spec *ecs.ContainerSpec) (ecs.Start
 		}
 	} else {
 		args = append(args, "--add-host=host.docker.internal:host-gateway")
+	}
+
+	if spec.Platform != "" {
+		args = append(args, "--platform", spec.Platform)
+	}
+
+	for _, mount := range spec.Mounts {
+		source := mount.Source
+		if task != nil {
+			source = task.volumes[mount.Source]
+			if source == "" {
+				return ecs.Started{}, fmt.Errorf("unknown task volume %s", mount.Source)
+			}
+		}
+
+		if source == "" {
+			option := "type=volume,target=" + mount.Target
+			if mount.ReadOnly {
+				option += ",readonly"
+			}
+
+			args = append(args, "--mount", option)
+			continue
+		}
+
+		option := source + ":" + mount.Target
+		if mount.ReadOnly {
+			option += ":ro"
+		}
+
+		args = append(args, "-v", option)
 	}
 
 	args = append(args, resourceArgs(spec.CPU, spec.Memory, spec.MemoryReservation)...)
@@ -297,7 +319,7 @@ func (r *Runtime) CleanOwned(ctx context.Context, label, ownerLabel, owner strin
 	}
 
 	for id := range containers {
-		if err := dockercli.RemoveContainerVolume(ctx, id, ""); err != nil {
+		if _, err := dockercli.Run(ctx, nil, "rm", "-f", "-v", id); err != nil && !dockercli.Gone(err) {
 			return err
 		}
 	}

@@ -12,8 +12,8 @@ Persist Batch compute environments and queues; submit dependency-aware jobs with
 | Wire protocol | REST JSON |
 | API version | `2016-08-10` |
 | Scope | Account and region |
-| Execution | Records by default: environments and queues become VALID immediately; jobs remain RUNNABLE or PENDING behind dependencies until cancelled, terminated or failed by a dependency. Optional local Docker execution supports EC2 jobs only; Fargate execution is explicitly rejected. |
-| Selected operations | 19 of 48 in the pinned model |
+| Execution | Records by default: environments and queues become VALID immediately; jobs remain RUNNABLE or PENDING behind dependencies until cancelled, terminated or failed by a dependency. Optional local Docker execution supports EC2 and Linux Fargate jobs. |
+| Selected operations | 24 of 48 in the pinned model |
 
 ## Implemented behavior
 
@@ -21,19 +21,19 @@ See the [implemented feature catalogue](catalogue.md#aws-batch) for this service
 
 ## Limitations and future work
 
-- No EC2 provisioning/autoscaling or actual ECS cluster records. UNMANAGED environments provide no local execution capacity and jobs stay RUNNABLE. Roles remain metadata: Batch containers do not receive ECS task credentials; IAM existence/trust/permissions are not evaluated.
+- No EC2 provisioning/autoscaling or actual ECS cluster records. UNMANAGED environments provide no local execution capacity and jobs stay RUNNABLE. Compute environment service roles and job execution roles are metadata.
 - MANAGED EC2, FARGATE, FARGATE_SPOT and UNMANAGED are supported. Managed x86 choices are finite c5/m5/r5 families/sizes, optimal and default_x86_64; EC2 Spot, EKS, ECS managed instances, launch templates, custom AMIs, instance tags, scaling policies and infrastructure updates are excluded.
 - Create environment supports name/type/state/serviceRole/tags and selected computeResources. Both types require ENABLED at creation (also the omitted-state default); DISABLED returns ClientException/400 without storing a record. Update accepts ENABLED/DISABLED and supports state/serviceRole and minvCpus/maxvCpus/desiredvCpus only. Desired capacity cannot decrease or leave the retained bounds; bounds alone do not invoke a scheduler.
-- Container definitions only: GPU, multinode, volumes, secrets, privileges, EKS/ECS advanced properties, consumable resources and tag propagation remain unsupported. Unsupported members fail explicitly.
+- Container definitions only: GPU, multinode, EFS and named Docker volumes, privileges, EKS/ECS advanced properties, consumable resources and tag propagation remain unsupported. Unsupported members fail explicitly.
 - Definition descriptions retain all matching revisions and inactive history; SubmitJob resolves the latest ACTIVE revision for an unrevisioned name or scoped ARN. Jobs and attempts are retained until reset.
-- Scheduling policies, fair-share capacity, service environments, consumable resources and advanced queue actions are future scope.
+- Quota-share policies, AWS fair-share utilization reporting, service environments, consumable resources and advanced queue actions are excluded. Local fair-share allocation uses the algorithm described in the Batch guide.
 - CloudFormation supports name/type/state/serviceRole/computeResources/tags for environments, name/state/priority/order/tags for queues and name/type/parameters/container/platform/tags for definitions. Compute config/role/type/name changes replace the environment; definition metadata changes create another revision and retire the previous revision after success.
 - Explicitly named environment/queue replacements need distinct names to coexist; reusing the same name fails safely. CloudFormation environments must be created ENABLED. ReplaceComputeEnvironment=false and infrastructure-update policies are excluded.
 - The [Batch guide](../guides/batch.md) lists exact members, defaults, finite limits, reference/version rules and executable CLI examples. The console offers only what the service implements: no EC2 Spot capacity, service-role updates, N_TO_N array dependencies or scheduling policies, and a job's log stream is a link to CloudWatch Logs, not an embedded viewer.
-- Job lists use storage key order rather than AWS creation-time grouping/order. Filters support JOB_NAME, JOB_DEFINITION, BEFORE_CREATED_AT and AFTER_CREATED_AT; fair-share filters remain unsupported.
+- ListJobs supports JOB_NAME, JOB_DEFINITION, BEFORE_CREATED_AT, AFTER_CREATED_AT and SHARE_IDENTIFIER. AWS JOB_NAME grouping by name and version is excluded.
 - Local scheduling accounts for vCPUs only, not EC2 instance types, memory placement, min/desired capacity, placement strategies or distributed workers. Host image architecture and Docker availability constrain execution.
 - Background transitions and events are best effort; no durable EventBridge outbox. Logs ship once per polling step and can be lost if the process or container disappears before shipping. Logs do not provide an exactly-once delivery guarantee.
-- Fargate settings are metadata only. Docker-mode SubmitJob explicitly rejects FARGATE definitions with ClientException; switching a records store to Docker fails queued Fargate jobs without invoking the runtime. Fargate networking, platform selection and execution roles are not applied to local containers.
+- Fargate platform versions validate AWS definition choices. Docker runs Linux images with the selected architecture and requires daemon support for execution or emulation. Windows, awsvpc networking, public IP assignment, Spot interruptions and Fargate platform images are excluded. SDKs that restrict HTTP credential hosts require an explicit endpoint credentials provider.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -50,14 +50,18 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `CancelJob` | `POST /v1/canceljob` |
 | `CreateComputeEnvironment` | `POST /v1/createcomputeenvironment` |
 | `CreateJobQueue` | `POST /v1/createjobqueue` |
+| `CreateSchedulingPolicy` | `POST /v1/createschedulingpolicy` |
 | `DeleteComputeEnvironment` | `POST /v1/deletecomputeenvironment` |
 | `DeleteJobQueue` | `POST /v1/deletejobqueue` |
+| `DeleteSchedulingPolicy` | `POST /v1/deleteschedulingpolicy` |
 | `DeregisterJobDefinition` | `POST /v1/deregisterjobdefinition` |
 | `DescribeComputeEnvironments` | `POST /v1/describecomputeenvironments` |
 | `DescribeJobDefinitions` | `POST /v1/describejobdefinitions` |
 | `DescribeJobQueues` | `POST /v1/describejobqueues` |
 | `DescribeJobs` | `POST /v1/describejobs` |
+| `DescribeSchedulingPolicies` | `POST /v1/describeschedulingpolicies` |
 | `ListJobs` | `POST /v1/listjobs` |
+| `ListSchedulingPolicies` | `POST /v1/listschedulingpolicies` |
 | `ListTagsForResource` | `GET /v1/tags/{resourceArn}` |
 | `RegisterJobDefinition` | `POST /v1/registerjobdefinition` |
 | `SubmitJob` | `POST /v1/submitjob` |
@@ -66,32 +70,29 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `UntagResource` | `DELETE /v1/tags/{resourceArn}` |
 | `UpdateComputeEnvironment` | `POST /v1/updatecomputeenvironment` |
 | `UpdateJobQueue` | `POST /v1/updatejobqueue` |
+| `UpdateSchedulingPolicy` | `POST /v1/updateschedulingpolicy` |
 
 ## Operations not implemented
 
-??? info "29 modeled operations outside the implementation"
+??? info "24 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
     - `CancelJobs`
     - `CreateConsumableResource`
     - `CreateQuotaShare`
-    - `CreateSchedulingPolicy`
     - `CreateServiceEnvironment`
     - `DeleteConsumableResource`
     - `DeleteQuotaShare`
-    - `DeleteSchedulingPolicy`
     - `DeleteServiceEnvironment`
     - `DescribeConsumableResource`
     - `DescribeQuotaShare`
-    - `DescribeSchedulingPolicies`
     - `DescribeServiceEnvironments`
     - `DescribeServiceJob`
     - `GetJobQueueSnapshot`
     - `ListConsumableResources`
     - `ListJobsByConsumableResource`
     - `ListQuotaShares`
-    - `ListSchedulingPolicies`
     - `ListServiceJobs`
     - `SubmitServiceJob`
     - `TerminateJobs`
@@ -99,7 +100,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `TerminateServiceJobs`
     - `UpdateConsumableResource`
     - `UpdateQuotaShare`
-    - `UpdateSchedulingPolicy`
     - `UpdateServiceEnvironment`
     - `UpdateServiceJob`
 
@@ -108,5 +108,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/batch)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/batch/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/batch.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
-- SDK integration examples: [batch_creation_state_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/batch_creation_state_test.go), [batch_jobs_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/batch_jobs_test.go), [batch_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/batch_test.go).
+- SDK integration examples: [batch_creation_state_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/batch_creation_state_test.go), [batch_jobs_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/batch_jobs_test.go), [batch_scheduling_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/batch_scheduling_test.go), [batch_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/batch_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

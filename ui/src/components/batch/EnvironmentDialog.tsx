@@ -105,8 +105,8 @@ export function CreateEnvironmentDialog({
 				{managed ? (
 					<SpaceBetween size="m">
 						<Alert>
-							Compute environments are metadata. Docker mode executes EC2 jobs
-							only; Fargate submissions require records mode.
+							Docker mode uses compute environment vCPU limits to run EC2 and
+							Linux Fargate jobs locally.
 						</Alert>
 						<Choice
 							label="Compute type"

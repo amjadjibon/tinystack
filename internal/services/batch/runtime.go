@@ -111,6 +111,10 @@ func (s *Service) Reset(ctx context.Context) {
 			tx.Delete(k)
 		}
 
+		for _, key := range tx.Keys(jobRoleIndex) {
+			tx.Delete(key)
+		}
+
 		return nil
 	})
 }
@@ -174,9 +178,7 @@ func (s *Service) visitJobs(ctx context.Context) {
 			return nil
 		}
 
-		// Queue priority first, FIFO within each queue. Resource listing order is unaffected.
-		priorities := map[string]int64{}
-		queues := map[string]*record{}
+		queues, policies := map[string]*record{}, map[string]*record{}
 		for scope := range scopes {
 			qs, e := rows(tx, scope, kindQueue)
 			if e != nil {
@@ -185,53 +187,32 @@ func (s *Service) visitJobs(ctx context.Context) {
 
 			for _, q := range qs {
 				queues[q.ARN] = q
-				priorities[q.ARN] = common.Value(q.Queue.Priority)
+			}
+
+			ps, e := rows(tx, scope, kindPolicy)
+			if e != nil {
+				return e
+			}
+
+			for _, p := range ps {
+				policies[p.ARN] = p
 			}
 		}
 
-		slices.SortStableFunc(all, func(a, b *record) int {
-			if c := priorities[common.Value(b.Job.JobQueue)] - priorities[common.Value(a.Job.JobQueue)]; c != 0 {
-				if c < 0 {
-					return -1
-				}
-
-				return 1
-			}
-
-			if c := common.Value(a.Job.CreatedAt) - common.Value(b.Job.CreatedAt); c != 0 {
-				if c < 0 {
-					return -1
-				}
-
-				return 1
-			}
-
-			return strings.Compare(a.ID, b.ID)
-		})
+		fair := orderJobs(all, queues, policies, time.Now().UnixMilli())
 		used := map[string]int64{}
 		for _, r := range all {
 			if st := common.Value(
 				r.Job.Status,
 			); st == statusRunning || st == statusStarting ||
 				(terminal(st) && r.ContainerID != "") {
-				used[r.ComputeEnvironment] += jobCPU(r.Job.Container)
+				used[r.ComputeEnvironment] += jobCPUUnits(r.Job.Container)
 			}
 		}
 
 		for _, r := range all {
 			st := common.Value(r.Job.Status)
 			if r.Job.ArrayProperties != nil && r.Parent == "" {
-				continue
-			}
-
-			if !terminal(st) && slices.Contains(r.Job.PlatformCapabilities, fargatePlatform) {
-				r.Job.Status = new(statusFailed)
-				r.Job.StatusReason = new("Fargate execution is unsupported in Docker mode; use records mode")
-				r.Job.StoppedAt = new(time.Now().UnixMilli())
-				if err := saveJob(tx, r); err != nil {
-					return err
-				}
-
 				continue
 			}
 
@@ -252,16 +233,40 @@ func (s *Service) visitJobs(ctx context.Context) {
 						continue
 					}
 
-					if ce.CE.ComputeResources == nil ||
-						used[ce.ARN]+jobCPU(r.Job.Container) > common.Value(ce.CE.ComputeResources.MaxvCpus) {
+					resources := ce.CE.ComputeResources
+					if resources == nil {
 						continue
 					}
 
+					fargate := slices.Contains(r.Job.PlatformCapabilities, fargatePlatform)
+					if isFargate(common.Value(resources.Type)) != fargate {
+						continue
+					}
+
+					cpu, capacity := jobCPUUnits(r.Job.Container), common.Value(resources.MaxvCpus)*cpuUnitsPerVCPU
+					if used[ce.ARN]+cpu > capacity {
+						continue
+					}
+
+					if f := fair[q.ARN]; f != nil {
+						share := common.Value(r.Job.ShareIdentifier)
+						if !f.permits(ce.ARN, share, used[ce.ARN], cpu, capacity) {
+							continue
+						}
+
+						f.claim(ce.ARN, share)
+					}
+
 					r.ComputeEnvironment = ce.ARN
-					used[ce.ARN] += jobCPU(r.Job.Container)
+					used[ce.ARN] += cpu
 					r.Job.Status = new(statusStarting)
+					if r.Job.Container.JobRoleArn != nil && s.endpoint != "" {
+						r.CredentialToken = common.RandomID(32)
+					}
+
 					r.EventStatus = statusStarting
 					events = append(events, common.Clone(r))
+					r.Job.StartedAt = nil
 					r.Job.Container.ExitCode = nil
 					r.Job.Container.Reason = nil
 					r.Job.Container.LogStreamName = nil
@@ -309,15 +314,17 @@ func (s *Service) visitJobs(ctx context.Context) {
 	}
 }
 
-func jobCPU(c *api.ContainerDetail) int64 {
+const cpuUnitsPerVCPU = 1024
+
+func jobCPUUnits(c *api.ContainerDetail) int64 {
 	for _, r := range c.ResourceRequirements {
 		if common.Value(r.Type) == resourceVCPU {
-			n, _ := strconv.ParseInt(common.Value(r.Value), 10, 64)
-			return n
+			n, _ := strconv.ParseFloat(common.Value(r.Value), 64)
+			return int64(n * cpuUnitsPerVCPU)
 		}
 	}
 
-	return common.Value(c.Vcpus)
+	return common.Value(c.Vcpus) * cpuUnitsPerVCPU
 }
 
 func jobMemory(c *api.ContainerDetail) int64 {
@@ -390,8 +397,23 @@ func (s *Service) stepJob(ctx context.Context, r *record) error {
 
 		spec := &ecs.ContainerSpec{
 			Image: common.Value(c.Image), Name: "default", Command: c.Command,
-			CPU: jobCPU(c) * 1024, Memory: jobMemory(c), Environment: env,
+			CPU: jobCPUUnits(c), Memory: jobMemory(c), Environment: env,
 			Labels: map[string]string{"tinystack.batch.job": r.ARN, "tinystack.batch.store": s.owner},
+		}
+
+		if slices.Contains(r.Job.PlatformCapabilities, fargatePlatform) {
+			platform, platformErr := dockerPlatform(c.RuntimePlatform)
+			if platformErr != nil {
+				finishAttempt(r, nil, platformErr.Error(), true)
+				return s.replaceJob(ctx, r)
+			}
+
+			spec.Platform = platform
+		}
+
+		if initErr := s.initContainer(ctx, r, spec); initErr != nil {
+			finishAttempt(r, nil, "ResourceInitializationError: "+initErr.Error(), false)
+			return s.replaceJob(ctx, r)
 		}
 
 		started, e := s.runtime.Start(ctx, spec)

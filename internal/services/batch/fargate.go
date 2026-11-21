@@ -11,6 +11,7 @@ import (
 const (
 	legacyLinuxVersion     = "1.3.0"
 	x86Architecture        = "X86_64"
+	arm64Architecture      = "ARM64"
 	fargatePlatform        = "FARGATE"
 	latestPlatform         = "LATEST"
 	windowsPlatformVersion = "1.0.0"
@@ -21,7 +22,7 @@ const (
 
 func isFargate(typ string) bool { return typ == fargatePlatform || typ == "FARGATE_SPOT" }
 
-// Fargate options are validated metadata; the local runtime does not implement Fargate networking or platforms.
+// Validate the AWS Fargate size and platform-version combinations.
 func platformOK(c *api.ContainerProperties, fargate bool) error {
 	if !fargate {
 		if c.NetworkConfiguration != nil || c.FargatePlatformConfiguration != nil || c.RuntimePlatform != nil {
@@ -64,7 +65,7 @@ func platformOK(c *api.ContainerProperties, fargate bool) error {
 		}
 	}
 
-	if !slices.Contains([]string{x86Architecture, "ARM64"}, arch) ||
+	if !slices.Contains([]string{x86Architecture, arm64Architecture}, arch) ||
 		!slices.Contains(
 			[]string{
 				linuxOS,
@@ -82,7 +83,8 @@ func platformOK(c *api.ContainerProperties, fargate bool) error {
 		return invalid("Windows requires X86_64 and platform LATEST or 1.0.0")
 	}
 
-	if os == linuxOS && (version == windowsPlatformVersion || arch == "ARM64" && version == legacyLinuxVersion) {
+	if os == linuxOS &&
+		(version == windowsPlatformVersion || arch == arm64Architecture && version == legacyLinuxVersion) {
 		return invalid("Unsupported Linux architecture/platform version combination")
 	}
 
@@ -127,4 +129,22 @@ func platformOK(c *api.ContainerProperties, fargate bool) error {
 	}
 
 	return nil
+}
+
+func dockerPlatform(platform *api.RuntimePlatform) (string, error) {
+	if platform != nil {
+		if os := common.Value(platform.OperatingSystemFamily); os != "" && os != linuxOS {
+			return "", invalid("Windows Fargate is unavailable in the local Linux Docker runtime")
+		}
+
+		switch common.Value(platform.CpuArchitecture) {
+		case arm64Architecture:
+			return "linux/arm64", nil
+		case "", x86Architecture:
+		default:
+			return "", invalid("Unsupported Fargate Docker architecture")
+		}
+	}
+
+	return "linux/amd64", nil
 }

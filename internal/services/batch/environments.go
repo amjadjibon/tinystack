@@ -223,8 +223,8 @@ func (s *Service) DeleteComputeEnvironment(
 
 // Normalize reference lists for stable filter-bound cursors. Unknown references
 // are omitted by describe operations; mutations require actual records.
-func filters(scope request.Scope, kind string, list []string, maximum int) ([]string, error) {
-	if guardErr := stringsUnique(list, maximum); guardErr != nil {
+func filters(scope request.Scope, kind string, list []string) ([]string, error) {
+	if guardErr := stringsUnique(list, 100); guardErr != nil {
 		return nil, guardErr
 	}
 
@@ -263,7 +263,7 @@ func (s *Service) DescribeComputeEnvironments(
 		return nil, err
 	}
 
-	refs, err := filters(scope, kindCE, in.ComputeEnvironments, 100)
+	refs, err := filters(scope, kindCE, in.ComputeEnvironments)
 	if err != nil {
 		return nil, err
 	}

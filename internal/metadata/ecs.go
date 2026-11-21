@@ -98,8 +98,11 @@ func (s *Service) serveECS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch {
+	case path == "batch-credentials" && s.batchContainerRole != nil:
+		s.serveECSCredentials(w, r, "", true)
+
 	case path == "credentials" || strings.HasPrefix(path, "credentials/"):
-		s.serveECSCredentials(w, r, strings.TrimPrefix(path, "credentials/"))
+		s.serveECSCredentials(w, r, strings.TrimPrefix(path, "credentials/"), false)
 
 	case strings.HasPrefix(path, "v4/"):
 		s.serveECSV4(w, r, strings.TrimPrefix(path, "v4/"))
@@ -109,7 +112,7 @@ func (s *Service) serveECS(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Service) serveECSCredentials(w http.ResponseWriter, r *http.Request, pathSuffix string) {
+func (s *Service) serveECSCredentials(w http.ResponseWriter, r *http.Request, pathSuffix string, batch bool) {
 	token := r.Header.Get("Authorization")
 	token = strings.TrimPrefix(token, "Bearer ")
 	token = strings.TrimSpace(token)
@@ -123,20 +126,38 @@ func (s *Service) serveECSCredentials(w http.ResponseWriter, r *http.Request, pa
 		return
 	}
 
-	rec, ok, err := s.containers.ContainerMetadataByToken(r.Context(), token)
-	if err != nil {
-		writeECSError(w, http.StatusInternalServerError, "InternalError", err.Error())
-		return
-	}
+	var role, sessionName string
+	if batch {
+		arn, jobID, err := s.batchContainerRole(r.Context(), token)
+		if err != nil {
+			writeECSError(w, http.StatusInternalServerError, "InternalError", "unable to look up Batch job role")
+			return
+		}
 
-	if !ok {
-		writeECSError(w, http.StatusUnauthorized, "AccessDenied", "invalid authorization token")
-		return
-	}
+		if arn == "" {
+			writeECSError(w, http.StatusUnauthorized, "AccessDenied", "invalid authorization token")
+			return
+		}
 
-	if rec.TaskRoleARN == "" {
-		writeECSError(w, http.StatusNotFound, "ResourceNotFoundException", "task has no role")
-		return
+		role, sessionName = arn, "batch-job-"+strings.ReplaceAll(jobID, ":", "-")
+	} else {
+		rec, ok, err := s.containers.ContainerMetadataByToken(r.Context(), token)
+		if err != nil {
+			writeECSError(w, http.StatusInternalServerError, "InternalError", err.Error())
+			return
+		}
+
+		if !ok {
+			writeECSError(w, http.StatusUnauthorized, "AccessDenied", "invalid authorization token")
+			return
+		}
+
+		if rec.TaskRoleARN == "" {
+			writeECSError(w, http.StatusNotFound, "ResourceNotFoundException", "task has no role")
+			return
+		}
+
+		role, sessionName = rec.TaskRoleARN, "ecs-task-"+rec.TaskID
 	}
 
 	if s.assumeRole == nil {
@@ -144,11 +165,10 @@ func (s *Service) serveECSCredentials(w http.ResponseWriter, r *http.Request, pa
 		return
 	}
 
-	sessionName := "ecs-task-" + rec.TaskID
 	accessKey, secret, tok, expires, err := s.assumeRole(
 		r.Context(),
 		"ecs-tasks.amazonaws.com",
-		rec.TaskRoleARN,
+		role,
 		sessionName,
 		3600,
 	)
@@ -162,7 +182,7 @@ func (s *Service) serveECSCredentials(w http.ResponseWriter, r *http.Request, pa
 		SecretAccessKey: secret,
 		Token:           tok,
 		Expiration:      expires.UTC().Format(time.RFC3339),
-		RoleArn:         rec.TaskRoleARN,
+		RoleArn:         role,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -46,6 +46,7 @@ type Runtime interface {
 
 // ContainerSpec is a container of a task, from its definition and overrides.
 type ContainerSpec struct {
+	Platform string // optional Docker OS/architecture, e.g. linux/arm64
 	// Metadata is committed with the started container.
 	Metadata          *ContainerMetadata
 	HealthCheck       *api.HealthCheck
