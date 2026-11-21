@@ -584,14 +584,15 @@ type DeleteApiKeyRequest struct {
 	ApiKey *string `json:"-"`
 }
 
-type ApiStage struct {
-	ApiId *string `json:"apiId,omitempty"`
-	Stage *string `json:"stage,omitempty"`
-}
-
 type ThrottleSettings struct {
 	BurstLimit *int64   `json:"burstLimit,omitempty"`
 	RateLimit  *float64 `json:"rateLimit,omitempty"`
+}
+
+type ApiStage struct {
+	ApiId    *string                     `json:"apiId,omitempty"`
+	Stage    *string                     `json:"stage,omitempty"`
+	Throttle map[string]ThrottleSettings `json:"throttle,omitempty"`
 }
 
 type QuotaSettings struct {
@@ -621,6 +622,37 @@ type UsagePlan struct {
 
 type GetUsagePlanRequest struct {
 	UsagePlanId *string `json:"-"`
+}
+
+type GetUsageRequest struct {
+	UsagePlanId *string `json:"-"`
+	KeyId       *string `json:"-"`
+	StartDate   *string `json:"-"`
+	EndDate     *string `json:"-"`
+	Limit       *int64  `json:"-"`
+	Position    *string `json:"-"`
+}
+
+type Usage struct {
+	UsagePlanId *string              `json:"usagePlanId,omitempty"`
+	StartDate   *string              `json:"startDate,omitempty"`
+	EndDate     *string              `json:"endDate,omitempty"`
+	Position    *string              `json:"position,omitempty"`
+	Items       map[string][][]int64 `json:"values,omitempty"`
+}
+
+type GetAccountRequest struct {
+}
+
+type Account struct {
+	ThrottleSettings *ThrottleSettings `json:"throttleSettings,omitempty"`
+}
+
+type FlushStageAuthorizersCacheOutput struct{}
+
+type FlushStageAuthorizersCacheRequest struct {
+	RestApiId *string `json:"-"`
+	StageName *string `json:"-"`
 }
 
 type GetUsagePlansRequest struct {
@@ -935,6 +967,9 @@ type API interface {
 	DeleteApiKey(context.Context, *DeleteApiKeyRequest) (*DeleteApiKeyOutput, error)
 	CreateUsagePlan(context.Context, *CreateUsagePlanRequest) (*UsagePlan, error)
 	GetUsagePlan(context.Context, *GetUsagePlanRequest) (*UsagePlan, error)
+	GetUsage(context.Context, *GetUsageRequest) (*Usage, error)
+	GetAccount(context.Context, *GetAccountRequest) (*Account, error)
+	FlushStageAuthorizersCache(context.Context, *FlushStageAuthorizersCacheRequest) (*FlushStageAuthorizersCacheOutput, error)
 	GetUsagePlans(context.Context, *GetUsagePlansRequest) (*UsagePlans, error)
 	UpdateUsagePlan(context.Context, *UpdateUsagePlanRequest) (*UsagePlan, error)
 	DeleteUsagePlan(context.Context, *DeleteUsagePlanRequest) (*DeleteUsagePlanOutput, error)
@@ -1115,6 +1150,13 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"GetUsagePlan": {Name: "GetUsagePlan", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"UsagePlanId": catalog.MemberBinding{Location: "label", Name: "usagePlanId", Format: ""}}, Output: map[string]catalog.MemberBinding{"ApiStages": catalog.MemberBinding{Location: "document", Name: "apiStages", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "description", Format: ""}, "Id": catalog.MemberBinding{Location: "document", Name: "id", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "name", Format: ""}, "Quota": catalog.MemberBinding{Location: "document", Name: "quota", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "tags", Format: ""}, "Throttle": catalog.MemberBinding{Location: "document", Name: "throttle", Format: ""}}, Method: "GET", URI: "/usageplans/{usagePlanId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetUsagePlanRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetUsagePlan(ctx, input.(*GetUsagePlanRequest))
+		}},
+		"GetUsage": {Name: "GetUsage", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"EndDate": catalog.MemberBinding{Location: "query", Name: "endDate", Format: ""}, "KeyId": catalog.MemberBinding{Location: "query", Name: "keyId", Format: ""}, "Limit": catalog.MemberBinding{Location: "query", Name: "limit", Format: ""}, "Position": catalog.MemberBinding{Location: "query", Name: "position", Format: ""}, "StartDate": catalog.MemberBinding{Location: "query", Name: "startDate", Format: ""}, "UsagePlanId": catalog.MemberBinding{Location: "label", Name: "usagePlanId", Format: ""}}, Output: map[string]catalog.MemberBinding{"EndDate": catalog.MemberBinding{Location: "document", Name: "endDate", Format: ""}, "Items": catalog.MemberBinding{Location: "document", Name: "items", Format: ""}, "Position": catalog.MemberBinding{Location: "document", Name: "position", Format: ""}, "StartDate": catalog.MemberBinding{Location: "document", Name: "startDate", Format: ""}, "UsagePlanId": catalog.MemberBinding{Location: "document", Name: "usagePlanId", Format: ""}}, Method: "GET", URI: "/usageplans/{usagePlanId}/usage", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetUsageRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) { return api.GetUsage(ctx, input.(*GetUsageRequest)) }},
+		"GetAccount": {Name: "GetAccount", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{}, Output: map[string]catalog.MemberBinding{"ThrottleSettings": catalog.MemberBinding{Location: "document", Name: "throttleSettings", Format: ""}}, Method: "GET", URI: "/account", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetAccountRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetAccount(ctx, input.(*GetAccountRequest))
+		}},
+		"FlushStageAuthorizersCache": {Name: "FlushStageAuthorizersCache", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "apigateway:DELETE", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"RestApiId": catalog.MemberBinding{Location: "label", Name: "restApiId", Format: ""}, "StageName": catalog.MemberBinding{Location: "label", Name: "stageName", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/restapis/{restApiId}/stages/{stageName}/cache/authorizers", Target: "", Version: "", ContentType: "application/json", StatusCode: 202}}, NewInput: func() any { return &FlushStageAuthorizersCacheRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.FlushStageAuthorizersCache(ctx, input.(*FlushStageAuthorizersCacheRequest))
 		}},
 		"GetUsagePlans": {Name: "GetUsagePlans", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"KeyId": catalog.MemberBinding{Location: "query", Name: "keyId", Format: ""}, "Limit": catalog.MemberBinding{Location: "query", Name: "limit", Format: ""}, "Position": catalog.MemberBinding{Location: "query", Name: "position", Format: ""}}, Output: map[string]catalog.MemberBinding{"Items": catalog.MemberBinding{Location: "document", Name: "items", Format: ""}, "Position": catalog.MemberBinding{Location: "document", Name: "position", Format: ""}}, Method: "GET", URI: "/usageplans", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetUsagePlansRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetUsagePlans(ctx, input.(*GetUsagePlansRequest))

@@ -81,7 +81,7 @@ type Server struct {
 	// mqtt serves MQTT over WebSocket; see UseMQTT.
 	mqtt execute.MQTT
 	// domains serves API Gateway custom domain names; see UseDomains.
-	domains Domains
+	domains []Domains
 	health  []byte
 	// localStackHealth answers LocalStack's /_localstack/health.
 	localStackHealth []byte

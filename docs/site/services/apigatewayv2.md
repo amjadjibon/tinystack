@@ -13,7 +13,7 @@ Manage and invoke HTTP and WebSocket APIs with routes, stages, deployments and L
 | API version | `2018-11-29` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 43 of 103 in the pinned model |
+| Selected operations | 52 of 103 in the pinned model |
 
 ## Implemented behavior
 
@@ -22,13 +22,13 @@ See the [implemented feature catalogue](catalogue.md#api-gateway-http-and-websoc
 ## Limitations and future work
 
 - HTTP API private integrations, VPC links, integration TLS configuration, AWS service integration subtypes and backend response caching are unsupported.
-- HTTP API custom domains and API mappings are unsupported.
+- HTTP API custom domains are configured through the AWS SDK or CLI. ACM certificates, TLS, DNS, mutual TLS, routing rules, domain updates, WebSocket domain mappings, and mixing REST and HTTP mappings on one domain are unsupported.
 - HTTP API throttling applies to configured routes in each stage. Shared account and Region quotas are not enforced.
 - HTTP API integration mappings support the execute request context and authorizer values exposed by TinyStack. Body selections support definite object properties and array indexes within the first 100 KiB. Reserved header destinations and Lambda proxy path overwrite are rejected.
 - In verify mode, console management requires an authenticated root console session; without a session only resource inventory is available.
 - Console test requests execute deployed snapshots; automatic stages publish draft changes immediately, manual stages require a new deployment. AWS_IAM tests require signed execute-api CLI/SDK requests. Console action JSON is limited to 2 MiB and displayed response bodies to 1 MiB; binary bodies display as base64.
 - HTTP API metrics include Method and Resource dimensions when detailed metrics are enabled. DataProcessed and metrics for missing stages are unsupported.
-- WebSocket support is text-only: no binary input, API keys, IAM/JWT/Lambda route authorizers, access logs, metrics, throttling, integration response mappings, mapping templates or non-Lambda AWS/HTTP integrations; unsupported members and expressions fail explicitly.
+- WebSocket support is text-only: no binary input, API keys, authorization on routes other than $connect, JWT authorizers, authorizer caching or credentials roles, access logs, metrics, throttling, integration response mappings, mapping templates or non-Lambda AWS/HTTP integrations; unsupported members and expressions fail explicitly.
 - WebSocket MOCK integrations are limited to empty successful responses; route responses support only $default; message selection supports dotted object fields, without array indexes or expression interpolation; message size is limited to 128 KiB, without AWS frame-level quota emulation.
 - WebSocket APIs use the AWS SDK/CLI for configuration; the console API Gateway forms remain focused on HTTP APIs.
 - OpenAPI schemas, request bodies and validators, integration parameter mappings, external references and base-path transformations are unsupported. Configure mappings through integration operations or CloudFormation. CreateApi Body is absent from the pinned model.
@@ -46,27 +46,35 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | Operation | HTTP binding |
 | --- | --- |
 | `CreateApi` | `POST /v2/apis` |
+| `CreateApiMapping` | `POST /v2/domainnames/{DomainName}/apimappings` |
 | `CreateAuthorizer` | `POST /v2/apis/{ApiId}/authorizers` |
 | `CreateDeployment` | `POST /v2/apis/{ApiId}/deployments` |
+| `CreateDomainName` | `POST /v2/domainnames` |
 | `CreateIntegration` | `POST /v2/apis/{ApiId}/integrations` |
 | `CreateRoute` | `POST /v2/apis/{ApiId}/routes` |
 | `CreateRouteResponse` | `POST /v2/apis/{ApiId}/routes/{RouteId}/routeresponses` |
 | `CreateStage` | `POST /v2/apis/{ApiId}/stages` |
 | `DeleteApi` | `DELETE /v2/apis/{ApiId}` |
+| `DeleteApiMapping` | `DELETE /v2/domainnames/{DomainName}/apimappings/{ApiMappingId}` |
 | `DeleteAuthorizer` | `DELETE /v2/apis/{ApiId}/authorizers/{AuthorizerId}` |
 | `DeleteCorsConfiguration` | `DELETE /v2/apis/{ApiId}/cors` |
 | `DeleteDeployment` | `DELETE /v2/apis/{ApiId}/deployments/{DeploymentId}` |
+| `DeleteDomainName` | `DELETE /v2/domainnames/{DomainName}` |
 | `DeleteIntegration` | `DELETE /v2/apis/{ApiId}/integrations/{IntegrationId}` |
 | `DeleteRoute` | `DELETE /v2/apis/{ApiId}/routes/{RouteId}` |
 | `DeleteRouteResponse` | `DELETE /v2/apis/{ApiId}/routes/{RouteId}/routeresponses/{RouteResponseId}` |
 | `DeleteStage` | `DELETE /v2/apis/{ApiId}/stages/{StageName}` |
 | `ExportApi` | `GET /v2/apis/{ApiId}/exports/{Specification}` |
 | `GetApi` | `GET /v2/apis/{ApiId}` |
+| `GetApiMapping` | `GET /v2/domainnames/{DomainName}/apimappings/{ApiMappingId}` |
+| `GetApiMappings` | `GET /v2/domainnames/{DomainName}/apimappings` |
 | `GetApis` | `GET /v2/apis` |
 | `GetAuthorizer` | `GET /v2/apis/{ApiId}/authorizers/{AuthorizerId}` |
 | `GetAuthorizers` | `GET /v2/apis/{ApiId}/authorizers` |
 | `GetDeployment` | `GET /v2/apis/{ApiId}/deployments/{DeploymentId}` |
 | `GetDeployments` | `GET /v2/apis/{ApiId}/deployments` |
+| `GetDomainName` | `GET /v2/domainnames/{DomainName}` |
+| `GetDomainNames` | `GET /v2/domainnames` |
 | `GetIntegration` | `GET /v2/apis/{ApiId}/integrations/{IntegrationId}` |
 | `GetIntegrations` | `GET /v2/apis/{ApiId}/integrations` |
 | `GetRoute` | `GET /v2/apis/{ApiId}/routes/{RouteId}` |
@@ -82,6 +90,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `TagResource` | `POST /v2/tags/{ResourceArn}` |
 | `UntagResource` | `DELETE /v2/tags/{ResourceArn}` |
 | `UpdateApi` | `PATCH /v2/apis/{ApiId}` |
+| `UpdateApiMapping` | `PATCH /v2/domainnames/{DomainName}/apimappings/{ApiMappingId}` |
 | `UpdateAuthorizer` | `PATCH /v2/apis/{ApiId}/authorizers/{AuthorizerId}` |
 | `UpdateDeployment` | `PATCH /v2/apis/{ApiId}/deployments/{DeploymentId}` |
 | `UpdateIntegration` | `PATCH /v2/apis/{ApiId}/integrations/{IntegrationId}` |
@@ -91,12 +100,10 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "60 modeled operations outside the implementation"
+??? info "51 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
-    - `CreateApiMapping`
-    - `CreateDomainName`
     - `CreateIntegrationResponse`
     - `CreateModel`
     - `CreatePortal`
@@ -106,8 +113,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `CreateRoutingRule`
     - `CreateVpcLink`
     - `DeleteAccessLogSettings`
-    - `DeleteApiMapping`
-    - `DeleteDomainName`
     - `DeleteIntegrationResponse`
     - `DeleteModel`
     - `DeletePortal`
@@ -120,10 +125,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteRoutingRule`
     - `DeleteVpcLink`
     - `DisablePortal`
-    - `GetApiMapping`
-    - `GetApiMappings`
-    - `GetDomainName`
-    - `GetDomainNames`
     - `GetIntegrationResponse`
     - `GetIntegrationResponses`
     - `GetModel`
@@ -146,7 +147,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `PublishPortal`
     - `PutPortalProductSharingPolicy`
     - `PutRoutingRule`
-    - `UpdateApiMapping`
     - `UpdateDomainName`
     - `UpdateIntegrationResponse`
     - `UpdateModel`
@@ -161,5 +161,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/apigatewayv2)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/apigatewayv2/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/apigatewayv2.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
-- SDK integration examples: [apigatewayv2_runtime_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigatewayv2_runtime_test.go), [apigatewayv2_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigatewayv2_test.go), [apigatewayv2_websocket_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigatewayv2_websocket_test.go).
+- SDK integration examples: [apigatewayv2_domains_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigatewayv2_domains_test.go), [apigatewayv2_runtime_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigatewayv2_runtime_test.go), [apigatewayv2_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigatewayv2_test.go), [apigatewayv2_websocket_authorizer_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigatewayv2_websocket_authorizer_test.go), [apigatewayv2_websocket_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/apigatewayv2_websocket_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

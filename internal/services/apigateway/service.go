@@ -17,6 +17,7 @@ package apigateway
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -24,6 +25,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
 	"github.com/amjadjibon/tinystack/internal/services/awsmetrics"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
@@ -52,18 +54,24 @@ type Service struct {
 	now       func() time.Time
 	// authorizer checks Lambda proxy integrations against the function's resource policy;
 	// see UseServiceAuthorizer.
-	authorizer catalog.ServiceAuthorizer
-	metrics    *awsmetrics.Meter
+	authorizer       catalog.ServiceAuthorizer
+	metrics          *awsmetrics.Meter
+	runtimeMu        *sync.Mutex
+	buckets          map[throttleKey]proxy.Bucket
+	authorizerCaches map[stageCacheKey]*proxy.AuthorizerCache
 }
 
 func New(store storage.Store, functions *lambda.Service, logGroups *logs.Service, pools *cognitoidp.Service) *Service {
 	return &Service{
-		store:     store,
-		functions: functions,
-		logs:      logGroups,
-		pools:     pools,
-		now:       time.Now,
-		metrics:   new(awsmetrics.Meter),
+		store:            store,
+		functions:        functions,
+		logs:             logGroups,
+		pools:            pools,
+		now:              time.Now,
+		metrics:          new(awsmetrics.Meter),
+		runtimeMu:        new(sync.Mutex),
+		buckets:          make(map[throttleKey]proxy.Bucket),
+		authorizerCaches: make(map[stageCacheKey]*proxy.AuthorizerCache),
 	}
 }
 

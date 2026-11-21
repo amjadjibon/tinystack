@@ -458,6 +458,7 @@ func build(
 	a.onStop(httpAPIs.Stop)
 	a.onReset(httpAPIs.Reset)
 	restAPIs := apigateway.New(store, functions, logGroups, identities)
+	a.onReset(restAPIs.Reset)
 	graphQL := appsync.New(store, functions, identities)
 	// Stop closes real-time connections, which shutdown leaves open.
 	a.onStop(graphQL.Stop)
@@ -1041,7 +1042,7 @@ func build(
 	}
 	handler.UseCORS(buckets.CORS)
 	handler.UseAPIs(connectionAPI, httpAPIs, restAPIs)
-	handler.UseDomains(restAPIs.Domains())
+	handler.UseDomains(restAPIs.Domains(), httpAPIs.Domains())
 	handler.UseLoadBalancers(balancers)
 	handler.UseFunctionURLs(functions.URLs())
 	handler.UseGraphQL(graphQL)

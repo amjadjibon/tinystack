@@ -66,6 +66,12 @@ func checkStage(tx storage.ReadTx, scope request.Scope, apiID string, st *api.St
 		}
 	}
 
+	for _, settings := range st.MethodSettings {
+		if err := checkThrottle(settings.ThrottlingRateLimit, settings.ThrottlingBurstLimit); err != nil {
+			return err
+		}
+	}
+
 	if logs := st.AccessLogSettings; logs != nil && (logs.DestinationArn != nil || logs.Format != nil) {
 		if !logGroupARN.MatchString(common.Value(logs.DestinationArn)) || common.Value(logs.Format) == "" {
 			return badRequest("Access log settings need a CloudWatch Logs log group ARN and a format.")
@@ -500,5 +506,6 @@ func (s *Service) DeleteStage(ctx context.Context, in *api.DeleteStageRequest) (
 		return nil, err
 	}
 
+	s.discardStageRuntime(m.Scope, common.Value(in.RestApiId), in.StageName)
 	return &api.DeleteStageOutput{}, nil
 }

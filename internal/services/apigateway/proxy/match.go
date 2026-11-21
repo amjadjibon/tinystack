@@ -47,8 +47,9 @@ func Bind(template, path string) (params map[string]string, rank []int, ok bool)
 
 // Policy is what a Lambda authorizer that returns an IAM policy decided.
 type Policy struct {
-	Context   map[string]any
-	Principal string
+	Context            map[string]any
+	Principal          string
+	UsageIdentifierKey string
 	// Allowed is true when a statement allows execute-api:Invoke on the
 	// method and none denies it.
 	Allowed bool
@@ -68,13 +69,14 @@ func ReadPolicy(payload []byte, arn string) (Policy, bool) {
 				Effect   string
 			}
 		} `json:"policyDocument"`
-		PrincipalID string `json:"principalId"`
+		PrincipalID        string `json:"principalId"`
+		UsageIdentifierKey string `json:"usageIdentifierKey"`
 	}
 	if json.Unmarshal(payload, &out) != nil || out.PolicyDocument == nil {
 		return Policy{}, false
 	}
 
-	p := Policy{Context: out.Context, Principal: out.PrincipalID}
+	p := Policy{Context: out.Context, Principal: out.PrincipalID, UsageIdentifierKey: out.UsageIdentifierKey}
 	for _, st := range out.PolicyDocument.Statement {
 		if !anyMatches(st.Action, "execute-api:Invoke") || !anyMatches(st.Resource, arn) {
 			continue

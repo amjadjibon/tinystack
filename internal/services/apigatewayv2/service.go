@@ -52,8 +52,8 @@ const (
 var _ api.API = (*Service)(nil)
 
 type Service struct {
-	authorizerCaches map[stageRuntimeKey]*authorizerCache
-	buckets          map[stageRuntimeKey]map[string]throttleBucket
+	authorizerCaches map[stageRuntimeKey]*proxy.AuthorizerCache
+	buckets          map[stageRuntimeKey]map[string]proxy.Bucket
 	connections      map[string]*connection
 	store            storage.Store
 	functions        *lambda.Service
@@ -72,8 +72,8 @@ type Service struct {
 
 func New(store storage.Store, functions *lambda.Service, logGroups *logs.Service) *Service {
 	return &Service{
-		authorizerCaches: map[stageRuntimeKey]*authorizerCache{},
-		buckets:          map[stageRuntimeKey]map[string]throttleBucket{},
+		authorizerCaches: map[stageRuntimeKey]*proxy.AuthorizerCache{},
+		buckets:          map[stageRuntimeKey]map[string]proxy.Bucket{},
 		connections:      map[string]*connection{},
 		store:            store,
 		functions:        functions,

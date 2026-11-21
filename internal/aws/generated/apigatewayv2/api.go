@@ -885,6 +885,137 @@ type ResetAuthorizersCacheRequest struct {
 	StageName *string `json:"-"`
 }
 
+type DomainNameConfiguration struct {
+	ApiGatewayDomainName  *string    `json:"apiGatewayDomainName,omitempty"`
+	CertificateArn        *string    `json:"certificateArn,omitempty"`
+	CertificateName       *string    `json:"certificateName,omitempty"`
+	CertificateUploadDate *time.Time `json:"certificateUploadDate,omitempty"`
+	DomainNameStatus      *string    `json:"domainNameStatus,omitempty"`
+	EndpointType          *string    `json:"endpointType,omitempty"`
+	HostedZoneId          *string    `json:"hostedZoneId,omitempty"`
+	SecurityPolicy        *string    `json:"securityPolicy,omitempty"`
+}
+
+type CreateDomainNameRequest struct {
+	DomainName               *string                   `json:"domainName,omitempty"`
+	DomainNameConfigurations []DomainNameConfiguration `json:"domainNameConfigurations,omitempty"`
+	RoutingMode              *string                   `json:"routingMode,omitempty"`
+	Tags                     map[string]string         `json:"tags,omitempty"`
+}
+
+type CreateDomainNameResponse struct {
+	ApiMappingSelectionExpression *string                   `json:"apiMappingSelectionExpression,omitempty"`
+	DomainName                    *string                   `json:"domainName,omitempty"`
+	DomainNameArn                 *string                   `json:"domainNameArn,omitempty"`
+	DomainNameConfigurations      []DomainNameConfiguration `json:"domainNameConfigurations,omitempty"`
+	RoutingMode                   *string                   `json:"routingMode,omitempty"`
+	Tags                          map[string]string         `json:"tags,omitempty"`
+}
+
+type GetDomainNameRequest struct {
+	DomainName *string `json:"-"`
+}
+
+type GetDomainNameResponse struct {
+	ApiMappingSelectionExpression *string                   `json:"apiMappingSelectionExpression,omitempty"`
+	DomainName                    *string                   `json:"domainName,omitempty"`
+	DomainNameArn                 *string                   `json:"domainNameArn,omitempty"`
+	DomainNameConfigurations      []DomainNameConfiguration `json:"domainNameConfigurations,omitempty"`
+	RoutingMode                   *string                   `json:"routingMode,omitempty"`
+	Tags                          map[string]string         `json:"tags,omitempty"`
+}
+
+type GetDomainNamesRequest struct {
+	MaxResults *string `json:"-"`
+	NextToken  *string `json:"-"`
+}
+
+type DomainName struct {
+	ApiMappingSelectionExpression *string                   `json:"apiMappingSelectionExpression,omitempty"`
+	DomainName                    *string                   `json:"domainName,omitempty"`
+	DomainNameArn                 *string                   `json:"domainNameArn,omitempty"`
+	DomainNameConfigurations      []DomainNameConfiguration `json:"domainNameConfigurations,omitempty"`
+	RoutingMode                   *string                   `json:"routingMode,omitempty"`
+	Tags                          map[string]string         `json:"tags,omitempty"`
+}
+
+type GetDomainNamesResponse struct {
+	Items     []DomainName `json:"items,omitempty"`
+	NextToken *string      `json:"nextToken,omitempty"`
+}
+
+type DeleteDomainNameOutput struct{}
+
+type DeleteDomainNameRequest struct {
+	DomainName *string `json:"-"`
+}
+
+type CreateApiMappingRequest struct {
+	ApiId         *string `json:"apiId,omitempty"`
+	ApiMappingKey *string `json:"apiMappingKey,omitempty"`
+	DomainName    *string `json:"-"`
+	Stage         *string `json:"stage,omitempty"`
+}
+
+type CreateApiMappingResponse struct {
+	ApiId         *string `json:"apiId,omitempty"`
+	ApiMappingId  *string `json:"apiMappingId,omitempty"`
+	ApiMappingKey *string `json:"apiMappingKey,omitempty"`
+	Stage         *string `json:"stage,omitempty"`
+}
+
+type GetApiMappingRequest struct {
+	ApiMappingId *string `json:"-"`
+	DomainName   *string `json:"-"`
+}
+
+type GetApiMappingResponse struct {
+	ApiId         *string `json:"apiId,omitempty"`
+	ApiMappingId  *string `json:"apiMappingId,omitempty"`
+	ApiMappingKey *string `json:"apiMappingKey,omitempty"`
+	Stage         *string `json:"stage,omitempty"`
+}
+
+type GetApiMappingsRequest struct {
+	DomainName *string `json:"-"`
+	MaxResults *string `json:"-"`
+	NextToken  *string `json:"-"`
+}
+
+type ApiMapping struct {
+	ApiId         *string `json:"apiId,omitempty"`
+	ApiMappingId  *string `json:"apiMappingId,omitempty"`
+	ApiMappingKey *string `json:"apiMappingKey,omitempty"`
+	Stage         *string `json:"stage,omitempty"`
+}
+
+type GetApiMappingsResponse struct {
+	Items     []ApiMapping `json:"items,omitempty"`
+	NextToken *string      `json:"nextToken,omitempty"`
+}
+
+type UpdateApiMappingRequest struct {
+	ApiId         *string `json:"apiId,omitempty"`
+	ApiMappingId  *string `json:"-"`
+	ApiMappingKey *string `json:"apiMappingKey,omitempty"`
+	DomainName    *string `json:"-"`
+	Stage         *string `json:"stage,omitempty"`
+}
+
+type UpdateApiMappingResponse struct {
+	ApiId         *string `json:"apiId,omitempty"`
+	ApiMappingId  *string `json:"apiMappingId,omitempty"`
+	ApiMappingKey *string `json:"apiMappingKey,omitempty"`
+	Stage         *string `json:"stage,omitempty"`
+}
+
+type DeleteApiMappingOutput struct{}
+
+type DeleteApiMappingRequest struct {
+	ApiMappingId *string `json:"-"`
+	DomainName   *string `json:"-"`
+}
+
 type API interface {
 	CreateApi(context.Context, *CreateApiRequest) (*CreateApiResponse, error)
 	GetApi(context.Context, *GetApiRequest) (*GetApiResponse, error)
@@ -929,10 +1060,19 @@ type API interface {
 	ReimportApi(context.Context, *ReimportApiRequest) (*ReimportApiResponse, error)
 	ExportApi(context.Context, *ExportApiRequest) (*ExportApiResponse, error)
 	ResetAuthorizersCache(context.Context, *ResetAuthorizersCacheRequest) (*ResetAuthorizersCacheOutput, error)
+	CreateDomainName(context.Context, *CreateDomainNameRequest) (*CreateDomainNameResponse, error)
+	GetDomainName(context.Context, *GetDomainNameRequest) (*GetDomainNameResponse, error)
+	GetDomainNames(context.Context, *GetDomainNamesRequest) (*GetDomainNamesResponse, error)
+	DeleteDomainName(context.Context, *DeleteDomainNameRequest) (*DeleteDomainNameOutput, error)
+	CreateApiMapping(context.Context, *CreateApiMappingRequest) (*CreateApiMappingResponse, error)
+	GetApiMapping(context.Context, *GetApiMappingRequest) (*GetApiMappingResponse, error)
+	GetApiMappings(context.Context, *GetApiMappingsRequest) (*GetApiMappingsResponse, error)
+	UpdateApiMapping(context.Context, *UpdateApiMappingRequest) (*UpdateApiMappingResponse, error)
+	DeleteApiMapping(context.Context, *DeleteApiMappingRequest) (*DeleteApiMappingOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "apigatewayv2", SigningName: "apigateway", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "apigateway", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"BadRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "NotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "TooManyRequestsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "apigatewayv2", SigningName: "apigateway", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "apigateway", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"restJson1"}, Errors: map[string]catalog.ErrorBinding{"AccessDeniedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 403}, "BadRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "NotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 404}, "TooManyRequestsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 429}}, Operations: map[string]catalog.Operation{
 		"CreateApi": {Name: "CreateApi", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:POST", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiKeySelectionExpression": catalog.MemberBinding{Location: "document", Name: "ApiKeySelectionExpression", Format: ""}, "CorsConfiguration": catalog.MemberBinding{Location: "document", Name: "CorsConfiguration", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "Description", Format: ""}, "DisableExecuteApiEndpoint": catalog.MemberBinding{Location: "document", Name: "DisableExecuteApiEndpoint", Format: ""}, "IpAddressType": catalog.MemberBinding{Location: "document", Name: "IpAddressType", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "Name", Format: ""}, "ProtocolType": catalog.MemberBinding{Location: "document", Name: "ProtocolType", Format: ""}, "RouteKey": catalog.MemberBinding{Location: "document", Name: "RouteKey", Format: ""}, "RouteSelectionExpression": catalog.MemberBinding{Location: "document", Name: "RouteSelectionExpression", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}, "Target": catalog.MemberBinding{Location: "document", Name: "Target", Format: ""}, "Version": catalog.MemberBinding{Location: "document", Name: "Version", Format: ""}}, Output: map[string]catalog.MemberBinding{"ApiEndpoint": catalog.MemberBinding{Location: "document", Name: "ApiEndpoint", Format: ""}, "ApiGatewayManaged": catalog.MemberBinding{Location: "document", Name: "ApiGatewayManaged", Format: ""}, "ApiId": catalog.MemberBinding{Location: "document", Name: "ApiId", Format: ""}, "ApiKeySelectionExpression": catalog.MemberBinding{Location: "document", Name: "ApiKeySelectionExpression", Format: ""}, "CorsConfiguration": catalog.MemberBinding{Location: "document", Name: "CorsConfiguration", Format: ""}, "CreatedDate": catalog.MemberBinding{Location: "document", Name: "CreatedDate", Format: ""}, "Description": catalog.MemberBinding{Location: "document", Name: "Description", Format: ""}, "DisableExecuteApiEndpoint": catalog.MemberBinding{Location: "document", Name: "DisableExecuteApiEndpoint", Format: ""}, "DisableSchemaValidation": catalog.MemberBinding{Location: "document", Name: "DisableSchemaValidation", Format: ""}, "ImportInfo": catalog.MemberBinding{Location: "document", Name: "ImportInfo", Format: ""}, "IpAddressType": catalog.MemberBinding{Location: "document", Name: "IpAddressType", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "Name", Format: ""}, "ProtocolType": catalog.MemberBinding{Location: "document", Name: "ProtocolType", Format: ""}, "RouteSelectionExpression": catalog.MemberBinding{Location: "document", Name: "RouteSelectionExpression", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}, "Version": catalog.MemberBinding{Location: "document", Name: "Version", Format: ""}, "Warnings": catalog.MemberBinding{Location: "document", Name: "Warnings", Format: ""}}, Method: "POST", URI: "/v2/apis", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &CreateApiRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateApi(ctx, input.(*CreateApiRequest))
 		}},
@@ -1051,6 +1191,33 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"ResetAuthorizersCache": {Name: "ResetAuthorizersCache", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "apigateway:DELETE", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiId": catalog.MemberBinding{Location: "label", Name: "ApiId", Format: ""}, "StageName": catalog.MemberBinding{Location: "label", Name: "StageName", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/v2/apis/{ApiId}/stages/{StageName}/cache/authorizers", Target: "", Version: "", ContentType: "application/json", StatusCode: 204}}, NewInput: func() any { return &ResetAuthorizersCacheRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ResetAuthorizersCache(ctx, input.(*ResetAuthorizersCacheRequest))
+		}},
+		"CreateDomainName": {Name: "CreateDomainName", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:POST", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"DomainName": catalog.MemberBinding{Location: "document", Name: "DomainName", Format: ""}, "DomainNameConfigurations": catalog.MemberBinding{Location: "document", Name: "DomainNameConfigurations", Format: ""}, "RoutingMode": catalog.MemberBinding{Location: "document", Name: "RoutingMode", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Output: map[string]catalog.MemberBinding{"ApiMappingSelectionExpression": catalog.MemberBinding{Location: "document", Name: "ApiMappingSelectionExpression", Format: ""}, "DomainName": catalog.MemberBinding{Location: "document", Name: "DomainName", Format: ""}, "DomainNameArn": catalog.MemberBinding{Location: "document", Name: "DomainNameArn", Format: ""}, "DomainNameConfigurations": catalog.MemberBinding{Location: "document", Name: "DomainNameConfigurations", Format: ""}, "RoutingMode": catalog.MemberBinding{Location: "document", Name: "RoutingMode", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Method: "POST", URI: "/v2/domainnames", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &CreateDomainNameRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateDomainName(ctx, input.(*CreateDomainNameRequest))
+		}},
+		"GetDomainName": {Name: "GetDomainName", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"DomainName": catalog.MemberBinding{Location: "label", Name: "DomainName", Format: ""}}, Output: map[string]catalog.MemberBinding{"ApiMappingSelectionExpression": catalog.MemberBinding{Location: "document", Name: "ApiMappingSelectionExpression", Format: ""}, "DomainName": catalog.MemberBinding{Location: "document", Name: "DomainName", Format: ""}, "DomainNameArn": catalog.MemberBinding{Location: "document", Name: "DomainNameArn", Format: ""}, "DomainNameConfigurations": catalog.MemberBinding{Location: "document", Name: "DomainNameConfigurations", Format: ""}, "RoutingMode": catalog.MemberBinding{Location: "document", Name: "RoutingMode", Format: ""}, "Tags": catalog.MemberBinding{Location: "document", Name: "Tags", Format: ""}}, Method: "GET", URI: "/v2/domainnames/{DomainName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetDomainNameRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetDomainName(ctx, input.(*GetDomainNameRequest))
+		}},
+		"GetDomainNames": {Name: "GetDomainNames", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"Items": catalog.MemberBinding{Location: "document", Name: "Items", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}}, Method: "GET", URI: "/v2/domainnames", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetDomainNamesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetDomainNames(ctx, input.(*GetDomainNamesRequest))
+		}},
+		"DeleteDomainName": {Name: "DeleteDomainName", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "apigateway:DELETE", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"DomainName": catalog.MemberBinding{Location: "label", Name: "DomainName", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/v2/domainnames/{DomainName}", Target: "", Version: "", ContentType: "application/json", StatusCode: 204}}, NewInput: func() any { return &DeleteDomainNameRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteDomainName(ctx, input.(*DeleteDomainNameRequest))
+		}},
+		"CreateApiMapping": {Name: "CreateApiMapping", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:POST", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiId": catalog.MemberBinding{Location: "document", Name: "ApiId", Format: ""}, "ApiMappingKey": catalog.MemberBinding{Location: "document", Name: "ApiMappingKey", Format: ""}, "DomainName": catalog.MemberBinding{Location: "label", Name: "DomainName", Format: ""}, "Stage": catalog.MemberBinding{Location: "document", Name: "Stage", Format: ""}}, Output: map[string]catalog.MemberBinding{"ApiId": catalog.MemberBinding{Location: "document", Name: "ApiId", Format: ""}, "ApiMappingId": catalog.MemberBinding{Location: "document", Name: "ApiMappingId", Format: ""}, "ApiMappingKey": catalog.MemberBinding{Location: "document", Name: "ApiMappingKey", Format: ""}, "Stage": catalog.MemberBinding{Location: "document", Name: "Stage", Format: ""}}, Method: "POST", URI: "/v2/domainnames/{DomainName}/apimappings", Target: "", Version: "", ContentType: "application/json", StatusCode: 201}}, NewInput: func() any { return &CreateApiMappingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateApiMapping(ctx, input.(*CreateApiMappingRequest))
+		}},
+		"GetApiMapping": {Name: "GetApiMapping", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiMappingId": catalog.MemberBinding{Location: "label", Name: "ApiMappingId", Format: ""}, "DomainName": catalog.MemberBinding{Location: "label", Name: "DomainName", Format: ""}}, Output: map[string]catalog.MemberBinding{"ApiId": catalog.MemberBinding{Location: "document", Name: "ApiId", Format: ""}, "ApiMappingId": catalog.MemberBinding{Location: "document", Name: "ApiMappingId", Format: ""}, "ApiMappingKey": catalog.MemberBinding{Location: "document", Name: "ApiMappingKey", Format: ""}, "Stage": catalog.MemberBinding{Location: "document", Name: "Stage", Format: ""}}, Method: "GET", URI: "/v2/domainnames/{DomainName}/apimappings/{ApiMappingId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetApiMappingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetApiMapping(ctx, input.(*GetApiMappingRequest))
+		}},
+		"GetApiMappings": {Name: "GetApiMappings", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:GET", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"DomainName": catalog.MemberBinding{Location: "label", Name: "DomainName", Format: ""}, "MaxResults": catalog.MemberBinding{Location: "query", Name: "maxResults", Format: ""}, "NextToken": catalog.MemberBinding{Location: "query", Name: "nextToken", Format: ""}}, Output: map[string]catalog.MemberBinding{"Items": catalog.MemberBinding{Location: "document", Name: "Items", Format: ""}, "NextToken": catalog.MemberBinding{Location: "document", Name: "NextToken", Format: ""}}, Method: "GET", URI: "/v2/domainnames/{DomainName}/apimappings", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &GetApiMappingsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetApiMappings(ctx, input.(*GetApiMappingsRequest))
+		}},
+		"UpdateApiMapping": {Name: "UpdateApiMapping", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "apigateway:PATCH", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiId": catalog.MemberBinding{Location: "document", Name: "ApiId", Format: ""}, "ApiMappingId": catalog.MemberBinding{Location: "label", Name: "ApiMappingId", Format: ""}, "ApiMappingKey": catalog.MemberBinding{Location: "document", Name: "ApiMappingKey", Format: ""}, "DomainName": catalog.MemberBinding{Location: "label", Name: "DomainName", Format: ""}, "Stage": catalog.MemberBinding{Location: "document", Name: "Stage", Format: ""}}, Output: map[string]catalog.MemberBinding{"ApiId": catalog.MemberBinding{Location: "document", Name: "ApiId", Format: ""}, "ApiMappingId": catalog.MemberBinding{Location: "document", Name: "ApiMappingId", Format: ""}, "ApiMappingKey": catalog.MemberBinding{Location: "document", Name: "ApiMappingKey", Format: ""}, "Stage": catalog.MemberBinding{Location: "document", Name: "Stage", Format: ""}}, Method: "PATCH", URI: "/v2/domainnames/{DomainName}/apimappings/{ApiMappingId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 200}}, NewInput: func() any { return &UpdateApiMappingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateApiMapping(ctx, input.(*UpdateApiMappingRequest))
+		}},
+		"DeleteApiMapping": {Name: "DeleteApiMapping", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "apigateway:DELETE", Bindings: map[string]catalog.Binding{"restJson1": catalog.Binding{Input: map[string]catalog.MemberBinding{"ApiMappingId": catalog.MemberBinding{Location: "label", Name: "ApiMappingId", Format: ""}, "DomainName": catalog.MemberBinding{Location: "label", Name: "DomainName", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/v2/domainnames/{DomainName}/apimappings/{ApiMappingId}", Target: "", Version: "", ContentType: "application/json", StatusCode: 204}}, NewInput: func() any { return &DeleteApiMappingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteApiMapping(ctx, input.(*DeleteApiMappingRequest))
 		}},
 	}}
 }

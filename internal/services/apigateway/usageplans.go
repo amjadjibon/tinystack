@@ -2,11 +2,10 @@ package apigateway
 
 import (
 	"context"
-	"net/http"
 	"slices"
 	"strings"
+	"time"
 
-	"github.com/amjadjibon/tinystack/internal/aws/execute"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
@@ -18,7 +17,7 @@ import (
 // keys, are "…/apigateway/usageplan/<ID>". A method with apiKeyRequired
 // answers 403 unless the request's key (the x-api-key header, or the
 // authorizer's usageIdentifierKey) is enabled and in a usage plan of the
-// API's stage. Throttles and quotas are stored, never enforced.
+// API's stage.
 
 const (
 	kindAPIKey      = "apikey"
@@ -30,8 +29,9 @@ const (
 
 // usagePlan is a usage plan's record.
 type usagePlan struct {
-	Plan api.UsagePlan
-	Keys []string
+	Joined map[string]time.Time
+	Plan   api.UsagePlan
+	Keys   []string
 }
 
 func apiKeyNotFound() error { return notFound("Invalid API Key identifier specified") }
@@ -220,8 +220,12 @@ func (s *Service) DeleteApiKey(ctx context.Context, in *api.DeleteApiKeyRequest)
 				return readErr
 			}
 
-			if slices.Contains(p.Keys, *k.Id) {
+			if slices.Contains(p.Keys, *k.Id) || !p.Joined[*k.Id].IsZero() {
 				p.Keys = slices.DeleteFunc(p.Keys, func(id string) bool { return id == *k.Id })
+				delete(p.Joined, *k.Id)
+				for _, key := range tx.Keys(usagePrefix(m.Scope, *p.Plan.Id, *k.Id)) {
+					tx.Delete(key)
+				}
 				if writeErr := storage.Write(tx, pk, p); writeErr != nil {
 					return writeErr
 				}
@@ -242,6 +246,10 @@ func (s *Service) DeleteApiKey(ctx context.Context, in *api.DeleteApiKeyRequest)
 // checkStages checks that a usage plan's API stages exist.
 func checkStages(tx storage.ReadTx, scope request.Scope, stages []api.ApiStage) error {
 	for _, st := range stages {
+		if err := checkPlanStageThrottles(st); err != nil {
+			return err
+		}
+
 		if _, found := tx.Get(owned(scope, kindStage, common.Value(st.ApiId), common.Value(st.Stage))); !found {
 			return badRequest(
 				"Invalid stage identifier specified: %s:%s",
@@ -255,8 +263,10 @@ func checkStages(tx storage.ReadTx, scope request.Scope, stages []api.ApiStage) 
 }
 
 func checkLimits(throttle *api.ThrottleSettings, quota *api.QuotaSettings) error {
-	if throttle != nil && (common.Value(throttle.BurstLimit) < 0 || common.Value(throttle.RateLimit) < 0) {
-		return badRequest("Throttle limits must not be negative.")
+	if throttle != nil {
+		if err := checkThrottle(throttle.RateLimit, throttle.BurstLimit); err != nil {
+			return err
+		}
 	}
 
 	if quota != nil {
@@ -266,8 +276,8 @@ func checkLimits(throttle *api.ThrottleSettings, quota *api.QuotaSettings) error
 			return badRequest("Quota period must be DAY, WEEK, or MONTH.")
 		}
 
-		if common.Value(quota.Limit) < 0 || common.Value(quota.Offset) < 0 {
-			return badRequest("Quota limit and offset must not be negative.")
+		if quota.Limit == nil || *quota.Limit < 0 || common.Value(quota.Offset) < 0 {
+			return badRequest("Quota limit is required. The limit and offset must not be negative.")
 		}
 	}
 
@@ -368,21 +378,156 @@ func (s *Service) GetUsagePlans(ctx context.Context, in *api.GetUsagePlansReques
 	return out, nil
 }
 
+// checkUsagePlanMembership enforces one plan per API key and stage.
+func checkUsagePlanMembership(tx storage.ReadTx, scope request.Scope, plan *usagePlan) error {
+	if len(plan.Keys) == 0 || len(plan.Plan.ApiStages) == 0 {
+		return nil
+	}
+
+	plans, err := storage.Records[usagePlan](tx, scope.Prefix(service, kindUsagePlan))
+	if err != nil {
+		return err
+	}
+
+	for _, other := range plans {
+		if *other.Plan.Id == *plan.Plan.Id || !slices.ContainsFunc(other.Keys, func(id string) bool {
+			return slices.Contains(plan.Keys, id)
+		}) {
+			continue
+		}
+
+		for _, stage := range plan.Plan.ApiStages {
+			if findPlanStage(other, common.Value(stage.ApiId), common.Value(stage.Stage)) >= 0 {
+				return conflict("An API key can belong to only one usage plan for an API stage.")
+			}
+		}
+	}
+
+	return nil
+}
+
+func findPlanStage(p *usagePlan, apiID, stage string) int {
+	return slices.IndexFunc(p.Plan.ApiStages, func(st api.ApiStage) bool {
+		return common.Value(st.ApiId) == apiID && common.Value(st.Stage) == stage
+	})
+}
+
+func patchUsagePlan(tx storage.ReadTx, scope request.Scope, p *usagePlan, op api.PatchOperation) error {
+	parts := pathSegments(common.Value(op.Path))
+	if len(parts) == 0 || parts[0] != "apiStages" {
+		return patch(&p.Plan, []api.PatchOperation{op}, "name", "description", "throttle", "quota")
+	}
+
+	if len(parts) == 1 {
+		apiID, stage, ok := strings.Cut(common.Value(op.Value), ":")
+		if !ok {
+			return badRequest("API stages are given as <API ID>:<stage>.")
+		}
+
+		index := findPlanStage(p, apiID, stage)
+		switch common.Value(op.Op) {
+		case opAdd:
+			if index < 0 {
+				st := api.ApiStage{ApiId: new(apiID), Stage: new(stage)}
+				if err := checkStages(tx, scope, []api.ApiStage{st}); err != nil {
+					return err
+				}
+
+				p.Plan.ApiStages = append(p.Plan.ApiStages, st)
+			}
+		case opRemove:
+			if index >= 0 {
+				p.Plan.ApiStages = slices.Delete(p.Plan.ApiStages, index, index+1)
+			}
+		default:
+			return badRequest("API stages can only be added or removed.")
+		}
+
+		return nil
+	}
+
+	apiID, stage, _ := strings.Cut(parts[1], ":")
+	index := findPlanStage(p, apiID, stage)
+	if len(parts) < 4 || parts[2] != "throttle" || index < 0 {
+		return badRequest("Invalid usage plan stage throttle path: %s", common.Value(op.Path))
+	}
+
+	return patchPlanStageThrottle(&p.Plan.ApiStages[index], parts[3:], op)
+}
+
+func patchPlanStageThrottle(st *api.ApiStage, parts []string, op api.PatchOperation) error {
+	field := parts[len(parts)-1]
+	hasField := field == "rateLimit" || field == "burstLimit"
+	if hasField {
+		parts = parts[:len(parts)-1]
+	}
+
+	method := strings.Join(parts, "/")
+	if !strings.HasPrefix(method, "/") || strings.Count(method, "/") == 1 {
+		method = "/" + method
+	}
+
+	if !validThrottleMethod(method) {
+		return badRequest("Method throttle keys must use <resource path>/<HTTP method>.")
+	}
+
+	if !hasField {
+		if common.Value(op.Op) != opRemove {
+			return badRequest("Invalid method throttle path: %s", common.Value(op.Path))
+		}
+
+		delete(st.Throttle, method)
+		return nil
+	}
+
+	config := st.Throttle[method]
+	op.Path = new("/" + field)
+	if err := patch(&config, []api.PatchOperation{op}, field); err != nil {
+		return err
+	}
+
+	if st.Throttle == nil {
+		st.Throttle = make(map[string]api.ThrottleSettings)
+	}
+
+	if config.RateLimit == nil && config.BurstLimit == nil {
+		delete(st.Throttle, method)
+	} else {
+		st.Throttle[method] = config
+	}
+
+	return nil
+}
+
+func validThrottleMethod(key string) bool {
+	i := strings.LastIndexByte(key, '/')
+	return i > 0 && key[0] == '/' && methods[key[i+1:]]
+}
+
+func checkPlanStageThrottles(st api.ApiStage) error {
+	for path, config := range st.Throttle {
+		if !validThrottleMethod(path) {
+			return badRequest("Method throttle keys must use <resource path>/<HTTP method>.")
+		}
+
+		if err := checkLimits(&config, nil); err != nil {
+			return err
+		}
+
+		if config.BurstLimit == nil && config.RateLimit == nil {
+			return badRequest("A method throttle needs a rate or burst limit.")
+		}
+	}
+
+	return nil
+}
+
 // UpdateUsagePlan patches a usage plan: its name, description, throttle, and
 // quota, and "/apiStages", which adds or removes "<API ID>:<stage>".
 func (s *Service) UpdateUsagePlan(ctx context.Context, in *api.UpdateUsagePlanRequest) (*api.UsagePlan, error) {
 	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
-	}
-
-	var stageOps, otherOps []api.PatchOperation
-	for _, op := range in.PatchOperations {
-		if common.Value(op.Path) == "/apiStages" {
-			stageOps = append(stageOps, op)
-		} else {
-			otherOps = append(otherOps, op)
-		}
 	}
 
 	var out *api.UsagePlan
@@ -392,31 +537,20 @@ func (s *Service) UpdateUsagePlan(ctx context.Context, in *api.UpdateUsagePlanRe
 			return loadErr
 		}
 
-		if patchErr := patch(&p.Plan, otherOps, "name", "description", "throttle", "quota"); patchErr != nil {
-			return patchErr
+		for _, op := range in.PatchOperations {
+			if patchErr := patchUsagePlan(tx, m.Scope, p, op); patchErr != nil {
+				return patchErr
+			}
 		}
 
-		for _, op := range stageOps {
-			apiID, stage, ok := strings.Cut(common.Value(op.Value), ":")
-			if !ok {
-				return badRequest("API stages are given as <API ID>:<stage>.")
+		for _, stage := range p.Plan.ApiStages {
+			if throttleErr := checkPlanStageThrottles(stage); throttleErr != nil {
+				return throttleErr
 			}
+		}
 
-			st := api.ApiStage{ApiId: &apiID, Stage: &stage}
-			p.Plan.ApiStages = slices.DeleteFunc(p.Plan.ApiStages, func(a api.ApiStage) bool {
-				return common.Value(a.ApiId) == apiID && common.Value(a.Stage) == stage
-			})
-			switch common.Value(op.Op) {
-			case opAdd:
-				if stageErr := checkStages(tx, m.Scope, []api.ApiStage{st}); stageErr != nil {
-					return stageErr
-				}
-
-				p.Plan.ApiStages = append(p.Plan.ApiStages, st)
-			case opRemove:
-			default:
-				return badRequest("API stages can only be added or removed.")
-			}
+		if membershipErr := checkUsagePlanMembership(tx, m.Scope, p); membershipErr != nil {
+			return membershipErr
 		}
 
 		if limitErr := checkLimits(p.Plan.Throttle, p.Plan.Quota); limitErr != nil {
@@ -447,7 +581,12 @@ func (s *Service) DeleteUsagePlan(
 			return loadErr
 		}
 
-		tx.Delete(m.Prefix(service, kindUsagePlan) + common.Value(in.UsagePlanId))
+		id := common.Value(in.UsagePlanId)
+		for _, key := range tx.Keys(m.Prefix(service, kindUsage) + id + "/") {
+			tx.Delete(key)
+		}
+
+		tx.Delete(m.Prefix(service, kindUsagePlan) + id)
 		return nil
 	})
 	if err != nil {
@@ -491,6 +630,17 @@ func (s *Service) CreateUsagePlanKey(
 		}
 
 		p.Keys = append(p.Keys, *k.Id)
+		if membershipErr := checkUsagePlanMembership(tx, m.Scope, p); membershipErr != nil {
+			return membershipErr
+		}
+
+		if p.Joined == nil {
+			p.Joined = make(map[string]time.Time)
+		}
+
+		if p.Joined[*k.Id].IsZero() {
+			p.Joined[*k.Id] = s.now()
+		}
 		out = planKey(k)
 		return storage.Write(tx, m.Prefix(service, kindUsagePlan)+*p.Plan.Id, p)
 	})
@@ -607,47 +757,4 @@ func (s *Service) DeleteUsagePlanKey(
 	}
 
 	return &api.DeleteUsagePlanKeyOutput{}, nil
-}
-
-// checkAPIKey answers 403 unless a call that needs an API key has an enabled
-// one in a usage plan of its API's stage: the x-api-key header's, or, for an
-// API whose key source is AUTHORIZER, the authorizer's usageIdentifierKey.
-func (s *Service) checkAPIKey(ctx context.Context, c *call, authorizer map[string]any) *execute.Response {
-	if !common.Value(c.method.ApiKeyRequired) {
-		return nil
-	}
-
-	keyValue := c.req.Header.Get("X-Api-Key")
-	if common.Value(c.api.API.ApiKeySource) == "AUTHORIZER" {
-		keyValue, _ = authorizer["usageIdentifierKey"].(string)
-	}
-
-	allowed := false
-	err := s.store.View(ctx, func(tx storage.ReadTx) error {
-		id, found := tx.Get(c.scope.Prefix(service, kindAPIKeyValue) + keyValue)
-		if keyValue == "" || !found {
-			return nil
-		}
-
-		k, loadErr := loadAPIKey(tx, c.scope, string(id))
-		if loadErr != nil || !common.Value(k.Enabled) {
-			return loadErr
-		}
-
-		plans, readErr := storage.Records[usagePlan](tx, c.scope.Prefix(service, kindUsagePlan))
-		for _, p := range plans {
-			if slices.Contains(p.Keys, *k.Id) && slices.ContainsFunc(p.Plan.ApiStages, func(st api.ApiStage) bool {
-				return common.Value(st.ApiId) == *c.api.API.Id && common.Value(st.Stage) == *c.stage.StageName
-			}) {
-				allowed = true
-			}
-		}
-
-		return readErr
-	})
-	if err != nil || !allowed {
-		return execute.Message(http.StatusForbidden, "Forbidden")
-	}
-
-	return nil
 }

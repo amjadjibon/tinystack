@@ -34,6 +34,7 @@ type call struct {
 	method    *api.Method
 	params    map[string]string
 	requestID string
+	usageKey  string
 	// path is the request path after the stage.
 	path             string
 	authorizerError  string
@@ -48,6 +49,11 @@ type call struct {
 // names the stage, whose deployment's most specific resource and method
 // (or ANY) answer it after the method's authorization.
 func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*execute.Response, bool, error) {
+	return s.execute(ctx, id, r, false)
+}
+
+func (s *Service) execute(ctx context.Context, id string, r *execute.Request, customDomain bool,
+) (*execute.Response, bool, error) {
 	c := &call{req: r, requestID: uuid.NewV4().String()}
 	started := time.Now()
 	found := false
@@ -80,15 +86,15 @@ func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*
 		return nil, found, err
 	}
 
-	resp := s.run(ctx, c)
+	resp := s.run(ctx, c, customDomain)
 	resp.Header.Set("X-Amzn-Requestid", c.requestID)
 	s.accessLog(ctx, c, resp)
 	s.publish(c, resp, started, c.integrated)
 	return resp, true, nil
 }
 
-func (s *Service) run(ctx context.Context, c *call) *execute.Response {
-	if common.Value(c.api.API.DisableExecuteApiEndpoint) || c.stage == nil || c.snapshot == nil {
+func (s *Service) run(ctx context.Context, c *call, customDomain bool) *execute.Response {
+	if (!customDomain && common.Value(c.api.API.DisableExecuteApiEndpoint)) || c.stage == nil || c.snapshot == nil {
 		return execute.Message(http.StatusForbidden, "Forbidden")
 	}
 
@@ -102,7 +108,7 @@ func (s *Service) run(ctx context.Context, c *call) *execute.Response {
 		return denied
 	}
 
-	if keyDenied := s.checkAPIKey(ctx, c, authorizer); keyDenied != nil {
+	if keyDenied := s.checkAPIKey(ctx, c); keyDenied != nil {
 		return keyDenied
 	}
 
@@ -207,7 +213,7 @@ func (s *Service) authorize(ctx context.Context, c *call) (map[string]any, *exec
 		var values []string
 		for _, source := range sources(a) {
 			v := identityValue(c, source)
-			if v == "" {
+			if v == "" && (common.Value(a.Type) == typeToken || common.Value(a.AuthorizerResultTtlInSeconds) > 0) {
 				c.authorizerError = "missing identity source " + source
 				return nil, unauthorized
 			}
@@ -278,7 +284,7 @@ func (s *Service) cognitoAuthorize(ctx context.Context, c *call) (map[string]any
 }
 
 // lambdaAuthorize runs a Lambda TOKEN or REQUEST authorizer and applies the
-// IAM policy it returns. Its results are not cached.
+// IAM policy it returns. A cached policy is checked against each request ARN.
 func (s *Service) lambdaAuthorize(
 	ctx context.Context,
 	c *call,
@@ -287,6 +293,58 @@ func (s *Service) lambdaAuthorize(
 ) (map[string]any, *execute.Response) {
 	failed := execute.Message(http.StatusInternalServerError, "Internal Server Error")
 	methodARN := c.methodARN()
+	ttl := time.Duration(common.Value(a.AuthorizerResultTtlInSeconds)) * time.Second
+	cacheKey := proxy.AuthorizerCacheKey(*c.stage.DeploymentId, *a.Id, values)
+	var cache *proxy.AuthorizerCache
+	var out []byte
+	if ttl > 0 {
+		s.runtimeMu.Lock()
+		cache = s.stageAuthorizerCache(c)
+		out = cache.Get(cacheKey, s.now())
+		s.runtimeMu.Unlock()
+	}
+
+	fresh := out == nil
+	if fresh {
+		var denied *execute.Response
+		out, denied = s.invokeAuthorizer(ctx, c, a, values, methodARN)
+		if denied != nil {
+			return nil, denied
+		}
+	}
+
+	p, ok := proxy.ReadPolicy(out, methodARN)
+	if !ok {
+		c.authorizerError = "invalid authorizer response"
+		return nil, failed
+	}
+
+	if fresh && cache != nil {
+		s.runtimeMu.Lock()
+		cache.Put(cacheKey, out, s.now(), ttl)
+		s.runtimeMu.Unlock()
+	}
+
+	switch {
+	case p.Denied:
+		c.authorizerError = "denied"
+		return nil, execute.Message(http.StatusForbidden,
+			"User is not authorized to access this resource with an explicit deny")
+	case !p.Allowed && (!c.hasPolicy() || c.authorizePolicy(ctx, execute.Anonymous) != nil):
+		// A policy that neither allows nor denies leaves the decision to a resource policy Allow.
+		c.authorizerError = "not allowed"
+		return nil, execute.Message(http.StatusForbidden, "User is not authorized to access this resource")
+	}
+
+	c.usageKey = p.UsageIdentifierKey
+	authorizer := map[string]any{"principalId": p.Principal}
+	maps.Copy(authorizer, p.Context)
+	return authorizer, nil
+}
+
+func (s *Service) invokeAuthorizer(
+	ctx context.Context, c *call, a *api.Authorizer, values []string, methodARN string,
+) ([]byte, *execute.Response) {
 	event := map[string]any{"type": common.Value(a.Type), "methodArn": methodARN}
 	if common.Value(a.Type) == typeToken {
 		event["authorizationToken"] = values[0]
@@ -297,7 +355,7 @@ func (s *Service) lambdaAuthorize(
 		}
 
 		if err != nil {
-			return nil, failed
+			return nil, execute.Message(http.StatusInternalServerError, "Internal Server Error")
 		}
 
 		event["type"], event["methodArn"] = typeRequest, methodARN
@@ -315,7 +373,7 @@ func (s *Service) lambdaAuthorize(
 
 	if err != nil {
 		c.authorizerError = err.Error()
-		return nil, failed
+		return nil, execute.Message(http.StatusInternalServerError, "Internal Server Error")
 	}
 
 	if functionError {
@@ -329,27 +387,10 @@ func (s *Service) lambdaAuthorize(
 		}
 
 		c.authorizerError = "the authorizer function failed"
-		return nil, failed
+		return nil, execute.Message(http.StatusInternalServerError, "Internal Server Error")
 	}
 
-	p, ok := proxy.ReadPolicy(out, methodARN)
-	switch {
-	case !ok:
-		c.authorizerError = "invalid authorizer response"
-		return nil, failed
-	case p.Denied:
-		c.authorizerError = "denied"
-		return nil, execute.Message(http.StatusForbidden,
-			"User is not authorized to access this resource with an explicit deny")
-	case !p.Allowed && (!c.hasPolicy() || c.authorizePolicy(ctx, execute.Anonymous) != nil):
-		// A policy that neither allows nor denies leaves the decision to a resource policy Allow.
-		c.authorizerError = "not allowed"
-		return nil, execute.Message(http.StatusForbidden, "User is not authorized to access this resource")
-	}
-
-	authorizer := map[string]any{"principalId": p.Principal}
-	maps.Copy(authorizer, p.Context)
-	return authorizer, nil
+	return out, nil
 }
 
 func (c *call) proxyContext(authorizer map[string]any) *proxy.Context {

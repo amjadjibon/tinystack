@@ -1691,6 +1691,9 @@
       "DeleteApiKey",
       "CreateUsagePlan",
       "GetUsagePlan",
+      "GetUsage",
+      "GetAccount",
+      "FlushStageAuthorizersCache",
       "GetUsagePlans",
       "UpdateUsagePlan",
       "DeleteUsagePlan",
@@ -1902,7 +1905,8 @@
       ],
       "ApiStage": [
         "apiId",
-        "stage"
+        "stage",
+        "throttle"
       ],
       "ThrottleSettings": [
         "burstLimit",
@@ -1912,6 +1916,28 @@
         "limit",
         "offset",
         "period"
+      ],
+      "GetUsageRequest": [
+        "usagePlanId",
+        "keyId",
+        "startDate",
+        "endDate",
+        "limit",
+        "position"
+      ],
+      "Usage": [
+        "usagePlanId",
+        "startDate",
+        "endDate",
+        "position",
+        "items"
+      ],
+      "Account": [
+        "throttleSettings"
+      ],
+      "FlushStageAuthorizersCacheRequest": [
+        "restApiId",
+        "stageName"
       ],
       "GetUsagePlanRequest": [
         "usagePlanId"
@@ -2124,9 +2150,126 @@
       "ImportApi",
       "ReimportApi",
       "ExportApi",
-      "ResetAuthorizersCache"
+      "ResetAuthorizersCache",
+      "CreateDomainName",
+      "GetDomainName",
+      "GetDomainNames",
+      "DeleteDomainName",
+      "CreateApiMapping",
+      "GetApiMapping",
+      "GetApiMappings",
+      "UpdateApiMapping",
+      "DeleteApiMapping"
     ],
     "shapes": {
+      "DomainName": [
+        "ApiMappingSelectionExpression",
+        "DomainName",
+        "DomainNameArn",
+        "DomainNameConfigurations",
+        "RoutingMode",
+        "Tags"
+      ],
+      "ApiMapping": [
+        "ApiId",
+        "ApiMappingId",
+        "ApiMappingKey",
+        "Stage"
+      ],
+      "DomainNameConfiguration": [
+        "ApiGatewayDomainName",
+        "CertificateArn",
+        "CertificateName",
+        "CertificateUploadDate",
+        "DomainNameStatus",
+        "EndpointType",
+        "HostedZoneId",
+        "SecurityPolicy"
+      ],
+      "CreateDomainNameRequest": [
+        "DomainName",
+        "DomainNameConfigurations",
+        "RoutingMode",
+        "Tags"
+      ],
+      "CreateDomainNameResponse": [
+        "ApiMappingSelectionExpression",
+        "DomainName",
+        "DomainNameArn",
+        "DomainNameConfigurations",
+        "RoutingMode",
+        "Tags"
+      ],
+      "GetDomainNameRequest": [
+        "DomainName"
+      ],
+      "GetDomainNameResponse": [
+        "ApiMappingSelectionExpression",
+        "DomainName",
+        "DomainNameArn",
+        "DomainNameConfigurations",
+        "RoutingMode",
+        "Tags"
+      ],
+      "GetDomainNamesRequest": [
+        "MaxResults",
+        "NextToken"
+      ],
+      "GetDomainNamesResponse": [
+        "Items",
+        "NextToken"
+      ],
+      "DeleteDomainNameRequest": [
+        "DomainName"
+      ],
+      "CreateApiMappingRequest": [
+        "ApiId",
+        "ApiMappingKey",
+        "DomainName",
+        "Stage"
+      ],
+      "CreateApiMappingResponse": [
+        "ApiId",
+        "ApiMappingId",
+        "ApiMappingKey",
+        "Stage"
+      ],
+      "GetApiMappingRequest": [
+        "ApiMappingId",
+        "DomainName"
+      ],
+      "GetApiMappingResponse": [
+        "ApiId",
+        "ApiMappingId",
+        "ApiMappingKey",
+        "Stage"
+      ],
+      "GetApiMappingsRequest": [
+        "DomainName",
+        "MaxResults",
+        "NextToken"
+      ],
+      "GetApiMappingsResponse": [
+        "Items",
+        "NextToken"
+      ],
+      "UpdateApiMappingRequest": [
+        "ApiId",
+        "ApiMappingId",
+        "ApiMappingKey",
+        "DomainName",
+        "Stage"
+      ],
+      "UpdateApiMappingResponse": [
+        "ApiId",
+        "ApiMappingId",
+        "ApiMappingKey",
+        "Stage"
+      ],
+      "DeleteApiMappingRequest": [
+        "ApiMappingId",
+        "DomainName"
+      ],
       "CreateApiRequest": [
         "ApiKeySelectionExpression",
         "CorsConfiguration",

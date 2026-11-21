@@ -312,9 +312,8 @@ func (s *Service) UpdateRoute(ctx context.Context, in *api.UpdateRouteRequest) (
 				return false, badRequest("ApiKeyRequired is only supported for WebSocket APIs.")
 			}
 
-			if common.Value(a.ProtocolType) == protocolWebSocket &&
-				(in.AuthorizationScopes != nil || in.AuthorizerId != nil) {
-				return false, badRequest("WebSocket authorizers and authorization scopes are not supported.")
+			if common.Value(a.ProtocolType) == protocolWebSocket && len(in.AuthorizationScopes) != 0 {
+				return false, badRequest("WebSocket authorization scopes are not supported.")
 			}
 
 			r.RouteKey, r.ApiKeyRequired = common.OrElse(
@@ -339,6 +338,10 @@ func (s *Service) UpdateRoute(ctx context.Context, in *api.UpdateRouteRequest) (
 
 			// Clearing authorization drops what only it used.
 			if common.Value(r.AuthorizationType) == authNone || common.Value(r.AuthorizationType) == authIAM {
+				if common.Value(a.ProtocolType) == protocolWebSocket && common.Value(in.AuthorizerId) != "" {
+					return false, badRequest("AuthorizerId can only be set with CUSTOM authorization.")
+				}
+
 				r.AuthorizerId = nil
 			}
 

@@ -19,6 +19,8 @@ const (
 	contextRouteKey         = "routeKey"
 	contextRequestTime      = "requestTime"
 	contextRequestTimeEpoch = "requestTimeEpoch"
+	contextSourceIP         = "identity.sourceIp"
+	contextUserAgent        = "identity.userAgent"
 )
 
 // contextVariable returns a $context variable's value for a request and, once
@@ -56,9 +58,9 @@ func contextVariable(c *call, resp *execute.Response, name string) string {
 		return r.Time.Format("02/Jan/2006:15:04:05 -0700")
 	case contextRequestTimeEpoch:
 		return strconv.FormatInt(r.Time.UnixMilli(), 10)
-	case "identity.sourceIp":
+	case contextSourceIP:
 		return r.SourceIP
-	case "identity.userAgent":
+	case contextUserAgent:
 		return r.Header.Get("User-Agent")
 	case "authorizer.error":
 		return c.authorizerError

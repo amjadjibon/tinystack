@@ -94,14 +94,6 @@ func (s *Service) CreateAuthorizer(
 		EnableSimpleResponses:          in.EnableSimpleResponses,
 		JwtConfiguration:               in.JwtConfiguration,
 	}
-	if checkErr := checkAuthorizer(a); checkErr != nil {
-		return nil, checkErr
-	}
-
-	if common.Value(a.AuthorizerType) == typeRequest {
-		a.EnableSimpleResponses = new(common.Value(a.EnableSimpleResponses))
-		a.AuthorizerResultTtlInSeconds = new(common.Value(a.AuthorizerResultTtlInSeconds))
-	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		api, loadErr := loadAPI(tx, m.Scope, in.ApiId)
@@ -109,8 +101,13 @@ func (s *Service) CreateAuthorizer(
 			return loadErr
 		}
 
-		if common.Value(api.ProtocolType) == protocolWebSocket {
-			return badRequest("WebSocket authorizers are not supported.")
+		if checkErr := checkProtocolAuthorizer(api, a); checkErr != nil {
+			return checkErr
+		}
+
+		if common.Value(api.ProtocolType) == protocolHTTP && common.Value(a.AuthorizerType) == typeRequest {
+			a.EnableSimpleResponses = new(common.Value(a.EnableSimpleResponses))
+			a.AuthorizerResultTtlInSeconds = new(common.Value(a.AuthorizerResultTtlInSeconds))
 		}
 
 		if writeErr := storage.Write(
@@ -162,6 +159,10 @@ func (s *Service) changeAuthorizer(
 		}
 
 		if keep {
+			if checkErr := checkProtocolAuthorizer(owner, a); checkErr != nil {
+				return checkErr
+			}
+
 			if writeErr := storage.Write(tx, key, a); writeErr != nil {
 				return writeErr
 			}
@@ -272,7 +273,7 @@ func (s *Service) UpdateAuthorizer(
 				a.IdentitySource = in.IdentitySource
 			}
 
-			return true, checkAuthorizer(a)
+			return true, nil
 		})
 	if err != nil {
 		return nil, err

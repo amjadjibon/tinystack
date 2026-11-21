@@ -393,6 +393,10 @@ func (s *Service) DeleteApi(ctx context.Context, in *api.DeleteApiRequest) (*api
 			return loadErr
 		}
 
+		if checkErr := checkMappedStage(tx, m.Scope, *a.ApiId, nil); checkErr != nil {
+			return checkErr
+		}
+
 		for _, kind := range []string{
 			kindRoute, kindIntegration, kindAuthorizer, kindDeployment, kindStage, kindRouteResponse,
 		} {

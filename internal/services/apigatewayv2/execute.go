@@ -49,6 +49,11 @@ type call struct {
 // stage's deployment, runs the route's authorizer and integration, and
 // applies the API's CORS configuration.
 func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*execute.Response, bool, error) {
+	return s.execute(ctx, id, r, "")
+}
+
+func (s *Service) execute(ctx context.Context, id string, r *execute.Request, mappedStage string,
+) (*execute.Response, bool, error) {
 	c := &call{req: r, requestID: newRequestID()}
 	started := time.Now()
 	found := false
@@ -63,13 +68,17 @@ func (s *Service) Execute(ctx context.Context, id string, r *execute.Request) (*
 			return err
 		}
 
+		if mappedStage != "" {
+			return c.useStage(tx, mappedStage, r.Path)
+		}
+
 		return c.resolveStage(tx)
 	})
 	if err != nil || !found {
 		return nil, found, err
 	}
 
-	resp := s.run(ctx, c)
+	resp := s.run(ctx, c, mappedStage != "")
 	resp.Header.Set("Apigw-Requestid", c.requestID)
 	s.accessLog(ctx, c, resp)
 	s.publish(c, resp, started, c.integrated)
@@ -89,16 +98,19 @@ func (c *call) resolveStage(tx storage.ReadTx) error {
 		name = ""
 	}
 
+	if name != "" {
+		if _, found := tx.Get(owned(c.scope, kindStage, *c.api.ApiId, name)); found {
+			return c.useStage(tx, name, path)
+		}
+	}
+
+	return c.useStage(tx, defaultStage, c.req.Path)
+}
+
+func (c *call) useStage(tx storage.ReadTx, name, path string) error {
 	st, found, err := storage.Read[api.Stage](tx, owned(c.scope, kindStage, *c.api.ApiId, name))
 	if err != nil {
 		return err
-	}
-
-	if !found || name == "" {
-		name, path = defaultStage, c.req.Path
-		if st, found, err = storage.Read[api.Stage](tx, owned(c.scope, kindStage, *c.api.ApiId, name)); err != nil {
-			return err
-		}
 	}
 
 	if !found || st.DeploymentId == nil {
@@ -111,12 +123,12 @@ func (c *call) resolveStage(tx storage.ReadTx) error {
 }
 
 // run answers the request.
-func (s *Service) run(ctx context.Context, c *call) *execute.Response {
+func (s *Service) run(ctx context.Context, c *call, customDomain bool) *execute.Response {
 	r := c.req
 	if common.Value(c.api.ProtocolType) == protocolWebSocket {
 		return execute.Message(http.StatusBadRequest, "WebSocket upgrade required")
 	}
-	if common.Value(c.api.DisableExecuteApiEndpoint) {
+	if !customDomain && common.Value(c.api.DisableExecuteApiEndpoint) {
 		return execute.Message(http.StatusForbidden, "Forbidden")
 	}
 
@@ -353,7 +365,7 @@ func (s *Service) lambdaAuthorize(ctx context.Context, c *call) (map[string]any,
 
 	routeARN := execute.APIResource(c.scope, *c.api.ApiId, *c.stage.StageName, c.req.Method, c.path).ARN
 	ttl := time.Duration(common.Value(a.AuthorizerResultTtlInSeconds)) * time.Second
-	var cache *authorizerCache
+	var cache *proxy.AuthorizerCache
 	var key [sha256.Size]byte
 	var out []byte
 	if ttl > 0 {

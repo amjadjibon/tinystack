@@ -129,11 +129,11 @@ const (
 
 // APIResource builds an execute-api invocation target from the API owner's scope.
 // Paths are concrete request paths, without the stage. HTTP API default routes
-// are <stage>/$default, with no method or path, which policies match as */$default.
+// and WebSocket connect routes are <stage>/$default and <stage>/$connect, without a path.
 func APIResource(scope request.Scope, apiID, stage, method, path string) catalog.AuthorizationResource {
 	resource := stage + "/" + method + "/" + strings.TrimPrefix(path, "/")
-	if method == "$default" {
-		resource = stage + "/$default"
+	if method == "$default" || method == "$connect" {
+		resource = stage + "/" + method
 	}
 
 	// The owner is set even without a resource policy, so other accounts need both sides to allow.

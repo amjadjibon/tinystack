@@ -22,7 +22,20 @@ type tagged struct {
 // (arn:aws:apigateway:<region>::/apis/<ID>[/stages/<name>]) names.
 func taggable(tx storage.ReadTx, scope request.Scope, arn string) (*tagged, error) {
 	missing := notFound("Invalid resource ARN %s", arn)
-	rest, ok := strings.CutPrefix(arn, "arn:aws:apigateway:"+scope.Region+"::/apis/")
+	prefix := "arn:aws:apigateway:" + scope.Region + "::/"
+	if name, ok := strings.CutPrefix(arn, prefix+"domainnames/"); ok {
+		d, err := loadDomain(tx, scope, name)
+		if err != nil {
+			return nil, err
+		}
+
+		return &tagged{tags: d.Tags, save: func(tx storage.WriteTx, tags map[string]string) error {
+			d.Tags = tags
+			return storage.Write(tx, domainKey(scope, name), d)
+		}}, nil
+	}
+
+	rest, ok := strings.CutPrefix(arn, prefix+"apis/")
 	if !ok {
 		return nil, missing
 	}

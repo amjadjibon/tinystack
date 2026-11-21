@@ -21,17 +21,20 @@ import (
 )
 
 type websocketEvent struct {
+	Type           string            `json:"type"`
+	MethodARN      string            `json:"methodArn"`
 	Headers        map[string]string `json:"headers"`
 	Query          map[string]string `json:"queryStringParameters"`
 	Body           string            `json:"body"`
 	RequestContext struct {
-		RouteKey     string `json:"routeKey"`
-		EventType    string `json:"eventType"`
-		ConnectionID string `json:"connectionId"`
-		RequestID    string `json:"requestId"`
-		APIID        string `json:"apiId"`
-		Stage        string `json:"stage"`
-		DomainName   string `json:"domainName"`
+		Authorizer   map[string]any `json:"authorizer"`
+		RouteKey     string         `json:"routeKey"`
+		EventType    string         `json:"eventType"`
+		ConnectionID string         `json:"connectionId"`
+		RequestID    string         `json:"requestId"`
+		APIID        string         `json:"apiId"`
+		Stage        string         `json:"stage"`
+		DomainName   string         `json:"domainName"`
 		Identity     struct {
 			SourceIP string `json:"sourceIp"`
 		} `json:"identity"`

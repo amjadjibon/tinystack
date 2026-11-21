@@ -56,11 +56,11 @@ type Domains interface {
 	Known(ctx context.Context, host string) bool
 }
 
-// UseDomains serves API Gateway custom domain names: unsigned requests whose
+// UseDomains serves API Gateway custom domain names: requests whose
 // host is a domain name, or requests to /_aws/domain/<domain name>/... on any
 // host. Call it before serving requests.
-func (s *Server) UseDomains(domains Domains) {
-	s.domains = domains
+func (s *Server) UseDomains(domains ...Domains) {
+	s.domains = append(s.domains, domains...)
 }
 
 // domainTarget returns the custom domain a request addresses and the path
@@ -76,19 +76,38 @@ func (s *Server) domainTarget(r *http.Request) (name, path, endpoint string, ok 
 }
 
 // domainHost returns the custom domain a request's host is, if it is one.
-// SigV4 requests are AWS's, so they never pay for the lookup.
+// Management requests can share the same listener but use a separate SigV4 signing name.
 func (s *Server) domainHost(r *http.Request) (string, bool) {
 	host := r.Host
 	if h, _, err := net.SplitHostPort(host); err == nil {
 		host = h
 	}
 
-	if s.domains == nil || strings.HasPrefix(r.Header.Get("Authorization"), "AWS4-") ||
-		sigv4.Presigned(r.URL.Query()) || !strings.Contains(host, ".") || !s.domains.Known(r.Context(), host) {
+	if len(s.domains) == 0 || !strings.Contains(host, ".") {
 		return "", false
 	}
 
-	return host, true
+	if header := r.Header.Get("Authorization"); strings.HasPrefix(header, "AWS4-") {
+		auth, err := sigv4.Parse(header)
+		if err != nil || auth.Service != executeService {
+			return "", false
+		}
+	}
+
+	if query := r.URL.Query(); sigv4.Presigned(query) {
+		auth, err := sigv4.ParseQuery(query, 0)
+		if err != nil || auth.Service != executeService {
+			return "", false
+		}
+	}
+
+	for _, domain := range s.domains {
+		if domain.Known(r.Context(), host) {
+			return host, true
+		}
+	}
+
+	return "", false
 }
 
 // lambdaURLPath is the path prefix that addresses a Lambda function URL by
@@ -210,9 +229,14 @@ func (s *Server) serveAPI(w http.ResponseWriter, r *http.Request) bool {
 		handlers, graphQL = []execute.Handler{s.graphQL}, ok
 	}
 
-	if !ok && s.domains != nil {
+	if !ok && len(s.domains) > 0 {
 		id, path, endpoint, ok = s.domainTarget(r)
-		handlers = []execute.Handler{s.domains}
+		if ok {
+			handlers = make([]execute.Handler, 0, len(s.domains))
+			for _, domain := range s.domains {
+				handlers = append(handlers, domain)
+			}
+		}
 	}
 
 	if !ok || len(handlers) == 0 {

@@ -432,6 +432,10 @@ func (s *Service) DeleteStage(ctx context.Context, in *api.DeleteStageRequest) (
 			return loadErr
 		}
 
+		if checkErr := checkMappedStage(tx, m.Scope, *a.ApiId, st.StageName); checkErr != nil {
+			return checkErr
+		}
+
 		tx.Delete(owned(m.Scope, kindStage, *a.ApiId, *st.StageName))
 		return prune(tx, m.Scope, *a.ApiId, common.Value(st.DeploymentId))
 	})

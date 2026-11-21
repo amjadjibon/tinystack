@@ -137,6 +137,22 @@ func TestRESTAPICustomDomains(t *testing.T) {
 		}
 	}
 
+	_, err = c.UpdateRestApi(ctx, &restapi.UpdateRestApiInput{
+		RestApiId: api.Id, PatchOperations: []resttypes.PatchOperation{replace("/disableExecuteApiEndpoint", "true")},
+	})
+	mustAuthorize(t, err)
+	if status, _ := getStatus(t, s.URL+"/pets", "api.example.com"); status != http.StatusOK {
+		t.Fatalf("custom domain with default endpoint disabled: %d", status)
+	}
+
+	_, err = c.CreateDomainName(ctx, &restapi.CreateDomainNameInput{
+		DomainName: new("mtls.example.com"),
+		MutualTlsAuthentication: &resttypes.MutualTlsAuthenticationInput{
+			TruststoreUri: new("s3://example/truststore.pem"),
+		},
+	})
+	code(t, err, "NotImplemented")
+
 	if _, err = c.DeleteBasePathMapping(ctx, &restapi.DeleteBasePathMappingInput{
 		DomainName: domain.DomainName, BasePath: aws.String("(none)"),
 	}); err != nil {

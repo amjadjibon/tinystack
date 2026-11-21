@@ -2,21 +2,11 @@ package apigatewayv2
 
 import (
 	"math"
-	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
 )
-
-const (
-	defaultThrottleBurst = 5000
-	defaultThrottleRate  = 10000.0
-)
-
-type throttleBucket struct {
-	at                  time.Time
-	rate, burst, tokens float64
-}
 
 func checkThrottling(settings *api.RouteSettings) error {
 	if settings == nil {
@@ -51,7 +41,7 @@ func (s *Service) allowRequest(c *call) bool {
 		return true
 	}
 
-	rate, burst := defaultThrottleRate, float64(defaultThrottleBurst)
+	rate, burst := proxy.DefaultThrottleRate, float64(proxy.DefaultThrottleBurst)
 	if settings.ThrottlingRateLimit != nil {
 		rate = *settings.ThrottlingRateLimit
 	}
@@ -71,26 +61,12 @@ func (s *Service) allowRequest(c *call) bool {
 	key := c.runtimeKey()
 	routes := s.buckets[key]
 	if routes == nil {
-		routes = map[string]throttleBucket{}
+		routes = map[string]proxy.Bucket{}
 		s.buckets[key] = routes
 	}
 
 	route := *c.route.RouteKey
-	b, ok := routes[route]
-	if !ok || b.burst != burst || b.rate != rate {
-		b = throttleBucket{at: now, rate: rate, burst: burst, tokens: burst}
-	}
-
-	if now.After(b.at) {
-		b.tokens = min(burst, b.tokens+now.Sub(b.at).Seconds()*rate)
-		b.at = now
-	}
-
-	allowed := b.tokens >= 1
-	if allowed {
-		b.tokens--
-	}
-
+	b, allowed := routes[route].Take(now, rate, burst)
 	routes[route] = b
 	return allowed
 }

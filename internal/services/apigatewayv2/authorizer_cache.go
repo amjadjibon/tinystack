@@ -1,20 +1,17 @@
 package apigatewayv2
 
 import (
-	"container/list"
 	"context"
 	"crypto/sha256"
-	"encoding/json"
 	"maps"
 	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigatewayv2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
-
-const authorizerCacheSize = 1024
 
 type stageRuntimeKey struct {
 	created          time.Time
@@ -29,25 +26,10 @@ func (c *call) runtimeKey() stageRuntimeKey {
 	}
 }
 
-type authorizerCache struct {
-	entries map[[sha256.Size]byte]*list.Element
-	recency list.List
-}
-
-type cachedAuthorization struct {
-	expires time.Time
-	payload []byte
-	key     [sha256.Size]byte
-}
-
 // cachedAuthorizer keeps deployment and identity tuple boundaries separate.
 func (s *Service) cachedAuthorizer(c *call, authorizerID string, sources []string,
-) (cache *authorizerCache, cacheKey [sha256.Size]byte, payload []byte) {
-	input, _ := json.Marshal(struct {
-		Deployment, Authorizer string
-		Sources                []string
-	}{*c.stage.DeploymentId, authorizerID, sources})
-	cacheKey = sha256.Sum256(input)
+) (cache *proxy.AuthorizerCache, cacheKey [sha256.Size]byte, payload []byte) {
+	cacheKey = proxy.AuthorizerCacheKey(*c.stage.DeploymentId, authorizerID, sources)
 
 	s.runtimeMu.Lock()
 	defer s.runtimeMu.Unlock()
@@ -55,41 +37,24 @@ func (s *Service) cachedAuthorizer(c *call, authorizerID string, sources []strin
 	key := c.runtimeKey()
 	cache = s.authorizerCaches[key]
 	if cache == nil {
-		cache = &authorizerCache{entries: map[[sha256.Size]byte]*list.Element{}}
+		cache = new(proxy.AuthorizerCache)
 		s.authorizerCaches[key] = cache
 	}
 
-	if element := cache.entries[cacheKey]; element != nil {
-		entry := element.Value.(cachedAuthorization)
-		if s.now().Before(entry.expires) {
-			cache.recency.MoveToFront(element)
-			return cache, cacheKey, entry.payload
-		}
-
-		cache.recency.Remove(element)
-		delete(cache.entries, cacheKey)
-	}
-
-	return cache, cacheKey, nil
+	payload = cache.Get(cacheKey, s.now())
+	return cache, cacheKey, payload
 }
 
-func (s *Service) cacheAuthorizer(cache *authorizerCache, key [sha256.Size]byte, payload []byte, ttl time.Duration) {
+func (s *Service) cacheAuthorizer(
+	cache *proxy.AuthorizerCache,
+	key [sha256.Size]byte,
+	payload []byte,
+	ttl time.Duration,
+) {
 	s.runtimeMu.Lock()
 	defer s.runtimeMu.Unlock()
 
-	// Keep the first result if concurrent requests missed the same entry.
-	if cache.entries[key] != nil {
-		return
-	}
-
-	if len(cache.entries) == authorizerCacheSize {
-		removed := cache.recency.Remove(cache.recency.Back()).(cachedAuthorization)
-		delete(cache.entries, removed.key)
-	}
-
-	cache.entries[key] = cache.recency.PushFront(cachedAuthorization{
-		key: key, payload: payload, expires: s.now().Add(ttl),
-	})
+	cache.Put(key, payload, s.now(), ttl)
 }
 
 func (s *Service) ResetAuthorizersCache(
@@ -137,6 +102,9 @@ func (s *Service) discardStageRuntime(apiID string, stageName *string) {
 
 	s.runtimeMu.Lock()
 	defer s.runtimeMu.Unlock()
-	maps.DeleteFunc(s.authorizerCaches, func(key stageRuntimeKey, _ *authorizerCache) bool { return matches(key) })
-	maps.DeleteFunc(s.buckets, func(key stageRuntimeKey, _ map[string]throttleBucket) bool { return matches(key) })
+	maps.DeleteFunc(
+		s.authorizerCaches,
+		func(key stageRuntimeKey, _ *proxy.AuthorizerCache) bool { return matches(key) },
+	)
+	maps.DeleteFunc(s.buckets, func(key stageRuntimeKey, _ map[string]proxy.Bucket) bool { return matches(key) })
 }

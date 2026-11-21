@@ -11,6 +11,7 @@ import (
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/apigateway"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
+	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -31,10 +32,7 @@ const (
 	cloudFrontZone = "Z2FDTNDATAQYW2"
 )
 
-var (
-	domainPattern   = regexp.MustCompile(`^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$`)
-	basePathPattern = regexp.MustCompile(`^[A-Za-z0-9._~-]+(/[A-Za-z0-9._~-]+)*$`)
-)
+var basePathPattern = regexp.MustCompile(`^[A-Za-z0-9._~-]+(/[A-Za-z0-9._~-]+)*$`)
 
 // domain is a custom domain name's record.
 type domain struct {
@@ -45,8 +43,6 @@ type domain struct {
 func domainKey(scope request.Scope, name string) string {
 	return scope.Prefix(service, kindDomain) + name
 }
-
-func domainIndexKey(name string) string { return "aws/" + service + "/domain/" + name }
 
 func domainNotFound() error { return notFound("Invalid domain name identifier specified") }
 
@@ -66,7 +62,7 @@ func (s *Service) CreateDomainName(ctx context.Context, in *api.CreateDomainName
 	}
 
 	name := strings.ToLower(common.Value(in.DomainName))
-	if !domainPattern.MatchString(name) || len(name) > 253 {
+	if !proxy.ValidDomainName(name) {
 		return nil, badRequest("Invalid domain name: %s", common.Value(in.DomainName))
 	}
 
@@ -112,13 +108,15 @@ func (s *Service) CreateDomainName(ctx context.Context, in *api.CreateDomainName
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if _, exists := tx.Get(domainIndexKey(name)); exists {
-			return conflict("The domain name you provided already exists.")
+		for _, gateway := range []string{service, "apigatewayv2"} {
+			if _, exists := tx.Get(proxy.DomainIndexKey(gateway, name)); exists {
+				return conflict("The domain name you provided already exists.")
+			}
 		}
 
 		if writeErr := storage.Write(
 			tx,
-			domainIndexKey(name),
+			proxy.DomainIndexKey(service, name),
 			location{Account: m.AccountID, Region: m.Region},
 		); writeErr != nil {
 			return writeErr
@@ -207,7 +205,7 @@ func (s *Service) DeleteDomainName(
 			return loadErr
 		}
 
-		tx.Delete(domainIndexKey(*d.Domain.DomainName))
+		tx.Delete(proxy.DomainIndexKey(service, *d.Domain.DomainName))
 		tx.Delete(domainKey(m.Scope, *d.Domain.DomainName))
 		return nil
 	})
@@ -390,7 +388,7 @@ func (s *Service) Domains() *Domains { return &Domains{s: s} }
 func (h *Domains) Known(ctx context.Context, host string) bool {
 	found := false
 	_ = h.s.store.View(ctx, func(tx storage.ReadTx) error {
-		_, found = tx.Get(domainIndexKey(strings.ToLower(host)))
+		_, found = tx.Get(proxy.DomainIndexKey(service, strings.ToLower(host)))
 		return nil
 	})
 
@@ -403,7 +401,7 @@ func (h *Domains) Execute(ctx context.Context, name string, r *execute.Request) 
 	name = strings.ToLower(name)
 	var d *domain
 	err := h.s.store.View(ctx, func(tx storage.ReadTx) error {
-		loc, found, err := storage.Read[location](tx, domainIndexKey(name))
+		loc, found, err := storage.Read[location](tx, proxy.DomainIndexKey(service, name))
 		if err != nil || !found {
 			return err
 		}
@@ -439,5 +437,10 @@ func (h *Domains) Execute(ctx context.Context, name string, r *execute.Request) 
 		mapped.Path = "/" + *best.Stage + "/" + rest
 	}
 
-	return h.s.Execute(ctx, *best.RestApiId, &mapped)
+	resp, found, err := h.s.execute(ctx, *best.RestApiId, &mapped, true)
+	if err == nil && !found {
+		resp = execute.Message(http.StatusForbidden, "Forbidden")
+	}
+
+	return resp, true, err
 }

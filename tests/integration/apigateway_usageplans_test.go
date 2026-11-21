@@ -3,7 +3,9 @@ package integration_test
 import (
 	"context"
 	"net/http"
+	"slices"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	restapi "github.com/aws/aws-sdk-go-v2/service/apigateway"
@@ -85,7 +87,7 @@ func TestRESTAPIKeysAndUsagePlans(t *testing.T) {
 	plan, err := c.CreateUsagePlan(ctx, &restapi.CreateUsagePlanInput{
 		Name:     aws.String("gold"),
 		Throttle: &resttypes.ThrottleSettings{BurstLimit: 10, RateLimit: 5},
-		Quota:    &resttypes.QuotaSettings{Limit: 1000, Period: resttypes.QuotaPeriodTypeMonth},
+		Quota:    &resttypes.QuotaSettings{Limit: 3, Offset: 1, Period: resttypes.QuotaPeriodTypeMonth},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -113,6 +115,8 @@ func TestRESTAPIKeysAndUsagePlans(t *testing.T) {
 		UsagePlanId: plan.Id, PatchOperations: []resttypes.PatchOperation{
 			{Op: resttypes.OpAdd, Path: aws.String("/apiStages"), Value: aws.String(id + ":prod")},
 			replace("/throttle/rateLimit", "50"),
+			replace("/apiStages/"+id+":prod/throttle//GET/rateLimit", "0"),
+			replace("/apiStages/"+id+":prod/throttle//GET/burstLimit", "1"),
 		},
 	})
 	if err != nil || len(updated.ApiStages) != 1 || updated.Throttle.RateLimit != 50 {
@@ -121,6 +125,39 @@ func TestRESTAPIKeysAndUsagePlans(t *testing.T) {
 
 	if status, _, _ = call(t, s, "GET", id, "/prod", withKey, ""); status != http.StatusOK {
 		t.Fatalf("with key: %d", status)
+	}
+
+	check := func(want int, message string) {
+		t.Helper()
+		got, _, body := call(t, s, http.MethodGet, id, "/prod", withKey, "")
+		if got != want || (message != "" && body != message) {
+			t.Fatalf("request = %d %s, want %d %s", got, body, want, message)
+		}
+	}
+	check(http.StatusTooManyRequests, `{"message":"Too Many Requests"}`)
+
+	_, err = c.UpdateUsagePlan(ctx, &restapi.UpdateUsagePlanInput{
+		UsagePlanId: plan.Id, PatchOperations: []resttypes.PatchOperation{
+			replace("/apiStages/"+id+":prod/throttle//GET/burstLimit", "2"),
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	check(http.StatusOK, "")
+	check(http.StatusTooManyRequests, `{"message":"Limit Exceeded"}`)
+	date := time.Now().UTC().Format(time.DateOnly)
+	usage, err := c.GetUsage(ctx, &restapi.GetUsageInput{
+		UsagePlanId: plan.Id, KeyId: key.Id, StartDate: new(date), EndDate: new(date),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	log := usage.Items[*key.Id]
+	if len(log) != 1 || !slices.Equal(log[0], []int64{2, 0}) {
+		t.Fatalf("usage = %v, want [[2 0]]", log)
 	}
 
 	// A disabled key is refused.

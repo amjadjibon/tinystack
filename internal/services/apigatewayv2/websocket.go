@@ -18,9 +18,11 @@ import (
 )
 
 const (
-	socketIdleTimeout = 10 * time.Minute
-	socketLifetime    = 2 * time.Hour
-	socketMessage     = "MESSAGE"
+	socketIdleTimeout  = 10 * time.Minute
+	socketLifetime     = 2 * time.Hour
+	socketMessage      = "MESSAGE"
+	socketConnect      = "$connect"
+	socketConnectEvent = "CONNECT"
 )
 
 type connection struct {
@@ -28,6 +30,7 @@ type connection struct {
 	socket       execute.Socket
 	cancel       context.CancelFunc
 	call         *call
+	authorizer   map[string]any
 	connectedAt  time.Time
 	lastActiveAt time.Time
 	id           string
@@ -169,7 +172,7 @@ func (s *Service) Connect(ctx context.Context, id string, r *execute.Request, so
 		connectedAt: now, lastActiveAt: now,
 	}
 
-	response, _ := s.socketEvent(connCtx, conn, "$connect", "CONNECT", nil)
+	response, _ := s.socketEvent(connCtx, conn, socketConnect, socketConnectEvent, nil)
 	if response.Status < 200 || response.Status >= 300 {
 		return true, &awserror.Error{
 			Code:       "ForbiddenException",
@@ -297,6 +300,15 @@ func (s *Service) socketEvent(ctx context.Context, conn *connection, key, eventT
 		return &execute.Response{Status: http.StatusOK}, false
 	}
 
+	if eventType == socketConnectEvent {
+		auth, denied := s.authorizeSocket(ctx, &c, conn)
+		if denied != nil {
+			return denied, false
+		}
+
+		conn.authorizer = auth
+	}
+
 	twoWay := eventType == socketMessage && c.snapshot.Responses[common.Value(c.route.RouteId)]
 	integration, ok := c.snapshot.Integrations[integrationID(common.Value(c.route.Target))]
 	if !ok {
@@ -307,6 +319,36 @@ func (s *Service) socketEvent(ctx context.Context, conn *connection, key, eventT
 		return &execute.Response{Status: http.StatusOK}, twoWay
 	}
 
+	payload, err := json.Marshal(s.socketPayload(&c, conn, eventType, body))
+	if err != nil {
+		return execute.Message(500, "Internal Server Error"), twoWay
+	}
+
+	uri := proxy.Substitute(common.Value(integration.IntegrationUri), c.stage.StageVariables)
+	arn, _ := proxy.LambdaARN(uri)
+	err = s.authorizer.Authorize(ctx, catalog.ServiceDelivery{
+		Principal: "apigateway.amazonaws.com",
+		SourceARN: c.socketRouteARN(), SourceAccount: c.scope.AccountID, Target: arn,
+	})
+	if err != nil {
+		return execute.Message(500, "Internal Server Error"), twoWay
+	}
+
+	out, functionError, err := s.invoke(ctx, &c, arn, payload,
+		time.Duration(common.Value(integration.TimeoutInMillis))*time.Millisecond)
+	if err != nil {
+		return execute.Message(500, "Internal Server Error"), twoWay
+	}
+
+	return proxy.ResponseV1(out, functionError, http.StatusInternalServerError), twoWay
+}
+
+func (c *call) socketRouteARN() string {
+	return "arn:aws:execute-api:" + c.scope.Region + ":" + c.scope.AccountID + ":" + *c.api.ApiId + "/" +
+		*c.stage.StageName + "/" + *c.route.RouteKey
+}
+
+func (s *Service) socketPayload(c *call, conn *connection, eventType string, body []byte) map[string]any {
 	event := map[string]any{
 		"requestContext": map[string]any{
 			"routeKey": common.Value(c.route.RouteKey), "eventType": eventType, "connectionId": conn.id,
@@ -319,7 +361,7 @@ func (s *Service) socketEvent(ctx context.Context, conn *connection, key, eventT
 	}
 
 	switch eventType {
-	case "CONNECT":
+	case socketConnectEvent:
 		headers := map[string]string{}
 		for name := range c.req.Header {
 			headers[strings.ToLower(name)] = c.req.Header.Get(name)
@@ -336,27 +378,9 @@ func (s *Service) socketEvent(ctx context.Context, conn *connection, key, eventT
 		event["body"] = string(body)
 	}
 
-	payload, err := json.Marshal(event)
-	if err != nil {
-		return execute.Message(500, "Internal Server Error"), twoWay
+	if conn.authorizer != nil {
+		event["requestContext"].(map[string]any)["authorizer"] = conn.authorizer
 	}
 
-	uri := proxy.Substitute(common.Value(integration.IntegrationUri), c.stage.StageVariables)
-	arn, _ := proxy.LambdaARN(uri)
-	err = s.authorizer.Authorize(ctx, catalog.ServiceDelivery{
-		Principal: "apigateway.amazonaws.com",
-		SourceARN: "arn:aws:execute-api:" + c.scope.Region + ":" + c.scope.AccountID + ":" + *c.api.ApiId + "/" +
-			*c.stage.StageName + "/" + *c.route.RouteKey, SourceAccount: c.scope.AccountID, Target: arn,
-	})
-	if err != nil {
-		return execute.Message(500, "Internal Server Error"), twoWay
-	}
-
-	out, functionError, err := s.invoke(ctx, &c, arn, payload,
-		time.Duration(common.Value(integration.TimeoutInMillis))*time.Millisecond)
-	if err != nil {
-		return execute.Message(500, "Internal Server Error"), twoWay
-	}
-
-	return proxy.ResponseV1(out, functionError, http.StatusInternalServerError), twoWay
+	return event
 }

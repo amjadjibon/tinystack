@@ -38,8 +38,9 @@ func checkProtocolRoute(a *api.Api, r *api.Route) error {
 		return badRequest("Invalid WebSocket route key %s.", key)
 	}
 
-	if common.Value(r.AuthorizationType) != authNone || len(r.AuthorizationScopes) != 0 || r.AuthorizerId != nil {
-		return badRequest("WebSocket routes currently support NONE authorization only.")
+	auth := common.Value(r.AuthorizationType)
+	if len(r.AuthorizationScopes) != 0 || (auth != authNone && (key != socketConnect || auth == authJWT)) {
+		return badRequest("WebSocket authorization supports AWS_IAM and CUSTOM on $connect only.")
 	}
 
 	return nil

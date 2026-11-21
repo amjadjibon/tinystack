@@ -249,5 +249,6 @@ func (s *Service) DeleteRestApi(ctx context.Context, in *api.DeleteRestApiReques
 		return nil, err
 	}
 
+	s.discardStageRuntime(m.Scope, common.Value(in.RestApiId), nil)
 	return &api.DeleteRestApiOutput{}, nil
 }
