@@ -493,7 +493,8 @@ func (s *Service) CompleteMultipartUpload(
 	}
 
 	s.notify(ctx, m, cfg, objectEvent{
-		name: "ObjectCreated:CompleteMultipartUpload", reason: "CompleteMultipartUpload",
+		bucketKey: bucket,
+		name:      "ObjectCreated:CompleteMultipartUpload", reason: "CompleteMultipartUpload",
 		bucket: *in.Bucket, key: *in.Key, etag: etag, version: common.Value(version), size: size,
 	})
 	location := "/" + *in.Bucket + "/" + url.PathEscape(*in.Key)

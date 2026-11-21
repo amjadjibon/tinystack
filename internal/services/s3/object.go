@@ -219,7 +219,7 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 	}
 
 	var cfg *api.NotificationConfiguration
-	var status string
+	var bucketKey, status string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		key, resolveErr := resolve(tx, m, in.Bucket, in.ExpectedBucketOwner)
 		if resolveErr != nil {
@@ -261,6 +261,7 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 		}
 
 		var putErr error
+		bucketKey = key
 		status, putErr = putCurrent(tx, key, *in.Key, &obj, blob.Record())
 		return putErr
 	})
@@ -271,13 +272,14 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 
 	version := reported(status, &obj)
 	s.notify(ctx, m, cfg, objectEvent{
-		name:    "ObjectCreated:Put",
-		reason:  "PutObject",
-		bucket:  *in.Bucket,
-		key:     *in.Key,
-		etag:    obj.ETag,
-		version: common.Value(version),
-		size:    obj.Size,
+		bucketKey: bucketKey,
+		name:      "ObjectCreated:Put",
+		reason:    "PutObject",
+		bucket:    *in.Bucket,
+		key:       *in.Key,
+		etag:      obj.ETag,
+		version:   common.Value(version),
+		size:      obj.Size,
 	})
 	out := &api.PutObjectOutput{ETag: new(obj.ETag), VersionId: version}
 	obj.Checksum.apply(out)

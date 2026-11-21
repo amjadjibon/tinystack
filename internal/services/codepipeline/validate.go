@@ -8,6 +8,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/codepipeline"
+	"github.com/amjadjibon/tinystack/internal/common"
 )
 
 const (
@@ -25,6 +26,7 @@ var (
 	pipelineTypes  = []string{typeV1, typeV2}
 	categories     = []string{categorySource, "Build", "Deploy", "Test", categoryInvoke, categoryApproval, "Compute"}
 	owners         = []string{ownerAWS, "ThirdParty", "Custom"}
+	retryModes     = []string{"FAILED_ACTIONS", "ALL_ACTIONS"}
 
 	namePattern     = regexp.MustCompile(`^[A-Za-z0-9.@\-_]+$`)
 	rolePattern     = regexp.MustCompile(`^arn:aws(-\w+)*:iam::\d{12}:role/`)
@@ -117,28 +119,57 @@ func checkSettings(p *api.PipelineDeclaration) error {
 		return err
 	}
 
-	// Pipeline variables and the QUEUED and PARALLEL execution modes are V2 features, and a declaration that uses
-	// one without naming a type becomes a V2 pipeline.
 	v2Features := len(p.Variables) > 0 || *p.ExecutionMode != modeSuperseded
+	for i := range p.Stages {
+		failure := p.Stages[i].OnFailure
+		if failure == nil {
+			continue
+		}
+
+		v2Features = true
+		switch common.Value(failure.Result) {
+		case "RETRY":
+			if failure.RetryConfiguration == nil {
+				return invalidStructure("RETRY requires onFailure.retryConfiguration")
+			}
+
+			if err := requiredEnum("retryMode", failure.RetryConfiguration.RetryMode, retryModes); err != nil {
+				return err
+			}
+		case "ROLLBACK":
+			if i == 0 || *p.ExecutionMode == modeParallel || failure.RetryConfiguration != nil {
+				return invalidStructure("ROLLBACK requires a non-source stage in SUPERSEDED or QUEUED mode")
+			}
+		default:
+			return invalidStructure("onFailure supports only RETRY and ROLLBACK results")
+		}
+	}
+
 	switch {
 	case p.PipelineType == nil && v2Features:
 		p.PipelineType = new(typeV2)
 	case p.PipelineType == nil:
 		p.PipelineType = new(typeV1)
 	case *p.PipelineType == typeV1 && v2Features:
-		return invalidStructure("Pipeline variables and the %s execution mode require a V2 pipeline", *p.ExecutionMode)
+		return invalidStructure("Pipeline variables, automatic failure handling and non-default modes require V2")
 	}
 
 	return nil
 }
 
 func checkVariables(variables []api.PipelineVariableDeclaration) error {
+	seen := make(map[string]bool, len(variables))
 	for i := range variables {
 		v := &variables[i]
 		if err := requiredText("variable name", v.Name, 1, 128, variablePattern); err != nil {
 			return err
 		}
 
+		if seen[*v.Name] {
+			return invalidStructure("Duplicate pipeline variable %s", *v.Name)
+		}
+
+		seen[*v.Name] = true
 		if err := optionalText("variable defaultValue", v.DefaultValue, 1, 1000, nil); err != nil {
 			return err
 		}

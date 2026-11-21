@@ -60,7 +60,13 @@ type Service struct {
 	accountBlocksPublicPolicy func(context.Context) (bool, error)
 	authorizer                catalog.ServiceAuthorizer
 	now                       func() time.Time
+	objectCreated             func(context.Context, request.Scope, string, string, string)
 	maxObjectBytes            int64
+}
+
+// ObserveObjectCreates registers an in-process consumer of committed object writes.
+func (s *Service) ObserveObjectCreates(fn func(context.Context, request.Scope, string, string, string)) {
+	s.objectCreated = fn
 }
 
 // New owns the supplied file facility, or creates a temporary one for standalone use.

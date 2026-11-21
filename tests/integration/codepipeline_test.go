@@ -122,8 +122,22 @@ func TestCodePipelineSDKLifecycle(t *testing.T) {
 		t.Fatal(updated, err)
 	}
 
-	if _, err = c.GetPipeline(ctx, &sdk.GetPipelineInput{Name: new("app"), Version: new(int32(1))}); err == nil {
-		t.Fatal("expected the older version to be gone")
+	old, err := c.GetPipeline(ctx, &sdk.GetPipelineInput{Name: new("app"), Version: new(int32(1))})
+	if err != nil || aws.ToInt32(old.Pipeline.Version) != 1 ||
+		old.Pipeline.PipelineType != types.PipelineTypeV1 || len(old.Pipeline.Variables) != 0 ||
+		!old.Metadata.Updated.Equal(*got.Metadata.Updated) {
+		t.Fatal(old, err)
+	}
+
+	execution, err := c.GetPipelineExecution(ctx, &sdk.GetPipelineExecutionInput{
+		PipelineName: new("app"), PipelineExecutionId: pipelineExecutions(t, c, "app")[0].PipelineExecutionId,
+	})
+	if err != nil || aws.ToInt32(execution.PipelineExecution.PipelineVersion) != 1 {
+		t.Fatal(execution, err)
+	}
+
+	if _, err = c.GetPipeline(ctx, &sdk.GetPipelineInput{Name: new("app"), Version: new(int32(3))}); err == nil {
+		t.Fatal("expected a missing version error")
 	} else if gone := (*types.PipelineVersionNotFoundException)(nil); !errors.As(err, &gone) {
 		t.Fatalf("error = %T %v", err, err)
 	}
@@ -220,14 +234,32 @@ func TestCodePipelineRejectsUnsupportedMembers(t *testing.T) {
 	ctx := context.Background()
 	c := codePipelineClient(s, "us-east-1")
 	p := codePipelineDeclaration("triggered")
+	p.PipelineType = types.PipelineTypeV2
 	p.Triggers = []types.PipelineTriggerDeclaration{
-		{ProviderType: types.PipelineTriggerProviderTypeCodeStarSourceConnection},
+		{
+			ProviderType: types.PipelineTriggerProviderTypeCodeStarSourceConnection,
+			GitConfiguration: &types.GitConfiguration{
+				SourceActionName: p.Stages[0].Actions[0].Name,
+				Push: []types.GitPushFilter{
+					{Branches: &types.GitBranchFilterCriteria{Includes: []string{"main"}}},
+				},
+			},
+		},
 	}
-	if _, err := c.CreatePipeline(ctx, &sdk.CreatePipelineInput{Pipeline: p}); err == nil {
-		t.Fatal("expected triggers to be rejected")
-	}
+	_, err := c.CreatePipeline(ctx, &sdk.CreatePipelineInput{Pipeline: p})
+	code(t, err, "ValidationException")
 
-	if _, err := c.GetPipeline(ctx, &sdk.GetPipelineInput{Name: new("triggered")}); err == nil {
+	if _, err = c.GetPipeline(ctx, &sdk.GetPipelineInput{Name: new("triggered")}); err == nil {
 		t.Fatal("a rejected pipeline was stored")
 	}
+
+	p.Triggers = nil
+	p.Stages[1].OnFailure = &types.FailureConditions{
+		Result: types.ResultRollback,
+		Conditions: []types.Condition{
+			{Result: types.ResultRollback},
+		},
+	}
+	_, err = c.CreatePipeline(ctx, &sdk.CreatePipelineInput{Pipeline: p})
+	code(t, err, "ValidationException")
 }

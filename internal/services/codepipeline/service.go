@@ -35,7 +35,7 @@ type (
 		mu      sync.Mutex
 	}
 
-	// record is a pipeline as stored. Only the current version of the declaration is kept.
+	// record is the current pipeline declaration with its mutable settings.
 	record struct {
 		Transitions map[string]api.TransitionState
 		Tags        map[string]string

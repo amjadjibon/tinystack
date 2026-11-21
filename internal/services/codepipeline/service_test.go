@@ -110,10 +110,12 @@ func TestPipelineLifecycle(t *testing.T) {
 		t.Fatal(got, err)
 	}
 
-	if _, err = s.GetPipeline(ctx, &api.GetPipelineInput{Name: new("app"), Version: new(int64(1))}); err == nil {
-		t.Fatal("an older version was served")
+	old, err := s.GetPipeline(ctx, &api.GetPipelineInput{Name: new("app"), Version: new(int64(1))})
+	if err != nil || *old.Pipeline.Version != 1 || len(old.Pipeline.Stages) != 3 {
+		t.Fatal(old, err)
 	}
 
+	_, err = s.GetPipeline(ctx, &api.GetPipelineInput{Name: new("app"), Version: new(int64(3))})
 	wantCode(t, err, "PipelineVersionNotFoundException")
 	if _, err = s.DeletePipeline(ctx, &api.DeletePipelineInput{Name: new("app")}); err != nil {
 		t.Fatal(err)

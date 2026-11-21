@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path"
 	"slices"
 	"strings"
 	"time"
@@ -345,11 +346,12 @@ func notifications(tx storage.ReadTx, key string) (*api.NotificationConfiguratio
 
 // objectEvent is a committed object change to notify about.
 type objectEvent struct {
-	name   string // such as "ObjectCreated:Put"
-	reason string // the API operation, for EventBridge
-	bucket string
-	key    string
-	etag   string
+	bucketKey string // resolved bucket storage key for committed object creations
+	name      string // such as "ObjectCreated:Put"
+	reason    string // the API operation, for EventBridge
+	bucket    string
+	key       string
+	etag      string
 	// version is the version ID written or deleted, if versioning applies.
 	version string
 	size    int64
@@ -364,11 +366,17 @@ const eventTime = "2006-01-02T15:04:05.000Z"
 //
 //nolint:gocritic // Metadata is an immutable request snapshot.
 func (s *Service) notify(ctx context.Context, m request.Metadata, cfg *api.NotificationConfiguration, e objectEvent) {
+	ctx = context.WithoutCancel(ctx)
+	if s.objectCreated != nil && e.bucketKey != "" {
+		owner, _, _ := strings.Cut(e.bucketKey, "/")
+		scope := request.Scope{AccountID: owner, Region: m.Region}
+		s.objectCreated(ctx, scope, path.Base(e.bucketKey), e.key, e.version)
+	}
+
 	if cfg == nil {
 		return
 	}
 
-	ctx = context.WithoutCancel(ctx)
 	now := s.now().UTC()
 	sequencer := fmt.Sprintf("%016X", now.UnixNano())
 	source := "arn:aws:s3:::" + e.bucket

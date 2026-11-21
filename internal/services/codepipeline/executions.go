@@ -3,6 +3,7 @@ package codepipeline
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -20,18 +21,19 @@ const (
 )
 
 type executionRecord struct {
-	StopReason *string
-	Artifacts  map[string]api.ArtifactDetail
-	Values     map[string]string
-	Revisions  map[string]api.SourceRevisionOverride
-	Actions    []actionRecord
-	Sources    []api.SourceRevision
-	Scope      request.Scope
-	Execution  api.PipelineExecution
-	Pipeline   api.PipelineDeclaration
-	Started    float64
-	Updated    float64
-	Stage      int
+	StopReason       *string
+	Artifacts        map[string]api.ArtifactDetail
+	Values           map[string]string
+	Revisions        map[string]api.SourceRevisionOverride
+	Actions          []actionRecord
+	Sources          []api.SourceRevision
+	Scope            request.Scope
+	Execution        api.PipelineExecution
+	Pipeline         api.PipelineDeclaration
+	Started          float64
+	Updated          float64
+	Stage            int
+	AutoRetriedStage int // one-based stage number, zero until the first automatic retry
 }
 
 type actionRecord struct {
@@ -75,6 +77,16 @@ func (s *Service) start(
 		return nil, err
 	}
 
+	return s.startExecution(ctx, in, trigger, scope, p)
+}
+
+func (s *Service) startExecution(
+	ctx context.Context,
+	in *api.StartPipelineExecutionInput,
+	trigger string,
+	scope request.Scope,
+	p *record,
+) (*api.StartPipelineExecutionOutput, error) {
 	id := executionID()
 	created := false
 	now := common.Unix(time.Now())
@@ -181,7 +193,7 @@ func (s *Service) start(
 		}
 	}
 
-	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 		token := idempotency.Key(scope, serviceName, "StartPipelineExecution/"+*in.Name, in.ClientRequestToken)
 		previous, found, e := idempotency.Replay[string](tx, token, in,
 			awserror.New("ConflictException", "ClientRequestToken was used with different parameters"))
@@ -190,13 +202,21 @@ func (s *Service) start(
 			return e
 		}
 
-		created = true
-		key := executionKey(scope, *in.Name, id)
-		if e := storage.Write(tx, key, r); e != nil {
+		current, exists, e := storage.Read[record](tx, scope.Key(serviceName, pipelineKind, *in.Name))
+		if e != nil {
 			return e
 		}
 
-		if e := storage.Write(tx, executionIndex+scope.AccountID+"/"+scope.Region+"/"+id, key); e != nil {
+		if !exists {
+			return pipelineNotFound(*in.Name)
+		}
+
+		if current.Created != p.Created || *current.Pipeline.Version != *p.Pipeline.Version {
+			return awserror.New("ConflictException", "Pipeline changed while the execution was starting")
+		}
+
+		created = true
+		if e := saveExecution(tx, r); e != nil {
 			return e
 		}
 
@@ -214,6 +234,16 @@ func (s *Service) start(
 	}
 
 	return &api.StartPipelineExecutionOutput{PipelineExecutionId: new(id)}, nil
+}
+
+func saveExecution(tx storage.WriteTx, r *executionRecord) error {
+	id := *r.Execution.PipelineExecutionId
+	key := executionKey(r.Scope, *r.Pipeline.Name, id)
+	if err := storage.Write(tx, key, r); err != nil {
+		return err
+	}
+
+	return storage.Write(tx, executionIndex+r.Scope.AccountID+"/"+r.Scope.Region+"/"+id, key)
 }
 
 func (s *Service) execution(ctx context.Context, name, id *string, fn func(*executionRecord) error) error {
@@ -321,6 +351,7 @@ func (s *Service) ListPipelineExecutions(
 				Trigger:             r.Execution.Trigger,
 				ExecutionMode:       r.Execution.ExecutionMode,
 				ExecutionType:       r.Execution.ExecutionType,
+				RollbackMetadata:    r.Execution.RollbackMetadata,
 				SourceRevisions:     r.Sources,
 			},
 		)
@@ -454,25 +485,52 @@ func (s *Service) RetryStageExecution(
 	ctx context.Context,
 	in *api.RetryStageExecutionInput,
 ) (*api.RetryStageExecutionOutput, error) {
+	if err := requiredEnum("retryMode", in.RetryMode, retryModes); err != nil {
+		return nil, err
+	}
+
 	err := s.execution(ctx, in.PipelineName, in.PipelineExecutionId, func(r *executionRecord) error {
 		if common.Value(r.Execution.Status) != statusFailed || r.Stage >= len(r.Pipeline.Stages) ||
-			*r.Pipeline.Stages[r.Stage].Name != *in.StageName {
+			*r.Pipeline.Stages[r.Stage].Name != common.Value(in.StageName) {
 			return awserror.New("StageNotRetryableException", "Only the failed stage can be retried")
 		}
 
-		for i := range r.Actions {
-			a := &r.Actions[i]
-			if a.Stage == r.Stage &&
-				(common.Value(in.RetryMode) == "ALL_ACTIONS" || common.Value(a.Detail.Status) != statusSucceeded) {
-				a.Retired = true
-			}
-		}
-
-		finishExecution(r, statusInProgress, "Retrying failed stage")
+		retryStage(r, *in.RetryMode)
 		return nil
 	})
 
 	return &api.RetryStageExecutionOutput{PipelineExecutionId: in.PipelineExecutionId}, err
+}
+
+func retryStage(r *executionRecord, mode string) {
+	for i := range r.Actions {
+		a := &r.Actions[i]
+		if a.Stage != r.Stage || a.Retired || (mode == "FAILED_ACTIONS" && *a.Detail.Status == statusSucceeded) {
+			continue
+		}
+
+		a.Retired = true
+		if out := a.Detail.Output; out != nil {
+			for _, artifact := range out.OutputArtifacts {
+				delete(r.Artifacts, *artifact.Name)
+				r.Execution.ArtifactRevisions = slices.DeleteFunc(r.Execution.ArtifactRevisions,
+					func(revision api.ArtifactRevision) bool { return *revision.Name == *artifact.Name })
+			}
+
+			if namespace := a.Detail.Input.Namespace; namespace != nil {
+				for name := range out.OutputVariables {
+					delete(r.Values, *namespace+"."+name)
+				}
+			}
+		}
+
+		if r.Stage == 0 {
+			r.Sources = slices.DeleteFunc(r.Sources,
+				func(revision api.SourceRevision) bool { return *revision.ActionName == *a.Detail.ActionName })
+		}
+	}
+
+	finishExecution(r, statusInProgress, "Retrying failed stage")
 }
 
 func (s *Service) transition(ctx context.Context, name, stage, kind, reason *string, enabled bool) error {

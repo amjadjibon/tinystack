@@ -207,6 +207,7 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 	var obj object
 	var cfg *api.NotificationConfiguration
 	var copied, written *string
+	var bucketKey string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		source, resolveErr := resolveSource(tx, m, sourceBucket, in.ExpectedSourceBucketOwner)
 		if resolveErr != nil {
@@ -285,6 +286,7 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 
 		obj.Parts = nil
 		obj.LastModified = s.now().UnixMilli()
+		bucketKey = target
 		status, putErr := putCurrent(tx, target, *in.Key, &obj, body)
 		written = reported(status, &obj)
 		return putErr
@@ -294,13 +296,14 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 	}
 
 	s.notify(ctx, m, cfg, objectEvent{
-		name:    "ObjectCreated:Copy",
-		reason:  "CopyObject",
-		bucket:  *in.Bucket,
-		key:     *in.Key,
-		etag:    obj.ETag,
-		version: common.Value(written),
-		size:    obj.Size,
+		bucketKey: bucketKey,
+		name:      "ObjectCreated:Copy",
+		reason:    "CopyObject",
+		bucket:    *in.Bucket,
+		key:       *in.Key,
+		etag:      obj.ETag,
+		version:   common.Value(written),
+		size:      obj.Size,
 	})
 	result := &api.CopyObjectResult{
 		ETag:         new(obj.ETag),

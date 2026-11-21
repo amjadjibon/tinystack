@@ -13,7 +13,7 @@ Run durable pipeline executions with CodeCommit and S3 sources, approvals, build
 | API version | `2015-07-09` |
 | Scope | Account and region |
 | Execution | Background execution engine with S3 zip artifacts; CodeBuild requires Docker |
-| Selected operations | 20 of 44 in the pinned model |
+| Selected operations | 21 of 44 in the pinned model |
 
 ## Implemented behavior
 
@@ -21,17 +21,17 @@ See the [implemented feature catalogue](catalogue.md#codepipeline) for this serv
 
 ## Limitations and future work
 
-- No S3 source change detection, V2 connection triggers, webhooks, custom action workers, stage conditions or rollback; unsupported providers and action configuration fail explicitly.
-- Only the current pipeline version is retained; GetPipeline for another version fails with PipelineVersionNotFoundException, and the version in a submitted declaration is ignored because the service sets it.
-- Stage blockers and conditions, action commands, declaration-level environment/output variables, configurable approval timeouts, and output artifact file declarations remain unselected and fail with NotImplemented.
+- V2 Git trigger filters require a CodeStarSourceConnection action, which TinyStack lacks. Connection triggers, webhooks, custom action workers, and EventBridge rules targeting a pipeline ARN are unsupported. Unsupported providers and action configuration fail explicitly.
+- Version history starts with the current declaration when an existing store is upgraded. The service sets the declaration version. GetPipeline returns PipelineVersionNotFoundException for an unavailable version.
+- Stage blockers, beforeEntry, onSuccess and condition rules within onFailure, action commands, declaration-level environment/output variables, configurable approval timeouts, and output artifact file declarations are rejected as unsupported request fields.
 - Provider-specific action rules (valid providers per category, artifact counts and configuration keys) and account quotas for pipelines, stages and actions are not enforced.
 - ListTagsForResource returns every tag in one response, as the operation documents, and does not accept nextToken or maxResults.
-- CloudFormation Triggers, DisableInboundStageTransitions, stage conditions and RestartExecutionOnUpdate set to true fail the stack operation instead of being ignored.
+- CloudFormation Triggers, DisableInboundStageTransitions, stage condition rules and RestartExecutionOnUpdate set to true fail the stack operation instead of being ignored.
 - Cross-Region actions, action role overrides, CODEBUILD_CLONE_REF, multiple CodeBuild inputs/outputs, Lambda output artifacts and continuation tokens, GetJobDetails and CloudFormation change-set modes are unsupported.
 - Artifact paths preserve the documented three-component AWS layout; AWS-specific name truncation and credential generation are not reproduced. Artifact-store encryption keys fail execution explicitly.
-- S3 source revisions without explicit version overrides are read when the source action starts; SNS/event delivery is not retried. ECS deployment completion uses the local service update and does not wait for real container steady state.
+- Unversioned S3 objects and manual starts without version overrides read the current object when the source action starts. SNS and event delivery is not retried. ECS deployment completion uses the local service update and does not wait for real container steady state.
 - Lambda jobs accept final success/failure only; the AWS continuation/heartbeat flow that can extend processing up to 24 hours is unsupported. Pending jobs time out after 20 minutes without a final response.
-- Pipeline-level SUPERSEDED behavior is implemented at stage boundaries; execution concurrency quotas and retained declaration history are not implemented.
+- Pipeline-level SUPERSEDED behavior is implemented at stage boundaries. Execution concurrency quotas are unsupported.
 - CodeBuild exported environment variables are not produced by the current build runner; action input environment overrides and upstream namespace references are supported.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
@@ -61,6 +61,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `PutJobFailureResult` | `POST /` |
 | `PutJobSuccessResult` | `POST /` |
 | `RetryStageExecution` | `POST /` |
+| `RollbackStage` | `POST /` |
 | `StartPipelineExecution` | `POST /` |
 | `StopPipelineExecution` | `POST /` |
 | `TagResource` | `POST /` |
@@ -69,7 +70,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "24 modeled operations outside the implementation"
+??? info "23 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
@@ -95,7 +96,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `PutThirdPartyJobSuccessResult`
     - `PutWebhook`
     - `RegisterWebhookWithThirdParty`
-    - `RollbackStage`
     - `UpdateActionType`
 
 ## Source and examples
@@ -103,5 +103,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/codepipeline)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/codepipeline/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/codepipeline.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
-- SDK integration examples: [codepipeline_executions_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/codepipeline_executions_test.go), [codepipeline_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/codepipeline_test.go).
+- SDK integration examples: [codepipeline_executions_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/codepipeline_executions_test.go), [codepipeline_sources_rollback_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/codepipeline_sources_rollback_test.go), [codepipeline_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/codepipeline_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

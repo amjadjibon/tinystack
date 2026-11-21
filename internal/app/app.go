@@ -901,6 +901,7 @@ func build(
 	a.onReset(buildProjects.Reset)
 	codePipelines.Start(caller, codecommitRecords, buildProjects)
 	codecommitRecords.ObserveReferences(codePipelines.SourceChanged)
+	buckets.ObserveObjectCreates(codePipelines.S3SourceChanged)
 	a.onStop(codePipelines.Stop)
 	a.onReset(codePipelines.Reset)
 	workflows.UseCaller(caller)

@@ -31688,6 +31688,7 @@
       "ListActionExecutions",
       "PutApprovalResult",
       "RetryStageExecution",
+      "RollbackStage",
       "EnableStageTransition",
       "DisableStageTransition",
       "PutJobSuccessResult",
@@ -31801,7 +31802,23 @@
       ],
       "StageDeclaration": [
         "name",
-        "actions"
+        "actions",
+        "onFailure"
+      ],
+      "FailureConditions": [
+        "result",
+        "retryConfiguration"
+      ],
+      "RetryConfiguration": [
+        "retryMode"
+      ],
+      "RollbackStageInput": [
+        "pipelineName",
+        "stageName",
+        "targetPipelineExecutionId"
+      ],
+      "RollbackStageOutput": [
+        "pipelineExecutionId"
       ],
       "ActionDeclaration": [
         "name",

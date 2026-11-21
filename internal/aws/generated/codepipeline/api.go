@@ -48,9 +48,19 @@ type ActionDeclaration struct {
 	Namespace       *string           `json:"namespace,omitempty"`
 }
 
+type RetryConfiguration struct {
+	RetryMode *string `json:"retryMode,omitempty"`
+}
+
+type FailureConditions struct {
+	Result             *string             `json:"result,omitempty"`
+	RetryConfiguration *RetryConfiguration `json:"retryConfiguration,omitempty"`
+}
+
 type StageDeclaration struct {
-	Name    *string             `json:"name,omitempty"`
-	Actions []ActionDeclaration `json:"actions,omitempty"`
+	Name      *string             `json:"name,omitempty"`
+	Actions   []ActionDeclaration `json:"actions,omitempty"`
+	OnFailure *FailureConditions  `json:"onFailure,omitempty"`
 }
 
 type PipelineVariableDeclaration struct {
@@ -433,6 +443,16 @@ type RetryStageExecutionOutput struct {
 	PipelineExecutionId *string `json:"pipelineExecutionId,omitempty"`
 }
 
+type RollbackStageInput struct {
+	PipelineName              *string `json:"pipelineName,omitempty"`
+	StageName                 *string `json:"stageName,omitempty"`
+	TargetPipelineExecutionId *string `json:"targetPipelineExecutionId,omitempty"`
+}
+
+type RollbackStageOutput struct {
+	PipelineExecutionId *string `json:"pipelineExecutionId,omitempty"`
+}
+
 type EnableStageTransitionOutput struct{}
 
 type EnableStageTransitionInput struct {
@@ -503,21 +523,23 @@ var pattern6 = regexp.MustCompile("^[a-zA-Z0-9!@ \\(\\)\\.\\*\\?\\-]+$")
 
 var enum5 = []string{"KMS"}
 
-var enum6 = []string{"ConfigurationError", "JobFailed", "PermissionError", "RevisionOutOfSync", "RevisionUnavailable", "SystemUnavailable"}
+var enum6 = []string{"FAIL", "RETRY", "ROLLBACK", "SKIP"}
+
+var enum7 = []string{"ConfigurationError", "JobFailed", "PermissionError", "RevisionOutOfSync", "RevisionUnavailable", "SystemUnavailable"}
 
 var pattern7 = regexp.MustCompile("^[a-zA-Z0-9_\\-]+$")
 
 var pattern8 = regexp.MustCompile("^arn:aws(-[\\w]+)*:codepipeline:.+:[0-9]{12}:.+$")
 
-var enum7 = []string{"PARALLEL", "QUEUED", "SUPERSEDED"}
+var enum8 = []string{"PARALLEL", "QUEUED", "SUPERSEDED"}
 
-var enum8 = []string{"V1", "V2"}
+var enum9 = []string{"V1", "V2"}
 
 var pattern9 = regexp.MustCompile(".*")
 
-var enum9 = []string{"ALL_ACTIONS", "FAILED_ACTIONS"}
+var enum10 = []string{"ALL_ACTIONS", "FAILED_ACTIONS"}
 
-var enum10 = []string{"COMMIT_ID", "IMAGE_DIGEST", "S3_OBJECT_KEY", "S3_OBJECT_VERSION_ID"}
+var enum11 = []string{"COMMIT_ID", "IMAGE_DIGEST", "S3_OBJECT_KEY", "S3_OBJECT_VERSION_ID"}
 
 var pattern10 = regexp.MustCompile("^[a-zA-Z0-9-]+$")
 
@@ -845,12 +867,26 @@ func (v *ExecutionDetails) Validate(path string) error {
 	return nil
 }
 
+func (v *FailureConditions) Validate(path string) error {
+	if v.Result != nil {
+		if err := validation.Enum(path+"result", (*v.Result), enum6); err != nil {
+			return err
+		}
+	}
+	if v.RetryConfiguration != nil {
+		if err := (*v.RetryConfiguration).Validate(path + "retryConfiguration" + "."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (v *FailureDetails) Validate(path string) error {
 	if err := validation.Required(path+"type", v.Type != nil); err != nil {
 		return err
 	}
 	if v.Type != nil {
-		if err := validation.Enum(path+"type", (*v.Type), enum6); err != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum7); err != nil {
 			return err
 		}
 	}
@@ -1093,12 +1129,12 @@ func (v *PipelineDeclaration) Validate(path string) error {
 		}
 	}
 	if v.ExecutionMode != nil {
-		if err := validation.Enum(path+"executionMode", (*v.ExecutionMode), enum7); err != nil {
+		if err := validation.Enum(path+"executionMode", (*v.ExecutionMode), enum8); err != nil {
 			return err
 		}
 	}
 	if v.PipelineType != nil {
-		if err := validation.Enum(path+"pipelineType", (*v.PipelineType), enum8); err != nil {
+		if err := validation.Enum(path+"pipelineType", (*v.PipelineType), enum9); err != nil {
 			return err
 		}
 	}
@@ -1269,6 +1305,15 @@ func (v *PutJobSuccessResultInput) Validate(path string) error {
 	return nil
 }
 
+func (v *RetryConfiguration) Validate(path string) error {
+	if v.RetryMode != nil {
+		if err := validation.Enum(path+"retryMode", (*v.RetryMode), enum10); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (v *RetryStageExecutionInput) Validate(path string) error {
 	if err := validation.Required(path+"pipelineName", v.PipelineName != nil); err != nil {
 		return err
@@ -1304,7 +1349,41 @@ func (v *RetryStageExecutionInput) Validate(path string) error {
 		return err
 	}
 	if v.RetryMode != nil {
-		if err := validation.Enum(path+"retryMode", (*v.RetryMode), enum9); err != nil {
+		if err := validation.Enum(path+"retryMode", (*v.RetryMode), enum10); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *RollbackStageInput) Validate(path string) error {
+	if err := validation.Required(path+"pipelineName", v.PipelineName != nil); err != nil {
+		return err
+	}
+	if v.PipelineName != nil {
+		if err := validation.Length(path+"pipelineName", utf8.RuneCountInString((*v.PipelineName)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"pipelineName", (*v.PipelineName), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"stageName", v.StageName != nil); err != nil {
+		return err
+	}
+	if v.StageName != nil {
+		if err := validation.Length(path+"stageName", utf8.RuneCountInString((*v.StageName)), new(int64(1)), new(int64(100))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"stageName", (*v.StageName), pattern0, nil, "^[A-Za-z0-9.@\\-_]+$"); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"targetPipelineExecutionId", v.TargetPipelineExecutionId != nil); err != nil {
+		return err
+	}
+	if v.TargetPipelineExecutionId != nil {
+		if err := validation.Pattern(path+"targetPipelineExecutionId", (*v.TargetPipelineExecutionId), pattern3, nil, "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"); err != nil {
 			return err
 		}
 	}
@@ -1327,7 +1406,7 @@ func (v *SourceRevisionOverride) Validate(path string) error {
 		return err
 	}
 	if v.RevisionType != nil {
-		if err := validation.Enum(path+"revisionType", (*v.RevisionType), enum10); err != nil {
+		if err := validation.Enum(path+"revisionType", (*v.RevisionType), enum11); err != nil {
 			return err
 		}
 	}
@@ -1362,6 +1441,11 @@ func (v *StageDeclaration) Validate(path string) error {
 			if err := e0.Validate(validation.Index(path+"actions", i0) + "."); err != nil {
 				return err
 			}
+		}
+	}
+	if v.OnFailure != nil {
+		if err := (*v.OnFailure).Validate(path + "onFailure" + "."); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -1531,6 +1615,7 @@ type API interface {
 	ListActionExecutions(context.Context, *ListActionExecutionsInput) (*ListActionExecutionsOutput, error)
 	PutApprovalResult(context.Context, *PutApprovalResultInput) (*PutApprovalResultOutput, error)
 	RetryStageExecution(context.Context, *RetryStageExecutionInput) (*RetryStageExecutionOutput, error)
+	RollbackStage(context.Context, *RollbackStageInput) (*RollbackStageOutput, error)
 	EnableStageTransition(context.Context, *EnableStageTransitionInput) (*EnableStageTransitionOutput, error)
 	DisableStageTransition(context.Context, *DisableStageTransitionInput) (*DisableStageTransitionOutput, error)
 	PutJobSuccessResult(context.Context, *PutJobSuccessResultInput) (*PutJobSuccessResultOutput, error)
@@ -1538,7 +1623,7 @@ type API interface {
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "codepipeline", SigningName: "codepipeline", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "codepipeline", TargetPrefix: "CodePipeline_20150709", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1", "rpcv2Cbor"}, Errors: map[string]catalog.ErrorBinding{"ActionNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ApprovalAlreadyCompletedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConcurrentPipelineExecutionsLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "DuplicatedStopRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidActionDeclarationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidApprovalTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidArnException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidBlockerDeclarationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidJobStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidNextTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStageDeclarationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStructureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "JobNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NotLatestPipelineExecutionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "OutputVariablesSizeExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineExecutionNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineExecutionNotStoppableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineNameInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineVersionNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "StageNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "StageNotRetryableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TooManyTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "codepipeline", SigningName: "codepipeline", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "codepipeline", TargetPrefix: "CodePipeline_20150709", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_1", "rpcv2Cbor"}, Errors: map[string]catalog.ErrorBinding{"ActionNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ApprovalAlreadyCompletedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConcurrentPipelineExecutionsLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 409}, "DuplicatedStopRequestException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidActionDeclarationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidApprovalTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidArnException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidBlockerDeclarationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidJobStateException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidNextTokenException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStageDeclarationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidStructureException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "JobNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "NotLatestPipelineExecutionException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "OutputVariablesSizeExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineExecutionNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineExecutionNotStoppableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineExecutionOutdatedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineNameInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PipelineVersionNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "StageNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "StageNotRetryableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TooManyTagsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "UnableToRollbackStageException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ValidationException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreatePipeline": {Name: "CreatePipeline", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:CreatePipeline", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.CreatePipeline", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/CreatePipeline", Target: "CodePipeline_20150709.CreatePipeline", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &CreatePipelineInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*CreatePipelineInput)
 			if err := in.Validate(""); err != nil {
@@ -1650,6 +1735,13 @@ func Descriptor(api API) catalog.Service {
 				return nil, awserror.New("ValidationException", err.Error())
 			}
 			return api.RetryStageExecution(ctx, in)
+		}},
+		"RollbackStage": {Name: "RollbackStage", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:RollbackStage", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.RollbackStage", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/RollbackStage", Target: "CodePipeline_20150709.RollbackStage", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &RollbackStageInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			in := input.(*RollbackStageInput)
+			if err := in.Validate(""); err != nil {
+				return nil, awserror.New("ValidationException", err.Error())
+			}
+			return api.RollbackStage(ctx, in)
 		}},
 		"EnableStageTransition": {Name: "EnableStageTransition", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "codepipeline:EnableStageTransition", Bindings: map[string]catalog.Binding{"awsJson1_1": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CodePipeline_20150709.EnableStageTransition", Version: "", ContentType: "application/x-amz-json-1.1", StatusCode: 200}, "rpcv2Cbor": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/service/CodePipeline_20150709/operation/EnableStageTransition", Target: "CodePipeline_20150709.EnableStageTransition", Version: "", ContentType: "application/cbor", StatusCode: 200}}, NewInput: func() any { return &EnableStageTransitionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			in := input.(*EnableStageTransitionInput)

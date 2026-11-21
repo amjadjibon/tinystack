@@ -3,6 +3,7 @@ package codepipeline
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -14,6 +15,17 @@ import (
 
 // maxPipelines is the most pipelines ListPipelines returns in a page; the model documents no default.
 const maxPipelines = 1000
+
+const pipelineVersionKind = "pipeline-version"
+
+type pipelineVersion struct {
+	Pipeline api.PipelineDeclaration
+	Updated  float64
+}
+
+func pipelineVersionKey(scope request.Scope, name string, version int64) string {
+	return scope.Key(serviceName, pipelineVersionKind, name+"/"+strconv.FormatInt(version, 10))
+}
 
 // candidate validates a caller's declaration and returns a normalized copy that the caller can store.
 func candidate(in *api.PipelineDeclaration, region string) (*api.PipelineDeclaration, error) {
@@ -131,6 +143,11 @@ func (s *Service) UpdatePipeline(ctx context.Context, in *api.UpdatePipelineInpu
 
 		// The version in the declaration is ignored: every update adds one to the stored version.
 		p.Version = new(*r.Pipeline.Version + 1)
+		previous := pipelineVersion{Pipeline: r.Pipeline, Updated: r.Updated}
+		if e := storage.Write(tx, pipelineVersionKey(scope, *p.Name, *r.Pipeline.Version), &previous); e != nil {
+			return e
+		}
+
 		r.Pipeline = *p
 		r.Updated = common.Unix(time.Now())
 
@@ -181,25 +198,51 @@ func (s *Service) GetPipeline(ctx context.Context, in *api.GetPipelineInput) (*a
 		return nil, awserror.Validation("version must be at least 1")
 	}
 
-	r, scope, err := s.load(ctx, in.Name)
+	scope, err := request.RegionalScope(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Only the current version of a declaration is kept.
-	if in.Version != nil && *in.Version != *r.Pipeline.Version {
-		return nil, awserror.New("PipelineVersionNotFoundException",
-			fmt.Sprintf("Only version %d of pipeline %s is retained", *r.Pipeline.Version, *in.Name))
+	if checkErr := requiredText("name", in.Name, 1, 100, namePattern); checkErr != nil {
+		return nil, checkErr
 	}
 
-	return &api.GetPipelineOutput{
-		Pipeline: &r.Pipeline,
-		Metadata: &api.PipelineMetadata{
+	out := &api.GetPipelineOutput{}
+	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+		r, found, e := storage.Read[record](tx, scope.Key(serviceName, pipelineKind, *in.Name))
+		if e != nil {
+			return e
+		}
+
+		if !found {
+			return pipelineNotFound(*in.Name)
+		}
+
+		out.Pipeline = &r.Pipeline
+		out.Metadata = &api.PipelineMetadata{
 			PipelineArn: new(pipelineARN(scope, *in.Name)),
 			Created:     new(r.Created),
 			Updated:     new(r.Updated),
-		},
-	}, nil
+		}
+		if in.Version == nil || *in.Version == *r.Pipeline.Version {
+			return nil
+		}
+
+		v, found, e := storage.Read[pipelineVersion](tx, pipelineVersionKey(scope, *in.Name, *in.Version))
+		if e != nil {
+			return e
+		}
+
+		if !found {
+			return awserror.New("PipelineVersionNotFoundException",
+				fmt.Sprintf("Version %d of pipeline %s was not found", *in.Version, *in.Name))
+		}
+
+		out.Pipeline = &v.Pipeline
+		out.Metadata.Updated = new(v.Updated)
+		return nil
+	})
+	return out, err
 }
 
 func (s *Service) GetPipelineState(
@@ -246,7 +289,7 @@ func (s *Service) GetPipelineState(
 					incoming := api.StageExecution{
 						PipelineExecutionId: row.Execution.PipelineExecutionId,
 						Status:              new(statusInProgress),
-						Type:                new("STANDARD"),
+						Type:                row.Execution.ExecutionType,
 					}
 
 					state.InboundExecutions = append(state.InboundExecutions, incoming)
@@ -275,6 +318,7 @@ func (s *Service) GetPipelineState(
 					state.LatestExecution = &api.StageExecution{
 						PipelineExecutionId: row.Execution.PipelineExecutionId,
 						Status:              new(status),
+						Type:                row.Execution.ExecutionType,
 					}
 				}
 			}
@@ -400,6 +444,10 @@ func (s *Service) DeletePipeline(ctx context.Context, in *api.DeletePipelineInpu
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		tx.Delete(scope.Key(serviceName, pipelineKind, *in.Name))
+		for _, key := range tx.Keys(scope.Prefix(serviceName, pipelineVersionKind) + *in.Name + "/") {
+			tx.Delete(key)
+		}
+
 		return nil
 	})
 	if err != nil {

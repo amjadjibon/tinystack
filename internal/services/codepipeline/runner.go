@@ -120,7 +120,7 @@ func (s *Service) tick(ctx context.Context) {
 
 	for _, key := range keys {
 		var claims []claimedAction
-		var before, after *executionRecord
+		var before, after, rollback *executionRecord
 		err := s.store.Update(ctx, func(tx storage.WriteTx) error {
 			r, ok, e := storage.Read[executionRecord](tx, key)
 			if e != nil {
@@ -137,10 +137,16 @@ func (s *Service) tick(ctx context.Context) {
 				return e
 			}
 
-			if !ok {
+			if !ok || r.Started < p.Created {
 				finishExecution(r, statusStopped, "Pipeline deleted")
 			} else {
 				claims = s.advance(tx, key, r, p)
+				if common.Value(r.Execution.Status) == statusFailed {
+					rollback, e = onStageFailure(tx, r, p)
+					if e != nil {
+						return e
+					}
+				}
 			}
 
 			after = common.Clone(r)
@@ -151,6 +157,10 @@ func (s *Service) tick(ctx context.Context) {
 		}
 
 		s.emitChanges(ctx, before, after)
+		if rollback != nil {
+			s.emit(ctx, rollback, "Pipeline", "STARTED", nil)
+		}
+
 		if before != nil && after != nil {
 			if len(claims) > 0 {
 				entered := true
@@ -254,7 +264,7 @@ func (s *Service) advance(tx storage.ReadTx, key string, r *executionRecord, p *
 			active := false
 			for idx := range r.Actions {
 				a := &r.Actions[idx]
-				if a.Stage == r.Stage && !a.Retired {
+				if a.Stage == r.Stage {
 					active = true
 				}
 			}
@@ -288,15 +298,15 @@ func (s *Service) advance(tx storage.ReadTx, key string, r *executionRecord, p *
 				}
 
 				for idx := range other.Actions {
-					a := &other.Actions[idx]
-					if !a.Retired && a.Stage == r.Stage && common.Value(a.Detail.Status) == statusInProgress {
+					if other.Stage == r.Stage && other.Actions[idx].Stage == r.Stage {
 						return nil
 					}
 				}
 			}
 		}
 
-		if t, ok := p.Transitions[*stage.Name+"/Inbound"]; ok && !common.Value(t.Enabled) {
+		if t, ok := p.Transitions[*stage.Name+"/Inbound"]; ok && !common.Value(t.Enabled) &&
+			r.Execution.RollbackMetadata == nil {
 			return nil
 		}
 	}
@@ -330,6 +340,12 @@ func (s *Service) advance(tx storage.ReadTx, key string, r *executionRecord, p *
 	}
 
 	if order == 1000 {
+		if r.Execution.RollbackMetadata != nil {
+			r.Stage++
+			finishExecution(r, statusSucceeded, "Stage rollback succeeded")
+			return nil
+		}
+
 		if transition, ok := p.Transitions[*stage.Name+"/Outbound"]; ok && !common.Value(transition.Enabled) {
 			return nil
 		}
