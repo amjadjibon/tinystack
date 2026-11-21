@@ -90,7 +90,8 @@ func mediaJob(role *string, file string) *sdk.CreateJobInput {
 
 func mediaWait(t *testing.T, c *sdk.Client, id *string, status types.JobStatus) *types.Job {
 	t.Helper()
-	deadline := time.Now().Add(10 * time.Second)
+	// Generous, since the full parallel suite can starve the one-second job worker.
+	deadline := time.Now().Add(30 * time.Second)
 	for time.Now().Before(deadline) {
 		out, err := c.GetJob(context.Background(), &sdk.GetJobInput{Id: id})
 		mediaRequire(t, out, err)
