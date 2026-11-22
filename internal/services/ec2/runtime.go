@@ -64,6 +64,10 @@ func (s *Service) UseRuntime(rt Runtime, cfg config.VMConfig, imds, gateway http
 
 // Stop leaves guests running. Listeners are rebound from persisted ports on recovery.
 func (s *Service) Stop() {
+	if s.storageBG != nil {
+		s.storageBG.Stop()
+	}
+
 	if s.bg == nil {
 		return
 	}
@@ -109,8 +113,8 @@ func (s *Service) Reset(ctx context.Context) {
 	})
 }
 
-func (s *Service) validateVM(tx storage.ReadTx, l *launch, count int64, id string) error {
-	if _, _, err := vmImage(l.img, id, s.runtimeConfig.Images); err != nil {
+func (s *Service) validateVM(tx storage.ReadTx, l *launch, img *image, count int64, id string) error {
+	if _, _, err := vmImage(img, id, s.runtimeConfig.Images); err != nil {
 		return err
 	}
 
@@ -416,6 +420,10 @@ func (s *Service) reconcileVM(ctx context.Context, key string) {
 		}
 
 		if current.State == stateTerminated {
+			if releaseErr := releaseInstanceVolumes(tx, *scope, current); releaseErr != nil {
+				return releaseErr
+			}
+
 			if releaseErr := releaseInstanceInterfaces(tx, *scope, i.ID); releaseErr != nil {
 				return releaseErr
 			}

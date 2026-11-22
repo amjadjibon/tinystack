@@ -1180,9 +1180,11 @@ func build(
 		); err != nil {
 			return nil, err
 		}
-		a.onStop(network.Stop)
 		a.onReset(network.Reset)
 	}
+
+	network.StartStorageTransitions()
+	a.onStop(network.Stop)
 
 	a.Metadata = metaService
 	handler.HandlePath("/_tinystack/imds/", metaService.IMDSHandler())

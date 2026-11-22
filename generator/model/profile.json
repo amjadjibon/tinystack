@@ -8144,7 +8144,36 @@
       "DescribeVpnConnections",
       "DeleteVpnConnection",
       "CreateVpnConnectionRoute",
-      "DeleteVpnConnectionRoute"
+      "DeleteVpnConnectionRoute",
+      "CreateVolume",
+      "DescribeVolumes",
+      "DeleteVolume",
+      "AttachVolume",
+      "DetachVolume",
+      "ModifyVolume",
+      "DescribeVolumesModifications",
+      "DescribeVolumeStatus",
+      "CreateSnapshot",
+      "DescribeSnapshots",
+      "DeleteSnapshot",
+      "CopySnapshot",
+      "ModifySnapshotAttribute",
+      "DescribeSnapshotAttribute",
+      "CreateImage",
+      "RegisterImage",
+      "DeregisterImage",
+      "CopyImage",
+      "ModifyImageAttribute",
+      "DescribeImageAttribute",
+      "DescribeInstanceAttribute",
+      "ModifyInstanceAttribute",
+      "DescribeInstanceTypes",
+      "DescribeInstanceTypeOfferings",
+      "DescribeInstanceCreditSpecifications",
+      "GetConsoleOutput",
+      "DescribeAccountAttributes",
+      "EnableEbsEncryptionByDefault",
+      "GetEbsEncryptionByDefault"
     ],
     "shapes": {
       "DescribeRegionsRequest": [
@@ -8578,7 +8607,9 @@
         "ClientToken",
         "LaunchTemplate",
         "IamInstanceProfile",
-        "MetadataOptions"
+        "MetadataOptions",
+        "BlockDeviceMappings",
+        "DisableApiStop"
       ],
       "RunInstancesMonitoringEnabled": [
         "Enabled"
@@ -8627,7 +8658,8 @@
         "PublicIpAddress",
         "IamInstanceProfile",
         "NetworkInterfaces",
-        "MetadataOptions"
+        "MetadataOptions",
+        "BlockDeviceMappings"
       ],
       "InstanceState": [
         "Code",
@@ -8716,7 +8748,8 @@
         "MaxResults",
         "NextToken",
         "DryRun",
-        "Filters"
+        "Filters",
+        "ExecutableUsers"
       ],
       "DescribeImagesResult": [
         "NextToken",
@@ -8742,18 +8775,22 @@
         "CreationDate",
         "Public",
         "Architecture",
-        "ImageType"
+        "ImageType",
+        "Tags"
       ],
       "BlockDeviceMapping": [
         "DeviceName",
-        "Ebs"
+        "Ebs",
+        "NoDevice"
       ],
       "EbsBlockDevice": [
         "DeleteOnTermination",
         "SnapshotId",
         "VolumeSize",
         "VolumeType",
-        "Encrypted"
+        "Encrypted",
+        "Iops",
+        "Throughput"
       ],
       "CreateLaunchTemplateRequest": [
         "DryRun",
@@ -10753,6 +10790,447 @@
       "DeleteVpnConnectionRouteRequest": [
         "DestinationCidrBlock",
         "VpnConnectionId"
+      ],
+      "CreateVolumeRequest": [
+        "AvailabilityZone",
+        "AvailabilityZoneId",
+        "Encrypted",
+        "Iops",
+        "Size",
+        "SnapshotId",
+        "VolumeType",
+        "TagSpecifications",
+        "Throughput",
+        "ClientToken",
+        "DryRun"
+      ],
+      "Volume": [
+        "AvailabilityZoneId",
+        "Iops",
+        "Tags",
+        "VolumeType",
+        "Throughput",
+        "VolumeId",
+        "Size",
+        "SnapshotId",
+        "AvailabilityZone",
+        "State",
+        "CreateTime",
+        "Attachments",
+        "Encrypted"
+      ],
+      "DescribeVolumesRequest": [
+        "VolumeIds",
+        "DryRun",
+        "Filters",
+        "NextToken",
+        "MaxResults"
+      ],
+      "DescribeVolumesResult": [
+        "NextToken",
+        "Volumes"
+      ],
+      "DeleteVolumeRequest": [
+        "VolumeId",
+        "DryRun"
+      ],
+      "AttachVolumeRequest": [
+        "Device",
+        "InstanceId",
+        "VolumeId",
+        "DryRun"
+      ],
+      "VolumeAttachment": [
+        "DeleteOnTermination",
+        "VolumeId",
+        "InstanceId",
+        "Device",
+        "State",
+        "AttachTime"
+      ],
+      "DetachVolumeRequest": [
+        "Device",
+        "InstanceId",
+        "VolumeId",
+        "DryRun"
+      ],
+      "ModifyVolumeRequest": [
+        "DryRun",
+        "VolumeId",
+        "Size",
+        "VolumeType",
+        "Iops",
+        "Throughput"
+      ],
+      "ModifyVolumeResult": [
+        "VolumeModification"
+      ],
+      "VolumeModification": [
+        "VolumeId",
+        "ModificationState",
+        "TargetSize",
+        "TargetIops",
+        "TargetVolumeType",
+        "TargetThroughput",
+        "OriginalSize",
+        "OriginalIops",
+        "OriginalVolumeType",
+        "OriginalThroughput",
+        "Progress",
+        "StartTime",
+        "EndTime"
+      ],
+      "DescribeVolumesModificationsRequest": [
+        "DryRun",
+        "VolumeIds",
+        "Filters",
+        "NextToken",
+        "MaxResults"
+      ],
+      "DescribeVolumesModificationsResult": [
+        "NextToken",
+        "VolumesModifications"
+      ],
+      "DescribeVolumeStatusRequest": [
+        "MaxResults",
+        "NextToken",
+        "VolumeIds",
+        "DryRun",
+        "Filters"
+      ],
+      "DescribeVolumeStatusResult": [
+        "NextToken",
+        "VolumeStatuses"
+      ],
+      "VolumeStatusItem": [
+        "AvailabilityZone",
+        "AvailabilityZoneId",
+        "VolumeId",
+        "VolumeStatus"
+      ],
+      "VolumeStatusInfo": [
+        "Status",
+        "Details"
+      ],
+      "VolumeStatusDetails": [
+        "Name",
+        "Status"
+      ],
+      "CreateSnapshotRequest": [
+        "Description",
+        "VolumeId",
+        "TagSpecifications",
+        "DryRun"
+      ],
+      "Snapshot": [
+        "Tags",
+        "StorageTier",
+        "SnapshotId",
+        "VolumeId",
+        "State",
+        "StartTime",
+        "Progress",
+        "OwnerId",
+        "Description",
+        "VolumeSize",
+        "Encrypted"
+      ],
+      "DescribeSnapshotsRequest": [
+        "MaxResults",
+        "NextToken",
+        "OwnerIds",
+        "RestorableByUserIds",
+        "SnapshotIds",
+        "DryRun",
+        "Filters"
+      ],
+      "DescribeSnapshotsResult": [
+        "NextToken",
+        "Snapshots"
+      ],
+      "DeleteSnapshotRequest": [
+        "SnapshotId",
+        "DryRun"
+      ],
+      "CopySnapshotRequest": [
+        "Description",
+        "DestinationRegion",
+        "Encrypted",
+        "SourceRegion",
+        "SourceSnapshotId",
+        "TagSpecifications",
+        "DryRun",
+        "PresignedUrl"
+      ],
+      "CopySnapshotResult": [
+        "Tags",
+        "SnapshotId"
+      ],
+      "ModifySnapshotAttributeRequest": [
+        "Attribute",
+        "CreateVolumePermission",
+        "GroupNames",
+        "OperationType",
+        "SnapshotId",
+        "UserIds",
+        "DryRun"
+      ],
+      "DescribeSnapshotAttributeRequest": [
+        "Attribute",
+        "SnapshotId",
+        "DryRun"
+      ],
+      "DescribeSnapshotAttributeResult": [
+        "SnapshotId",
+        "CreateVolumePermissions",
+        "ProductCodes"
+      ],
+      "CreateVolumePermission": [
+        "UserId",
+        "Group"
+      ],
+      "CreateVolumePermissionModifications": [
+        "Add",
+        "Remove"
+      ],
+      "CreateImageRequest": [
+        "TagSpecifications",
+        "DryRun",
+        "InstanceId",
+        "Name",
+        "Description",
+        "NoReboot",
+        "BlockDeviceMappings"
+      ],
+      "CreateImageResult": [
+        "ImageId"
+      ],
+      "RegisterImageRequest": [
+        "TagSpecifications",
+        "DryRun",
+        "Name",
+        "Description",
+        "Architecture",
+        "RootDeviceName",
+        "BlockDeviceMappings",
+        "VirtualizationType",
+        "EnaSupport"
+      ],
+      "RegisterImageResult": [
+        "ImageId"
+      ],
+      "DeregisterImageRequest": [
+        "ImageId",
+        "DeleteAssociatedSnapshots",
+        "DryRun"
+      ],
+      "DeregisterImageResult": [
+        "Return",
+        "DeleteSnapshotResults"
+      ],
+      "DeleteSnapshotReturnCode": [
+        "SnapshotId",
+        "ReturnCode"
+      ],
+      "CopyImageRequest": [
+        "ClientToken",
+        "Description",
+        "Encrypted",
+        "Name",
+        "SourceImageId",
+        "SourceRegion",
+        "CopyImageTags",
+        "TagSpecifications",
+        "DryRun"
+      ],
+      "CopyImageResult": [
+        "ImageId"
+      ],
+      "ModifyImageAttributeRequest": [
+        "Attribute",
+        "Description",
+        "ImageId",
+        "LaunchPermission",
+        "OperationType",
+        "UserGroups",
+        "UserIds",
+        "Value",
+        "DryRun"
+      ],
+      "LaunchPermission": [
+        "UserId",
+        "Group"
+      ],
+      "LaunchPermissionModifications": [
+        "Add",
+        "Remove"
+      ],
+      "DescribeImageAttributeRequest": [
+        "Attribute",
+        "ImageId",
+        "DryRun"
+      ],
+      "ImageAttribute": [
+        "Description",
+        "BootMode",
+        "ImageId",
+        "LaunchPermissions",
+        "ProductCodes",
+        "BlockDeviceMappings"
+      ],
+      "DescribeInstanceAttributeRequest": [
+        "DryRun",
+        "InstanceId",
+        "Attribute"
+      ],
+      "InstanceAttribute": [
+        "BlockDeviceMappings",
+        "DisableApiTermination",
+        "EnaSupport",
+        "EbsOptimized",
+        "InstanceId",
+        "InstanceInitiatedShutdownBehavior",
+        "InstanceType",
+        "RootDeviceName",
+        "SourceDestCheck",
+        "UserData",
+        "DisableApiStop",
+        "Groups",
+        "ProductCodes"
+      ],
+      "ModifyInstanceAttributeRequest": [
+        "SourceDestCheck",
+        "DisableApiStop",
+        "DryRun",
+        "InstanceId",
+        "Attribute",
+        "Value",
+        "BlockDeviceMappings",
+        "DisableApiTermination",
+        "InstanceType",
+        "UserData",
+        "InstanceInitiatedShutdownBehavior",
+        "Groups"
+      ],
+      "InstanceBlockDeviceMapping": [
+        "DeviceName",
+        "Ebs"
+      ],
+      "EbsInstanceBlockDevice": [
+        "AttachTime",
+        "DeleteOnTermination",
+        "Status",
+        "VolumeId"
+      ],
+      "InstanceBlockDeviceMappingSpecification": [
+        "DeviceName",
+        "Ebs"
+      ],
+      "EbsInstanceBlockDeviceSpecification": [
+        "DeleteOnTermination",
+        "VolumeId"
+      ],
+      "SecureBlobAttributeValue": [
+        "Value"
+      ],
+      "DescribeInstanceTypesRequest": [
+        "DryRun",
+        "InstanceTypes",
+        "Filters",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeInstanceTypesResult": [
+        "InstanceTypes",
+        "NextToken"
+      ],
+      "InstanceTypeInfo": [
+        "InstanceType",
+        "SupportedUsageClasses",
+        "SupportedRootDeviceTypes",
+        "SupportedVirtualizationTypes",
+        "BareMetal",
+        "ProcessorInfo",
+        "VCpuInfo",
+        "MemoryInfo",
+        "InstanceStorageSupported",
+        "BurstablePerformanceSupported"
+      ],
+      "ProcessorInfo": [
+        "SupportedArchitectures"
+      ],
+      "VCpuInfo": [
+        "DefaultVCpus"
+      ],
+      "MemoryInfo": [
+        "SizeInMiB"
+      ],
+      "DescribeInstanceTypeOfferingsRequest": [
+        "DryRun",
+        "LocationType",
+        "Filters",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeInstanceTypeOfferingsResult": [
+        "InstanceTypeOfferings",
+        "NextToken"
+      ],
+      "InstanceTypeOffering": [
+        "InstanceType",
+        "LocationType",
+        "Location"
+      ],
+      "DescribeInstanceCreditSpecificationsRequest": [
+        "DryRun",
+        "Filters",
+        "InstanceIds",
+        "MaxResults",
+        "NextToken"
+      ],
+      "DescribeInstanceCreditSpecificationsResult": [
+        "InstanceCreditSpecifications",
+        "NextToken"
+      ],
+      "InstanceCreditSpecification": [
+        "InstanceId",
+        "CpuCredits"
+      ],
+      "GetConsoleOutputRequest": [
+        "InstanceId",
+        "Latest",
+        "DryRun"
+      ],
+      "GetConsoleOutputResult": [
+        "InstanceId",
+        "Timestamp",
+        "Output"
+      ],
+      "DescribeAccountAttributesRequest": [
+        "DryRun",
+        "AttributeNames"
+      ],
+      "DescribeAccountAttributesResult": [
+        "AccountAttributes"
+      ],
+      "AccountAttribute": [
+        "AttributeName",
+        "AttributeValues"
+      ],
+      "AccountAttributeValue": [
+        "AttributeValue"
+      ],
+      "EnableEbsEncryptionByDefaultRequest": [
+        "DryRun"
+      ],
+      "EnableEbsEncryptionByDefaultResult": [
+        "EbsEncryptionByDefault"
+      ],
+      "GetEbsEncryptionByDefaultRequest": [
+        "DryRun"
+      ],
+      "GetEbsEncryptionByDefaultResult": [
+        "EbsEncryptionByDefault"
       ]
     }
   },

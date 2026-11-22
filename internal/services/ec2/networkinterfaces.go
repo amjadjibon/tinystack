@@ -59,7 +59,7 @@ func eniValues(scope request.Scope, ni *networkInterface) values {
 	return values{
 		ec2NetworkInterfaceId: {ni.ID}, filterVPCID: {ni.VPCID}, filterSubnetID: {ni.SubnetID},
 		filterGroupID: ni.GroupIDs, "status": {state}, filterDescription: {ni.Description}, filterZone: {ni.Zone},
-		"attachment.instance-id": {instanceID}, "attachment.attachment-id": {attachmentID},
+		filterAttachmentInstanceID: {instanceID}, "attachment.attachment-id": {attachmentID},
 		filterOwnerID: {scope.AccountID}, filterPrivateIP: ni.PrivateIPs, "addresses.private-ip-address": ni.PrivateIPs,
 		"interface-type": {ni.Kind}, "requester-managed": {"false"},
 	}.withTags(ni.Tags)

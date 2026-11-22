@@ -114,7 +114,7 @@ func interfaceValues(scope request.Scope, ni *managedInterface) values {
 	return values{
 		ec2NetworkInterfaceId: {ni.id}, filterGroupID: slices.Clone(ni.groups), filterSubnetID: {ni.subnetID},
 		filterVPCID: {ni.vpcID}, "status": {ec2InUse}, filterDescription: {ni.description}, filterZone: {ni.zone},
-		"attachment.instance-id": {}, filterOwnerID: {scope.AccountID}, filterPrivateIP: {ni.privateIP},
+		filterAttachmentInstanceID: {}, filterOwnerID: {scope.AccountID}, filterPrivateIP: {ni.privateIP},
 		"interface-type": {ni.kind}, "requester-managed": {strconv.FormatBool(true)},
 	}
 }

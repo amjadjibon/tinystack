@@ -28,6 +28,9 @@ type taggableKind struct {
 // taggable maps each resource ID prefix to its resource type. Every record
 // of these kinds keeps its tags in a Tags field.
 var taggable = map[string]taggableKind{
+	"vol":      {kind: kindVolume, resourceType: kindVolume, missing: volumeNotFound},
+	"snap":     {kind: kindSnapshot, resourceType: kindSnapshot, missing: snapshotNotFound},
+	"ami":      {kind: kindImage, resourceType: kindImage, missing: missingImage},
 	"dopt":     {kind: kindDHCPOptions, resourceType: kindDHCPOptions, missing: dhcpNotFound},
 	"eigw":     {kind: kindEgressGateway, resourceType: kindEgressGateway, missing: egressNotFound},
 	"eni":      {kind: kindNetworkInterface, resourceType: kindNetworkInterface, missing: eniNotFound},
@@ -158,6 +161,31 @@ func specTags(specs []api.TagSpecification, resourceType string) (map[string]str
 	}
 
 	return tags, checkTags(tags)
+}
+
+// splitResourceTags validates all tag specifications before any records are written.
+func splitResourceTags(specs []api.TagSpecification, kinds ...string) (map[string]map[string]string, error) {
+	grouped := make(map[string][]api.TagSpecification, len(kinds))
+	for _, spec := range specs {
+		kind := common.Value(spec.ResourceType)
+		if !slices.Contains(kinds, kind) {
+			return nil, invalidParameter("Unsupported tag resource type: " + kind)
+		}
+
+		grouped[kind] = append(grouped[kind], spec)
+	}
+
+	out := make(map[string]map[string]string, len(grouped))
+	for kind, group := range grouped {
+		tags, err := specTags(group, kind)
+		if err != nil {
+			return nil, err
+		}
+
+		out[kind] = tags
+	}
+
+	return out, nil
 }
 
 func tagList(tags map[string]string) []api.Tag {

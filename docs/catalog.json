@@ -684,7 +684,7 @@
     "ec2": {
       "title": "EC2",
       "category": "Compute",
-      "summary": "Model networking and instance lifecycle for SDK and infrastructure tests.",
+      "summary": "Model networking, instances, EBS, and AMIs for SDK and infrastructure tests.",
       "features": [
         "VPCs, subnets, security groups, internet/NAT gateways and Elastic IPs",
         "Route tables, network ACLs, VPC endpoints, and persisted standalone/instance plus service-managed network interfaces",
@@ -692,7 +692,11 @@
         "Records-only VPC/subnet/ENI flow logs, versioned managed prefix lists, same-region VPC peering, and endpoint-service discovery",
         "Security-group rule modification, description updates, and peering reference/stale-rule inspection",
         "Key pairs, instance records, instance profile associations and launch templates",
-        "Fixed regional image catalogue and tags",
+        "EBS volumes with attachment, resize and health records, instance block-device mappings, and delete-on-termination",
+        "EBS snapshots with regional copies, restore to volumes, and account or public permissions for unencrypted snapshots",
+        "Fixed regional image catalogue plus account AMIs captured from instance volumes, registered from snapshots, or copied across Regions; AMI launch permissions and tag filtering",
+        "Instance attribute reads and updates, API stop and termination protection, a synthetic instance type and availability catalogue, CPU credit defaults, account attributes, and records-mode console output",
+        "Account and Region scoped EBS encryption-by-default setting",
         "Resource inventory of taggable resources (not terminated instances or deleted NAT gateways), which the Resource Groups Tagging API finds and tags",
         "AWS-style EC2 and VPC consoles with scoped instance launch/start/stop/reboot/termination, AMIs, generated/imported key pairs with one-time private key display, IAM instance profiles, VPC DNS settings and subnet public IPv4 settings, security rules, route tables and subnet associations, gateways, Elastic IPs, NAT gateways, network ACL rules and associations, endpoint configuration, tags, and links between related resources",
         "Transit gateways with validated options and default-table selection, VPC attachments, transit gateway route tables, associations, VPC CIDR propagation, static and blackhole routes, and route table target support",
@@ -703,6 +707,9 @@
       "gaps": [
         "Default records mode does not boot VMs; optional VM modes support Linux guests only and require user-installed Lima or QEMU",
         "Security groups, routing and NAT are not enforced for real guests; networking remains records only",
+        "EBS volumes, snapshots and encryption are metadata in all modes; Lima and QEMU guests do not receive these disks, and registered AMIs only launch in records mode",
+        "EBS Multi-Attach, customer-managed encryption keys, snapshot archive and fast restore, and organization AMI sharing are outside the profile",
+        "Instance type offerings are synthetic. VM resizing and guest serial console capture are outside the profile",
         "VM boot takes minutes and downloads multi-GB images on first launch; default limits are two VMs and 4096 MiB per VM",
         "The large upstream EC2 API remains mostly outside the selected profile",
         "Console AMIs and derived network interfaces are read-only; launch templates use the AWS CLI or SDK",

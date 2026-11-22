@@ -13,6 +13,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/ec2"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
+	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
@@ -109,7 +110,7 @@ func findImage(region, id string) (*image, error) {
 		}
 	}
 
-	return nil, awserror.New("InvalidAMIID.NotFound", fmt.Sprintf("The image id '[%s]' does not exist", id))
+	return nil, missingImage(id)
 }
 
 // PublicParameters returns the Systems Manager public parameters that name
@@ -127,12 +128,26 @@ func PublicParameters(region string) map[string]string {
 
 func imageOutput(region string, img *image) api.Image {
 	out := api.Image{
-		ImageId: new(imageID(region, img)), Name: new(img.Name), Description: new(img.Description),
-		ImageLocation: new(img.Owner + "/" + img.Name), State: new(stateAvailable), OwnerId: new(img.Owner),
-		CreationDate: new(img.Created), Public: new(true), Architecture: new(img.Architecture),
-		ImageType: new("machine"), RootDeviceName: new(img.RootDevice), RootDeviceType: new("ebs"),
-		VirtualizationType: new("hvm"), Hypervisor: new("xen"), EnaSupport: new(true), BootMode: new(img.BootMode),
-		PlatformDetails: new("Linux/UNIX"), UsageOperation: new("RunInstances"),
+		ImageId:        new(imageID(region, img)),
+		Name:           new(img.Name),
+		Description:    new(img.Description),
+		ImageLocation:  new(img.Owner + "/" + img.Name),
+		State:          new(stateAvailable),
+		OwnerId:        new(img.Owner),
+		CreationDate:   new(img.Created),
+		Public:         new(true),
+		Architecture:   new(img.Architecture),
+		ImageType:      new("machine"),
+		RootDeviceName: new(img.RootDevice),
+		RootDeviceType: new("ebs"),
+		VirtualizationType: new(
+			virtualizationHVM,
+		),
+		Hypervisor:      new("xen"),
+		EnaSupport:      new(true),
+		BootMode:        new(img.BootMode),
+		PlatformDetails: new("Linux/UNIX"),
+		UsageOperation:  new("RunInstances"),
 		BlockDeviceMappings: []api.BlockDeviceMapping{{
 			DeviceName: new(img.RootDevice),
 			Ebs: &api.EbsBlockDevice{
@@ -148,65 +163,109 @@ func imageOutput(region string, img *image) api.Image {
 	return out
 }
 
-func imageValues(region string, img *image) values {
-	out := imageOutput(region, img)
-	return values{
-		filterImageID: {*out.ImageId}, "name": {img.Name}, filterDescription: {img.Description},
-		"architecture": {img.Architecture}, filterOwnerID: {img.Owner}, "owner-alias": {img.OwnerAlias},
-		filterState: {stateAvailable}, "is-public": boolValue(true), "image-type": {"machine"},
-		"root-device-name": {img.RootDevice}, "root-device-type": {"ebs"}, "virtualization-type": {"hvm"},
-		"hypervisor": {"xen"}, "ena-support": boolValue(true), "platform-details": {"Linux/UNIX"},
-		"usage-operation": {"RunInstances"}, "manifest-location": {*out.ImageLocation},
-		"block-device-mapping.device-name": {img.RootDevice}, "block-device-mapping.volume-type": {img.VolumeType},
-		"block-device-mapping.volume-size":           {strconv.Itoa(rootVolumeSize)},
-		"block-device-mapping.snapshot-id":           {*out.BlockDeviceMappings[0].Ebs.SnapshotId},
-		"block-device-mapping.delete-on-termination": boolValue(true),
-		"block-device-mapping.encrypted":             boolValue(false),
-	}.withTags(nil)
+func imageValues(out *api.Image, tags map[string]string) values {
+	vals := values{
+		filterImageID:      {common.Value(out.ImageId)},
+		"name":             {common.Value(out.Name)},
+		filterDescription:  {common.Value(out.Description)},
+		"architecture":     {common.Value(out.Architecture)},
+		filterOwnerID:      {common.Value(out.OwnerId)},
+		"owner-alias":      {common.Value(out.ImageOwnerAlias)},
+		filterState:        {common.Value(out.State)},
+		"is-public":        boolValue(common.Value(out.Public)),
+		"image-type":       {common.Value(out.ImageType)},
+		"root-device-name": {common.Value(out.RootDeviceName)},
+		"root-device-type": {
+			common.Value(out.RootDeviceType),
+		},
+		"virtualization-type":                        {common.Value(out.VirtualizationType)},
+		"hypervisor":                                 {common.Value(out.Hypervisor)},
+		"ena-support":                                boolValue(common.Value(out.EnaSupport)),
+		"platform-details":                           {common.Value(out.PlatformDetails)},
+		"usage-operation":                            {common.Value(out.UsageOperation)},
+		"manifest-location":                          {common.Value(out.ImageLocation)},
+		"creation-date":                              {common.Value(out.CreationDate)},
+		"boot-mode":                                  {common.Value(out.BootMode)},
+		"block-device-mapping.device-name":           {},
+		"block-device-mapping.volume-type":           {},
+		"block-device-mapping.volume-size":           {},
+		"block-device-mapping.snapshot-id":           {},
+		"block-device-mapping.delete-on-termination": {},
+		"block-device-mapping.encrypted":             {},
+	}
+	for _, m := range out.BlockDeviceMappings {
+		b := m.Ebs
+		for name, value := range map[string]string{
+			"device-name": common.Value(m.DeviceName), "volume-type": common.Value(b.VolumeType),
+			"volume-size": strconv.FormatInt(common.Value(b.VolumeSize), 10), "snapshot-id": common.Value(b.SnapshotId),
+			"delete-on-termination": strconv.FormatBool(common.Value(b.DeleteOnTermination)),
+			"encrypted":             strconv.FormatBool(common.Value(b.Encrypted)),
+		} {
+			key := "block-device-mapping." + name
+			vals[key] = append(vals[key], value)
+		}
+	}
+
+	return vals.withTags(tags)
 }
 
 var accountID = regexp.MustCompile(`^\d{12}$`)
 
-// ownedBy reports whether an image belongs to one of owners: account IDs,
-// or the aliases self, amazon, and aws-marketplace.
-func ownedBy(scope request.Scope, img *image, owners []string) bool {
-	return len(owners) == 0 || slices.ContainsFunc(owners, func(owner string) bool {
-		return owner == img.Owner || (owner == "self" && scope.AccountID == img.Owner) ||
-			(img.OwnerAlias != "" && owner == img.OwnerAlias)
-	})
-}
-
-// DescribeImages lists the catalog's images: every one is public, so
-// ExecutableUsers is not needed.
 func (s *Service) DescribeImages(
 	ctx context.Context,
 	in *api.DescribeImagesRequest,
 ) (*api.DescribeImagesResult, error) {
-	match, err := compileFilters(in.Filters, imageValues("", &images[0]).names()...)
-	if err != nil {
+	match, filterErr := compileFilters(in.Filters, imageValues(&api.Image{}, nil).names()...)
+	if filterErr != nil {
+		return nil, filterErr
+	}
+
+	if err := validatePrincipals(in.Owners, "self", amazonAlias, "aws-marketplace"); err != nil {
 		return nil, err
 	}
 
-	for _, owner := range in.Owners {
-		if !accountID.MatchString(owner) && !slices.Contains([]string{"self", amazonAlias, "aws-marketplace"}, owner) {
-			return nil, invalidParameter(fmt.Sprintf("Invalid value '%s' for owner.", owner))
-		}
+	if err := validatePrincipals(in.ExecutableUsers, "self", permissionAll); err != nil {
+		return nil, err
 	}
 
 	var found []*api.Image
-	err = s.view(ctx, in.DryRun, func(_ storage.ReadTx, scope request.Scope) error {
-		for _, id := range in.ImageIds {
-			if _, findErr := findImage(scope.Region, id); findErr != nil {
-				return findErr
+	err := s.view(ctx, in.DryRun, func(tx storage.ReadTx, scope request.Scope) error {
+		all, err := listAssets[registeredImage](tx, scope, kindImage)
+		if err != nil {
+			return err
+		}
+
+		visible := map[string]bool{}
+		collect := func(out *api.Image, grants []string, tags map[string]string) {
+			id, owner := *out.ImageId, *out.OwnerId
+			if !authorized(scope.AccountID, owner, grants) {
+				return
 			}
+
+			visible[id] = true
+			if (len(in.ImageIds) == 0 || slices.Contains(in.ImageIds, id)) &&
+				matchesOwner(scope.AccountID, owner, common.Value(out.ImageOwnerAlias), in.Owners) &&
+				matchesPermission(
+					scope.AccountID,
+					owner,
+					grants,
+					in.ExecutableUsers,
+				) && match.match(imageValues(out, tags)) {
+				found = append(found, out)
+			}
+		}
+		for _, img := range all {
+			collect(img.output(), img.Permissions, img.Tags)
 		}
 
 		for i := range images {
-			img := &images[i]
-			out := imageOutput(scope.Region, img)
-			if (len(in.ImageIds) == 0 || slices.Contains(in.ImageIds, *out.ImageId)) &&
-				ownedBy(scope, img, in.Owners) && match.match(imageValues(scope.Region, img)) {
-				found = append(found, &out)
+			out := imageOutput(scope.Region, &images[i])
+			collect(&out, []string{permissionAll}, nil)
+		}
+
+		for _, id := range in.ImageIds {
+			if !visible[id] {
+				return missingImage(id)
 			}
 		}
 

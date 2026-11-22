@@ -573,6 +573,22 @@ type InstanceMetadataOptionsRequest struct {
 	InstanceMetadataTags    *string `json:"InstanceMetadataTags,omitempty" ec2:"InstanceMetadataTags,InstanceMetadataTags"`
 }
 
+type EbsBlockDevice struct {
+	DeleteOnTermination *bool   `json:"DeleteOnTermination,omitempty" ec2:"DeleteOnTermination,deleteOnTermination"`
+	SnapshotId          *string `json:"SnapshotId,omitempty" ec2:"SnapshotId,snapshotId"`
+	VolumeSize          *int64  `json:"VolumeSize,omitempty" ec2:"VolumeSize,volumeSize"`
+	VolumeType          *string `json:"VolumeType,omitempty" ec2:"VolumeType,volumeType"`
+	Encrypted           *bool   `json:"Encrypted,omitempty" ec2:"Encrypted,encrypted"`
+	Iops                *int64  `json:"Iops,omitempty" ec2:"Iops,iops"`
+	Throughput          *int64  `json:"Throughput,omitempty" ec2:"Throughput,throughput"`
+}
+
+type BlockDeviceMapping struct {
+	DeviceName *string         `json:"DeviceName,omitempty" ec2:"DeviceName,deviceName"`
+	Ebs        *EbsBlockDevice `json:"Ebs,omitempty" ec2:"Ebs,ebs"`
+	NoDevice   *string         `json:"NoDevice,omitempty" ec2:"NoDevice,noDevice"`
+}
+
 type RunInstancesRequest struct {
 	ImageId                           *string                          `json:"ImageId,omitempty" ec2:"ImageId,ImageId"`
 	InstanceType                      *string                          `json:"InstanceType,omitempty" ec2:"InstanceType,InstanceType"`
@@ -594,6 +610,8 @@ type RunInstancesRequest struct {
 	LaunchTemplate                    *LaunchTemplateSpecification     `json:"LaunchTemplate,omitempty" ec2:"LaunchTemplate,LaunchTemplate"`
 	IamInstanceProfile                *IamInstanceProfileSpecification `json:"IamInstanceProfile,omitempty" ec2:"IamInstanceProfile,iamInstanceProfile"`
 	MetadataOptions                   *InstanceMetadataOptionsRequest  `json:"MetadataOptions,omitempty" ec2:"MetadataOptions,MetadataOptions"`
+	BlockDeviceMappings               []BlockDeviceMapping             `json:"BlockDeviceMappings,omitempty" ec2:"BlockDeviceMapping,BlockDeviceMapping,member=BlockDeviceMapping"`
+	DisableApiStop                    *bool                            `json:"DisableApiStop,omitempty" ec2:"DisableApiStop,DisableApiStop"`
 }
 
 type StateReason struct {
@@ -706,6 +724,18 @@ type InstanceMetadataOptionsResponse struct {
 	State                   *string `json:"State,omitempty" ec2:"State,state"`
 }
 
+type EbsInstanceBlockDevice struct {
+	AttachTime          *time.Time `json:"AttachTime,omitempty" ec2:"AttachTime,attachTime"`
+	DeleteOnTermination *bool      `json:"DeleteOnTermination,omitempty" ec2:"DeleteOnTermination,deleteOnTermination"`
+	Status              *string    `json:"Status,omitempty" ec2:"Status,status"`
+	VolumeId            *string    `json:"VolumeId,omitempty" ec2:"VolumeId,volumeId"`
+}
+
+type InstanceBlockDeviceMapping struct {
+	DeviceName *string                 `json:"DeviceName,omitempty" ec2:"DeviceName,deviceName"`
+	Ebs        *EbsInstanceBlockDevice `json:"Ebs,omitempty" ec2:"Ebs,ebs"`
+}
+
 type Instance struct {
 	Architecture          *string                          `json:"Architecture,omitempty" ec2:"Architecture,architecture"`
 	ClientToken           *string                          `json:"ClientToken,omitempty" ec2:"ClientToken,clientToken"`
@@ -740,6 +770,7 @@ type Instance struct {
 	IamInstanceProfile    *IamInstanceProfile              `json:"IamInstanceProfile,omitempty" ec2:"IamInstanceProfile,iamInstanceProfile"`
 	NetworkInterfaces     []InstanceNetworkInterface       `json:"NetworkInterfaces,omitempty" ec2:"NetworkInterfaceSet,networkInterfaceSet,member=item"`
 	MetadataOptions       *InstanceMetadataOptionsResponse `json:"MetadataOptions,omitempty" ec2:"MetadataOptions,metadataOptions"`
+	BlockDeviceMappings   []InstanceBlockDeviceMapping     `json:"BlockDeviceMappings,omitempty" ec2:"BlockDeviceMapping,blockDeviceMapping,member=item"`
 }
 
 type Reservation struct {
@@ -858,19 +889,7 @@ type DescribeImagesRequest struct {
 	NextToken         *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
 	DryRun            *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
 	Filters           []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
-}
-
-type EbsBlockDevice struct {
-	DeleteOnTermination *bool   `json:"DeleteOnTermination,omitempty" ec2:"DeleteOnTermination,deleteOnTermination"`
-	SnapshotId          *string `json:"SnapshotId,omitempty" ec2:"SnapshotId,snapshotId"`
-	VolumeSize          *int64  `json:"VolumeSize,omitempty" ec2:"VolumeSize,volumeSize"`
-	VolumeType          *string `json:"VolumeType,omitempty" ec2:"VolumeType,volumeType"`
-	Encrypted           *bool   `json:"Encrypted,omitempty" ec2:"Encrypted,encrypted"`
-}
-
-type BlockDeviceMapping struct {
-	DeviceName *string         `json:"DeviceName,omitempty" ec2:"DeviceName,deviceName"`
-	Ebs        *EbsBlockDevice `json:"Ebs,omitempty" ec2:"Ebs,ebs"`
+	ExecutableUsers   []string `json:"ExecutableUsers,omitempty" ec2:"ExecutableBy,ExecutableBy,member=ExecutableBy"`
 }
 
 type Image struct {
@@ -894,6 +913,7 @@ type Image struct {
 	Public              *bool                `json:"Public,omitempty" ec2:"IsPublic,isPublic"`
 	Architecture        *string              `json:"Architecture,omitempty" ec2:"Architecture,architecture"`
 	ImageType           *string              `json:"ImageType,omitempty" ec2:"ImageType,imageType"`
+	Tags                []Tag                `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
 }
 
 type DescribeImagesResult struct {
@@ -3131,6 +3151,524 @@ type DeleteVpnConnectionRouteRequest struct {
 	VpnConnectionId      *string `json:"VpnConnectionId,omitempty" ec2:"VpnConnectionId,VpnConnectionId"`
 }
 
+type CreateVolumeRequest struct {
+	AvailabilityZone   *string            `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,AvailabilityZone"`
+	AvailabilityZoneId *string            `json:"AvailabilityZoneId,omitempty" ec2:"AvailabilityZoneId,AvailabilityZoneId"`
+	Encrypted          *bool              `json:"Encrypted,omitempty" ec2:"Encrypted,encrypted"`
+	Iops               *int64             `json:"Iops,omitempty" ec2:"Iops,Iops"`
+	Size               *int64             `json:"Size,omitempty" ec2:"Size,Size"`
+	SnapshotId         *string            `json:"SnapshotId,omitempty" ec2:"SnapshotId,SnapshotId"`
+	VolumeType         *string            `json:"VolumeType,omitempty" ec2:"VolumeType,VolumeType"`
+	TagSpecifications  []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	Throughput         *int64             `json:"Throughput,omitempty" ec2:"Throughput,Throughput"`
+	ClientToken        *string            `json:"ClientToken,omitempty" ec2:"ClientToken,ClientToken"`
+	DryRun             *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type VolumeAttachment struct {
+	DeleteOnTermination *bool      `json:"DeleteOnTermination,omitempty" ec2:"DeleteOnTermination,deleteOnTermination"`
+	VolumeId            *string    `json:"VolumeId,omitempty" ec2:"VolumeId,volumeId"`
+	InstanceId          *string    `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	Device              *string    `json:"Device,omitempty" ec2:"Device,device"`
+	State               *string    `json:"State,omitempty" ec2:"Status,status"`
+	AttachTime          *time.Time `json:"AttachTime,omitempty" ec2:"AttachTime,attachTime"`
+}
+
+type Volume struct {
+	AvailabilityZoneId *string            `json:"AvailabilityZoneId,omitempty" ec2:"AvailabilityZoneId,availabilityZoneId"`
+	Iops               *int64             `json:"Iops,omitempty" ec2:"Iops,iops"`
+	Tags               []Tag              `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	VolumeType         *string            `json:"VolumeType,omitempty" ec2:"VolumeType,volumeType"`
+	Throughput         *int64             `json:"Throughput,omitempty" ec2:"Throughput,throughput"`
+	VolumeId           *string            `json:"VolumeId,omitempty" ec2:"VolumeId,volumeId"`
+	Size               *int64             `json:"Size,omitempty" ec2:"Size,size"`
+	SnapshotId         *string            `json:"SnapshotId,omitempty" ec2:"SnapshotId,snapshotId"`
+	AvailabilityZone   *string            `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,availabilityZone"`
+	State              *string            `json:"State,omitempty" ec2:"Status,status"`
+	CreateTime         *time.Time         `json:"CreateTime,omitempty" ec2:"CreateTime,createTime"`
+	Attachments        []VolumeAttachment `json:"Attachments,omitempty" ec2:"AttachmentSet,attachmentSet,member=item"`
+	Encrypted          *bool              `json:"Encrypted,omitempty" ec2:"Encrypted,encrypted"`
+}
+
+type DescribeVolumesRequest struct {
+	VolumeIds  []string `json:"VolumeIds,omitempty" ec2:"VolumeId,VolumeId,member=VolumeId"`
+	DryRun     *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	Filters    []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	NextToken  *string  `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+	MaxResults *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,maxResults"`
+}
+
+type DescribeVolumesResult struct {
+	NextToken *string  `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+	Volumes   []Volume `json:"Volumes,omitempty" ec2:"VolumeSet,volumeSet,member=item"`
+}
+
+type DeleteVolumeOutput struct{}
+
+type DeleteVolumeRequest struct {
+	VolumeId *string `json:"VolumeId,omitempty" ec2:"VolumeId,VolumeId"`
+	DryRun   *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type AttachVolumeRequest struct {
+	Device     *string `json:"Device,omitempty" ec2:"Device,Device"`
+	InstanceId *string `json:"InstanceId,omitempty" ec2:"InstanceId,InstanceId"`
+	VolumeId   *string `json:"VolumeId,omitempty" ec2:"VolumeId,VolumeId"`
+	DryRun     *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type DetachVolumeRequest struct {
+	Device     *string `json:"Device,omitempty" ec2:"Device,Device"`
+	InstanceId *string `json:"InstanceId,omitempty" ec2:"InstanceId,InstanceId"`
+	VolumeId   *string `json:"VolumeId,omitempty" ec2:"VolumeId,VolumeId"`
+	DryRun     *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type ModifyVolumeRequest struct {
+	DryRun     *bool   `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	VolumeId   *string `json:"VolumeId,omitempty" ec2:"VolumeId,VolumeId"`
+	Size       *int64  `json:"Size,omitempty" ec2:"Size,Size"`
+	VolumeType *string `json:"VolumeType,omitempty" ec2:"VolumeType,VolumeType"`
+	Iops       *int64  `json:"Iops,omitempty" ec2:"Iops,Iops"`
+	Throughput *int64  `json:"Throughput,omitempty" ec2:"Throughput,Throughput"`
+}
+
+type VolumeModification struct {
+	VolumeId           *string    `json:"VolumeId,omitempty" ec2:"VolumeId,volumeId"`
+	ModificationState  *string    `json:"ModificationState,omitempty" ec2:"ModificationState,modificationState"`
+	TargetSize         *int64     `json:"TargetSize,omitempty" ec2:"TargetSize,targetSize"`
+	TargetIops         *int64     `json:"TargetIops,omitempty" ec2:"TargetIops,targetIops"`
+	TargetVolumeType   *string    `json:"TargetVolumeType,omitempty" ec2:"TargetVolumeType,targetVolumeType"`
+	TargetThroughput   *int64     `json:"TargetThroughput,omitempty" ec2:"TargetThroughput,targetThroughput"`
+	OriginalSize       *int64     `json:"OriginalSize,omitempty" ec2:"OriginalSize,originalSize"`
+	OriginalIops       *int64     `json:"OriginalIops,omitempty" ec2:"OriginalIops,originalIops"`
+	OriginalVolumeType *string    `json:"OriginalVolumeType,omitempty" ec2:"OriginalVolumeType,originalVolumeType"`
+	OriginalThroughput *int64     `json:"OriginalThroughput,omitempty" ec2:"OriginalThroughput,originalThroughput"`
+	Progress           *int64     `json:"Progress,omitempty" ec2:"Progress,progress"`
+	StartTime          *time.Time `json:"StartTime,omitempty" ec2:"StartTime,startTime"`
+	EndTime            *time.Time `json:"EndTime,omitempty" ec2:"EndTime,endTime"`
+}
+
+type ModifyVolumeResult struct {
+	VolumeModification *VolumeModification `json:"VolumeModification,omitempty" ec2:"VolumeModification,volumeModification"`
+}
+
+type DescribeVolumesModificationsRequest struct {
+	DryRun     *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	VolumeIds  []string `json:"VolumeIds,omitempty" ec2:"VolumeId,VolumeId,member=VolumeId"`
+	Filters    []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	NextToken  *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	MaxResults *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+}
+
+type DescribeVolumesModificationsResult struct {
+	NextToken            *string              `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+	VolumesModifications []VolumeModification `json:"VolumesModifications,omitempty" ec2:"VolumeModificationSet,volumeModificationSet,member=item"`
+}
+
+type DescribeVolumeStatusRequest struct {
+	MaxResults *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken  *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	VolumeIds  []string `json:"VolumeIds,omitempty" ec2:"VolumeId,VolumeId,member=VolumeId"`
+	DryRun     *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	Filters    []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+}
+
+type VolumeStatusDetails struct {
+	Name   *string `json:"Name,omitempty" ec2:"Name,name"`
+	Status *string `json:"Status,omitempty" ec2:"Status,status"`
+}
+
+type VolumeStatusInfo struct {
+	Status  *string               `json:"Status,omitempty" ec2:"Status,status"`
+	Details []VolumeStatusDetails `json:"Details,omitempty" ec2:"Details,details,member=item"`
+}
+
+type VolumeStatusItem struct {
+	AvailabilityZone   *string           `json:"AvailabilityZone,omitempty" ec2:"AvailabilityZone,availabilityZone"`
+	AvailabilityZoneId *string           `json:"AvailabilityZoneId,omitempty" ec2:"AvailabilityZoneId,availabilityZoneId"`
+	VolumeId           *string           `json:"VolumeId,omitempty" ec2:"VolumeId,volumeId"`
+	VolumeStatus       *VolumeStatusInfo `json:"VolumeStatus,omitempty" ec2:"VolumeStatus,volumeStatus"`
+}
+
+type DescribeVolumeStatusResult struct {
+	NextToken      *string            `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+	VolumeStatuses []VolumeStatusItem `json:"VolumeStatuses,omitempty" ec2:"VolumeStatusSet,volumeStatusSet,member=item"`
+}
+
+type CreateSnapshotRequest struct {
+	Description       *string            `json:"Description,omitempty" ec2:"Description,Description"`
+	VolumeId          *string            `json:"VolumeId,omitempty" ec2:"VolumeId,VolumeId"`
+	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type Snapshot struct {
+	Tags        []Tag      `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	StorageTier *string    `json:"StorageTier,omitempty" ec2:"StorageTier,storageTier"`
+	SnapshotId  *string    `json:"SnapshotId,omitempty" ec2:"SnapshotId,snapshotId"`
+	VolumeId    *string    `json:"VolumeId,omitempty" ec2:"VolumeId,volumeId"`
+	State       *string    `json:"State,omitempty" ec2:"Status,status"`
+	StartTime   *time.Time `json:"StartTime,omitempty" ec2:"StartTime,startTime"`
+	Progress    *string    `json:"Progress,omitempty" ec2:"Progress,progress"`
+	OwnerId     *string    `json:"OwnerId,omitempty" ec2:"OwnerId,ownerId"`
+	Description *string    `json:"Description,omitempty" ec2:"Description,description"`
+	VolumeSize  *int64     `json:"VolumeSize,omitempty" ec2:"VolumeSize,volumeSize"`
+	Encrypted   *bool      `json:"Encrypted,omitempty" ec2:"Encrypted,encrypted"`
+}
+
+type DescribeSnapshotsRequest struct {
+	MaxResults          *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken           *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+	OwnerIds            []string `json:"OwnerIds,omitempty" ec2:"Owner,Owner,member=Owner"`
+	RestorableByUserIds []string `json:"RestorableByUserIds,omitempty" ec2:"RestorableBy,RestorableBy"`
+	SnapshotIds         []string `json:"SnapshotIds,omitempty" ec2:"SnapshotId,SnapshotId,member=SnapshotId"`
+	DryRun              *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	Filters             []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+}
+
+type DescribeSnapshotsResult struct {
+	NextToken *string    `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+	Snapshots []Snapshot `json:"Snapshots,omitempty" ec2:"SnapshotSet,snapshotSet,member=item"`
+}
+
+type DeleteSnapshotOutput struct{}
+
+type DeleteSnapshotRequest struct {
+	SnapshotId *string `json:"SnapshotId,omitempty" ec2:"SnapshotId,SnapshotId"`
+	DryRun     *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type CopySnapshotRequest struct {
+	Description       *string            `json:"Description,omitempty" ec2:"Description,Description"`
+	DestinationRegion *string            `json:"DestinationRegion,omitempty" ec2:"DestinationRegion,destinationRegion"`
+	Encrypted         *bool              `json:"Encrypted,omitempty" ec2:"Encrypted,encrypted"`
+	SourceRegion      *string            `json:"SourceRegion,omitempty" ec2:"SourceRegion,SourceRegion"`
+	SourceSnapshotId  *string            `json:"SourceSnapshotId,omitempty" ec2:"SourceSnapshotId,SourceSnapshotId"`
+	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	PresignedUrl      *string            `json:"PresignedUrl,omitempty" ec2:"PresignedUrl,presignedUrl"`
+}
+
+type CopySnapshotResult struct {
+	Tags       []Tag   `json:"Tags,omitempty" ec2:"TagSet,tagSet,member=item"`
+	SnapshotId *string `json:"SnapshotId,omitempty" ec2:"SnapshotId,snapshotId"`
+}
+
+type ModifySnapshotAttributeOutput struct{}
+
+type CreateVolumePermission struct {
+	UserId *string `json:"UserId,omitempty" ec2:"UserId,userId"`
+	Group  *string `json:"Group,omitempty" ec2:"Group,group"`
+}
+
+type CreateVolumePermissionModifications struct {
+	Add    []CreateVolumePermission `json:"Add,omitempty" ec2:"Add,Add,member=item"`
+	Remove []CreateVolumePermission `json:"Remove,omitempty" ec2:"Remove,Remove,member=item"`
+}
+
+type ModifySnapshotAttributeRequest struct {
+	Attribute              *string                              `json:"Attribute,omitempty" ec2:"Attribute,Attribute"`
+	CreateVolumePermission *CreateVolumePermissionModifications `json:"CreateVolumePermission,omitempty" ec2:"CreateVolumePermission,CreateVolumePermission"`
+	GroupNames             []string                             `json:"GroupNames,omitempty" ec2:"UserGroup,UserGroup,member=GroupName"`
+	OperationType          *string                              `json:"OperationType,omitempty" ec2:"OperationType,OperationType"`
+	SnapshotId             *string                              `json:"SnapshotId,omitempty" ec2:"SnapshotId,SnapshotId"`
+	UserIds                []string                             `json:"UserIds,omitempty" ec2:"UserId,UserId,member=UserId"`
+	DryRun                 *bool                                `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type DescribeSnapshotAttributeRequest struct {
+	Attribute  *string `json:"Attribute,omitempty" ec2:"Attribute,Attribute"`
+	SnapshotId *string `json:"SnapshotId,omitempty" ec2:"SnapshotId,SnapshotId"`
+	DryRun     *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type ProductCode struct {
+	ProductCodeId   *string `json:"ProductCodeId,omitempty" ec2:"ProductCode,productCode"`
+	ProductCodeType *string `json:"ProductCodeType,omitempty" ec2:"Type,type"`
+}
+
+type DescribeSnapshotAttributeResult struct {
+	SnapshotId              *string                  `json:"SnapshotId,omitempty" ec2:"SnapshotId,snapshotId"`
+	CreateVolumePermissions []CreateVolumePermission `json:"CreateVolumePermissions,omitempty" ec2:"CreateVolumePermission,createVolumePermission,member=item"`
+	ProductCodes            []ProductCode            `json:"ProductCodes,omitempty" ec2:"ProductCodes,productCodes,member=item"`
+}
+
+type CreateImageRequest struct {
+	TagSpecifications   []TagSpecification   `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	DryRun              *bool                `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	InstanceId          *string              `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	Name                *string              `json:"Name,omitempty" ec2:"Name,name"`
+	Description         *string              `json:"Description,omitempty" ec2:"Description,description"`
+	NoReboot            *bool                `json:"NoReboot,omitempty" ec2:"NoReboot,noReboot"`
+	BlockDeviceMappings []BlockDeviceMapping `json:"BlockDeviceMappings,omitempty" ec2:"BlockDeviceMapping,blockDeviceMapping,member=BlockDeviceMapping"`
+}
+
+type CreateImageResult struct {
+	ImageId *string `json:"ImageId,omitempty" ec2:"ImageId,imageId"`
+}
+
+type RegisterImageRequest struct {
+	TagSpecifications   []TagSpecification   `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	DryRun              *bool                `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	Name                *string              `json:"Name,omitempty" ec2:"Name,name"`
+	Description         *string              `json:"Description,omitempty" ec2:"Description,description"`
+	Architecture        *string              `json:"Architecture,omitempty" ec2:"Architecture,architecture"`
+	RootDeviceName      *string              `json:"RootDeviceName,omitempty" ec2:"RootDeviceName,rootDeviceName"`
+	BlockDeviceMappings []BlockDeviceMapping `json:"BlockDeviceMappings,omitempty" ec2:"BlockDeviceMapping,BlockDeviceMapping,member=BlockDeviceMapping"`
+	VirtualizationType  *string              `json:"VirtualizationType,omitempty" ec2:"VirtualizationType,virtualizationType"`
+	EnaSupport          *bool                `json:"EnaSupport,omitempty" ec2:"EnaSupport,enaSupport"`
+}
+
+type RegisterImageResult struct {
+	ImageId *string `json:"ImageId,omitempty" ec2:"ImageId,imageId"`
+}
+
+type DeregisterImageRequest struct {
+	ImageId                   *string `json:"ImageId,omitempty" ec2:"ImageId,ImageId"`
+	DeleteAssociatedSnapshots *bool   `json:"DeleteAssociatedSnapshots,omitempty" ec2:"DeleteAssociatedSnapshots,DeleteAssociatedSnapshots"`
+	DryRun                    *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type DeleteSnapshotReturnCode struct {
+	SnapshotId *string `json:"SnapshotId,omitempty" ec2:"SnapshotId,snapshotId"`
+	ReturnCode *string `json:"ReturnCode,omitempty" ec2:"ReturnCode,returnCode"`
+}
+
+type DeregisterImageResult struct {
+	Return                *bool                      `json:"Return,omitempty" ec2:"Return,return"`
+	DeleteSnapshotResults []DeleteSnapshotReturnCode `json:"DeleteSnapshotResults,omitempty" ec2:"DeleteSnapshotResultSet,deleteSnapshotResultSet,member=item"`
+}
+
+type CopyImageRequest struct {
+	ClientToken       *string            `json:"ClientToken,omitempty" ec2:"ClientToken,ClientToken"`
+	Description       *string            `json:"Description,omitempty" ec2:"Description,Description"`
+	Encrypted         *bool              `json:"Encrypted,omitempty" ec2:"Encrypted,encrypted"`
+	Name              *string            `json:"Name,omitempty" ec2:"Name,Name"`
+	SourceImageId     *string            `json:"SourceImageId,omitempty" ec2:"SourceImageId,SourceImageId"`
+	SourceRegion      *string            `json:"SourceRegion,omitempty" ec2:"SourceRegion,SourceRegion"`
+	CopyImageTags     *bool              `json:"CopyImageTags,omitempty" ec2:"CopyImageTags,CopyImageTags"`
+	TagSpecifications []TagSpecification `json:"TagSpecifications,omitempty" ec2:"TagSpecification,TagSpecification,member=item"`
+	DryRun            *bool              `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type CopyImageResult struct {
+	ImageId *string `json:"ImageId,omitempty" ec2:"ImageId,imageId"`
+}
+
+type ModifyImageAttributeOutput struct{}
+
+type LaunchPermission struct {
+	UserId *string `json:"UserId,omitempty" ec2:"UserId,userId"`
+	Group  *string `json:"Group,omitempty" ec2:"Group,group"`
+}
+
+type LaunchPermissionModifications struct {
+	Add    []LaunchPermission `json:"Add,omitempty" ec2:"Add,Add,member=item"`
+	Remove []LaunchPermission `json:"Remove,omitempty" ec2:"Remove,Remove,member=item"`
+}
+
+type ModifyImageAttributeRequest struct {
+	Attribute        *string                        `json:"Attribute,omitempty" ec2:"Attribute,Attribute"`
+	Description      *AttributeValue                `json:"Description,omitempty" ec2:"Description,Description"`
+	ImageId          *string                        `json:"ImageId,omitempty" ec2:"ImageId,ImageId"`
+	LaunchPermission *LaunchPermissionModifications `json:"LaunchPermission,omitempty" ec2:"LaunchPermission,LaunchPermission"`
+	OperationType    *string                        `json:"OperationType,omitempty" ec2:"OperationType,OperationType"`
+	UserGroups       []string                       `json:"UserGroups,omitempty" ec2:"UserGroup,UserGroup,member=UserGroup"`
+	UserIds          []string                       `json:"UserIds,omitempty" ec2:"UserId,UserId,member=UserId"`
+	Value            *string                        `json:"Value,omitempty" ec2:"Value,Value"`
+	DryRun           *bool                          `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type DescribeImageAttributeRequest struct {
+	Attribute *string `json:"Attribute,omitempty" ec2:"Attribute,Attribute"`
+	ImageId   *string `json:"ImageId,omitempty" ec2:"ImageId,ImageId"`
+	DryRun    *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type ImageAttribute struct {
+	Description         *AttributeValue      `json:"Description,omitempty" ec2:"Description,description"`
+	BootMode            *AttributeValue      `json:"BootMode,omitempty" ec2:"BootMode,bootMode"`
+	ImageId             *string              `json:"ImageId,omitempty" ec2:"ImageId,imageId"`
+	LaunchPermissions   []LaunchPermission   `json:"LaunchPermissions,omitempty" ec2:"LaunchPermission,launchPermission,member=item"`
+	ProductCodes        []ProductCode        `json:"ProductCodes,omitempty" ec2:"ProductCodes,productCodes,member=item"`
+	BlockDeviceMappings []BlockDeviceMapping `json:"BlockDeviceMappings,omitempty" ec2:"BlockDeviceMapping,blockDeviceMapping,member=item"`
+}
+
+type DescribeInstanceAttributeRequest struct {
+	DryRun     *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	InstanceId *string `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	Attribute  *string `json:"Attribute,omitempty" ec2:"Attribute,attribute"`
+}
+
+type InstanceAttribute struct {
+	BlockDeviceMappings               []InstanceBlockDeviceMapping `json:"BlockDeviceMappings,omitempty" ec2:"BlockDeviceMapping,blockDeviceMapping,member=item"`
+	DisableApiTermination             *AttributeBooleanValue       `json:"DisableApiTermination,omitempty" ec2:"DisableApiTermination,disableApiTermination"`
+	EnaSupport                        *AttributeBooleanValue       `json:"EnaSupport,omitempty" ec2:"EnaSupport,enaSupport"`
+	EbsOptimized                      *AttributeBooleanValue       `json:"EbsOptimized,omitempty" ec2:"EbsOptimized,ebsOptimized"`
+	InstanceId                        *string                      `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	InstanceInitiatedShutdownBehavior *AttributeValue              `json:"InstanceInitiatedShutdownBehavior,omitempty" ec2:"InstanceInitiatedShutdownBehavior,instanceInitiatedShutdownBehavior"`
+	InstanceType                      *AttributeValue              `json:"InstanceType,omitempty" ec2:"InstanceType,instanceType"`
+	RootDeviceName                    *AttributeValue              `json:"RootDeviceName,omitempty" ec2:"RootDeviceName,rootDeviceName"`
+	SourceDestCheck                   *AttributeBooleanValue       `json:"SourceDestCheck,omitempty" ec2:"SourceDestCheck,sourceDestCheck"`
+	UserData                          *AttributeValue              `json:"UserData,omitempty" ec2:"UserData,userData"`
+	DisableApiStop                    *AttributeBooleanValue       `json:"DisableApiStop,omitempty" ec2:"DisableApiStop,disableApiStop"`
+	Groups                            []GroupIdentifier            `json:"Groups,omitempty" ec2:"GroupSet,groupSet,member=item"`
+	ProductCodes                      []ProductCode                `json:"ProductCodes,omitempty" ec2:"ProductCodes,productCodes,member=item"`
+}
+
+type ModifyInstanceAttributeOutput struct{}
+
+type EbsInstanceBlockDeviceSpecification struct {
+	DeleteOnTermination *bool   `json:"DeleteOnTermination,omitempty" ec2:"DeleteOnTermination,deleteOnTermination"`
+	VolumeId            *string `json:"VolumeId,omitempty" ec2:"VolumeId,volumeId"`
+}
+
+type InstanceBlockDeviceMappingSpecification struct {
+	DeviceName *string                              `json:"DeviceName,omitempty" ec2:"DeviceName,deviceName"`
+	Ebs        *EbsInstanceBlockDeviceSpecification `json:"Ebs,omitempty" ec2:"Ebs,ebs"`
+}
+
+type SecureBlobAttributeValue struct {
+	Value []byte `json:"Value,omitempty" ec2:"Value,value"`
+}
+
+type ModifyInstanceAttributeRequest struct {
+	SourceDestCheck                   *AttributeBooleanValue                    `json:"SourceDestCheck,omitempty" ec2:"SourceDestCheck,SourceDestCheck"`
+	DisableApiStop                    *AttributeBooleanValue                    `json:"DisableApiStop,omitempty" ec2:"DisableApiStop,DisableApiStop"`
+	DryRun                            *bool                                     `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	InstanceId                        *string                                   `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	Attribute                         *string                                   `json:"Attribute,omitempty" ec2:"Attribute,attribute"`
+	Value                             *string                                   `json:"Value,omitempty" ec2:"Value,value"`
+	BlockDeviceMappings               []InstanceBlockDeviceMappingSpecification `json:"BlockDeviceMappings,omitempty" ec2:"BlockDeviceMapping,blockDeviceMapping,member=item"`
+	DisableApiTermination             *AttributeBooleanValue                    `json:"DisableApiTermination,omitempty" ec2:"DisableApiTermination,disableApiTermination"`
+	InstanceType                      *AttributeValue                           `json:"InstanceType,omitempty" ec2:"InstanceType,instanceType"`
+	UserData                          *SecureBlobAttributeValue                 `json:"UserData,omitempty" ec2:"UserData,userData"`
+	InstanceInitiatedShutdownBehavior *AttributeValue                           `json:"InstanceInitiatedShutdownBehavior,omitempty" ec2:"InstanceInitiatedShutdownBehavior,instanceInitiatedShutdownBehavior"`
+	Groups                            []string                                  `json:"Groups,omitempty" ec2:"GroupId,GroupId,member=groupId"`
+}
+
+type DescribeInstanceTypesRequest struct {
+	DryRun        *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	InstanceTypes []string `json:"InstanceTypes,omitempty" ec2:"InstanceType,InstanceType"`
+	Filters       []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	MaxResults    *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken     *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+}
+
+type ProcessorInfo struct {
+	SupportedArchitectures []string `json:"SupportedArchitectures,omitempty" ec2:"SupportedArchitectures,supportedArchitectures,member=item"`
+}
+
+type VCpuInfo struct {
+	DefaultVCpus *int64 `json:"DefaultVCpus,omitempty" ec2:"DefaultVCpus,defaultVCpus"`
+}
+
+type MemoryInfo struct {
+	SizeInMiB *int64 `json:"SizeInMiB,omitempty" ec2:"SizeInMiB,sizeInMiB"`
+}
+
+type InstanceTypeInfo struct {
+	InstanceType                  *string        `json:"InstanceType,omitempty" ec2:"InstanceType,instanceType"`
+	SupportedUsageClasses         []string       `json:"SupportedUsageClasses,omitempty" ec2:"SupportedUsageClasses,supportedUsageClasses,member=item"`
+	SupportedRootDeviceTypes      []string       `json:"SupportedRootDeviceTypes,omitempty" ec2:"SupportedRootDeviceTypes,supportedRootDeviceTypes,member=item"`
+	SupportedVirtualizationTypes  []string       `json:"SupportedVirtualizationTypes,omitempty" ec2:"SupportedVirtualizationTypes,supportedVirtualizationTypes,member=item"`
+	BareMetal                     *bool          `json:"BareMetal,omitempty" ec2:"BareMetal,bareMetal"`
+	ProcessorInfo                 *ProcessorInfo `json:"ProcessorInfo,omitempty" ec2:"ProcessorInfo,processorInfo"`
+	VCpuInfo                      *VCpuInfo      `json:"VCpuInfo,omitempty" ec2:"VCpuInfo,vCpuInfo"`
+	MemoryInfo                    *MemoryInfo    `json:"MemoryInfo,omitempty" ec2:"MemoryInfo,memoryInfo"`
+	InstanceStorageSupported      *bool          `json:"InstanceStorageSupported,omitempty" ec2:"InstanceStorageSupported,instanceStorageSupported"`
+	BurstablePerformanceSupported *bool          `json:"BurstablePerformanceSupported,omitempty" ec2:"BurstablePerformanceSupported,burstablePerformanceSupported"`
+}
+
+type DescribeInstanceTypesResult struct {
+	InstanceTypes []InstanceTypeInfo `json:"InstanceTypes,omitempty" ec2:"InstanceTypeSet,instanceTypeSet,member=item"`
+	NextToken     *string            `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type DescribeInstanceTypeOfferingsRequest struct {
+	DryRun       *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	LocationType *string  `json:"LocationType,omitempty" ec2:"LocationType,LocationType"`
+	Filters      []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	MaxResults   *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken    *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+}
+
+type InstanceTypeOffering struct {
+	InstanceType *string `json:"InstanceType,omitempty" ec2:"InstanceType,instanceType"`
+	LocationType *string `json:"LocationType,omitempty" ec2:"LocationType,locationType"`
+	Location     *string `json:"Location,omitempty" ec2:"Location,location"`
+}
+
+type DescribeInstanceTypeOfferingsResult struct {
+	InstanceTypeOfferings []InstanceTypeOffering `json:"InstanceTypeOfferings,omitempty" ec2:"InstanceTypeOfferingSet,instanceTypeOfferingSet,member=item"`
+	NextToken             *string                `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type DescribeInstanceCreditSpecificationsRequest struct {
+	DryRun      *bool    `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+	Filters     []Filter `json:"Filters,omitempty" ec2:"Filter,Filter,member=Filter"`
+	InstanceIds []string `json:"InstanceIds,omitempty" ec2:"InstanceId,InstanceId,member=InstanceId"`
+	MaxResults  *int64   `json:"MaxResults,omitempty" ec2:"MaxResults,MaxResults"`
+	NextToken   *string  `json:"NextToken,omitempty" ec2:"NextToken,NextToken"`
+}
+
+type InstanceCreditSpecification struct {
+	InstanceId *string `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	CpuCredits *string `json:"CpuCredits,omitempty" ec2:"CpuCredits,cpuCredits"`
+}
+
+type DescribeInstanceCreditSpecificationsResult struct {
+	InstanceCreditSpecifications []InstanceCreditSpecification `json:"InstanceCreditSpecifications,omitempty" ec2:"InstanceCreditSpecificationSet,instanceCreditSpecificationSet,member=item"`
+	NextToken                    *string                       `json:"NextToken,omitempty" ec2:"NextToken,nextToken"`
+}
+
+type GetConsoleOutputRequest struct {
+	InstanceId *string `json:"InstanceId,omitempty" ec2:"InstanceId,InstanceId"`
+	Latest     *bool   `json:"Latest,omitempty" ec2:"Latest,Latest"`
+	DryRun     *bool   `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+}
+
+type GetConsoleOutputResult struct {
+	InstanceId *string    `json:"InstanceId,omitempty" ec2:"InstanceId,instanceId"`
+	Timestamp  *time.Time `json:"Timestamp,omitempty" ec2:"Timestamp,timestamp"`
+	Output     *string    `json:"Output,omitempty" ec2:"Output,output"`
+}
+
+type DescribeAccountAttributesRequest struct {
+	DryRun         *bool    `json:"DryRun,omitempty" ec2:"DryRun,dryRun"`
+	AttributeNames []string `json:"AttributeNames,omitempty" ec2:"AttributeName,attributeName,member=attributeName"`
+}
+
+type AccountAttributeValue struct {
+	AttributeValue *string `json:"AttributeValue,omitempty" ec2:"AttributeValue,attributeValue"`
+}
+
+type AccountAttribute struct {
+	AttributeName   *string                 `json:"AttributeName,omitempty" ec2:"AttributeName,attributeName"`
+	AttributeValues []AccountAttributeValue `json:"AttributeValues,omitempty" ec2:"AttributeValueSet,attributeValueSet,member=item"`
+}
+
+type DescribeAccountAttributesResult struct {
+	AccountAttributes []AccountAttribute `json:"AccountAttributes,omitempty" ec2:"AccountAttributeSet,accountAttributeSet,member=item"`
+}
+
+type EnableEbsEncryptionByDefaultRequest struct {
+	DryRun *bool `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type EnableEbsEncryptionByDefaultResult struct {
+	EbsEncryptionByDefault *bool `json:"EbsEncryptionByDefault,omitempty" ec2:"EbsEncryptionByDefault,ebsEncryptionByDefault"`
+}
+
+type GetEbsEncryptionByDefaultRequest struct {
+	DryRun *bool `json:"DryRun,omitempty" ec2:"DryRun,DryRun"`
+}
+
+type GetEbsEncryptionByDefaultResult struct {
+	EbsEncryptionByDefault *bool `json:"EbsEncryptionByDefault,omitempty" ec2:"EbsEncryptionByDefault,ebsEncryptionByDefault"`
+}
+
 type API interface {
 	DescribeRegions(context.Context, *DescribeRegionsRequest) (*DescribeRegionsResult, error)
 	DescribeAvailabilityZones(context.Context, *DescribeAvailabilityZonesRequest) (*DescribeAvailabilityZonesResult, error)
@@ -3293,6 +3831,35 @@ type API interface {
 	DeleteVpnConnection(context.Context, *DeleteVpnConnectionRequest) (*DeleteVpnConnectionOutput, error)
 	CreateVpnConnectionRoute(context.Context, *CreateVpnConnectionRouteRequest) (*CreateVpnConnectionRouteOutput, error)
 	DeleteVpnConnectionRoute(context.Context, *DeleteVpnConnectionRouteRequest) (*DeleteVpnConnectionRouteOutput, error)
+	CreateVolume(context.Context, *CreateVolumeRequest) (*Volume, error)
+	DescribeVolumes(context.Context, *DescribeVolumesRequest) (*DescribeVolumesResult, error)
+	DeleteVolume(context.Context, *DeleteVolumeRequest) (*DeleteVolumeOutput, error)
+	AttachVolume(context.Context, *AttachVolumeRequest) (*VolumeAttachment, error)
+	DetachVolume(context.Context, *DetachVolumeRequest) (*VolumeAttachment, error)
+	ModifyVolume(context.Context, *ModifyVolumeRequest) (*ModifyVolumeResult, error)
+	DescribeVolumesModifications(context.Context, *DescribeVolumesModificationsRequest) (*DescribeVolumesModificationsResult, error)
+	DescribeVolumeStatus(context.Context, *DescribeVolumeStatusRequest) (*DescribeVolumeStatusResult, error)
+	CreateSnapshot(context.Context, *CreateSnapshotRequest) (*Snapshot, error)
+	DescribeSnapshots(context.Context, *DescribeSnapshotsRequest) (*DescribeSnapshotsResult, error)
+	DeleteSnapshot(context.Context, *DeleteSnapshotRequest) (*DeleteSnapshotOutput, error)
+	CopySnapshot(context.Context, *CopySnapshotRequest) (*CopySnapshotResult, error)
+	ModifySnapshotAttribute(context.Context, *ModifySnapshotAttributeRequest) (*ModifySnapshotAttributeOutput, error)
+	DescribeSnapshotAttribute(context.Context, *DescribeSnapshotAttributeRequest) (*DescribeSnapshotAttributeResult, error)
+	CreateImage(context.Context, *CreateImageRequest) (*CreateImageResult, error)
+	RegisterImage(context.Context, *RegisterImageRequest) (*RegisterImageResult, error)
+	DeregisterImage(context.Context, *DeregisterImageRequest) (*DeregisterImageResult, error)
+	CopyImage(context.Context, *CopyImageRequest) (*CopyImageResult, error)
+	ModifyImageAttribute(context.Context, *ModifyImageAttributeRequest) (*ModifyImageAttributeOutput, error)
+	DescribeImageAttribute(context.Context, *DescribeImageAttributeRequest) (*ImageAttribute, error)
+	DescribeInstanceAttribute(context.Context, *DescribeInstanceAttributeRequest) (*InstanceAttribute, error)
+	ModifyInstanceAttribute(context.Context, *ModifyInstanceAttributeRequest) (*ModifyInstanceAttributeOutput, error)
+	DescribeInstanceTypes(context.Context, *DescribeInstanceTypesRequest) (*DescribeInstanceTypesResult, error)
+	DescribeInstanceTypeOfferings(context.Context, *DescribeInstanceTypeOfferingsRequest) (*DescribeInstanceTypeOfferingsResult, error)
+	DescribeInstanceCreditSpecifications(context.Context, *DescribeInstanceCreditSpecificationsRequest) (*DescribeInstanceCreditSpecificationsResult, error)
+	GetConsoleOutput(context.Context, *GetConsoleOutputRequest) (*GetConsoleOutputResult, error)
+	DescribeAccountAttributes(context.Context, *DescribeAccountAttributesRequest) (*DescribeAccountAttributesResult, error)
+	EnableEbsEncryptionByDefault(context.Context, *EnableEbsEncryptionByDefaultRequest) (*EnableEbsEncryptionByDefaultResult, error)
+	GetEbsEncryptionByDefault(context.Context, *GetEbsEncryptionByDefaultRequest) (*GetEbsEncryptionByDefaultResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
@@ -3779,6 +4346,93 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteVpnConnectionRoute": {Name: "DeleteVpnConnectionRoute", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:DeleteVpnConnectionRoute", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteVpnConnectionRoute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteVpnConnectionRouteRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteVpnConnectionRoute(ctx, input.(*DeleteVpnConnectionRouteRequest))
+		}},
+		"CreateVolume": {Name: "CreateVolume", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:CreateVolume", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateVolume", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateVolumeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateVolume(ctx, input.(*CreateVolumeRequest))
+		}},
+		"DescribeVolumes": {Name: "DescribeVolumes", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeVolumes", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeVolumes", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeVolumesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeVolumes(ctx, input.(*DescribeVolumesRequest))
+		}},
+		"DeleteVolume": {Name: "DeleteVolume", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:DeleteVolume", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteVolume", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteVolumeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteVolume(ctx, input.(*DeleteVolumeRequest))
+		}},
+		"AttachVolume": {Name: "AttachVolume", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:AttachVolume", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "AttachVolume", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &AttachVolumeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.AttachVolume(ctx, input.(*AttachVolumeRequest))
+		}},
+		"DetachVolume": {Name: "DetachVolume", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DetachVolume", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DetachVolume", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DetachVolumeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DetachVolume(ctx, input.(*DetachVolumeRequest))
+		}},
+		"ModifyVolume": {Name: "ModifyVolume", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:ModifyVolume", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifyVolume", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifyVolumeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifyVolume(ctx, input.(*ModifyVolumeRequest))
+		}},
+		"DescribeVolumesModifications": {Name: "DescribeVolumesModifications", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeVolumesModifications", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeVolumesModifications", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeVolumesModificationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeVolumesModifications(ctx, input.(*DescribeVolumesModificationsRequest))
+		}},
+		"DescribeVolumeStatus": {Name: "DescribeVolumeStatus", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeVolumeStatus", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeVolumeStatus", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeVolumeStatusRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeVolumeStatus(ctx, input.(*DescribeVolumeStatusRequest))
+		}},
+		"CreateSnapshot": {Name: "CreateSnapshot", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:CreateSnapshot", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateSnapshot", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateSnapshotRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateSnapshot(ctx, input.(*CreateSnapshotRequest))
+		}},
+		"DescribeSnapshots": {Name: "DescribeSnapshots", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeSnapshots", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeSnapshots", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeSnapshotsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeSnapshots(ctx, input.(*DescribeSnapshotsRequest))
+		}},
+		"DeleteSnapshot": {Name: "DeleteSnapshot", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:DeleteSnapshot", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteSnapshot", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteSnapshotRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteSnapshot(ctx, input.(*DeleteSnapshotRequest))
+		}},
+		"CopySnapshot": {Name: "CopySnapshot", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "ec2:CopySnapshot", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CopySnapshot", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CopySnapshotRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CopySnapshot(ctx, input.(*CopySnapshotRequest))
+		}},
+		"ModifySnapshotAttribute": {Name: "ModifySnapshotAttribute", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:ModifySnapshotAttribute", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifySnapshotAttribute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifySnapshotAttributeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifySnapshotAttribute(ctx, input.(*ModifySnapshotAttributeRequest))
+		}},
+		"DescribeSnapshotAttribute": {Name: "DescribeSnapshotAttribute", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeSnapshotAttribute", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeSnapshotAttribute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeSnapshotAttributeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeSnapshotAttribute(ctx, input.(*DescribeSnapshotAttributeRequest))
+		}},
+		"CreateImage": {Name: "CreateImage", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:CreateImage", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateImage", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateImageRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateImage(ctx, input.(*CreateImageRequest))
+		}},
+		"RegisterImage": {Name: "RegisterImage", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:RegisterImage", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "RegisterImage", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &RegisterImageRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RegisterImage(ctx, input.(*RegisterImageRequest))
+		}},
+		"DeregisterImage": {Name: "DeregisterImage", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DeregisterImage", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeregisterImage", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeregisterImageRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeregisterImage(ctx, input.(*DeregisterImageRequest))
+		}},
+		"CopyImage": {Name: "CopyImage", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:CopyImage", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CopyImage", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CopyImageRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CopyImage(ctx, input.(*CopyImageRequest))
+		}},
+		"ModifyImageAttribute": {Name: "ModifyImageAttribute", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "ec2:ModifyImageAttribute", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifyImageAttribute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifyImageAttributeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifyImageAttribute(ctx, input.(*ModifyImageAttributeRequest))
+		}},
+		"DescribeImageAttribute": {Name: "DescribeImageAttribute", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeImageAttribute", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeImageAttribute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeImageAttributeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeImageAttribute(ctx, input.(*DescribeImageAttributeRequest))
+		}},
+		"DescribeInstanceAttribute": {Name: "DescribeInstanceAttribute", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeInstanceAttribute", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeInstanceAttribute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeInstanceAttributeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeInstanceAttribute(ctx, input.(*DescribeInstanceAttributeRequest))
+		}},
+		"ModifyInstanceAttribute": {Name: "ModifyInstanceAttribute", UnitOutput: true, Sensitive: true, Anonymous: false, IAMAction: "ec2:ModifyInstanceAttribute", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ModifyInstanceAttribute", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ModifyInstanceAttributeRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ModifyInstanceAttribute(ctx, input.(*ModifyInstanceAttributeRequest))
+		}},
+		"DescribeInstanceTypes": {Name: "DescribeInstanceTypes", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeInstanceTypes", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeInstanceTypes", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeInstanceTypesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeInstanceTypes(ctx, input.(*DescribeInstanceTypesRequest))
+		}},
+		"DescribeInstanceTypeOfferings": {Name: "DescribeInstanceTypeOfferings", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeInstanceTypeOfferings", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeInstanceTypeOfferings", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeInstanceTypeOfferingsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeInstanceTypeOfferings(ctx, input.(*DescribeInstanceTypeOfferingsRequest))
+		}},
+		"DescribeInstanceCreditSpecifications": {Name: "DescribeInstanceCreditSpecifications", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeInstanceCreditSpecifications", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeInstanceCreditSpecifications", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeInstanceCreditSpecificationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeInstanceCreditSpecifications(ctx, input.(*DescribeInstanceCreditSpecificationsRequest))
+		}},
+		"GetConsoleOutput": {Name: "GetConsoleOutput", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:GetConsoleOutput", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetConsoleOutput", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetConsoleOutputRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetConsoleOutput(ctx, input.(*GetConsoleOutputRequest))
+		}},
+		"DescribeAccountAttributes": {Name: "DescribeAccountAttributes", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:DescribeAccountAttributes", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DescribeAccountAttributes", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DescribeAccountAttributesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeAccountAttributes(ctx, input.(*DescribeAccountAttributesRequest))
+		}},
+		"EnableEbsEncryptionByDefault": {Name: "EnableEbsEncryptionByDefault", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:EnableEbsEncryptionByDefault", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "EnableEbsEncryptionByDefault", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &EnableEbsEncryptionByDefaultRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.EnableEbsEncryptionByDefault(ctx, input.(*EnableEbsEncryptionByDefaultRequest))
+		}},
+		"GetEbsEncryptionByDefault": {Name: "GetEbsEncryptionByDefault", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "ec2:GetEbsEncryptionByDefault", Bindings: map[string]catalog.Binding{"ec2Query": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetEbsEncryptionByDefault", Version: "2016-11-15", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetEbsEncryptionByDefaultRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetEbsEncryptionByDefault(ctx, input.(*GetEbsEncryptionByDefaultRequest))
 		}},
 	}}
 }

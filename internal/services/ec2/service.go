@@ -27,6 +27,7 @@ type Service struct {
 	now       func() time.Time
 	profiles  InstanceProfiles
 	bg        *background.Group
+	storageBG *background.Group
 	listeners map[string]*http.Server
 	// reconciling holds the instance index keys whose VM work is in flight.
 	reconciling   map[string]bool

@@ -56,7 +56,7 @@ func flowOutput(f *flowLog) api.FlowLog {
 
 func flowResource(tx storage.ReadTx, scope request.Scope, kind, id string) (string, error) {
 	switch kind {
-	case "VPC":
+	case platformVPC:
 		v, err := loadVPC(tx, scope, id)
 		if err != nil {
 			return "", err
@@ -104,7 +104,7 @@ func checkFlowLog(in *api.CreateFlowLogsRequest) (api.FlowLog, error) {
 		return api.FlowLog{}, invalidParameter("Invalid TrafficType")
 	}
 
-	if !slices.Contains([]string{"VPC", "Subnet", "NetworkInterface"}, common.Value(in.ResourceType)) {
+	if !slices.Contains([]string{platformVPC, "Subnet", "NetworkInterface"}, common.Value(in.ResourceType)) {
 		return api.FlowLog{}, awserror.New(
 			"NotImplemented",
 			"Only VPC, Subnet and NetworkInterface flow logs are supported",

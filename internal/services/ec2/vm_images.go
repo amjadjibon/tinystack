@@ -57,6 +57,10 @@ func vmImage(img *image, id string, overrides map[string]config.VMImage) (config
 	return mapped, user, nil
 }
 
+var instanceSizeUnits = map[string]int{
+	"large": 1, "xlarge": 2, "2xlarge": 4, "4xlarge": 8, "8xlarge": 16, "12xlarge": 24, "16xlarge": 32,
+}
+
 // VMSize reports real vCPUs and memory in MiB, rather than silently rounding down.
 func VMSize(instanceType string) (cpus, memory int, err error) {
 	family, size, _ := strings.Cut(instanceType, ".")
@@ -66,19 +70,14 @@ func VMSize(instanceType string) (cpus, memory int, err error) {
 		return 0, 0, invalidParameter("instance type has no VM sizing: " + instanceType)
 	}
 
-	units := map[string]int{
-		"large": 1, "xlarge": 2, "2xlarge": 4, "4xlarge": 8, "8xlarge": 16,
-		"12xlarge": 24, "16xlarge": 32,
-	}
-
 	if family == "t3" || family == vmT4g {
-		small := map[string]int{"nano": 512, "micro": 1024, "small": 2048, "medium": 4096}
+		small := map[string]int{"nano": 512, "micro": 1024, "small": 2048, sizeMedium: 4096}
 		if m, ok := small[size]; ok {
 			return 2, m, nil
 		}
 	}
 
-	unit, ok := units[size]
+	unit, ok := instanceSizeUnits[size]
 	if !ok {
 		return 0, 0, invalidParameter(fmt.Sprintf("unsupported VM instance size: %s", instanceType))
 	}

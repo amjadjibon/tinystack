@@ -60,7 +60,17 @@ var (
 	}
 
 	sizes = []string{
-		"nano", "micro", "small", "medium", "large", "xlarge", "2xlarge", "4xlarge", "8xlarge", "12xlarge", "16xlarge",
+		"nano",
+		"micro",
+		"small",
+		sizeMedium,
+		"large",
+		"xlarge",
+		"2xlarge",
+		"4xlarge",
+		"8xlarge",
+		"12xlarge",
+		"16xlarge",
 	}
 )
 
@@ -78,6 +88,7 @@ type instance struct {
 	Zone        string
 	PublicIP    string `json:",omitempty"`
 	RootDevice  string
+	BootMode    string `json:",omitempty"`
 	Arch        string
 	ID          string
 	Reservation string
@@ -98,12 +109,17 @@ type instance struct {
 	Shutdown    string
 	Tenancy     string
 	Groups      []groupRef
-	VMPort      int `json:",omitempty"`
+	Volumes     []volumeAttachment `json:",omitempty"`
+	VMPort      int                `json:",omitempty"`
 	LaunchIndex int64
 	VMCreated   bool `json:",omitempty"`
 	// NoTerminate is the disableApiTermination attribute.
-	NoTerminate bool
-	Monitoring  bool
+	NoTerminate       bool
+	NoStop            bool
+	NoSourceDestCheck bool
+	VolumeBacked      bool
+	NoENA             bool
+	Monitoring        bool
 }
 
 type instanceMetadataOptions struct {
@@ -254,8 +270,9 @@ func instanceOutput(scope request.Scope, i *instance, state string) api.Instance
 			AvailabilityZoneId: new(zoneID(scope.Region, strings.TrimPrefix(i.Zone, scope.Region))),
 		},
 		Monitoring: &api.Monitoring{State: new(monitoring)}, Architecture: new(i.Arch),
-		RootDeviceType: new("ebs"), RootDeviceName: new(i.RootDevice), VirtualizationType: new("hvm"),
-		Hypervisor: new("xen"), EnaSupport: new(true), EbsOptimized: new(false), SourceDestCheck: new(true),
+		RootDeviceType: new("ebs"), RootDeviceName: new(i.RootDevice), VirtualizationType: new(virtualizationHVM),
+		Hypervisor: new("xen"), EnaSupport: new(!i.NoENA), EbsOptimized: new(false),
+		SourceDestCheck: new(!i.NoSourceDestCheck),
 		PlatformDetails: new("Linux/UNIX"), UsageOperation: new("RunInstances"), Tags: tagList(i.Tags),
 		SecurityGroups: []api.GroupIdentifier{},
 	}
@@ -288,6 +305,7 @@ func instanceOutput(scope request.Scope, i *instance, state string) api.Instance
 	}
 
 	out.MetadataOptions = i.metadataOptionsOutput()
+	out.BlockDeviceMappings = i.deviceMappings()
 
 	return out
 }
@@ -346,13 +364,23 @@ func instanceValues(scope request.Scope, i *instance) values {
 		"reservation-id": {i.Reservation}, "launch-index": {strconv.FormatInt(i.LaunchIndex, 10)},
 		"architecture": {i.Arch}, filterOwnerID: {scope.AccountID}, "client-token": {i.ClientToken},
 		"monitoring-state": {*out.Monitoring.State}, "tenancy": {i.Tenancy}, "root-device-type": {"ebs"},
-		"root-device-name": {i.RootDevice}, "hypervisor": {"xen"}, "virtualization-type": {"hvm"},
+		"root-device-name": {i.RootDevice}, "hypervisor": {"xen"}, "virtualization-type": {virtualizationHVM},
 		"platform-details": {"Linux/UNIX"}, "instance.group-id": {}, "instance.group-name": {},
+		"block-device-mapping.device-name": {}, "block-device-mapping.volume-id": {},
+		"block-device-mapping.delete-on-termination": {}, "block-device-mapping.status": {},
 	}
 
 	for _, g := range i.Groups {
 		v["instance.group-id"] = append(v["instance.group-id"], g.ID)
 		v["instance.group-name"] = append(v["instance.group-name"], g.Name)
+	}
+
+	for _, a := range i.Volumes {
+		v["block-device-mapping.device-name"] = append(v["block-device-mapping.device-name"], a.Device)
+		v["block-device-mapping.volume-id"] = append(v["block-device-mapping.volume-id"], a.VolumeID)
+		v["block-device-mapping.delete-on-termination"] = append(v["block-device-mapping.delete-on-termination"],
+			strconv.FormatBool(a.DeleteOnTermination))
+		v["block-device-mapping.status"] = append(v["block-device-mapping.status"], stateAttached)
 	}
 
 	return v.withTags(i.Tags)
@@ -371,8 +399,7 @@ func instanceType(name string) (string, error) {
 
 // launch is what RunInstances resolved from its request.
 type launch struct {
-	img         *image
-	tags        map[string]string
+	tags        map[string]map[string]string
 	instanceTyp string
 	arch        string
 	tenancy     string
@@ -383,7 +410,7 @@ type launch struct {
 
 // checkLaunch validates the parts of a RunInstances request that need no
 // stored state.
-func checkLaunch(region string, in *api.RunInstancesRequest) (*launch, error) {
+func checkLaunch(in *api.RunInstancesRequest) (*launch, error) {
 	if m := in.MetadataOptions; m != nil {
 		if err := validateMetadataOptions(m.HttpTokens, m.HttpEndpoint, m.HttpProtocolIpv6, m.InstanceMetadataTags,
 			m.HttpPutResponseHopLimit); err != nil {
@@ -406,25 +433,16 @@ func checkLaunch(region string, in *api.RunInstancesRequest) (*launch, error) {
 			"Cannot specify a private IP address when launching more than one instance")
 	}
 
-	img, err := findImage(region, common.Value(in.ImageId))
-	if err != nil {
-		return nil, err
-	}
-
 	if l.instanceTyp == "" {
 		l.instanceTyp = defaultInstanceType
 	}
 
-	if l.arch, err = instanceType(l.instanceTyp); err != nil {
+	arch, err := instanceType(l.instanceTyp)
+	if err != nil {
 		return nil, err
 	}
 
-	if l.arch != img.Architecture {
-		return nil, invalidParameter(fmt.Sprintf("The architecture '%s' of the specified instance type does not "+
-			"match the architecture '%s' of the specified AMI.", l.arch, img.Architecture))
-	}
-
-	l.img, l.tenancy, l.shutdown = img, tenancyDefault, shutdownStop
+	l.arch, l.tenancy, l.shutdown = arch, tenancyDefault, shutdownStop
 	if in.Placement != nil && in.Placement.Tenancy != nil {
 		l.tenancy = *in.Placement.Tenancy
 	}
@@ -453,7 +471,7 @@ func checkLaunch(region string, in *api.RunInstancesRequest) (*launch, error) {
 		}
 	}
 
-	l.tags, err = specTags(in.TagSpecifications, kindInstance)
+	l.tags, err = splitResourceTags(in.TagSpecifications, kindInstance, kindVolume)
 	return l, err
 }
 
@@ -654,16 +672,16 @@ func reservation(scope request.Scope, id string, instances []api.Instance) *api.
 // the Region's limit of 20 active instances allows. A ClientToken already
 // used returns the instances it launched.
 func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest) (*api.Reservation, error) {
-	m, err := caller(ctx, in.DryRun)
+	if _, err := caller(ctx, in.DryRun); err != nil {
+		return nil, err
+	}
+
+	in, err := s.launchTemplateRequest(ctx, in)
 	if err != nil {
 		return nil, err
 	}
 
-	if in, err = s.launchTemplateRequest(ctx, in); err != nil {
-		return nil, err
-	}
-
-	l, err := checkLaunch(m.Region, in)
+	l, err := checkLaunch(in)
 	if err != nil {
 		return nil, err
 	}
@@ -708,8 +726,31 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 				"than your current instance limit of %d allows.", l.min, maxInstances))
 		}
 
+		img, imageErr := launchableImage(tx, scope, common.Value(in.ImageId))
+		if imageErr != nil {
+			return imageErr
+		}
+
+		if img.State != stateAvailable {
+			return awserror.New("IncorrectState", "The AMI must be available")
+		}
+
+		if l.arch != img.Architecture {
+			return invalidParameter(fmt.Sprintf("The architecture '%s' of the specified instance type does not "+
+				"match the architecture '%s' of the specified AMI.", l.arch, img.Architecture))
+		}
+
+		mappings, mappingsErr := launchVolumeMappings(img.Devices, in.BlockDeviceMappings, img.RootDevice)
+		if mappingsErr != nil {
+			return mappingsErr
+		}
+
 		if s.runtime != nil {
-			if vmErr := s.validateVM(tx, l, count, common.Value(in.ImageId)); vmErr != nil {
+			if _, catalogErr := findImage(scope.Region, img.ID); catalogErr != nil {
+				return awserror.New("UnsupportedOperation", "Registered AMIs can only be launched in records mode")
+			}
+
+			if vmErr := s.validateVM(tx, l, &img.image, count, img.ID); vmErr != nil {
 				return vmErr
 			}
 		}
@@ -743,12 +784,33 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 		out = reservation(scope, newID("r"), nil)
 		for n := range count {
 			i := &instance{
-				ID: newID("i"), Reservation: *out.ReservationId, ImageID: common.Value(in.ImageId), Type: l.instanceTyp,
-				KeyName: common.Value(in.KeyName), SubnetID: sn.ID, VPCID: sn.VPCID, Zone: sn.Zone, State: stateRunning,
-				ClientToken: token, UserData: l.userData, Shutdown: l.shutdown, Tenancy: l.tenancy, Arch: l.arch,
-				RootDevice: l.img.RootDevice, LaunchIndex: n, NoTerminate: common.Value(in.DisableApiTermination),
-				Monitoring: in.Monitoring != nil && common.Value(in.Monitoring.Enabled), Groups: groups, Tags: l.tags,
-				LaunchTime: now, Changed: now,
+				ID:          newID("i"),
+				Reservation: *out.ReservationId,
+				ImageID:     common.Value(in.ImageId),
+				Type:        l.instanceTyp,
+				KeyName:     common.Value(in.KeyName),
+				SubnetID:    sn.ID,
+				VPCID:       sn.VPCID,
+				Zone:        sn.Zone,
+				State:       stateRunning,
+				ClientToken: token,
+				UserData:    l.userData,
+				Shutdown:    l.shutdown,
+				Tenancy:     l.tenancy,
+				Arch:        l.arch,
+				RootDevice:  img.RootDevice,
+				LaunchIndex: n,
+				NoTerminate: common.Value(in.DisableApiTermination),
+				Monitoring: in.Monitoring != nil &&
+					common.Value(in.Monitoring.Enabled),
+				Groups:       groups,
+				Tags:         l.tags[kindInstance],
+				NoStop:       common.Value(in.DisableApiStop),
+				VolumeBacked: true,
+				NoENA:        !img.ENA,
+				BootMode:     img.BootMode,
+				LaunchTime:   now,
+				Changed:      now,
 			}
 
 			if s.runtime != nil {
@@ -780,6 +842,18 @@ func (s *Service) RunInstances(ctx context.Context, in *api.RunInstancesRequest)
 			i.PrivateIP = ip
 			if sn.MapPublicIP {
 				i.PublicIP = publicIP()
+			}
+
+			if volumeErr := launchVolumes(
+				tx,
+				scope,
+				i,
+				mappings,
+				img.Devices,
+				in.BlockDeviceMappings,
+				l.tags[kindVolume],
+			); volumeErr != nil {
+				return volumeErr
 			}
 
 			if indexErr := storage.Write(tx, "aws/ec2/instances/"+i.ID, scope); indexErr != nil {
@@ -945,6 +1019,10 @@ func (s *Service) change(
 			}
 
 			if i.State == stateTerminated {
+				if err := releaseInstanceVolumes(tx, scope, i); err != nil {
+					return err
+				}
+
 				if err := releaseInstanceInterfaces(tx, scope, i.ID); err != nil {
 					return err
 				}
@@ -989,6 +1067,12 @@ func (s *Service) StartInstances(
 		case stateRunning:
 			return stateRunning, nil
 		case stateStopped:
+			if i.VolumeBacked && !slices.ContainsFunc(i.Volumes, func(a volumeAttachment) bool {
+				return a.Device == i.RootDevice
+			}) {
+				return "", awserror.New("InvalidBlockDeviceMapping", "The instance does not have a root volume")
+			}
+
 			i.State, i.Reason = stateRunning, ""
 			if sn != nil && sn.MapPublicIP && i.AddressID == "" {
 				i.PublicIP = publicIP()
@@ -1016,6 +1100,13 @@ func (s *Service) StopInstances(ctx context.Context, in *api.StopInstancesReques
 			case stateStopped:
 				return stateStopped, nil
 			case stateRunning:
+				if i.NoStop {
+					return "", awserror.New(
+						"OperationNotPermitted",
+						"Disable instance stop protection before stopping it",
+					)
+				}
+
 				// An Elastic IP address stays with a stopped instance.
 				i.State, i.Reason = stateStopped, reason
 				if i.AddressID == "" {
@@ -1069,13 +1160,18 @@ func (s *Service) TerminateInstances(
 		in.InstanceIds,
 		func(i *instance, _ *subnet, reason string) (string, error) {
 			switch {
-			case i.State == stateTerminated:
-				return stateTerminated, nil
+			case i.State == stateTerminated || i.State == stateShuttingDown:
+				return i.State, nil
 			case i.NoTerminate:
 				return "", awserror.New(
 					"OperationNotPermitted",
 					fmt.Sprintf("The instance '%s' may not be terminated. "+
 						"Modify its 'disableApiTermination' instance attribute and try again.", i.ID),
+				)
+			case i.NoStop:
+				return "", awserror.New(
+					"OperationNotPermitted",
+					"Disable instance stop protection before terminating it",
 				)
 			default:
 				i.State, i.Reason, i.PublicIP, i.PrivateIP = stateTerminated, reason, "", ""

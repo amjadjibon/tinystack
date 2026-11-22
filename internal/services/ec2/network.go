@@ -640,7 +640,7 @@ func subnetValues(scope request.Scope, sn *subnet) values {
 	out := values{
 		filterSubnetID: {sn.ID}, filterVPCID: {sn.VPCID}, "cidr-block": {sn.CIDR}, filterCIDR: {sn.CIDR},
 		"cidrBlock": {sn.CIDR}, filterZone: {zoneName}, "availabilityZone": {zoneName},
-		"availability-zone-id": {zoneIDValue}, "default-for-az": boolValue(sn.DefaultForAZ),
+		filterZoneID: {zoneIDValue}, "default-for-az": boolValue(sn.DefaultForAZ),
 		"defaultForAz": boolValue(sn.DefaultForAZ), filterState: {stateAvailable}, filterOwnerID: {scope.AccountID},
 		"map-public-ip-on-launch": boolValue(sn.MapPublicIP), "available-ip-address-count": {count},
 		"subnet-arn": {subnetARN(scope, sn)}, "ipv6-native": boolValue(false),
