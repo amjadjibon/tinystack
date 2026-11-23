@@ -69,7 +69,7 @@ func snapshotReady(r *record) error {
 
 // createSnapshot is called with the lifecycle lock held, including for final snapshots.
 func (s *Service) createSnapshot(
-	ctx context.Context, scope request.Scope, source *record, id string, tags []api.Tag, final bool,
+	ctx context.Context, scope request.Scope, source *record, id string, tags []api.Tag, final bool, captured time.Time,
 ) (*record, error) {
 	id = strings.ToLower(id)
 	if !validName(id, 255) {
@@ -93,14 +93,15 @@ func (s *Service) createSnapshot(
 
 	r := common.Clone(source)
 	r.SourceTags = common.CloneTags(source.Tags)
-	now := time.Now().UTC()
+	now, typ := snapshotTime(captured)
+	r.BackupRetryAt = time.Time{}
 	r.Name, r.Kind, r.Tags, r.Since = id, kindSnapshot, parsed, now
 	r.Container, r.Volume, r.ReadyAt = "", "", now.Add(snapshotDelay)
 	db := source.Instance
 	_, _, port, _ := Engine(common.Value(db.Engine), common.Value(db.EngineVersion))
 	r.Snapshot = &api.DBSnapshot{
 		DBSnapshotIdentifier: new(id), DBInstanceIdentifier: db.DBInstanceIdentifier,
-		DBSnapshotArn: new(arn(scope, kindSnapshot, id)), SnapshotType: new(manualSnapshot),
+		DBSnapshotArn: new(arn(scope, kindSnapshot, id)), SnapshotType: new(typ),
 		Status: new(creating), PercentProgress: new(int64(0)), Engine: db.Engine, EngineVersion: db.EngineVersion,
 		AllocatedStorage: db.AllocatedStorage, MasterUsername: db.MasterUsername, Port: new(port),
 		InstanceCreateTime: db.InstanceCreateTime, SnapshotCreateTime: new(now), OriginalSnapshotCreateTime: new(now),
@@ -161,7 +162,10 @@ func (s *Service) saveSnapshot(ctx context.Context, scope request.Scope, source,
 		target.Volume = targetSpec.Volume
 	}
 
-	target.ReadyAt = time.Now().UTC().Add(snapshotDelay)
+	target.ReadyAt = time.Time{}
+	if !isAutomatedSnapshot(target) {
+		target.ReadyAt = time.Now().UTC().Add(snapshotDelay)
+	}
 	if err := s.insert(ctx, scope, target); err != nil {
 		if s.runtime != nil {
 			_ = s.runtime.Remove(ctx, s.dataSpec(ctx, scope, target), true)
@@ -198,7 +202,7 @@ func (s *Service) CreateDBSnapshot(
 		return nil, err
 	}
 
-	r, err := s.createSnapshot(ctx, scope, source, common.Value(in.DBSnapshotIdentifier), in.Tags, false)
+	r, err := s.createSnapshot(ctx, scope, source, common.Value(in.DBSnapshotIdentifier), in.Tags, false, time.Time{})
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +219,7 @@ func (s *Service) DescribeDBSnapshots(
 	}
 
 	typ := common.Value(in.SnapshotType)
-	if typ != "" && typ != manualSnapshot && typ != "automated" {
+	if typ != "" && typ != manualSnapshot && typ != automatedSnapshot {
 		return nil, invalid("Supported SnapshotType values are manual and automated")
 	}
 
@@ -314,6 +318,13 @@ func (s *Service) DeleteDBSnapshot(
 		return nil, err
 	}
 
+	if isAutomatedSnapshot(r) {
+		return nil, awserror.New(
+			"InvalidDBSnapshotStateFault",
+			"Delete automated backups through retention or backup deletion",
+		)
+	}
+
 	if readyErr := snapshotReady(r); readyErr != nil {
 		return nil, readyErr
 	}
@@ -377,6 +388,7 @@ func (s *Service) CopyDBSnapshot(
 	r.Name, r.Tags, r.Volume, r.Since = id, tags, "", time.Now().UTC()
 	r.RestoreAccounts = nil
 	r.Snapshot.DBSnapshotIdentifier, r.Snapshot.DBSnapshotArn = new(id), new(arn(scope, kindSnapshot, id))
+	r.Snapshot.SnapshotType = new(manualSnapshot)
 	r.Snapshot.SourceDBSnapshotIdentifier = source.Snapshot.DBSnapshotArn
 	r.Snapshot.SourceRegion = new(scope.Region)
 	r.Snapshot.SnapshotCreateTime = new(r.Since)
@@ -403,6 +415,13 @@ func (s *Service) RestoreDBInstanceFromDBSnapshot(
 		return nil, err
 	}
 
+	return s.restoreInstanceSnapshot(ctx, scope, source, in, nil)
+}
+
+func (s *Service) restoreInstanceSnapshot(
+	ctx context.Context, scope request.Scope, source *record,
+	in *api.RestoreDBInstanceFromDBSnapshotMessage, settings *api.RestoreDBInstanceToPointInTimeMessage,
+) (*api.RestoreDBInstanceFromDBSnapshotResult, error) {
 	if readyErr := snapshotReady(source); readyErr != nil {
 		return nil, readyErr
 	}
@@ -415,15 +434,16 @@ func (s *Service) RestoreDBInstanceFromDBSnapshot(
 	r := common.Clone(source)
 	r.Name, r.Kind, r.Snapshot, r.Since = id, kindDB, nil, time.Now().UTC()
 	r.Container, r.Volume, r.Initialized = "", "", false
-	r.Tags, err = parseTags(in.Tags)
+	tags, err := parseTags(in.Tags)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(in.Tags) == 0 {
-		r.Tags = common.CloneTags(source.SourceTags)
+		tags = common.CloneTags(source.SourceTags)
 	}
 
+	r.Tags = tags
 	r.SourceTags, r.RestoreAccounts = nil, nil
 
 	db := r.Instance
@@ -434,6 +454,25 @@ func (s *Service) RestoreDBInstanceFromDBSnapshot(
 	db.PendingModifiedValues = nil
 	db.ReadReplicaSourceDBInstanceIdentifier, db.ReadReplicaDBInstanceIdentifiers = nil, nil
 	db.BackupRetentionPeriod, db.PreferredMaintenanceWindow = new(int64(1)), new(defaultMaintenanceWindow)
+	db.LatestRestorableTime = nil
+	r.MaintenanceAt, r.BackupSlot, r.BackupRetryAt = time.Time{}, time.Time{}, time.Time{}
+	r.MaintenanceOptIn = nil
+	db.PreferredBackupWindow = new(defaultBackupWindow)
+	var optionGroup *string
+	if settings != nil {
+		retention := common.OrElse(settings.BackupRetentionPeriod, db.BackupRetentionPeriod)
+		if retentionErr := checkInstanceRetention(*retention, false, false); retentionErr != nil {
+			return nil, retentionErr
+		}
+
+		window, windowErr := backupWindow(settings.PreferredBackupWindow)
+		if windowErr != nil {
+			return nil, windowErr
+		}
+
+		db.BackupRetentionPeriod, db.PreferredBackupWindow = retention, new(window)
+		optionGroup = settings.OptionGroupName
+	}
 	if in.DBInstanceClass != nil {
 		if !strings.HasPrefix(*in.DBInstanceClass, "db.") || len(*in.DBInstanceClass) < 4 {
 			return nil, invalid("Invalid DBInstanceClass")
@@ -443,7 +482,7 @@ func (s *Service) RestoreDBInstanceFromDBSnapshot(
 	}
 
 	if in.AllocatedStorage != nil {
-		if *in.AllocatedStorage < common.Value(db.AllocatedStorage) || *in.AllocatedStorage > 65536 {
+		if *in.AllocatedStorage < common.Value(db.AllocatedStorage) || *in.AllocatedStorage > maxInstanceStorage {
 			return nil, invalid("AllocatedStorage cannot be smaller than the snapshot or exceed 65536 GiB")
 		}
 
@@ -491,7 +530,7 @@ func (s *Service) RestoreDBInstanceFromDBSnapshot(
 			}}
 		}
 
-		return s.setOptionGroup(tx, scope, db, nil)
+		return s.setOptionGroup(tx, scope, db, optionGroup)
 	})
 	if err != nil {
 		return nil, err

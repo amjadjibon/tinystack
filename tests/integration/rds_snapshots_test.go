@@ -195,7 +195,9 @@ func TestRDSSnapshotFiltersAndValidation(t *testing.T) {
 	s := server(t)
 	c := rdsClient(s, "test", "us-east-1")
 	ctx := context.Background()
-	instance, err := c.CreateDBInstance(ctx, rdsInput("source"))
+	in := rdsInput("source")
+	in.BackupRetentionPeriod = new(int32(0))
+	instance, err := c.CreateDBInstance(ctx, in)
 	if err != nil {
 		t.Fatal(err)
 	}

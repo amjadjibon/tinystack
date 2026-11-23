@@ -352,6 +352,8 @@ TagResource UntagResource GetTags
  TagResource UntagResource ListTagsForResource
 `)},
 	consoleRDS: {operations: strings.Fields(`
+ DescribeDBEngineVersions DescribeOrderableDBInstanceOptions DescribeValidDBInstanceModifications
+ DescribeAccountAttributes DescribeOptionGroupOptions
  CreateDBInstance DescribeDBInstances ModifyDBInstance DeleteDBInstance StopDBInstance StartDBInstance RebootDBInstance
  DescribeDBClusters CreateDBCluster ModifyDBCluster DeleteDBCluster StartDBCluster StopDBCluster
  EnableHttpEndpoint DisableHttpEndpoint

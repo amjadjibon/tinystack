@@ -15,32 +15,25 @@ import (
 
 // Engine resolves only explicitly supported versions; no minor version is silently discarded.
 func Engine(engine, version string) (image, resolved string, port int64, err error) {
-	switch engine {
-	case EnginePostgres:
+	port = 3306
+	if engine == EnginePostgres {
+		port = 5432
+	}
+
+	for _, item := range standaloneVersions {
+		if item.engine != engine {
+			continue
+		}
+
 		if version == "" {
-			version = "16"
+			version = item.versions[0]
+			if engine == EnginePostgres {
+				version = "16"
+			}
 		}
 
-		if slices.Contains([]string{"14", "15", "16", "17"}, version) {
-			return "postgres:" + version, version, 5432, nil
-		}
-
-	case EngineMySQL:
-		if version == "" {
-			version = mysqlFamilyVersion
-		}
-
-		if version == mysqlFamilyVersion {
-			return "mysql:8.0", version, 3306, nil
-		}
-
-	case EngineMariaDB:
-		if version == "" {
-			version = "11"
-		}
-
-		if version == "11" {
-			return "mariadb:11", version, 3306, nil
+		if slices.Contains(item.versions, version) {
+			return engine + ":" + version, version, port, nil
 		}
 	}
 
@@ -111,11 +104,16 @@ func (s *Service) CreateDBInstance(
 	}
 
 	size := common.Value(common.OrElse(in.AllocatedStorage, new(int64(20))))
-	if size < 20 || size > 65536 {
+	if size < 20 || size > maxInstanceStorage {
 		return nil, invalid("AllocatedStorage must be between 20 and 65536 GiB")
 	}
 
 	window, _, err := maintenanceWindow(in.PreferredMaintenanceWindow, time.Now())
+	if err != nil {
+		return nil, err
+	}
+
+	backup, err := backupWindow(in.PreferredBackupWindow)
 	if err != nil {
 		return nil, err
 	}
@@ -134,12 +132,22 @@ func (s *Service) CreateDBInstance(
 	r := &record{
 		Name: id, Kind: kindDB, Tags: tags, Password: password, RootPassword: password, Since: now,
 		Instance: &api.DBInstance{
-			CopyTagsToSnapshot: in.CopyTagsToSnapshot, DbiResourceId: new("db-" + common.RandomID(26)),
-			BackupRetentionPeriod: retention, PreferredMaintenanceWindow: new(window),
-			DBInstanceIdentifier: new(id), DBInstanceClass: new(class), Engine: new(engine),
-			EngineVersion: new(version), MasterUsername: new(username), DBName: in.DBName, AllocatedStorage: new(size),
-			DBInstanceStatus: new(available), DBInstanceArn: new(arn(scope, kindDB, id)), InstanceCreateTime: new(now),
-			Endpoint: &api.Endpoint{Address: new("127.0.0.1"), Port: new(port)},
+			CopyTagsToSnapshot:         in.CopyTagsToSnapshot,
+			DbiResourceId:              new("db-" + common.RandomID(26)),
+			BackupRetentionPeriod:      retention,
+			PreferredMaintenanceWindow: new(window),
+			PreferredBackupWindow:      new(backup),
+			DBInstanceIdentifier:       new(id),
+			DBInstanceClass:            new(class),
+			Engine:                     new(engine),
+			EngineVersion:              new(version),
+			MasterUsername:             new(username),
+			DBName:                     in.DBName,
+			AllocatedStorage:           new(size),
+			DBInstanceStatus:           new(available),
+			DBInstanceArn:              new(arn(scope, kindDB, id)),
+			InstanceCreateTime:         new(now),
+			Endpoint:                   &api.Endpoint{Address: new("127.0.0.1"), Port: new(port)},
 		},
 	}
 
@@ -280,8 +288,8 @@ func (s *Service) DeleteDBInstance(
 	}
 
 	if r.Instance.DBClusterIdentifier != nil {
-		if in.FinalDBSnapshotIdentifier != nil {
-			return nil, invalid("Cluster member final snapshots are unsupported")
+		if in.FinalDBSnapshotIdentifier != nil || in.DeleteAutomatedBackups != nil {
+			return nil, invalid("Cluster members inherit backup and snapshot settings")
 		}
 
 		e := s.store.Update(ctx, func(tx storage.WriteTx) error { return deleteClusterMember(tx, scope, r) })
@@ -305,6 +313,7 @@ func (s *Service) DeleteDBInstance(
 			common.Value(in.FinalDBSnapshotIdentifier),
 			nil,
 			true,
+			time.Time{},
 		); snapshotErr != nil {
 			return nil, snapshotErr
 		}
@@ -316,7 +325,20 @@ func (s *Service) DeleteDBInstance(
 		}
 	}
 
+	deleteBackups := common.Value(common.OrElse(in.DeleteAutomatedBackups, new(true)))
+	if deleteBackups {
+		if backupErr := s.deleteBackupSnapshots(ctx, scope, r); backupErr != nil {
+			return nil, backupErr
+		}
+	}
+
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		if !deleteBackups {
+			if backupErr := retainBackupSnapshots(tx, scope, r); backupErr != nil {
+				return backupErr
+			}
+		}
+
 		if linkErr := removeReplicaLinks(tx, scope, r); linkErr != nil {
 			return linkErr
 		}
@@ -447,7 +469,7 @@ func (s *Service) modifyInstance(
 	}
 
 	if in.AllocatedStorage != nil {
-		if *in.AllocatedStorage < common.Value(db.AllocatedStorage) || *in.AllocatedStorage > 65536 {
+		if *in.AllocatedStorage < common.Value(db.AllocatedStorage) || *in.AllocatedStorage > maxInstanceStorage {
 			return invalid("AllocatedStorage cannot decrease or exceed 65536 GiB")
 		}
 
@@ -477,6 +499,15 @@ func (s *Service) modifyInstance(
 
 		db.PreferredMaintenanceWindow = new(window)
 		r.MaintenanceAt = time.Time{}
+	}
+
+	if in.PreferredBackupWindow != nil {
+		window, err := backupWindow(in.PreferredBackupWindow)
+		if err != nil {
+			return err
+		}
+
+		db.PreferredBackupWindow = new(window)
 	}
 
 	if in.CopyTagsToSnapshot != nil {

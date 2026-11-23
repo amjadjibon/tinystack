@@ -22,6 +22,8 @@ const (
 	eventAvailable          = "availability"
 	eventMaintenance        = "maintenance"
 	eventReplica            = "read replica"
+	eventFailover           = "failover"
+	eventBackup             = "backup"
 	sourceDBInstance        = "db-instance"
 	sourceDBCluster         = "db-cluster"
 	sourceDBSnapshot        = "db-snapshot"
@@ -35,13 +37,13 @@ var eventSources = map[string]string{
 
 var eventCategories = []api.EventCategoriesMap{
 	{SourceType: new(sourceDBCluster), EventCategories: []string{
-		eventAvailable, eventChange, eventCreation, eventDeletion, eventMaintenance,
+		eventAvailable, eventChange, eventCreation, eventDeletion, eventFailover, eventMaintenance,
 	}},
-	{SourceType: new(sourceDBClusterSnapshot), EventCategories: []string{eventCreation, eventDeletion}},
+	{SourceType: new(sourceDBClusterSnapshot), EventCategories: []string{eventBackup, eventCreation, eventDeletion}},
 	{SourceType: new(sourceDBInstance), EventCategories: []string{
 		eventAvailable, eventChange, eventCreation, eventDeletion, eventMaintenance, eventReplica,
 	}},
-	{SourceType: new(sourceDBSnapshot), EventCategories: []string{eventCreation, eventDeletion}},
+	{SourceType: new(sourceDBSnapshot), EventCategories: []string{eventBackup, eventCreation, eventDeletion}},
 }
 
 func recordEvent(tx storage.WriteTx, scope request.Scope, r *record, category, message string) error {
@@ -61,10 +63,16 @@ func recordEvent(tx storage.WriteTx, scope request.Scope, r *record, category, m
 		tx.Delete(key)
 	}
 
-	return storage.Write(tx, prefix+now.Format(eventDateFormat)+"-"+common.RandomID(12), &api.Event{
+	id := now.Format(eventDateFormat) + "-" + common.RandomID(12)
+	event := &api.Event{
 		Date: new(now), SourceType: new(source), SourceIdentifier: new(r.Name),
 		SourceArn: new(arn(scope, r.Kind, r.Name)), EventCategories: []string{category}, Message: new(message),
-	})
+	}
+	if err := storage.Write(tx, prefix+id, event); err != nil {
+		return err
+	}
+
+	return queueEventDeliveries(tx, scope, event, r.Tags, id)
 }
 
 func supportedEventSource(source string) bool {

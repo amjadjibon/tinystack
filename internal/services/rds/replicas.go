@@ -86,6 +86,7 @@ func (s *Service) CreateDBInstanceReadReplica(
 		db.DBInstanceIdentifier, db.DBInstanceArn = new(name), new(arn(scope, kindDB, name))
 		db.DbiResourceId, db.InstanceCreateTime = new("db-"+common.RandomID(26)), new(now)
 		db.BackupRetentionPeriod, db.PendingModifiedValues = new(int64(0)), nil
+		db.LatestRestorableTime = nil
 		db.ReadReplicaSourceDBInstanceIdentifier, db.ReadReplicaDBInstanceIdentifiers = new(source.Name), nil
 		if configureErr := s.configureReplica(tx, scope, db, in); configureErr != nil {
 			return configureErr
@@ -129,7 +130,7 @@ func (s *Service) configureReplica(
 	}
 
 	if in.AllocatedStorage != nil {
-		if *in.AllocatedStorage < common.Value(db.AllocatedStorage) || *in.AllocatedStorage > 65536 {
+		if *in.AllocatedStorage < common.Value(db.AllocatedStorage) || *in.AllocatedStorage > maxInstanceStorage {
 			return invalid("AllocatedStorage cannot be less than the source or exceed 65536 GiB")
 		}
 

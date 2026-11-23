@@ -89,6 +89,7 @@ func writeMaintenance(tx storage.WriteTx, scope request.Scope, r *record) error 
 		window = r.Cluster.PreferredMaintenanceWindow
 	default:
 		r.MaintenanceAt = time.Time{}
+		r.MaintenanceOptIn = nil
 		tx.Delete(key)
 		return nil
 	}
@@ -132,6 +133,8 @@ func (s *Service) StartMaintenance() {
 	}
 
 	s.bg.Every(time.Second, s.visitMaintenance)
+	s.bg.Every(time.Second, s.visitEventDeliveries)
+	s.bg.Every(time.Second, s.visitBackups)
 }
 
 func (s *Service) visitMaintenance(ctx context.Context) {
@@ -174,30 +177,7 @@ func (s *Service) applyMaintenance(ctx context.Context, scope request.Scope, kin
 		return
 	}
 
-	if kind == kindCluster {
-		if common.Value(cluster(r).Status) != available {
-			return
-		}
-
-		applyClusterPending(r.Cluster)
-	} else {
-		if common.Value(instance(r).DBInstanceStatus) != available {
-			return
-		}
-
-		if p := r.Instance.PendingModifiedValues; r.Instance.DBClusterIdentifier == nil &&
-			p != nil && p.DBInstanceClass != nil {
-			if err := s.instanceAction(ctx, scope, r, actionRestart); err != nil {
-				return
-			}
-		}
-
-		applyInstancePending(r.Instance)
-	}
-
-	_ = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		return saveModification(tx, scope, r, eventMaintenance, "Applied pending modifications")
-	})
+	_ = s.applyPendingMaintenance(ctx, scope, r)
 }
 
 func saveModification(tx storage.WriteTx, scope request.Scope, r *record, category, message string) error {

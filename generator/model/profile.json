@@ -24425,7 +24425,25 @@
       "CreateOptionGroup",
       "DescribeOptionGroups",
       "DeleteOptionGroup",
-      "ModifyOptionGroup"
+      "ModifyOptionGroup",
+      "DescribeDBEngineVersions",
+      "DescribeOrderableDBInstanceOptions",
+      "DescribeValidDBInstanceModifications",
+      "DescribeAccountAttributes",
+      "DescribeOptionGroupOptions",
+      "CreateEventSubscription",
+      "DescribeEventSubscriptions",
+      "ModifyEventSubscription",
+      "DeleteEventSubscription",
+      "AddSourceIdentifierToSubscription",
+      "RemoveSourceIdentifierFromSubscription",
+      "DescribeDBInstanceAutomatedBackups",
+      "DeleteDBInstanceAutomatedBackup",
+      "RestoreDBInstanceToPointInTime",
+      "RestoreDBClusterToPointInTime",
+      "DescribePendingMaintenanceActions",
+      "ApplyPendingMaintenanceAction",
+      "FailoverDBCluster"
     ],
     "shapes": {
       "CreateDBInstanceMessage": [
@@ -24444,7 +24462,8 @@
         "CopyTagsToSnapshot",
         "PreferredMaintenanceWindow",
         "BackupRetentionPeriod",
-        "OptionGroupName"
+        "OptionGroupName",
+        "PreferredBackupWindow"
       ],
       "DescribeDBInstancesMessage": [
         "DBInstanceIdentifier",
@@ -24455,7 +24474,8 @@
       "DeleteDBInstanceMessage": [
         "DBInstanceIdentifier",
         "SkipFinalSnapshot",
-        "FinalDBSnapshotIdentifier"
+        "FinalDBSnapshotIdentifier",
+        "DeleteAutomatedBackups"
       ],
       "ModifyDBInstanceMessage": [
         "DBInstanceIdentifier",
@@ -24467,7 +24487,8 @@
         "PreferredMaintenanceWindow",
         "BackupRetentionPeriod",
         "AllocatedStorage",
-        "OptionGroupName"
+        "OptionGroupName",
+        "PreferredBackupWindow"
       ],
       "StopDBInstanceMessage": [
         "DBInstanceIdentifier"
@@ -24548,7 +24569,9 @@
         "PendingModifiedValues",
         "ReadReplicaSourceDBInstanceIdentifier",
         "ReadReplicaDBInstanceIdentifiers",
-        "OptionGroupMemberships"
+        "OptionGroupMemberships",
+        "LatestRestorableTime",
+        "PreferredBackupWindow"
       ],
       "Endpoint": [
         "Address",
@@ -24599,7 +24622,8 @@
         "EnableHttpEndpoint",
         "ServerlessV2ScalingConfiguration",
         "DBClusterParameterGroupName",
-        "PreferredMaintenanceWindow"
+        "PreferredMaintenanceWindow",
+        "PreferredBackupWindow"
       ],
       "DescribeDBClustersMessage": [
         "DBClusterIdentifier",
@@ -24619,7 +24643,8 @@
         "EnableHttpEndpoint",
         "ServerlessV2ScalingConfiguration",
         "DBClusterParameterGroupName",
-        "PreferredMaintenanceWindow"
+        "PreferredMaintenanceWindow",
+        "PreferredBackupWindow"
       ],
       "DeleteDBClusterMessage": [
         "DBClusterIdentifier",
@@ -24652,7 +24677,10 @@
         "ServerlessV2ScalingConfiguration",
         "DBClusterParameterGroup",
         "PreferredMaintenanceWindow",
-        "PendingModifiedValues"
+        "PendingModifiedValues",
+        "LatestRestorableTime",
+        "EarliestRestorableTime",
+        "PreferredBackupWindow"
       ],
       "DBClusterMember": [
         "DBInstanceIdentifier",
@@ -24775,7 +24803,8 @@
         "ClusterCreateTime",
         "KmsKeyId",
         "VpcId",
-        "SourceDBClusterSnapshotArn"
+        "SourceDBClusterSnapshotArn",
+        "DbClusterResourceId"
       ],
       "ModifyDBParameterGroupMessage": [
         "DBParameterGroupName",
@@ -25021,6 +25050,236 @@
       "OptionGroupMembership": [
         "OptionGroupName",
         "Status"
+      ],
+      "DescribeDBEngineVersionsMessage": [
+        "Engine",
+        "EngineVersion",
+        "DBParameterGroupFamily",
+        "Filters",
+        "MaxRecords",
+        "Marker",
+        "DefaultOnly"
+      ],
+      "DescribeOrderableDBInstanceOptionsMessage": [
+        "Engine",
+        "EngineVersion",
+        "DBInstanceClass",
+        "LicenseModel",
+        "Vpc",
+        "MaxRecords",
+        "Marker"
+      ],
+      "DescribeValidDBInstanceModificationsMessage": [
+        "DBInstanceIdentifier"
+      ],
+      "DescribeAccountAttributesMessage": [],
+      "DescribeOptionGroupOptionsMessage": [
+        "EngineName",
+        "MajorEngineVersion",
+        "MaxRecords",
+        "Marker"
+      ],
+      "CreateEventSubscriptionMessage": [
+        "SubscriptionName",
+        "SnsTopicArn",
+        "SourceType",
+        "EventCategories",
+        "SourceIds",
+        "Enabled",
+        "Tags"
+      ],
+      "DescribeEventSubscriptionsMessage": [
+        "SubscriptionName",
+        "MaxRecords",
+        "Marker"
+      ],
+      "ModifyEventSubscriptionMessage": [
+        "SubscriptionName",
+        "SnsTopicArn",
+        "SourceType",
+        "EventCategories",
+        "Enabled"
+      ],
+      "DeleteEventSubscriptionMessage": [
+        "SubscriptionName"
+      ],
+      "AddSourceIdentifierToSubscriptionMessage": [
+        "SubscriptionName",
+        "SourceIdentifier"
+      ],
+      "RemoveSourceIdentifierFromSubscriptionMessage": [
+        "SubscriptionName",
+        "SourceIdentifier"
+      ],
+      "DescribeDBInstanceAutomatedBackupsMessage": [
+        "DbiResourceId",
+        "DBInstanceIdentifier",
+        "Filters",
+        "MaxRecords",
+        "Marker",
+        "DBInstanceAutomatedBackupsArn"
+      ],
+      "DeleteDBInstanceAutomatedBackupMessage": [
+        "DbiResourceId",
+        "DBInstanceAutomatedBackupsArn"
+      ],
+      "RestoreDBInstanceToPointInTimeMessage": [
+        "SourceDBInstanceIdentifier",
+        "SourceDbiResourceId",
+        "SourceDBInstanceAutomatedBackupsArn",
+        "TargetDBInstanceIdentifier",
+        "RestoreTime",
+        "UseLatestRestorableTime",
+        "DBInstanceClass",
+        "DBSubnetGroupName",
+        "DBParameterGroupName",
+        "AllocatedStorage",
+        "Tags",
+        "CopyTagsToSnapshot",
+        "BackupRetentionPeriod",
+        "PreferredBackupWindow",
+        "OptionGroupName"
+      ],
+      "RestoreDBClusterToPointInTimeMessage": [
+        "DBClusterIdentifier",
+        "RestoreType",
+        "SourceDBClusterIdentifier",
+        "SourceDbClusterResourceId",
+        "RestoreToTime",
+        "UseLatestRestorableTime",
+        "Port",
+        "DBSubnetGroupName",
+        "VpcSecurityGroupIds",
+        "DBClusterParameterGroupName",
+        "BackupRetentionPeriod",
+        "PreferredBackupWindow",
+        "DeletionProtection",
+        "Tags"
+      ],
+      "DescribePendingMaintenanceActionsMessage": [
+        "ResourceIdentifier",
+        "Filters",
+        "MaxRecords",
+        "Marker"
+      ],
+      "ApplyPendingMaintenanceActionMessage": [
+        "ResourceIdentifier",
+        "ApplyAction",
+        "OptInType"
+      ],
+      "FailoverDBClusterMessage": [
+        "DBClusterIdentifier",
+        "TargetDBInstanceIdentifier"
+      ],
+      "DBEngineVersion": [
+        "Engine",
+        "MajorEngineVersion",
+        "EngineVersion",
+        "DBParameterGroupFamily",
+        "DBEngineDescription",
+        "DBEngineVersionDescription",
+        "SupportsReadReplica",
+        "SupportedEngineModes",
+        "Status"
+      ],
+      "OrderableDBInstanceOption": [
+        "Engine",
+        "EngineVersion",
+        "DBInstanceClass",
+        "LicenseModel",
+        "AvailabilityZones",
+        "MultiAZCapable",
+        "ReadReplicaCapable",
+        "Vpc",
+        "StorageType",
+        "MinStorageSize",
+        "MaxStorageSize",
+        "SupportedEngineModes",
+        "SupportsClusters"
+      ],
+      "ValidDBInstanceModificationsMessage": [
+        "Storage"
+      ],
+      "ValidStorageOptions": [
+        "StorageType",
+        "StorageSize",
+        "SupportsStorageAutoscaling"
+      ],
+      "Range": [
+        "From",
+        "To",
+        "Step"
+      ],
+      "AccountQuota": [
+        "AccountQuotaName",
+        "Used",
+        "Max"
+      ],
+      "OptionGroupOption": [
+        "Name",
+        "Description",
+        "EngineName",
+        "MajorEngineVersion",
+        "PortRequired",
+        "Persistent",
+        "Permanent",
+        "OptionGroupOptionSettings"
+      ],
+      "OptionGroupOptionSetting": [
+        "SettingName",
+        "SettingDescription",
+        "DefaultValue",
+        "ApplyType",
+        "AllowedValues",
+        "IsModifiable",
+        "IsRequired"
+      ],
+      "EventSubscription": [
+        "CustomerAwsId",
+        "CustSubscriptionId",
+        "SnsTopicArn",
+        "Status",
+        "SubscriptionCreationTime",
+        "SourceType",
+        "SourceIdsList",
+        "EventCategoriesList",
+        "Enabled",
+        "EventSubscriptionArn"
+      ],
+      "DBInstanceAutomatedBackup": [
+        "DBInstanceArn",
+        "DbiResourceId",
+        "Region",
+        "DBInstanceIdentifier",
+        "RestoreWindow",
+        "AllocatedStorage",
+        "Status",
+        "Port",
+        "VpcId",
+        "InstanceCreateTime",
+        "MasterUsername",
+        "Engine",
+        "EngineVersion",
+        "OptionGroupName",
+        "Encrypted",
+        "BackupRetentionPeriod",
+        "PreferredBackupWindow",
+        "DBInstanceAutomatedBackupsArn",
+        "TagList"
+      ],
+      "RestoreWindow": [
+        "EarliestTime",
+        "LatestTime"
+      ],
+      "ResourcePendingMaintenanceActions": [
+        "ResourceIdentifier",
+        "PendingMaintenanceActionDetails"
+      ],
+      "PendingMaintenanceAction": [
+        "Action",
+        "OptInStatus",
+        "CurrentApplyDate",
+        "Description"
       ]
     }
   },

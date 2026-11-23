@@ -29,7 +29,8 @@ func (s *Service) createClusterInstance(
 
 	if in.MasterUsername != nil || in.MasterUserPassword != nil || in.DBName != nil || in.AllocatedStorage != nil ||
 		in.DBSubnetGroupName != nil || in.EngineVersion != nil || in.CopyTagsToSnapshot != nil ||
-		in.PreferredMaintenanceWindow != nil || in.BackupRetentionPeriod != nil || in.OptionGroupName != nil {
+		in.PreferredMaintenanceWindow != nil || in.PreferredBackupWindow != nil ||
+		in.BackupRetentionPeriod != nil || in.OptionGroupName != nil {
 		return nil, invalid(
 			"Cluster members inherit database settings; specify only identifier, class, engine, cluster and tags",
 		)
@@ -146,7 +147,7 @@ func (s *Service) changeClusterMember(ctx context.Context, scope request.Scope, 
 	}
 
 	if in.CopyTagsToSnapshot != nil || in.AllocatedStorage != nil || in.BackupRetentionPeriod != nil ||
-		in.PreferredMaintenanceWindow != nil || in.OptionGroupName != nil {
+		in.PreferredMaintenanceWindow != nil || in.PreferredBackupWindow != nil || in.OptionGroupName != nil {
 		return nil, invalid("Cluster members inherit storage, backup, maintenance window and option settings")
 	}
 

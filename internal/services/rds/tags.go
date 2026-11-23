@@ -49,7 +49,7 @@ func (s *Service) resourceTags(
 		parts[4] != scope.AccountID ||
 		(parts[5] != kindClusterSnapshot && parts[5] != kindSnapshot && parts[5] != kindDB && parts[5] != kindCluster &&
 			parts[5] != kindSubnet && parts[5] != kindParameter && parts[5] != kindClusterParameter &&
-			parts[5] != kindOption) {
+			parts[5] != kindOption && parts[5] != kindSubscription) {
 		return nil, invalid("ResourceName must be an RDS ARN in the request account and Region")
 	}
 

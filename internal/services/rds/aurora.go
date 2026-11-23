@@ -321,6 +321,15 @@ func (s *Service) modifyCluster(ctx context.Context, in *api.ModifyDBClusterMess
 		r.MaintenanceAt = time.Time{}
 	}
 
+	if in.PreferredBackupWindow != nil {
+		window, windowErr := clusterBackupWindow(common.Value(c.Engine), in.PreferredBackupWindow)
+		if windowErr != nil {
+			return nil, windowErr
+		}
+
+		c.PreferredBackupWindow = window
+	}
+
 	if in.Port != nil && s.runtime == nil {
 		c.Port = in.Port
 	}
@@ -561,6 +570,7 @@ func (s *Service) deleteCluster(ctx context.Context, in *api.DeleteDBClusterMess
 			r,
 			common.Value(in.FinalDBSnapshotIdentifier),
 			nil,
+			time.Time{},
 		); err != nil {
 			return nil, err
 		}
@@ -573,6 +583,10 @@ func (s *Service) deleteCluster(ctx context.Context, in *api.DeleteDBClusterMess
 	}
 
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		if backupErr := retainBackupSnapshots(tx, scope, r); backupErr != nil {
+			return backupErr
+		}
+
 		tx.Delete(scope.Key(serviceName, kindCluster, r.Name))
 		tx.Delete(clusterIndex + scope.AccountID + "/" + scope.Region + "/" + r.Name)
 		tx.Delete(maintenanceKey(scope, kindCluster, r.Name))

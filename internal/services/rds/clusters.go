@@ -22,30 +22,34 @@ const (
 
 var clusterUsername = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9]*$`)
 
+var clusterEngines = map[string]struct {
+	versions []string
+	port     int64
+}{
+	EngineAuroraPostgres: {[]string{"17.7", "16.11", "16.6", "15.10"}, 5432},
+	EngineAuroraMySQL: {
+		[]string{"8.0.mysql_aurora.3.12.0", "8.0.mysql_aurora.3.11.1", "8.0.mysql_aurora.3.08.0"},
+		3306,
+	},
+	EngineDocDB:   {[]string{docDB50, docDB40, "3.6"}, 27017},
+	EngineNeptune: {[]string{"1.3.2.0", "1.2.1.0"}, 8182},
+}
+
 func clusterEngine(engine, version string) (resolved string, port int64, err error) {
-	var versions []string
-	switch engine {
-	case EngineAuroraPostgres:
-		versions, port = []string{"17.7", "16.11", "16.6", "15.10"}, 5432
-	case EngineAuroraMySQL:
-		versions, port = []string{"8.0.mysql_aurora.3.12.0", "8.0.mysql_aurora.3.11.1", "8.0.mysql_aurora.3.08.0"}, 3306
-	case EngineDocDB:
-		versions, port = []string{docDB50, docDB40, "3.6"}, 27017
-	case EngineNeptune:
-		versions, port = []string{"1.3.2.0", "1.2.1.0"}, 8182
-	default:
+	definition, supported := clusterEngines[engine]
+	if !supported {
 		return "", 0, invalid("Unsupported cluster engine")
 	}
 
 	if version == "" {
-		version = versions[0]
+		version = definition.versions[0]
 	}
 
-	if !slices.Contains(versions, version) {
+	if !slices.Contains(definition.versions, version) {
 		return "", 0, invalid("Unsupported EngineVersion")
 	}
 
-	return version, port, nil
+	return version, definition.port, nil
 }
 
 // Records mode validates DocumentDB credentials without retaining them.
@@ -199,6 +203,9 @@ func cluster(r *record) *api.DBCluster {
 	out := common.Clone(r.Cluster)
 	out.TagList = tagList(r.Tags)
 	out.PreferredMaintenanceWindow = common.OrElse(out.PreferredMaintenanceWindow, new(defaultMaintenanceWindow))
+	if aurora(common.Value(out.Engine)) {
+		out.PreferredBackupWindow = common.OrElse(out.PreferredBackupWindow, new(defaultBackupWindow))
+	}
 	if !r.ReadyAt.IsZero() && !time.Now().Before(r.ReadyAt) {
 		out.Status = new(available)
 	}
@@ -270,6 +277,11 @@ func (s *Service) CreateDBCluster(
 		return nil, windowErr
 	}
 
+	backup, err := clusterBackupWindow(engine, in.PreferredBackupWindow)
+	if err != nil {
+		return nil, err
+	}
+
 	id := strings.ToLower(common.Value(in.DBClusterIdentifier))
 	c := &api.DBCluster{
 		DBClusterIdentifier:              new(id),
@@ -284,6 +296,7 @@ func (s *Service) CreateDBCluster(
 		DBClusterParameterGroup:          in.DBClusterParameterGroupName,
 		VpcSecurityGroups:                clusterGroups(in.VpcSecurityGroupIds),
 		PreferredMaintenanceWindow:       new(window),
+		PreferredBackupWindow:            backup,
 		BackupRetentionPeriod:            common.OrElse(in.BackupRetentionPeriod, new(int64(1))),
 		StorageEncrypted:                 common.OrElse(in.StorageEncrypted, new(false)),
 		KmsKeyId:                         in.KmsKeyId,

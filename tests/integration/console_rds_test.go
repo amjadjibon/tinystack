@@ -20,6 +20,12 @@ func TestConsoleRDSLifecycle(t *testing.T) {
 		return response["output"].(map[string]any)
 	}
 
+	versions := call("DescribeDBEngineVersions", map[string]any{"Engine": "postgres", "DefaultOnly": true})
+	engines := versions["DBEngineVersions"].([]any)
+	if len(engines) != 1 || engines[0].(map[string]any)["EngineVersion"] != "16" {
+		t.Fatalf("default PostgreSQL discovery: %v", engines)
+	}
+
 	call(
 		"CreateDBParameterGroup",
 		map[string]any{
@@ -153,7 +159,7 @@ func TestConsoleRDSLifecycle(t *testing.T) {
 	}
 
 	for _, op := range []string{
-		"DescribeDBEngineVersions", "DescribeEngineDefaultParameters", "DescribeEngineDefaultClusterParameters",
+		"DescribeEventSubscriptions", "DescribeEngineDefaultParameters", "DescribeEngineDefaultClusterParameters",
 	} {
 		response := consoleResponse(
 			t,

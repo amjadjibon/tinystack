@@ -21,7 +21,7 @@ const (
 	optionPendingRemove = "pending-removal"
 )
 
-var optionEngines = []struct {
+var standaloneVersions = []struct {
 	engine   string
 	versions []string
 }{
@@ -46,7 +46,7 @@ func makeOptionGroup(scope request.Scope, name, engine, version, description str
 
 func defaultOptionGroups(scope request.Scope) []*record {
 	var out []*record
-	for _, item := range optionEngines {
+	for _, item := range standaloneVersions {
 		for _, version := range item.versions {
 			name := optionGroupName(item.engine, version)
 			out = append(out, makeOptionGroup(scope, name, item.engine, version, "Default option group"))
@@ -307,6 +307,8 @@ func updateOptions(group *api.OptionGroup, in *api.ModifyOptionGroupMessage) err
 	return nil
 }
 
+var auditEvents = []string{"CONNECT", "QUERY", "TABLE", "QUERY_DDL", "QUERY_DML", "QUERY_DML_NO_SELECT", "QUERY_DCL"}
+
 func updateAuditSettings(option *api.Option, updates []api.OptionSetting) error {
 	seen := make(map[string]bool)
 	for _, setting := range updates {
@@ -319,9 +321,7 @@ func updateAuditSettings(option *api.Option, updates []api.OptionSetting) error 
 		switch name {
 		case "SERVER_AUDIT_EVENTS":
 			for event := range strings.SplitSeq(*setting.Value, ",") {
-				switch strings.TrimSpace(event) {
-				case "CONNECT", "QUERY", "TABLE", "QUERY_DDL", "QUERY_DML", "QUERY_DML_NO_SELECT", "QUERY_DCL":
-				default:
+				if !slices.Contains(auditEvents, strings.TrimSpace(event)) {
 					return invalid("Unsupported SERVER_AUDIT_EVENTS value")
 				}
 			}

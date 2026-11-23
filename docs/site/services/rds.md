@@ -13,7 +13,7 @@ Manage RDS instances, Aurora, DocumentDB and Neptune clusters with optional Dock
 | API version | `2014-10-31` |
 | Scope | Account and region |
 | Execution | Records / optional Docker |
-| Selected operations | 61 of 168 in the pinned model |
+| Selected operations | 79 of 168 in the pinned model |
 
 ## Implemented behavior
 
@@ -28,9 +28,9 @@ See the [implemented feature catalogue](catalogue.md#rds-documentdb-and-neptune)
 - AllocatedStorage does not enforce a volume size; DBInstanceClass does not change CPU or memory limits; network topology and AWS availability behavior are not reproduced.
 - Standalone EngineVersion accepts only the listed major tags; Aurora accepts only the listed AWS version strings; community image tags float within the selected major.
 - Docker SQL replication, cascading and cross-Region/account replicas, Multi-AZ clusters and instances, IAM DB authentication and proxies are unsupported. Input members outside the profile fail explicitly.
-- Backup retention is metadata only. Deferred DocumentDB password changes are unsupported. DocumentDB and Neptune retain immediate metadata updates.
-- Option groups are metadata only. Docker permits default and empty custom option groups on instances. Deferred changes to attached option groups, additional option types and settings, and DescribeOptionGroupOptions are unsupported.
-- The event history contains lifecycle actions performed by TinyStack. Event subscriptions, external notifications and unmodeled event sources are unsupported.
+- Deferred DocumentDB password changes are unsupported. DocumentDB and Neptune retain immediate metadata updates.
+- Option groups are metadata only. Docker permits default and empty custom option groups on instances. Deferred changes to attached option groups and additional option types and settings are unsupported.
+- The event history contains lifecycle actions performed by TinyStack. Unmodeled event sources, cross-account topics and FIFO topics are unsupported. SNS publish failures retry for up to one hour, and delivery can repeat if TinyStack exits after publish and before recording success.
 - Host ports can change after container recreation; no advertise host setting exists, so a remote Docker daemon is unsupported.
 - Persistent records retain database credentials in the local store; memory-mode shutdown retains volumes without records, so delete or reset before shutdown to remove SQL data immediately; startup removes orphaned runtime resources.
 - Failed initial startup or readiness timeout marks the instance failed and removes its container and fresh volume; recovery failures retain an existing volume.
@@ -43,13 +43,15 @@ See the [implemented feature catalogue](catalogue.md#rds-documentdb-and-neptune)
 - Cluster members accept identifier, class, matching engine, parent cluster and tags. Inherited database settings and member start/stop/reboot requests return errors. Class changes are metadata only. Aurora member class changes honor ApplyImmediately and apply during a cluster reboot or maintenance window.
 - Docker Neptune snapshot creation, copy and restore are unsupported because Gremlin graph data lives in memory. Set SkipFinalSnapshot=true to delete a Docker Neptune cluster. CloudFormation skips final cluster snapshots. Docker rejects engine port changes.
 - Encryption and KMS keys are metadata only and do not provision KMS resources; DocumentDB password validation supports 8–100 printable ASCII characters except slash, double quote and at sign; passwords are not returned; records mode discards them and Docker mode retains them in local storage.
-- Automated backups and scheduled snapshots are unsupported. SnapshotType=automated returns an empty list for instances and is unsupported for clusters. Snapshot sharing records restore access metadata only. Cross-account or cross-Region copies and restores, shared/public/awsbackup snapshot selection, KMS key changes during copy or restore and snapshot count quotas are unsupported.
+- Snapshot sharing records restore access metadata only. Cross-account or cross-Region copies and restores, shared/public/awsbackup snapshot selection, KMS key changes during copy or restore and snapshot count quotas are unsupported.
 - Snapshot data copy is synchronous and crash-consistent, rather than an AWS storage-level online snapshot: the source database has an I/O interruption while paused for the filesystem copy, and the restored engine performs crash recovery. Snapshot metadata transitions to available after a short simulated delay; progress is 0 or 100.
 - Snapshots created in records mode have no engine data volume and cannot be copied or restored in Docker mode. Restores use default parameter groups unless overridden. Instance restore cannot reduce allocated storage. Cluster restore requires a cluster snapshot and its original engine and version, leaves DB subnet and VPC security groups unset unless supplied, and creates a cluster with no member instances.
-- Aurora runs community PostgreSQL/MySQL, not the proprietary Aurora storage engine; readers and writers share one process, scaling is metadata only, versions map to floating community image tags, and failover, replicas, global clusters and Aurora Serverless v1 are unsupported.
+- Automated restores recover the selected snapshot time. Transaction log replay, Aurora copy-on-write clones, cross-account and cross-Region backup replication, and DocumentDB and Neptune automated backups are unsupported. Aurora automated snapshots expire by retention, including after cluster deletion.
+- Aurora uses community PostgreSQL/MySQL images with floating version tags. Readers and writers share one process and scaling changes metadata. SQL replication, global clusters and Aurora Serverless v1 are unsupported.
 - Aurora port and EngineVersion changes return errors. Managed secret rotation and KMS customization are unsupported.
 - Parameter catalogs cover a portable subset, not every AWS engine parameter or extension; PostgreSQL changes and resets require reboot in Docker mode, while Aurora parameter changes require cluster stop/start; records mode stores values without running SQL.
-- Parameter group quotas are not enforced and copies cannot cross accounts or Regions.
+- Discovery class, zone, storage type and quota data are advisory and do not model AWS capacity or quota enforcement. Maintenance actions cover pending TinyStack modifications. Engine, operating system and certificate upgrades are unsupported.
+- Parameter group copies cannot cross accounts or Regions.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
 separates proposed work from registered functionality; there are no promised release dates.
@@ -63,7 +65,9 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 | Operation | HTTP binding |
 | --- | --- |
+| `AddSourceIdentifierToSubscription` | `POST /` |
 | `AddTagsToResource` | `POST /` |
+| `ApplyPendingMaintenanceAction` | `POST /` |
 | `CopyDBClusterParameterGroup` | `POST /` |
 | `CopyDBClusterSnapshot` | `POST /` |
 | `CopyDBParameterGroup` | `POST /` |
@@ -76,20 +80,26 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `CreateDBParameterGroup` | `POST /` |
 | `CreateDBSnapshot` | `POST /` |
 | `CreateDBSubnetGroup` | `POST /` |
+| `CreateEventSubscription` | `POST /` |
 | `CreateOptionGroup` | `POST /` |
 | `DeleteDBCluster` | `POST /` |
 | `DeleteDBClusterParameterGroup` | `POST /` |
 | `DeleteDBClusterSnapshot` | `POST /` |
 | `DeleteDBInstance` | `POST /` |
+| `DeleteDBInstanceAutomatedBackup` | `POST /` |
 | `DeleteDBParameterGroup` | `POST /` |
 | `DeleteDBSnapshot` | `POST /` |
 | `DeleteDBSubnetGroup` | `POST /` |
+| `DeleteEventSubscription` | `POST /` |
 | `DeleteOptionGroup` | `POST /` |
+| `DescribeAccountAttributes` | `POST /` |
 | `DescribeDBClusterParameterGroups` | `POST /` |
 | `DescribeDBClusterParameters` | `POST /` |
 | `DescribeDBClusterSnapshotAttributes` | `POST /` |
 | `DescribeDBClusterSnapshots` | `POST /` |
 | `DescribeDBClusters` | `POST /` |
+| `DescribeDBEngineVersions` | `POST /` |
+| `DescribeDBInstanceAutomatedBackups` | `POST /` |
 | `DescribeDBInstances` | `POST /` |
 | `DescribeDBParameterGroups` | `POST /` |
 | `DescribeDBParameters` | `POST /` |
@@ -99,10 +109,16 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `DescribeEngineDefaultClusterParameters` | `POST /` |
 | `DescribeEngineDefaultParameters` | `POST /` |
 | `DescribeEventCategories` | `POST /` |
+| `DescribeEventSubscriptions` | `POST /` |
 | `DescribeEvents` | `POST /` |
+| `DescribeOptionGroupOptions` | `POST /` |
 | `DescribeOptionGroups` | `POST /` |
+| `DescribeOrderableDBInstanceOptions` | `POST /` |
+| `DescribePendingMaintenanceActions` | `POST /` |
+| `DescribeValidDBInstanceModifications` | `POST /` |
 | `DisableHttpEndpoint` | `POST /` |
 | `EnableHttpEndpoint` | `POST /` |
+| `FailoverDBCluster` | `POST /` |
 | `ListTagsForResource` | `POST /` |
 | `ModifyDBCluster` | `POST /` |
 | `ModifyDBClusterParameterGroup` | `POST /` |
@@ -111,15 +127,19 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `ModifyDBParameterGroup` | `POST /` |
 | `ModifyDBSnapshotAttribute` | `POST /` |
 | `ModifyDBSubnetGroup` | `POST /` |
+| `ModifyEventSubscription` | `POST /` |
 | `ModifyOptionGroup` | `POST /` |
 | `PromoteReadReplica` | `POST /` |
 | `RebootDBCluster` | `POST /` |
 | `RebootDBInstance` | `POST /` |
+| `RemoveSourceIdentifierFromSubscription` | `POST /` |
 | `RemoveTagsFromResource` | `POST /` |
 | `ResetDBClusterParameterGroup` | `POST /` |
 | `ResetDBParameterGroup` | `POST /` |
 | `RestoreDBClusterFromSnapshot` | `POST /` |
+| `RestoreDBClusterToPointInTime` | `POST /` |
 | `RestoreDBInstanceFromDBSnapshot` | `POST /` |
+| `RestoreDBInstanceToPointInTime` | `POST /` |
 | `StartDBCluster` | `POST /` |
 | `StartDBInstance` | `POST /` |
 | `StopDBCluster` | `POST /` |
@@ -127,14 +147,12 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "107 modeled operations outside the implementation"
+??? info "89 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
     - `AddRoleToDBCluster`
     - `AddRoleToDBInstance`
-    - `AddSourceIdentifierToSubscription`
-    - `ApplyPendingMaintenanceAction`
     - `AuthorizeDBSecurityGroupIngress`
     - `BacktrackDBCluster`
     - `CancelDBCapacityReservation`
@@ -148,7 +166,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `CreateDBProxyEndpoint`
     - `CreateDBSecurityGroup`
     - `CreateDBShardGroup`
-    - `CreateEventSubscription`
     - `CreateGlobalCluster`
     - `CreateIntegration`
     - `CreateTenantDatabase`
@@ -156,25 +173,20 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DeleteCustomDBEngineVersion`
     - `DeleteDBClusterAutomatedBackup`
     - `DeleteDBClusterEndpoint`
-    - `DeleteDBInstanceAutomatedBackup`
     - `DeleteDBProxy`
     - `DeleteDBProxyEndpoint`
     - `DeleteDBSecurityGroup`
     - `DeleteDBShardGroup`
-    - `DeleteEventSubscription`
     - `DeleteGlobalCluster`
     - `DeleteIntegration`
     - `DeleteTenantDatabase`
     - `DeregisterDBProxyTargets`
-    - `DescribeAccountAttributes`
     - `DescribeBlueGreenDeployments`
     - `DescribeCertificates`
     - `DescribeDBCapacityReservations`
     - `DescribeDBClusterAutomatedBackups`
     - `DescribeDBClusterBacktracks`
     - `DescribeDBClusterEndpoints`
-    - `DescribeDBEngineVersions`
-    - `DescribeDBInstanceAutomatedBackups`
     - `DescribeDBLogFiles`
     - `DescribeDBMajorEngineVersions`
     - `DescribeDBProxies`
@@ -185,21 +197,15 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `DescribeDBSecurityGroups`
     - `DescribeDBShardGroups`
     - `DescribeDBSnapshotTenantDatabases`
-    - `DescribeEventSubscriptions`
     - `DescribeExportTasks`
     - `DescribeGlobalClusters`
     - `DescribeIntegrations`
-    - `DescribeOptionGroupOptions`
-    - `DescribeOrderableDBInstanceOptions`
-    - `DescribePendingMaintenanceActions`
     - `DescribeReservedDBInstances`
     - `DescribeReservedDBInstancesOfferings`
     - `DescribeServerlessV2PlatformVersions`
     - `DescribeSourceRegions`
     - `DescribeTenantDatabases`
-    - `DescribeValidDBInstanceModifications`
     - `DownloadDBLogFilePortion`
-    - `FailoverDBCluster`
     - `FailoverGlobalCluster`
     - `ModifyActivityStream`
     - `ModifyCertificates`
@@ -213,7 +219,6 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `ModifyDBRecommendation`
     - `ModifyDBShardGroup`
     - `ModifyDBSnapshot`
-    - `ModifyEventSubscription`
     - `ModifyGlobalCluster`
     - `ModifyIntegration`
     - `ModifyTenantDatabase`
@@ -224,11 +229,8 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
     - `RemoveFromGlobalCluster`
     - `RemoveRoleFromDBCluster`
     - `RemoveRoleFromDBInstance`
-    - `RemoveSourceIdentifierFromSubscription`
     - `RestoreDBClusterFromS3`
-    - `RestoreDBClusterToPointInTime`
     - `RestoreDBInstanceFromS3`
-    - `RestoreDBInstanceToPointInTime`
     - `RevokeDBSecurityGroupIngress`
     - `StartActivityStream`
     - `StartDBInstanceAutomatedBackupsReplication`
@@ -244,5 +246,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/rds)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/rds/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/rds.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
-- SDK integration examples: [rds_cluster_snapshots_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_cluster_snapshots_test.go), [rds_docker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_docker_test.go), [rds_management_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_management_test.go), [rds_parameters_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_parameters_test.go), [rds_snapshots_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_snapshots_test.go), [rds_subnet_groups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_subnet_groups_test.go), [rds_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_test.go).
+- SDK integration examples: [rds_backups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_backups_test.go), [rds_cluster_snapshots_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_cluster_snapshots_test.go), [rds_discovery_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_discovery_test.go), [rds_docker_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_docker_test.go), [rds_management_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_management_test.go), [rds_parameters_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_parameters_test.go), [rds_pending_actions_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_pending_actions_test.go), [rds_snapshots_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_snapshots_test.go), [rds_subnet_groups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_subnet_groups_test.go), [rds_subscriptions_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_subscriptions_test.go), [rds_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/rds_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

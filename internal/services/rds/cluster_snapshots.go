@@ -29,6 +29,7 @@ func (s *Service) createClusterSnapshot(
 	source *record,
 	id string,
 	tags []api.Tag,
+	captured time.Time,
 ) (*record, error) {
 	c := source.Cluster
 	engine := common.Value(c.Engine)
@@ -74,7 +75,8 @@ func (s *Service) createClusterSnapshot(
 		}
 	}
 
-	now := time.Now().UTC()
+	now, typ := snapshotTime(captured)
+	r.BackupRetryAt = time.Time{}
 	r.Since = now
 	r.ClusterSnapshot = &api.DBClusterSnapshot{
 		DBClusterSnapshotIdentifier: new(id),
@@ -88,7 +90,8 @@ func (s *Service) createClusterSnapshot(
 		Status:                      new(creating),
 		PercentProgress:             new(int64(0)),
 		DBClusterSnapshotArn:        new(arn(scope, kindClusterSnapshot, id)),
-		SnapshotType:                new(manualSnapshot),
+		SnapshotType:                new(typ),
+		DbClusterResourceId:         c.DbClusterResourceId,
 		StorageEncrypted:            c.StorageEncrypted,
 		KmsKeyId:                    c.KmsKeyId,
 		VpcId:                       vpc,
@@ -117,7 +120,14 @@ func (s *Service) CreateDBClusterSnapshot(
 		return nil, err
 	}
 
-	r, err := s.createClusterSnapshot(ctx, scope, source, common.Value(in.DBClusterSnapshotIdentifier), in.Tags)
+	r, err := s.createClusterSnapshot(
+		ctx,
+		scope,
+		source,
+		common.Value(in.DBClusterSnapshotIdentifier),
+		in.Tags,
+		time.Time{},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -134,8 +144,9 @@ func (s *Service) DescribeDBClusterSnapshots(
 		return nil, err
 	}
 
-	if in.SnapshotType != nil && *in.SnapshotType != manualSnapshot {
-		return nil, invalid("Only manual cluster snapshots are supported")
+	typ := common.Value(in.SnapshotType)
+	if typ != "" && typ != manualSnapshot && typ != automatedSnapshot {
+		return nil, invalid("Supported SnapshotType values are manual and automated")
 	}
 
 	id, err := resourceID(scope, kindClusterSnapshot, common.Value(in.DBClusterSnapshotIdentifier))
@@ -155,7 +166,8 @@ func (s *Service) DescribeDBClusterSnapshots(
 
 	var selected []*record
 	for _, r := range records {
-		if sourceID == "" || common.Value(r.ClusterSnapshot.DBClusterIdentifier) == sourceID {
+		if (sourceID == "" || common.Value(r.ClusterSnapshot.DBClusterIdentifier) == sourceID) &&
+			(typ == "" || typ == common.Value(r.ClusterSnapshot.SnapshotType)) {
 			selected = append(selected, r)
 		}
 	}
@@ -187,6 +199,10 @@ func (s *Service) DeleteDBClusterSnapshot(
 	r, err := s.snapshotRecord(ctx, scope, kindClusterSnapshot, common.Value(in.DBClusterSnapshotIdentifier))
 	if err != nil {
 		return nil, err
+	}
+
+	if isAutomatedSnapshot(r) {
+		return nil, snapshotStateError(kindClusterSnapshot, "Automated cluster snapshots expire through retention")
 	}
 
 	if err := clusterSnapshotReady(r); err != nil {
@@ -264,6 +280,7 @@ func (s *Service) CopyDBClusterSnapshot(
 	snap.SourceDBClusterSnapshotArn = source.ClusterSnapshot.DBClusterSnapshotArn
 	snap.SnapshotCreateTime = new(r.Since)
 	snap.Status, snap.PercentProgress = new(creating), new(int64(0))
+	r.ClusterSnapshot.SnapshotType = new(manualSnapshot)
 	if err := s.saveSnapshot(ctx, scope, source, r); err != nil {
 		return nil, err
 	}

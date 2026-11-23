@@ -57,6 +57,9 @@ type record struct {
 	Since            time.Time
 	ReadyAt          time.Time
 	MaintenanceAt    time.Time
+	MaintenanceOptIn *string
+	BackupSlot       time.Time
+	BackupRetryAt    time.Time
 	ClusterSnapshot  *api.DBClusterSnapshot
 	Snapshot         *api.DBSnapshot
 	SourceTags       map[string]string
@@ -69,6 +72,7 @@ type record struct {
 	Parameter        *api.DBParameterGroup
 	ClusterParameter *api.DBClusterParameterGroup
 	OptionGroup      *api.OptionGroup
+	Subscription     *api.EventSubscription
 	Parameters       map[string]api.Parameter
 	Password         string
 	RootPassword     string
@@ -83,13 +87,14 @@ type Service struct {
 	caller      *catalog.Caller
 	runtime     Runtime
 	bg          *background.Group
+	now         func() time.Time
 	dataClosed  func(string)
 	owner       string
 	mu          sync.Mutex
 	orphansDone bool
 }
 
-func New(store storage.Store) *Service         { return &Service{store: store} }
+func New(store storage.Store) *Service         { return &Service{store: store, now: time.Now} }
 func (s *Service) UseCaller(c *catalog.Caller) { s.caller = c }
 
 func invalid(message string) error { return awserror.New("InvalidParameterValue", message) }
@@ -108,6 +113,8 @@ func resourceError(kind, suffix, name string) error {
 		shape = "DBParameterGroup"
 	case kindParameter:
 		shape = "DBParameterGroup"
+	case kindSubscription:
+		shape = "Subscription"
 	case kindOption:
 		shape = "OptionGroup"
 	}
@@ -166,11 +173,23 @@ func (s *Service) insert(ctx context.Context, scope request.Scope, r *record) er
 			return err
 		}
 
-		if err := recordEvent(tx, scope, r, eventCreation, "Created "+eventSources[r.Kind]); err != nil {
+		category, message := eventCreation, "Created "+eventSources[r.Kind]
+		if isAutomatedSnapshot(r) {
+			category, message = eventBackup, "Automated DB snapshot created"
+			if r.Kind == kindClusterSnapshot {
+				message = "Automated cluster snapshot created"
+			}
+		}
+
+		if err := recordEvent(tx, scope, r, category, message); err != nil {
 			return err
 		}
 
 		switch r.Kind {
+		case kindSnapshot, kindClusterSnapshot:
+			if isAutomatedSnapshot(r) {
+				return registerBackup(tx, scope, r)
+			}
 		case kindDB:
 			return storage.Write(tx, indexPrefix+scope.AccountID+"/"+scope.Region+"/"+r.Name, true)
 		case kindCluster:
@@ -189,6 +208,10 @@ func instance(r *record) *api.DBInstance {
 	if out.DBClusterIdentifier == nil {
 		out.PreferredMaintenanceWindow = common.OrElse(out.PreferredMaintenanceWindow, new(defaultMaintenanceWindow))
 		out.BackupRetentionPeriod = common.OrElse(out.BackupRetentionPeriod, new(int64(1)))
+		out.PreferredBackupWindow = common.OrElse(out.PreferredBackupWindow, new(defaultBackupWindow))
+		if *out.BackupRetentionPeriod == 0 {
+			out.LatestRestorableTime = nil
+		}
 		if len(out.OptionGroupMemberships) == 0 {
 			out.OptionGroupMemberships = optionMembership(optionGroupName(
 				common.Value(out.Engine), common.Value(out.EngineVersion),

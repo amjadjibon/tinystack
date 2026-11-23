@@ -21,16 +21,23 @@ func (s *Service) RestoreDBClusterFromSnapshot(
 		return nil, err
 	}
 
-	id := strings.ToLower(common.Value(in.DBClusterIdentifier))
-	if !validName(id, 63) {
-		return nil, invalid("Invalid DBClusterIdentifier")
-	}
-
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	source, err := s.snapshotRecord(ctx, scope, kindClusterSnapshot, common.Value(in.SnapshotIdentifier))
 	if err != nil {
 		return nil, err
+	}
+
+	return s.restoreClusterSnapshot(ctx, scope, source, in, nil)
+}
+
+func (s *Service) restoreClusterSnapshot(
+	ctx context.Context, scope request.Scope, source *record, in *api.RestoreDBClusterFromSnapshotMessage,
+	preferredBackupWindow *string,
+) (*api.RestoreDBClusterFromSnapshotResult, error) {
+	id := strings.ToLower(common.Value(in.DBClusterIdentifier))
+	if !validName(id, 63) {
+		return nil, invalid("Invalid DBClusterIdentifier")
 	}
 
 	if readyErr := clusterSnapshotReady(source); readyErr != nil {
@@ -41,6 +48,11 @@ func (s *Service) RestoreDBClusterFromSnapshot(
 	engine, version := common.Value(snap.Engine), common.Value(snap.EngineVersion)
 	if (in.Engine != nil && *in.Engine != engine) || (in.EngineVersion != nil && *in.EngineVersion != version) {
 		return nil, awserror.New("InvalidRestoreFault", "Restore requires the snapshot's engine and engine version")
+	}
+
+	backup, err := clusterBackupWindow(engine, preferredBackupWindow)
+	if err != nil {
+		return nil, err
 	}
 
 	tags, err := parseTags(in.Tags)
@@ -63,6 +75,7 @@ func (s *Service) RestoreDBClusterFromSnapshot(
 		VpcSecurityGroups:          clusterGroups(in.VpcSecurityGroupIds),
 		BackupRetentionPeriod:      common.OrElse(in.BackupRetentionPeriod, source.Cluster.BackupRetentionPeriod),
 		PreferredMaintenanceWindow: new(defaultMaintenanceWindow),
+		PreferredBackupWindow:      backup,
 		StorageEncrypted:           snap.StorageEncrypted,
 		KmsKeyId:                   snap.KmsKeyId,
 		DeletionProtection:         common.OrElse(in.DeletionProtection, new(false)),

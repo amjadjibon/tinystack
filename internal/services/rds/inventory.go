@@ -31,7 +31,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 			typ := map[string]string{
 				kindClusterSnapshot: sourceDBClusterSnapshot, kindSnapshot: sourceDBSnapshot, kindDB: sourceDBInstance,
-				kindCluster: sourceDBCluster, kindOption: "option-group",
+				kindCluster: sourceDBCluster, kindOption: "option-group", kindSubscription: "event-subscription",
 				kindSubnet: subnetType, kindParameter: "db-parameter-group", kindClusterParameter: "db-cluster-parameter-group",
 			}[r.Kind]
 			details := map[string]any{}
@@ -60,6 +60,10 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				details["Engine"] = common.Value(r.ClusterSnapshot.Engine)
 				details["Status"] = common.Value(clusterSnapshot(r).Status)
 				details["DBClusterIdentifier"] = common.Value(r.ClusterSnapshot.DBClusterIdentifier)
+			}
+
+			if r.Subscription != nil {
+				details["Status"] = common.Value(r.Subscription.Status)
 			}
 
 			out = append(out, catalog.Resource{
