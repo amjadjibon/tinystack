@@ -108,12 +108,25 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 		return nil, guardErr
 	}
 
+	if redirectErr := validWebsiteRedirect(in.WebsiteRedirectLocation); redirectErr != nil {
+		return nil, redirectErr
+	}
+
 	if c := common.Value(in.StorageClass); c != "" && c != storageStandard {
 		return nil, fail(
 			http.StatusNotImplemented,
 			"NotImplemented",
 			"TinyStack only supports the STANDARD storage class",
 		)
+	}
+
+	keyMD5, err := customerKeyMD5(in.SSECustomerAlgorithm, in.SSECustomerKey, in.SSECustomerKeyMD5)
+	if err != nil {
+		return nil, err
+	}
+
+	if keyMD5 != "" && in.ServerSideEncryption != nil {
+		return nil, invalidArgument("Server-side encryption and SSE-C cannot be combined")
 	}
 
 	if sseErr := encryption(in.ServerSideEncryption); sseErr != nil {
@@ -142,10 +155,18 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 
 	if sourceBucket == common.Value(in.Bucket) && sourceKey == common.Value(in.Key) && sourceVersion == "" &&
 		metadataDirective == directiveCopy &&
-		taggingDirective == directiveCopy && in.StorageClass == nil {
+		taggingDirective == directiveCopy && in.StorageClass == nil && in.WebsiteRedirectLocation == nil &&
+		in.SSECustomerAlgorithm == nil && in.ServerSideEncryption == nil {
 		return nil, fail(http.StatusBadRequest, "InvalidRequest", "This copy request is illegal because it is "+
 			"trying to copy an object to itself without changing the object's metadata, storage class, website "+
 			"redirect location or encryption attributes.")
+	}
+
+	sourceMD5, err := customerKeyMD5(
+		in.CopySourceSSECustomerAlgorithm, in.CopySourceSSECustomerKey, in.CopySourceSSECustomerKeyMD5,
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	var snapshot []byte
@@ -159,6 +180,10 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 		obj, data, readErr := locate(tx, source, sourceKey, sourceVersion)
 		if readErr != nil {
 			return readErr
+		}
+
+		if accessErr := s.copyReadable(&obj, sourceMD5); accessErr != nil {
+			return accessErr
 		}
 
 		sourceObject = obj
@@ -206,7 +231,7 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 
 	var obj object
 	var cfg *api.NotificationConfiguration
-	var copied, written *string
+	var copied, written, expiration *string
 	var bucketKey string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		source, resolveErr := resolveSource(tx, m, sourceBucket, in.ExpectedSourceBucketOwner)
@@ -231,6 +256,10 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 
 		if copied = reported(sourceStatus, &obj); sourceVersion != "" {
 			copied = &sourceVersion
+		}
+
+		if accessErr := s.copyReadable(&obj, sourceMD5); accessErr != nil {
+			return accessErr
 		}
 
 		if guardErr := copyConditions(&obj, in.CopySourceIfMatch, in.CopySourceIfNoneMatch,
@@ -286,6 +315,11 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 
 		obj.Parts = nil
 		obj.LastModified = s.now().UnixMilli()
+		obj.StorageClass = ""
+		obj.RestoreReady, obj.RestoreUntil = 0, 0
+		obj.CustomerKeyMD5 = keyMD5
+		obj.WebsiteRedirect = common.Value(in.WebsiteRedirectLocation)
+		expiration = s.expirationHeader(targetMeta.Lifecycle, *in.Key, &obj)
 		bucketKey = target
 		status, putErr := putCurrent(tx, target, *in.Key, &obj, body)
 		written = reported(status, &obj)
@@ -312,11 +346,30 @@ func (s *Service) CopyObject(ctx context.Context, in *api.CopyObjectRequest) (*a
 
 	obj.Checksum.apply(result)
 
-	return &api.CopyObjectOutput{
+	out := &api.CopyObjectOutput{
 		CopyObjectResult:    result,
 		VersionId:           written,
 		CopySourceVersionId: copied,
-	}, nil
+		Expiration:          expiration,
+	}
+
+	if keyMD5 != "" {
+		out.SSECustomerAlgorithm, out.SSECustomerKeyMD5 = new(sseS3), new(keyMD5)
+	}
+
+	return out, nil
+}
+
+func (s *Service) copyReadable(obj *object, customerMD5 string) error {
+	if err := requireCustomerKey(obj.CustomerKeyMD5, customerMD5); err != nil {
+		return err
+	}
+
+	if !obj.readable(s.now()) {
+		return invalidObjectState()
+	}
+
+	return nil
 }
 
 // copyConditions applies S3's ETag precedence over date conditions.
@@ -375,6 +428,13 @@ func (s *Service) UploadPartCopy(
 		return nil, guardErr
 	}
 
+	sourceMD5, err := customerKeyMD5(
+		in.CopySourceSSECustomerAlgorithm, in.CopySourceSSECustomerKey, in.CopySourceSSECustomerKeyMD5,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	var snapshot []byte
 	var obj object
 	var copied *string
@@ -397,6 +457,10 @@ func (s *Service) UploadPartCopy(
 		obj, data, transactionErr = locate(tx, source, sourceKey, version)
 		if transactionErr != nil {
 			return transactionErr
+		}
+
+		if accessErr := s.copyReadable(&obj, sourceMD5); accessErr != nil {
+			return accessErr
 		}
 
 		if guardErr := copyConditions(&obj, in.CopySourceIfMatch, in.CopySourceIfNoneMatch,

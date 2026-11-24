@@ -274,9 +274,10 @@ type Config struct {
 		Region  string `yaml:"region"`
 	} `yaml:"defaults"`
 	Storage struct {
-		Mode           string `yaml:"mode"`
-		Path           string `yaml:"path"`
-		MaxObjectBytes int64  `yaml:"s3_max_object_bytes"`
+		Mode           string        `yaml:"mode"`
+		Path           string        `yaml:"path"`
+		MaxObjectBytes int64         `yaml:"s3_max_object_bytes"`
+		S3LifecycleDay time.Duration `yaml:"s3_lifecycle_day"`
 	} `yaml:"storage"`
 	Lambda struct {
 		Executor string `yaml:"executor"`
@@ -553,6 +554,10 @@ func (c *Config) Validate() error {
 
 	if c.Storage.MaxObjectBytes < 1 || c.Storage.MaxObjectBytes > 5<<30 {
 		return fmt.Errorf("storage.s3_max_object_bytes must be between 1 and 5368709120")
+	}
+
+	if d := c.Storage.S3LifecycleDay; d != 0 && (d < time.Millisecond || d > 24*time.Hour) {
+		return fmt.Errorf("storage.s3_lifecycle_day must be between 1ms and 24h")
 	}
 
 	switch c.Storage.Mode {

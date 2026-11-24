@@ -17,6 +17,8 @@ type Payload struct {
 	Body     io.ReadCloser
 	Stream   io.ReadCloser
 	Trailers func() http.Header
+	// Status overrides the modeled success code when the action has multiple success outcomes.
+	Status int
 }
 
 func WithPayload(ctx context.Context, payload *Payload) context.Context {

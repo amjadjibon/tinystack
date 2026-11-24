@@ -25,7 +25,8 @@ import (
 const minMultipartPart = 5 << 20
 
 type upload struct {
-	Metadata map[string]string
+	WebsiteRedirect string `json:",omitempty"`
+	Metadata        map[string]string
 	// ObjectLockRetainUntilDate is when retention expires.
 	ObjectLockRetainUntilDate *time.Time `json:",omitempty"`
 	Key                       string
@@ -108,6 +109,10 @@ func (s *Service) CreateMultipartUpload(
 		return nil, guardErr
 	}
 
+	if redirectErr := validWebsiteRedirect(in.WebsiteRedirectLocation); redirectErr != nil {
+		return nil, redirectErr
+	}
+
 	if c := common.Value(in.StorageClass); c != "" && c != storageStandard {
 		return nil, fail(http.StatusNotImplemented, "NotImplemented", "Only STANDARD storage is supported")
 	}
@@ -137,10 +142,11 @@ func (s *Service) CreateMultipartUpload(
 
 	id := base64.RawURLEncoding.EncodeToString(idBytes)
 	u := upload{
-		Key:         *in.Key,
-		ContentType: common.Value(in.ContentType),
-		Metadata:    in.Metadata,
-		Initiated:   s.now().UnixMilli(),
+		Key:             *in.Key,
+		ContentType:     common.Value(in.ContentType),
+		WebsiteRedirect: common.Value(in.WebsiteRedirectLocation),
+		Metadata:        in.Metadata,
+		Initiated:       s.now().UnixMilli(),
 
 		ChecksumAlgorithm: algorithm,
 		ChecksumType:      checksumType,
@@ -327,7 +333,7 @@ func (s *Service) CompleteMultipartUpload(
 
 	var etag string
 	var size int64
-	var version *string
+	var version, expiration *string
 	var stored *checksum
 	var cfg *api.NotificationConfiguration
 	var u upload
@@ -471,13 +477,19 @@ func (s *Service) CompleteMultipartUpload(
 		finalSum := md5.Sum(digests) // #nosec G401 -- S3 multipart ETag.
 		etag = fmt.Sprintf(`"%x-%d"`, finalSum, len(in.MultipartUpload.Parts))
 		obj := object{
-			ETag: etag, ContentType: u.ContentType, Metadata: u.Metadata,
+			ETag: etag, ContentType: u.ContentType, Metadata: u.Metadata, WebsiteRedirect: u.WebsiteRedirect,
 			Parts: completedParts, Size: size, LastModified: s.now().UnixMilli(), Checksum: stored,
 			ObjectLockMode:            u.ObjectLockMode,
 			ObjectLockRetainUntilDate: u.ObjectLockRetainUntilDate,
 			ObjectLockLegalHoldStatus: u.ObjectLockLegalHoldStatus,
 		}
 
+		meta, _, readErr := storage.Read[bucketMeta](tx, bucket)
+		if readErr != nil {
+			return readErr
+		}
+
+		expiration = s.expirationHeader(meta.Lifecycle, *in.Key, &obj)
 		status, writeErr := putCurrent(tx, bucket, *in.Key, &obj, blob.Record())
 		if writeErr != nil {
 			return writeErr
@@ -499,7 +511,7 @@ func (s *Service) CompleteMultipartUpload(
 	})
 	location := "/" + *in.Bucket + "/" + url.PathEscape(*in.Key)
 	out := &api.CompleteMultipartUploadOutput{
-		Location: &location, Bucket: in.Bucket, Key: in.Key, ETag: &etag, VersionId: version,
+		Location: &location, Bucket: in.Bucket, Key: in.Key, ETag: &etag, VersionId: version, Expiration: expiration,
 	}
 
 	stored.apply(out)

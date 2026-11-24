@@ -10,7 +10,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/storage"
 )
 
-// PutBucketLogging stores configuration only; no access logs are delivered.
+// PutBucketLogging sets the server access log delivery target.
 func (s *Service) PutBucketLogging(ctx context.Context,
 	in *api.PutBucketLoggingRequest,
 ) (*api.PutBucketLoggingOutput, error) {

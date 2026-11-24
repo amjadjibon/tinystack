@@ -94,28 +94,38 @@ type PutObjectRequest struct {
 	ObjectLockMode            *string           `json:"-" xml:"-"`
 	ObjectLockRetainUntilDate *time.Time        `json:"-" xml:"-"`
 	ObjectLockLegalHoldStatus *string           `json:"-" xml:"-"`
+	WebsiteRedirectLocation   *string           `json:"-" xml:"-"`
+	SSECustomerAlgorithm      *string           `json:"-" xml:"-"`
+	SSECustomerKey            *string           `json:"-" xml:"-"`
+	SSECustomerKeyMD5         *string           `json:"-" xml:"-"`
 }
 
 type PutObjectOutput struct {
-	ETag              *string `json:"-" xml:"-"`
-	VersionId         *string `json:"-" xml:"-"`
-	ChecksumCRC32     *string `json:"-" xml:"-"`
-	ChecksumCRC32C    *string `json:"-" xml:"-"`
-	ChecksumCRC64NVME *string `json:"-" xml:"-"`
-	ChecksumSHA1      *string `json:"-" xml:"-"`
-	ChecksumSHA256    *string `json:"-" xml:"-"`
-	ChecksumType      *string `json:"-" xml:"-"`
+	ETag                 *string `json:"-" xml:"-"`
+	VersionId            *string `json:"-" xml:"-"`
+	ChecksumCRC32        *string `json:"-" xml:"-"`
+	ChecksumCRC32C       *string `json:"-" xml:"-"`
+	ChecksumCRC64NVME    *string `json:"-" xml:"-"`
+	ChecksumSHA1         *string `json:"-" xml:"-"`
+	ChecksumSHA256       *string `json:"-" xml:"-"`
+	ChecksumType         *string `json:"-" xml:"-"`
+	Expiration           *string `json:"-" xml:"-"`
+	SSECustomerAlgorithm *string `json:"-" xml:"-"`
+	SSECustomerKeyMD5    *string `json:"-" xml:"-"`
 }
 
 type GetObjectRequest struct {
-	Bucket              *string `json:"-" xml:"-"`
-	Key                 *string `json:"-" xml:"-"`
-	Range               *string `json:"-" xml:"-"`
-	IfMatch             *string `json:"-" xml:"-"`
-	IfNoneMatch         *string `json:"-" xml:"-"`
-	ChecksumMode        *string `json:"-" xml:"-"`
-	ExpectedBucketOwner *string `json:"-" xml:"-"`
-	VersionId           *string `json:"-" xml:"-"`
+	Bucket               *string `json:"-" xml:"-"`
+	Key                  *string `json:"-" xml:"-"`
+	Range                *string `json:"-" xml:"-"`
+	IfMatch              *string `json:"-" xml:"-"`
+	IfNoneMatch          *string `json:"-" xml:"-"`
+	ChecksumMode         *string `json:"-" xml:"-"`
+	ExpectedBucketOwner  *string `json:"-" xml:"-"`
+	VersionId            *string `json:"-" xml:"-"`
+	SSECustomerAlgorithm *string `json:"-" xml:"-"`
+	SSECustomerKey       *string `json:"-" xml:"-"`
+	SSECustomerKeyMD5    *string `json:"-" xml:"-"`
 }
 
 type GetObjectOutput struct {
@@ -139,17 +149,27 @@ type GetObjectOutput struct {
 	ObjectLockMode            *string           `json:"-" xml:"-"`
 	ObjectLockRetainUntilDate *time.Time        `json:"-" xml:"-"`
 	ObjectLockLegalHoldStatus *string           `json:"-" xml:"-"`
+	Expiration                *string           `json:"-" xml:"-"`
+	StorageClass              *string           `json:"-" xml:"-"`
+	ReplicationStatus         *string           `json:"-" xml:"-"`
+	WebsiteRedirectLocation   *string           `json:"-" xml:"-"`
+	Restore                   *string           `json:"-" xml:"-"`
+	SSECustomerAlgorithm      *string           `json:"-" xml:"-"`
+	SSECustomerKeyMD5         *string           `json:"-" xml:"-"`
 }
 
 type HeadObjectRequest struct {
-	Bucket              *string `json:"-" xml:"-"`
-	Key                 *string `json:"-" xml:"-"`
-	Range               *string `json:"-" xml:"-"`
-	IfMatch             *string `json:"-" xml:"-"`
-	IfNoneMatch         *string `json:"-" xml:"-"`
-	ChecksumMode        *string `json:"-" xml:"-"`
-	ExpectedBucketOwner *string `json:"-" xml:"-"`
-	VersionId           *string `json:"-" xml:"-"`
+	Bucket               *string `json:"-" xml:"-"`
+	Key                  *string `json:"-" xml:"-"`
+	Range                *string `json:"-" xml:"-"`
+	IfMatch              *string `json:"-" xml:"-"`
+	IfNoneMatch          *string `json:"-" xml:"-"`
+	ChecksumMode         *string `json:"-" xml:"-"`
+	ExpectedBucketOwner  *string `json:"-" xml:"-"`
+	VersionId            *string `json:"-" xml:"-"`
+	SSECustomerAlgorithm *string `json:"-" xml:"-"`
+	SSECustomerKey       *string `json:"-" xml:"-"`
+	SSECustomerKeyMD5    *string `json:"-" xml:"-"`
 }
 
 type HeadObjectOutput struct {
@@ -169,6 +189,13 @@ type HeadObjectOutput struct {
 	ObjectLockMode            *string           `json:"-" xml:"-"`
 	ObjectLockRetainUntilDate *time.Time        `json:"-" xml:"-"`
 	ObjectLockLegalHoldStatus *string           `json:"-" xml:"-"`
+	Expiration                *string           `json:"-" xml:"-"`
+	StorageClass              *string           `json:"-" xml:"-"`
+	ReplicationStatus         *string           `json:"-" xml:"-"`
+	WebsiteRedirectLocation   *string           `json:"-" xml:"-"`
+	Restore                   *string           `json:"-" xml:"-"`
+	SSECustomerAlgorithm      *string           `json:"-" xml:"-"`
+	SSECustomerKeyMD5         *string           `json:"-" xml:"-"`
 }
 
 type DeleteObjectRequest struct {
@@ -266,6 +293,7 @@ type CreateMultipartUploadRequest struct {
 	ObjectLockMode            *string           `json:"-" xml:"-"`
 	ObjectLockRetainUntilDate *time.Time        `json:"-" xml:"-"`
 	ObjectLockLegalHoldStatus *string           `json:"-" xml:"-"`
+	WebsiteRedirectLocation   *string           `json:"-" xml:"-"`
 }
 
 type CreateMultipartUploadOutput struct {
@@ -383,6 +411,7 @@ type CompleteMultipartUploadOutput struct {
 	ChecksumSHA1      *string  `json:"ChecksumSHA1,omitempty" xml:"ChecksumSHA1,omitempty"`
 	ChecksumSHA256    *string  `json:"ChecksumSHA256,omitempty" xml:"ChecksumSHA256,omitempty"`
 	ChecksumType      *string  `json:"ChecksumType,omitempty" xml:"ChecksumType,omitempty"`
+	Expiration        *string  `json:"-" xml:"-"`
 }
 
 type AbortMultipartUploadRequest struct {
@@ -488,26 +517,33 @@ type GetBucketNotificationConfigurationRequest struct {
 }
 
 type CopyObjectRequest struct {
-	Bucket                      *string           `json:"-" xml:"-"`
-	Key                         *string           `json:"-" xml:"-"`
-	CopySource                  *string           `json:"-" xml:"-"`
-	CopySourceIfMatch           *string           `json:"-" xml:"-"`
-	CopySourceIfNoneMatch       *string           `json:"-" xml:"-"`
-	MetadataDirective           *string           `json:"-" xml:"-"`
-	Metadata                    map[string]string `json:"-" xml:"-"`
-	ContentType                 *string           `json:"-" xml:"-"`
-	TaggingDirective            *string           `json:"-" xml:"-"`
-	Tagging                     *string           `json:"-" xml:"-"`
-	StorageClass                *string           `json:"-" xml:"-"`
-	ServerSideEncryption        *string           `json:"-" xml:"-"`
-	ExpectedBucketOwner         *string           `json:"-" xml:"-"`
-	ExpectedSourceBucketOwner   *string           `json:"-" xml:"-"`
-	ChecksumAlgorithm           *string           `json:"-" xml:"-"`
-	ObjectLockMode              *string           `json:"-" xml:"-"`
-	ObjectLockRetainUntilDate   *time.Time        `json:"-" xml:"-"`
-	ObjectLockLegalHoldStatus   *string           `json:"-" xml:"-"`
-	CopySourceIfModifiedSince   *time.Time        `json:"-" xml:"-"`
-	CopySourceIfUnmodifiedSince *time.Time        `json:"-" xml:"-"`
+	Bucket                         *string           `json:"-" xml:"-"`
+	Key                            *string           `json:"-" xml:"-"`
+	CopySource                     *string           `json:"-" xml:"-"`
+	CopySourceIfMatch              *string           `json:"-" xml:"-"`
+	CopySourceIfNoneMatch          *string           `json:"-" xml:"-"`
+	MetadataDirective              *string           `json:"-" xml:"-"`
+	Metadata                       map[string]string `json:"-" xml:"-"`
+	ContentType                    *string           `json:"-" xml:"-"`
+	TaggingDirective               *string           `json:"-" xml:"-"`
+	Tagging                        *string           `json:"-" xml:"-"`
+	StorageClass                   *string           `json:"-" xml:"-"`
+	ServerSideEncryption           *string           `json:"-" xml:"-"`
+	ExpectedBucketOwner            *string           `json:"-" xml:"-"`
+	ExpectedSourceBucketOwner      *string           `json:"-" xml:"-"`
+	ChecksumAlgorithm              *string           `json:"-" xml:"-"`
+	ObjectLockMode                 *string           `json:"-" xml:"-"`
+	ObjectLockRetainUntilDate      *time.Time        `json:"-" xml:"-"`
+	ObjectLockLegalHoldStatus      *string           `json:"-" xml:"-"`
+	CopySourceIfModifiedSince      *time.Time        `json:"-" xml:"-"`
+	CopySourceIfUnmodifiedSince    *time.Time        `json:"-" xml:"-"`
+	WebsiteRedirectLocation        *string           `json:"-" xml:"-"`
+	SSECustomerAlgorithm           *string           `json:"-" xml:"-"`
+	SSECustomerKey                 *string           `json:"-" xml:"-"`
+	SSECustomerKeyMD5              *string           `json:"-" xml:"-"`
+	CopySourceSSECustomerAlgorithm *string           `json:"-" xml:"-"`
+	CopySourceSSECustomerKey       *string           `json:"-" xml:"-"`
+	CopySourceSSECustomerKeyMD5    *string           `json:"-" xml:"-"`
 }
 
 type CopyObjectResult struct {
@@ -522,9 +558,12 @@ type CopyObjectResult struct {
 }
 
 type CopyObjectOutput struct {
-	CopyObjectResult    *CopyObjectResult `json:"-" xml:"-"`
-	VersionId           *string           `json:"-" xml:"-"`
-	CopySourceVersionId *string           `json:"-" xml:"-"`
+	CopyObjectResult     *CopyObjectResult `json:"-" xml:"-"`
+	VersionId            *string           `json:"-" xml:"-"`
+	CopySourceVersionId  *string           `json:"-" xml:"-"`
+	Expiration           *string           `json:"-" xml:"-"`
+	SSECustomerAlgorithm *string           `json:"-" xml:"-"`
+	SSECustomerKeyMD5    *string           `json:"-" xml:"-"`
 }
 
 type GetObjectTaggingRequest struct {
@@ -1181,18 +1220,21 @@ type GetObjectLegalHoldOutput struct {
 }
 
 type UploadPartCopyRequest struct {
-	Bucket                      *string    `json:"-" xml:"-"`
-	Key                         *string    `json:"-" xml:"-"`
-	CopySource                  *string    `json:"-" xml:"-"`
-	CopySourceRange             *string    `json:"-" xml:"-"`
-	CopySourceIfMatch           *string    `json:"-" xml:"-"`
-	CopySourceIfNoneMatch       *string    `json:"-" xml:"-"`
-	CopySourceIfModifiedSince   *time.Time `json:"-" xml:"-"`
-	CopySourceIfUnmodifiedSince *time.Time `json:"-" xml:"-"`
-	PartNumber                  *int64     `json:"-" xml:"-"`
-	UploadId                    *string    `json:"-" xml:"-"`
-	ExpectedBucketOwner         *string    `json:"-" xml:"-"`
-	ExpectedSourceBucketOwner   *string    `json:"-" xml:"-"`
+	Bucket                         *string    `json:"-" xml:"-"`
+	Key                            *string    `json:"-" xml:"-"`
+	CopySource                     *string    `json:"-" xml:"-"`
+	CopySourceRange                *string    `json:"-" xml:"-"`
+	CopySourceIfMatch              *string    `json:"-" xml:"-"`
+	CopySourceIfNoneMatch          *string    `json:"-" xml:"-"`
+	CopySourceIfModifiedSince      *time.Time `json:"-" xml:"-"`
+	CopySourceIfUnmodifiedSince    *time.Time `json:"-" xml:"-"`
+	PartNumber                     *int64     `json:"-" xml:"-"`
+	UploadId                       *string    `json:"-" xml:"-"`
+	ExpectedBucketOwner            *string    `json:"-" xml:"-"`
+	ExpectedSourceBucketOwner      *string    `json:"-" xml:"-"`
+	CopySourceSSECustomerAlgorithm *string    `json:"-" xml:"-"`
+	CopySourceSSECustomerKey       *string    `json:"-" xml:"-"`
+	CopySourceSSECustomerKeyMD5    *string    `json:"-" xml:"-"`
 }
 
 type CopyPartResult struct {
@@ -1333,6 +1375,423 @@ type GetBucketLoggingOutput struct {
 	LoggingEnabled *LoggingEnabled `json:"LoggingEnabled,omitempty" xml:"LoggingEnabled,omitempty"`
 }
 
+type GetBucketAccelerateConfigurationRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetBucketAccelerateConfigurationOutput struct {
+	XMLName xml.Name `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ AccelerateConfiguration"`
+	Status  *string  `json:"Status,omitempty" xml:"Status,omitempty"`
+}
+
+type PutBucketAccelerateConfigurationOutput struct{}
+
+type AccelerateConfiguration struct {
+	Status *string `json:"Status,omitempty" xml:"Status,omitempty"`
+}
+
+type PutBucketAccelerateConfigurationRequest struct {
+	Bucket                  *string                  `json:"-" xml:"-"`
+	AccelerateConfiguration *AccelerateConfiguration `json:"-" xml:"-"`
+	ExpectedBucketOwner     *string                  `json:"-" xml:"-"`
+	ChecksumAlgorithm       *string                  `json:"-" xml:"-"`
+}
+
+type GetBucketRequestPaymentRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetBucketRequestPaymentOutput struct {
+	XMLName xml.Name `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ RequestPaymentConfiguration"`
+	Payer   *string  `json:"Payer,omitempty" xml:"Payer,omitempty"`
+}
+
+type PutBucketRequestPaymentOutput struct{}
+
+type RequestPaymentConfiguration struct {
+	Payer *string `json:"Payer,omitempty" xml:"Payer,omitempty"`
+}
+
+type PutBucketRequestPaymentRequest struct {
+	Bucket                      *string                      `json:"-" xml:"-"`
+	RequestPaymentConfiguration *RequestPaymentConfiguration `json:"-" xml:"-"`
+	ExpectedBucketOwner         *string                      `json:"-" xml:"-"`
+	ChecksumAlgorithm           *string                      `json:"-" xml:"-"`
+	ContentMD5                  *string                      `json:"-" xml:"-"`
+}
+
+type PutBucketReplicationOutput struct{}
+
+type ReplicationRuleAndOperator struct {
+	Prefix *string `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+	Tags   []Tag   `json:"Tags,omitempty" xml:"Tag,omitempty"`
+}
+
+type ReplicationRuleFilter struct {
+	Prefix *string                     `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+	Tag    *Tag                        `json:"Tag,omitempty" xml:"Tag,omitempty"`
+	And    *ReplicationRuleAndOperator `json:"And,omitempty" xml:"And,omitempty"`
+}
+
+type Destination struct {
+	Bucket       *string `json:"Bucket,omitempty" xml:"Bucket,omitempty"`
+	Account      *string `json:"Account,omitempty" xml:"Account,omitempty"`
+	StorageClass *string `json:"StorageClass,omitempty" xml:"StorageClass,omitempty"`
+}
+
+type DeleteMarkerReplication struct {
+	Status *string `json:"Status,omitempty" xml:"Status,omitempty"`
+}
+
+type ReplicationRule struct {
+	ID                      *string                  `json:"ID,omitempty" xml:"ID,omitempty"`
+	Priority                *int64                   `json:"Priority,omitempty" xml:"Priority,omitempty"`
+	Prefix                  *string                  `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+	Filter                  *ReplicationRuleFilter   `json:"Filter,omitempty" xml:"Filter,omitempty"`
+	Status                  *string                  `json:"Status,omitempty" xml:"Status,omitempty"`
+	Destination             *Destination             `json:"Destination,omitempty" xml:"Destination,omitempty"`
+	DeleteMarkerReplication *DeleteMarkerReplication `json:"DeleteMarkerReplication,omitempty" xml:"DeleteMarkerReplication,omitempty"`
+}
+
+type ReplicationConfiguration struct {
+	Role  *string           `json:"Role,omitempty" xml:"Role,omitempty"`
+	Rules []ReplicationRule `json:"Rules,omitempty" xml:"Rule,omitempty"`
+}
+
+type PutBucketReplicationRequest struct {
+	Bucket                   *string                   `json:"-" xml:"-"`
+	ChecksumAlgorithm        *string                   `json:"-" xml:"-"`
+	ReplicationConfiguration *ReplicationConfiguration `json:"-" xml:"-"`
+	ExpectedBucketOwner      *string                   `json:"-" xml:"-"`
+	ContentMD5               *string                   `json:"-" xml:"-"`
+}
+
+type GetBucketReplicationRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetBucketReplicationOutput struct {
+	ReplicationConfiguration *ReplicationConfiguration `json:"-" xml:"-"`
+}
+
+type DeleteBucketReplicationOutput struct{}
+
+type DeleteBucketReplicationRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type PutBucketAnalyticsConfigurationOutput struct{}
+
+type AnalyticsAndOperator struct {
+	Prefix *string `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+	Tags   []Tag   `json:"Tags,omitempty" xml:"Tag,omitempty"`
+}
+
+type AnalyticsFilter struct {
+	Prefix *string               `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+	Tag    *Tag                  `json:"Tag,omitempty" xml:"Tag,omitempty"`
+	And    *AnalyticsAndOperator `json:"And,omitempty" xml:"And,omitempty"`
+}
+
+type AnalyticsS3BucketDestination struct {
+	Format          *string `json:"Format,omitempty" xml:"Format,omitempty"`
+	BucketAccountId *string `json:"BucketAccountId,omitempty" xml:"BucketAccountId,omitempty"`
+	Bucket          *string `json:"Bucket,omitempty" xml:"Bucket,omitempty"`
+	Prefix          *string `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+}
+
+type AnalyticsExportDestination struct {
+	S3BucketDestination *AnalyticsS3BucketDestination `json:"S3BucketDestination,omitempty" xml:"S3BucketDestination,omitempty"`
+}
+
+type StorageClassAnalysisDataExport struct {
+	OutputSchemaVersion *string                     `json:"OutputSchemaVersion,omitempty" xml:"OutputSchemaVersion,omitempty"`
+	Destination         *AnalyticsExportDestination `json:"Destination,omitempty" xml:"Destination,omitempty"`
+}
+
+type StorageClassAnalysis struct {
+	DataExport *StorageClassAnalysisDataExport `json:"DataExport,omitempty" xml:"DataExport,omitempty"`
+}
+
+type AnalyticsConfiguration struct {
+	Id                   *string               `json:"Id,omitempty" xml:"Id,omitempty"`
+	Filter               *AnalyticsFilter      `json:"Filter,omitempty" xml:"Filter,omitempty"`
+	StorageClassAnalysis *StorageClassAnalysis `json:"StorageClassAnalysis,omitempty" xml:"StorageClassAnalysis,omitempty"`
+}
+
+type PutBucketAnalyticsConfigurationRequest struct {
+	Bucket                 *string                 `json:"-" xml:"-"`
+	Id                     *string                 `json:"-" xml:"-"`
+	AnalyticsConfiguration *AnalyticsConfiguration `json:"-" xml:"-"`
+	ExpectedBucketOwner    *string                 `json:"-" xml:"-"`
+}
+
+type GetBucketAnalyticsConfigurationRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	Id                  *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetBucketAnalyticsConfigurationOutput struct {
+	AnalyticsConfiguration *AnalyticsConfiguration `json:"-" xml:"-"`
+}
+
+type DeleteBucketAnalyticsConfigurationOutput struct{}
+
+type DeleteBucketAnalyticsConfigurationRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	Id                  *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type ListBucketAnalyticsConfigurationsRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ContinuationToken   *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type ListBucketAnalyticsConfigurationsOutput struct {
+	XMLName                    xml.Name                 `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ ListBucketAnalyticsConfigurationResult"`
+	IsTruncated                *bool                    `json:"IsTruncated,omitempty" xml:"IsTruncated,omitempty"`
+	ContinuationToken          *string                  `json:"ContinuationToken,omitempty" xml:"ContinuationToken,omitempty"`
+	NextContinuationToken      *string                  `json:"NextContinuationToken,omitempty" xml:"NextContinuationToken,omitempty"`
+	AnalyticsConfigurationList []AnalyticsConfiguration `json:"AnalyticsConfigurationList,omitempty" xml:"AnalyticsConfiguration,omitempty"`
+}
+
+type PutBucketMetricsConfigurationOutput struct{}
+
+type MetricsAndOperator struct {
+	Prefix         *string `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+	Tags           []Tag   `json:"Tags,omitempty" xml:"Tag,omitempty"`
+	AccessPointArn *string `json:"AccessPointArn,omitempty" xml:"AccessPointArn,omitempty"`
+}
+
+type MetricsFilter struct {
+	Prefix         *string             `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+	Tag            *Tag                `json:"Tag,omitempty" xml:"Tag,omitempty"`
+	AccessPointArn *string             `json:"AccessPointArn,omitempty" xml:"AccessPointArn,omitempty"`
+	And            *MetricsAndOperator `json:"And,omitempty" xml:"And,omitempty"`
+}
+
+type MetricsConfiguration struct {
+	Id     *string        `json:"Id,omitempty" xml:"Id,omitempty"`
+	Filter *MetricsFilter `json:"Filter,omitempty" xml:"Filter,omitempty"`
+}
+
+type PutBucketMetricsConfigurationRequest struct {
+	Bucket               *string               `json:"-" xml:"-"`
+	Id                   *string               `json:"-" xml:"-"`
+	MetricsConfiguration *MetricsConfiguration `json:"-" xml:"-"`
+	ExpectedBucketOwner  *string               `json:"-" xml:"-"`
+}
+
+type GetBucketMetricsConfigurationRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	Id                  *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetBucketMetricsConfigurationOutput struct {
+	MetricsConfiguration *MetricsConfiguration `json:"-" xml:"-"`
+}
+
+type DeleteBucketMetricsConfigurationOutput struct{}
+
+type DeleteBucketMetricsConfigurationRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	Id                  *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type ListBucketMetricsConfigurationsRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ContinuationToken   *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type ListBucketMetricsConfigurationsOutput struct {
+	XMLName                  xml.Name               `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ ListMetricsConfigurationsResult"`
+	IsTruncated              *bool                  `json:"IsTruncated,omitempty" xml:"IsTruncated,omitempty"`
+	ContinuationToken        *string                `json:"ContinuationToken,omitempty" xml:"ContinuationToken,omitempty"`
+	NextContinuationToken    *string                `json:"NextContinuationToken,omitempty" xml:"NextContinuationToken,omitempty"`
+	MetricsConfigurationList []MetricsConfiguration `json:"MetricsConfigurationList,omitempty" xml:"MetricsConfiguration,omitempty"`
+}
+
+type PutBucketInventoryConfigurationOutput struct{}
+
+type SSES3 struct {
+	XMLName xml.Name `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ SSE-S3"`
+}
+
+type SSEKMS struct {
+	XMLName xml.Name `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ SSE-KMS"`
+	KeyId   *string  `json:"KeyId,omitempty" xml:"KeyId,omitempty"`
+}
+
+type InventoryEncryption struct {
+	SSES3  *SSES3  `json:"SSES3,omitempty" xml:"SSE-S3,omitempty"`
+	SSEKMS *SSEKMS `json:"SSEKMS,omitempty" xml:"SSE-KMS,omitempty"`
+}
+
+type InventoryS3BucketDestination struct {
+	AccountId  *string              `json:"AccountId,omitempty" xml:"AccountId,omitempty"`
+	Bucket     *string              `json:"Bucket,omitempty" xml:"Bucket,omitempty"`
+	Format     *string              `json:"Format,omitempty" xml:"Format,omitempty"`
+	Prefix     *string              `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+	Encryption *InventoryEncryption `json:"Encryption,omitempty" xml:"Encryption,omitempty"`
+}
+
+type InventoryDestination struct {
+	S3BucketDestination *InventoryS3BucketDestination `json:"S3BucketDestination,omitempty" xml:"S3BucketDestination,omitempty"`
+}
+
+type InventoryFilter struct {
+	Prefix *string `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+}
+
+type InventorySchedule struct {
+	Frequency *string `json:"Frequency,omitempty" xml:"Frequency,omitempty"`
+}
+
+type InventoryConfiguration struct {
+	Destination            *InventoryDestination `json:"Destination,omitempty" xml:"Destination,omitempty"`
+	IsEnabled              *bool                 `json:"IsEnabled,omitempty" xml:"IsEnabled,omitempty"`
+	Filter                 *InventoryFilter      `json:"Filter,omitempty" xml:"Filter,omitempty"`
+	Id                     *string               `json:"Id,omitempty" xml:"Id,omitempty"`
+	IncludedObjectVersions *string               `json:"IncludedObjectVersions,omitempty" xml:"IncludedObjectVersions,omitempty"`
+	OptionalFields         []string              `json:"OptionalFields,omitempty" xml:"OptionalFields>Field,omitempty"`
+	Schedule               *InventorySchedule    `json:"Schedule,omitempty" xml:"Schedule,omitempty"`
+}
+
+type PutBucketInventoryConfigurationRequest struct {
+	Bucket                 *string                 `json:"-" xml:"-"`
+	Id                     *string                 `json:"-" xml:"-"`
+	InventoryConfiguration *InventoryConfiguration `json:"-" xml:"-"`
+	ExpectedBucketOwner    *string                 `json:"-" xml:"-"`
+}
+
+type GetBucketInventoryConfigurationRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	Id                  *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetBucketInventoryConfigurationOutput struct {
+	InventoryConfiguration *InventoryConfiguration `json:"-" xml:"-"`
+}
+
+type DeleteBucketInventoryConfigurationOutput struct{}
+
+type DeleteBucketInventoryConfigurationRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	Id                  *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type ListBucketInventoryConfigurationsRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ContinuationToken   *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type ListBucketInventoryConfigurationsOutput struct {
+	XMLName                    xml.Name                 `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ ListInventoryConfigurationsResult"`
+	ContinuationToken          *string                  `json:"ContinuationToken,omitempty" xml:"ContinuationToken,omitempty"`
+	InventoryConfigurationList []InventoryConfiguration `json:"InventoryConfigurationList,omitempty" xml:"InventoryConfiguration,omitempty"`
+	IsTruncated                *bool                    `json:"IsTruncated,omitempty" xml:"IsTruncated,omitempty"`
+	NextContinuationToken      *string                  `json:"NextContinuationToken,omitempty" xml:"NextContinuationToken,omitempty"`
+}
+
+type PutBucketIntelligentTieringConfigurationOutput struct{}
+
+type IntelligentTieringAndOperator struct {
+	Prefix *string `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+	Tags   []Tag   `json:"Tags,omitempty" xml:"Tag,omitempty"`
+}
+
+type IntelligentTieringFilter struct {
+	Prefix *string                        `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+	Tag    *Tag                           `json:"Tag,omitempty" xml:"Tag,omitempty"`
+	And    *IntelligentTieringAndOperator `json:"And,omitempty" xml:"And,omitempty"`
+}
+
+type Tiering struct {
+	Days       *int64  `json:"Days,omitempty" xml:"Days,omitempty"`
+	AccessTier *string `json:"AccessTier,omitempty" xml:"AccessTier,omitempty"`
+}
+
+type IntelligentTieringConfiguration struct {
+	Id       *string                   `json:"Id,omitempty" xml:"Id,omitempty"`
+	Filter   *IntelligentTieringFilter `json:"Filter,omitempty" xml:"Filter,omitempty"`
+	Status   *string                   `json:"Status,omitempty" xml:"Status,omitempty"`
+	Tierings []Tiering                 `json:"Tierings,omitempty" xml:"Tiering,omitempty"`
+}
+
+type PutBucketIntelligentTieringConfigurationRequest struct {
+	Bucket                          *string                          `json:"-" xml:"-"`
+	Id                              *string                          `json:"-" xml:"-"`
+	ExpectedBucketOwner             *string                          `json:"-" xml:"-"`
+	IntelligentTieringConfiguration *IntelligentTieringConfiguration `json:"-" xml:"-"`
+}
+
+type GetBucketIntelligentTieringConfigurationRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	Id                  *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type GetBucketIntelligentTieringConfigurationOutput struct {
+	IntelligentTieringConfiguration *IntelligentTieringConfiguration `json:"-" xml:"-"`
+}
+
+type DeleteBucketIntelligentTieringConfigurationOutput struct{}
+
+type DeleteBucketIntelligentTieringConfigurationRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	Id                  *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type ListBucketIntelligentTieringConfigurationsRequest struct {
+	Bucket              *string `json:"-" xml:"-"`
+	ContinuationToken   *string `json:"-" xml:"-"`
+	ExpectedBucketOwner *string `json:"-" xml:"-"`
+}
+
+type ListBucketIntelligentTieringConfigurationsOutput struct {
+	XMLName                             xml.Name                          `json:"-" xml:"http://s3.amazonaws.com/doc/2006-03-01/ ListBucketIntelligentTieringConfigurationsOutput"`
+	IsTruncated                         *bool                             `json:"IsTruncated,omitempty" xml:"IsTruncated,omitempty"`
+	ContinuationToken                   *string                           `json:"ContinuationToken,omitempty" xml:"ContinuationToken,omitempty"`
+	NextContinuationToken               *string                           `json:"NextContinuationToken,omitempty" xml:"NextContinuationToken,omitempty"`
+	IntelligentTieringConfigurationList []IntelligentTieringConfiguration `json:"IntelligentTieringConfigurationList,omitempty" xml:"IntelligentTieringConfiguration,omitempty"`
+}
+
+type GlacierJobParameters struct {
+	Tier *string `json:"Tier,omitempty" xml:"Tier,omitempty"`
+}
+
+type RestoreRequest struct {
+	Days                 *int64                `json:"Days,omitempty" xml:"Days,omitempty"`
+	GlacierJobParameters *GlacierJobParameters `json:"GlacierJobParameters,omitempty" xml:"GlacierJobParameters,omitempty"`
+	Tier                 *string               `json:"Tier,omitempty" xml:"Tier,omitempty"`
+}
+
+type RestoreObjectRequest struct {
+	Bucket              *string         `json:"-" xml:"-"`
+	Key                 *string         `json:"-" xml:"-"`
+	VersionId           *string         `json:"-" xml:"-"`
+	RestoreRequest      *RestoreRequest `json:"-" xml:"-"`
+	ChecksumAlgorithm   *string         `json:"-" xml:"-"`
+	ExpectedBucketOwner *string         `json:"-" xml:"-"`
+}
+
+type RestoreObjectOutput struct {
+}
+
 type API interface {
 	CreateBucket(context.Context, *CreateBucketRequest) (*CreateBucketOutput, error)
 	DeleteBucket(context.Context, *DeleteBucketRequest) (*DeleteBucketOutput, error)
@@ -1400,10 +1859,34 @@ type API interface {
 	GetObjectAttributes(context.Context, *GetObjectAttributesRequest) (*GetObjectAttributesOutput, error)
 	PutBucketLogging(context.Context, *PutBucketLoggingRequest) (*PutBucketLoggingOutput, error)
 	GetBucketLogging(context.Context, *GetBucketLoggingRequest) (*GetBucketLoggingOutput, error)
+	GetBucketAccelerateConfiguration(context.Context, *GetBucketAccelerateConfigurationRequest) (*GetBucketAccelerateConfigurationOutput, error)
+	PutBucketAccelerateConfiguration(context.Context, *PutBucketAccelerateConfigurationRequest) (*PutBucketAccelerateConfigurationOutput, error)
+	GetBucketRequestPayment(context.Context, *GetBucketRequestPaymentRequest) (*GetBucketRequestPaymentOutput, error)
+	PutBucketRequestPayment(context.Context, *PutBucketRequestPaymentRequest) (*PutBucketRequestPaymentOutput, error)
+	PutBucketReplication(context.Context, *PutBucketReplicationRequest) (*PutBucketReplicationOutput, error)
+	GetBucketReplication(context.Context, *GetBucketReplicationRequest) (*GetBucketReplicationOutput, error)
+	DeleteBucketReplication(context.Context, *DeleteBucketReplicationRequest) (*DeleteBucketReplicationOutput, error)
+	PutBucketAnalyticsConfiguration(context.Context, *PutBucketAnalyticsConfigurationRequest) (*PutBucketAnalyticsConfigurationOutput, error)
+	GetBucketAnalyticsConfiguration(context.Context, *GetBucketAnalyticsConfigurationRequest) (*GetBucketAnalyticsConfigurationOutput, error)
+	DeleteBucketAnalyticsConfiguration(context.Context, *DeleteBucketAnalyticsConfigurationRequest) (*DeleteBucketAnalyticsConfigurationOutput, error)
+	ListBucketAnalyticsConfigurations(context.Context, *ListBucketAnalyticsConfigurationsRequest) (*ListBucketAnalyticsConfigurationsOutput, error)
+	PutBucketMetricsConfiguration(context.Context, *PutBucketMetricsConfigurationRequest) (*PutBucketMetricsConfigurationOutput, error)
+	GetBucketMetricsConfiguration(context.Context, *GetBucketMetricsConfigurationRequest) (*GetBucketMetricsConfigurationOutput, error)
+	DeleteBucketMetricsConfiguration(context.Context, *DeleteBucketMetricsConfigurationRequest) (*DeleteBucketMetricsConfigurationOutput, error)
+	ListBucketMetricsConfigurations(context.Context, *ListBucketMetricsConfigurationsRequest) (*ListBucketMetricsConfigurationsOutput, error)
+	PutBucketInventoryConfiguration(context.Context, *PutBucketInventoryConfigurationRequest) (*PutBucketInventoryConfigurationOutput, error)
+	GetBucketInventoryConfiguration(context.Context, *GetBucketInventoryConfigurationRequest) (*GetBucketInventoryConfigurationOutput, error)
+	DeleteBucketInventoryConfiguration(context.Context, *DeleteBucketInventoryConfigurationRequest) (*DeleteBucketInventoryConfigurationOutput, error)
+	ListBucketInventoryConfigurations(context.Context, *ListBucketInventoryConfigurationsRequest) (*ListBucketInventoryConfigurationsOutput, error)
+	PutBucketIntelligentTieringConfiguration(context.Context, *PutBucketIntelligentTieringConfigurationRequest) (*PutBucketIntelligentTieringConfigurationOutput, error)
+	GetBucketIntelligentTieringConfiguration(context.Context, *GetBucketIntelligentTieringConfigurationRequest) (*GetBucketIntelligentTieringConfigurationOutput, error)
+	DeleteBucketIntelligentTieringConfiguration(context.Context, *DeleteBucketIntelligentTieringConfigurationRequest) (*DeleteBucketIntelligentTieringConfigurationOutput, error)
+	ListBucketIntelligentTieringConfigurations(context.Context, *ListBucketIntelligentTieringConfigurationsRequest) (*ListBucketIntelligentTieringConfigurationsOutput, error)
+	RestoreObject(context.Context, *RestoreObjectRequest) (*RestoreObjectOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "s3", SigningName: "s3", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "s3", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "http://s3.amazonaws.com/doc/2006-03-01/", Protocols: []string{"restXml"}, Errors: map[string]catalog.ErrorBinding{"BucketAlreadyExists": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "BucketAlreadyOwnedByYou": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "EncryptionTypeMismatch": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidObjectState": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 403}, "InvalidRequest": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidWriteOffset": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "NoSuchBucket": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchKey": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchUpload": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NotFound": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ObjectNotInActiveTierError": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 403}, "TooManyParts": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "s3", SigningName: "s3", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "s3", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "http://s3.amazonaws.com/doc/2006-03-01/", Protocols: []string{"restXml"}, Errors: map[string]catalog.ErrorBinding{"BucketAlreadyExists": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "BucketAlreadyOwnedByYou": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 409}, "EncryptionTypeMismatch": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidObjectState": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 403}, "InvalidRequest": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "InvalidWriteOffset": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "NoSuchBucket": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchKey": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NoSuchUpload": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 404}, "NotFound": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}, "ObjectAlreadyInActiveTierError": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 403}, "ObjectNotInActiveTierError": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 403}, "TooManyParts": catalog.ErrorBinding{QueryCode: "", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateBucket": {Name: "CreateBucket", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:CreateBucket", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"ACL": catalog.MemberBinding{Location: "header", Name: "x-amz-acl", Format: ""}, "Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "BucketNamespace": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-bucket-namespace", Format: ""}, "CreateBucketConfiguration": catalog.MemberBinding{Location: "payload", Name: "CreateBucketConfiguration", Format: ""}, "GrantFullControl": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-full-control", Format: ""}, "GrantRead": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read", Format: ""}, "GrantReadACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read-acp", Format: ""}, "GrantWrite": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-write", Format: ""}, "GrantWriteACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-write-acp", Format: ""}, "ObjectLockEnabledForBucket": catalog.MemberBinding{Location: "header", Name: "x-amz-bucket-object-lock-enabled", Format: ""}, "ObjectOwnership": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-ownership", Format: ""}}, Output: map[string]catalog.MemberBinding{"Location": catalog.MemberBinding{Location: "header", Name: "Location", Format: ""}}, Method: "PUT", URI: "/{Bucket}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &CreateBucketRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateBucket(ctx, input.(*CreateBucketRequest))
 		}},
@@ -1416,13 +1899,13 @@ func Descriptor(api API) catalog.Service {
 		"ListBuckets": {Name: "ListBuckets", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:ListAllMyBuckets", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"BucketRegion": catalog.MemberBinding{Location: "query", Name: "bucket-region", Format: ""}, "ContinuationToken": catalog.MemberBinding{Location: "query", Name: "continuation-token", Format: ""}, "MaxBuckets": catalog.MemberBinding{Location: "query", Name: "max-buckets", Format: ""}, "Prefix": catalog.MemberBinding{Location: "query", Name: "prefix", Format: ""}}, Output: map[string]catalog.MemberBinding{"Buckets": catalog.MemberBinding{Location: "document", Name: "Buckets", Format: ""}, "ContinuationToken": catalog.MemberBinding{Location: "document", Name: "ContinuationToken", Format: ""}, "Owner": catalog.MemberBinding{Location: "document", Name: "Owner", Format: ""}, "Prefix": catalog.MemberBinding{Location: "document", Name: "Prefix", Format: ""}}, Method: "GET", URI: "/?x-id=ListBuckets", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &ListBucketsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListBuckets(ctx, input.(*ListBucketsRequest))
 		}},
-		"PutObject": {Name: "PutObject", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:PutObject", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"ACL": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-acl", Format: ""}, "Body": catalog.MemberBinding{Location: "payload", Name: "Body", Format: ""}, "Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "BucketKeyEnabled": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-bucket-key-enabled", Format: ""}, "CacheControl": catalog.MemberBinding{Location: "unsupported:header", Name: "Cache-Control", Format: ""}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-sdk-checksum-algorithm", Format: ""}, "ChecksumCRC32": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32", Format: ""}, "ChecksumCRC32C": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32c", Format: ""}, "ChecksumCRC64NVME": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc64nvme", Format: ""}, "ChecksumMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-md5", Format: ""}, "ChecksumSHA1": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha1", Format: ""}, "ChecksumSHA256": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha256", Format: ""}, "ChecksumSHA512": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-sha512", Format: ""}, "ChecksumXXHASH128": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-xxhash128", Format: ""}, "ChecksumXXHASH3": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-xxhash3", Format: ""}, "ChecksumXXHASH64": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-xxhash64", Format: ""}, "ContentDisposition": catalog.MemberBinding{Location: "unsupported:header", Name: "Content-Disposition", Format: ""}, "ContentEncoding": catalog.MemberBinding{Location: "unsupported:header", Name: "Content-Encoding", Format: ""}, "ContentLanguage": catalog.MemberBinding{Location: "unsupported:header", Name: "Content-Language", Format: ""}, "ContentLength": catalog.MemberBinding{Location: "header", Name: "Content-Length", Format: ""}, "ContentMD5": catalog.MemberBinding{Location: "header", Name: "Content-MD5", Format: ""}, "ContentType": catalog.MemberBinding{Location: "header", Name: "Content-Type", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Expires": catalog.MemberBinding{Location: "unsupported:header", Name: "Expires", Format: ""}, "GrantFullControl": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-full-control", Format: ""}, "GrantRead": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read", Format: ""}, "GrantReadACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read-acp", Format: ""}, "GrantWriteACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-write-acp", Format: ""}, "IfMatch": catalog.MemberBinding{Location: "header", Name: "If-Match", Format: ""}, "IfNoneMatch": catalog.MemberBinding{Location: "header", Name: "If-None-Match", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "Metadata": catalog.MemberBinding{Location: "prefix", Name: "x-amz-meta-", Format: ""}, "ObjectLockEventHold": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-lock-event-hold", Format: ""}, "ObjectLockEventHoldDurationDays": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-lock-event-hold-duration-days", Format: ""}, "ObjectLockEventHoldDurationYears": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-lock-event-hold-duration-years", Format: ""}, "ObjectLockLegalHoldStatus": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-legal-hold", Format: ""}, "ObjectLockMode": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-mode", Format: ""}, "ObjectLockRetainUntilDate": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-retain-until-date", Format: "date-time"}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKey": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "SSEKMSEncryptionContext": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-context", Format: ""}, "SSEKMSKeyId": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-aws-kms-key-id", Format: ""}, "ServerSideEncryption": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption", Format: ""}, "StorageClass": catalog.MemberBinding{Location: "header", Name: "x-amz-storage-class", Format: ""}, "Tagging": catalog.MemberBinding{Location: "header", Name: "x-amz-tagging", Format: ""}, "WebsiteRedirectLocation": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-website-redirect-location", Format: ""}, "WriteOffsetBytes": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-write-offset-bytes", Format: ""}}, Output: map[string]catalog.MemberBinding{"ChecksumCRC32": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32", Format: ""}, "ChecksumCRC32C": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32c", Format: ""}, "ChecksumCRC64NVME": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc64nvme", Format: ""}, "ChecksumSHA1": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha1", Format: ""}, "ChecksumSHA256": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha256", Format: ""}, "ChecksumType": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-type", Format: ""}, "ETag": catalog.MemberBinding{Location: "header", Name: "ETag", Format: ""}, "VersionId": catalog.MemberBinding{Location: "header", Name: "x-amz-version-id", Format: ""}}, Method: "PUT", URI: "/{Bucket}/{Key+}?x-id=PutObject", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutObjectRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"PutObject": {Name: "PutObject", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "s3:PutObject", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"ACL": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-acl", Format: ""}, "Body": catalog.MemberBinding{Location: "payload", Name: "Body", Format: ""}, "Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "BucketKeyEnabled": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-bucket-key-enabled", Format: ""}, "CacheControl": catalog.MemberBinding{Location: "unsupported:header", Name: "Cache-Control", Format: ""}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-sdk-checksum-algorithm", Format: ""}, "ChecksumCRC32": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32", Format: ""}, "ChecksumCRC32C": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32c", Format: ""}, "ChecksumCRC64NVME": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc64nvme", Format: ""}, "ChecksumMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-md5", Format: ""}, "ChecksumSHA1": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha1", Format: ""}, "ChecksumSHA256": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha256", Format: ""}, "ChecksumSHA512": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-sha512", Format: ""}, "ChecksumXXHASH128": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-xxhash128", Format: ""}, "ChecksumXXHASH3": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-xxhash3", Format: ""}, "ChecksumXXHASH64": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-xxhash64", Format: ""}, "ContentDisposition": catalog.MemberBinding{Location: "unsupported:header", Name: "Content-Disposition", Format: ""}, "ContentEncoding": catalog.MemberBinding{Location: "unsupported:header", Name: "Content-Encoding", Format: ""}, "ContentLanguage": catalog.MemberBinding{Location: "unsupported:header", Name: "Content-Language", Format: ""}, "ContentLength": catalog.MemberBinding{Location: "header", Name: "Content-Length", Format: ""}, "ContentMD5": catalog.MemberBinding{Location: "header", Name: "Content-MD5", Format: ""}, "ContentType": catalog.MemberBinding{Location: "header", Name: "Content-Type", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Expires": catalog.MemberBinding{Location: "unsupported:header", Name: "Expires", Format: ""}, "GrantFullControl": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-full-control", Format: ""}, "GrantRead": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read", Format: ""}, "GrantReadACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read-acp", Format: ""}, "GrantWriteACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-write-acp", Format: ""}, "IfMatch": catalog.MemberBinding{Location: "header", Name: "If-Match", Format: ""}, "IfNoneMatch": catalog.MemberBinding{Location: "header", Name: "If-None-Match", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "Metadata": catalog.MemberBinding{Location: "prefix", Name: "x-amz-meta-", Format: ""}, "ObjectLockEventHold": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-lock-event-hold", Format: ""}, "ObjectLockEventHoldDurationDays": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-lock-event-hold-duration-days", Format: ""}, "ObjectLockEventHoldDurationYears": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-lock-event-hold-duration-years", Format: ""}, "ObjectLockLegalHoldStatus": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-legal-hold", Format: ""}, "ObjectLockMode": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-mode", Format: ""}, "ObjectLockRetainUntilDate": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-retain-until-date", Format: "date-time"}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKey": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-key", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "SSEKMSEncryptionContext": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-context", Format: ""}, "SSEKMSKeyId": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-aws-kms-key-id", Format: ""}, "ServerSideEncryption": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption", Format: ""}, "StorageClass": catalog.MemberBinding{Location: "header", Name: "x-amz-storage-class", Format: ""}, "Tagging": catalog.MemberBinding{Location: "header", Name: "x-amz-tagging", Format: ""}, "WebsiteRedirectLocation": catalog.MemberBinding{Location: "header", Name: "x-amz-website-redirect-location", Format: ""}, "WriteOffsetBytes": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-write-offset-bytes", Format: ""}}, Output: map[string]catalog.MemberBinding{"ChecksumCRC32": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32", Format: ""}, "ChecksumCRC32C": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32c", Format: ""}, "ChecksumCRC64NVME": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc64nvme", Format: ""}, "ChecksumSHA1": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha1", Format: ""}, "ChecksumSHA256": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha256", Format: ""}, "ChecksumType": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-type", Format: ""}, "ETag": catalog.MemberBinding{Location: "header", Name: "ETag", Format: ""}, "Expiration": catalog.MemberBinding{Location: "header", Name: "x-amz-expiration", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "VersionId": catalog.MemberBinding{Location: "header", Name: "x-amz-version-id", Format: ""}}, Method: "PUT", URI: "/{Bucket}/{Key+}?x-id=PutObject", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutObjectRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.PutObject(ctx, input.(*PutObjectRequest))
 		}},
-		"GetObject": {Name: "GetObject", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetObject", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ChecksumMode": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-mode", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "IfMatch": catalog.MemberBinding{Location: "header", Name: "If-Match", Format: ""}, "IfModifiedSince": catalog.MemberBinding{Location: "unsupported:header", Name: "If-Modified-Since", Format: ""}, "IfNoneMatch": catalog.MemberBinding{Location: "header", Name: "If-None-Match", Format: ""}, "IfUnmodifiedSince": catalog.MemberBinding{Location: "unsupported:header", Name: "If-Unmodified-Since", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "PartNumber": catalog.MemberBinding{Location: "unsupported:query", Name: "partNumber", Format: ""}, "Range": catalog.MemberBinding{Location: "header", Name: "Range", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "ResponseCacheControl": catalog.MemberBinding{Location: "unsupported:query", Name: "response-cache-control", Format: ""}, "ResponseContentDisposition": catalog.MemberBinding{Location: "unsupported:query", Name: "response-content-disposition", Format: ""}, "ResponseContentEncoding": catalog.MemberBinding{Location: "unsupported:query", Name: "response-content-encoding", Format: ""}, "ResponseContentLanguage": catalog.MemberBinding{Location: "unsupported:query", Name: "response-content-language", Format: ""}, "ResponseContentType": catalog.MemberBinding{Location: "unsupported:query", Name: "response-content-type", Format: ""}, "ResponseExpires": catalog.MemberBinding{Location: "unsupported:query", Name: "response-expires", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKey": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "VersionId": catalog.MemberBinding{Location: "query", Name: "versionId", Format: ""}}, Output: map[string]catalog.MemberBinding{"AcceptRanges": catalog.MemberBinding{Location: "header", Name: "accept-ranges", Format: ""}, "Body": catalog.MemberBinding{Location: "payload", Name: "Body", Format: ""}, "ChecksumCRC32": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32", Format: ""}, "ChecksumCRC32C": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32c", Format: ""}, "ChecksumCRC64NVME": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc64nvme", Format: ""}, "ChecksumSHA1": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha1", Format: ""}, "ChecksumSHA256": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha256", Format: ""}, "ChecksumType": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-type", Format: ""}, "ContentLength": catalog.MemberBinding{Location: "header", Name: "Content-Length", Format: ""}, "ContentRange": catalog.MemberBinding{Location: "header", Name: "Content-Range", Format: ""}, "ContentType": catalog.MemberBinding{Location: "header", Name: "Content-Type", Format: ""}, "DeleteMarker": catalog.MemberBinding{Location: "header", Name: "x-amz-delete-marker", Format: ""}, "ETag": catalog.MemberBinding{Location: "header", Name: "ETag", Format: ""}, "LastModified": catalog.MemberBinding{Location: "header", Name: "Last-Modified", Format: ""}, "Metadata": catalog.MemberBinding{Location: "prefix", Name: "x-amz-meta-", Format: ""}, "ObjectLockLegalHoldStatus": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-legal-hold", Format: ""}, "ObjectLockMode": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-mode", Format: ""}, "ObjectLockRetainUntilDate": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-retain-until-date", Format: "date-time"}, "TagCount": catalog.MemberBinding{Location: "header", Name: "x-amz-tagging-count", Format: ""}, "VersionId": catalog.MemberBinding{Location: "header", Name: "x-amz-version-id", Format: ""}}, Method: "GET", URI: "/{Bucket}/{Key+}?x-id=GetObject", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetObjectRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"GetObject": {Name: "GetObject", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "s3:GetObject", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ChecksumMode": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-mode", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "IfMatch": catalog.MemberBinding{Location: "header", Name: "If-Match", Format: ""}, "IfModifiedSince": catalog.MemberBinding{Location: "unsupported:header", Name: "If-Modified-Since", Format: ""}, "IfNoneMatch": catalog.MemberBinding{Location: "header", Name: "If-None-Match", Format: ""}, "IfUnmodifiedSince": catalog.MemberBinding{Location: "unsupported:header", Name: "If-Unmodified-Since", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "PartNumber": catalog.MemberBinding{Location: "unsupported:query", Name: "partNumber", Format: ""}, "Range": catalog.MemberBinding{Location: "header", Name: "Range", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "ResponseCacheControl": catalog.MemberBinding{Location: "unsupported:query", Name: "response-cache-control", Format: ""}, "ResponseContentDisposition": catalog.MemberBinding{Location: "unsupported:query", Name: "response-content-disposition", Format: ""}, "ResponseContentEncoding": catalog.MemberBinding{Location: "unsupported:query", Name: "response-content-encoding", Format: ""}, "ResponseContentLanguage": catalog.MemberBinding{Location: "unsupported:query", Name: "response-content-language", Format: ""}, "ResponseContentType": catalog.MemberBinding{Location: "unsupported:query", Name: "response-content-type", Format: ""}, "ResponseExpires": catalog.MemberBinding{Location: "unsupported:query", Name: "response-expires", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKey": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-key", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "VersionId": catalog.MemberBinding{Location: "query", Name: "versionId", Format: ""}}, Output: map[string]catalog.MemberBinding{"AcceptRanges": catalog.MemberBinding{Location: "header", Name: "accept-ranges", Format: ""}, "Body": catalog.MemberBinding{Location: "payload", Name: "Body", Format: ""}, "ChecksumCRC32": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32", Format: ""}, "ChecksumCRC32C": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32c", Format: ""}, "ChecksumCRC64NVME": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc64nvme", Format: ""}, "ChecksumSHA1": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha1", Format: ""}, "ChecksumSHA256": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha256", Format: ""}, "ChecksumType": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-type", Format: ""}, "ContentLength": catalog.MemberBinding{Location: "header", Name: "Content-Length", Format: ""}, "ContentRange": catalog.MemberBinding{Location: "header", Name: "Content-Range", Format: ""}, "ContentType": catalog.MemberBinding{Location: "header", Name: "Content-Type", Format: ""}, "DeleteMarker": catalog.MemberBinding{Location: "header", Name: "x-amz-delete-marker", Format: ""}, "ETag": catalog.MemberBinding{Location: "header", Name: "ETag", Format: ""}, "Expiration": catalog.MemberBinding{Location: "header", Name: "x-amz-expiration", Format: ""}, "LastModified": catalog.MemberBinding{Location: "header", Name: "Last-Modified", Format: ""}, "Metadata": catalog.MemberBinding{Location: "prefix", Name: "x-amz-meta-", Format: ""}, "ObjectLockLegalHoldStatus": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-legal-hold", Format: ""}, "ObjectLockMode": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-mode", Format: ""}, "ObjectLockRetainUntilDate": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-retain-until-date", Format: "date-time"}, "ReplicationStatus": catalog.MemberBinding{Location: "header", Name: "x-amz-replication-status", Format: ""}, "Restore": catalog.MemberBinding{Location: "header", Name: "x-amz-restore", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "StorageClass": catalog.MemberBinding{Location: "header", Name: "x-amz-storage-class", Format: ""}, "TagCount": catalog.MemberBinding{Location: "header", Name: "x-amz-tagging-count", Format: ""}, "VersionId": catalog.MemberBinding{Location: "header", Name: "x-amz-version-id", Format: ""}, "WebsiteRedirectLocation": catalog.MemberBinding{Location: "header", Name: "x-amz-website-redirect-location", Format: ""}}, Method: "GET", URI: "/{Bucket}/{Key+}?x-id=GetObject", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetObjectRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetObject(ctx, input.(*GetObjectRequest))
 		}},
-		"HeadObject": {Name: "HeadObject", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetObject", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ChecksumMode": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-mode", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "IfMatch": catalog.MemberBinding{Location: "header", Name: "If-Match", Format: ""}, "IfModifiedSince": catalog.MemberBinding{Location: "unsupported:header", Name: "If-Modified-Since", Format: ""}, "IfNoneMatch": catalog.MemberBinding{Location: "header", Name: "If-None-Match", Format: ""}, "IfUnmodifiedSince": catalog.MemberBinding{Location: "unsupported:header", Name: "If-Unmodified-Since", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "PartNumber": catalog.MemberBinding{Location: "unsupported:query", Name: "partNumber", Format: ""}, "Range": catalog.MemberBinding{Location: "header", Name: "Range", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "ResponseCacheControl": catalog.MemberBinding{Location: "unsupported:query", Name: "response-cache-control", Format: ""}, "ResponseContentDisposition": catalog.MemberBinding{Location: "unsupported:query", Name: "response-content-disposition", Format: ""}, "ResponseContentEncoding": catalog.MemberBinding{Location: "unsupported:query", Name: "response-content-encoding", Format: ""}, "ResponseContentLanguage": catalog.MemberBinding{Location: "unsupported:query", Name: "response-content-language", Format: ""}, "ResponseContentType": catalog.MemberBinding{Location: "unsupported:query", Name: "response-content-type", Format: ""}, "ResponseExpires": catalog.MemberBinding{Location: "unsupported:query", Name: "response-expires", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKey": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "VersionId": catalog.MemberBinding{Location: "query", Name: "versionId", Format: ""}}, Output: map[string]catalog.MemberBinding{"AcceptRanges": catalog.MemberBinding{Location: "header", Name: "accept-ranges", Format: ""}, "ChecksumCRC32": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32", Format: ""}, "ChecksumCRC32C": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32c", Format: ""}, "ChecksumCRC64NVME": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc64nvme", Format: ""}, "ChecksumSHA1": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha1", Format: ""}, "ChecksumSHA256": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha256", Format: ""}, "ChecksumType": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-type", Format: ""}, "ContentLength": catalog.MemberBinding{Location: "header", Name: "Content-Length", Format: ""}, "ContentType": catalog.MemberBinding{Location: "header", Name: "Content-Type", Format: ""}, "ETag": catalog.MemberBinding{Location: "header", Name: "ETag", Format: ""}, "LastModified": catalog.MemberBinding{Location: "header", Name: "Last-Modified", Format: ""}, "Metadata": catalog.MemberBinding{Location: "prefix", Name: "x-amz-meta-", Format: ""}, "ObjectLockLegalHoldStatus": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-legal-hold", Format: ""}, "ObjectLockMode": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-mode", Format: ""}, "ObjectLockRetainUntilDate": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-retain-until-date", Format: "date-time"}, "VersionId": catalog.MemberBinding{Location: "header", Name: "x-amz-version-id", Format: ""}}, Method: "HEAD", URI: "/{Bucket}/{Key+}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &HeadObjectRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"HeadObject": {Name: "HeadObject", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "s3:GetObject", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ChecksumMode": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-mode", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "IfMatch": catalog.MemberBinding{Location: "header", Name: "If-Match", Format: ""}, "IfModifiedSince": catalog.MemberBinding{Location: "unsupported:header", Name: "If-Modified-Since", Format: ""}, "IfNoneMatch": catalog.MemberBinding{Location: "header", Name: "If-None-Match", Format: ""}, "IfUnmodifiedSince": catalog.MemberBinding{Location: "unsupported:header", Name: "If-Unmodified-Since", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "PartNumber": catalog.MemberBinding{Location: "unsupported:query", Name: "partNumber", Format: ""}, "Range": catalog.MemberBinding{Location: "header", Name: "Range", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "ResponseCacheControl": catalog.MemberBinding{Location: "unsupported:query", Name: "response-cache-control", Format: ""}, "ResponseContentDisposition": catalog.MemberBinding{Location: "unsupported:query", Name: "response-content-disposition", Format: ""}, "ResponseContentEncoding": catalog.MemberBinding{Location: "unsupported:query", Name: "response-content-encoding", Format: ""}, "ResponseContentLanguage": catalog.MemberBinding{Location: "unsupported:query", Name: "response-content-language", Format: ""}, "ResponseContentType": catalog.MemberBinding{Location: "unsupported:query", Name: "response-content-type", Format: ""}, "ResponseExpires": catalog.MemberBinding{Location: "unsupported:query", Name: "response-expires", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKey": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-key", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "VersionId": catalog.MemberBinding{Location: "query", Name: "versionId", Format: ""}}, Output: map[string]catalog.MemberBinding{"AcceptRanges": catalog.MemberBinding{Location: "header", Name: "accept-ranges", Format: ""}, "ChecksumCRC32": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32", Format: ""}, "ChecksumCRC32C": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32c", Format: ""}, "ChecksumCRC64NVME": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc64nvme", Format: ""}, "ChecksumSHA1": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha1", Format: ""}, "ChecksumSHA256": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha256", Format: ""}, "ChecksumType": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-type", Format: ""}, "ContentLength": catalog.MemberBinding{Location: "header", Name: "Content-Length", Format: ""}, "ContentType": catalog.MemberBinding{Location: "header", Name: "Content-Type", Format: ""}, "ETag": catalog.MemberBinding{Location: "header", Name: "ETag", Format: ""}, "Expiration": catalog.MemberBinding{Location: "header", Name: "x-amz-expiration", Format: ""}, "LastModified": catalog.MemberBinding{Location: "header", Name: "Last-Modified", Format: ""}, "Metadata": catalog.MemberBinding{Location: "prefix", Name: "x-amz-meta-", Format: ""}, "ObjectLockLegalHoldStatus": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-legal-hold", Format: ""}, "ObjectLockMode": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-mode", Format: ""}, "ObjectLockRetainUntilDate": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-retain-until-date", Format: "date-time"}, "ReplicationStatus": catalog.MemberBinding{Location: "header", Name: "x-amz-replication-status", Format: ""}, "Restore": catalog.MemberBinding{Location: "header", Name: "x-amz-restore", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "StorageClass": catalog.MemberBinding{Location: "header", Name: "x-amz-storage-class", Format: ""}, "VersionId": catalog.MemberBinding{Location: "header", Name: "x-amz-version-id", Format: ""}, "WebsiteRedirectLocation": catalog.MemberBinding{Location: "header", Name: "x-amz-website-redirect-location", Format: ""}}, Method: "HEAD", URI: "/{Bucket}/{Key+}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &HeadObjectRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.HeadObject(ctx, input.(*HeadObjectRequest))
 		}},
 		"DeleteObject": {Name: "DeleteObject", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:DeleteObject", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "BypassGovernanceRetention": catalog.MemberBinding{Location: "header", Name: "x-amz-bypass-governance-retention", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "IfMatch": catalog.MemberBinding{Location: "unsupported:header", Name: "If-Match", Format: ""}, "IfMatchLastModifiedTime": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-if-match-last-modified-time", Format: ""}, "IfMatchSize": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-if-match-size", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "MFA": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-mfa", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "VersionId": catalog.MemberBinding{Location: "query", Name: "versionId", Format: ""}}, Output: map[string]catalog.MemberBinding{"DeleteMarker": catalog.MemberBinding{Location: "header", Name: "x-amz-delete-marker", Format: ""}, "VersionId": catalog.MemberBinding{Location: "header", Name: "x-amz-version-id", Format: ""}}, Method: "DELETE", URI: "/{Bucket}/{Key+}?x-id=DeleteObject", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteObjectRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
@@ -1440,7 +1923,7 @@ func Descriptor(api API) catalog.Service {
 		"DeleteBucketTagging": {Name: "DeleteBucketTagging", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "s3:PutBucketTagging", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}?tagging", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteBucketTaggingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteBucketTagging(ctx, input.(*DeleteBucketTaggingRequest))
 		}},
-		"CreateMultipartUpload": {Name: "CreateMultipartUpload", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:PutObject", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"ACL": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-acl", Format: ""}, "Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "BucketKeyEnabled": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-bucket-key-enabled", Format: ""}, "CacheControl": catalog.MemberBinding{Location: "unsupported:header", Name: "Cache-Control", Format: ""}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-algorithm", Format: ""}, "ChecksumType": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-type", Format: ""}, "ContentDisposition": catalog.MemberBinding{Location: "unsupported:header", Name: "Content-Disposition", Format: ""}, "ContentEncoding": catalog.MemberBinding{Location: "unsupported:header", Name: "Content-Encoding", Format: ""}, "ContentLanguage": catalog.MemberBinding{Location: "unsupported:header", Name: "Content-Language", Format: ""}, "ContentType": catalog.MemberBinding{Location: "header", Name: "Content-Type", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Expires": catalog.MemberBinding{Location: "unsupported:header", Name: "Expires", Format: ""}, "GrantFullControl": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-full-control", Format: ""}, "GrantRead": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read", Format: ""}, "GrantReadACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read-acp", Format: ""}, "GrantWriteACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-write-acp", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "Metadata": catalog.MemberBinding{Location: "prefix", Name: "x-amz-meta-", Format: ""}, "ObjectLockEventHold": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-lock-event-hold", Format: ""}, "ObjectLockEventHoldDurationDays": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-lock-event-hold-duration-days", Format: ""}, "ObjectLockEventHoldDurationYears": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-lock-event-hold-duration-years", Format: ""}, "ObjectLockLegalHoldStatus": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-legal-hold", Format: ""}, "ObjectLockMode": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-mode", Format: ""}, "ObjectLockRetainUntilDate": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-retain-until-date", Format: "date-time"}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKey": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "SSEKMSEncryptionContext": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-context", Format: ""}, "SSEKMSKeyId": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-aws-kms-key-id", Format: ""}, "ServerSideEncryption": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption", Format: ""}, "StorageClass": catalog.MemberBinding{Location: "header", Name: "x-amz-storage-class", Format: ""}, "Tagging": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-tagging", Format: ""}, "WebsiteRedirectLocation": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-website-redirect-location", Format: ""}}, Output: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "document", Name: "Bucket", Format: ""}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-algorithm", Format: ""}, "ChecksumType": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-type", Format: ""}, "Key": catalog.MemberBinding{Location: "document", Name: "Key", Format: ""}, "UploadId": catalog.MemberBinding{Location: "document", Name: "UploadId", Format: ""}}, Method: "POST", URI: "/{Bucket}/{Key+}?uploads", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &CreateMultipartUploadRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"CreateMultipartUpload": {Name: "CreateMultipartUpload", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:PutObject", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"ACL": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-acl", Format: ""}, "Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "BucketKeyEnabled": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-bucket-key-enabled", Format: ""}, "CacheControl": catalog.MemberBinding{Location: "unsupported:header", Name: "Cache-Control", Format: ""}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-algorithm", Format: ""}, "ChecksumType": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-type", Format: ""}, "ContentDisposition": catalog.MemberBinding{Location: "unsupported:header", Name: "Content-Disposition", Format: ""}, "ContentEncoding": catalog.MemberBinding{Location: "unsupported:header", Name: "Content-Encoding", Format: ""}, "ContentLanguage": catalog.MemberBinding{Location: "unsupported:header", Name: "Content-Language", Format: ""}, "ContentType": catalog.MemberBinding{Location: "header", Name: "Content-Type", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Expires": catalog.MemberBinding{Location: "unsupported:header", Name: "Expires", Format: ""}, "GrantFullControl": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-full-control", Format: ""}, "GrantRead": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read", Format: ""}, "GrantReadACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read-acp", Format: ""}, "GrantWriteACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-write-acp", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "Metadata": catalog.MemberBinding{Location: "prefix", Name: "x-amz-meta-", Format: ""}, "ObjectLockEventHold": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-lock-event-hold", Format: ""}, "ObjectLockEventHoldDurationDays": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-lock-event-hold-duration-days", Format: ""}, "ObjectLockEventHoldDurationYears": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-lock-event-hold-duration-years", Format: ""}, "ObjectLockLegalHoldStatus": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-legal-hold", Format: ""}, "ObjectLockMode": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-mode", Format: ""}, "ObjectLockRetainUntilDate": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-retain-until-date", Format: "date-time"}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKey": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "SSEKMSEncryptionContext": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-context", Format: ""}, "SSEKMSKeyId": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-aws-kms-key-id", Format: ""}, "ServerSideEncryption": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption", Format: ""}, "StorageClass": catalog.MemberBinding{Location: "header", Name: "x-amz-storage-class", Format: ""}, "Tagging": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-tagging", Format: ""}, "WebsiteRedirectLocation": catalog.MemberBinding{Location: "header", Name: "x-amz-website-redirect-location", Format: ""}}, Output: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "document", Name: "Bucket", Format: ""}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-algorithm", Format: ""}, "ChecksumType": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-type", Format: ""}, "Key": catalog.MemberBinding{Location: "document", Name: "Key", Format: ""}, "UploadId": catalog.MemberBinding{Location: "document", Name: "UploadId", Format: ""}}, Method: "POST", URI: "/{Bucket}/{Key+}?uploads", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &CreateMultipartUploadRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateMultipartUpload(ctx, input.(*CreateMultipartUploadRequest))
 		}},
 		"UploadPart": {Name: "UploadPart", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:PutObject", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Body": catalog.MemberBinding{Location: "payload", Name: "Body", Format: ""}, "Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-sdk-checksum-algorithm", Format: ""}, "ChecksumCRC32": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32", Format: ""}, "ChecksumCRC32C": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32c", Format: ""}, "ChecksumCRC64NVME": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc64nvme", Format: ""}, "ChecksumMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-md5", Format: ""}, "ChecksumSHA1": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha1", Format: ""}, "ChecksumSHA256": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha256", Format: ""}, "ChecksumSHA512": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-sha512", Format: ""}, "ChecksumXXHASH128": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-xxhash128", Format: ""}, "ChecksumXXHASH3": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-xxhash3", Format: ""}, "ChecksumXXHASH64": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-xxhash64", Format: ""}, "ContentLength": catalog.MemberBinding{Location: "header", Name: "Content-Length", Format: ""}, "ContentMD5": catalog.MemberBinding{Location: "header", Name: "Content-MD5", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "PartNumber": catalog.MemberBinding{Location: "query", Name: "partNumber", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKey": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "UploadId": catalog.MemberBinding{Location: "query", Name: "uploadId", Format: ""}}, Output: map[string]catalog.MemberBinding{"ChecksumCRC32": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32", Format: ""}, "ChecksumCRC32C": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32c", Format: ""}, "ChecksumCRC64NVME": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc64nvme", Format: ""}, "ChecksumSHA1": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha1", Format: ""}, "ChecksumSHA256": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha256", Format: ""}, "ETag": catalog.MemberBinding{Location: "header", Name: "ETag", Format: ""}}, Method: "PUT", URI: "/{Bucket}/{Key+}?x-id=UploadPart", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &UploadPartRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
@@ -1449,7 +1932,7 @@ func Descriptor(api API) catalog.Service {
 		"ListParts": {Name: "ListParts", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:ListMultipartUploadParts", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "MaxParts": catalog.MemberBinding{Location: "query", Name: "max-parts", Format: ""}, "PartNumberMarker": catalog.MemberBinding{Location: "query", Name: "part-number-marker", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKey": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "UploadId": catalog.MemberBinding{Location: "query", Name: "uploadId", Format: ""}}, Output: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "document", Name: "Bucket", Format: ""}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "document", Name: "ChecksumAlgorithm", Format: ""}, "ChecksumType": catalog.MemberBinding{Location: "document", Name: "ChecksumType", Format: ""}, "IsTruncated": catalog.MemberBinding{Location: "document", Name: "IsTruncated", Format: ""}, "Key": catalog.MemberBinding{Location: "document", Name: "Key", Format: ""}, "MaxParts": catalog.MemberBinding{Location: "document", Name: "MaxParts", Format: ""}, "NextPartNumberMarker": catalog.MemberBinding{Location: "document", Name: "NextPartNumberMarker", Format: ""}, "PartNumberMarker": catalog.MemberBinding{Location: "document", Name: "PartNumberMarker", Format: ""}, "Parts": catalog.MemberBinding{Location: "document", Name: "Parts", Format: ""}, "StorageClass": catalog.MemberBinding{Location: "document", Name: "StorageClass", Format: ""}, "UploadId": catalog.MemberBinding{Location: "document", Name: "UploadId", Format: ""}}, Method: "GET", URI: "/{Bucket}/{Key+}?x-id=ListParts", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &ListPartsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.ListParts(ctx, input.(*ListPartsRequest))
 		}},
-		"CompleteMultipartUpload": {Name: "CompleteMultipartUpload", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:PutObject", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ChecksumCRC32": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32", Format: ""}, "ChecksumCRC32C": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32c", Format: ""}, "ChecksumCRC64NVME": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc64nvme", Format: ""}, "ChecksumMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-md5", Format: ""}, "ChecksumSHA1": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha1", Format: ""}, "ChecksumSHA256": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha256", Format: ""}, "ChecksumSHA512": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-sha512", Format: ""}, "ChecksumType": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-type", Format: ""}, "ChecksumXXHASH128": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-xxhash128", Format: ""}, "ChecksumXXHASH3": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-xxhash3", Format: ""}, "ChecksumXXHASH64": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-xxhash64", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "IfMatch": catalog.MemberBinding{Location: "header", Name: "If-Match", Format: ""}, "IfNoneMatch": catalog.MemberBinding{Location: "header", Name: "If-None-Match", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "MpuObjectSize": catalog.MemberBinding{Location: "header", Name: "x-amz-mp-object-size", Format: ""}, "MultipartUpload": catalog.MemberBinding{Location: "payload", Name: "MultipartUpload", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKey": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "UploadId": catalog.MemberBinding{Location: "query", Name: "uploadId", Format: ""}}, Output: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "document", Name: "Bucket", Format: ""}, "ChecksumCRC32": catalog.MemberBinding{Location: "document", Name: "ChecksumCRC32", Format: ""}, "ChecksumCRC32C": catalog.MemberBinding{Location: "document", Name: "ChecksumCRC32C", Format: ""}, "ChecksumCRC64NVME": catalog.MemberBinding{Location: "document", Name: "ChecksumCRC64NVME", Format: ""}, "ChecksumSHA1": catalog.MemberBinding{Location: "document", Name: "ChecksumSHA1", Format: ""}, "ChecksumSHA256": catalog.MemberBinding{Location: "document", Name: "ChecksumSHA256", Format: ""}, "ChecksumType": catalog.MemberBinding{Location: "document", Name: "ChecksumType", Format: ""}, "ETag": catalog.MemberBinding{Location: "document", Name: "ETag", Format: ""}, "Key": catalog.MemberBinding{Location: "document", Name: "Key", Format: ""}, "Location": catalog.MemberBinding{Location: "document", Name: "Location", Format: ""}, "VersionId": catalog.MemberBinding{Location: "header", Name: "x-amz-version-id", Format: ""}}, Method: "POST", URI: "/{Bucket}/{Key+}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &CompleteMultipartUploadRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"CompleteMultipartUpload": {Name: "CompleteMultipartUpload", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:PutObject", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ChecksumCRC32": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32", Format: ""}, "ChecksumCRC32C": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc32c", Format: ""}, "ChecksumCRC64NVME": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-crc64nvme", Format: ""}, "ChecksumMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-md5", Format: ""}, "ChecksumSHA1": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha1", Format: ""}, "ChecksumSHA256": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-sha256", Format: ""}, "ChecksumSHA512": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-sha512", Format: ""}, "ChecksumType": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-type", Format: ""}, "ChecksumXXHASH128": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-xxhash128", Format: ""}, "ChecksumXXHASH3": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-xxhash3", Format: ""}, "ChecksumXXHASH64": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-checksum-xxhash64", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "IfMatch": catalog.MemberBinding{Location: "header", Name: "If-Match", Format: ""}, "IfNoneMatch": catalog.MemberBinding{Location: "header", Name: "If-None-Match", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "MpuObjectSize": catalog.MemberBinding{Location: "header", Name: "x-amz-mp-object-size", Format: ""}, "MultipartUpload": catalog.MemberBinding{Location: "payload", Name: "MultipartUpload", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKey": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "UploadId": catalog.MemberBinding{Location: "query", Name: "uploadId", Format: ""}}, Output: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "document", Name: "Bucket", Format: ""}, "ChecksumCRC32": catalog.MemberBinding{Location: "document", Name: "ChecksumCRC32", Format: ""}, "ChecksumCRC32C": catalog.MemberBinding{Location: "document", Name: "ChecksumCRC32C", Format: ""}, "ChecksumCRC64NVME": catalog.MemberBinding{Location: "document", Name: "ChecksumCRC64NVME", Format: ""}, "ChecksumSHA1": catalog.MemberBinding{Location: "document", Name: "ChecksumSHA1", Format: ""}, "ChecksumSHA256": catalog.MemberBinding{Location: "document", Name: "ChecksumSHA256", Format: ""}, "ChecksumType": catalog.MemberBinding{Location: "document", Name: "ChecksumType", Format: ""}, "ETag": catalog.MemberBinding{Location: "document", Name: "ETag", Format: ""}, "Expiration": catalog.MemberBinding{Location: "header", Name: "x-amz-expiration", Format: ""}, "Key": catalog.MemberBinding{Location: "document", Name: "Key", Format: ""}, "Location": catalog.MemberBinding{Location: "document", Name: "Location", Format: ""}, "VersionId": catalog.MemberBinding{Location: "header", Name: "x-amz-version-id", Format: ""}}, Method: "POST", URI: "/{Bucket}/{Key+}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &CompleteMultipartUploadRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CompleteMultipartUpload(ctx, input.(*CompleteMultipartUploadRequest))
 		}},
 		"AbortMultipartUpload": {Name: "AbortMultipartUpload", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:AbortMultipartUpload", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "IfMatchInitiatedTime": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-if-match-initiated-time", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "UploadId": catalog.MemberBinding{Location: "query", Name: "uploadId", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}/{Key+}?x-id=AbortMultipartUpload", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &AbortMultipartUploadRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
@@ -1464,7 +1947,7 @@ func Descriptor(api API) catalog.Service {
 		"GetBucketNotificationConfiguration": {Name: "GetBucketNotificationConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetBucketNotification", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}}, Output: map[string]catalog.MemberBinding{"EventBridgeConfiguration": catalog.MemberBinding{Location: "document", Name: "EventBridgeConfiguration", Format: ""}, "LambdaFunctionConfigurations": catalog.MemberBinding{Location: "document", Name: "LambdaFunctionConfigurations", Format: ""}, "QueueConfigurations": catalog.MemberBinding{Location: "document", Name: "QueueConfigurations", Format: ""}, "TopicConfigurations": catalog.MemberBinding{Location: "document", Name: "TopicConfigurations", Format: ""}}, Method: "GET", URI: "/{Bucket}?notification", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketNotificationConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetBucketNotificationConfiguration(ctx, input.(*GetBucketNotificationConfigurationRequest))
 		}},
-		"CopyObject": {Name: "CopyObject", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:PutObject", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"ACL": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-acl", Format: ""}, "AnnotationDirective": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-annotation-directive", Format: ""}, "Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "BucketKeyEnabled": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-bucket-key-enabled", Format: ""}, "CacheControl": catalog.MemberBinding{Location: "unsupported:header", Name: "Cache-Control", Format: ""}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-algorithm", Format: ""}, "ContentDisposition": catalog.MemberBinding{Location: "unsupported:header", Name: "Content-Disposition", Format: ""}, "ContentEncoding": catalog.MemberBinding{Location: "unsupported:header", Name: "Content-Encoding", Format: ""}, "ContentLanguage": catalog.MemberBinding{Location: "unsupported:header", Name: "Content-Language", Format: ""}, "ContentType": catalog.MemberBinding{Location: "header", Name: "Content-Type", Format: ""}, "CopySource": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source", Format: ""}, "CopySourceIfMatch": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-match", Format: ""}, "CopySourceIfModifiedSince": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-modified-since", Format: ""}, "CopySourceIfNoneMatch": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-none-match", Format: ""}, "CopySourceIfUnmodifiedSince": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-unmodified-since", Format: ""}, "CopySourceSSECustomerAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-copy-source-server-side-encryption-customer-algorithm", Format: ""}, "CopySourceSSECustomerKey": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-copy-source-server-side-encryption-customer-key", Format: ""}, "CopySourceSSECustomerKeyMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-copy-source-server-side-encryption-customer-key-MD5", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "ExpectedSourceBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-source-expected-bucket-owner", Format: ""}, "Expires": catalog.MemberBinding{Location: "unsupported:header", Name: "Expires", Format: ""}, "GrantFullControl": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-full-control", Format: ""}, "GrantRead": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read", Format: ""}, "GrantReadACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read-acp", Format: ""}, "GrantWriteACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-write-acp", Format: ""}, "IfMatch": catalog.MemberBinding{Location: "unsupported:header", Name: "If-Match", Format: ""}, "IfNoneMatch": catalog.MemberBinding{Location: "unsupported:header", Name: "If-None-Match", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "Metadata": catalog.MemberBinding{Location: "prefix", Name: "x-amz-meta-", Format: ""}, "MetadataDirective": catalog.MemberBinding{Location: "header", Name: "x-amz-metadata-directive", Format: ""}, "ObjectLockEventHold": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-lock-event-hold", Format: ""}, "ObjectLockEventHoldDurationDays": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-lock-event-hold-duration-days", Format: ""}, "ObjectLockEventHoldDurationYears": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-lock-event-hold-duration-years", Format: ""}, "ObjectLockLegalHoldStatus": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-legal-hold", Format: ""}, "ObjectLockMode": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-mode", Format: ""}, "ObjectLockRetainUntilDate": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-retain-until-date", Format: "date-time"}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKey": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "SSEKMSEncryptionContext": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-context", Format: ""}, "SSEKMSKeyId": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-aws-kms-key-id", Format: ""}, "ServerSideEncryption": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption", Format: ""}, "StorageClass": catalog.MemberBinding{Location: "header", Name: "x-amz-storage-class", Format: ""}, "Tagging": catalog.MemberBinding{Location: "header", Name: "x-amz-tagging", Format: ""}, "TaggingDirective": catalog.MemberBinding{Location: "header", Name: "x-amz-tagging-directive", Format: ""}, "WebsiteRedirectLocation": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-website-redirect-location", Format: ""}}, Output: map[string]catalog.MemberBinding{"CopyObjectResult": catalog.MemberBinding{Location: "payload", Name: "CopyObjectResult", Format: ""}, "CopySourceVersionId": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-version-id", Format: ""}, "VersionId": catalog.MemberBinding{Location: "header", Name: "x-amz-version-id", Format: ""}}, Method: "PUT", URI: "/{Bucket}/{Key+}?x-id=CopyObject", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &CopyObjectRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"CopyObject": {Name: "CopyObject", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "s3:PutObject", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"ACL": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-acl", Format: ""}, "AnnotationDirective": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-annotation-directive", Format: ""}, "Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "BucketKeyEnabled": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-bucket-key-enabled", Format: ""}, "CacheControl": catalog.MemberBinding{Location: "unsupported:header", Name: "Cache-Control", Format: ""}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-checksum-algorithm", Format: ""}, "ContentDisposition": catalog.MemberBinding{Location: "unsupported:header", Name: "Content-Disposition", Format: ""}, "ContentEncoding": catalog.MemberBinding{Location: "unsupported:header", Name: "Content-Encoding", Format: ""}, "ContentLanguage": catalog.MemberBinding{Location: "unsupported:header", Name: "Content-Language", Format: ""}, "ContentType": catalog.MemberBinding{Location: "header", Name: "Content-Type", Format: ""}, "CopySource": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source", Format: ""}, "CopySourceIfMatch": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-match", Format: ""}, "CopySourceIfModifiedSince": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-modified-since", Format: ""}, "CopySourceIfNoneMatch": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-none-match", Format: ""}, "CopySourceIfUnmodifiedSince": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-unmodified-since", Format: ""}, "CopySourceSSECustomerAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-server-side-encryption-customer-algorithm", Format: ""}, "CopySourceSSECustomerKey": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-server-side-encryption-customer-key", Format: ""}, "CopySourceSSECustomerKeyMD5": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-server-side-encryption-customer-key-MD5", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "ExpectedSourceBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-source-expected-bucket-owner", Format: ""}, "Expires": catalog.MemberBinding{Location: "unsupported:header", Name: "Expires", Format: ""}, "GrantFullControl": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-full-control", Format: ""}, "GrantRead": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read", Format: ""}, "GrantReadACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-read-acp", Format: ""}, "GrantWriteACP": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-grant-write-acp", Format: ""}, "IfMatch": catalog.MemberBinding{Location: "unsupported:header", Name: "If-Match", Format: ""}, "IfNoneMatch": catalog.MemberBinding{Location: "unsupported:header", Name: "If-None-Match", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "Metadata": catalog.MemberBinding{Location: "prefix", Name: "x-amz-meta-", Format: ""}, "MetadataDirective": catalog.MemberBinding{Location: "header", Name: "x-amz-metadata-directive", Format: ""}, "ObjectLockEventHold": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-lock-event-hold", Format: ""}, "ObjectLockEventHoldDurationDays": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-lock-event-hold-duration-days", Format: ""}, "ObjectLockEventHoldDurationYears": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-object-lock-event-hold-duration-years", Format: ""}, "ObjectLockLegalHoldStatus": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-legal-hold", Format: ""}, "ObjectLockMode": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-mode", Format: ""}, "ObjectLockRetainUntilDate": catalog.MemberBinding{Location: "header", Name: "x-amz-object-lock-retain-until-date", Format: "date-time"}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKey": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-key", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "SSEKMSEncryptionContext": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-context", Format: ""}, "SSEKMSKeyId": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-aws-kms-key-id", Format: ""}, "ServerSideEncryption": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption", Format: ""}, "StorageClass": catalog.MemberBinding{Location: "header", Name: "x-amz-storage-class", Format: ""}, "Tagging": catalog.MemberBinding{Location: "header", Name: "x-amz-tagging", Format: ""}, "TaggingDirective": catalog.MemberBinding{Location: "header", Name: "x-amz-tagging-directive", Format: ""}, "WebsiteRedirectLocation": catalog.MemberBinding{Location: "header", Name: "x-amz-website-redirect-location", Format: ""}}, Output: map[string]catalog.MemberBinding{"CopyObjectResult": catalog.MemberBinding{Location: "payload", Name: "CopyObjectResult", Format: ""}, "CopySourceVersionId": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-version-id", Format: ""}, "Expiration": catalog.MemberBinding{Location: "header", Name: "x-amz-expiration", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "VersionId": catalog.MemberBinding{Location: "header", Name: "x-amz-version-id", Format: ""}}, Method: "PUT", URI: "/{Bucket}/{Key+}?x-id=CopyObject", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &CopyObjectRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CopyObject(ctx, input.(*CopyObjectRequest))
 		}},
 		"GetObjectTagging": {Name: "GetObjectTagging", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetObjectTagging", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "VersionId": catalog.MemberBinding{Location: "query", Name: "versionId", Format: ""}}, Output: map[string]catalog.MemberBinding{"TagSet": catalog.MemberBinding{Location: "document", Name: "TagSet", Format: ""}, "VersionId": catalog.MemberBinding{Location: "header", Name: "x-amz-version-id", Format: ""}}, Method: "GET", URI: "/{Bucket}/{Key+}?tagging", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetObjectTaggingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
@@ -1587,7 +2070,7 @@ func Descriptor(api API) catalog.Service {
 		"GetObjectLegalHold": {Name: "GetObjectLegalHold", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetObjectLegalHold", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "VersionId": catalog.MemberBinding{Location: "query", Name: "versionId", Format: ""}}, Output: map[string]catalog.MemberBinding{"LegalHold": catalog.MemberBinding{Location: "payload", Name: "LegalHold", Format: ""}}, Method: "GET", URI: "/{Bucket}/{Key+}?legal-hold", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetObjectLegalHoldRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetObjectLegalHold(ctx, input.(*GetObjectLegalHoldRequest))
 		}},
-		"UploadPartCopy": {Name: "UploadPartCopy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:PutObject", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "CopySource": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source", Format: ""}, "CopySourceIfMatch": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-match", Format: ""}, "CopySourceIfModifiedSince": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-modified-since", Format: ""}, "CopySourceIfNoneMatch": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-none-match", Format: ""}, "CopySourceIfUnmodifiedSince": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-unmodified-since", Format: ""}, "CopySourceRange": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-range", Format: ""}, "CopySourceSSECustomerAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-copy-source-server-side-encryption-customer-algorithm", Format: ""}, "CopySourceSSECustomerKey": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-copy-source-server-side-encryption-customer-key", Format: ""}, "CopySourceSSECustomerKeyMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-copy-source-server-side-encryption-customer-key-MD5", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "ExpectedSourceBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-source-expected-bucket-owner", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "PartNumber": catalog.MemberBinding{Location: "query", Name: "partNumber", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKey": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "UploadId": catalog.MemberBinding{Location: "query", Name: "uploadId", Format: ""}}, Output: map[string]catalog.MemberBinding{"CopyPartResult": catalog.MemberBinding{Location: "payload", Name: "CopyPartResult", Format: ""}, "CopySourceVersionId": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-version-id", Format: ""}}, Method: "PUT", URI: "/{Bucket}/{Key+}?x-id=UploadPartCopy", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &UploadPartCopyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+		"UploadPartCopy": {Name: "UploadPartCopy", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "s3:PutObject", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "CopySource": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source", Format: ""}, "CopySourceIfMatch": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-match", Format: ""}, "CopySourceIfModifiedSince": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-modified-since", Format: ""}, "CopySourceIfNoneMatch": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-none-match", Format: ""}, "CopySourceIfUnmodifiedSince": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-if-unmodified-since", Format: ""}, "CopySourceRange": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-range", Format: ""}, "CopySourceSSECustomerAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-server-side-encryption-customer-algorithm", Format: ""}, "CopySourceSSECustomerKey": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-server-side-encryption-customer-key", Format: ""}, "CopySourceSSECustomerKeyMD5": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-server-side-encryption-customer-key-MD5", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "ExpectedSourceBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-source-expected-bucket-owner", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "PartNumber": catalog.MemberBinding{Location: "query", Name: "partNumber", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "SSECustomerAlgorithm": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-algorithm", Format: ""}, "SSECustomerKey": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key", Format: ""}, "SSECustomerKeyMD5": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-server-side-encryption-customer-key-MD5", Format: ""}, "UploadId": catalog.MemberBinding{Location: "query", Name: "uploadId", Format: ""}}, Output: map[string]catalog.MemberBinding{"CopyPartResult": catalog.MemberBinding{Location: "payload", Name: "CopyPartResult", Format: ""}, "CopySourceVersionId": catalog.MemberBinding{Location: "header", Name: "x-amz-copy-source-version-id", Format: ""}}, Method: "PUT", URI: "/{Bucket}/{Key+}?x-id=UploadPartCopy", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &UploadPartCopyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.UploadPartCopy(ctx, input.(*UploadPartCopyRequest))
 		}},
 		"ListObjects": {Name: "ListObjects", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:ListBucket", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "Delimiter": catalog.MemberBinding{Location: "query", Name: "delimiter", Format: ""}, "EncodingType": catalog.MemberBinding{Location: "query", Name: "encoding-type", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Marker": catalog.MemberBinding{Location: "query", Name: "marker", Format: ""}, "MaxKeys": catalog.MemberBinding{Location: "query", Name: "max-keys", Format: ""}, "OptionalObjectAttributes": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-optional-object-attributes", Format: ""}, "Prefix": catalog.MemberBinding{Location: "query", Name: "prefix", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}}, Output: map[string]catalog.MemberBinding{"CommonPrefixes": catalog.MemberBinding{Location: "document", Name: "CommonPrefixes", Format: ""}, "Contents": catalog.MemberBinding{Location: "document", Name: "Contents", Format: ""}, "Delimiter": catalog.MemberBinding{Location: "document", Name: "Delimiter", Format: ""}, "EncodingType": catalog.MemberBinding{Location: "document", Name: "EncodingType", Format: ""}, "IsTruncated": catalog.MemberBinding{Location: "document", Name: "IsTruncated", Format: ""}, "Marker": catalog.MemberBinding{Location: "document", Name: "Marker", Format: ""}, "MaxKeys": catalog.MemberBinding{Location: "document", Name: "MaxKeys", Format: ""}, "Name": catalog.MemberBinding{Location: "document", Name: "Name", Format: ""}, "NextMarker": catalog.MemberBinding{Location: "document", Name: "NextMarker", Format: ""}, "Prefix": catalog.MemberBinding{Location: "document", Name: "Prefix", Format: ""}}, Method: "GET", URI: "/{Bucket}", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &ListObjectsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
@@ -1601,6 +2084,78 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"GetBucketLogging": {Name: "GetBucketLogging", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetBucketLogging", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}}, Output: map[string]catalog.MemberBinding{"LoggingEnabled": catalog.MemberBinding{Location: "document", Name: "LoggingEnabled", Format: ""}}, Method: "GET", URI: "/{Bucket}?logging", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketLoggingRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetBucketLogging(ctx, input.(*GetBucketLoggingRequest))
+		}},
+		"GetBucketAccelerateConfiguration": {Name: "GetBucketAccelerateConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetAccelerateConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}}, Output: map[string]catalog.MemberBinding{"Status": catalog.MemberBinding{Location: "document", Name: "Status", Format: ""}}, Method: "GET", URI: "/{Bucket}?accelerate", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketAccelerateConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBucketAccelerateConfiguration(ctx, input.(*GetBucketAccelerateConfigurationRequest))
+		}},
+		"PutBucketAccelerateConfiguration": {Name: "PutBucketAccelerateConfiguration", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "s3:PutAccelerateConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AccelerateConfiguration": catalog.MemberBinding{Location: "payload", Name: "AccelerateConfiguration", Format: ""}, "Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-sdk-checksum-algorithm", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/{Bucket}?accelerate", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutBucketAccelerateConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutBucketAccelerateConfiguration(ctx, input.(*PutBucketAccelerateConfigurationRequest))
+		}},
+		"GetBucketRequestPayment": {Name: "GetBucketRequestPayment", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetBucketRequestPayment", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}}, Output: map[string]catalog.MemberBinding{"Payer": catalog.MemberBinding{Location: "document", Name: "Payer", Format: ""}}, Method: "GET", URI: "/{Bucket}?requestPayment", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketRequestPaymentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBucketRequestPayment(ctx, input.(*GetBucketRequestPaymentRequest))
+		}},
+		"PutBucketRequestPayment": {Name: "PutBucketRequestPayment", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "s3:PutBucketRequestPayment", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-sdk-checksum-algorithm", Format: ""}, "ContentMD5": catalog.MemberBinding{Location: "header", Name: "Content-MD5", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "RequestPaymentConfiguration": catalog.MemberBinding{Location: "payload", Name: "RequestPaymentConfiguration", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/{Bucket}?requestPayment", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutBucketRequestPaymentRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutBucketRequestPayment(ctx, input.(*PutBucketRequestPaymentRequest))
+		}},
+		"PutBucketReplication": {Name: "PutBucketReplication", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "s3:PutReplicationConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-sdk-checksum-algorithm", Format: ""}, "ContentMD5": catalog.MemberBinding{Location: "header", Name: "Content-MD5", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "ReplicationConfiguration": catalog.MemberBinding{Location: "payload", Name: "ReplicationConfiguration", Format: ""}, "Token": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-bucket-object-lock-token", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/{Bucket}?replication", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutBucketReplicationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutBucketReplication(ctx, input.(*PutBucketReplicationRequest))
+		}},
+		"GetBucketReplication": {Name: "GetBucketReplication", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetReplicationConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}}, Output: map[string]catalog.MemberBinding{"ReplicationConfiguration": catalog.MemberBinding{Location: "payload", Name: "ReplicationConfiguration", Format: ""}}, Method: "GET", URI: "/{Bucket}?replication", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketReplicationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBucketReplication(ctx, input.(*GetBucketReplicationRequest))
+		}},
+		"DeleteBucketReplication": {Name: "DeleteBucketReplication", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "s3:PutReplicationConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}?replication", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteBucketReplicationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteBucketReplication(ctx, input.(*DeleteBucketReplicationRequest))
+		}},
+		"PutBucketAnalyticsConfiguration": {Name: "PutBucketAnalyticsConfiguration", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "s3:PutAnalyticsConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"AnalyticsConfiguration": catalog.MemberBinding{Location: "payload", Name: "AnalyticsConfiguration", Format: ""}, "Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Id": catalog.MemberBinding{Location: "query", Name: "id", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/{Bucket}?analytics", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutBucketAnalyticsConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutBucketAnalyticsConfiguration(ctx, input.(*PutBucketAnalyticsConfigurationRequest))
+		}},
+		"GetBucketAnalyticsConfiguration": {Name: "GetBucketAnalyticsConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetAnalyticsConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Id": catalog.MemberBinding{Location: "query", Name: "id", Format: ""}}, Output: map[string]catalog.MemberBinding{"AnalyticsConfiguration": catalog.MemberBinding{Location: "payload", Name: "AnalyticsConfiguration", Format: ""}}, Method: "GET", URI: "/{Bucket}?analytics&x-id=GetBucketAnalyticsConfiguration", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketAnalyticsConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBucketAnalyticsConfiguration(ctx, input.(*GetBucketAnalyticsConfigurationRequest))
+		}},
+		"DeleteBucketAnalyticsConfiguration": {Name: "DeleteBucketAnalyticsConfiguration", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "s3:PutAnalyticsConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Id": catalog.MemberBinding{Location: "query", Name: "id", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}?analytics", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteBucketAnalyticsConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteBucketAnalyticsConfiguration(ctx, input.(*DeleteBucketAnalyticsConfigurationRequest))
+		}},
+		"ListBucketAnalyticsConfigurations": {Name: "ListBucketAnalyticsConfigurations", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetAnalyticsConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ContinuationToken": catalog.MemberBinding{Location: "query", Name: "continuation-token", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}}, Output: map[string]catalog.MemberBinding{"AnalyticsConfigurationList": catalog.MemberBinding{Location: "document", Name: "AnalyticsConfigurationList", Format: ""}, "ContinuationToken": catalog.MemberBinding{Location: "document", Name: "ContinuationToken", Format: ""}, "IsTruncated": catalog.MemberBinding{Location: "document", Name: "IsTruncated", Format: ""}, "NextContinuationToken": catalog.MemberBinding{Location: "document", Name: "NextContinuationToken", Format: ""}}, Method: "GET", URI: "/{Bucket}?analytics&x-id=ListBucketAnalyticsConfigurations", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &ListBucketAnalyticsConfigurationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListBucketAnalyticsConfigurations(ctx, input.(*ListBucketAnalyticsConfigurationsRequest))
+		}},
+		"PutBucketMetricsConfiguration": {Name: "PutBucketMetricsConfiguration", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "s3:PutMetricsConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Id": catalog.MemberBinding{Location: "query", Name: "id", Format: ""}, "MetricsConfiguration": catalog.MemberBinding{Location: "payload", Name: "MetricsConfiguration", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/{Bucket}?metrics", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutBucketMetricsConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutBucketMetricsConfiguration(ctx, input.(*PutBucketMetricsConfigurationRequest))
+		}},
+		"GetBucketMetricsConfiguration": {Name: "GetBucketMetricsConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetMetricsConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Id": catalog.MemberBinding{Location: "query", Name: "id", Format: ""}}, Output: map[string]catalog.MemberBinding{"MetricsConfiguration": catalog.MemberBinding{Location: "payload", Name: "MetricsConfiguration", Format: ""}}, Method: "GET", URI: "/{Bucket}?metrics&x-id=GetBucketMetricsConfiguration", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketMetricsConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBucketMetricsConfiguration(ctx, input.(*GetBucketMetricsConfigurationRequest))
+		}},
+		"DeleteBucketMetricsConfiguration": {Name: "DeleteBucketMetricsConfiguration", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "s3:PutMetricsConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Id": catalog.MemberBinding{Location: "query", Name: "id", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}?metrics", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteBucketMetricsConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteBucketMetricsConfiguration(ctx, input.(*DeleteBucketMetricsConfigurationRequest))
+		}},
+		"ListBucketMetricsConfigurations": {Name: "ListBucketMetricsConfigurations", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetMetricsConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ContinuationToken": catalog.MemberBinding{Location: "query", Name: "continuation-token", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}}, Output: map[string]catalog.MemberBinding{"ContinuationToken": catalog.MemberBinding{Location: "document", Name: "ContinuationToken", Format: ""}, "IsTruncated": catalog.MemberBinding{Location: "document", Name: "IsTruncated", Format: ""}, "MetricsConfigurationList": catalog.MemberBinding{Location: "document", Name: "MetricsConfigurationList", Format: ""}, "NextContinuationToken": catalog.MemberBinding{Location: "document", Name: "NextContinuationToken", Format: ""}}, Method: "GET", URI: "/{Bucket}?metrics&x-id=ListBucketMetricsConfigurations", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &ListBucketMetricsConfigurationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListBucketMetricsConfigurations(ctx, input.(*ListBucketMetricsConfigurationsRequest))
+		}},
+		"PutBucketInventoryConfiguration": {Name: "PutBucketInventoryConfiguration", UnitOutput: true, Sensitive: true, Anonymous: false, IAMAction: "s3:PutInventoryConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Id": catalog.MemberBinding{Location: "query", Name: "id", Format: ""}, "InventoryConfiguration": catalog.MemberBinding{Location: "payload", Name: "InventoryConfiguration", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/{Bucket}?inventory", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutBucketInventoryConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutBucketInventoryConfiguration(ctx, input.(*PutBucketInventoryConfigurationRequest))
+		}},
+		"GetBucketInventoryConfiguration": {Name: "GetBucketInventoryConfiguration", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "s3:GetInventoryConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Id": catalog.MemberBinding{Location: "query", Name: "id", Format: ""}}, Output: map[string]catalog.MemberBinding{"InventoryConfiguration": catalog.MemberBinding{Location: "payload", Name: "InventoryConfiguration", Format: ""}}, Method: "GET", URI: "/{Bucket}?inventory&x-id=GetBucketInventoryConfiguration", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketInventoryConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBucketInventoryConfiguration(ctx, input.(*GetBucketInventoryConfigurationRequest))
+		}},
+		"DeleteBucketInventoryConfiguration": {Name: "DeleteBucketInventoryConfiguration", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "s3:PutInventoryConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Id": catalog.MemberBinding{Location: "query", Name: "id", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}?inventory", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteBucketInventoryConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteBucketInventoryConfiguration(ctx, input.(*DeleteBucketInventoryConfigurationRequest))
+		}},
+		"ListBucketInventoryConfigurations": {Name: "ListBucketInventoryConfigurations", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "s3:GetInventoryConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ContinuationToken": catalog.MemberBinding{Location: "query", Name: "continuation-token", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}}, Output: map[string]catalog.MemberBinding{"ContinuationToken": catalog.MemberBinding{Location: "document", Name: "ContinuationToken", Format: ""}, "InventoryConfigurationList": catalog.MemberBinding{Location: "document", Name: "InventoryConfigurationList", Format: ""}, "IsTruncated": catalog.MemberBinding{Location: "document", Name: "IsTruncated", Format: ""}, "NextContinuationToken": catalog.MemberBinding{Location: "document", Name: "NextContinuationToken", Format: ""}}, Method: "GET", URI: "/{Bucket}?inventory&x-id=ListBucketInventoryConfigurations", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &ListBucketInventoryConfigurationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListBucketInventoryConfigurations(ctx, input.(*ListBucketInventoryConfigurationsRequest))
+		}},
+		"PutBucketIntelligentTieringConfiguration": {Name: "PutBucketIntelligentTieringConfiguration", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "s3:PutIntelligentTieringConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Id": catalog.MemberBinding{Location: "query", Name: "id", Format: ""}, "IntelligentTieringConfiguration": catalog.MemberBinding{Location: "payload", Name: "IntelligentTieringConfiguration", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "PUT", URI: "/{Bucket}?intelligent-tiering", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &PutBucketIntelligentTieringConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutBucketIntelligentTieringConfiguration(ctx, input.(*PutBucketIntelligentTieringConfigurationRequest))
+		}},
+		"GetBucketIntelligentTieringConfiguration": {Name: "GetBucketIntelligentTieringConfiguration", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetIntelligentTieringConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Id": catalog.MemberBinding{Location: "query", Name: "id", Format: ""}}, Output: map[string]catalog.MemberBinding{"IntelligentTieringConfiguration": catalog.MemberBinding{Location: "payload", Name: "IntelligentTieringConfiguration", Format: ""}}, Method: "GET", URI: "/{Bucket}?intelligent-tiering&x-id=GetBucketIntelligentTieringConfiguration", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &GetBucketIntelligentTieringConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetBucketIntelligentTieringConfiguration(ctx, input.(*GetBucketIntelligentTieringConfigurationRequest))
+		}},
+		"DeleteBucketIntelligentTieringConfiguration": {Name: "DeleteBucketIntelligentTieringConfiguration", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "s3:PutIntelligentTieringConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Id": catalog.MemberBinding{Location: "query", Name: "id", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "DELETE", URI: "/{Bucket}?intelligent-tiering", Target: "", Version: "", ContentType: "application/xml", StatusCode: 204}}, NewInput: func() any { return &DeleteBucketIntelligentTieringConfigurationRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteBucketIntelligentTieringConfiguration(ctx, input.(*DeleteBucketIntelligentTieringConfigurationRequest))
+		}},
+		"ListBucketIntelligentTieringConfigurations": {Name: "ListBucketIntelligentTieringConfigurations", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:GetIntelligentTieringConfiguration", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ContinuationToken": catalog.MemberBinding{Location: "query", Name: "continuation-token", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}}, Output: map[string]catalog.MemberBinding{"ContinuationToken": catalog.MemberBinding{Location: "document", Name: "ContinuationToken", Format: ""}, "IntelligentTieringConfigurationList": catalog.MemberBinding{Location: "document", Name: "IntelligentTieringConfigurationList", Format: ""}, "IsTruncated": catalog.MemberBinding{Location: "document", Name: "IsTruncated", Format: ""}, "NextContinuationToken": catalog.MemberBinding{Location: "document", Name: "NextContinuationToken", Format: ""}}, Method: "GET", URI: "/{Bucket}?intelligent-tiering&x-id=ListBucketIntelligentTieringConfigurations", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &ListBucketIntelligentTieringConfigurationsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListBucketIntelligentTieringConfigurations(ctx, input.(*ListBucketIntelligentTieringConfigurationsRequest))
+		}},
+		"RestoreObject": {Name: "RestoreObject", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "s3:RestoreObject", Bindings: map[string]catalog.Binding{"restXml": catalog.Binding{Input: map[string]catalog.MemberBinding{"Bucket": catalog.MemberBinding{Location: "label", Name: "Bucket", Format: ""}, "ChecksumAlgorithm": catalog.MemberBinding{Location: "header", Name: "x-amz-sdk-checksum-algorithm", Format: ""}, "ExpectedBucketOwner": catalog.MemberBinding{Location: "header", Name: "x-amz-expected-bucket-owner", Format: ""}, "Key": catalog.MemberBinding{Location: "label", Name: "Key", Format: ""}, "RequestPayer": catalog.MemberBinding{Location: "unsupported:header", Name: "x-amz-request-payer", Format: ""}, "RestoreRequest": catalog.MemberBinding{Location: "payload", Name: "RestoreRequest", Format: ""}, "VersionId": catalog.MemberBinding{Location: "query", Name: "versionId", Format: ""}}, Output: map[string]catalog.MemberBinding{}, Method: "POST", URI: "/{Bucket}/{Key+}?restore", Target: "", Version: "", ContentType: "application/xml", StatusCode: 200}}, NewInput: func() any { return &RestoreObjectRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.RestoreObject(ctx, input.(*RestoreObjectRequest))
 		}},
 	}}
 }

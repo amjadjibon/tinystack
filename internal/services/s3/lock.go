@@ -17,7 +17,7 @@ const (
 	lockLegalHoldOn    = "ON"
 	lockLegalHoldOff   = "OFF"
 	// lockEnabled is the only ObjectLockEnabled value.
-	lockEnabled = "Enabled"
+	lockEnabled = configurationEnabled
 )
 
 func requireObjectLock(meta *bucketMeta) error {

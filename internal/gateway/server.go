@@ -36,6 +36,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/recent"
 	"github.com/amjadjibon/tinystack/internal/services/cognitoidp"
 	"github.com/amjadjibon/tinystack/internal/services/iam"
+	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/services/ssooidc"
 )
 
@@ -48,6 +49,8 @@ const (
 )
 
 type Server struct {
+	s3AccessLogs func(context.Context, *s3.AccessRecord) error
+	s3Website    func(context.Context, *s3.WebsiteRequest) (*s3.WebsiteResponse, error)
 	shellSupport
 	managementEvents func(context.Context, *catalog.ManagementEvent) error
 	services         map[string]*catalog.Service
@@ -109,6 +112,7 @@ type Tokens func(ctx context.Context, issuer, endpoint, authorization string, fo
 type call struct {
 	service       *catalog.Service
 	authorization *AuthorizationRecord
+	chunkVerifier *sigv4.ChunkVerifier
 	// credentials are those of an access key TinyStack issued, if the request's is one.
 	credentials *request.Credentials
 	form        url.Values
@@ -1010,6 +1014,10 @@ func (s *Server) serveLocalStackHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if s.serveS3Website(w, r) {
+		return
+	}
+
 	// "_" is not valid in an S3 bucket name, so these paths never name one.
 	if h, ok := s.endpoint(r.URL.Path, nil); ok {
 		h.ServeHTTP(w, r)
@@ -1086,7 +1094,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx = request.WithMetadata(r.Context(), c.meta)
 	if c.service.SigningName == "s3" {
 		switch c.meta.Operation {
-		case opGetObject, opPutObject, opUploadPart:
+		case opGetObject, opPutObject, opUploadPart, "RestoreObject":
 			if c.payload == nil {
 				c.payload = &request.Payload{}
 			}
@@ -1112,6 +1120,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	binding := op.Bindings[m.Protocol]
+	if c.payload != nil && c.payload.Status != 0 {
+		binding.StatusCode = c.payload.Status
+	}
+
 	status := binding.StatusCode
 	switch m.Protocol {
 	case catalog.RESTXML:
@@ -1225,6 +1237,7 @@ func (s *Server) record(r *http.Request, c *call, start time.Time, body *capturi
 		}
 	}
 
+	s.recordS3Access(r, c, &rec, w)
 	s.requests.Add(rec)
 	s.metrics.add(c, rec.Status, rec.DurationMS/1000)
 	s.logger.Info(

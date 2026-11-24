@@ -20428,7 +20428,31 @@
       "ListObjects",
       "GetObjectAttributes",
       "PutBucketLogging",
-      "GetBucketLogging"
+      "GetBucketLogging",
+      "GetBucketAccelerateConfiguration",
+      "PutBucketAccelerateConfiguration",
+      "GetBucketRequestPayment",
+      "PutBucketRequestPayment",
+      "PutBucketReplication",
+      "GetBucketReplication",
+      "DeleteBucketReplication",
+      "PutBucketAnalyticsConfiguration",
+      "GetBucketAnalyticsConfiguration",
+      "DeleteBucketAnalyticsConfiguration",
+      "ListBucketAnalyticsConfigurations",
+      "PutBucketMetricsConfiguration",
+      "GetBucketMetricsConfiguration",
+      "DeleteBucketMetricsConfiguration",
+      "ListBucketMetricsConfigurations",
+      "PutBucketInventoryConfiguration",
+      "GetBucketInventoryConfiguration",
+      "DeleteBucketInventoryConfiguration",
+      "ListBucketInventoryConfigurations",
+      "PutBucketIntelligentTieringConfiguration",
+      "GetBucketIntelligentTieringConfiguration",
+      "DeleteBucketIntelligentTieringConfiguration",
+      "ListBucketIntelligentTieringConfigurations",
+      "RestoreObject"
     ],
     "shapes": {
       "CreateBucketRequest": [
@@ -20498,7 +20522,11 @@
         "Tagging",
         "ObjectLockMode",
         "ObjectLockRetainUntilDate",
-        "ObjectLockLegalHoldStatus"
+        "ObjectLockLegalHoldStatus",
+        "WebsiteRedirectLocation",
+        "SSECustomerAlgorithm",
+        "SSECustomerKey",
+        "SSECustomerKeyMD5"
       ],
       "PutObjectOutput": [
         "ETag",
@@ -20508,7 +20536,10 @@
         "ChecksumCRC64NVME",
         "ChecksumSHA1",
         "ChecksumSHA256",
-        "ChecksumType"
+        "ChecksumType",
+        "Expiration",
+        "SSECustomerAlgorithm",
+        "SSECustomerKeyMD5"
       ],
       "GetObjectRequest": [
         "Bucket",
@@ -20518,7 +20549,10 @@
         "IfNoneMatch",
         "ChecksumMode",
         "ExpectedBucketOwner",
-        "VersionId"
+        "VersionId",
+        "SSECustomerAlgorithm",
+        "SSECustomerKey",
+        "SSECustomerKeyMD5"
       ],
       "GetObjectOutput": [
         "Body",
@@ -20540,7 +20574,14 @@
         "ChecksumType",
         "ObjectLockMode",
         "ObjectLockRetainUntilDate",
-        "ObjectLockLegalHoldStatus"
+        "ObjectLockLegalHoldStatus",
+        "Expiration",
+        "StorageClass",
+        "ReplicationStatus",
+        "WebsiteRedirectLocation",
+        "Restore",
+        "SSECustomerAlgorithm",
+        "SSECustomerKeyMD5"
       ],
       "HeadObjectRequest": [
         "Bucket",
@@ -20550,7 +20591,10 @@
         "IfNoneMatch",
         "ChecksumMode",
         "ExpectedBucketOwner",
-        "VersionId"
+        "VersionId",
+        "SSECustomerAlgorithm",
+        "SSECustomerKey",
+        "SSECustomerKeyMD5"
       ],
       "HeadObjectOutput": [
         "ContentLength",
@@ -20568,7 +20612,14 @@
         "ChecksumType",
         "ObjectLockMode",
         "ObjectLockRetainUntilDate",
-        "ObjectLockLegalHoldStatus"
+        "ObjectLockLegalHoldStatus",
+        "Expiration",
+        "StorageClass",
+        "ReplicationStatus",
+        "WebsiteRedirectLocation",
+        "Restore",
+        "SSECustomerAlgorithm",
+        "SSECustomerKeyMD5"
       ],
       "DeleteObjectRequest": [
         "Bucket",
@@ -20651,7 +20702,8 @@
         "ChecksumType",
         "ObjectLockMode",
         "ObjectLockRetainUntilDate",
-        "ObjectLockLegalHoldStatus"
+        "ObjectLockLegalHoldStatus",
+        "WebsiteRedirectLocation"
       ],
       "CreateMultipartUploadOutput": [
         "Bucket",
@@ -20711,7 +20763,8 @@
         "ChecksumCRC64NVME",
         "ChecksumSHA1",
         "ChecksumSHA256",
-        "ChecksumType"
+        "ChecksumType",
+        "Expiration"
       ],
       "CompletedMultipartUpload": [
         "Parts"
@@ -20824,12 +20877,22 @@
         "ObjectLockRetainUntilDate",
         "ObjectLockLegalHoldStatus",
         "CopySourceIfModifiedSince",
-        "CopySourceIfUnmodifiedSince"
+        "CopySourceIfUnmodifiedSince",
+        "WebsiteRedirectLocation",
+        "SSECustomerAlgorithm",
+        "SSECustomerKey",
+        "SSECustomerKeyMD5",
+        "CopySourceSSECustomerAlgorithm",
+        "CopySourceSSECustomerKey",
+        "CopySourceSSECustomerKeyMD5"
       ],
       "CopyObjectOutput": [
         "CopyObjectResult",
         "VersionId",
-        "CopySourceVersionId"
+        "CopySourceVersionId",
+        "Expiration",
+        "SSECustomerAlgorithm",
+        "SSECustomerKeyMD5"
       ],
       "CopyObjectResult": [
         "ETag",
@@ -21355,7 +21418,10 @@
         "PartNumber",
         "UploadId",
         "ExpectedBucketOwner",
-        "ExpectedSourceBucketOwner"
+        "ExpectedSourceBucketOwner",
+        "CopySourceSSECustomerAlgorithm",
+        "CopySourceSSECustomerKey",
+        "CopySourceSSECustomerKeyMD5"
       ],
       "UploadPartCopyOutput": [
         "CopySourceVersionId",
@@ -21468,6 +21534,321 @@
       "SimplePrefix": [],
       "PartitionedPrefix": [
         "PartitionDateSource"
+      ],
+      "GetBucketAccelerateConfigurationRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketAccelerateConfigurationOutput": [
+        "Status"
+      ],
+      "PutBucketAccelerateConfigurationRequest": [
+        "Bucket",
+        "AccelerateConfiguration",
+        "ExpectedBucketOwner",
+        "ChecksumAlgorithm"
+      ],
+      "AccelerateConfiguration": [
+        "Status"
+      ],
+      "GetBucketRequestPaymentRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketRequestPaymentOutput": [
+        "Payer"
+      ],
+      "PutBucketRequestPaymentRequest": [
+        "Bucket",
+        "RequestPaymentConfiguration",
+        "ExpectedBucketOwner",
+        "ChecksumAlgorithm",
+        "ContentMD5"
+      ],
+      "RequestPaymentConfiguration": [
+        "Payer"
+      ],
+      "PutBucketReplicationRequest": [
+        "Bucket",
+        "ChecksumAlgorithm",
+        "ReplicationConfiguration",
+        "ExpectedBucketOwner",
+        "ContentMD5"
+      ],
+      "ReplicationConfiguration": [
+        "Role",
+        "Rules"
+      ],
+      "ReplicationRule": [
+        "ID",
+        "Priority",
+        "Prefix",
+        "Filter",
+        "Status",
+        "Destination",
+        "DeleteMarkerReplication"
+      ],
+      "ReplicationRuleFilter": [
+        "Prefix",
+        "Tag",
+        "And"
+      ],
+      "ReplicationRuleAndOperator": [
+        "Prefix",
+        "Tags"
+      ],
+      "Destination": [
+        "Bucket",
+        "Account",
+        "StorageClass"
+      ],
+      "DeleteMarkerReplication": [
+        "Status"
+      ],
+      "GetBucketReplicationRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketReplicationOutput": [
+        "ReplicationConfiguration"
+      ],
+      "DeleteBucketReplicationRequest": [
+        "Bucket",
+        "ExpectedBucketOwner"
+      ],
+      "PutBucketAnalyticsConfigurationRequest": [
+        "Bucket",
+        "Id",
+        "AnalyticsConfiguration",
+        "ExpectedBucketOwner"
+      ],
+      "AnalyticsConfiguration": [
+        "Id",
+        "Filter",
+        "StorageClassAnalysis"
+      ],
+      "AnalyticsFilter": [
+        "Prefix",
+        "Tag",
+        "And"
+      ],
+      "AnalyticsAndOperator": [
+        "Prefix",
+        "Tags"
+      ],
+      "StorageClassAnalysis": [
+        "DataExport"
+      ],
+      "StorageClassAnalysisDataExport": [
+        "OutputSchemaVersion",
+        "Destination"
+      ],
+      "AnalyticsExportDestination": [
+        "S3BucketDestination"
+      ],
+      "AnalyticsS3BucketDestination": [
+        "Format",
+        "BucketAccountId",
+        "Bucket",
+        "Prefix"
+      ],
+      "GetBucketAnalyticsConfigurationRequest": [
+        "Bucket",
+        "Id",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketAnalyticsConfigurationOutput": [
+        "AnalyticsConfiguration"
+      ],
+      "DeleteBucketAnalyticsConfigurationRequest": [
+        "Bucket",
+        "Id",
+        "ExpectedBucketOwner"
+      ],
+      "ListBucketAnalyticsConfigurationsRequest": [
+        "Bucket",
+        "ContinuationToken",
+        "ExpectedBucketOwner"
+      ],
+      "ListBucketAnalyticsConfigurationsOutput": [
+        "IsTruncated",
+        "ContinuationToken",
+        "NextContinuationToken",
+        "AnalyticsConfigurationList"
+      ],
+      "PutBucketMetricsConfigurationRequest": [
+        "Bucket",
+        "Id",
+        "MetricsConfiguration",
+        "ExpectedBucketOwner"
+      ],
+      "MetricsConfiguration": [
+        "Id",
+        "Filter"
+      ],
+      "MetricsFilter": [
+        "Prefix",
+        "Tag",
+        "AccessPointArn",
+        "And"
+      ],
+      "MetricsAndOperator": [
+        "Prefix",
+        "Tags",
+        "AccessPointArn"
+      ],
+      "GetBucketMetricsConfigurationRequest": [
+        "Bucket",
+        "Id",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketMetricsConfigurationOutput": [
+        "MetricsConfiguration"
+      ],
+      "DeleteBucketMetricsConfigurationRequest": [
+        "Bucket",
+        "Id",
+        "ExpectedBucketOwner"
+      ],
+      "ListBucketMetricsConfigurationsRequest": [
+        "Bucket",
+        "ContinuationToken",
+        "ExpectedBucketOwner"
+      ],
+      "ListBucketMetricsConfigurationsOutput": [
+        "IsTruncated",
+        "ContinuationToken",
+        "NextContinuationToken",
+        "MetricsConfigurationList"
+      ],
+      "PutBucketInventoryConfigurationRequest": [
+        "Bucket",
+        "Id",
+        "InventoryConfiguration",
+        "ExpectedBucketOwner"
+      ],
+      "InventoryConfiguration": [
+        "Destination",
+        "IsEnabled",
+        "Filter",
+        "Id",
+        "IncludedObjectVersions",
+        "OptionalFields",
+        "Schedule"
+      ],
+      "InventoryDestination": [
+        "S3BucketDestination"
+      ],
+      "InventoryS3BucketDestination": [
+        "AccountId",
+        "Bucket",
+        "Format",
+        "Prefix",
+        "Encryption"
+      ],
+      "InventoryEncryption": [
+        "SSES3",
+        "SSEKMS"
+      ],
+      "SSES3": [],
+      "SSEKMS": [
+        "KeyId"
+      ],
+      "InventoryFilter": [
+        "Prefix"
+      ],
+      "InventorySchedule": [
+        "Frequency"
+      ],
+      "GetBucketInventoryConfigurationRequest": [
+        "Bucket",
+        "Id",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketInventoryConfigurationOutput": [
+        "InventoryConfiguration"
+      ],
+      "DeleteBucketInventoryConfigurationRequest": [
+        "Bucket",
+        "Id",
+        "ExpectedBucketOwner"
+      ],
+      "ListBucketInventoryConfigurationsRequest": [
+        "Bucket",
+        "ContinuationToken",
+        "ExpectedBucketOwner"
+      ],
+      "ListBucketInventoryConfigurationsOutput": [
+        "ContinuationToken",
+        "InventoryConfigurationList",
+        "IsTruncated",
+        "NextContinuationToken"
+      ],
+      "PutBucketIntelligentTieringConfigurationRequest": [
+        "Bucket",
+        "Id",
+        "ExpectedBucketOwner",
+        "IntelligentTieringConfiguration"
+      ],
+      "IntelligentTieringConfiguration": [
+        "Id",
+        "Filter",
+        "Status",
+        "Tierings"
+      ],
+      "IntelligentTieringFilter": [
+        "Prefix",
+        "Tag",
+        "And"
+      ],
+      "IntelligentTieringAndOperator": [
+        "Prefix",
+        "Tags"
+      ],
+      "Tiering": [
+        "Days",
+        "AccessTier"
+      ],
+      "GetBucketIntelligentTieringConfigurationRequest": [
+        "Bucket",
+        "Id",
+        "ExpectedBucketOwner"
+      ],
+      "GetBucketIntelligentTieringConfigurationOutput": [
+        "IntelligentTieringConfiguration"
+      ],
+      "DeleteBucketIntelligentTieringConfigurationRequest": [
+        "Bucket",
+        "Id",
+        "ExpectedBucketOwner"
+      ],
+      "ListBucketIntelligentTieringConfigurationsRequest": [
+        "Bucket",
+        "ContinuationToken",
+        "ExpectedBucketOwner"
+      ],
+      "ListBucketIntelligentTieringConfigurationsOutput": [
+        "IsTruncated",
+        "ContinuationToken",
+        "NextContinuationToken",
+        "IntelligentTieringConfigurationList"
+      ],
+      "RestoreObjectRequest": [
+        "Bucket",
+        "Key",
+        "VersionId",
+        "RestoreRequest",
+        "ChecksumAlgorithm",
+        "ExpectedBucketOwner"
+      ],
+      "RestoreObjectOutput": [],
+      "RestoreRequest": [
+        "Days",
+        "GlacierJobParameters",
+        "Tier"
+      ],
+      "GlacierJobParameters": [
+        "Tier"
       ]
     }
   },

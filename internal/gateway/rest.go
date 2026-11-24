@@ -14,6 +14,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/protocol/restxml"
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/aws/sigv4"
+	"github.com/amjadjibon/tinystack/internal/services/s3"
 )
 
 // restMaxBody bounds REST document payloads and non-S3 services.
@@ -116,6 +117,9 @@ func routes(service *catalog.Service) []route {
 			rt.required = []string{queryUploadID}
 		case "CopyObject":
 			rt.header = "X-Amz-Copy-Source"
+		case "GetBucketAnalyticsConfiguration", "GetBucketMetricsConfiguration",
+			"GetBucketInventoryConfiguration", "GetBucketIntelligentTieringConfiguration":
+			rt.required = []string{"id"}
 		}
 
 		out = append(out, rt)
@@ -298,7 +302,7 @@ func (s *Server) restOperation(r *http.Request, c *call) (map[string]string, err
 func (s *Server) decodeREST(w http.ResponseWriter, r *http.Request, c *call, op *catalog.Operation) (any, error) {
 	binding := op.Bindings[c.meta.Protocol]
 	if c.service.SigningName == "s3" && (c.meta.Operation == opPutObject || c.meta.Operation == opUploadPart) {
-		stream, trailers, streamErr := rest.StreamBody(w, r, s.cfg.Storage.MaxObjectBytes)
+		stream, trailers, streamErr := rest.StreamBody(w, r, s.cfg.Storage.MaxObjectBytes, c.chunkVerifier)
 		if streamErr != nil {
 			return nil, streamErr
 		}
@@ -312,6 +316,10 @@ func (s *Server) decodeREST(w http.ResponseWriter, r *http.Request, c *call, op 
 
 		input := op.NewInput()
 		return input, rest.Decode(r, &binding, c.labels, nil, input, nil)
+	}
+
+	if c.service.SigningName == "s3" && signedStreaming(r) {
+		return nil, rest.NotImplemented("Signed aws-chunked payloads require PutObject or UploadPart")
 	}
 
 	body, err := rest.ReadBody(w, r, s.restBodyLimit(c))
@@ -337,7 +345,20 @@ func (s *Server) decodeREST(w http.ResponseWriter, r *http.Request, c *call, op 
 		return input, nil
 	}
 
-	return input, restxml.Decode(r, &binding, c.labels, body, input)
+	switch c.meta.Operation {
+	case "PutBucketAccelerateConfiguration", "PutBucketRequestPayment", "PutBucketReplication", "RestoreObject":
+		if c.service.Name == "s3" {
+			algorithm := r.Header.Get("x-amz-sdk-checksum-algorithm")
+			if algorithm != "" {
+				digest := r.Header.Get("x-amz-checksum-" + strings.ToLower(algorithm))
+				if checksumErr := s3.ValidateDocumentChecksum(algorithm, digest, body); checksumErr != nil {
+					return nil, checksumErr
+				}
+			}
+		}
+	}
+
+	return input, restxml.Decode(r, &binding, c.labels, body, input, c.service.Name == "s3")
 }
 
 // restBodyLimit lifts the cap only for S3 object and multipart part uploads.

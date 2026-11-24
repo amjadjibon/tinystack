@@ -167,6 +167,10 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request, c *call) e
 		}
 	}
 
+	if s3 && signedStreaming(r) && (a.Expires != 0 || a.Algorithm != sigv4.Algorithm) {
+		return authError(protocol, badSignature)
+	}
+
 	err = sigv4.Verify(r, a, secret, payloadHash, s3, time.Now())
 	switch {
 	case errors.Is(err, sigv4.ErrExpired) && a.Expires != 0 && protocol == catalog.RESTXML:
@@ -181,7 +185,16 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request, c *call) e
 		return authError(protocol, expiredToken)
 	}
 
-	return nil
+	if s3 && signedStreaming(r) {
+		c.chunkVerifier, err = sigv4.NewChunkVerifier(r, a, secret)
+	}
+
+	return err
+}
+
+func signedStreaming(r *http.Request) bool {
+	hashMode := r.Header.Get("X-Amz-Content-Sha256")
+	return hashMode == sigv4.StreamingPayload || hashMode == sigv4.StreamingPayloadTrailer
 }
 
 type tempFileCloser struct {
@@ -323,8 +336,16 @@ func (s *Server) payloadHash(w http.ResponseWriter, r *http.Request, c *call, s3
 		return declared, nil
 	}
 
+	if s3 && signedStreaming(r) {
+		if c.meta.Operation == opPutObject || c.meta.Operation == opUploadPart {
+			return declared, nil
+		}
+
+		return "", rest.NotImplemented("Signed aws-chunked payloads require PutObject or UploadPart")
+	}
+
 	if s3 && strings.HasPrefix(declared, "STREAMING-") {
-		return "", rest.NotImplemented("TinyStack does not verify signed streaming (aws-chunked) payloads.")
+		return "", rest.NotImplemented("Unsupported aws-chunked payload signing algorithm")
 	}
 
 	if s3 && (c.meta.Operation == opPutObject || c.meta.Operation == opUploadPart) {

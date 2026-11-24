@@ -2,7 +2,11 @@ package s3
 
 import (
 	"context"
+	"crypto/rand"
+	"math"
 	"net/http"
+	"slices"
+	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	"github.com/amjadjibon/tinystack/internal/common"
@@ -11,16 +15,24 @@ import (
 const (
 	maxLifecycleRules = 1000
 	// minimumSize128K is the default TransitionDefaultMinimumObjectSize.
-	minimumSize128K = "all_storage_classes_128K"
+	minimumSize128K       = "all_storage_classes_128K"
+	storageGlacier        = "GLACIER"
+	storageDeepArchive    = "DEEP_ARCHIVE"
+	storageOneZoneIA      = "ONEZONE_IA"
+	configurationEnabled  = "Enabled"
+	configurationDisabled = "Disabled"
 )
 
 var transitionClasses = map[string]bool{
-	"GLACIER": true, "STANDARD_IA": true, "ONEZONE_IA": true, "INTELLIGENT_TIERING": true, "DEEP_ARCHIVE": true,
-	"GLACIER_IR": true,
+	storageGlacier:        true,
+	"STANDARD_IA":         true,
+	storageOneZoneIA:      true,
+	"INTELLIGENT_TIERING": true,
+	storageDeepArchive:    true,
+	"GLACIER_IR":          true,
 }
 
-// lifecycle is a bucket's stored lifecycle configuration. TinyStack keeps the
-// rules but never applies them: no object expires or changes storage class.
+// lifecycle is a bucket's stored lifecycle configuration.
 type lifecycle struct {
 	MinimumSize string
 	Rules       []api.LifecycleRule
@@ -47,7 +59,7 @@ func checkLifecycleRule(r *api.LifecycleRule, ids map[string]bool) error {
 		return invalidArgument("ID length should not exceed allowed limit of 255")
 	case id != "" && ids[id]:
 		return invalidArgument("Rule ID must be unique. Found same ID for more than one rule")
-	case common.Value(r.Status) != "Enabled" && common.Value(r.Status) != "Disabled":
+	case !enabledDisabled(r.Status):
 		return malformedXML()
 	case r.Prefix != nil && r.Filter != nil:
 		return malformedXML()
@@ -57,15 +69,8 @@ func checkLifecycleRule(r *api.LifecycleRule, ids map[string]bool) error {
 	}
 
 	ids[id] = true
-	if f := r.Filter; f != nil &&
-		count(
-			f.Prefix != nil,
-			f.Tag != nil,
-			f.ObjectSizeGreaterThan != nil,
-			f.ObjectSizeLessThan != nil,
-			f.And != nil,
-		) > 1 {
-		return malformedXML()
+	if err := checkLifecycleFilter(r); err != nil {
+		return err
 	}
 
 	if e := r.Expiration; e != nil {
@@ -73,13 +78,18 @@ func checkLifecycleRule(r *api.LifecycleRule, ids map[string]bool) error {
 			return malformedXML()
 		}
 
-		if e.Days != nil && *e.Days <= 0 {
+		if e.Days != nil && !validLifecycleDays(e.Days, 1) {
 			return invalidArgument("'Days' for Expiration action must be a positive integer")
+		}
+
+		if !validLifecycleDate(e.Date) {
+			return invalidArgument("The Expiration date must be midnight UTC")
 		}
 	}
 
 	for _, t := range r.Transitions {
-		if count(t.Date != nil, t.Days != nil) != 1 || common.Value(t.Days) < 0 {
+		if count(t.Date != nil, t.Days != nil) != 1 ||
+			(t.Days != nil && !validLifecycleDays(t.Days, 0)) || !validLifecycleDate(t.Date) {
 			return malformedXML()
 		}
 
@@ -89,22 +99,86 @@ func checkLifecycleRule(r *api.LifecycleRule, ids map[string]bool) error {
 	}
 
 	for _, t := range r.NoncurrentVersionTransitions {
-		if !transitionClasses[common.Value(t.StorageClass)] || common.Value(t.NoncurrentDays) < 0 {
+		if !transitionClasses[common.Value(t.StorageClass)] || !validLifecycleDays(t.NoncurrentDays, 1) ||
+			!validRetainedVersions(r.Filter, t.NewerNoncurrentVersions) {
 			return malformedXML()
 		}
 	}
 
-	if e := r.NoncurrentVersionExpiration; e != nil && common.Value(e.NoncurrentDays) <= 0 {
+	if e := r.NoncurrentVersionExpiration; e != nil && (!validLifecycleDays(e.NoncurrentDays, 1) ||
+		!validRetainedVersions(r.Filter, e.NewerNoncurrentVersions)) {
 		return invalidArgument("'NoncurrentDays' for NoncurrentVersionExpiration action must be a positive integer")
 	}
 
-	if a := r.AbortIncompleteMultipartUpload; a != nil && common.Value(a.DaysAfterInitiation) <= 0 {
+	if a := r.AbortIncompleteMultipartUpload; a != nil && !validLifecycleDays(a.DaysAfterInitiation, 1) {
 		return invalidArgument(
 			"'DaysAfterInitiation' for AbortIncompleteMultipartUpload action must be a positive integer",
 		)
 	}
 
 	return nil
+}
+
+func validLifecycleDays(days *int64, minDays int64) bool {
+	return days != nil && *days >= minDays && *days <= math.MaxInt32
+}
+
+func validLifecycleDate(t *time.Time) bool {
+	return t == nil || t.Equal(t.UTC().Truncate(lifecycleDay))
+}
+
+func validRetainedVersions(filter *api.LifecycleRuleFilter, retained *int64) bool {
+	return retained == nil || (filter != nil && *retained >= 1 && *retained <= 100)
+}
+
+func checkLifecycleFilter(r *api.LifecycleRule) error {
+	if len(common.Value(r.Prefix)) > maxKeyBytes {
+		return malformedXML()
+	}
+
+	f := r.Filter
+	if f == nil {
+		return nil
+	}
+
+	if count(
+		f.Prefix != nil,
+		f.Tag != nil,
+		f.ObjectSizeGreaterThan != nil,
+		f.ObjectSizeLessThan != nil,
+		f.And != nil,
+	) > 1 {
+		return malformedXML()
+	}
+
+	prefix, low, high := f.Prefix, f.ObjectSizeGreaterThan, f.ObjectSizeLessThan
+	var tags []api.Tag
+	if f.Tag != nil {
+		tags = []api.Tag{*f.Tag}
+	}
+
+	if a := f.And; a != nil {
+		prefix, low, high, tags = a.Prefix, a.ObjectSizeGreaterThan, a.ObjectSizeLessThan, a.Tags
+		if count(prefix != nil, low != nil, high != nil)+len(tags) < 2 {
+			return malformedXML()
+		}
+	}
+
+	const maximumS3ObjectSize = 5 << 40
+	if len(common.Value(prefix)) > maxKeyBytes ||
+		(low != nil && (*low < 0 || *low > maximumS3ObjectSize)) ||
+		(high != nil && (*high < 0 || *high > maximumS3ObjectSize || (low != nil && *high <= *low))) {
+		return invalidArgument("Invalid lifecycle filter prefix or object size")
+	}
+
+	if len(tags) > 0 || low != nil || high != nil {
+		if r.AbortIncompleteMultipartUpload != nil ||
+			(r.Expiration != nil && common.Value(r.Expiration.ExpiredObjectDeleteMarker)) {
+			return invalidArgument("Upload abort and expired delete marker actions require a prefix or empty filter")
+		}
+	}
+
+	return configurationTags(tags)
 }
 
 func (s *Service) PutBucketLifecycleConfiguration(
@@ -116,9 +190,14 @@ func (s *Service) PutBucketLifecycleConfiguration(
 		return nil, malformedXML()
 	}
 
+	rules := slices.Clone(cfg.Rules)
 	ids := map[string]bool{}
-	for i := range cfg.Rules {
-		if err := checkLifecycleRule(&cfg.Rules[i], ids); err != nil {
+	for i := range rules {
+		if rules[i].ID == nil {
+			rules[i].ID = new(rand.Text())
+		}
+
+		if err := checkLifecycleRule(&rules[i], ids); err != nil {
 			return nil, err
 		}
 	}
@@ -133,7 +212,7 @@ func (s *Service) PutBucketLifecycleConfiguration(
 	}
 
 	err := s.updateBucket(ctx, in.Bucket, in.ExpectedBucketOwner, func(meta *bucketMeta) {
-		meta.Lifecycle = &lifecycle{Rules: cfg.Rules, MinimumSize: size}
+		meta.Lifecycle = &lifecycle{Rules: rules, MinimumSize: size}
 	})
 	if err != nil {
 		return nil, err

@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"cmp"
 	"context"
 	"crypto/rand"
 	"net/http"
@@ -26,7 +27,7 @@ import (
 // ".../bb/<version ID>/<key>". When a key has no current object, the newest
 // history entry is a delete marker, which is then the latest version.
 const (
-	versioningEnabled   = "Enabled"
+	versioningEnabled   = configurationEnabled
 	versioningSuspended = "Suspended"
 	// nullVersion is the version ID of an object written while versioning was
 	// off or suspended; such an object stores an empty VersionID.
@@ -50,6 +51,10 @@ func noSuchVersion() error {
 // marker was named by its version ID.
 func deleteMarkerError(marker *object, named bool) error {
 	headers := map[string]string{"x-amz-delete-marker": "true", "x-amz-version-id": versionOf(marker)}
+	if marker.ReplicationStatus != "" {
+		headers["x-amz-replication-status"] = marker.ReplicationStatus
+	}
+
 	if named {
 		headers["Last-Modified"] = time.UnixMilli(marker.LastModified).UTC().Format(http.TimeFormat)
 		return &awserror.Error{
@@ -109,13 +114,14 @@ func bodyKey(bucket, key string, obj *object) string {
 }
 
 // archive moves the current object of key, if any, to the front of h.
-func archive(tx storage.WriteTx, bucket, key string, h []object) ([]object, error) {
+func archive(tx storage.WriteTx, bucket, key string, h []object, now int64) ([]object, error) {
 	var current object
 	found, err := readJSON(tx, bucket+"/o/"+key, &current)
 	if err != nil || !found {
 		return h, err
 	}
 
+	current.NoncurrentSince = now
 	body, _ := tx.Get(bucket + "/db/" + key)
 	tx.Put(bodyKey(bucket, key, &current), body)
 	tx.Delete(bucket + "/o/" + key)
@@ -144,6 +150,7 @@ func promote(tx storage.WriteTx, bucket, key string, h []object) ([]object, erro
 	}
 
 	next := h[0]
+	next.NoncurrentSince = 0
 	body, _ := tx.Get(bodyKey(bucket, key, &next))
 	tx.Delete(bodyKey(bucket, key, &next))
 	tx.Put(bucket+"/db/"+key, body)
@@ -155,24 +162,29 @@ func promote(tx storage.WriteTx, bucket, key string, h []object) ([]object, erro
 // ID when versioning is enabled and replaces the null version when it is
 // suspended.
 func putCurrent(tx storage.WriteTx, bucket, key string, obj *object, body []byte) (string, error) {
-	status, err := versioning(tx, bucket)
+	meta, _, err := storage.Read[bucketMeta](tx, bucket)
 	if err != nil {
 		return "", err
 	}
 
-	obj.VersionID, obj.DeleteMarker = "", false
+	status := meta.Versioning
+	obj.ReplicationStatus = ""
+	obj.VersionID, obj.DeleteMarker, obj.NoncurrentSince = "", false, 0
 	if status != "" {
 		h, loadErr := history(tx, bucket, key)
 		if loadErr != nil {
 			return "", loadErr
 		}
 
-		if h, err = archive(tx, bucket, key, h); err != nil {
+		if h, err = archive(tx, bucket, key, h, obj.LastModified); err != nil {
 			return "", err
 		}
 
 		if status == versioningEnabled {
 			obj.VersionID = rand.Text()
+			if err := enqueueReplication(tx, meta.Replication, bucket, key, obj); err != nil {
+				return "", err
+			}
 		} else {
 			h = dropNull(tx, bucket, key, h)
 		}
@@ -195,12 +207,13 @@ type removal struct {
 
 // deleteCurrent deletes key without naming a version: an unversioned bucket
 // removes the object, and a versioned one hides it behind a new delete marker.
-func deleteCurrent(tx storage.WriteTx, bucket, key string, now int64) (removal, error) {
-	status, err := versioning(tx, bucket)
+func deleteCurrent(tx storage.WriteTx, bucket, key string, now int64, replicate bool) (removal, error) {
+	meta, _, err := storage.Read[bucketMeta](tx, bucket)
 	if err != nil {
 		return removal{}, err
 	}
 
+	status := meta.Versioning
 	if status == "" {
 		_, found := tx.Get(bucket + "/o/" + key)
 		tx.Delete(bucket + "/o/" + key)
@@ -213,13 +226,18 @@ func deleteCurrent(tx storage.WriteTx, bucket, key string, now int64) (removal, 
 		return removal{}, err
 	}
 
-	if h, err = archive(tx, bucket, key, h); err != nil {
+	if h, err = archive(tx, bucket, key, h, now); err != nil {
 		return removal{}, err
 	}
 
 	marker := object{DeleteMarker: true, LastModified: now}
 	if status == versioningEnabled {
 		marker.VersionID = rand.Text()
+		if replicate {
+			if err := enqueueReplication(tx, meta.Replication, bucket, key, &marker); err != nil {
+				return removal{}, err
+			}
+		}
 	} else {
 		h = dropNull(tx, bucket, key, h)
 	}
@@ -363,8 +381,8 @@ func (s *Service) PutBucketVersioning(
 	}
 
 	switch common.Value(cfg.MFADelete) {
-	case "", "Disabled":
-	case "Enabled":
+	case "", configurationDisabled:
+	case configurationEnabled:
 		return nil, fail(http.StatusNotImplemented, "NotImplemented", "TinyStack does not support MFA delete")
 	default:
 		return nil, fail(http.StatusBadRequest, "MalformedXML", "The XML you provided was not well-formed.")
@@ -377,6 +395,10 @@ func (s *Service) PutBucketVersioning(
 				"InvalidBucketState",
 				"An Object Lock configuration is present on this bucket, so the versioning state cannot be changed.",
 			)
+		}
+
+		if status == versioningSuspended && meta.Replication != nil {
+			return replicationVersioningError()
 		}
 
 		meta.Versioning = status
@@ -625,7 +647,7 @@ func (s *Service) ListObjectVersions(
 		out.Versions = append(out.Versions, api.ObjectVersion{
 			Key: encode(e.key), VersionId: new(versionOf(&e.obj)), IsLatest: new(e.latest),
 			LastModified: modified, ETag: new(e.obj.ETag), Size: new(e.obj.Size),
-			StorageClass: new(storageStandard), Owner: owner,
+			StorageClass: new(cmp.Or(e.obj.StorageClass, storageStandard)), Owner: owner,
 		})
 	}
 

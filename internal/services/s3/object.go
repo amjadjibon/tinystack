@@ -2,6 +2,7 @@ package s3
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"crypto/md5"  // #nosec G501 -- S3 defines MD5 ETags and Content-MD5; they are not a security control.
 	"crypto/sha1" // #nosec G505 -- S3 defines SHA-1 object checksums; they are not a security control.
@@ -37,8 +38,12 @@ const (
 
 // object is the stored metadata of one object; its bytes are a separate record.
 type object struct {
-	Metadata map[string]string `json:",omitempty"`
-	Tags     map[string]string `json:",omitempty"`
+	CustomerKeyMD5    string            `json:",omitempty"`
+	WebsiteRedirect   string            `json:",omitempty"`
+	ReplicationStatus string            `json:",omitempty"`
+	StorageClass      string            `json:",omitempty"`
+	Metadata          map[string]string `json:",omitempty"`
+	Tags              map[string]string `json:",omitempty"`
 	// Checksum is the stored checksum, absent on objects written before it was kept.
 	Checksum *checksum `json:",omitempty"`
 	// ObjectLockRetainUntilDate is when retention expires.
@@ -52,6 +57,9 @@ type object struct {
 	// ObjectLockLegalHoldStatus is the legal hold status: "ON" or "OFF".
 	ObjectLockLegalHoldStatus string           `json:",omitempty"`
 	Parts                     []api.ObjectPart `json:",omitempty"`
+	RestoreReady              int64            `json:",omitempty"`
+	RestoreUntil              int64            `json:",omitempty"`
+	NoncurrentSince           int64            `json:",omitempty"`
 	Size                      int64
 	LastModified              int64
 	// DeleteMarker marks a delete marker, which only a history record holds.
@@ -131,12 +139,25 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 		return nil, guardErr
 	}
 
+	if redirectErr := validWebsiteRedirect(in.WebsiteRedirectLocation); redirectErr != nil {
+		return nil, redirectErr
+	}
+
 	if c := common.Value(in.StorageClass); c != "" && c != storageStandard {
 		return nil, fail(
 			http.StatusNotImplemented,
 			"NotImplemented",
 			"TinyStack only supports the STANDARD storage class",
 		)
+	}
+
+	keyMD5, err := customerKeyMD5(in.SSECustomerAlgorithm, in.SSECustomerKey, in.SSECustomerKeyMD5)
+	if err != nil {
+		return nil, err
+	}
+
+	if keyMD5 != "" && in.ServerSideEncryption != nil {
+		return nil, invalidArgument("Server-side encryption and SSE-C cannot be combined")
 	}
 
 	if sseErr := encryption(in.ServerSideEncryption); sseErr != nil {
@@ -205,13 +226,15 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 	}
 
 	obj := object{
-		ETag:         `"` + hex.EncodeToString(digest) + `"`,
-		ContentType:  common.Value(in.ContentType),
-		Size:         blob.Size,
-		LastModified: s.now().UnixMilli(),
-		Metadata:     in.Metadata,
-		Tags:         tags,
-		Checksum:     &stored,
+		ETag:            `"` + hex.EncodeToString(digest) + `"`,
+		ContentType:     common.Value(in.ContentType),
+		WebsiteRedirect: common.Value(in.WebsiteRedirectLocation),
+		CustomerKeyMD5:  keyMD5,
+		Size:            blob.Size,
+		LastModified:    s.now().UnixMilli(),
+		Metadata:        in.Metadata,
+		Tags:            tags,
+		Checksum:        &stored,
 	}
 
 	if obj.ContentType == "" {
@@ -220,6 +243,7 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 
 	var cfg *api.NotificationConfiguration
 	var bucketKey, status string
+	var expiration *string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		key, resolveErr := resolve(tx, m, in.Bucket, in.ExpectedBucketOwner)
 		if resolveErr != nil {
@@ -260,6 +284,7 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 			return preconditionFailed()
 		}
 
+		expiration = s.expirationHeader(meta.Lifecycle, *in.Key, &obj)
 		var putErr error
 		bucketKey = key
 		status, putErr = putCurrent(tx, key, *in.Key, &obj, blob.Record())
@@ -281,8 +306,11 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 		version:   common.Value(version),
 		size:      obj.Size,
 	})
-	out := &api.PutObjectOutput{ETag: new(obj.ETag), VersionId: version}
+	out := &api.PutObjectOutput{ETag: new(obj.ETag), VersionId: version, Expiration: expiration}
 	obj.Checksum.apply(out)
+	if keyMD5 != "" {
+		out.SSECustomerAlgorithm, out.SSECustomerKeyMD5 = new(sseS3), new(keyMD5)
+	}
 
 	return out, nil
 }
@@ -290,13 +318,15 @@ func (s *Service) PutObject(ctx context.Context, in *api.PutObjectRequest) (*api
 // target names an object, or one version of it, in a request.
 type target struct {
 	bucket, key, version, owner *string
+	customerMD5                 *string
 }
 
 // found is an object version read by a request.
 type found struct {
-	version *string // the version ID to report, if any
-	body    []byte
-	obj     object
+	expiration *string
+	version    *string // the version ID to report, if any
+	body       []byte
+	obj        object
 }
 
 // read loads the current object, or the named version, and applies If-Match
@@ -321,7 +351,7 @@ func (s *Service) read(ctx context.Context, t target, ifMatch, ifNoneMatch *stri
 			return resolveErr
 		}
 
-		status, readErr := versioning(tx, prefix)
+		meta, _, readErr := storage.Read[bucketMeta](tx, prefix)
 		if readErr != nil {
 			return readErr
 		}
@@ -331,7 +361,21 @@ func (s *Service) read(ctx context.Context, t target, ifMatch, ifNoneMatch *stri
 			return readErr
 		}
 
-		f.obj, f.version = obj, reported(status, &obj)
+		if withBody || t.customerMD5 != nil {
+			if keyErr := requireCustomerKey(obj.CustomerKeyMD5, common.Value(t.customerMD5)); keyErr != nil {
+				return keyErr
+			}
+		}
+
+		if withBody && !obj.readable(s.now()) {
+			return invalidObjectState()
+		}
+
+		f.obj, f.version = obj, reported(meta.Versioning, &obj)
+		if data == prefix+"/db/"+*t.key {
+			f.expiration = s.expirationHeader(meta.Lifecycle, *t.key, &obj)
+		}
+
 		if t.version != nil {
 			f.version = t.version
 		}
@@ -387,7 +431,13 @@ func (s *Service) Object(ctx context.Context, bucket, key, version string) ([]by
 }
 
 func (s *Service) GetObject(ctx context.Context, in *api.GetObjectRequest) (*api.GetObjectOutput, error) {
-	f, err := s.read(ctx, target{in.Bucket, in.Key, in.VersionId, in.ExpectedBucketOwner}, in.IfMatch,
+	keyMD5, err := customerKeyMD5(in.SSECustomerAlgorithm, in.SSECustomerKey, in.SSECustomerKeyMD5)
+	if err != nil {
+		return nil, err
+	}
+
+	t := target{in.Bucket, in.Key, in.VersionId, in.ExpectedBucketOwner, new(keyMD5)}
+	f, err := s.read(ctx, t, in.IfMatch,
 		in.IfNoneMatch, true)
 	if err != nil {
 		return nil, err
@@ -413,11 +463,29 @@ func (s *Service) GetObject(ctx context.Context, in *api.GetObjectRequest) (*api
 	}()
 	out := &api.GetObjectOutput{
 		VersionId:     f.version,
+		Expiration:    f.expiration,
+		Restore:       obj.restoreHeader(s.now()),
 		ContentLength: new(obj.Size),
 		ContentType:   new(obj.ContentType),
 		ETag:          new(obj.ETag),
 		LastModified:  new(time.UnixMilli(obj.LastModified).UTC()),
 		Metadata:      obj.Metadata,
+	}
+
+	if obj.CustomerKeyMD5 != "" {
+		out.SSECustomerAlgorithm, out.SSECustomerKeyMD5 = new(sseS3), new(obj.CustomerKeyMD5)
+	}
+
+	if obj.WebsiteRedirect != "" {
+		out.WebsiteRedirectLocation = new(obj.WebsiteRedirect)
+	}
+
+	if obj.ReplicationStatus != "" {
+		out.ReplicationStatus = new(obj.ReplicationStatus)
+	}
+
+	if obj.StorageClass != "" {
+		out.StorageClass = new(obj.StorageClass)
 	}
 
 	if obj.ObjectLockMode != "" {
@@ -468,7 +536,13 @@ func (s *Service) GetObject(ctx context.Context, in *api.GetObjectRequest) (*api
 }
 
 func (s *Service) HeadObject(ctx context.Context, in *api.HeadObjectRequest) (*api.HeadObjectOutput, error) {
-	f, err := s.read(ctx, target{in.Bucket, in.Key, in.VersionId, in.ExpectedBucketOwner}, in.IfMatch,
+	keyMD5, err := customerKeyMD5(in.SSECustomerAlgorithm, in.SSECustomerKey, in.SSECustomerKeyMD5)
+	if err != nil {
+		return nil, err
+	}
+
+	t := target{in.Bucket, in.Key, in.VersionId, in.ExpectedBucketOwner, new(keyMD5)}
+	f, err := s.read(ctx, t, in.IfMatch,
 		in.IfNoneMatch, false)
 	if err != nil {
 		return nil, err
@@ -482,11 +556,29 @@ func (s *Service) HeadObject(ctx context.Context, in *api.HeadObjectRequest) (*a
 	obj := &f.obj
 	out := &api.HeadObjectOutput{
 		VersionId:     f.version,
+		Expiration:    f.expiration,
+		Restore:       obj.restoreHeader(s.now()),
 		ContentLength: new(obj.Size),
 		ContentType:   new(obj.ContentType),
 		ETag:          new(obj.ETag),
 		LastModified:  new(time.UnixMilli(obj.LastModified).UTC()),
 		Metadata:      obj.Metadata,
+	}
+
+	if obj.CustomerKeyMD5 != "" {
+		out.SSECustomerAlgorithm, out.SSECustomerKeyMD5 = new(sseS3), new(obj.CustomerKeyMD5)
+	}
+
+	if obj.WebsiteRedirect != "" {
+		out.WebsiteRedirectLocation = new(obj.WebsiteRedirect)
+	}
+
+	if obj.ReplicationStatus != "" {
+		out.ReplicationStatus = new(obj.ReplicationStatus)
+	}
+
+	if obj.StorageClass != "" {
+		out.StorageClass = new(obj.StorageClass)
 	}
 
 	if obj.ObjectLockMode != "" {
@@ -548,7 +640,7 @@ func (s *Service) DeleteObject(ctx context.Context, in *api.DeleteObjectRequest)
 				s.now(),
 			)
 		} else {
-			r, deleteErr = deleteCurrent(tx, key, *in.Key, s.now().UnixMilli())
+			r, deleteErr = deleteCurrent(tx, key, *in.Key, s.now().UnixMilli(), true)
 		}
 
 		// Only a deletion that removed something is notified.
@@ -632,7 +724,7 @@ func (s *Service) DeleteObjects(ctx context.Context, in *api.DeleteObjectsReques
 					s.now(),
 				)
 			} else {
-				r, deleteErr = deleteCurrent(tx, key, *o.Key, now)
+				r, deleteErr = deleteCurrent(tx, key, *o.Key, now, true)
 			}
 
 			if deleteErr != nil {
@@ -685,8 +777,8 @@ func (s *Service) DeleteObjects(ctx context.Context, in *api.DeleteObjectsReques
 		return nil, err
 	}
 
-	for _, e := range events {
-		s.notify(ctx, m, cfg, e)
+	for i := range events {
+		s.notify(ctx, m, cfg, events[i])
 	}
 
 	return out, nil
@@ -903,6 +995,7 @@ func (s *Service) listObjects(ctx context.Context, bucket, owner *string,
 
 			entry.LastModified = new(time.UnixMilli(obj.LastModified).UTC())
 			entry.ETag, entry.Size = new(obj.ETag), new(obj.Size)
+			entry.StorageClass = new(cmp.Or(obj.StorageClass, storageStandard))
 		}
 
 		return nil

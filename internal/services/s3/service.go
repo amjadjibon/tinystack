@@ -29,6 +29,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
+	"github.com/amjadjibon/tinystack/internal/services/background"
 	"github.com/amjadjibon/tinystack/internal/services/eventbridge"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/sns"
@@ -48,6 +49,7 @@ type Service struct {
 	store   *bodyStore
 	blobs   *storage.BlobStore
 	blobErr error
+	workers *background.Group
 	// queues, topics, functions, and events receive bucket notifications,
 	// which deliveries records.
 	queues     *sqs.Service
@@ -62,6 +64,7 @@ type Service struct {
 	now                       func() time.Time
 	objectCreated             func(context.Context, request.Scope, string, string, string)
 	maxObjectBytes            int64
+	day                       time.Duration
 }
 
 // ObserveObjectCreates registers an in-process consumer of committed object writes.
@@ -89,7 +92,7 @@ func New(
 	}
 
 	s := &Service{
-		blobs: blobs, blobErr: blobErr, maxObjectBytes: 256 << 20,
+		blobs: blobs, workers: background.New(), blobErr: blobErr, maxObjectBytes: 256 << 20,
 		store:      &bodyStore{Store: store, blobs: blobs},
 		queues:     queues,
 		topics:     topics,
@@ -115,6 +118,9 @@ type bucketIndex struct {
 
 // bucketMeta is the bucket's regional metadata.
 type bucketMeta struct {
+	Replication   *api.ReplicationConfiguration  `json:",omitempty"`
+	Acceleration  string                         `json:",omitempty"`
+	Payer         string                         `json:",omitempty"`
 	Logging       *api.LoggingEnabled            `json:",omitempty"`
 	Tags          map[string]string              `json:",omitempty"`
 	Notifications *api.NotificationConfiguration `json:",omitempty"`
@@ -354,6 +360,10 @@ func (s *Service) DeleteBucket(ctx context.Context, in *api.DeleteBucketRequest)
 			return fail(409, "BucketHasAccessPointsAttached", "The bucket has access points attached")
 		}
 
+		for _, item := range tx.Keys(key + "/config/") {
+			tx.Delete(item)
+		}
+
 		tx.Delete(indexPrefix + *in.Bucket)
 		tx.Delete(key)
 		return nil
@@ -457,6 +467,8 @@ func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
 
 // Stop collects orphan files, closes the facility and removes its temporary directory in memory mode.
 func (s *Service) Stop() {
+	s.workers.Stop()
+
 	if s.blobs != nil {
 		_ = s.collect(context.Background())
 		_ = s.blobs.Close()

@@ -562,33 +562,4 @@ func TestS3StreamingVerifyMode(t *testing.T) {
 		}
 		assertNoSpools("unsigned aws-chunked trailers")
 	})
-
-	t.Run("signed streaming rejected as NotImplemented", func(t *testing.T) {
-		stReq, err := http.NewRequestWithContext(
-			ctx,
-			http.MethodPut,
-			s.URL+"/verify-mode/streaming-sig.bin",
-			strings.NewReader("0\r\n\r\n"),
-		)
-		if err != nil {
-			t.Fatal(err)
-		}
-		stReq.Header.Set("Content-Encoding", "aws-chunked")
-		stReq.Header.Set("X-Amz-Content-Sha256", "STREAMING-AWS4-HMAC-SHA256-PAYLOAD")
-		signedWithHeader(t, stReq, time.Now())
-
-		stResp, err := s.Client().Do(stReq)
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer stResp.Body.Close()
-		if stResp.StatusCode != http.StatusNotImplemented {
-			t.Fatalf("expected 501 NotImplemented, got %d", stResp.StatusCode)
-		}
-		b, _ := io.ReadAll(stResp.Body)
-		if !strings.Contains(string(b), "NotImplemented") {
-			t.Fatalf("expected NotImplemented code in response, got %s", string(b))
-		}
-		assertNoSpools("signed streaming rejection")
-	})
 }

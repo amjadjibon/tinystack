@@ -76,6 +76,7 @@ func (b *capturingBody) Read(p []byte) (int, error) {
 
 // capturingWriter records the response status and body.
 type capturingWriter struct {
+	firstWrite time.Time
 	http.ResponseWriter
 	capture
 	status int
@@ -84,6 +85,7 @@ type capturingWriter struct {
 func (w *capturingWriter) WriteHeader(status int) {
 	if w.status == 0 {
 		w.status = status
+		w.firstWrite = time.Now()
 	}
 
 	w.ResponseWriter.WriteHeader(status)
@@ -92,6 +94,7 @@ func (w *capturingWriter) WriteHeader(status int) {
 func (w *capturingWriter) Write(p []byte) (int, error) {
 	if w.status == 0 {
 		w.status = http.StatusOK
+		w.firstWrite = time.Now()
 	}
 
 	n, err := w.ResponseWriter.Write(p)

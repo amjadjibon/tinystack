@@ -225,3 +225,20 @@ func reporting(mode *string) (bool, error) {
 		return false, invalidArgument("Invalid checksum mode " + m)
 	}
 }
+
+// ValidateDocumentChecksum checks the checksum supplied for a configuration or restore payload.
+func ValidateDocumentChecksum(algorithm, value string, body []byte) error {
+	if err := validAlgorithm(algorithm); err != nil {
+		return err
+	}
+
+	if value == "" {
+		return invalidArgument("The requested checksum header is missing")
+	}
+
+	if sum(algorithm, body) != value {
+		return fail(http.StatusBadRequest, "BadDigest", "The request checksum did not match the payload")
+	}
+
+	return nil
+}

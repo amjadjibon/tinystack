@@ -65,7 +65,8 @@ Generated in-process PutObject and UploadPart calls using byte-slice shapes, in-
 to 1 MiB). In verify mode, only signed hexadecimal or empty hash uploads spool to temporary disk files for SHA-256
 validation before operation dispatch; `UNSIGNED-PAYLOAD`, supported unsigned-trailer forms
 (`STREAMING-UNSIGNED-PAYLOAD-TRAILER`), and usual presigned S3 uploads stream directly without that spool.
-Signed aws-chunked (`STREAMING-AWS4-HMAC-SHA256-*`) uploads remain unsupported and fail with `NotImplemented`.
+Signed aws-chunked uploads also stream directly. Verify mode checks the chained signature of each chunk, the final
+zero-length chunk, and the signed trailers before committing the object or part.
 The REST layer decodes ordinary, chunked, and aws-chunked bodies with trailing checksum validation on the fly.
 
 Services return `awserror` values. Descriptor error bindings determine protocol codes, statuses, and message

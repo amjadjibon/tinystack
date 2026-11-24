@@ -3,11 +3,15 @@ package s3
 import (
 	"context"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
 	"github.com/amjadjibon/tinystack/internal/common"
 )
+
+const websiteHTTPS = "https"
 
 // checkWebsite validates a website configuration: it redirects every request
 // to another host, or it names an index document, with optional routing rules.
@@ -21,7 +25,7 @@ func checkWebsite(cfg *api.WebsiteConfiguration) error {
 			return invalidArgument("RedirectAllRequestsTo cannot be provided in conjunction with other Routing Rules.")
 		}
 
-		return nil
+		return validateWebsiteDestination(cfg.RedirectAllRequestsTo.HostName, cfg.RedirectAllRequestsTo.Protocol)
 	case cfg.IndexDocument == nil:
 		return invalidArgument("A value for IndexDocument Suffix must be provided if RedirectAllRequestsTo is empty")
 	}
@@ -30,8 +34,50 @@ func checkWebsite(cfg *api.WebsiteConfiguration) error {
 		return invalidArgument("The IndexDocument Suffix is not well formed")
 	}
 
+	if len(cfg.RoutingRules) > 50 {
+		return invalidArgument("A website configuration can have at most 50 routing rules")
+	}
+
+	if cfg.ErrorDocument != nil {
+		if err := validKey(cfg.ErrorDocument.Key); err != nil {
+			return err
+		}
+	}
+
 	for _, r := range cfg.RoutingRules {
 		if r.Redirect == nil || (r.Redirect.ReplaceKeyPrefixWith != nil && r.Redirect.ReplaceKeyWith != nil) {
+			return malformedXML()
+		}
+		if err := validateWebsiteDestination(r.Redirect.HostName, r.Redirect.Protocol); err != nil {
+			return err
+		}
+
+		if code := r.Redirect.HttpRedirectCode; code != nil {
+			n, err := strconv.Atoi(*code)
+			if err != nil || n < 300 || n >= 400 {
+				return malformedXML()
+			}
+		}
+
+		if c := r.Condition; c != nil && c.HttpErrorCodeReturnedEquals != nil {
+			n, err := strconv.Atoi(*c.HttpErrorCodeReturnedEquals)
+			if err != nil || n < 400 || n >= 600 {
+				return malformedXML()
+			}
+		}
+	}
+
+	return nil
+}
+
+func validateWebsiteDestination(host, protocol *string) error {
+	if protocol != nil && *protocol != "http" && *protocol != websiteHTTPS {
+		return malformedXML()
+	}
+
+	if host != nil {
+		u, err := url.Parse("http://" + *host)
+		if err != nil || u.Hostname() == "" || u.Host != *host || u.User != nil || strings.Contains(*host, "\\") {
 			return malformedXML()
 		}
 	}
@@ -39,8 +85,7 @@ func checkWebsite(cfg *api.WebsiteConfiguration) error {
 	return nil
 }
 
-// PutBucketWebsite stores the bucket's website configuration. TinyStack has
-// no website endpoint, so nothing serves it.
+// PutBucketWebsite stores the configuration for the bucket's website endpoint.
 func (s *Service) PutBucketWebsite(
 	ctx context.Context,
 	in *api.PutBucketWebsiteRequest,

@@ -72,8 +72,9 @@ its checksum. HTTP PutObject and UploadPart stream request bodies directly into 
 a fixed-size buffer, supporting ordinary, chunked, and aws-chunked formats with trailing checksum validation.
 In verify mode, only signed hexadecimal or empty hash uploads spool to temporary disk files for SHA-256 validation
 before operation dispatch; `UNSIGNED-PAYLOAD`, supported unsigned-trailer forms (`STREAMING-UNSIGNED-PAYLOAD-TRAILER`),
-and usual presigned S3 uploads stream directly without that spool. Signed aws-chunked (`STREAMING-AWS4-HMAC-SHA256-*`) uploads remain
-unsupported and fail with `NotImplemented`. Generated in-process PutObject and UploadPart calls using byte-slice
+and usual presigned S3 uploads stream directly without that spool. Signed aws-chunked uploads also stream directly,
+with each chunk, the terminator, and any signed trailer verified in verify mode. Generated in-process PutObject and
+UploadPart calls using byte-slice
 shapes, in-process reads (such as Lambda `Object()` helpers), and console download/preview buffers still buffer
 bytes in memory; console uploads are limited to 1 MiB. The default object/part/completed-object limit is 256 MiB,
 configured by `storage.s3_max_object_bytes` (1 byte through 5 GiB). Other services retain their existing REST limits.

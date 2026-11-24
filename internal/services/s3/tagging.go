@@ -214,7 +214,11 @@ func (s *Service) PutObjectTagging(
 		return nil, err
 	}
 
-	version, err := s.retagObject(ctx, target{in.Bucket, in.Key, in.VersionId, in.ExpectedBucketOwner}, tags)
+	version, err := s.retagObject(
+		ctx,
+		target{bucket: in.Bucket, key: in.Key, version: in.VersionId, owner: in.ExpectedBucketOwner},
+		tags,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +230,11 @@ func (s *Service) DeleteObjectTagging(
 	ctx context.Context,
 	in *api.DeleteObjectTaggingRequest,
 ) (*api.DeleteObjectTaggingOutput, error) {
-	version, err := s.retagObject(ctx, target{in.Bucket, in.Key, in.VersionId, in.ExpectedBucketOwner}, nil)
+	version, err := s.retagObject(
+		ctx,
+		target{bucket: in.Bucket, key: in.Key, version: in.VersionId, owner: in.ExpectedBucketOwner},
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +248,13 @@ func (s *Service) GetObjectTagging(
 	ctx context.Context,
 	in *api.GetObjectTaggingRequest,
 ) (*api.GetObjectTaggingOutput, error) {
-	f, err := s.read(ctx, target{in.Bucket, in.Key, in.VersionId, in.ExpectedBucketOwner}, nil, nil, false)
+	f, err := s.read(
+		ctx,
+		target{bucket: in.Bucket, key: in.Key, version: in.VersionId, owner: in.ExpectedBucketOwner},
+		nil,
+		nil,
+		false,
+	)
 	if err != nil {
 		return nil, err
 	}

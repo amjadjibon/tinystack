@@ -16,9 +16,9 @@ import (
 func (s *Server) UseHosted(hosted *cognitoidp.Service) { s.hosted = hosted }
 
 func requestEndpoint(r *http.Request) string {
-	scheme := "http"
+	scheme := httpScheme
 	if r.TLS != nil {
-		scheme = "https"
+		scheme = httpsScheme
 	}
 
 	return scheme + "://" + r.Host

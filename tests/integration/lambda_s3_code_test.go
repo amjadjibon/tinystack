@@ -12,7 +12,6 @@ import (
 	sdklambda "github.com/aws/aws-sdk-go-v2/service/lambda"
 	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 func sha(data []byte) string {
@@ -25,7 +24,7 @@ func TestLambdaCodeFromS3(t *testing.T) {
 	c := lambdaClient(s, "test")
 	objects := s3Client(s, "test", "us-east-1")
 	ctx := context.Background()
-	versioned(t, objects, "artifacts", s3types.BucketVersioningStatusEnabled)
+	versioned(t, objects, "artifacts")
 
 	upload := func(data []byte) string {
 		out, err := objects.PutObject(ctx, &s3.PutObjectInput{

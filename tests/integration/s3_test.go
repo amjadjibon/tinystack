@@ -412,8 +412,13 @@ func TestS3RESTAddressing(t *testing.T) {
 		t.Fatal(status, body)
 	}
 
+	if status, body := do(http.MethodGet, "/site?replication", ""); status != http.StatusNotFound ||
+		!strings.Contains(body, "<Code>ReplicationConfigurationNotFoundError</Code>") {
+		t.Fatal(status, body)
+	}
+
 	// Subresources that are not implemented fail instead of reaching another operation.
-	if status, body := do(http.MethodGet, "/site?replication", ""); status != http.StatusNotImplemented ||
+	if status, body := do(http.MethodGet, "/site/index.html?torrent", ""); status != http.StatusNotImplemented ||
 		!strings.Contains(body, "<Code>NotImplemented</Code>") {
 		t.Fatal(status, body)
 	}

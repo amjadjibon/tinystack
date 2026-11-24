@@ -22,7 +22,9 @@ import (
 // Decode fills input from the request. labels holds the decoded URI labels and
 // body the request payload. Modeled inputs the service does not implement fail,
 // and so does a payload that does not match its Content-MD5.
-func Decode(r *http.Request, b *catalog.Binding, labels map[string]string, body []byte, input any) error {
+func Decode(
+	r *http.Request, b *catalog.Binding, labels map[string]string, body []byte, input any, nested bool,
+) error {
 	if digest := r.Header.Get("Content-MD5"); digest != "" {
 		want, err := base64.StdEncoding.DecodeString(digest)
 		if err != nil || len(want) != md5.Size {
@@ -39,29 +41,70 @@ func Decode(r *http.Request, b *catalog.Binding, labels map[string]string, body 
 		}
 	}
 
-	return rest.Decode(r, b, labels, body, input, decodeXML)
+	return rest.Decode(r, b, labels, body, input, func(data []byte, v any) error {
+		return decodeXML(data, v, nested)
+	})
 }
 
-// decodeXML decodes a body strictly: elements the generated type does not
-// declare fail instead of being ignored.
-func decodeXML(body []byte, v any) error {
+// An XML tag can name a path such as TagSet>Tag. Intermediate nodes
+// have explicit children, and leaves resolve their members from the Go type.
+type xmlMember struct {
+	typ      reflect.Type
+	children map[string]*xmlMember
+}
+
+func xmlMembers(typ reflect.Type) map[string]*xmlMember {
+	for typ.Kind() == reflect.Pointer || typ.Kind() == reflect.Slice {
+		typ = typ.Elem()
+	}
+
+	if typ.Kind() != reflect.Struct {
+		return nil
+	}
+
+	members := make(map[string]*xmlMember)
+	for i := range typ.NumField() {
+		field := typ.Field(i)
+		name, options, _ := strings.Cut(field.Tag.Get("xml"), ",")
+		if field.Name == "XMLName" || name == "" || name == "-" || strings.Contains(options, "attr") {
+			continue
+		}
+
+		if _, local, ok := strings.Cut(name, " "); ok {
+			name = local
+		}
+
+		children := members
+		for {
+			segment, tail, hasChild := strings.Cut(name, ">")
+			if !hasChild {
+				children[segment] = &xmlMember{typ: field.Type}
+				break
+			}
+
+			if children[segment] == nil {
+				children[segment] = &xmlMember{children: make(map[string]*xmlMember)}
+			}
+
+			children, name = children[segment].children, tail
+		}
+	}
+
+	return members
+}
+
+// decodeXML rejects elements outside the generated input shape. With nested
+// validation the same check applies inside each payload structure.
+func decodeXML(body []byte, v any, nested bool) error {
 	malformed := awserror.New("MalformedXML", "The XML you provided was not well-formed or did not validate")
 	if err := xml.Unmarshal(body, v); err != nil {
 		return malformed
 	}
 
-	known := map[string]bool{}
-	t := reflect.TypeOf(v).Elem()
-	for i := range t.NumField() {
-		name, _, _ := strings.Cut(t.Field(i).Tag.Get("xml"), ",")
-		name, _, _ = strings.Cut(name, ">")
-		if name != "" && name != "-" && t.Field(i).Name != "XMLName" {
-			known[name] = true
-		}
-	}
-
+	root := reflect.TypeOf(v).Elem()
+	types := map[reflect.Type]map[string]*xmlMember{root: xmlMembers(root)}
+	var parents []*xmlMember
 	dec := xml.NewDecoder(bytes.NewReader(body))
-	depth := 0
 	for {
 		tok, err := dec.Token()
 		if errors.Is(err, io.EOF) {
@@ -74,12 +117,31 @@ func decodeXML(body []byte, v any) error {
 
 		switch el := tok.(type) {
 		case xml.StartElement:
-			depth++
-			if depth == 2 && !known[el.Name.Local] {
-				return rest.NotImplemented("TinyStack does not support the " + el.Name.Local + " element.")
+			var member *xmlMember
+			switch {
+			case len(parents) == 0:
+				member = &xmlMember{typ: root}
+			case len(parents) == 1 || nested:
+				parent := parents[len(parents)-1]
+				children := parent.children
+				if parent.typ != nil {
+					var known bool
+					children, known = types[parent.typ]
+					if !known {
+						children = xmlMembers(parent.typ)
+						types[parent.typ] = children
+					}
+				}
+
+				member = children[el.Name.Local]
+				if member == nil {
+					return rest.NotImplemented("TinyStack does not support the " + el.Name.Local + " element.")
+				}
 			}
+
+			parents = append(parents, member)
 		case xml.EndElement:
-			depth--
+			parents = parents[:len(parents)-1]
 		}
 	}
 }

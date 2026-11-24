@@ -431,9 +431,9 @@ func (s *Server) serveS3PostUpload(w http.ResponseWriter, r *http.Request, c *ca
 
 	switch form.fields["success_action_status"] {
 	case "201":
-		scheme := "http"
+		scheme := httpScheme
 		if r.TLS != nil {
-			scheme = "https"
+			scheme = httpsScheme
 		}
 
 		location := fmt.Sprintf("%s://%s/%s/%s", scheme, r.Host, bucket, url.PathEscape(key))

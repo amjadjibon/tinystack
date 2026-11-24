@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"cmp"
 	"context"
 	"strconv"
 	"strings"
@@ -10,6 +11,11 @@ import (
 	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/storage"
+)
+
+const (
+	attributeETag         = "ETag"
+	attributeStorageClass = "StorageClass"
 )
 
 func (s *Service) GetObjectAttributes(ctx context.Context,
@@ -30,7 +36,7 @@ func (s *Service) GetObjectAttributes(ctx context.Context,
 
 	for _, attribute := range in.ObjectAttributes {
 		switch attribute {
-		case "ETag", "Checksum", "ObjectParts", "StorageClass", "ObjectSize":
+		case attributeETag, "Checksum", "ObjectParts", attributeStorageClass, "ObjectSize":
 		default:
 			return nil, invalidArgument("Invalid object attribute")
 		}
@@ -73,15 +79,15 @@ func (s *Service) GetObjectAttributes(ctx context.Context,
 		out.LastModified = new(time.UnixMilli(obj.LastModified).UTC())
 		for _, attribute := range in.ObjectAttributes {
 			switch attribute {
-			case "ETag":
+			case attributeETag:
 				out.ETag = new(strings.Trim(obj.ETag, `"`))
 			case "Checksum":
 				if obj.Checksum != nil {
 					out.Checksum = &api.Checksum{}
 					obj.Checksum.apply(out.Checksum)
 				}
-			case "StorageClass":
-				out.StorageClass = new(storageStandard)
+			case attributeStorageClass:
+				out.StorageClass = new(cmp.Or(obj.StorageClass, storageStandard))
 			case "ObjectSize":
 				out.ObjectSize = new(obj.Size)
 			case "ObjectParts":

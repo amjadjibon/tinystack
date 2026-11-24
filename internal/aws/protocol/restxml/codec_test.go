@@ -42,7 +42,7 @@ func TestDecodeBindsMembers(t *testing.T) {
 	}
 
 	var in input
-	if err = Decode(r, &binding, map[string]string{"Bucket": "b", "Key": "a/b"}, body, &in); err != nil {
+	if err = Decode(r, &binding, map[string]string{"Bucket": "b", "Key": "a/b"}, body, &in, false); err != nil {
 		t.Fatal(err)
 	}
 
@@ -53,7 +53,7 @@ func TestDecodeBindsMembers(t *testing.T) {
 
 	r.Header.Set("Range", "bytes=0-1")
 	var e *awserror.Error
-	if err = Decode(r, &binding, nil, body, &input{}); !errors.As(err, &e) || e.StatusCode != 501 {
+	if err = Decode(r, &binding, nil, body, &input{}, false); !errors.As(err, &e) || e.StatusCode != 501 {
 		t.Fatalf("unsupported header accepted: %v", err)
 	}
 }
@@ -63,16 +63,16 @@ func TestDecodeXMLRejectsUnknownElements(t *testing.T) {
 		LocationConstraint *string `xml:"LocationConstraint,omitempty"`
 	}
 
-	if err := decodeXML([]byte(`<C><LocationConstraint>eu-west-1</LocationConstraint></C>`), &cfg); err != nil ||
+	if err := decodeXML([]byte(`<C><LocationConstraint>eu-west-1</LocationConstraint></C>`), &cfg, true); err != nil ||
 		*cfg.LocationConstraint != "eu-west-1" {
 		t.Fatal(err)
 	}
 
-	if err := decodeXML([]byte(`<C><Tags/></C>`), &cfg); err == nil {
+	if err := decodeXML([]byte(`<C><Tags/></C>`), &cfg, true); err == nil {
 		t.Fatal("unknown element accepted")
 	}
 
-	if err := decodeXML([]byte(`<C>`), &cfg); err == nil {
+	if err := decodeXML([]byte(`<C>`), &cfg, true); err == nil {
 		t.Fatal("malformed XML accepted")
 	}
 }
@@ -85,10 +85,26 @@ func TestDecodeChecksContentMD5(t *testing.T) {
 	} {
 		r := httptest.NewRequest(http.MethodPut, "/b/k", strings.NewReader("data"))
 		r.Header.Set("Content-MD5", digest)
-		err := Decode(r, &binding, nil, []byte("data"), &input{})
+		err := Decode(r, &binding, nil, []byte("data"), &input{}, false)
 		var e *awserror.Error
 		if (code == "" && err != nil) || (code != "" && (!errors.As(err, &e) || e.Code != code)) {
 			t.Fatalf("%s: %v", digest, err)
 		}
+	}
+}
+
+func TestDecodeXMLRejectsUnknownNestedElements(t *testing.T) {
+	var cfg struct {
+		Rules []struct {
+			Enabled *bool `xml:"Enabled,omitempty"`
+		} `xml:"Rules>Rule,omitempty"`
+	}
+
+	if err := decodeXML([]byte(`<C><Rules><Rule><Enabled>true</Enabled></Rule></Rules></C>`), &cfg, true); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := decodeXML([]byte(`<C><Rules><Rule><Unknown/></Rule></Rules></C>`), &cfg, true); err == nil {
+		t.Fatal("unknown nested element accepted")
 	}
 }

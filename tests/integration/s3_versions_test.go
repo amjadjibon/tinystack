@@ -14,7 +14,7 @@ import (
 )
 
 // versioned creates a bucket and sets its versioning status.
-func versioned(t *testing.T, c *s3.Client, bucket string, status s3types.BucketVersioningStatus) {
+func versioned(t *testing.T, c *s3.Client, bucket string) {
 	t.Helper()
 	ctx := context.Background()
 	if _, err := c.CreateBucket(ctx, &s3.CreateBucketInput{Bucket: aws.String(bucket)}); err != nil {
@@ -22,7 +22,10 @@ func versioned(t *testing.T, c *s3.Client, bucket string, status s3types.BucketV
 	}
 
 	_, err := c.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
-		Bucket: aws.String(bucket), VersioningConfiguration: &s3types.VersioningConfiguration{Status: status},
+		Bucket: aws.String(
+			bucket,
+		),
+		VersioningConfiguration: &s3types.VersioningConfiguration{Status: s3types.BucketVersioningStatusEnabled},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -276,7 +279,7 @@ func TestS3VersioningSuspended(t *testing.T) {
 	s := server(t)
 	c := s3Client(s, "test", "us-east-1")
 	ctx := context.Background()
-	versioned(t, c, "logs", s3types.BucketVersioningStatusEnabled)
+	versioned(t, c, "logs")
 	v1 := putVersion(t, c, "logs", "a", "one")
 
 	_, err := c.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
@@ -360,7 +363,7 @@ func TestS3VersionNotifications(t *testing.T) {
 	queues := sqsClient(s, "test")
 	ctx := context.Background()
 	queueURL, arn := queueARN(t, queues, "changes")
-	versioned(t, c, "docs", s3types.BucketVersioningStatusEnabled)
+	versioned(t, c, "docs")
 	_, err := c.PutBucketNotificationConfiguration(ctx, &s3.PutBucketNotificationConfigurationInput{
 		Bucket: aws.String("docs"), NotificationConfiguration: &s3types.NotificationConfiguration{
 			QueueConfigurations: []s3types.QueueConfiguration{{

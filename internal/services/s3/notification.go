@@ -26,12 +26,17 @@ import (
 )
 
 const (
-	serviceSQS    = "sqs"
-	serviceSNS    = "sns"
-	serviceLambda = "lambda"
-	fieldBucket   = "bucket"
-	eventCreated  = "ObjectCreated:"
-	eventRemoved  = "ObjectRemoved:"
+	s3ServicePrincipal       = "s3.amazonaws.com"
+	principalIDField         = "principalId"
+	serviceSQS               = "sqs"
+	serviceSNS               = "sns"
+	serviceLambda            = "lambda"
+	fieldBucket              = "bucket"
+	eventCreated             = "ObjectCreated:"
+	eventRemoved             = "ObjectRemoved:"
+	eventLifecycleDelete     = "LifecycleExpiration:Delete"
+	eventLifecycleMarker     = "LifecycleExpiration:DeleteMarkerCreated"
+	eventLifecycleTransition = "LifecycleTransition"
 	// notificationSubject is the subject of the SNS messages S3 publishes.
 	notificationSubject = "Amazon S3 Notification"
 )
@@ -41,6 +46,8 @@ var supportedEvents = []string{
 	"s3:ObjectCreated:*", "s3:ObjectCreated:Put", "s3:ObjectCreated:Post", "s3:ObjectCreated:Copy",
 	"s3:ObjectCreated:CompleteMultipartUpload", "s3:ObjectRemoved:*", "s3:ObjectRemoved:Delete",
 	"s3:ObjectRemoved:DeleteMarkerCreated",
+	"s3:LifecycleExpiration:*", "s3:" + eventLifecycleDelete, "s3:" + eventLifecycleMarker,
+	"s3:" + eventLifecycleTransition,
 }
 
 func invalidArgument(message string) error {
@@ -353,8 +360,9 @@ type objectEvent struct {
 	key       string
 	etag      string
 	// version is the version ID written or deleted, if versioning applies.
-	version string
-	size    int64
+	version      string
+	storageClass string
+	size         int64
 }
 
 const eventTime = "2006-01-02T15:04:05.000Z"
@@ -414,7 +422,10 @@ func (s *Service) notify(ctx context.Context, m request.Metadata, cfg *api.Notif
 
 	if cfg.EventBridgeConfiguration != nil {
 		detailType := "Object Created"
-		if strings.HasPrefix(e.name, eventRemoved) {
+		switch {
+		case e.name == eventLifecycleTransition:
+			detailType = "Object Storage Class Changed"
+		case e.name == eventLifecycleDelete || e.name == eventLifecycleMarker || strings.HasPrefix(e.name, eventRemoved):
 			detailType = "Object Deleted"
 		}
 
@@ -431,7 +442,7 @@ func (s *Service) notify(ctx context.Context, m request.Metadata, cfg *api.Notif
 // authorize checks that the destination's resource policy lets the bucket's notifications through.
 func (s *Service) authorize(ctx context.Context, bucket, account, target string) error {
 	return s.authorizer.Authorize(ctx, catalog.ServiceDelivery{
-		Principal: "s3.amazonaws.com", SourceARN: "arn:aws:s3:::" + bucket, SourceAccount: account, Target: target,
+		Principal: s3ServicePrincipal, SourceARN: "arn:aws:s3:::" + bucket, SourceAccount: account, Target: target,
 	})
 }
 
@@ -448,13 +459,13 @@ func (*Service) record(m request.Metadata, e objectEvent, id, sequencer string, 
 		object["versionId"] = e.version
 	}
 
-	return json.Marshal(map[string]any{"Records": []map[string]any{{
+	record := map[string]any{
 		"eventVersion":      "2.1",
 		"eventSource":       "aws:s3",
 		"awsRegion":         m.Region,
 		"eventTime":         now.Format(eventTime),
 		"eventName":         e.name,
-		"userIdentity":      map[string]string{"principalId": "AWS:" + m.AccountID},
+		"userIdentity":      map[string]string{principalIDField: "AWS:" + m.AccountID},
 		"requestParameters": map[string]string{"sourceIPAddress": "127.0.0.1"},
 		"responseElements":  map[string]string{"x-amz-request-id": m.RequestID, "x-amz-id-2": m.RequestID},
 		"s3": map[string]any{
@@ -462,12 +473,27 @@ func (*Service) record(m request.Metadata, e objectEvent, id, sequencer string, 
 			"configurationId": id,
 			fieldBucket: map[string]any{
 				"name":          e.bucket,
-				"ownerIdentity": map[string]string{"principalId": canonicalID(m.AccountID)},
+				"ownerIdentity": map[string]string{principalIDField: canonicalID(m.AccountID)},
 				"arn":           "arn:aws:s3:::" + e.bucket,
 			},
 			"object": object,
 		},
-	}}})
+	}
+
+	switch e.name {
+	case eventLifecycleDelete, eventLifecycleMarker, eventLifecycleTransition:
+		record["eventVersion"] = "2.3"
+		record["userIdentity"] = map[string]string{principalIDField: s3ServicePrincipal}
+		record["requestParameters"] = map[string]string{"sourceIPAddress": s3ServicePrincipal}
+	}
+
+	if e.storageClass != "" {
+		record["lifecycleEventData"] = map[string]any{
+			"transitionEventData": map[string]string{"destinationStorageClass": e.storageClass},
+		}
+	}
+
+	return json.Marshal(map[string]any{"Records": []map[string]any{record}})
 }
 
 // eventDetail is the detail of the EventBridge event for e.
@@ -492,7 +518,10 @@ func (*Service) eventDetail(m request.Metadata, e objectEvent, sequencer string)
 	switch {
 	case strings.HasPrefix(e.name, eventCreated):
 		object["size"], object["etag"] = e.size, strings.Trim(e.etag, `"`)
-	case e.name == eventRemoved+"DeleteMarkerCreated":
+	case e.name == eventLifecycleTransition:
+		delete(detail, "reason")
+		detail["destination-storage-class"] = e.storageClass
+	case e.name == eventRemoved+"DeleteMarkerCreated" || e.name == eventLifecycleMarker:
 		detail["deletion-type"] = "Delete Marker Created"
 	default:
 		detail["deletion-type"] = "Permanently Deleted"

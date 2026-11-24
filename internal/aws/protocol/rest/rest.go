@@ -21,6 +21,7 @@ import (
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"github.com/amjadjibon/tinystack/internal/aws/sigv4"
 )
 
 const (
@@ -129,6 +130,7 @@ func readBoundedLine(r *bufio.Reader, maxLen int) (string, error) {
 }
 
 type chunkReader struct {
+	signed            *signedChunks
 	r                 *bufio.Reader
 	header            http.Header
 	remaining         int64
@@ -156,18 +158,26 @@ func (c *chunkReader) Read(p []byte) (int, error) {
 	for {
 		switch c.state {
 		case stateChunkHeader:
-			line, err := readBoundedLine(c.r, maxFramingLine)
+			line, err := c.line(maxFramingLine)
 			if err != nil {
 				return 0, c.malformed(err)
 			}
 
-			sizeText, _, _ := strings.Cut(line, ";")
+			sizeText, extension, _ := strings.Cut(line, ";")
 			size, err := strconv.ParseInt(strings.TrimSpace(sizeText), 16, 64)
 			if err != nil || size < 0 {
 				return 0, c.malformed(nil)
 			}
 
+			if err := c.startChunk(extension); err != nil {
+				return 0, err
+			}
+
 			if size == 0 {
+				if err := c.finishChunk(); err != nil {
+					return 0, err
+				}
+
 				c.state = stateTrailers
 				continue
 			}
@@ -192,6 +202,10 @@ func (c *chunkReader) Read(p []byte) (int, error) {
 			}
 
 			if n > 0 {
+				if c.signed != nil && c.signed.digest != nil {
+					_, _ = c.signed.digest.Write(p[:n])
+				}
+
 				return n, nil
 			}
 
@@ -200,16 +214,20 @@ func (c *chunkReader) Read(p []byte) (int, error) {
 			}
 
 		case stateChunkCRLF:
-			crlf, err := readBoundedLine(c.r, maxDelimiterLine)
+			crlf, err := c.line(maxDelimiterLine)
 			if err != nil || crlf != "" {
 				return 0, c.malformed(err)
+			}
+
+			if err := c.finishChunk(); err != nil {
+				return 0, err
 			}
 
 			c.state = stateChunkHeader
 
 		case stateTrailers:
 			for {
-				line, err := readBoundedLine(c.r, maxFramingLine)
+				line, err := c.line(maxFramingLine)
 				if err != nil {
 					return 0, c.malformed(err)
 				}
@@ -229,8 +247,8 @@ func (c *chunkReader) Read(p []byte) (int, error) {
 					return 0, c.malformed(nil)
 				}
 
-				if c.header != nil {
-					c.header.Set(strings.TrimSpace(name), strings.TrimSpace(value))
+				if err := c.trailer(strings.TrimSpace(name), strings.TrimSpace(value)); err != nil {
+					return 0, err
 				}
 			}
 
@@ -240,6 +258,10 @@ func (c *chunkReader) Read(p []byte) (int, error) {
 			}
 			if !errors.Is(err, io.EOF) {
 				return 0, c.malformed(err)
+			}
+
+			if err := c.finishTrailers(); err != nil {
+				return 0, err
 			}
 
 			c.state = stateEOF
@@ -363,7 +385,22 @@ func (s *StreamLimiter) Trailers() http.Header {
 
 // StreamBody prepares a bounded streaming reader for an upload request, decoding
 // aws-chunked streams on the fly and validating declared bounds.
-func StreamBody(w http.ResponseWriter, r *http.Request, maxBytes int64) (io.ReadCloser, func() http.Header, error) {
+func StreamBody(
+	w http.ResponseWriter, r *http.Request, maxBytes int64, verifier *sigv4.ChunkVerifier,
+) (io.ReadCloser, func() http.Header, error) {
+	signed, err := signedChunkOptions(r, verifier)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	switch hashMode := r.Header.Get("X-Amz-Content-Sha256"); hashMode {
+	case sigv4.StreamingPayload, sigv4.StreamingPayloadTrailer, "STREAMING-UNSIGNED-PAYLOAD-TRAILER":
+	default:
+		if strings.HasPrefix(hashMode, "STREAMING-") {
+			return nil, nil, NotImplemented("Unsupported aws-chunked payload signing algorithm")
+		}
+	}
+
 	encodings := strings.Split(r.Header.Get("Content-Encoding"), ",")
 	chunked := strings.HasPrefix(r.Header.Get("X-Amz-Content-Sha256"), "STREAMING-")
 	kept := encodings[:0]
@@ -402,7 +439,7 @@ func StreamBody(w http.ResponseWriter, r *http.Request, maxBytes int64) (io.Read
 
 		encodedLimit := maxBytes + max(8<<20, maxBytes/8)
 		reader := http.MaxBytesReader(w, r.Body, encodedLimit)
-		bodyReader = NewChunkReader(bufio.NewReader(reader), trailers)
+		bodyReader = &chunkReader{r: bufio.NewReader(reader), header: trailers, signed: signed}
 	} else {
 		if clStr := r.Header.Get("Content-Length"); clStr != "" {
 			l, err := strconv.ParseInt(strings.TrimSpace(clStr), 10, 64)

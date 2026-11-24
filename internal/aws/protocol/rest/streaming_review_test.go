@@ -39,7 +39,7 @@ func TestStreamBodyModelsTruncatedHTTPPayload(t *testing.T) {
 	r.Body = io.NopCloser(truncatedUpload{Reader: strings.NewReader("hello")})
 	r.ContentLength = 10
 	r.Header.Set("Content-Length", "10")
-	stream, _, err := StreamBody(httptest.NewRecorder(), r, 1<<20)
+	stream, _, err := StreamBody(httptest.NewRecorder(), r, 1<<20, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +75,7 @@ func TestStreamBodyRejectsMalformedDecodedContentLength(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPut, "/bucket/key", strings.NewReader("0\r\n\r\n"))
 			r.Header.Set("Content-Encoding", "aws-chunked")
 			r.Header.Set("x-amz-decoded-content-length", val)
-			_, _, err := StreamBody(httptest.NewRecorder(), r, 1<<20)
+			_, _, err := StreamBody(httptest.NewRecorder(), r, 1<<20, nil)
 			if err == nil {
 				t.Fatalf("expected error for x-amz-decoded-content-length %q, got nil", val)
 			}
@@ -130,7 +130,7 @@ func TestStreamLimiterPreservesContextCancellation(t *testing.T) {
 	r.ContentLength = 11
 	r.Header.Set("Content-Length", "11")
 
-	stream, _, err := StreamBody(httptest.NewRecorder(), r, 1<<20)
+	stream, _, err := StreamBody(httptest.NewRecorder(), r, 1<<20, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,7 +155,7 @@ func TestStreamBodyRequiresDeclaredHTTPChecksumTrailer(t *testing.T) {
 	r := httptest.NewRequest(http.MethodPut, "/bucket/key", strings.NewReader("hello"))
 	// net/http removes the Trailer header and keeps its declarations here.
 	r.Trailer = http.Header{"X-Amz-Checksum-Crc32": nil}
-	stream, _, err := StreamBody(httptest.NewRecorder(), r, 1<<20)
+	stream, _, err := StreamBody(httptest.NewRecorder(), r, 1<<20, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
