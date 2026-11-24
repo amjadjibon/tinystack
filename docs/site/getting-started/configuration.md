@@ -39,6 +39,7 @@ Use `./bin/tinystack start --help` for the current command help.
 | `storage.s3_max_object_bytes` | `268435456` (256 MiB) | `1`–`5368709120` (5 GiB); limits S3 PUTs, individual parts and completed objects; uploads use bounded HTTP streaming |
 | `storage.s3_lifecycle_day` | `24h` | Optional test duration from `1ms` to `24h`. Shorter values use elapsed time for day-based lifecycle rules and restore expiry. The default uses UTC calendar days |
 | `storage.path` | Unset | Required in `persistent`, forbidden in `memory`; `~` expands to your home directory |
+| `dynamodb.enforce_provisioned_throughput` | `false` | `true` enables DynamoDB provisioned table and index throttling with a 300-second burst budget |
 | `codebuild.builds` | `records` | `records` or `docker`; records rejects StartBuild; Docker executes buildspec 0.2 |
 | `ecs.containers` | `records` | `records` or `docker` |
 | `eks.clusters` | `records` | `records` or `k3s` |

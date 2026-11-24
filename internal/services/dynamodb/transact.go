@@ -45,6 +45,10 @@ func (s *Service) transactGetItems(
 	in *api.TransactGetItemsInput,
 	used *tally,
 ) (*api.TransactGetItemsOutput, error) {
+	if err := validateCapacity(in.ReturnConsumedCapacity); err != nil {
+		return nil, err
+	}
+
 	if len(in.TransactItems) == 0 || len(in.TransactItems) > maxTransactItems {
 		return nil, awserror.Validation("TransactItems must hold 1 to 100 items")
 	}
@@ -78,7 +82,7 @@ func (s *Service) transactGetItems(
 	}
 
 	out := &api.TransactGetItemsOutput{Responses: make([]api.ItemResponse, len(in.TransactItems))}
-	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+	err := s.readData(ctx, used, func(tx storage.ReadTx) error {
 		tables := map[string]*table{}
 		seen := map[string]bool{}
 		for i, ti := range in.TransactItems {
@@ -102,7 +106,7 @@ func (s *Service) transactGetItems(
 				return sizeErr
 			}
 
-			used.charge(common.Value(ti.Get.TableName), bytes, true)
+			used.charge(keys[i], nil, bytes, true)
 			out.Responses[i].Item = projections[i].apply(it)
 		}
 
@@ -112,6 +116,7 @@ func (s *Service) transactGetItems(
 		return nil, err
 	}
 
+	out.ConsumedCapacity = used.capacity(in.ReturnConsumedCapacity)
 	return out, nil
 }
 
@@ -186,7 +191,7 @@ func newTransactWrite(ctx context.Context, ti *api.TransactWriteItem) (*transact
 	}
 
 	switch common.Value(returnValues) {
-	case "", "NONE":
+	case "", modeNone:
 	case returnAllOld:
 		w.returnOld = true
 	default:
@@ -226,7 +231,7 @@ func (s *Service) TransactWriteItems(
 	ctx context.Context,
 	in *api.TransactWriteItemsInput,
 ) (*api.TransactWriteItemsOutput, error) {
-	puts := outbox{used: tally{transactional: true}}
+	puts := s.newOutbox(true)
 	return observed(ctx, s, "TransactWriteItems", &puts.used, func() (*api.TransactWriteItemsOutput, error) {
 		return s.transactWriteItems(ctx, in, &puts)
 	})
@@ -237,6 +242,14 @@ func (s *Service) transactWriteItems(
 	in *api.TransactWriteItemsInput,
 	puts *outbox,
 ) (*api.TransactWriteItemsOutput, error) {
+	if err := validateCapacity(in.ReturnConsumedCapacity); err != nil {
+		return nil, err
+	}
+
+	if err := puts.requestMetrics(in.ReturnItemCollectionMetrics); err != nil {
+		return nil, err
+	}
+
 	if len(in.TransactItems) == 0 || len(in.TransactItems) > maxTransactItems {
 		return nil, awserror.Validation("TransactItems must hold 1 to 100 items")
 	}
@@ -263,12 +276,16 @@ func (s *Service) transactWriteItems(
 	digest := sha256.Sum256(encoded)
 	m, _ := request.FromContext(ctx)
 	tokens := m.AccountID + "/" + m.Region + "/dynamodb-token/"
-	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+	err = s.writeData(ctx, puts, func(tx storage.WriteTx) error {
 		now := time.Now()
 		if in.ClientRequestToken != nil {
 			done, tokenErr := claimToken(tx, tokens, *in.ClientRequestToken, hex.EncodeToString(digest[:]), now)
-			if done || tokenErr != nil {
+			if tokenErr != nil {
 				return tokenErr
+			}
+
+			if done {
+				return chargeTransactionReplay(tx, writes, &puts.used)
 			}
 		}
 
@@ -279,7 +296,9 @@ func (s *Service) transactWriteItems(
 	}
 
 	s.deliver(ctx, puts)
-	return &api.TransactWriteItemsOutput{}, nil
+	return &api.TransactWriteItemsOutput{
+		ConsumedCapacity: puts.used.capacity(in.ReturnConsumedCapacity), ItemCollectionMetrics: puts.collectionMetrics,
+	}, nil
 }
 
 // claimToken purges expired tokens and records token for the request whose
@@ -401,13 +420,57 @@ func transact(tx storage.WriteTx, writes []*transactWrite, out *outbox) error {
 
 	for i, w := range writes {
 		st := stages[i]
-		if (w.delete && !st.found) || (!w.delete && st.next == nil) {
+		if w.delete && !st.found {
+			out.used.chargeWrite(capacityTarget{key: w.req.key}, 0)
+			continue
+		}
+
+		if !w.delete && st.next == nil {
+			bytes, err := itemSize(st.old)
+			if err != nil {
+				return err
+			}
+
+			out.used.charge(w.req.key, nil, bytes, true)
 			continue
 		}
 
 		if err := writeItem(tx, w.req.key, st.t, st.record, st.old, st.next, out); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func chargeTransactionReplay(tx storage.ReadTx, writes []*transactWrite, used *tally) error {
+	for _, w := range writes {
+		t, err := load(tx, w.req.key)
+		if isCode(err, "ResourceNotFoundException") {
+			used.charge(w.req.key, nil, 0, true)
+			continue
+		}
+
+		if err != nil {
+			return err
+		}
+
+		id, err := itemKey(t, w.key, w.put == nil)
+		if err != nil {
+			return err
+		}
+
+		it, _, err := loadItem(tx, itemRecord(w.req.key, id))
+		if err != nil {
+			return err
+		}
+
+		bytes, err := itemSize(it)
+		if err != nil {
+			return err
+		}
+
+		used.charge(w.req.key, nil, bytes, true)
 	}
 
 	return nil

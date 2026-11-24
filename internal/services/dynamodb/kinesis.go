@@ -334,8 +334,16 @@ type kinesisPut struct {
 // its transaction runs, for deliver to send once it commits, and the write
 // capacity the changes consumed.
 type outbox struct {
-	used tally
-	puts []kinesisPut
+	now               func() time.Time
+	collections       map[collectionTarget]item
+	collectionMetrics map[string][]api.ItemCollectionMetrics
+	used              tally
+	puts              []kinesisPut
+	changedAt         int64
+}
+
+func (s *Service) newOutbox(transactional bool) outbox {
+	return outbox{used: tally{transactional: transactional}, now: s.now}
 }
 
 // kinesisRecord is the JSON a Kinesis record holds for a change.

@@ -178,31 +178,77 @@ type AttributeValue struct {
 	SS   *[]string                  `json:"SS,omitempty"`
 }
 
+type ExpectedAttributeValue struct {
+	Value              *AttributeValue  `json:"Value,omitempty"`
+	Exists             *bool            `json:"Exists,omitempty"`
+	ComparisonOperator *string          `json:"ComparisonOperator,omitempty"`
+	AttributeValueList []AttributeValue `json:"AttributeValueList,omitempty"`
+}
+
 type PutItemInput struct {
-	TableName                 *string                   `json:"TableName,omitempty"`
-	Item                      map[string]AttributeValue `json:"Item,omitempty"`
-	ReturnValues              *string                   `json:"ReturnValues,omitempty"`
-	ConditionExpression       *string                   `json:"ConditionExpression,omitempty"`
-	ExpressionAttributeNames  map[string]string         `json:"ExpressionAttributeNames,omitempty"`
-	ExpressionAttributeValues map[string]AttributeValue `json:"ExpressionAttributeValues,omitempty"`
+	TableName                   *string                           `json:"TableName,omitempty"`
+	Item                        map[string]AttributeValue         `json:"Item,omitempty"`
+	ReturnValues                *string                           `json:"ReturnValues,omitempty"`
+	ConditionExpression         *string                           `json:"ConditionExpression,omitempty"`
+	ExpressionAttributeNames    map[string]string                 `json:"ExpressionAttributeNames,omitempty"`
+	ExpressionAttributeValues   map[string]AttributeValue         `json:"ExpressionAttributeValues,omitempty"`
+	Expected                    map[string]ExpectedAttributeValue `json:"Expected,omitempty"`
+	ConditionalOperator         *string                           `json:"ConditionalOperator,omitempty"`
+	ReturnConsumedCapacity      *string                           `json:"ReturnConsumedCapacity,omitempty"`
+	ReturnItemCollectionMetrics *string                           `json:"ReturnItemCollectionMetrics,omitempty"`
+}
+
+type Capacity struct {
+	ReadCapacityUnits  *float64 `json:"ReadCapacityUnits,omitempty"`
+	WriteCapacityUnits *float64 `json:"WriteCapacityUnits,omitempty"`
+	CapacityUnits      *float64 `json:"CapacityUnits,omitempty"`
+}
+
+type ConsumedCapacity struct {
+	TableName              *string             `json:"TableName,omitempty"`
+	CapacityUnits          *float64            `json:"CapacityUnits,omitempty"`
+	ReadCapacityUnits      *float64            `json:"ReadCapacityUnits,omitempty"`
+	WriteCapacityUnits     *float64            `json:"WriteCapacityUnits,omitempty"`
+	Table                  *Capacity           `json:"Table,omitempty"`
+	LocalSecondaryIndexes  map[string]Capacity `json:"LocalSecondaryIndexes,omitempty"`
+	GlobalSecondaryIndexes map[string]Capacity `json:"GlobalSecondaryIndexes,omitempty"`
+}
+
+type ItemCollectionMetrics struct {
+	ItemCollectionKey   map[string]AttributeValue `json:"ItemCollectionKey,omitempty"`
+	SizeEstimateRangeGB []float64                 `json:"SizeEstimateRangeGB,omitempty"`
 }
 
 type PutItemOutput struct {
-	Attributes map[string]AttributeValue `json:"Attributes,omitempty"`
+	Attributes            map[string]AttributeValue `json:"Attributes,omitempty"`
+	ConsumedCapacity      *ConsumedCapacity         `json:"ConsumedCapacity,omitempty"`
+	ItemCollectionMetrics *ItemCollectionMetrics    `json:"ItemCollectionMetrics,omitempty"`
+}
+
+type AttributeValueUpdate struct {
+	Value  *AttributeValue `json:"Value,omitempty"`
+	Action *string         `json:"Action,omitempty"`
 }
 
 type UpdateItemInput struct {
-	TableName                 *string                   `json:"TableName,omitempty"`
-	Key                       map[string]AttributeValue `json:"Key,omitempty"`
-	UpdateExpression          *string                   `json:"UpdateExpression,omitempty"`
-	ConditionExpression       *string                   `json:"ConditionExpression,omitempty"`
-	ExpressionAttributeNames  map[string]string         `json:"ExpressionAttributeNames,omitempty"`
-	ExpressionAttributeValues map[string]AttributeValue `json:"ExpressionAttributeValues,omitempty"`
-	ReturnValues              *string                   `json:"ReturnValues,omitempty"`
+	TableName                   *string                           `json:"TableName,omitempty"`
+	Key                         map[string]AttributeValue         `json:"Key,omitempty"`
+	UpdateExpression            *string                           `json:"UpdateExpression,omitempty"`
+	ConditionExpression         *string                           `json:"ConditionExpression,omitempty"`
+	ExpressionAttributeNames    map[string]string                 `json:"ExpressionAttributeNames,omitempty"`
+	ExpressionAttributeValues   map[string]AttributeValue         `json:"ExpressionAttributeValues,omitempty"`
+	ReturnValues                *string                           `json:"ReturnValues,omitempty"`
+	Expected                    map[string]ExpectedAttributeValue `json:"Expected,omitempty"`
+	AttributeUpdates            map[string]AttributeValueUpdate   `json:"AttributeUpdates,omitempty"`
+	ConditionalOperator         *string                           `json:"ConditionalOperator,omitempty"`
+	ReturnConsumedCapacity      *string                           `json:"ReturnConsumedCapacity,omitempty"`
+	ReturnItemCollectionMetrics *string                           `json:"ReturnItemCollectionMetrics,omitempty"`
 }
 
 type UpdateItemOutput struct {
-	Attributes map[string]AttributeValue `json:"Attributes,omitempty"`
+	Attributes            map[string]AttributeValue `json:"Attributes,omitempty"`
+	ConsumedCapacity      *ConsumedCapacity         `json:"ConsumedCapacity,omitempty"`
+	ItemCollectionMetrics *ItemCollectionMetrics    `json:"ItemCollectionMetrics,omitempty"`
 }
 
 type GetItemInput struct {
@@ -211,23 +257,37 @@ type GetItemInput struct {
 	ConsistentRead           *bool                     `json:"ConsistentRead,omitempty"`
 	ProjectionExpression     *string                   `json:"ProjectionExpression,omitempty"`
 	ExpressionAttributeNames map[string]string         `json:"ExpressionAttributeNames,omitempty"`
+	AttributesToGet          []string                  `json:"AttributesToGet,omitempty"`
+	ReturnConsumedCapacity   *string                   `json:"ReturnConsumedCapacity,omitempty"`
 }
 
 type GetItemOutput struct {
-	Item map[string]AttributeValue `json:"Item,omitempty"`
+	Item             map[string]AttributeValue `json:"Item,omitempty"`
+	ConsumedCapacity *ConsumedCapacity         `json:"ConsumedCapacity,omitempty"`
 }
 
 type DeleteItemInput struct {
-	TableName                 *string                   `json:"TableName,omitempty"`
-	Key                       map[string]AttributeValue `json:"Key,omitempty"`
-	ReturnValues              *string                   `json:"ReturnValues,omitempty"`
-	ConditionExpression       *string                   `json:"ConditionExpression,omitempty"`
-	ExpressionAttributeNames  map[string]string         `json:"ExpressionAttributeNames,omitempty"`
-	ExpressionAttributeValues map[string]AttributeValue `json:"ExpressionAttributeValues,omitempty"`
+	TableName                   *string                           `json:"TableName,omitempty"`
+	Key                         map[string]AttributeValue         `json:"Key,omitempty"`
+	ReturnValues                *string                           `json:"ReturnValues,omitempty"`
+	ConditionExpression         *string                           `json:"ConditionExpression,omitempty"`
+	ExpressionAttributeNames    map[string]string                 `json:"ExpressionAttributeNames,omitempty"`
+	ExpressionAttributeValues   map[string]AttributeValue         `json:"ExpressionAttributeValues,omitempty"`
+	Expected                    map[string]ExpectedAttributeValue `json:"Expected,omitempty"`
+	ConditionalOperator         *string                           `json:"ConditionalOperator,omitempty"`
+	ReturnConsumedCapacity      *string                           `json:"ReturnConsumedCapacity,omitempty"`
+	ReturnItemCollectionMetrics *string                           `json:"ReturnItemCollectionMetrics,omitempty"`
 }
 
 type DeleteItemOutput struct {
-	Attributes map[string]AttributeValue `json:"Attributes,omitempty"`
+	Attributes            map[string]AttributeValue `json:"Attributes,omitempty"`
+	ConsumedCapacity      *ConsumedCapacity         `json:"ConsumedCapacity,omitempty"`
+	ItemCollectionMetrics *ItemCollectionMetrics    `json:"ItemCollectionMetrics,omitempty"`
+}
+
+type Condition struct {
+	AttributeValueList []AttributeValue `json:"AttributeValueList,omitempty"`
+	ComparisonOperator *string          `json:"ComparisonOperator,omitempty"`
 }
 
 type ScanInput struct {
@@ -243,6 +303,10 @@ type ScanInput struct {
 	IndexName                 *string                   `json:"IndexName,omitempty"`
 	Segment                   *int64                    `json:"Segment,omitempty"`
 	TotalSegments             *int64                    `json:"TotalSegments,omitempty"`
+	AttributesToGet           []string                  `json:"AttributesToGet,omitempty"`
+	ScanFilter                map[string]Condition      `json:"ScanFilter,omitempty"`
+	ConditionalOperator       *string                   `json:"ConditionalOperator,omitempty"`
+	ReturnConsumedCapacity    *string                   `json:"ReturnConsumedCapacity,omitempty"`
 }
 
 type ScanOutput struct {
@@ -250,6 +314,7 @@ type ScanOutput struct {
 	Count            *int64                       `json:"Count,omitempty"`
 	ScannedCount     *int64                       `json:"ScannedCount,omitempty"`
 	LastEvaluatedKey map[string]AttributeValue    `json:"LastEvaluatedKey,omitempty"`
+	ConsumedCapacity *ConsumedCapacity            `json:"ConsumedCapacity,omitempty"`
 }
 
 type QueryInput struct {
@@ -265,6 +330,11 @@ type QueryInput struct {
 	ConsistentRead            *bool                     `json:"ConsistentRead,omitempty"`
 	Select                    *string                   `json:"Select,omitempty"`
 	IndexName                 *string                   `json:"IndexName,omitempty"`
+	AttributesToGet           []string                  `json:"AttributesToGet,omitempty"`
+	KeyConditions             map[string]Condition      `json:"KeyConditions,omitempty"`
+	QueryFilter               map[string]Condition      `json:"QueryFilter,omitempty"`
+	ConditionalOperator       *string                   `json:"ConditionalOperator,omitempty"`
+	ReturnConsumedCapacity    *string                   `json:"ReturnConsumedCapacity,omitempty"`
 }
 
 type QueryOutput struct {
@@ -272,6 +342,7 @@ type QueryOutput struct {
 	Count            *int64                       `json:"Count,omitempty"`
 	ScannedCount     *int64                       `json:"ScannedCount,omitempty"`
 	LastEvaluatedKey map[string]AttributeValue    `json:"LastEvaluatedKey,omitempty"`
+	ConsumedCapacity *ConsumedCapacity            `json:"ConsumedCapacity,omitempty"`
 }
 
 type DescribeContinuousBackupsInput struct {
@@ -336,15 +407,18 @@ type KeysAndAttributes struct {
 	ConsistentRead           *bool                       `json:"ConsistentRead,omitempty"`
 	ProjectionExpression     *string                     `json:"ProjectionExpression,omitempty"`
 	ExpressionAttributeNames map[string]string           `json:"ExpressionAttributeNames,omitempty"`
+	AttributesToGet          []string                    `json:"AttributesToGet,omitempty"`
 }
 
 type BatchGetItemInput struct {
-	RequestItems map[string]KeysAndAttributes `json:"RequestItems,omitempty"`
+	RequestItems           map[string]KeysAndAttributes `json:"RequestItems,omitempty"`
+	ReturnConsumedCapacity *string                      `json:"ReturnConsumedCapacity,omitempty"`
 }
 
 type BatchGetItemOutput struct {
-	Responses       map[string][]map[string]AttributeValue `json:"Responses,omitempty"`
-	UnprocessedKeys map[string]KeysAndAttributes           `json:"UnprocessedKeys,omitempty"`
+	Responses        map[string][]map[string]AttributeValue `json:"Responses,omitempty"`
+	UnprocessedKeys  map[string]KeysAndAttributes           `json:"UnprocessedKeys,omitempty"`
+	ConsumedCapacity []ConsumedCapacity                     `json:"ConsumedCapacity,omitempty"`
 }
 
 type PutRequest struct {
@@ -361,11 +435,15 @@ type WriteRequest struct {
 }
 
 type BatchWriteItemInput struct {
-	RequestItems map[string][]WriteRequest `json:"RequestItems,omitempty"`
+	RequestItems                map[string][]WriteRequest `json:"RequestItems,omitempty"`
+	ReturnConsumedCapacity      *string                   `json:"ReturnConsumedCapacity,omitempty"`
+	ReturnItemCollectionMetrics *string                   `json:"ReturnItemCollectionMetrics,omitempty"`
 }
 
 type BatchWriteItemOutput struct {
-	UnprocessedItems map[string][]WriteRequest `json:"UnprocessedItems,omitempty"`
+	UnprocessedItems      map[string][]WriteRequest          `json:"UnprocessedItems,omitempty"`
+	ConsumedCapacity      []ConsumedCapacity                 `json:"ConsumedCapacity,omitempty"`
+	ItemCollectionMetrics map[string][]ItemCollectionMetrics `json:"ItemCollectionMetrics,omitempty"`
 }
 
 type Get struct {
@@ -380,7 +458,8 @@ type TransactGetItem struct {
 }
 
 type TransactGetItemsInput struct {
-	TransactItems []TransactGetItem `json:"TransactItems,omitempty"`
+	TransactItems          []TransactGetItem `json:"TransactItems,omitempty"`
+	ReturnConsumedCapacity *string           `json:"ReturnConsumedCapacity,omitempty"`
 }
 
 type ItemResponse struct {
@@ -388,7 +467,8 @@ type ItemResponse struct {
 }
 
 type TransactGetItemsOutput struct {
-	Responses []ItemResponse `json:"Responses,omitempty"`
+	Responses        []ItemResponse     `json:"Responses,omitempty"`
+	ConsumedCapacity []ConsumedCapacity `json:"ConsumedCapacity,omitempty"`
 }
 
 type ConditionCheck struct {
@@ -436,11 +516,15 @@ type TransactWriteItem struct {
 }
 
 type TransactWriteItemsInput struct {
-	TransactItems      []TransactWriteItem `json:"TransactItems,omitempty"`
-	ClientRequestToken *string             `json:"ClientRequestToken,omitempty"`
+	TransactItems               []TransactWriteItem `json:"TransactItems,omitempty"`
+	ClientRequestToken          *string             `json:"ClientRequestToken,omitempty"`
+	ReturnConsumedCapacity      *string             `json:"ReturnConsumedCapacity,omitempty"`
+	ReturnItemCollectionMetrics *string             `json:"ReturnItemCollectionMetrics,omitempty"`
 }
 
 type TransactWriteItemsOutput struct {
+	ConsumedCapacity      []ConsumedCapacity                 `json:"ConsumedCapacity,omitempty"`
+	ItemCollectionMetrics map[string][]ItemCollectionMetrics `json:"ItemCollectionMetrics,omitempty"`
 }
 
 type UpdateGlobalSecondaryIndexAction struct {
@@ -689,17 +773,19 @@ type ListExportsOutput struct {
 }
 
 type ExecuteStatementInput struct {
-	Statement      *string          `json:"Statement,omitempty"`
-	Parameters     []AttributeValue `json:"Parameters,omitempty"`
-	ConsistentRead *bool            `json:"ConsistentRead,omitempty"`
-	NextToken      *string          `json:"NextToken,omitempty"`
-	Limit          *int64           `json:"Limit,omitempty"`
+	Statement              *string          `json:"Statement,omitempty"`
+	Parameters             []AttributeValue `json:"Parameters,omitempty"`
+	ConsistentRead         *bool            `json:"ConsistentRead,omitempty"`
+	NextToken              *string          `json:"NextToken,omitempty"`
+	Limit                  *int64           `json:"Limit,omitempty"`
+	ReturnConsumedCapacity *string          `json:"ReturnConsumedCapacity,omitempty"`
 }
 
 type ExecuteStatementOutput struct {
 	Items            []map[string]AttributeValue `json:"Items,omitempty"`
 	NextToken        *string                     `json:"NextToken,omitempty"`
 	LastEvaluatedKey map[string]AttributeValue   `json:"LastEvaluatedKey,omitempty"`
+	ConsumedCapacity *ConsumedCapacity           `json:"ConsumedCapacity,omitempty"`
 }
 
 type BatchStatementRequest struct {
@@ -709,7 +795,8 @@ type BatchStatementRequest struct {
 }
 
 type BatchExecuteStatementInput struct {
-	Statements []BatchStatementRequest `json:"Statements,omitempty"`
+	Statements             []BatchStatementRequest `json:"Statements,omitempty"`
+	ReturnConsumedCapacity *string                 `json:"ReturnConsumedCapacity,omitempty"`
 }
 
 type BatchStatementError struct {
@@ -725,7 +812,8 @@ type BatchStatementResponse struct {
 }
 
 type BatchExecuteStatementOutput struct {
-	Responses []BatchStatementResponse `json:"Responses,omitempty"`
+	Responses        []BatchStatementResponse `json:"Responses,omitempty"`
+	ConsumedCapacity []ConsumedCapacity       `json:"ConsumedCapacity,omitempty"`
 }
 
 type ParameterizedStatement struct {
@@ -735,12 +823,14 @@ type ParameterizedStatement struct {
 }
 
 type ExecuteTransactionInput struct {
-	TransactStatements []ParameterizedStatement `json:"TransactStatements,omitempty"`
-	ClientRequestToken *string                  `json:"ClientRequestToken,omitempty"`
+	TransactStatements     []ParameterizedStatement `json:"TransactStatements,omitempty"`
+	ClientRequestToken     *string                  `json:"ClientRequestToken,omitempty"`
+	ReturnConsumedCapacity *string                  `json:"ReturnConsumedCapacity,omitempty"`
 }
 
 type ExecuteTransactionOutput struct {
-	Responses []ItemResponse `json:"Responses,omitempty"`
+	Responses        []ItemResponse     `json:"Responses,omitempty"`
+	ConsumedCapacity []ConsumedCapacity `json:"ConsumedCapacity,omitempty"`
 }
 
 type EnableKinesisStreamingConfiguration struct {
@@ -822,6 +912,161 @@ type DeleteResourcePolicyOutput struct {
 	RevisionId *string `json:"RevisionId,omitempty"`
 }
 
+type S3BucketSource struct {
+	S3BucketOwner *string `json:"S3BucketOwner,omitempty"`
+	S3Bucket      *string `json:"S3Bucket,omitempty"`
+	S3KeyPrefix   *string `json:"S3KeyPrefix,omitempty"`
+}
+
+type CsvOptions struct {
+	Delimiter  *string  `json:"Delimiter,omitempty"`
+	HeaderList []string `json:"HeaderList,omitempty"`
+}
+
+type InputFormatOptions struct {
+	Csv *CsvOptions `json:"Csv,omitempty"`
+}
+
+type TableCreationParameters struct {
+	TableName              *string                `json:"TableName,omitempty"`
+	AttributeDefinitions   []AttributeDefinition  `json:"AttributeDefinitions,omitempty"`
+	KeySchema              []KeySchemaElement     `json:"KeySchema,omitempty"`
+	BillingMode            *string                `json:"BillingMode,omitempty"`
+	ProvisionedThroughput  *ProvisionedThroughput `json:"ProvisionedThroughput,omitempty"`
+	GlobalSecondaryIndexes []GlobalSecondaryIndex `json:"GlobalSecondaryIndexes,omitempty"`
+}
+
+type ImportTableInput struct {
+	ClientToken             *string                  `json:"ClientToken,omitempty"`
+	S3BucketSource          *S3BucketSource          `json:"S3BucketSource,omitempty"`
+	InputFormat             *string                  `json:"InputFormat,omitempty"`
+	InputFormatOptions      *InputFormatOptions      `json:"InputFormatOptions,omitempty"`
+	InputCompressionType    *string                  `json:"InputCompressionType,omitempty"`
+	TableCreationParameters *TableCreationParameters `json:"TableCreationParameters,omitempty"`
+}
+
+type ImportTableDescription struct {
+	ImportArn               *string                  `json:"ImportArn,omitempty"`
+	ImportStatus            *string                  `json:"ImportStatus,omitempty"`
+	TableArn                *string                  `json:"TableArn,omitempty"`
+	TableId                 *string                  `json:"TableId,omitempty"`
+	ClientToken             *string                  `json:"ClientToken,omitempty"`
+	S3BucketSource          *S3BucketSource          `json:"S3BucketSource,omitempty"`
+	ErrorCount              *int64                   `json:"ErrorCount,omitempty"`
+	InputFormat             *string                  `json:"InputFormat,omitempty"`
+	InputFormatOptions      *InputFormatOptions      `json:"InputFormatOptions,omitempty"`
+	InputCompressionType    *string                  `json:"InputCompressionType,omitempty"`
+	TableCreationParameters *TableCreationParameters `json:"TableCreationParameters,omitempty"`
+	StartTime               *float64                 `json:"StartTime,omitempty"`
+	EndTime                 *float64                 `json:"EndTime,omitempty"`
+	ProcessedSizeBytes      *int64                   `json:"ProcessedSizeBytes,omitempty"`
+	ProcessedItemCount      *int64                   `json:"ProcessedItemCount,omitempty"`
+	ImportedItemCount       *int64                   `json:"ImportedItemCount,omitempty"`
+	FailureCode             *string                  `json:"FailureCode,omitempty"`
+	FailureMessage          *string                  `json:"FailureMessage,omitempty"`
+}
+
+type ImportTableOutput struct {
+	ImportTableDescription *ImportTableDescription `json:"ImportTableDescription,omitempty"`
+}
+
+type DescribeImportInput struct {
+	ImportArn *string `json:"ImportArn,omitempty"`
+}
+
+type DescribeImportOutput struct {
+	ImportTableDescription *ImportTableDescription `json:"ImportTableDescription,omitempty"`
+}
+
+type ListImportsInput struct {
+	TableArn  *string `json:"TableArn,omitempty"`
+	PageSize  *int64  `json:"PageSize,omitempty"`
+	NextToken *string `json:"NextToken,omitempty"`
+}
+
+type ImportSummary struct {
+	ImportArn      *string         `json:"ImportArn,omitempty"`
+	ImportStatus   *string         `json:"ImportStatus,omitempty"`
+	TableArn       *string         `json:"TableArn,omitempty"`
+	S3BucketSource *S3BucketSource `json:"S3BucketSource,omitempty"`
+	InputFormat    *string         `json:"InputFormat,omitempty"`
+	StartTime      *float64        `json:"StartTime,omitempty"`
+	EndTime        *float64        `json:"EndTime,omitempty"`
+}
+
+type ListImportsOutput struct {
+	ImportSummaryList []ImportSummary `json:"ImportSummaryList,omitempty"`
+	NextToken         *string         `json:"NextToken,omitempty"`
+}
+
+type DescribeLimitsInput struct {
+}
+
+type DescribeLimitsOutput struct {
+	AccountMaxReadCapacityUnits  *int64 `json:"AccountMaxReadCapacityUnits,omitempty"`
+	AccountMaxWriteCapacityUnits *int64 `json:"AccountMaxWriteCapacityUnits,omitempty"`
+	TableMaxReadCapacityUnits    *int64 `json:"TableMaxReadCapacityUnits,omitempty"`
+	TableMaxWriteCapacityUnits   *int64 `json:"TableMaxWriteCapacityUnits,omitempty"`
+}
+
+type DescribeEndpointsRequest struct {
+}
+
+type Endpoint struct {
+	Address              *string `json:"Address,omitempty"`
+	CachePeriodInMinutes *int64  `json:"CachePeriodInMinutes,omitempty"`
+}
+
+type DescribeEndpointsResponse struct {
+	Endpoints []Endpoint `json:"Endpoints,omitempty"`
+}
+
+type DescribeContributorInsightsInput struct {
+	TableName *string `json:"TableName,omitempty"`
+	IndexName *string `json:"IndexName,omitempty"`
+}
+
+type DescribeContributorInsightsOutput struct {
+	TableName                   *string  `json:"TableName,omitempty"`
+	IndexName                   *string  `json:"IndexName,omitempty"`
+	ContributorInsightsRuleList []string `json:"ContributorInsightsRuleList,omitempty"`
+	ContributorInsightsStatus   *string  `json:"ContributorInsightsStatus,omitempty"`
+	LastUpdateDateTime          *float64 `json:"LastUpdateDateTime,omitempty"`
+	ContributorInsightsMode     *string  `json:"ContributorInsightsMode,omitempty"`
+}
+
+type UpdateContributorInsightsInput struct {
+	TableName                 *string `json:"TableName,omitempty"`
+	IndexName                 *string `json:"IndexName,omitempty"`
+	ContributorInsightsAction *string `json:"ContributorInsightsAction,omitempty"`
+	ContributorInsightsMode   *string `json:"ContributorInsightsMode,omitempty"`
+}
+
+type UpdateContributorInsightsOutput struct {
+	TableName                 *string `json:"TableName,omitempty"`
+	IndexName                 *string `json:"IndexName,omitempty"`
+	ContributorInsightsStatus *string `json:"ContributorInsightsStatus,omitempty"`
+	ContributorInsightsMode   *string `json:"ContributorInsightsMode,omitempty"`
+}
+
+type ListContributorInsightsInput struct {
+	TableName  *string `json:"TableName,omitempty"`
+	NextToken  *string `json:"NextToken,omitempty"`
+	MaxResults *int64  `json:"MaxResults,omitempty"`
+}
+
+type ContributorInsightsSummary struct {
+	TableName                 *string `json:"TableName,omitempty"`
+	IndexName                 *string `json:"IndexName,omitempty"`
+	ContributorInsightsStatus *string `json:"ContributorInsightsStatus,omitempty"`
+	ContributorInsightsMode   *string `json:"ContributorInsightsMode,omitempty"`
+}
+
+type ListContributorInsightsOutput struct {
+	ContributorInsightsSummaries []ContributorInsightsSummary `json:"ContributorInsightsSummaries,omitempty"`
+	NextToken                    *string                      `json:"NextToken,omitempty"`
+}
+
 type API interface {
 	CreateTable(context.Context, *CreateTableInput) (*CreateTableOutput, error)
 	DeleteTable(context.Context, *DeleteTableInput) (*DeleteTableOutput, error)
@@ -864,10 +1109,18 @@ type API interface {
 	PutResourcePolicy(context.Context, *PutResourcePolicyInput) (*PutResourcePolicyOutput, error)
 	GetResourcePolicy(context.Context, *GetResourcePolicyInput) (*GetResourcePolicyOutput, error)
 	DeleteResourcePolicy(context.Context, *DeleteResourcePolicyInput) (*DeleteResourcePolicyOutput, error)
+	ImportTable(context.Context, *ImportTableInput) (*ImportTableOutput, error)
+	DescribeImport(context.Context, *DescribeImportInput) (*DescribeImportOutput, error)
+	ListImports(context.Context, *ListImportsInput) (*ListImportsOutput, error)
+	DescribeLimits(context.Context, *DescribeLimitsInput) (*DescribeLimitsOutput, error)
+	DescribeEndpoints(context.Context, *DescribeEndpointsRequest) (*DescribeEndpointsResponse, error)
+	DescribeContributorInsights(context.Context, *DescribeContributorInsightsInput) (*DescribeContributorInsightsOutput, error)
+	UpdateContributorInsights(context.Context, *UpdateContributorInsightsInput) (*UpdateContributorInsightsOutput, error)
+	ListContributorInsights(context.Context, *ListContributorInsightsInput) (*ListContributorInsightsOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "dynamodb", SigningName: "dynamodb", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "dynamodb", TargetPrefix: "DynamoDB_20120810", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_0"}, Errors: map[string]catalog.ErrorBinding{"BackupInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "BackupNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConditionalCheckFailedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ContinuousBackupsUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "DuplicateItemException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExportConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExportNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "IdempotentParameterMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "InternalServerError": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEndpointException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 421}, "InvalidExportTimeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidRestoreTimeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ItemCollectionSizeLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PointInTimeRecoveryUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PolicyNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ProvisionedThroughputExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ReplicatedWriteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RequestLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionCanceledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "TransactionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionInProgressException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "dynamodb", SigningName: "dynamodb", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "dynamodb", TargetPrefix: "DynamoDB_20120810", QueryCompatible: false, XMLNamespace: "", Protocols: []string{"awsJson1_0"}, Errors: map[string]catalog.ErrorBinding{"BackupInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "BackupNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ConditionalCheckFailedException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ContinuousBackupsUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "DuplicateItemException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExportConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ExportNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "IdempotentParameterMismatchException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "ImportConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ImportNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InternalServerError": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 500}, "InvalidEndpointException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 421}, "InvalidExportTimeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "InvalidRestoreTimeException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ItemCollectionSizeLimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PointInTimeRecoveryUnavailableException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "PolicyNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ProvisionedThroughputExceededException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ReplicatedWriteConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "RequestLimitExceeded": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableAlreadyExistsException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableInUseException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TableNotFoundException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "ThrottlingException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionCanceledException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}, "TransactionConflictException": catalog.ErrorBinding{QueryCode: "", MessageMember: "message", StatusCode: 400}, "TransactionInProgressException": catalog.ErrorBinding{QueryCode: "", MessageMember: "Message", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateTable": {Name: "CreateTable", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:CreateTable", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.CreateTable", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &CreateTableInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateTable(ctx, input.(*CreateTableInput))
 		}},
@@ -982,6 +1235,30 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"DeleteResourcePolicy": {Name: "DeleteResourcePolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:DeleteResourcePolicy", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.DeleteResourcePolicy", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DeleteResourcePolicyInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.DeleteResourcePolicy(ctx, input.(*DeleteResourcePolicyInput))
+		}},
+		"ImportTable": {Name: "ImportTable", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:ImportTable", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.ImportTable", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ImportTableInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ImportTable(ctx, input.(*ImportTableInput))
+		}},
+		"DescribeImport": {Name: "DescribeImport", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:DescribeImport", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.DescribeImport", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeImportInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeImport(ctx, input.(*DescribeImportInput))
+		}},
+		"ListImports": {Name: "ListImports", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:ListImports", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.ListImports", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListImportsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListImports(ctx, input.(*ListImportsInput))
+		}},
+		"DescribeLimits": {Name: "DescribeLimits", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:DescribeLimits", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.DescribeLimits", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeLimitsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeLimits(ctx, input.(*DescribeLimitsInput))
+		}},
+		"DescribeEndpoints": {Name: "DescribeEndpoints", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:DescribeEndpoints", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.DescribeEndpoints", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeEndpointsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeEndpoints(ctx, input.(*DescribeEndpointsRequest))
+		}},
+		"DescribeContributorInsights": {Name: "DescribeContributorInsights", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:DescribeContributorInsights", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.DescribeContributorInsights", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &DescribeContributorInsightsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DescribeContributorInsights(ctx, input.(*DescribeContributorInsightsInput))
+		}},
+		"UpdateContributorInsights": {Name: "UpdateContributorInsights", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:UpdateContributorInsights", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.UpdateContributorInsights", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &UpdateContributorInsightsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateContributorInsights(ctx, input.(*UpdateContributorInsightsInput))
+		}},
+		"ListContributorInsights": {Name: "ListContributorInsights", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "dynamodb:ListContributorInsights", Bindings: map[string]catalog.Binding{"awsJson1_0": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DynamoDB_20120810.ListContributorInsights", Version: "", ContentType: "application/x-amz-json-1.0", StatusCode: 200}}, NewInput: func() any { return &ListContributorInsightsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListContributorInsights(ctx, input.(*ListContributorInsightsInput))
 		}},
 	}}
 }

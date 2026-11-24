@@ -38,7 +38,11 @@ func (s *Service) DescribeContinuousBackups(
 	in *api.DescribeContinuousBackupsInput,
 ) (*api.DescribeContinuousBackupsOutput, error) {
 	out := &api.DescribeContinuousBackupsOutput{}
-	err := s.view(ctx, in.TableName, func(t *table) { out.ContinuousBackupsDescription = continuousBackups(t) })
+	err := s.view(
+		ctx,
+		in.TableName,
+		func(t *table) { out.ContinuousBackupsDescription = continuousBackups(t, s.now()) },
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -85,8 +89,24 @@ func (s *Service) UpdateTable(ctx context.Context, in *api.UpdateTableInput) (*a
 			}
 		}
 
+		oldMode := common.Value(common.Value(t.Description.BillingModeSummary).BillingMode)
+		oldIndexes := t.globalIndexNames()
 		if capacityErr := updateCapacity(t, in); capacityErr != nil {
 			return capacityErr
+		}
+
+		if common.Value(common.Value(t.Description.BillingModeSummary).BillingMode) != oldMode {
+			for _, bucket := range tx.Keys(capacityPrefix(key)) {
+				tx.Delete(bucket)
+			}
+		}
+
+		indexes := t.globalIndexNames()
+		for _, name := range oldIndexes {
+			if !slices.Contains(indexes, name) {
+				tx.Delete(capacityPrefix(key) + name)
+				delete(t.Insights, name)
+			}
 		}
 
 		out.TableDescription = &t.Description

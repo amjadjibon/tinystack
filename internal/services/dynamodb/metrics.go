@@ -2,7 +2,7 @@ package dynamodb
 
 import (
 	"context"
-	"math"
+	"slices"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -22,7 +22,8 @@ const (
 	metricUserErrors = "UserErrors"
 	metricTTLDeleted = "TimeToLiveDeletedItemCount"
 
-	dimensionTable = "TableName"
+	dimensionTable       = "TableName"
+	dimensionGlobalIndex = "GlobalSecondaryIndexName"
 
 	// readUnitBytes and writeUnitBytes are the item sizes one read and one write capacity unit cover.
 	readUnitBytes  = 4096
@@ -32,45 +33,6 @@ const (
 // UseMetrics has the service report its AWS/DynamoDB metrics to sink. Call it before serving requests.
 func (s *Service) UseMetrics(sink awsmetrics.Sink) { s.metrics.Use(sink) }
 
-// tally is the capacity a request consumed, by table name. Eventually consistent reads cost half a unit per 4 KB;
-// transactional requests cost double.
-type tally struct {
-	read          map[string]float64
-	write         map[string]float64
-	transactional bool
-}
-
-// charge adds the units of bytes read from table; a read costs at least one unit.
-func (t *tally) charge(table string, bytes int64, consistent bool) {
-	units := math.Max(1, math.Ceil(float64(bytes)/readUnitBytes))
-	switch {
-	case t.transactional:
-		units *= 2
-	case !consistent:
-		units /= 2
-	}
-
-	if t.read == nil {
-		t.read = map[string]float64{}
-	}
-
-	t.read[table] += units
-}
-
-// chargeWrite adds the units of an item write of bytes to table.
-func (t *tally) chargeWrite(table string, bytes int64) {
-	units := math.Max(1, math.Ceil(float64(bytes)/writeUnitBytes))
-	if t.transactional {
-		units *= 2
-	}
-
-	if t.write == nil {
-		t.write = map[string]float64{}
-	}
-
-	t.write[table] += units
-}
-
 // observed runs a data-plane operation and reports it.
 func observed[T any](ctx context.Context, s *Service, operation string, used *tally, run func() (T, error)) (T, error) {
 	started := time.Now()
@@ -79,17 +41,30 @@ func observed[T any](ctx context.Context, s *Service, operation string, used *ta
 	return out, err
 }
 
-// observe reports a finished data-plane operation after its transaction has committed. A request that failed
-// with a 4xx error is a user error; a successful one reports its latency, that nothing was throttled, and the
-// capacity it consumed.
+// observe publishes the completed request's usage, latency or failure after it finishes.
 func (s *Service) observe(ctx context.Context, operation string, started time.Time, err error, used *tally) {
 	m, ok := request.FromContext(ctx)
 	if !ok {
 		return
 	}
 
+	if used.throttled != nil {
+		_, name := tableScope(used.throttled.key)
+		dims := []awsmetrics.Dimension{{Name: dimensionTable, Value: name}, {Name: "Operation", Value: operation}}
+		data := []awsmetrics.Datum{{Name: metricThrottled, Unit: awsmetrics.Count, Dimensions: dims, Value: 1}}
+		if used.throttled.global {
+			indexDims := append(slices.Clone(dims),
+				awsmetrics.Dimension{Name: dimensionGlobalIndex, Value: used.throttled.index})
+			data = append(data, awsmetrics.Datum{
+				Name: metricThrottled, Unit: awsmetrics.Count, Dimensions: indexDims, Value: 1,
+			})
+		}
+
+		s.metrics.Publish(m.Scope, metricNamespace, data...)
+	}
+
 	if err != nil {
-		if awserror.From(err).StatusCode < 500 {
+		if used.throttled == nil && awserror.From(err).StatusCode < 500 {
 			s.metrics.Publish(m.Scope, metricNamespace,
 				awsmetrics.Datum{Name: metricUserErrors, Unit: awsmetrics.Count, Value: 1})
 		}
@@ -100,27 +75,43 @@ func (s *Service) observe(ctx context.Context, operation string, started time.Ti
 	latency := float64(time.Since(started).Microseconds()) / 1000
 	tables := map[string]bool{}
 	var data []awsmetrics.Datum
-	for table, units := range used.read {
-		tables[table] = true
-		data = append(data, awsmetrics.Datum{
-			Name: metricReadUnits, Unit: awsmetrics.Count, Value: units,
-			Dimensions: []awsmetrics.Dimension{{Name: dimensionTable, Value: table}},
-		})
+	totals := map[capacityTarget]units{}
+	for target, spent := range used.spent {
+		if !target.global {
+			target.index = ""
+		}
+
+		total := totals[target]
+		total.read += spent.read
+		total.write += spent.write
+		totals[target] = total
 	}
 
-	for table, units := range used.write {
+	for target, total := range totals {
+		_, table := tableScope(target.key)
 		tables[table] = true
-		data = append(data, awsmetrics.Datum{
-			Name: metricWriteUnits, Unit: awsmetrics.Count, Value: units,
-			Dimensions: []awsmetrics.Dimension{{Name: dimensionTable, Value: table}},
-		})
+		dims := []awsmetrics.Dimension{{Name: dimensionTable, Value: table}}
+		if target.global {
+			dims = append(dims, awsmetrics.Dimension{Name: dimensionGlobalIndex, Value: target.index})
+		}
+
+		if total.read > 0 {
+			data = append(data, awsmetrics.Datum{
+				Name: metricReadUnits, Unit: awsmetrics.Count, Value: total.read, Dimensions: dims,
+			})
+		}
+
+		if total.write > 0 {
+			data = append(data, awsmetrics.Datum{
+				Name: metricWriteUnits, Unit: awsmetrics.Count, Value: total.write, Dimensions: dims,
+			})
+		}
 	}
 
 	for table := range tables {
 		dims := []awsmetrics.Dimension{{Name: dimensionTable, Value: table}, {Name: "Operation", Value: operation}}
 		data = append(data,
 			awsmetrics.Datum{Name: metricLatency, Unit: awsmetrics.Milliseconds, Dimensions: dims, Value: latency},
-			// TinyStack never throttles.
 			awsmetrics.Datum{Name: metricThrottled, Unit: awsmetrics.Count, Dimensions: dims},
 		)
 	}

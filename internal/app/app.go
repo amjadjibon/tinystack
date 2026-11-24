@@ -374,7 +374,8 @@ func build(
 	deliveries := delivery.New()
 	a.deliveries = deliveries
 	tables := dynamodb.New(store)
-	// Stop ends the TTL sweeper, which writes to the store.
+	tables.UseProvisionedCapacity(cfg.DynamoDB.EnforceProvisionedThroughput)
+	// Stop ends the TTL and PITR sweepers, which write to the store, if startup fails before S3 is built.
 	a.onStop(tables.Stop)
 	keys := kms.New(store)
 	queues := sqs.New(store, keys)
@@ -430,6 +431,8 @@ func build(
 
 	buckets := s3.New(store, queues, topics, functions, rules, deliveries, blobs)
 	a.onStop(buckets.Stop)
+	// Stop hooks run newest first, so DynamoDB imports, which read S3, finish before S3 closes. Stop is idempotent.
+	a.onStop(tables.Stop)
 	a.onReset(buckets.Reset)
 	if resumeErr := buckets.Resume(ctx); resumeErr != nil {
 		return nil, resumeErr
@@ -935,6 +938,7 @@ func build(
 	logGroups.UseCaller(caller)
 	// Table exports write to S3.
 	tables.UseCaller(caller)
+	tables.UseS3(buckets)
 	// Asynchronous invocations send results to their destinations.
 	functions.UseCaller(caller)
 	// GraphQL data sources reach DynamoDB and EventBridge.

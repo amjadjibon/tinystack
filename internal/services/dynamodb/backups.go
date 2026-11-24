@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"iter"
+	"maps"
 	"regexp"
 	"strings"
 	"time"
@@ -160,7 +162,7 @@ func (s *Service) CreateBackup(ctx context.Context, in *api.CreateBackupInput) (
 			tx.Put(items+record[len(from):], data)
 		}
 
-		return write(tx, backupPrefix(scope)+name+"/"+id, &b)
+		return storage.Write(tx, backupPrefix(scope)+name+"/"+id, &b)
 	})
 	if err != nil {
 		return nil, err
@@ -358,18 +360,16 @@ type restoreOptions struct {
 }
 
 // restore creates the table stored under key from src, a table record, and
-// copies items, the storage keys of src's items, which hold item IDs after
-// from. Like DynamoDB, the new table has no stream, TTL, tags, or
-// point-in-time recovery.
+// copies its items by ID. Like DynamoDB, the new table has no stream, TTL,
+// tags, or point-in-time recovery.
 func restore(
 	tx storage.WriteTx,
 	key string,
 	src *table,
-	items []string,
-	from string,
+	items iter.Seq2[string, []byte],
 	o *restoreOptions,
 ) (*table, error) {
-	if _, exists := tx.Get(key); exists {
+	if tableNameTaken(tx, key) {
 		_, name := tableScope(key)
 		return nil, awserror.New("TableAlreadyExistsException", "Table already exists: "+name)
 	}
@@ -406,9 +406,8 @@ func restore(
 	}
 
 	to := itemRecord(key, "")
-	for _, record := range items {
-		data, _ := tx.Get(record)
-		tx.Put(to+record[len(from):], data)
+	for id, data := range items {
+		tx.Put(to+id, data)
 	}
 
 	return t, save(tx, key, t)
@@ -482,9 +481,17 @@ func (s *Service) RestoreTableFromBackup(
 			return loadErr
 		}
 
-		items := backupItemPrefix(scope, owner, id)
+		prefix := backupItemPrefix(scope, owner, id)
+		items := func(yield func(string, []byte) bool) {
+			for _, record := range tx.Keys(prefix) {
+				data, _ := tx.Get(record)
+				if !yield(record[len(prefix):], data) {
+					return
+				}
+			}
+		}
 		var restoreErr error
-		t, restoreErr = restore(tx, key, &b.Source, tx.Keys(items), items, &restoreOptions{
+		t, restoreErr = restore(tx, key, &b.Source, items, &restoreOptions{
 			billing: in.BillingModeOverride, throughput: in.ProvisionedThroughputOverride,
 			summary: api.RestoreSummary{
 				SourceBackupArn: in.BackupArn, SourceTableArn: b.Source.Description.TableArn,
@@ -500,9 +507,7 @@ func (s *Service) RestoreTableFromBackup(
 	return &api.RestoreTableFromBackupOutput{TableDescription: &t.Description}, nil
 }
 
-// RestoreTableToPointInTime restores a table with point-in-time recovery as
-// it is now: TinyStack keeps no history, so it restores only the latest
-// restorable time.
+// RestoreTableToPointInTime restores the latest or a historical table snapshot.
 func (s *Service) RestoreTableToPointInTime(
 	ctx context.Context,
 	in *api.RestoreTableToPointInTimeInput,
@@ -515,9 +520,8 @@ func (s *Service) RestoreTableToPointInTime(
 		source = in.SourceTableArn
 	}
 
-	if in.RestoreDateTime != nil || !common.Value(in.UseLatestRestorableTime) {
-		return nil, awserror.New("InvalidRestoreTimeException",
-			"TinyStack restores only the latest restorable time; set UseLatestRestorableTime")
+	if (in.RestoreDateTime != nil) == common.Value(in.UseLatestRestorableTime) {
+		return nil, awserror.Validation("Specify either RestoreDateTime or UseLatestRestorableTime")
 	}
 
 	sourceKey, err := tableNamed(ctx, source)
@@ -537,20 +541,24 @@ func (s *Service) RestoreTableToPointInTime(
 			return loadErr
 		}
 
-		if src.PITR == 0 {
-			return awserror.New("PointInTimeRecoveryUnavailableException",
-				"Point in time recovery is not enabled for table '"+common.Value(src.Description.TableName)+"'")
+		at, timeErr := recoveryTime(src, in.RestoreDateTime, s.now(), "InvalidRestoreTimeException")
+		if timeErr != nil {
+			return timeErr
 		}
 
+		snap, snapshotErr := snapshot(tx, sourceKey, src, at)
+		if snapshotErr != nil {
+			return snapshotErr
+		}
+
+		src.Description.ItemCount, src.Description.TableSizeBytes = &snap.count, &snap.size
 		var restoreErr error
-		t, restoreErr = restore(tx, key, src, itemRecords(tx, sourceKey, ""), itemRecord(sourceKey, ""),
-			&restoreOptions{
-				billing: in.BillingModeOverride, throughput: in.ProvisionedThroughputOverride,
-				summary: api.RestoreSummary{
-					SourceTableArn: src.Description.TableArn, RestoreInProgress: new(false),
-					RestoreDateTime: new(float64(time.Now().UnixMilli()) / 1000),
-				},
-			})
+		t, restoreErr = restore(tx, key, src, maps.All(snap.items), &restoreOptions{
+			billing: in.BillingModeOverride, throughput: in.ProvisionedThroughputOverride,
+			summary: api.RestoreSummary{
+				SourceTableArn: src.Description.TableArn, RestoreInProgress: new(false), RestoreDateTime: &at,
+			},
+		})
 		return restoreErr
 	})
 	if err != nil {
@@ -562,13 +570,14 @@ func (s *Service) RestoreTableToPointInTime(
 
 // continuousBackups describes a table's continuous backups: always on, with
 // point-in-time recovery when it is enabled.
-func continuousBackups(t *table) *api.ContinuousBackupsDescription {
+func continuousBackups(t *table, now time.Time) *api.ContinuousBackupsDescription {
 	pitr := &api.PointInTimeRecoveryDescription{PointInTimeRecoveryStatus: new(statusDisabled)}
-	if t.PITR != 0 {
+	if t.PITR != nil {
+		earliest, latest := t.PITR.bounds(now)
 		pitr = &api.PointInTimeRecoveryDescription{
-			PointInTimeRecoveryStatus: new(statusEnabled), RecoveryPeriodInDays: new(t.PITRDays),
-			EarliestRestorableDateTime: new(t.PITR),
-			LatestRestorableDateTime:   new(float64(time.Now().UnixMilli()) / 1000),
+			PointInTimeRecoveryStatus: new(statusEnabled), RecoveryPeriodInDays: new(t.PITR.Days),
+			EarliestRestorableDateTime: new(float64(earliest) / 1000),
+			LatestRestorableDateTime:   new(float64(latest) / 1000),
 		}
 	}
 
@@ -605,16 +614,25 @@ func (s *Service) UpdateContinuousBackups(
 			return loadErr
 		}
 
+		now := s.now()
 		switch {
 		case !*spec.PointInTimeRecoveryEnabled:
-			t.PITR, t.PITRDays = 0, 0
-		case t.PITR == 0:
-			t.PITR, t.PITRDays = float64(time.Now().UnixMilli())/1000, days
-		default:
-			t.PITRDays = days
+			t.PITR = nil
+			clearPITR(tx, key)
+		case t.PITR == nil:
+			at := now.UnixMilli()
+			t.PITR = &recoveryWindow{Floor: at, Days: days}
+			if indexErr := storage.Write(tx, pitrIndexKey(key), at/hourMS); indexErr != nil {
+				return indexErr
+			}
+		case spec.RecoveryPeriodInDays != nil:
+			earliest, _ := t.PITR.bounds(now)
+			t.PITR.Days = days
+			shrunk, _ := t.PITR.bounds(now)
+			t.PITR.Floor = max(earliest, shrunk)
 		}
 
-		out.ContinuousBackupsDescription = continuousBackups(t)
+		out.ContinuousBackupsDescription = continuousBackups(t, now)
 		return save(tx, key, t)
 	})
 	if err != nil {
@@ -622,14 +640,4 @@ func (s *Service) UpdateContinuousBackups(
 	}
 
 	return out, nil
-}
-
-func write(tx storage.WriteTx, key string, v any) error {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return fmt.Errorf("encode %s: %w", key, err)
-	}
-
-	tx.Put(key, data)
-	return nil
 }

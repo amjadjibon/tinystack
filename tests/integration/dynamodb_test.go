@@ -391,8 +391,9 @@ func TestProtocolErrors(t *testing.T) {
 		{name: "malformed JSON", op: "ListTables", body: `{`, code: "ValidationException"},
 		{name: "missing fields", op: "CreateTable", body: `{}`, code: "ValidationException"},
 		{
-			name: "unsupported legacy condition", op: "PutItem",
-			body: `{"TableName":"users","Item":{"PK":{"S":"one"}},"Expected":{"PK":{"Exists":false}}}`,
+			name: "unsupported return values on condition failure", op: "PutItem",
+			body: `{"TableName":"users","Item":{"PK":{"S":"one"}},` +
+				`"ReturnValuesOnConditionCheckFailure":"ALL_OLD"}`,
 			code: "ValidationException",
 		},
 		{

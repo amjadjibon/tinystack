@@ -11,6 +11,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"time"
 
@@ -38,7 +40,7 @@ const (
 	maxExportResults = 25
 )
 
-// UseCaller lets table exports write to S3. Call it before serving requests.
+// UseCaller lets DynamoDB access S3. Call it before serving requests.
 func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
 
 func exportPrefix(scope request.Scope) string {
@@ -76,17 +78,13 @@ func loadExport(tx storage.ReadTx, key string) (*api.ExportDescription, error) {
 	return &d, nil
 }
 
-// ExportTableToPointInTime writes a table with point-in-time recovery to S3
-// as it is now: TinyStack keeps no history, so ExportTime must be omitted.
+// ExportTableToPointInTime writes a table snapshot to S3.
 // A repeated ClientToken returns the export it started.
 func (s *Service) ExportTableToPointInTime(
 	ctx context.Context,
 	in *api.ExportTableToPointInTimeInput,
 ) (*api.ExportTableToPointInTimeOutput, error) {
 	switch {
-	case in.ExportTime != nil:
-		return nil, awserror.New("InvalidExportTimeException",
-			"TinyStack exports only the current state of a table; omit ExportTime")
 	case common.Value(in.S3Bucket) == "":
 		return nil, awserror.Validation("S3Bucket is required")
 	case in.ExportFormat != nil && *in.ExportFormat != formatJSON:
@@ -118,11 +116,6 @@ func (s *Service) ExportTableToPointInTime(
 			return loadErr
 		}
 
-		if t.PITR == 0 {
-			return awserror.New("PointInTimeRecoveryUnavailableException",
-				"Point in time recovery is not enabled for table '"+name+"'")
-		}
-
 		previous, found, replayErr := idempotency.Replay[*api.ExportDescription](tx, token, in,
 			awserror.New("ExportConflictException",
 				"An export with this ClientToken was requested with different parameters"))
@@ -131,24 +124,30 @@ func (s *Service) ExportTableToPointInTime(
 			return replayErr
 		}
 
+		at, timeErr := recoveryTime(t, in.ExportTime, s.now(), "InvalidExportTimeException")
+		if timeErr != nil {
+			return timeErr
+		}
+
+		snap, snapshotErr := snapshot(tx, key, t, at)
+		if snapshotErr != nil {
+			return snapshotErr
+		}
+
 		suffix := make([]byte, 4)
 		_, _ = rand.Read(suffix)
 		id := fmt.Sprintf("%014d-%s", start.UnixMilli(), hex.EncodeToString(suffix))
 		d = &api.ExportDescription{
 			ExportArn: new(common.Value(t.Description.TableArn) + "/export/" + id), ExportStatus: new(exportCompleted),
 			StartTime: new(float64(start.UnixMilli()) / 1000), TableArn: t.Description.TableArn,
-			TableId: t.Description.TableId, ExportTime: new(float64(start.UnixMilli()) / 1000),
+			TableId: t.Description.TableId, ExportTime: &at,
 			ClientToken: in.ClientToken, S3Bucket: in.S3Bucket, S3Prefix: in.S3Prefix,
 			ExportFormat: new(formatJSON), ExportType: new(exportFull),
-			BilledSizeBytes: t.Description.TableSizeBytes,
+			BilledSizeBytes: &snap.size,
 		}
-		for _, record := range itemRecords(tx, key, "") {
-			it, _, itemErr := loadItem(tx, record)
-			if itemErr != nil {
-				return itemErr
-			}
-
-			line, encodeErr := json.Marshal(map[string]item{"Item": it})
+		for _, id := range slices.Sorted(maps.Keys(snap.items)) {
+			data := snap.items[id]
+			line, encodeErr := json.Marshal(map[string]json.RawMessage{"Item": data})
 			if encodeErr != nil {
 				return encodeErr
 			}
@@ -179,7 +178,7 @@ func (s *Service) ExportTableToPointInTime(
 	d.EndTime = new(float64(time.Now().UnixMilli()) / 1000)
 	_, id, _ := strings.Cut(common.Value(d.ExportArn), "/export/")
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if e := write(tx, exportPrefix(scope)+name+"/"+id, d); e != nil {
+		if e := storage.Write(tx, exportPrefix(scope)+name+"/"+id, d); e != nil {
 			return e
 		}
 

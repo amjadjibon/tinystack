@@ -364,6 +364,9 @@ type Config struct {
 		// default account and Region; 0 turns it off.
 		MQTTPort int `yaml:"mqtt_port"`
 	} `yaml:"iot"`
+	DynamoDB struct {
+		EnforceProvisionedThroughput bool `yaml:"enforce_provisioned_throughput"`
+	} `yaml:"dynamodb"`
 	// RegionSetInFile reports whether defaults.region was explicitly set by the configuration file.
 	RegionSetInFile bool `yaml:"-"`
 }

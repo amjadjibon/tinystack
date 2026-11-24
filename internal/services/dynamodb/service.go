@@ -1,3 +1,11 @@
+// Package dynamodb implements DynamoDB. Table items are stored under
+// <table key>/item/<item ID>. Point-in-time recovery stores undo records under
+// <table key>/pitr/<UTC hour>/<Unix milliseconds>/<sequence> and indexes expiry
+// work at aws/dynamodb/index/pitr/<account>/<region>/<table>.
+// Throughput token buckets are stored under <table key>/capacity/<index name>,
+// with an empty index name for the table. S3 import jobs are recorded under <scope>/dynamodb-import/<import ID>;
+// pending jobs are indexed at aws/dynamodb/index/import/<account>/<region>/<import ID>
+// and reserve their table name at <table key>/import-reservation.
 package dynamodb
 
 import (
@@ -30,44 +38,45 @@ const (
 type Service struct {
 	store  storage.Store
 	logger *slog.Logger
-	// caller writes exports to S3; see UseCaller.
+	// caller accesses S3 for imports and exports; see UseCaller.
 	caller *catalog.Caller
 	// kinesis receives the changes of tables with Kinesis destinations; see
 	// UseKinesis.
 	kinesis *kinesis.Service
-	// bg runs the TTL sweeper until Stop.
-	bg      *background.Group
-	metrics awsmetrics.Meter
+	s3      importSource
+	// bg runs the service sweepers until Stop.
+	bg              *background.Group
+	metrics         awsmetrics.Meter
+	now             func() time.Time
+	enforceCapacity bool
 }
 
-// New returns a DynamoDB service and starts its TTL sweeper, which runs until
-// Stop.
+// New returns a DynamoDB service and starts its background sweepers.
 func New(store storage.Store) *Service {
-	s := &Service{store: store, logger: slog.Default(), bg: background.New()}
+	s := &Service{store: store, logger: slog.Default(), bg: background.New(), now: time.Now}
 	s.bg.Every(ttlInterval, s.sweep)
+	s.bg.Every(time.Second, s.prunePITR)
 	return s
 }
 
-// Stop ends the TTL sweeper and waits for it. Later calls return at once.
+// Stop ends the background sweepers and waits for them.
 func (s *Service) Stop() { s.bg.Stop() }
 
 // table is the table record. Each item is its own record under the table's
 // key (itemRecord), and the description's item count and size are kept
 // current as items are written.
 type table struct {
-	ResourcePolicies map[string]resourcePolicy `json:",omitempty"`
+	ResourcePolicies map[string]resourcePolicy      `json:",omitempty"`
+	Tags             map[string]string              `json:",omitempty"`
+	PITR             *recoveryWindow                `json:"Recovery,omitempty"`
+	Insights         map[string]contributorInsights `json:",omitempty"`
 	Description      api.TableDescription
-	Tags             map[string]string `json:",omitempty"`
 	// TTL is the attribute that holds item expiry times while TTL is enabled.
 	TTL string `json:",omitempty"`
 	// Destinations are the table's Kinesis streaming destinations.
 	Destinations []destination `json:",omitempty"`
 	// Sequence is the sequence number of the table's last stream record.
 	Sequence int64 `json:",omitempty"`
-	// PITR is when point-in-time recovery was enabled, in Unix seconds, or
-	// zero while it is off; PITRDays is its recovery period.
-	PITR     float64 `json:",omitempty"`
-	PITRDays int64   `json:",omitempty"`
 }
 
 var tableName = regexp.MustCompile(`^[A-Za-z0-9_.-]{3,255}$`)
@@ -125,6 +134,38 @@ func (s *Service) CreateTable(ctx context.Context, in *api.CreateTableInput) (*a
 		return nil, err
 	}
 
+	t, err := prepareTable(ctx, name, in)
+	if err != nil {
+		return nil, err
+	}
+
+	viewType, err := streamViewType(in.StreamSpecification)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+		if tableNameTaken(tx, key) {
+			return awserror.New("ResourceInUseException", "Table already exists")
+		}
+
+		if viewType != "" {
+			if openErr := openStream(tx, key, t, viewType, time.Now()); openErr != nil {
+				return openErr
+			}
+		}
+
+		return save(tx, key, t)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.CreateTableOutput{TableDescription: &t.Description}, nil
+}
+
+// prepareTable validates a table definition before it is created or imported.
+func prepareTable(ctx context.Context, name *string, in *api.CreateTableInput) (*table, error) {
 	types := map[string]string{}
 	for _, d := range in.AttributeDefinitions {
 		name, kind := common.Value(d.AttributeName), common.Value(d.AttributeType)
@@ -170,7 +211,7 @@ func (s *Service) CreateTable(ctx context.Context, in *api.CreateTableInput) (*a
 	}
 
 	now := float64(time.Now().UnixMilli()) / 1000
-	t := table{
+	t := &table{
 		Description: api.TableDescription{
 			TableName:              name,
 			TableStatus:            new("ACTIVE"),
@@ -190,29 +231,7 @@ func (s *Service) CreateTable(ctx context.Context, in *api.CreateTableInput) (*a
 		Tags: tags,
 	}
 
-	viewType, err := streamViewType(in.StreamSpecification)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
-		if _, ok := tx.Get(key); ok {
-			return awserror.New("ResourceInUseException", "Table already exists")
-		}
-
-		if viewType != "" {
-			if openErr := openStream(tx, key, &t, viewType, time.Now()); openErr != nil {
-				return openErr
-			}
-		}
-
-		return save(tx, key, &t)
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &api.CreateTableOutput{TableDescription: &t.Description}, nil
+	return t, nil
 }
 
 func (s *Service) DescribeTable(ctx context.Context, in *api.DescribeTableInput) (*api.DescribeTableOutput, error) {
@@ -253,6 +272,10 @@ func (s *Service) DeleteTable(ctx context.Context, in *api.DeleteTableInput) (*a
 		}
 
 		tx.Delete(ttlIndexKey(key))
+		clearPITR(tx, key)
+		for _, record := range tx.Keys(capacityPrefix(key)) {
+			tx.Delete(record)
+		}
 		if closeErr := closeStream(tx, key, t, time.Now()); closeErr != nil {
 			return closeErr
 		}

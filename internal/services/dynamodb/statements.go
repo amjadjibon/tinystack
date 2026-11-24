@@ -90,15 +90,24 @@ func (s *Service) ExecuteStatement(
 	ctx context.Context,
 	in *api.ExecuteStatementInput,
 ) (*api.ExecuteStatementOutput, error) {
-	var puts outbox
+	puts := s.newOutbox(false)
 	return observed(ctx, s, "ExecuteStatement", &puts.used, func() (*api.ExecuteStatementOutput, error) {
+		if err := validateCapacity(in.ReturnConsumedCapacity); err != nil {
+			return nil, err
+		}
+
 		st, p, err := parseStatement(common.Value(in.Statement), in.Parameters)
 		if err != nil {
 			return nil, err
 		}
 
 		if st.kind == stmtSelect {
-			return s.selectItems(ctx, st, p, in, &puts.used)
+			out, selectErr := s.selectItems(ctx, st, p, in, &puts.used)
+			if selectErr == nil {
+				out.ConsumedCapacity = puts.used.singleCapacity(in.ReturnConsumedCapacity)
+			}
+
+			return out, selectErr
 		}
 
 		if in.NextToken != nil || in.Limit != nil {
@@ -110,7 +119,10 @@ func (s *Service) ExecuteStatement(
 			return nil, err
 		}
 
-		out := &api.ExecuteStatementOutput{Items: []map[string]api.AttributeValue{}}
+		out := &api.ExecuteStatementOutput{
+			Items:            []map[string]api.AttributeValue{},
+			ConsumedCapacity: puts.used.singleCapacity(in.ReturnConsumedCapacity),
+		}
 		if len(attributes) > 0 {
 			out.Items = append(out.Items, attributes)
 		}
@@ -376,8 +388,12 @@ func (s *Service) BatchExecuteStatement(
 	ctx context.Context,
 	in *api.BatchExecuteStatementInput,
 ) (*api.BatchExecuteStatementOutput, error) {
-	var puts outbox
+	puts := s.newOutbox(false)
 	return observed(ctx, s, "BatchExecuteStatement", &puts.used, func() (*api.BatchExecuteStatementOutput, error) {
+		if err := validateCapacity(in.ReturnConsumedCapacity); err != nil {
+			return nil, err
+		}
+
 		if len(in.Statements) == 0 || len(in.Statements) > maxBatchStatements {
 			return nil, awserror.Validation("Statements must hold 1 to %d statements", maxBatchStatements)
 		}
@@ -423,6 +439,7 @@ func (s *Service) BatchExecuteStatement(
 			}
 		}
 
+		out.ConsumedCapacity = puts.used.capacity(in.ReturnConsumedCapacity)
 		return out, nil
 	})
 }
@@ -488,8 +505,12 @@ func (s *Service) ExecuteTransaction(
 	ctx context.Context,
 	in *api.ExecuteTransactionInput,
 ) (*api.ExecuteTransactionOutput, error) {
-	puts := outbox{used: tally{transactional: true}}
+	puts := s.newOutbox(true)
 	return observed(ctx, s, "ExecuteTransaction", &puts.used, func() (*api.ExecuteTransactionOutput, error) {
+		if err := validateCapacity(in.ReturnConsumedCapacity); err != nil {
+			return nil, err
+		}
+
 		n := len(in.TransactStatements)
 		if n == 0 || n > maxTransactStatements {
 			return nil, awserror.Validation("TransactStatements must hold 1 to %d statements", maxTransactStatements)
@@ -520,7 +541,12 @@ func (s *Service) ExecuteTransaction(
 		// SDKs send a ClientRequestToken with every transaction; reads ignore it.
 		switch {
 		case reads == n:
-			return s.readTransaction(ctx, statements, parsers, &puts.used)
+			out, err := s.readTransaction(ctx, statements, parsers, &puts.used)
+			if err == nil {
+				out.ConsumedCapacity = puts.used.capacity(in.ReturnConsumedCapacity)
+			}
+
+			return out, err
 		case reads != 0:
 			return nil, awserror.Validation("Statements in a transaction must be all reads or all writes")
 		}
@@ -552,7 +578,9 @@ func (s *Service) ExecuteTransaction(
 			return nil, duplicates(err, statements)
 		}
 
-		return &api.ExecuteTransactionOutput{Responses: []api.ItemResponse{}}, nil
+		return &api.ExecuteTransactionOutput{
+			Responses: []api.ItemResponse{}, ConsumedCapacity: puts.used.capacity(in.ReturnConsumedCapacity),
+		}, nil
 	})
 }
 

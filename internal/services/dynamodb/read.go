@@ -123,13 +123,77 @@ func (r *readRequest) output(t *table, it item) item {
 	}
 }
 
+// references reports whether a condition uses a top-level attribute selected by matches.
+func (c *condition) references(matches func(string) bool) bool {
+	if c == nil {
+		return false
+	}
+
+	for _, operand := range c.args {
+		if operand.references(matches) {
+			return true
+		}
+	}
+
+	for _, child := range c.sub {
+		if child.references(matches) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (o *operand) references(matches func(string) bool) bool {
+	if len(o.path) > 0 && matches(o.path[0].name) {
+		return true
+	}
+
+	for _, child := range o.args {
+		if child.references(matches) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (r *readRequest) fetchesBase(t *table) bool {
+	if r.ix.name == "" || r.ix.global || r.ix.projectsAll() {
+		return false
+	}
+
+	if r.selection == selectAllAttributes {
+		return true
+	}
+
+	names := r.ix.keyNames(t)
+	names = append(names, r.ix.projection.NonKeyAttributes...)
+	missing := func(name string) bool { return !slices.Contains(names, name) }
+	for _, p := range r.pr {
+		if missing(p[0].name) {
+			return true
+		}
+	}
+
+	return r.filter.references(missing)
+}
+
+func (r *readRequest) consume(used *tally, p *page, consistent bool) {
+	used.charge(r.key, r.ix, p.bytes, consistent)
+	if p.fetchedBytes > 0 {
+		used.charge(r.key, nil, p.fetchedBytes, consistent)
+	}
+}
+
 type page struct {
 	last    item
 	items   []item
 	count   int64
 	scanned int64
 	// bytes is the size of the items evaluated.
-	bytes int64
+	bytes        int64
+	fetchedBytes int64
 }
 
 // read evaluates n items in order, as Scan and Query do: Limit and the 1 MB
@@ -139,6 +203,7 @@ func (r *readRequest) read(t *table, n int, at func(int) (item, error), limit *i
 	var out page
 	var size int64
 	var prev item
+	fetchesBase := r.fetchesBase(t)
 	for i := range n {
 		it, err := at(i)
 		if err != nil {
@@ -161,7 +226,19 @@ func (r *readRequest) read(t *table, n int, at func(int) (item, error), limit *i
 		}
 
 		size += bytes
-		out.bytes = size
+		indexedBytes := bytes
+		if r.ix.name != "" && !r.ix.global && !r.ix.projectsAll() {
+			indexedBytes, err = itemSize(r.ix.project(t, it))
+			if err != nil {
+				return page{}, err
+			}
+
+			if fetchesBase {
+				out.fetchedBytes += max(1, (bytes+readUnitBytes-1)/readUnitBytes) * readUnitBytes
+			}
+		}
+
+		out.bytes += indexedBytes
 		out.scanned++
 		if r.filter.match(it) {
 			out.count++
@@ -198,6 +275,25 @@ func (s *Service) Scan(ctx context.Context, in *api.ScanInput) (*api.ScanOutput,
 }
 
 func (s *Service) scan(ctx context.Context, in *api.ScanInput, used *tally) (*api.ScanOutput, error) {
+	if err := validateCapacity(in.ReturnConsumedCapacity); err != nil {
+		return nil, err
+	}
+
+	if in.AttributesToGet != nil || in.ScanFilter != nil || in.ConditionalOperator != nil {
+		b, pr, _, filter, err := prepareLegacyRead(
+			in.AttributesToGet, nil, in.ScanFilter, "ScanFilter",
+			in.ConditionalOperator, in.ProjectionExpression, nil, in.FilterExpression,
+			in.ExpressionAttributeNames != nil || in.ExpressionAttributeValues != nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		in = new(*in)
+		in.ProjectionExpression, in.FilterExpression = pr, filter
+		in.ExpressionAttributeNames, in.ExpressionAttributeValues = b.names, b.values
+	}
+
 	req, err := newReadRequest(ctx, in.TableName, in.Limit, in.Select, in.FilterExpression,
 		in.ProjectionExpression, in.ExpressionAttributeNames, in.ExpressionAttributeValues)
 	if err != nil {
@@ -214,7 +310,7 @@ func (s *Service) scan(ctx context.Context, in *api.ScanInput, used *tally) (*ap
 	}
 
 	var p page
-	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+	err = s.readData(ctx, used, func(tx storage.ReadTx) error {
 		t, e := load(tx, req.key)
 		if e != nil {
 			return e
@@ -243,15 +339,19 @@ func (s *Service) scan(ctx context.Context, in *api.ScanInput, used *tally) (*ap
 
 			return it, nil
 		}, in.Limit)
+		if e == nil {
+			req.consume(used, &p, common.Value(in.ConsistentRead))
+		}
+
 		return e
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	used.charge(common.Value(in.TableName), p.bytes, common.Value(in.ConsistentRead))
 	out := &api.ScanOutput{
 		Items: p.list(), Count: &p.count, ScannedCount: &p.scanned, LastEvaluatedKey: p.last,
+		ConsumedCapacity: used.singleCapacity(in.ReturnConsumedCapacity),
 	}
 
 	if req.countOnly {
@@ -296,6 +396,26 @@ func (s *Service) Query(ctx context.Context, in *api.QueryInput) (*api.QueryOutp
 }
 
 func (s *Service) query(ctx context.Context, in *api.QueryInput, used *tally) (*api.QueryOutput, error) {
+	if err := validateCapacity(in.ReturnConsumedCapacity); err != nil {
+		return nil, err
+	}
+
+	if in.AttributesToGet != nil || in.QueryFilter != nil || in.ConditionalOperator != nil || in.KeyConditions != nil {
+		b, pr, key, filter, err := prepareLegacyRead(
+			in.AttributesToGet, in.KeyConditions, in.QueryFilter, "QueryFilter",
+			in.ConditionalOperator, in.ProjectionExpression, in.KeyConditionExpression, in.FilterExpression,
+			in.ExpressionAttributeNames != nil || in.ExpressionAttributeValues != nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		in = new(*in)
+		in.ProjectionExpression, in.FilterExpression = pr, filter
+		in.KeyConditionExpression = key
+		in.ExpressionAttributeNames, in.ExpressionAttributeValues = b.names, b.values
+	}
+
 	req, err := newReadRequest(ctx, in.TableName, in.Limit, in.Select, in.FilterExpression,
 		in.ProjectionExpression, in.ExpressionAttributeNames, in.ExpressionAttributeValues)
 	if err != nil {
@@ -316,7 +436,7 @@ func (s *Service) query(ctx context.Context, in *api.QueryInput, used *tally) (*
 	}
 
 	var p page
-	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+	err = s.readData(ctx, used, func(tx storage.ReadTx) error {
 		t, e := load(tx, req.key)
 		if e != nil {
 			return e
@@ -324,6 +444,14 @@ func (s *Service) query(ctx context.Context, in *api.QueryInput, used *tally) (*
 
 		if guardErr := req.use(t, in.IndexName); guardErr != nil {
 			return guardErr
+		}
+
+		if in.QueryFilter != nil && req.filter.references(func(name string) bool {
+			return slices.ContainsFunc(req.ix.schema, func(k api.KeySchemaElement) bool {
+				return common.Value(k.AttributeName) == name
+			})
+		}) {
+			return awserror.Validation("QueryFilter can only contain non-primary key attributes")
 		}
 
 		items, e := partition(
@@ -340,15 +468,19 @@ func (s *Service) query(ctx context.Context, in *api.QueryInput, used *tally) (*
 		}
 
 		p, e = req.read(t, len(items), func(i int) (item, error) { return items[i], nil }, in.Limit)
+		if e == nil {
+			req.consume(used, &p, common.Value(in.ConsistentRead))
+		}
+
 		return e
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	used.charge(common.Value(in.TableName), p.bytes, common.Value(in.ConsistentRead))
 	out := &api.QueryOutput{
 		Items: p.list(), Count: &p.count, ScannedCount: &p.scanned, LastEvaluatedKey: p.last,
+		ConsumedCapacity: used.singleCapacity(in.ReturnConsumedCapacity),
 	}
 
 	if req.countOnly {

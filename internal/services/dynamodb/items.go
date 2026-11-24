@@ -75,8 +75,22 @@ func writeItemBy(
 	}
 
 	if by == nil {
-		_, name := tableScope(key)
-		out.used.chargeWrite(name, max(oldSize, newSize))
+		out.used.chargeWrite(capacityTarget{key: key}, max(oldSize, newSize))
+		if capacityErr := out.used.chargeIndexes(key, t, old, it); capacityErr != nil {
+			return capacityErr
+		}
+
+		collectionItem := it
+		if collectionItem == nil {
+			collectionItem = old
+		}
+
+		out.markCollection(key, record, t, collectionItem)
+
+	}
+
+	if historyErr := out.recordChange(tx, key, t, record, old, it, newSize-oldSize); historyErr != nil {
+		return historyErr
 	}
 
 	count := common.Value(t.Description.ItemCount)
@@ -198,7 +212,7 @@ func keyPart(t *table, k *api.KeySchemaElement, a *api.AttributeValue) (string, 
 }
 
 func returnValues(p *string, allowed ...string) error {
-	if p != nil && *p != "NONE" && !slices.Contains(allowed, *p) {
+	if p != nil && *p != modeNone && !slices.Contains(allowed, *p) {
 		return awserror.Validation("ReturnValues must be NONE or %s", strings.Join(allowed, ", "))
 	}
 
@@ -242,15 +256,37 @@ func newWriteRequest(
 }
 
 func (s *Service) PutItem(ctx context.Context, in *api.PutItemInput) (*api.PutItemOutput, error) {
-	var puts outbox
+	puts := s.newOutbox(false)
 	return observed(ctx, s, "PutItem", &puts.used, func() (*api.PutItemOutput, error) {
 		return s.putItem(ctx, in, &puts)
 	})
 }
 
 func (s *Service) putItem(ctx context.Context, in *api.PutItemInput, puts *outbox) (*api.PutItemOutput, error) {
+	if err := validateCapacity(in.ReturnConsumedCapacity); err != nil {
+		return nil, err
+	}
+
+	if err := puts.requestMetrics(in.ReturnItemCollectionMetrics); err != nil {
+		return nil, err
+	}
+
 	if err := returnValues(in.ReturnValues, returnAllOld); err != nil {
 		return nil, err
+	}
+
+	if in.Expected != nil || in.ConditionalOperator != nil {
+		b, cond, _, err := prepareLegacyWrite(
+			in.Expected, nil, in.ConditionalOperator, in.ConditionExpression, nil,
+			in.ExpressionAttributeNames != nil || in.ExpressionAttributeValues != nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		in = new(*in)
+		in.ConditionExpression = cond
+		in.ExpressionAttributeNames, in.ExpressionAttributeValues = b.names, b.values
 	}
 
 	req, err := newWriteRequest(ctx, in.TableName, in.ConditionExpression, in.ExpressionAttributeNames,
@@ -264,7 +300,7 @@ func (s *Service) putItem(ctx context.Context, in *api.PutItemInput, puts *outbo
 	}
 
 	out := &api.PutItemOutput{}
-	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+	err = s.writeData(ctx, puts, func(tx storage.WriteTx) error {
 		t, e := load(tx, req.key)
 		if e != nil {
 			return e
@@ -290,6 +326,8 @@ func (s *Service) putItem(ctx context.Context, in *api.PutItemInput, puts *outbo
 		return writeItem(tx, req.key, t, record, old, in.Item, puts)
 	})
 	if err == nil {
+		out.ConsumedCapacity = puts.used.singleCapacity(in.ReturnConsumedCapacity)
+		out.ItemCollectionMetrics = puts.singleCollectionMetric()
 		s.deliver(ctx, puts)
 	}
 
@@ -303,27 +341,22 @@ func (s *Service) GetItem(ctx context.Context, in *api.GetItemInput) (*api.GetIt
 }
 
 func (s *Service) getItem(ctx context.Context, in *api.GetItemInput, used *tally) (*api.GetItemOutput, error) {
+	if err := validateCapacity(in.ReturnConsumedCapacity); err != nil {
+		return nil, err
+	}
+
 	key, err := tableKey(ctx, in.TableName)
 	if err != nil {
 		return nil, err
 	}
 
-	ex, err := newExpressions(in.ExpressionAttributeNames, nil)
+	pr, err := readProjection(in.AttributesToGet, in.ExpressionAttributeNames, in.ProjectionExpression)
 	if err != nil {
 		return nil, err
-	}
-
-	pr, err := ex.projection(in.ProjectionExpression)
-	if err != nil {
-		return nil, err
-	}
-
-	if finishErr := ex.finish(); finishErr != nil {
-		return nil, finishErr
 	}
 
 	out := &api.GetItemOutput{}
-	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+	err = s.readData(ctx, used, func(tx storage.ReadTx) error {
 		t, e := load(tx, key)
 		if e != nil {
 			return e
@@ -340,15 +373,16 @@ func (s *Service) getItem(ctx context.Context, in *api.GetItemInput, used *tally
 		}
 
 		bytes, e := itemSize(it)
-		used.charge(common.Value(in.TableName), bytes, common.Value(in.ConsistentRead))
+		used.charge(key, nil, bytes, common.Value(in.ConsistentRead))
 		out.Item = pr.apply(it)
 		return e
 	})
+	out.ConsumedCapacity = used.singleCapacity(in.ReturnConsumedCapacity)
 	return out, err
 }
 
 func (s *Service) DeleteItem(ctx context.Context, in *api.DeleteItemInput) (*api.DeleteItemOutput, error) {
-	var puts outbox
+	puts := s.newOutbox(false)
 	return observed(ctx, s, "DeleteItem", &puts.used, func() (*api.DeleteItemOutput, error) {
 		return s.deleteItem(ctx, in, &puts)
 	})
@@ -359,8 +393,30 @@ func (s *Service) deleteItem(
 	in *api.DeleteItemInput,
 	puts *outbox,
 ) (*api.DeleteItemOutput, error) {
+	if err := validateCapacity(in.ReturnConsumedCapacity); err != nil {
+		return nil, err
+	}
+
+	if err := puts.requestMetrics(in.ReturnItemCollectionMetrics); err != nil {
+		return nil, err
+	}
+
 	if err := returnValues(in.ReturnValues, returnAllOld); err != nil {
 		return nil, err
+	}
+
+	if in.Expected != nil || in.ConditionalOperator != nil {
+		b, cond, _, err := prepareLegacyWrite(
+			in.Expected, nil, in.ConditionalOperator, in.ConditionExpression, nil,
+			in.ExpressionAttributeNames != nil || in.ExpressionAttributeValues != nil,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		in = new(*in)
+		in.ConditionExpression = cond
+		in.ExpressionAttributeNames, in.ExpressionAttributeValues = b.names, b.values
 	}
 
 	req, err := newWriteRequest(ctx, in.TableName, in.ConditionExpression, in.ExpressionAttributeNames,
@@ -374,7 +430,7 @@ func (s *Service) deleteItem(
 	}
 
 	out := &api.DeleteItemOutput{}
-	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+	err = s.writeData(ctx, puts, func(tx storage.WriteTx) error {
 		t, e := load(tx, req.key)
 		if e != nil {
 			return e
@@ -390,6 +446,7 @@ func (s *Service) deleteItem(
 		}
 
 		if !found {
+			puts.used.chargeWrite(capacityTarget{key: req.key}, 0)
 			return nil
 		}
 
@@ -400,6 +457,8 @@ func (s *Service) deleteItem(
 		return writeItem(tx, req.key, t, record, old, nil, puts)
 	})
 	if err == nil {
+		out.ConsumedCapacity = puts.used.singleCapacity(in.ReturnConsumedCapacity)
+		out.ItemCollectionMetrics = puts.singleCollectionMetric()
 		s.deliver(ctx, puts)
 	}
 
@@ -409,7 +468,7 @@ func (s *Service) deleteItem(
 // UpdateItem applies an update expression, creating the item from its key
 // when it does not exist.
 func (s *Service) UpdateItem(ctx context.Context, in *api.UpdateItemInput) (*api.UpdateItemOutput, error) {
-	var puts outbox
+	puts := s.newOutbox(false)
 	return observed(ctx, s, "UpdateItem", &puts.used, func() (*api.UpdateItemOutput, error) {
 		return s.updateItem(ctx, in, &puts)
 	})
@@ -420,9 +479,32 @@ func (s *Service) updateItem(
 	in *api.UpdateItemInput,
 	puts *outbox,
 ) (*api.UpdateItemOutput, error) {
+	if err := validateCapacity(in.ReturnConsumedCapacity); err != nil {
+		return nil, err
+	}
+
+	if err := puts.requestMetrics(in.ReturnItemCollectionMetrics); err != nil {
+		return nil, err
+	}
+
 	err := returnValues(in.ReturnValues, returnAllOld, returnUpdatedOld, returnAllNew, returnUpdatedNew)
 	if err != nil {
 		return nil, err
+	}
+
+	if in.Expected != nil || in.ConditionalOperator != nil || in.AttributeUpdates != nil {
+		b, cond, upd, legacyErr := prepareLegacyWrite(
+			in.Expected, in.AttributeUpdates, in.ConditionalOperator, in.ConditionExpression, in.UpdateExpression,
+			in.ExpressionAttributeNames != nil || in.ExpressionAttributeValues != nil,
+		)
+		if legacyErr != nil {
+			return nil, legacyErr
+		}
+
+		in = new(*in)
+		in.ConditionExpression = cond
+		in.UpdateExpression = upd
+		in.ExpressionAttributeNames, in.ExpressionAttributeValues = b.names, b.values
 	}
 
 	req, err := newWriteRequest(ctx, in.TableName, in.ConditionExpression, in.ExpressionAttributeNames,
@@ -441,7 +523,7 @@ func (s *Service) updateItem(
 	}
 
 	out := &api.UpdateItemOutput{}
-	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
+	err = s.writeData(ctx, puts, func(tx storage.WriteTx) error {
 		t, e := load(tx, req.key)
 		if e != nil {
 			return e
@@ -479,6 +561,8 @@ func (s *Service) updateItem(
 		return writeItem(tx, req.key, t, record, old, next, puts)
 	})
 	if err == nil {
+		out.ConsumedCapacity = puts.used.singleCapacity(in.ReturnConsumedCapacity)
+		out.ItemCollectionMetrics = puts.singleCollectionMetric()
 		s.deliver(ctx, puts)
 	}
 

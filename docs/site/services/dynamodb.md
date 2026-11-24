@@ -13,7 +13,7 @@ Store typed items and run expressions, transactions, streams, backups, exports, 
 | API version | `2012-08-10` |
 | Scope | Account and region |
 | Execution | Local behavior |
-| Selected operations | 41 of 62 in the pinned model |
+| Selected operations | 49 of 62 in the pinned model |
 
 ## Implemented behavior
 
@@ -22,13 +22,13 @@ See the [implemented feature catalogue](catalogue.md#dynamodb) for this service'
 ## Limitations and future work
 
 - Index queries scan the table and are immediately consistent; no independent index storage.
-- No throughput enforcement or capacity accounting; batch writes do not simulate throttling.
-- Point-in-time restores retain the latest state, not historical snapshots.
-- Legacy expression parameters and replica management are outside the subset.
+- Capacity enforcement is off by default. When enabled, table and global index token buckets start full and a throttled batch fails atomically. Capacity estimates use local item sizes and exclude failed conditional operations.
+- Point-in-time recovery uses the source table’s current schema and indexes. Disabling recovery or deleting the source table discards its history. The console restores to the latest restorable time.
+- Imports read S3 in the same account and Region, keep parsed items in memory and publish the table when the job finishes, and report the first data error and counts without CloudWatch Logs. Ion and replica management are unsupported.
 - Kinesis destinations turn on at once (Enable reports ENABLING, Describe ACTIVE); records are put after the item write commits, so concurrent writes to one item can arrive out of order, and a destination whose stream was deleted becomes ENABLE_FAILED until it is enabled again; DescribeTable does not list destinations.
 - Verify mode shows table inventory; item reads and management require signed CLI/SDK requests.
 - Batch reads and transaction operations use the AWS API rather than console forms.
-- DynamoDB metrics leave out index dimensions (GlobalSecondaryIndexName), ReturnedItemCount, SystemErrors and ConditionalCheckFailedRequests; TinyStack never throttles, so ThrottledRequests stays 0.
+- DynamoDB metrics omit ReturnedItemCount, SystemErrors and ConditionalCheckFailedRequests. Contributor Insights settings take effect immediately and do not create CloudWatch rules.
 - Explicit warm throughput configuration, partition prewarming and traffic-driven warm capacity scaling are unsupported.
 - Resource policies take effect immediately; cross-account table access uses table ARNs in the request Region.
 
@@ -55,8 +55,12 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `DeleteTable` | `POST /` |
 | `DescribeBackup` | `POST /` |
 | `DescribeContinuousBackups` | `POST /` |
+| `DescribeContributorInsights` | `POST /` |
+| `DescribeEndpoints` | `POST /` |
 | `DescribeExport` | `POST /` |
+| `DescribeImport` | `POST /` |
 | `DescribeKinesisStreamingDestination` | `POST /` |
+| `DescribeLimits` | `POST /` |
 | `DescribeTable` | `POST /` |
 | `DescribeTimeToLive` | `POST /` |
 | `DisableKinesisStreamingDestination` | `POST /` |
@@ -66,8 +70,11 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `ExportTableToPointInTime` | `POST /` |
 | `GetItem` | `POST /` |
 | `GetResourcePolicy` | `POST /` |
+| `ImportTable` | `POST /` |
 | `ListBackups` | `POST /` |
+| `ListContributorInsights` | `POST /` |
 | `ListExports` | `POST /` |
+| `ListImports` | `POST /` |
 | `ListTables` | `POST /` |
 | `ListTagsOfResource` | `POST /` |
 | `PutItem` | `POST /` |
@@ -81,6 +88,7 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `TransactWriteItems` | `POST /` |
 | `UntagResource` | `POST /` |
 | `UpdateContinuousBackups` | `POST /` |
+| `UpdateContributorInsights` | `POST /` |
 | `UpdateItem` | `POST /` |
 | `UpdateKinesisStreamingDestination` | `POST /` |
 | `UpdateTable` | `POST /` |
@@ -88,28 +96,20 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 
 ## Operations not implemented
 
-??? info "21 modeled operations outside the implementation"
+??? info "13 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
     - `CancelBulkOperation`
     - `CreateGlobalTable`
     - `DescribeBulkOperation`
-    - `DescribeContributorInsights`
-    - `DescribeEndpoints`
     - `DescribeGlobalTable`
     - `DescribeGlobalTableSettings`
-    - `DescribeImport`
-    - `DescribeLimits`
     - `DescribeTableReplicaAutoScaling`
-    - `ImportTable`
     - `ListBulkOperations`
-    - `ListContributorInsights`
     - `ListGlobalTables`
-    - `ListImports`
     - `SearchVectors`
     - `StartBulkPutItems`
-    - `UpdateContributorInsights`
     - `UpdateGlobalTable`
     - `UpdateGlobalTableSettings`
     - `UpdateTableReplicaAutoScaling`
@@ -119,5 +119,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/dynamodb)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/dynamodb/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/dynamodb.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
-- SDK integration examples: [dynamodb_backups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_backups_test.go), [dynamodb_exports_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_exports_test.go), [dynamodb_index_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_index_test.go), [dynamodb_kinesis_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_kinesis_test.go), [dynamodb_parallel_scan_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_parallel_scan_test.go), [dynamodb_partiql_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_partiql_test.go), [dynamodb_partiql_transaction_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_partiql_transaction_test.go), [dynamodb_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_policy_test.go), [dynamodb_query_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_query_test.go), [dynamodb_streams_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_streams_test.go), [dynamodb_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_test.go), [dynamodb_transact_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_transact_test.go), [dynamodb_update_table_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_update_table_test.go), [dynamodb_warm_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_warm_test.go).
+- SDK integration examples: [dynamodb_backups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_backups_test.go), [dynamodb_capacity_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_capacity_test.go), [dynamodb_control_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_control_test.go), [dynamodb_exports_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_exports_test.go), [dynamodb_imports_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_imports_test.go), [dynamodb_index_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_index_test.go), [dynamodb_kinesis_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_kinesis_test.go), [dynamodb_legacy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_legacy_test.go), [dynamodb_parallel_scan_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_parallel_scan_test.go), [dynamodb_partiql_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_partiql_test.go), [dynamodb_partiql_transaction_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_partiql_transaction_test.go), [dynamodb_pitr_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_pitr_test.go), [dynamodb_policy_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_policy_test.go), [dynamodb_query_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_query_test.go), [dynamodb_streams_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_streams_test.go), [dynamodb_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_test.go), [dynamodb_transact_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_transact_test.go), [dynamodb_update_table_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_update_table_test.go), [dynamodb_warm_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/dynamodb_warm_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

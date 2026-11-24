@@ -35,6 +35,10 @@ func (s *Service) batchGetItem(
 	in *api.BatchGetItemInput,
 	used *tally,
 ) (*api.BatchGetItemOutput, error) {
+	if err := validateCapacity(in.ReturnConsumedCapacity); err != nil {
+		return nil, err
+	}
+
 	if len(in.RequestItems) == 0 {
 		return nil, awserror.Validation("RequestItems must contain at least one table")
 	}
@@ -54,18 +58,13 @@ func (s *Service) batchGetItem(
 			return nil, awserror.Validation("Keys for table %s must not be empty", name)
 		}
 
-		ex, err := newExpressions(request.ExpressionAttributeNames, nil)
+		pr, err := readProjection(
+			request.AttributesToGet,
+			request.ExpressionAttributeNames,
+			request.ProjectionExpression,
+		)
 		if err != nil {
 			return nil, err
-		}
-
-		pr, err := ex.projection(request.ProjectionExpression)
-		if err != nil {
-			return nil, err
-		}
-
-		if guardErr := ex.finish(); guardErr != nil {
-			return nil, guardErr
 		}
 
 		keys[name], projections[name] = key, pr
@@ -81,7 +80,7 @@ func (s *Service) batchGetItem(
 		UnprocessedKeys: map[string]api.KeysAndAttributes{},
 	}
 
-	err := s.store.View(ctx, func(tx storage.ReadTx) error {
+	err := s.readData(ctx, used, func(tx storage.ReadTx) error {
 		var size int64
 		for _, name := range names {
 			request := in.RequestItems[name]
@@ -107,6 +106,7 @@ func (s *Service) batchGetItem(
 					rest := out.UnprocessedKeys[name]
 					rest.Keys = append(rest.Keys, k)
 					rest.ConsistentRead = request.ConsistentRead
+					rest.AttributesToGet = request.AttributesToGet
 					rest.ProjectionExpression = request.ProjectionExpression
 					rest.ExpressionAttributeNames = request.ExpressionAttributeNames
 					out.UnprocessedKeys[name] = rest
@@ -119,6 +119,7 @@ func (s *Service) batchGetItem(
 				}
 
 				if !found {
+					used.charge(keys[name], nil, 0, common.Value(request.ConsistentRead))
 					continue
 				}
 
@@ -128,7 +129,7 @@ func (s *Service) batchGetItem(
 				}
 
 				size += bytes
-				used.charge(name, bytes, common.Value(request.ConsistentRead))
+				used.charge(keys[name], nil, bytes, common.Value(request.ConsistentRead))
 				out.Responses[name] = append(out.Responses[name], projections[name].apply(it))
 			}
 		}
@@ -139,17 +140,16 @@ func (s *Service) batchGetItem(
 		return nil, err
 	}
 
+	out.ConsumedCapacity = used.capacity(in.ReturnConsumedCapacity)
 	return out, nil
 }
 
-// BatchWriteItem puts and deletes up to 25 items across tables. TinyStack
-// never throttles, so it applies every request in one transaction and
-// UnprocessedItems is always empty.
+// BatchWriteItem puts and deletes up to 25 items across tables in one transaction.
 func (s *Service) BatchWriteItem(
 	ctx context.Context,
 	in *api.BatchWriteItemInput,
 ) (*api.BatchWriteItemOutput, error) {
-	var puts outbox
+	puts := s.newOutbox(false)
 	return observed(ctx, s, "BatchWriteItem", &puts.used, func() (*api.BatchWriteItemOutput, error) {
 		return s.batchWriteItem(ctx, in, &puts)
 	})
@@ -160,6 +160,14 @@ func (s *Service) batchWriteItem(
 	in *api.BatchWriteItemInput,
 	puts *outbox,
 ) (*api.BatchWriteItemOutput, error) {
+	if err := validateCapacity(in.ReturnConsumedCapacity); err != nil {
+		return nil, err
+	}
+
+	if err := puts.requestMetrics(in.ReturnItemCollectionMetrics); err != nil {
+		return nil, err
+	}
+
 	if len(in.RequestItems) == 0 {
 		return nil, awserror.Validation("RequestItems must contain at least one table")
 	}
@@ -194,7 +202,7 @@ func (s *Service) batchWriteItem(
 		return nil, awserror.Validation("Too many items requested for the BatchWriteItem call")
 	}
 
-	err := s.store.Update(ctx, func(tx storage.WriteTx) error {
+	err := s.writeData(ctx, puts, func(tx storage.WriteTx) error {
 		for _, name := range names {
 			key := keys[name]
 			t, err := load(tx, key)
@@ -229,6 +237,7 @@ func (s *Service) batchWriteItem(
 
 				seen[record] = true
 				if next == nil && !found {
+					puts.used.chargeWrite(capacityTarget{key: key}, 0)
 					continue
 				}
 
@@ -245,5 +254,9 @@ func (s *Service) batchWriteItem(
 	}
 
 	s.deliver(ctx, puts)
-	return &api.BatchWriteItemOutput{UnprocessedItems: map[string][]api.WriteRequest{}}, nil
+	return &api.BatchWriteItemOutput{
+		UnprocessedItems:      map[string][]api.WriteRequest{},
+		ConsumedCapacity:      puts.used.capacity(in.ReturnConsumedCapacity),
+		ItemCollectionMetrics: puts.collectionMetrics,
+	}, nil
 }

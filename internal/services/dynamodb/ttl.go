@@ -173,7 +173,7 @@ func (s *Service) expire(ctx context.Context, key string, now time.Time) error {
 		return err
 	}
 
-	var puts outbox
+	puts := s.newOutbox(false)
 	var deleted int
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		t, loadErr := load(tx, key)

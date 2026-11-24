@@ -7246,7 +7246,15 @@
       "UpdateKinesisStreamingDestination",
       "PutResourcePolicy",
       "GetResourcePolicy",
-      "DeleteResourcePolicy"
+      "DeleteResourcePolicy",
+      "ImportTable",
+      "DescribeImport",
+      "ListImports",
+      "DescribeLimits",
+      "DescribeEndpoints",
+      "DescribeContributorInsights",
+      "UpdateContributorInsights",
+      "ListContributorInsights"
     ],
     "shapes": {
       "CreateTableInput": [
@@ -7276,14 +7284,20 @@
         "ReturnValues",
         "ConditionExpression",
         "ExpressionAttributeNames",
-        "ExpressionAttributeValues"
+        "ExpressionAttributeValues",
+        "Expected",
+        "ConditionalOperator",
+        "ReturnConsumedCapacity",
+        "ReturnItemCollectionMetrics"
       ],
       "GetItemInput": [
         "TableName",
         "Key",
         "ConsistentRead",
         "ProjectionExpression",
-        "ExpressionAttributeNames"
+        "ExpressionAttributeNames",
+        "AttributesToGet",
+        "ReturnConsumedCapacity"
       ],
       "DeleteItemInput": [
         "TableName",
@@ -7291,7 +7305,11 @@
         "ReturnValues",
         "ConditionExpression",
         "ExpressionAttributeNames",
-        "ExpressionAttributeValues"
+        "ExpressionAttributeValues",
+        "Expected",
+        "ConditionalOperator",
+        "ReturnConsumedCapacity",
+        "ReturnItemCollectionMetrics"
       ],
       "UpdateItemInput": [
         "TableName",
@@ -7300,7 +7318,12 @@
         "ConditionExpression",
         "ExpressionAttributeNames",
         "ExpressionAttributeValues",
-        "ReturnValues"
+        "ReturnValues",
+        "Expected",
+        "AttributeUpdates",
+        "ConditionalOperator",
+        "ReturnConsumedCapacity",
+        "ReturnItemCollectionMetrics"
       ],
       "ScanInput": [
         "TableName",
@@ -7314,7 +7337,11 @@
         "ExpressionAttributeValues",
         "IndexName",
         "Segment",
-        "TotalSegments"
+        "TotalSegments",
+        "AttributesToGet",
+        "ScanFilter",
+        "ConditionalOperator",
+        "ReturnConsumedCapacity"
       ],
       "QueryInput": [
         "TableName",
@@ -7328,31 +7355,45 @@
         "ExclusiveStartKey",
         "ConsistentRead",
         "Select",
-        "IndexName"
+        "IndexName",
+        "AttributesToGet",
+        "KeyConditions",
+        "QueryFilter",
+        "ConditionalOperator",
+        "ReturnConsumedCapacity"
       ],
       "PutItemOutput": [
-        "Attributes"
+        "Attributes",
+        "ConsumedCapacity",
+        "ItemCollectionMetrics"
       ],
       "GetItemOutput": [
-        "Item"
+        "Item",
+        "ConsumedCapacity"
       ],
       "DeleteItemOutput": [
-        "Attributes"
+        "Attributes",
+        "ConsumedCapacity",
+        "ItemCollectionMetrics"
       ],
       "UpdateItemOutput": [
-        "Attributes"
+        "Attributes",
+        "ConsumedCapacity",
+        "ItemCollectionMetrics"
       ],
       "ScanOutput": [
         "Items",
         "Count",
         "ScannedCount",
-        "LastEvaluatedKey"
+        "LastEvaluatedKey",
+        "ConsumedCapacity"
       ],
       "QueryOutput": [
         "Items",
         "Count",
         "ScannedCount",
-        "LastEvaluatedKey"
+        "LastEvaluatedKey",
+        "ConsumedCapacity"
       ],
       "TableDescription": [
         "TableName",
@@ -7455,23 +7496,30 @@
         "IndexArn"
       ],
       "BatchGetItemInput": [
-        "RequestItems"
+        "RequestItems",
+        "ReturnConsumedCapacity"
       ],
       "KeysAndAttributes": [
         "Keys",
         "ConsistentRead",
         "ProjectionExpression",
-        "ExpressionAttributeNames"
+        "ExpressionAttributeNames",
+        "AttributesToGet"
       ],
       "BatchGetItemOutput": [
         "Responses",
-        "UnprocessedKeys"
+        "UnprocessedKeys",
+        "ConsumedCapacity"
       ],
       "BatchWriteItemInput": [
-        "RequestItems"
+        "RequestItems",
+        "ReturnConsumedCapacity",
+        "ReturnItemCollectionMetrics"
       ],
       "BatchWriteItemOutput": [
-        "UnprocessedItems"
+        "UnprocessedItems",
+        "ConsumedCapacity",
+        "ItemCollectionMetrics"
       ],
       "WriteRequest": [
         "PutRequest",
@@ -7484,10 +7532,12 @@
         "Key"
       ],
       "TransactGetItemsInput": [
-        "TransactItems"
+        "TransactItems",
+        "ReturnConsumedCapacity"
       ],
       "TransactGetItemsOutput": [
-        "Responses"
+        "Responses",
+        "ConsumedCapacity"
       ],
       "TransactGetItem": [
         "Get"
@@ -7503,9 +7553,14 @@
       ],
       "TransactWriteItemsInput": [
         "TransactItems",
-        "ClientRequestToken"
+        "ClientRequestToken",
+        "ReturnConsumedCapacity",
+        "ReturnItemCollectionMetrics"
       ],
-      "TransactWriteItemsOutput": [],
+      "TransactWriteItemsOutput": [
+        "ConsumedCapacity",
+        "ItemCollectionMetrics"
+      ],
       "TransactWriteItem": [
         "ConditionCheck",
         "Put",
@@ -7748,15 +7803,18 @@
         "Parameters",
         "ConsistentRead",
         "NextToken",
-        "Limit"
+        "Limit",
+        "ReturnConsumedCapacity"
       ],
       "ExecuteStatementOutput": [
         "Items",
         "NextToken",
-        "LastEvaluatedKey"
+        "LastEvaluatedKey",
+        "ConsumedCapacity"
       ],
       "BatchExecuteStatementInput": [
-        "Statements"
+        "Statements",
+        "ReturnConsumedCapacity"
       ],
       "BatchStatementRequest": [
         "Statement",
@@ -7764,7 +7822,8 @@
         "ConsistentRead"
       ],
       "BatchExecuteStatementOutput": [
-        "Responses"
+        "Responses",
+        "ConsumedCapacity"
       ],
       "BatchStatementResponse": [
         "Error",
@@ -7796,10 +7855,12 @@
       ],
       "ExecuteTransactionInput": [
         "TransactStatements",
-        "ClientRequestToken"
+        "ClientRequestToken",
+        "ReturnConsumedCapacity"
       ],
       "ExecuteTransactionOutput": [
-        "Responses"
+        "Responses",
+        "ConsumedCapacity"
       ],
       "ParameterizedStatement": [
         "Statement",
@@ -7879,6 +7940,167 @@
       ],
       "DeleteResourcePolicyOutput": [
         "RevisionId"
+      ],
+      "ImportTableInput": [
+        "ClientToken",
+        "S3BucketSource",
+        "InputFormat",
+        "InputFormatOptions",
+        "InputCompressionType",
+        "TableCreationParameters"
+      ],
+      "ImportTableOutput": [
+        "ImportTableDescription"
+      ],
+      "ImportTableDescription": [
+        "ImportArn",
+        "ImportStatus",
+        "TableArn",
+        "TableId",
+        "ClientToken",
+        "S3BucketSource",
+        "ErrorCount",
+        "InputFormat",
+        "InputFormatOptions",
+        "InputCompressionType",
+        "TableCreationParameters",
+        "StartTime",
+        "EndTime",
+        "ProcessedSizeBytes",
+        "ProcessedItemCount",
+        "ImportedItemCount",
+        "FailureCode",
+        "FailureMessage"
+      ],
+      "ImportSummary": [
+        "ImportArn",
+        "ImportStatus",
+        "TableArn",
+        "S3BucketSource",
+        "InputFormat",
+        "StartTime",
+        "EndTime"
+      ],
+      "DescribeImportInput": [
+        "ImportArn"
+      ],
+      "DescribeImportOutput": [
+        "ImportTableDescription"
+      ],
+      "ListImportsInput": [
+        "TableArn",
+        "PageSize",
+        "NextToken"
+      ],
+      "ListImportsOutput": [
+        "ImportSummaryList",
+        "NextToken"
+      ],
+      "TableCreationParameters": [
+        "TableName",
+        "AttributeDefinitions",
+        "KeySchema",
+        "BillingMode",
+        "ProvisionedThroughput",
+        "GlobalSecondaryIndexes"
+      ],
+      "S3BucketSource": [
+        "S3BucketOwner",
+        "S3Bucket",
+        "S3KeyPrefix"
+      ],
+      "InputFormatOptions": [
+        "Csv"
+      ],
+      "CsvOptions": [
+        "Delimiter",
+        "HeaderList"
+      ],
+      "Condition": [
+        "AttributeValueList",
+        "ComparisonOperator"
+      ],
+      "ExpectedAttributeValue": [
+        "Value",
+        "Exists",
+        "ComparisonOperator",
+        "AttributeValueList"
+      ],
+      "AttributeValueUpdate": [
+        "Value",
+        "Action"
+      ],
+      "Capacity": [
+        "ReadCapacityUnits",
+        "WriteCapacityUnits",
+        "CapacityUnits"
+      ],
+      "ConsumedCapacity": [
+        "TableName",
+        "CapacityUnits",
+        "ReadCapacityUnits",
+        "WriteCapacityUnits",
+        "Table",
+        "LocalSecondaryIndexes",
+        "GlobalSecondaryIndexes"
+      ],
+      "ItemCollectionMetrics": [
+        "ItemCollectionKey",
+        "SizeEstimateRangeGB"
+      ],
+      "DescribeLimitsInput": [],
+      "DescribeLimitsOutput": [
+        "AccountMaxReadCapacityUnits",
+        "AccountMaxWriteCapacityUnits",
+        "TableMaxReadCapacityUnits",
+        "TableMaxWriteCapacityUnits"
+      ],
+      "DescribeEndpointsRequest": [],
+      "DescribeEndpointsResponse": [
+        "Endpoints"
+      ],
+      "Endpoint": [
+        "Address",
+        "CachePeriodInMinutes"
+      ],
+      "DescribeContributorInsightsInput": [
+        "TableName",
+        "IndexName"
+      ],
+      "DescribeContributorInsightsOutput": [
+        "TableName",
+        "IndexName",
+        "ContributorInsightsRuleList",
+        "ContributorInsightsStatus",
+        "LastUpdateDateTime",
+        "ContributorInsightsMode"
+      ],
+      "UpdateContributorInsightsInput": [
+        "TableName",
+        "IndexName",
+        "ContributorInsightsAction",
+        "ContributorInsightsMode"
+      ],
+      "UpdateContributorInsightsOutput": [
+        "TableName",
+        "IndexName",
+        "ContributorInsightsStatus",
+        "ContributorInsightsMode"
+      ],
+      "ListContributorInsightsInput": [
+        "TableName",
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListContributorInsightsOutput": [
+        "ContributorInsightsSummaries",
+        "NextToken"
+      ],
+      "ContributorInsightsSummary": [
+        "TableName",
+        "IndexName",
+        "ContributorInsightsStatus",
+        "ContributorInsightsMode"
       ]
     }
   },
