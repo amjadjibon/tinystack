@@ -400,7 +400,7 @@ func build(
 	streams := kinesis.New(store, keys)
 	functions.UseKinesis(streams)
 	tables.UseKinesis(streams)
-	topics := sns.New(store, queues, functions, deliveries)
+	topics := sns.New(store, queues, functions, keys, deliveries)
 	// Stop ends HTTP deliveries in flight.
 	a.onStop(topics.Stop)
 	secrets := secretsmanager.New(store, keys, functions, deliveries)
@@ -486,6 +486,8 @@ func build(
 	firehoses := firehose.New(store, streams, deliveries, logger)
 	// Stop ends the flusher, which writes to the store.
 	a.onStop(firehoses.Stop)
+	// Stop hooks run newest first, so SNS deliveries finish before Firehose, Lambda, and SQS close. Stop is idempotent.
+	a.onStop(topics.Stop)
 	pipelines := pipes.New(store, queues, streams, tables.Streams(), logger)
 	// Stop ends the pipe runner, which writes to the store.
 	a.onStop(pipelines.Stop)
@@ -910,6 +912,8 @@ func build(
 	a.onReset(codePipelines.Reset)
 	workflows.UseCaller(caller)
 	firehoses.UseCaller(caller)
+	// Firehose subscriptions deliver records via firehose:PutRecord.
+	topics.UseCaller(caller)
 	// Pipes enrich and deliver to Lambda, SQS, SNS, EventBridge, Step Functions, and Kinesis.
 	pipelines.UseCaller(caller)
 	monitoring.UseCaller(caller)

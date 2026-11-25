@@ -56,13 +56,17 @@ func (s *Service) PublishBatch(ctx context.Context, in *api.PublishBatchInput) (
 			"The length of all the messages put together is more than the limit.")
 	}
 
-	// A missing topic fails the whole batch.
+	// A missing topic or unusable KMS key fails the whole batch.
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		_, loadErr := load(tx, key)
 		return loadErr
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if keyErr := s.useKey(ctx, key); keyErr != nil {
+		return nil, keyErr
 	}
 
 	out := &api.PublishBatchResponse{Successful: []api.PublishBatchResultEntry{}, Failed: []api.BatchResultErrorEntry{}}

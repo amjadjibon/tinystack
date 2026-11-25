@@ -438,7 +438,7 @@ func TestCloudFormationCustomTimeout(t *testing.T) {
 	store := &memory.Store{}
 	stacks := cloudformation.New(store, nil)
 	stacks.CustomResourceTimeout = 20 * time.Millisecond
-	topics := localsns.New(store, nil, nil, nil)
+	topics := localsns.New(store, nil, nil, nil, nil)
 	t.Cleanup(topics.Stop)
 	services := []catalog.Service{cfnapi.Descriptor(stacks), snsapi.Descriptor(topics)}
 	handler, err := gateway.New(testConfig(), nil, services...)

@@ -5,14 +5,14 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
+	"maps"
 	"net/http"
 	"net/mail"
 	"net/url"
-	"strconv"
 	"time"
 
 	api "github.com/amjadjibon/tinystack/internal/aws/generated/sns"
+	"github.com/amjadjibon/tinystack/internal/aws/request"
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/apigateway/proxy"
@@ -98,42 +98,111 @@ func (s *Service) requestConfirmation(endpoint, topicARN string, sub *subscripti
 	}
 
 	if sub.Protocol == protocolEmail || sub.Protocol == protocolEmailJSON {
-		s.deliveries.Add(delivery.ViaSNS, topicARN, sub.Endpoint, body, nil)
+		if s.deliveries != nil {
+			s.deliveries.Add(delivery.ViaSNS, topicARN, sub.Endpoint, body, nil)
+		}
+
 		return nil
 	}
 
-	s.post(topicARN, sub, http.Header{
+	s.post(topicARN, sub, subscriptionDeliveryPolicy{}, http.Header{
 		"X-Amz-Sns-Message-Type": {c.Type}, "X-Amz-Sns-Message-Id": {c.MessageID},
 		"X-Amz-Sns-Topic-Arn": {topicARN},
-	}, body)
+	}, body, nil, nil)
 	return nil
 }
 
 // post sends a message to an HTTP or HTTPS endpoint in the background, as SNS
-// delivers, and records the delivery. A response other than 2XX is a failed
-// delivery, which is not retried.
-func (s *Service) post(topicARN string, sub *subscription, header http.Header, body []byte) {
-	header.Set("Content-Type", "text/plain; charset=UTF-8")
+// delivers, retrying notifications according to the effective delivery policy
+// before recording the outcome and redriving to the subscription DLQ on failure.
+func (s *Service) post(
+	topicARN string,
+	sub *subscription,
+	policy subscriptionDeliveryPolicy,
+	header http.Header,
+	body []byte,
+	rawAttrs map[string]api.MessageAttributeValue,
+	placed *sequenced,
+) {
+	subCopy := *sub
+	contentType := defaultContentType
+	if policy.RequestPolicy != nil && policy.RequestPolicy.HeaderContentType != "" {
+		contentType = policy.RequestPolicy.HeaderContentType
+	}
+
+	header.Set("Content-Type", contentType)
 	header.Set("User-Agent", "Amazon Simple Notification Service Agent")
-	endpoint := sub.Endpoint
+	endpoint := subCopy.Endpoint
+	isNotification := header.Get("X-Amz-Sns-Message-Type") == "Notification"
+	maxRetries := 0
+	if isNotification && policy.HealthyRetryPolicy != nil && policy.HealthyRetryPolicy.NumRetries != nil {
+		maxRetries = *policy.HealthyRetryPolicy.NumRetries
+	}
+
+	clonedAttrs := maps.Clone(rawAttrs)
 	s.bg.Go(func(ctx context.Context) {
-		resp := proxy.Forward(ctx, http.MethodPost, endpoint, header, body, postTimeout)
 		var err error
-		if resp.Status < 200 || resp.Status > 299 {
-			err = fmt.Errorf("the endpoint answered HTTP %s", strconv.Itoa(resp.Status))
+		for attempt := 0; attempt <= maxRetries; attempt++ {
+			var retryable bool
+			err, retryable = attemptHTTPPost(ctx, endpoint, header, body)
+			if err == nil || !retryable || attempt == maxRetries {
+				break
+			}
+
+			wait := retryDelay(policy.HealthyRetryPolicy, attempt)
+			if wait > 0 {
+				timer := time.NewTimer(wait)
+				select {
+				case <-timer.C:
+				case <-ctx.Done():
+					timer.Stop()
+					return
+				}
+			}
 		}
 
-		s.deliveries.Add(delivery.ViaSNS, topicARN, endpoint, body, err)
+		if s.deliveries != nil {
+			s.deliveries.Add(delivery.ViaSNS, topicARN, endpoint, body, err)
+		}
+
 		// A confirmation request is not a notification.
-		if header.Get("X-Amz-Sns-Message-Type") == "Notification" {
+		if isNotification {
 			s.notified(topicARN, err)
+			if err != nil {
+				s.redrive(ctx, topicARN, &subCopy, string(body), clonedAttrs, placed, err)
+			}
 		}
 	})
 }
 
+func attemptHTTPPost(
+	ctx context.Context,
+	endpoint string,
+	header http.Header,
+	body []byte,
+) (err error, retryable bool) {
+	resp, transportErr := proxy.RoundTrip(ctx, http.MethodPost, endpoint, header, body, postTimeout)
+	if transportErr != nil {
+		return transportErr, true
+	}
+
+	if resp.Status >= 200 && resp.Status <= 299 {
+		return nil, false
+	}
+
+	return &httpStatusError{status: resp.Status}, resp.Status >= 500 || resp.Status == http.StatusTooManyRequests
+}
+
 // deliverEndpoint delivers a notification to a confirmed HTTP, HTTPS, or email
 // subscription. Email is recorded in the delivery log, never sent.
-func (s *Service) deliverEndpoint(sub *subscription, subARN string, envelope *notification) error {
+func (s *Service) deliverEndpoint(
+	sub *subscription,
+	subARN string,
+	topicDeliveryRaw string,
+	envelope *notification,
+	e *api.PublishBatchRequestEntry,
+	placed *sequenced,
+) error {
 	body := []byte(envelope.Message)
 	if !sub.Raw && sub.Protocol != protocolEmail {
 		encoded, err := json.Marshal(envelope)
@@ -146,7 +215,10 @@ func (s *Service) deliverEndpoint(sub *subscription, subARN string, envelope *no
 
 	switch sub.Protocol {
 	case protocolEmail, protocolEmailJSON:
-		s.deliveries.Add(delivery.ViaSNS, envelope.TopicArn, sub.Endpoint, body, nil)
+		if s.deliveries != nil {
+			s.deliveries.Add(delivery.ViaSNS, envelope.TopicArn, sub.Endpoint, body, nil)
+		}
+
 		s.notified(envelope.TopicArn, nil)
 		return nil
 	}
@@ -159,8 +231,21 @@ func (s *Service) deliverEndpoint(sub *subscription, subARN string, envelope *no
 		header.Set("X-Amz-Sns-Rawdelivery", valueTrue)
 	}
 
-	s.post(envelope.TopicArn, sub, header, body)
+	_, effectivePolicy := effectiveSubscriptionDeliveryPolicy(topicDeliveryRaw, sub.DeliveryPolicy)
+	s.post(envelope.TopicArn, sub, effectivePolicy, header, body, e.MessageAttributes, placed)
 	return nil
+}
+
+// isAuthenticated reports whether a request carries AWS authentication (SigV4
+// credentials, an authenticated principal, or an internal/console call).
+//
+//nolint:gocritic // Metadata is an immutable request snapshot.
+func isAuthenticated(m request.Metadata) bool {
+	if m.Principal != nil {
+		return m.Principal.Kind != request.PrincipalAnonymous
+	}
+
+	return m.AccessKey != "" || m.Protocol == "console" || m.Protocol == ""
 }
 
 // ConfirmSubscription confirms a pending subscription with the token its
@@ -176,6 +261,13 @@ func (s *Service) ConfirmSubscription(
 		return nil, err
 	}
 
+	authUnsub := common.Value(in.AuthenticateOnUnsubscribe)
+	if authUnsub != "" && authUnsub != valueTrue && authUnsub != valueFalse {
+		return nil, invalid("AuthenticateOnUnsubscribe must be true or false")
+	}
+
+	m, _ := request.FromContext(ctx)
+	authenticated := isAuthenticated(m)
 	token := common.Value(in.Token)
 	var id string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
@@ -196,6 +288,8 @@ func (s *Service) ConfirmSubscription(
 			}
 
 			sub.Pending = false
+			sub.ConfirmationWasAuthenticated = authenticated
+			sub.AuthenticateOnUnsubscribe = authUnsub == valueTrue && authenticated
 			return storage.Write(tx, key, t)
 		}
 

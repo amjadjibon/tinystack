@@ -4,6 +4,7 @@ package sns
 import (
 	"context"
 	"github.com/amjadjibon/tinystack/internal/aws/catalog"
+	"time"
 )
 
 type Tag struct {
@@ -12,9 +13,10 @@ type Tag struct {
 }
 
 type CreateTopicInput struct {
-	Name       *string           `json:"Name,omitempty" query:"Name"`
-	Attributes map[string]string `json:"Attributes,omitempty" query:"Attributes"`
-	Tags       []Tag             `json:"Tags,omitempty" query:"Tags"`
+	Name                 *string           `json:"Name,omitempty" query:"Name"`
+	Attributes           map[string]string `json:"Attributes,omitempty" query:"Attributes"`
+	Tags                 []Tag             `json:"Tags,omitempty" query:"Tags"`
+	DataProtectionPolicy *string           `json:"DataProtectionPolicy,omitempty" query:"DataProtectionPolicy"`
 }
 
 type CreateTopicResponse struct {
@@ -53,8 +55,9 @@ type SubscribeResponse struct {
 }
 
 type ConfirmSubscriptionInput struct {
-	TopicArn *string `json:"TopicArn,omitempty" query:"TopicArn"`
-	Token    *string `json:"Token,omitempty" query:"Token"`
+	TopicArn                  *string `json:"TopicArn,omitempty" query:"TopicArn"`
+	Token                     *string `json:"Token,omitempty" query:"Token"`
+	AuthenticateOnUnsubscribe *string `json:"AuthenticateOnUnsubscribe,omitempty" query:"AuthenticateOnUnsubscribe"`
 }
 
 type ConfirmSubscriptionResponse struct {
@@ -102,6 +105,7 @@ type MessageAttributeValue struct {
 
 type PublishInput struct {
 	TopicArn               *string                          `json:"TopicArn,omitempty" query:"TopicArn"`
+	TargetArn              *string                          `json:"TargetArn,omitempty" query:"TargetArn"`
 	PhoneNumber            *string                          `json:"PhoneNumber,omitempty" query:"PhoneNumber"`
 	Message                *string                          `json:"Message,omitempty" query:"Message"`
 	Subject                *string                          `json:"Subject,omitempty" query:"Subject"`
@@ -221,6 +225,216 @@ type RemovePermissionInput struct {
 	Label    *string `json:"Label,omitempty" query:"Label"`
 }
 
+type CreatePlatformApplicationInput struct {
+	Name       *string           `json:"Name,omitempty" query:"Name"`
+	Platform   *string           `json:"Platform,omitempty" query:"Platform"`
+	Attributes map[string]string `json:"Attributes,omitempty" query:"Attributes"`
+}
+
+type CreatePlatformApplicationResponse struct {
+	PlatformApplicationArn *string `json:"PlatformApplicationArn,omitempty" query:"PlatformApplicationArn"`
+}
+
+type DeletePlatformApplicationOutput struct{}
+
+type DeletePlatformApplicationInput struct {
+	PlatformApplicationArn *string `json:"PlatformApplicationArn,omitempty" query:"PlatformApplicationArn"`
+}
+
+type GetPlatformApplicationAttributesInput struct {
+	PlatformApplicationArn *string `json:"PlatformApplicationArn,omitempty" query:"PlatformApplicationArn"`
+}
+
+type GetPlatformApplicationAttributesResponse struct {
+	Attributes map[string]string `json:"Attributes,omitempty" query:"Attributes"`
+}
+
+type SetPlatformApplicationAttributesOutput struct{}
+
+type SetPlatformApplicationAttributesInput struct {
+	PlatformApplicationArn *string           `json:"PlatformApplicationArn,omitempty" query:"PlatformApplicationArn"`
+	Attributes             map[string]string `json:"Attributes,omitempty" query:"Attributes"`
+}
+
+type ListPlatformApplicationsInput struct {
+	NextToken *string `json:"NextToken,omitempty" query:"NextToken"`
+}
+
+type PlatformApplication struct {
+	PlatformApplicationArn *string           `json:"PlatformApplicationArn,omitempty" query:"PlatformApplicationArn"`
+	Attributes             map[string]string `json:"Attributes,omitempty" query:"Attributes"`
+}
+
+type ListPlatformApplicationsResponse struct {
+	PlatformApplications []PlatformApplication `json:"PlatformApplications,omitempty" query:"PlatformApplications"`
+	NextToken            *string               `json:"NextToken,omitempty" query:"NextToken"`
+}
+
+type CreatePlatformEndpointInput struct {
+	PlatformApplicationArn *string           `json:"PlatformApplicationArn,omitempty" query:"PlatformApplicationArn"`
+	Token                  *string           `json:"Token,omitempty" query:"Token"`
+	CustomUserData         *string           `json:"CustomUserData,omitempty" query:"CustomUserData"`
+	Attributes             map[string]string `json:"Attributes,omitempty" query:"Attributes"`
+}
+
+type CreateEndpointResponse struct {
+	EndpointArn *string `json:"EndpointArn,omitempty" query:"EndpointArn"`
+}
+
+type DeleteEndpointOutput struct{}
+
+type DeleteEndpointInput struct {
+	EndpointArn *string `json:"EndpointArn,omitempty" query:"EndpointArn"`
+}
+
+type GetEndpointAttributesInput struct {
+	EndpointArn *string `json:"EndpointArn,omitempty" query:"EndpointArn"`
+}
+
+type GetEndpointAttributesResponse struct {
+	Attributes map[string]string `json:"Attributes,omitempty" query:"Attributes"`
+}
+
+type SetEndpointAttributesOutput struct{}
+
+type SetEndpointAttributesInput struct {
+	EndpointArn *string           `json:"EndpointArn,omitempty" query:"EndpointArn"`
+	Attributes  map[string]string `json:"Attributes,omitempty" query:"Attributes"`
+}
+
+type ListEndpointsByPlatformApplicationInput struct {
+	PlatformApplicationArn *string `json:"PlatformApplicationArn,omitempty" query:"PlatformApplicationArn"`
+	NextToken              *string `json:"NextToken,omitempty" query:"NextToken"`
+}
+
+type Endpoint struct {
+	EndpointArn *string           `json:"EndpointArn,omitempty" query:"EndpointArn"`
+	Attributes  map[string]string `json:"Attributes,omitempty" query:"Attributes"`
+}
+
+type ListEndpointsByPlatformApplicationResponse struct {
+	Endpoints []Endpoint `json:"Endpoints,omitempty" query:"Endpoints"`
+	NextToken *string    `json:"NextToken,omitempty" query:"NextToken"`
+}
+
+type GetDataProtectionPolicyInput struct {
+	ResourceArn *string `json:"ResourceArn,omitempty" query:"ResourceArn"`
+}
+
+type GetDataProtectionPolicyResponse struct {
+	DataProtectionPolicy *string `json:"DataProtectionPolicy,omitempty" query:"DataProtectionPolicy"`
+}
+
+type PutDataProtectionPolicyOutput struct{}
+
+type PutDataProtectionPolicyInput struct {
+	ResourceArn          *string `json:"ResourceArn,omitempty" query:"ResourceArn"`
+	DataProtectionPolicy *string `json:"DataProtectionPolicy,omitempty" query:"DataProtectionPolicy"`
+}
+
+type SetSMSAttributesInput struct {
+	Attributes map[string]string `json:"attributes,omitempty" query:"attributes"`
+}
+
+type SetSMSAttributesResponse struct {
+}
+
+type GetSMSAttributesInput struct {
+	Attributes []string `json:"attributes,omitempty" query:"attributes"`
+}
+
+type GetSMSAttributesResponse struct {
+	Attributes map[string]string `json:"attributes,omitempty" query:"attributes"`
+}
+
+type CheckIfPhoneNumberIsOptedOutInput struct {
+	PhoneNumber *string `json:"phoneNumber,omitempty" query:"phoneNumber"`
+}
+
+type CheckIfPhoneNumberIsOptedOutResponse struct {
+	IsOptedOut *bool `json:"isOptedOut,omitempty" query:"isOptedOut"`
+}
+
+type ListPhoneNumbersOptedOutInput struct {
+	NextToken *string `json:"nextToken,omitempty" query:"nextToken"`
+}
+
+type ListPhoneNumbersOptedOutResponse struct {
+	PhoneNumbers []string `json:"phoneNumbers,omitempty" query:"phoneNumbers"`
+	NextToken    *string  `json:"nextToken,omitempty" query:"nextToken"`
+}
+
+type OptInPhoneNumberInput struct {
+	PhoneNumber *string `json:"phoneNumber,omitempty" query:"phoneNumber"`
+}
+
+type OptInPhoneNumberResponse struct {
+}
+
+type CreateSMSSandboxPhoneNumberInput struct {
+	PhoneNumber  *string `json:"PhoneNumber,omitempty" query:"PhoneNumber"`
+	LanguageCode *string `json:"LanguageCode,omitempty" query:"LanguageCode"`
+}
+
+type CreateSMSSandboxPhoneNumberResult struct {
+}
+
+type VerifySMSSandboxPhoneNumberInput struct {
+	PhoneNumber     *string `json:"PhoneNumber,omitempty" query:"PhoneNumber"`
+	OneTimePassword *string `json:"OneTimePassword,omitempty" query:"OneTimePassword"`
+}
+
+type VerifySMSSandboxPhoneNumberResult struct {
+}
+
+type DeleteSMSSandboxPhoneNumberInput struct {
+	PhoneNumber *string `json:"PhoneNumber,omitempty" query:"PhoneNumber"`
+}
+
+type DeleteSMSSandboxPhoneNumberResult struct {
+}
+
+type ListSMSSandboxPhoneNumbersInput struct {
+	NextToken  *string `json:"NextToken,omitempty" query:"NextToken"`
+	MaxResults *int64  `json:"MaxResults,omitempty" query:"MaxResults"`
+}
+
+type SMSSandboxPhoneNumber struct {
+	PhoneNumber *string `json:"PhoneNumber,omitempty" query:"PhoneNumber"`
+	Status      *string `json:"Status,omitempty" query:"Status"`
+}
+
+type ListSMSSandboxPhoneNumbersResult struct {
+	PhoneNumbers []SMSSandboxPhoneNumber `json:"PhoneNumbers,omitempty" query:"PhoneNumbers"`
+	NextToken    *string                 `json:"NextToken,omitempty" query:"NextToken"`
+}
+
+type GetSMSSandboxAccountStatusInput struct {
+}
+
+type GetSMSSandboxAccountStatusResult struct {
+	IsInSandbox *bool `json:"IsInSandbox,omitempty" query:"IsInSandbox"`
+}
+
+type ListOriginationNumbersRequest struct {
+	NextToken  *string `json:"NextToken,omitempty" query:"NextToken"`
+	MaxResults *int64  `json:"MaxResults,omitempty" query:"MaxResults"`
+}
+
+type PhoneNumberInformation struct {
+	CreatedAt          *time.Time `json:"CreatedAt,omitempty" query:"CreatedAt"`
+	PhoneNumber        *string    `json:"PhoneNumber,omitempty" query:"PhoneNumber"`
+	Status             *string    `json:"Status,omitempty" query:"Status"`
+	Iso2CountryCode    *string    `json:"Iso2CountryCode,omitempty" query:"Iso2CountryCode"`
+	RouteType          *string    `json:"RouteType,omitempty" query:"RouteType"`
+	NumberCapabilities []string   `json:"NumberCapabilities,omitempty" query:"NumberCapabilities"`
+}
+
+type ListOriginationNumbersResult struct {
+	NextToken    *string                  `json:"NextToken,omitempty" query:"NextToken"`
+	PhoneNumbers []PhoneNumberInformation `json:"PhoneNumbers,omitempty" query:"PhoneNumbers"`
+}
+
 type API interface {
 	CreateTopic(context.Context, *CreateTopicInput) (*CreateTopicResponse, error)
 	DeleteTopic(context.Context, *DeleteTopicInput) (*DeleteTopicOutput, error)
@@ -241,10 +455,33 @@ type API interface {
 	PublishBatch(context.Context, *PublishBatchInput) (*PublishBatchResponse, error)
 	AddPermission(context.Context, *AddPermissionInput) (*AddPermissionOutput, error)
 	RemovePermission(context.Context, *RemovePermissionInput) (*RemovePermissionOutput, error)
+	CreatePlatformApplication(context.Context, *CreatePlatformApplicationInput) (*CreatePlatformApplicationResponse, error)
+	DeletePlatformApplication(context.Context, *DeletePlatformApplicationInput) (*DeletePlatformApplicationOutput, error)
+	GetPlatformApplicationAttributes(context.Context, *GetPlatformApplicationAttributesInput) (*GetPlatformApplicationAttributesResponse, error)
+	SetPlatformApplicationAttributes(context.Context, *SetPlatformApplicationAttributesInput) (*SetPlatformApplicationAttributesOutput, error)
+	ListPlatformApplications(context.Context, *ListPlatformApplicationsInput) (*ListPlatformApplicationsResponse, error)
+	CreatePlatformEndpoint(context.Context, *CreatePlatformEndpointInput) (*CreateEndpointResponse, error)
+	DeleteEndpoint(context.Context, *DeleteEndpointInput) (*DeleteEndpointOutput, error)
+	GetEndpointAttributes(context.Context, *GetEndpointAttributesInput) (*GetEndpointAttributesResponse, error)
+	SetEndpointAttributes(context.Context, *SetEndpointAttributesInput) (*SetEndpointAttributesOutput, error)
+	ListEndpointsByPlatformApplication(context.Context, *ListEndpointsByPlatformApplicationInput) (*ListEndpointsByPlatformApplicationResponse, error)
+	GetDataProtectionPolicy(context.Context, *GetDataProtectionPolicyInput) (*GetDataProtectionPolicyResponse, error)
+	PutDataProtectionPolicy(context.Context, *PutDataProtectionPolicyInput) (*PutDataProtectionPolicyOutput, error)
+	SetSMSAttributes(context.Context, *SetSMSAttributesInput) (*SetSMSAttributesResponse, error)
+	GetSMSAttributes(context.Context, *GetSMSAttributesInput) (*GetSMSAttributesResponse, error)
+	CheckIfPhoneNumberIsOptedOut(context.Context, *CheckIfPhoneNumberIsOptedOutInput) (*CheckIfPhoneNumberIsOptedOutResponse, error)
+	ListPhoneNumbersOptedOut(context.Context, *ListPhoneNumbersOptedOutInput) (*ListPhoneNumbersOptedOutResponse, error)
+	OptInPhoneNumber(context.Context, *OptInPhoneNumberInput) (*OptInPhoneNumberResponse, error)
+	CreateSMSSandboxPhoneNumber(context.Context, *CreateSMSSandboxPhoneNumberInput) (*CreateSMSSandboxPhoneNumberResult, error)
+	VerifySMSSandboxPhoneNumber(context.Context, *VerifySMSSandboxPhoneNumberInput) (*VerifySMSSandboxPhoneNumberResult, error)
+	DeleteSMSSandboxPhoneNumber(context.Context, *DeleteSMSSandboxPhoneNumberInput) (*DeleteSMSSandboxPhoneNumberResult, error)
+	ListSMSSandboxPhoneNumbers(context.Context, *ListSMSSandboxPhoneNumbersInput) (*ListSMSSandboxPhoneNumbersResult, error)
+	GetSMSSandboxAccountStatus(context.Context, *GetSMSSandboxAccountStatusInput) (*GetSMSSandboxAccountStatusResult, error)
+	ListOriginationNumbers(context.Context, *ListOriginationNumbersRequest) (*ListOriginationNumbersResult, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "sns", SigningName: "sns", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "sns", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "http://sns.amazonaws.com/doc/2010-03-31/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{"AuthorizationErrorException": catalog.ErrorBinding{QueryCode: "AuthorizationError", MessageMember: "", StatusCode: 403}, "BatchEntryIdsNotDistinctException": catalog.ErrorBinding{QueryCode: "BatchEntryIdsNotDistinct", MessageMember: "", StatusCode: 400}, "BatchRequestTooLongException": catalog.ErrorBinding{QueryCode: "BatchRequestTooLong", MessageMember: "", StatusCode: 400}, "ConcurrentAccessException": catalog.ErrorBinding{QueryCode: "ConcurrentAccess", MessageMember: "", StatusCode: 400}, "EmptyBatchRequestException": catalog.ErrorBinding{QueryCode: "EmptyBatchRequest", MessageMember: "", StatusCode: 400}, "EndpointDisabledException": catalog.ErrorBinding{QueryCode: "EndpointDisabled", MessageMember: "", StatusCode: 400}, "FilterPolicyLimitExceededException": catalog.ErrorBinding{QueryCode: "FilterPolicyLimitExceeded", MessageMember: "", StatusCode: 403}, "InternalErrorException": catalog.ErrorBinding{QueryCode: "InternalError", MessageMember: "", StatusCode: 500}, "InvalidBatchEntryIdException": catalog.ErrorBinding{QueryCode: "InvalidBatchEntryId", MessageMember: "", StatusCode: 400}, "InvalidParameterException": catalog.ErrorBinding{QueryCode: "InvalidParameter", MessageMember: "", StatusCode: 400}, "InvalidParameterValueException": catalog.ErrorBinding{QueryCode: "ParameterValueInvalid", MessageMember: "", StatusCode: 400}, "InvalidSecurityException": catalog.ErrorBinding{QueryCode: "InvalidSecurity", MessageMember: "", StatusCode: 403}, "InvalidStateException": catalog.ErrorBinding{QueryCode: "InvalidState", MessageMember: "", StatusCode: 400}, "KMSAccessDeniedException": catalog.ErrorBinding{QueryCode: "KMSAccessDenied", MessageMember: "", StatusCode: 400}, "KMSDisabledException": catalog.ErrorBinding{QueryCode: "KMSDisabled", MessageMember: "", StatusCode: 400}, "KMSInvalidStateException": catalog.ErrorBinding{QueryCode: "KMSInvalidState", MessageMember: "", StatusCode: 400}, "KMSNotFoundException": catalog.ErrorBinding{QueryCode: "KMSNotFound", MessageMember: "", StatusCode: 400}, "KMSOptInRequired": catalog.ErrorBinding{QueryCode: "KMSOptInRequired", MessageMember: "", StatusCode: 403}, "KMSThrottlingException": catalog.ErrorBinding{QueryCode: "KMSThrottling", MessageMember: "", StatusCode: 400}, "NotFoundException": catalog.ErrorBinding{QueryCode: "NotFound", MessageMember: "", StatusCode: 404}, "PlatformApplicationDisabledException": catalog.ErrorBinding{QueryCode: "PlatformApplicationDisabled", MessageMember: "", StatusCode: 400}, "ReplayLimitExceededException": catalog.ErrorBinding{QueryCode: "ReplayLimitExceeded", MessageMember: "", StatusCode: 403}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "ResourceNotFound", MessageMember: "", StatusCode: 404}, "StaleTagException": catalog.ErrorBinding{QueryCode: "StaleTag", MessageMember: "", StatusCode: 400}, "SubscriptionLimitExceededException": catalog.ErrorBinding{QueryCode: "SubscriptionLimitExceeded", MessageMember: "", StatusCode: 403}, "TagLimitExceededException": catalog.ErrorBinding{QueryCode: "TagLimitExceeded", MessageMember: "", StatusCode: 400}, "TagPolicyException": catalog.ErrorBinding{QueryCode: "TagPolicy", MessageMember: "", StatusCode: 400}, "TooManyEntriesInBatchRequestException": catalog.ErrorBinding{QueryCode: "TooManyEntriesInBatchRequest", MessageMember: "", StatusCode: 400}, "TopicLimitExceededException": catalog.ErrorBinding{QueryCode: "TopicLimitExceeded", MessageMember: "", StatusCode: 403}, "ValidationException": catalog.ErrorBinding{QueryCode: "ValidationException", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "sns", SigningName: "sns", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "sns", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "http://sns.amazonaws.com/doc/2010-03-31/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{"AuthorizationErrorException": catalog.ErrorBinding{QueryCode: "AuthorizationError", MessageMember: "", StatusCode: 403}, "BatchEntryIdsNotDistinctException": catalog.ErrorBinding{QueryCode: "BatchEntryIdsNotDistinct", MessageMember: "", StatusCode: 400}, "BatchRequestTooLongException": catalog.ErrorBinding{QueryCode: "BatchRequestTooLong", MessageMember: "", StatusCode: 400}, "ConcurrentAccessException": catalog.ErrorBinding{QueryCode: "ConcurrentAccess", MessageMember: "", StatusCode: 400}, "EmptyBatchRequestException": catalog.ErrorBinding{QueryCode: "EmptyBatchRequest", MessageMember: "", StatusCode: 400}, "EndpointDisabledException": catalog.ErrorBinding{QueryCode: "EndpointDisabled", MessageMember: "", StatusCode: 400}, "FilterPolicyLimitExceededException": catalog.ErrorBinding{QueryCode: "FilterPolicyLimitExceeded", MessageMember: "", StatusCode: 403}, "InternalErrorException": catalog.ErrorBinding{QueryCode: "InternalError", MessageMember: "", StatusCode: 500}, "InvalidBatchEntryIdException": catalog.ErrorBinding{QueryCode: "InvalidBatchEntryId", MessageMember: "", StatusCode: 400}, "InvalidParameterException": catalog.ErrorBinding{QueryCode: "InvalidParameter", MessageMember: "", StatusCode: 400}, "InvalidParameterValueException": catalog.ErrorBinding{QueryCode: "ParameterValueInvalid", MessageMember: "", StatusCode: 400}, "InvalidSecurityException": catalog.ErrorBinding{QueryCode: "InvalidSecurity", MessageMember: "", StatusCode: 403}, "InvalidStateException": catalog.ErrorBinding{QueryCode: "InvalidState", MessageMember: "", StatusCode: 400}, "KMSAccessDeniedException": catalog.ErrorBinding{QueryCode: "KMSAccessDenied", MessageMember: "", StatusCode: 400}, "KMSDisabledException": catalog.ErrorBinding{QueryCode: "KMSDisabled", MessageMember: "", StatusCode: 400}, "KMSInvalidStateException": catalog.ErrorBinding{QueryCode: "KMSInvalidState", MessageMember: "", StatusCode: 400}, "KMSNotFoundException": catalog.ErrorBinding{QueryCode: "KMSNotFound", MessageMember: "", StatusCode: 400}, "KMSOptInRequired": catalog.ErrorBinding{QueryCode: "KMSOptInRequired", MessageMember: "", StatusCode: 403}, "KMSThrottlingException": catalog.ErrorBinding{QueryCode: "KMSThrottling", MessageMember: "", StatusCode: 400}, "NotFoundException": catalog.ErrorBinding{QueryCode: "NotFound", MessageMember: "", StatusCode: 404}, "OptedOutException": catalog.ErrorBinding{QueryCode: "OptedOut", MessageMember: "", StatusCode: 400}, "PlatformApplicationDisabledException": catalog.ErrorBinding{QueryCode: "PlatformApplicationDisabled", MessageMember: "", StatusCode: 400}, "ReplayLimitExceededException": catalog.ErrorBinding{QueryCode: "ReplayLimitExceeded", MessageMember: "", StatusCode: 403}, "ResourceNotFoundException": catalog.ErrorBinding{QueryCode: "ResourceNotFound", MessageMember: "", StatusCode: 404}, "StaleTagException": catalog.ErrorBinding{QueryCode: "StaleTag", MessageMember: "", StatusCode: 400}, "SubscriptionLimitExceededException": catalog.ErrorBinding{QueryCode: "SubscriptionLimitExceeded", MessageMember: "", StatusCode: 403}, "TagLimitExceededException": catalog.ErrorBinding{QueryCode: "TagLimitExceeded", MessageMember: "", StatusCode: 400}, "TagPolicyException": catalog.ErrorBinding{QueryCode: "TagPolicy", MessageMember: "", StatusCode: 400}, "ThrottledException": catalog.ErrorBinding{QueryCode: "Throttled", MessageMember: "", StatusCode: 429}, "TooManyEntriesInBatchRequestException": catalog.ErrorBinding{QueryCode: "TooManyEntriesInBatchRequest", MessageMember: "", StatusCode: 400}, "TopicLimitExceededException": catalog.ErrorBinding{QueryCode: "TopicLimitExceeded", MessageMember: "", StatusCode: 403}, "UserErrorException": catalog.ErrorBinding{QueryCode: "UserError", MessageMember: "", StatusCode: 400}, "ValidationException": catalog.ErrorBinding{QueryCode: "ValidationException", MessageMember: "", StatusCode: 400}, "VerificationException": catalog.ErrorBinding{QueryCode: "VerificationException", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateTopic": {Name: "CreateTopic", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "sns:CreateTopic", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateTopic", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateTopicInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateTopic(ctx, input.(*CreateTopicInput))
 		}},
@@ -297,6 +534,75 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"RemovePermission": {Name: "RemovePermission", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "sns:RemovePermission", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "RemovePermission", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &RemovePermissionInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.RemovePermission(ctx, input.(*RemovePermissionInput))
+		}},
+		"CreatePlatformApplication": {Name: "CreatePlatformApplication", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "sns:CreatePlatformApplication", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreatePlatformApplication", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreatePlatformApplicationInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreatePlatformApplication(ctx, input.(*CreatePlatformApplicationInput))
+		}},
+		"DeletePlatformApplication": {Name: "DeletePlatformApplication", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "sns:DeletePlatformApplication", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeletePlatformApplication", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeletePlatformApplicationInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeletePlatformApplication(ctx, input.(*DeletePlatformApplicationInput))
+		}},
+		"GetPlatformApplicationAttributes": {Name: "GetPlatformApplicationAttributes", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "sns:GetPlatformApplicationAttributes", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetPlatformApplicationAttributes", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetPlatformApplicationAttributesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetPlatformApplicationAttributes(ctx, input.(*GetPlatformApplicationAttributesInput))
+		}},
+		"SetPlatformApplicationAttributes": {Name: "SetPlatformApplicationAttributes", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "sns:SetPlatformApplicationAttributes", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "SetPlatformApplicationAttributes", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &SetPlatformApplicationAttributesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.SetPlatformApplicationAttributes(ctx, input.(*SetPlatformApplicationAttributesInput))
+		}},
+		"ListPlatformApplications": {Name: "ListPlatformApplications", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "sns:ListPlatformApplications", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListPlatformApplications", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListPlatformApplicationsInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListPlatformApplications(ctx, input.(*ListPlatformApplicationsInput))
+		}},
+		"CreatePlatformEndpoint": {Name: "CreatePlatformEndpoint", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "sns:CreatePlatformEndpoint", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreatePlatformEndpoint", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreatePlatformEndpointInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreatePlatformEndpoint(ctx, input.(*CreatePlatformEndpointInput))
+		}},
+		"DeleteEndpoint": {Name: "DeleteEndpoint", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "sns:DeleteEndpoint", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteEndpoint", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteEndpointInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteEndpoint(ctx, input.(*DeleteEndpointInput))
+		}},
+		"GetEndpointAttributes": {Name: "GetEndpointAttributes", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "sns:GetEndpointAttributes", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetEndpointAttributes", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetEndpointAttributesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetEndpointAttributes(ctx, input.(*GetEndpointAttributesInput))
+		}},
+		"SetEndpointAttributes": {Name: "SetEndpointAttributes", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "sns:SetEndpointAttributes", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "SetEndpointAttributes", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &SetEndpointAttributesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.SetEndpointAttributes(ctx, input.(*SetEndpointAttributesInput))
+		}},
+		"ListEndpointsByPlatformApplication": {Name: "ListEndpointsByPlatformApplication", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "sns:ListEndpointsByPlatformApplication", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListEndpointsByPlatformApplication", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListEndpointsByPlatformApplicationInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListEndpointsByPlatformApplication(ctx, input.(*ListEndpointsByPlatformApplicationInput))
+		}},
+		"GetDataProtectionPolicy": {Name: "GetDataProtectionPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "sns:GetDataProtectionPolicy", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetDataProtectionPolicy", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetDataProtectionPolicyInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetDataProtectionPolicy(ctx, input.(*GetDataProtectionPolicyInput))
+		}},
+		"PutDataProtectionPolicy": {Name: "PutDataProtectionPolicy", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "sns:PutDataProtectionPolicy", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "PutDataProtectionPolicy", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &PutDataProtectionPolicyInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.PutDataProtectionPolicy(ctx, input.(*PutDataProtectionPolicyInput))
+		}},
+		"SetSMSAttributes": {Name: "SetSMSAttributes", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "sns:SetSMSAttributes", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "SetSMSAttributes", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &SetSMSAttributesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.SetSMSAttributes(ctx, input.(*SetSMSAttributesInput))
+		}},
+		"GetSMSAttributes": {Name: "GetSMSAttributes", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "sns:GetSMSAttributes", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetSMSAttributes", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetSMSAttributesInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetSMSAttributes(ctx, input.(*GetSMSAttributesInput))
+		}},
+		"CheckIfPhoneNumberIsOptedOut": {Name: "CheckIfPhoneNumberIsOptedOut", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "sns:CheckIfPhoneNumberIsOptedOut", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CheckIfPhoneNumberIsOptedOut", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CheckIfPhoneNumberIsOptedOutInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CheckIfPhoneNumberIsOptedOut(ctx, input.(*CheckIfPhoneNumberIsOptedOutInput))
+		}},
+		"ListPhoneNumbersOptedOut": {Name: "ListPhoneNumbersOptedOut", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "sns:ListPhoneNumbersOptedOut", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListPhoneNumbersOptedOut", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListPhoneNumbersOptedOutInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListPhoneNumbersOptedOut(ctx, input.(*ListPhoneNumbersOptedOutInput))
+		}},
+		"OptInPhoneNumber": {Name: "OptInPhoneNumber", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "sns:OptInPhoneNumber", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "OptInPhoneNumber", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &OptInPhoneNumberInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.OptInPhoneNumber(ctx, input.(*OptInPhoneNumberInput))
+		}},
+		"CreateSMSSandboxPhoneNumber": {Name: "CreateSMSSandboxPhoneNumber", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "sns:CreateSMSSandboxPhoneNumber", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateSMSSandboxPhoneNumber", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateSMSSandboxPhoneNumberInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateSMSSandboxPhoneNumber(ctx, input.(*CreateSMSSandboxPhoneNumberInput))
+		}},
+		"VerifySMSSandboxPhoneNumber": {Name: "VerifySMSSandboxPhoneNumber", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "sns:VerifySMSSandboxPhoneNumber", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "VerifySMSSandboxPhoneNumber", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &VerifySMSSandboxPhoneNumberInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.VerifySMSSandboxPhoneNumber(ctx, input.(*VerifySMSSandboxPhoneNumberInput))
+		}},
+		"DeleteSMSSandboxPhoneNumber": {Name: "DeleteSMSSandboxPhoneNumber", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "sns:DeleteSMSSandboxPhoneNumber", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteSMSSandboxPhoneNumber", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteSMSSandboxPhoneNumberInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteSMSSandboxPhoneNumber(ctx, input.(*DeleteSMSSandboxPhoneNumberInput))
+		}},
+		"ListSMSSandboxPhoneNumbers": {Name: "ListSMSSandboxPhoneNumbers", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "sns:ListSMSSandboxPhoneNumbers", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListSMSSandboxPhoneNumbers", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListSMSSandboxPhoneNumbersInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListSMSSandboxPhoneNumbers(ctx, input.(*ListSMSSandboxPhoneNumbersInput))
+		}},
+		"GetSMSSandboxAccountStatus": {Name: "GetSMSSandboxAccountStatus", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "sns:GetSMSSandboxAccountStatus", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetSMSSandboxAccountStatus", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetSMSSandboxAccountStatusInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetSMSSandboxAccountStatus(ctx, input.(*GetSMSSandboxAccountStatusInput))
+		}},
+		"ListOriginationNumbers": {Name: "ListOriginationNumbers", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "sns:ListOriginationNumbers", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListOriginationNumbers", Version: "2010-03-31", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListOriginationNumbersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListOriginationNumbers(ctx, input.(*ListOriginationNumbersRequest))
 		}},
 	}}
 }

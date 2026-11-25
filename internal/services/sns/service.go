@@ -1,7 +1,8 @@
-// Package sns implements standard SNS topics with SQS, Lambda, HTTP, HTTPS,
-// and email subscriptions. Deliveries call the SQS and Lambda services
-// in-process, post to HTTP endpoints through the shared outbound proxy, and
-// record email in the delivery log.
+// Package sns implements SNS topics, subscriptions, mobile push platform
+// applications and endpoints, topic data protection policies, and SMS
+// management. Deliveries call SQS, Lambda, and Firehose in-process, post to
+// HTTP/HTTPS endpoints through the shared outbound proxy with configured
+// retries, and record email, SMS, and mobile push in the delivery log.
 package sns
 
 import (
@@ -23,6 +24,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/delivery"
 	"github.com/amjadjibon/tinystack/internal/services/awsmetrics"
 	"github.com/amjadjibon/tinystack/internal/services/background"
+	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/lambda"
 	"github.com/amjadjibon/tinystack/internal/services/sqs"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
@@ -30,6 +32,7 @@ import (
 )
 
 const (
+	serviceName     = "sns"
 	pageSize        = 100
 	protocolSQS     = "sqs"
 	protocolLambda  = "lambda"
@@ -38,7 +41,7 @@ const (
 	attrRaw         = "RawMessageDelivery"
 	attrTopicArn    = "TopicArn"
 	attrPolicy      = "Policy"
-	// maxPolicy is the largest topic access policy SNS accepts.
+	// maxPolicy is the largest topic access or data protection policy SNS accepts.
 	maxPolicy = 30 * 1024
 )
 
@@ -48,9 +51,11 @@ type Service struct {
 	store      storage.Store
 	queues     *sqs.Service
 	functions  *lambda.Service
+	keys       *kms.Service
 	deliveries *delivery.Log
+	caller     *catalog.Caller
 	now        func() time.Time
-	// authorizer checks deliveries to queues and functions against their resource policies; see UseServiceAuthorizer.
+	// authorizer checks deliveries to queues, functions, and Firehose roles; see UseServiceAuthorizer.
 	authorizer catalog.ServiceAuthorizer
 	// bg runs HTTP deliveries until Stop.
 	bg      *background.Group
@@ -58,9 +63,15 @@ type Service struct {
 }
 
 // New returns SNS. Call Stop to end HTTP deliveries in flight.
-func New(store storage.Store, queues *sqs.Service, functions *lambda.Service, deliveries *delivery.Log) *Service {
+func New(
+	store storage.Store,
+	queues *sqs.Service,
+	functions *lambda.Service,
+	keys *kms.Service,
+	deliveries *delivery.Log,
+) *Service {
 	return &Service{
-		store: store, queues: queues, functions: functions, deliveries: deliveries, now: time.Now,
+		store: store, queues: queues, functions: functions, keys: keys, deliveries: deliveries, now: time.Now,
 		bg: background.New(),
 	}
 }
@@ -68,27 +79,37 @@ func New(store storage.Store, queues *sqs.Service, functions *lambda.Service, de
 // Stop cancels HTTP deliveries in flight and waits for them to end.
 func (s *Service) Stop() { s.bg.Stop() }
 
-// UseServiceAuthorizer makes deliveries to SQS queues and Lambda functions require the target's resource policy to
-// allow sns.amazonaws.com. Call it before serving requests.
+// UseCaller lets Firehose subscriptions invoke firehose:PutRecord in-process.
+// Call it before serving requests.
+func (s *Service) UseCaller(caller *catalog.Caller) { s.caller = caller }
+
+// UseServiceAuthorizer makes deliveries to SQS queues and Lambda functions
+// require the target's resource policy to allow sns.amazonaws.com, and
+// Firehose deliveries require the subscription role to trust sns.amazonaws.com.
+// Call it before serving requests.
 func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
 	s.authorizer = authorizer
 }
 
-// subscription is a topic's subscription. SQS and Lambda subscriptions are
-// confirmed immediately, as AWS does for resources in the subscriber's
-// account; HTTP, HTTPS, and email ones are Pending until ConfirmSubscription
-// presents their Token. FilterPolicyScope is empty for the default,
-// MessageAttributes.
+// subscription is a topic's subscription. SQS, Lambda, SMS, Firehose, and
+// application subscriptions are confirmed immediately; HTTP, HTTPS, and email
+// ones are Pending until ConfirmSubscription presents their Token.
+// FilterPolicyScope is empty for the default, MessageAttributes.
 type subscription struct {
-	ID                string
-	Protocol          string
-	Endpoint          string
-	Owner             string
-	Token             string `json:",omitempty"`
-	FilterPolicy      string `json:",omitempty"`
-	FilterPolicyScope string `json:",omitempty"`
-	Raw               bool   `json:",omitempty"`
-	Pending           bool   `json:",omitempty"`
+	ID                           string
+	Protocol                     string
+	Endpoint                     string
+	Owner                        string
+	Token                        string `json:",omitempty"`
+	FilterPolicy                 string `json:",omitempty"`
+	FilterPolicyScope            string `json:",omitempty"`
+	RedrivePolicy                string `json:",omitempty"`
+	DeliveryPolicy               string `json:",omitempty"`
+	SubscriptionRoleArn          string `json:",omitempty"`
+	Raw                          bool   `json:",omitempty"`
+	Pending                      bool   `json:",omitempty"`
+	ConfirmationWasAuthenticated bool   `json:",omitempty"`
+	AuthenticateOnUnsubscribe    bool   `json:",omitempty"`
 }
 
 // arn is the subscription's ARN as list operations report it.
@@ -101,8 +122,9 @@ func (sub *subscription) arn(topicARN string) string {
 }
 
 type topic struct {
-	Attributes map[string]string `json:",omitempty"`
-	Tags       map[string]string `json:",omitempty"`
+	Attributes           map[string]string `json:",omitempty"`
+	Tags                 map[string]string `json:",omitempty"`
+	DataProtectionPolicy string            `json:",omitempty"`
 	// Dedup holds a FIFO topic's recent messages by deduplication ID.
 	Dedup         map[string]*sequenced `json:",omitempty"`
 	Subscriptions []subscription
@@ -143,7 +165,7 @@ func parseARN(arn *string, sub bool) ([]string, error) {
 	}
 
 	parts := strings.Split(common.Value(arn), ":")
-	if len(parts) != want || parts[0] != arnScheme || parts[2] != "sns" || parts[3] == "" ||
+	if len(parts) != want || parts[0] != arnScheme || parts[2] != serviceName || parts[3] == "" ||
 		!accountID.MatchString(parts[4]) || !topicName.MatchString(parts[5]) || (sub && parts[6] == "") {
 		return nil, invalid("%s", name)
 	}
@@ -230,6 +252,33 @@ func (s *Service) CreateTopic(ctx context.Context, in *api.CreateTopicInput) (*a
 		return nil, err
 	}
 
+	dataProtection := ""
+	if in.DataProtectionPolicy != nil {
+		dataProtection, err = validateDataProtectionPolicy(*in.DataProtectionPolicy, false)
+		if err != nil {
+			return nil, err
+		}
+	} else if v, ok := attributes[attrDataProtectionPolicy]; ok {
+		dataProtection, err = validateDataProtectionPolicy(v, true)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if dataProtection != "" && attributes[attrFifo] == valueTrue {
+		return nil, invalid("DataProtectionPolicy is only supported for standard topics")
+	}
+
+	storedAttrs := maps.Clone(attributes)
+	delete(storedAttrs, attrDataProtectionPolicy)
+	if storedAttrs[attrKmsMasterKeyID] == "" {
+		delete(storedAttrs, attrKmsMasterKeyID)
+	}
+
+	if storedAttrs[attrDeliveryPolicy] == "" {
+		delete(storedAttrs, attrDeliveryPolicy)
+	}
+
 	tags, err := tagMap(in.Tags)
 	if err != nil {
 		return nil, err
@@ -242,7 +291,12 @@ func (s *Service) CreateTopic(ctx context.Context, in *api.CreateTopicInput) (*a
 	key := topicKey(m, name)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		if _, exists := tx.Get(key); !exists {
-			t := &topic{Attributes: attributes, Tags: tags, CreatedAt: s.now().Unix()}
+			t := &topic{
+				Attributes:           storedAttrs,
+				Tags:                 tags,
+				DataProtectionPolicy: dataProtection,
+				CreatedAt:            s.now().Unix(),
+			}
 			return storage.Write(tx, key, t)
 		}
 
@@ -255,7 +309,15 @@ func (s *Service) CreateTopic(ctx context.Context, in *api.CreateTopicInput) (*a
 			return invalid("Topic already exists with different attributes")
 		}
 
+		if t.DataProtectionPolicy != dataProtection {
+			return invalid("Topic already exists with different attributes")
+		}
+
 		for k, v := range in.Attributes {
+			if k == attrDataProtectionPolicy {
+				continue
+			}
+
 			if t.Attributes[k] != v {
 				return invalid("Topic already exists with different attributes")
 			}
@@ -292,14 +354,23 @@ func (s *Service) DeleteTopic(ctx context.Context, in *api.DeleteTopicInput) (*a
 	return &api.DeleteTopicOutput{}, nil
 }
 
-// topicKeys lists the caller's topic keys.
+// topicKeys lists the caller's topic keys, skipping sub-prefixed records such
+// as platform applications, endpoints, and SMS state.
 func (s *Service) topicKeys(ctx context.Context, tx storage.ReadTx) ([]string, error) {
 	m, err := request.Regional(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return tx.Keys(topicKey(m, "")), nil
+	prefix := topicKey(m, "")
+	var out []string
+	for _, k := range tx.Keys(prefix) {
+		if !strings.Contains(strings.TrimPrefix(k, prefix), "/") {
+			out = append(out, k)
+		}
+	}
+
+	return out, nil
 }
 
 func (s *Service) ListTopics(ctx context.Context, in *api.ListTopicsInput) (*api.ListTopicsResponse, error) {
@@ -341,11 +412,17 @@ func (s *Service) Subscribe(ctx context.Context, in *api.SubscribeInput) (*api.S
 	}
 
 	protocol, endpoint := common.Value(in.Protocol), common.Value(in.Endpoint)
-	if guardErr := checkSubscriber(protocol, endpoint, m.AccountID); guardErr != nil {
+	if guardErr := checkSubscriber(protocol, endpoint, m.AccountID, m.ResourceAuthorization); guardErr != nil {
 		return nil, guardErr
 	}
 
-	sub := subscription{ID: newID(), Protocol: protocol, Endpoint: endpoint, Owner: m.AccountID}
+	sub := subscription{
+		ID:                           newID(),
+		Protocol:                     protocol,
+		Endpoint:                     endpoint,
+		Owner:                        m.AccountID,
+		ConfirmationWasAuthenticated: !confirmable(protocol),
+	}
 	if confirmable(protocol) {
 		sub.Pending, sub.Token = true, newToken()
 	}
@@ -370,14 +447,18 @@ func (s *Service) Subscribe(ctx context.Context, in *api.SubscribeInput) (*api.S
 			return guardErr
 		}
 
-		for _, existing := range t.Subscriptions {
+		for i := range t.Subscriptions {
+			existing := &t.Subscriptions[i]
 			if existing.Protocol == sub.Protocol && existing.Endpoint == sub.Endpoint {
 				if existing.Raw != sub.Raw || existing.FilterPolicy != sub.FilterPolicy ||
-					existing.FilterPolicyScope != sub.FilterPolicyScope {
+					existing.FilterPolicyScope != sub.FilterPolicyScope ||
+					existing.RedrivePolicy != sub.RedrivePolicy ||
+					existing.DeliveryPolicy != sub.DeliveryPolicy ||
+					existing.SubscriptionRoleArn != sub.SubscriptionRoleArn {
 					return invalid("Subscription already exists with different attributes")
 				}
 
-				sub = existing
+				sub = *existing
 				return nil
 			}
 		}
@@ -404,31 +485,52 @@ func (s *Service) Subscribe(ctx context.Context, in *api.SubscribeInput) (*api.S
 	return &api.SubscribeResponse{SubscriptionArn: new(keyARN(key) + ":" + sub.ID)}, nil
 }
 
-// checkSubscriber accepts SQS queues and Lambda functions in the subscriber's
-// account, HTTP/HTTPS URLs and email addresses. In-process deliveries bypass
-// destination resource policy enforcement.
-func checkSubscriber(protocol, endpoint, account string) error {
+// checkSubscriber validates the protocol and endpoint. Cross-account SQS,
+// Lambda, Firehose, and platform application endpoints are allowed when
+// gateway resource authorization is enabled; otherwise endpoints stay in the
+// subscriber's account.
+func checkSubscriber(protocol, endpoint, account string, crossAccount bool) error {
 	parts := strings.Split(endpoint, ":")
+	var endpointAccount string
 	switch protocol {
 	case protocolSQS:
-		if len(parts) != 6 || parts[0] != arnScheme || parts[2] != protocolSQS || parts[3] == "" || parts[5] == "" {
+		if len(parts) != 6 || parts[0] != arnScheme || parts[2] != protocolSQS || parts[3] == "" ||
+			!accountID.MatchString(parts[4]) || parts[5] == "" {
 			return invalid("SQS endpoint ARN")
 		}
+
+		endpointAccount = parts[4]
 	case protocolLambda:
 		if len(parts) < 7 || len(parts) > 8 || parts[0] != arnScheme || parts[2] != protocolLambda ||
-			parts[3] == "" || parts[5] != "function" || parts[6] == "" {
+			parts[3] == "" || !accountID.MatchString(parts[4]) || parts[5] != "function" || parts[6] == "" {
 			return invalid("Lambda endpoint ARN")
 		}
+
+		endpointAccount = parts[4]
+	case protocolFirehose:
+		scope, _, err := parseFirehoseARN(endpoint)
+		if err != nil {
+			return err
+		}
+
+		endpointAccount = scope.AccountID
+	case protocolApplication:
+		ref, err := parsePlatformEndpointARN(endpoint)
+		if err != nil {
+			return err
+		}
+
+		endpointAccount = ref.scope.AccountID
 	case protocolHTTP, protocolHTTPS, protocolEmail, protocolEmailJSON:
 		return checkEndpoint(protocol, endpoint)
 	case protocolSMS:
 		return checkPhoneNumber(endpoint)
 	default:
-		return invalid("Protocol %q is not supported; only sqs, lambda, http, https, email, email-json, and "+
-			"sms subscriptions are", protocol)
+		return invalid("Protocol %q is not supported; only sqs, lambda, http, https, email, email-json, sms, "+
+			"firehose, and application subscriptions are", protocol)
 	}
 
-	if parts[4] != account {
+	if endpointAccount != account && !crossAccount {
 		return invalid("The endpoint must be in the subscriber's account")
 	}
 
@@ -436,11 +538,18 @@ func checkSubscriber(protocol, endpoint, account string) error {
 }
 
 func (s *Service) Unsubscribe(ctx context.Context, in *api.UnsubscribeInput) (*api.UnsubscribeOutput, error) {
+	m, err := request.Regional(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	key, id, err := resolve(ctx, in.SubscriptionArn, true)
 	if err != nil {
 		return nil, err
 	}
 
+	topicOwner := strings.Split(keyARN(key), ":")[4]
+	authenticated := isAuthenticated(m)
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		t, loadErr := load(tx, key)
 		if loadErr != nil {
@@ -449,6 +558,19 @@ func (s *Service) Unsubscribe(ctx context.Context, in *api.UnsubscribeInput) (*a
 
 		for i := range t.Subscriptions {
 			if t.Subscriptions[i].ID == id {
+				sub := &t.Subscriptions[i]
+				if sub.AuthenticateOnUnsubscribe {
+					if !authenticated {
+						return awserror.New("AuthorizationErrorException",
+							"Authentication is required to unsubscribe from this subscription")
+					}
+
+					if m.AccountID != topicOwner && m.AccountID != sub.Owner {
+						return awserror.New("AuthorizationErrorException",
+							"Only the topic owner or subscription owner can unsubscribe")
+					}
+				}
+
 				t.Subscriptions = append(t.Subscriptions[:i], t.Subscriptions[i+1:]...)
 				return storage.Write(tx, key, t)
 			}
@@ -474,7 +596,8 @@ func subscriptions(tx storage.ReadTx, keys []string) (map[string]api.Subscriptio
 		}
 
 		arn := keyARN(key)
-		for _, sub := range t.Subscriptions {
+		for i := range t.Subscriptions {
+			sub := &t.Subscriptions[i]
 			out[arn+":"+sub.ID] = api.Subscription{
 				SubscriptionArn: new(sub.arn(arn)),
 				Owner:           new(sub.Owner),

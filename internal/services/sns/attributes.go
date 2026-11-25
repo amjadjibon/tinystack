@@ -16,9 +16,8 @@ import (
 )
 
 // checkTopicAttribute validates a writable topic attribute. Delivery status
-// sample rates are stored; like
-// SNS without a feedback role, TinyStack logs nothing for them. Attributes
-// that would change delivery fail.
+// sample rates are stored; like SNS without a feedback role, TinyStack logs
+// nothing for them.
 func checkTopicAttribute(name, v string) error {
 	switch {
 	case name == attrDisplayName:
@@ -37,6 +36,13 @@ func checkTopicAttribute(name, v string) error {
 		if err := iampolicy.ValidateResource(v); err != nil {
 			return invalid("Policy Error: %s", err)
 		}
+	case name == attrDeliveryPolicy:
+		return checkTopicDeliveryPolicy(v)
+	case name == attrKmsMasterKeyID:
+		return checkKmsMasterKeyID(v)
+	case name == attrDataProtectionPolicy:
+		_, err := validateDataProtectionPolicy(v, true)
+		return err
 	case strings.HasSuffix(name, "FeedbackSampleRate"):
 		n, err := strconv.Atoi(v)
 		if err != nil || n < 0 || n > 100 {
@@ -95,23 +101,33 @@ func (s *Service) GetTopicAttributes(
 	arn := keyARN(key)
 	owner := strings.Split(arn, ":")[4]
 	pending := 0
-	for _, sub := range t.Subscriptions {
-		if sub.Pending {
+	for i := range t.Subscriptions {
+		if t.Subscriptions[i].Pending {
 			pending++
 		}
 	}
+
 	attributes := map[string]string{
-		attrTopicArn:             arn,
-		"Owner":                  owner,
-		attrPolicy:               defaultPolicy(arn, owner),
-		attrDisplayName:          "",
-		"SubscriptionsConfirmed": strconv.Itoa(len(t.Subscriptions) - pending),
-		"SubscriptionsPending":   strconv.Itoa(pending),
-		"SubscriptionsDeleted":   "0",
+		attrTopicArn:                arn,
+		"Owner":                     owner,
+		attrPolicy:                  defaultPolicy(arn, owner),
+		attrDisplayName:             "",
+		attrEffectiveDeliveryPolicy: effectiveTopicDeliveryPolicy(t.Attributes[attrDeliveryPolicy]),
+		"SubscriptionsConfirmed":    strconv.Itoa(len(t.Subscriptions) - pending),
+		"SubscriptionsPending":      strconv.Itoa(pending),
+		"SubscriptionsDeleted":      "0",
 	}
 
 	for k, v := range t.Attributes {
+		if v == "" && (k == attrKmsMasterKeyID || k == attrDeliveryPolicy) {
+			continue
+		}
+
 		attributes[k] = v
+	}
+
+	if t.DataProtectionPolicy != "" {
+		attributes[attrDataProtectionPolicy] = t.DataProtectionPolicy
 	}
 
 	return &api.GetTopicAttributesResponse{Attributes: attributes}, nil
@@ -141,11 +157,30 @@ func (s *Service) SetTopicAttributes(
 			return guardErr
 		}
 
+		if name == attrDataProtectionPolicy {
+			if t.fifo() {
+				return invalid("DataProtectionPolicy is only supported for standard topics")
+			}
+
+			policy, policyErr := validateDataProtectionPolicy(v, true)
+			if policyErr != nil {
+				return policyErr
+			}
+
+			t.DataProtectionPolicy = policy
+			return storage.Write(tx, key, t)
+		}
+
 		if t.Attributes == nil {
 			t.Attributes = map[string]string{}
 		}
 
-		t.Attributes[name] = v
+		if v == "" && (name == attrKmsMasterKeyID || name == attrDeliveryPolicy) {
+			delete(t.Attributes, name)
+		} else {
+			t.Attributes[name] = v
+		}
+
 		return storage.Write(tx, key, t)
 	})
 	if err != nil {
@@ -175,9 +210,11 @@ func (s *Service) GetSubscriptionAttributes(
 		return nil, err
 	}
 
+	var t *topic
 	var sub *subscription
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		t, loadErr := load(tx, key)
+		var loadErr error
+		t, loadErr = load(tx, key)
 		if loadErr != nil {
 			return loadErr
 		}
@@ -190,6 +227,7 @@ func (s *Service) GetSubscriptionAttributes(
 	}
 
 	arn := keyARN(key)
+	confirmedAuth := !sub.Pending && sub.ConfirmationWasAuthenticated
 	attributes := map[string]string{
 		"SubscriptionArn":              arn + ":" + sub.ID,
 		attrTopicArn:                   arn,
@@ -197,7 +235,7 @@ func (s *Service) GetSubscriptionAttributes(
 		"Protocol":                     sub.Protocol,
 		"Endpoint":                     sub.Endpoint,
 		attrRaw:                        strconv.FormatBool(sub.Raw),
-		"ConfirmationWasAuthenticated": strconv.FormatBool(!sub.Pending),
+		"ConfirmationWasAuthenticated": strconv.FormatBool(confirmedAuth),
 		"PendingConfirmation":          strconv.FormatBool(sub.Pending),
 	}
 	if sub.FilterPolicy != "" {
@@ -206,6 +244,23 @@ func (s *Service) GetSubscriptionAttributes(
 		if sub.FilterPolicyScope != "" {
 			attributes[attrFilterPolicyScope] = sub.FilterPolicyScope
 		}
+	}
+
+	if sub.RedrivePolicy != "" {
+		attributes[attrRedrivePolicy] = sub.RedrivePolicy
+	}
+
+	if sub.DeliveryPolicy != "" {
+		attributes[attrDeliveryPolicy] = sub.DeliveryPolicy
+	}
+
+	if sub.Protocol == protocolHTTP || sub.Protocol == protocolHTTPS {
+		effective, _ := effectiveSubscriptionDeliveryPolicy(t.Attributes[attrDeliveryPolicy], sub.DeliveryPolicy)
+		attributes[attrEffectiveDeliveryPolicy] = effective
+	}
+
+	if sub.SubscriptionRoleArn != "" {
+		attributes[attrSubscriptionRoleArn] = sub.SubscriptionRoleArn
 	}
 
 	return &api.GetSubscriptionAttributesResponse{Attributes: attributes}, nil

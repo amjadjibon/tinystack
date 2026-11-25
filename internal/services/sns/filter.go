@@ -53,6 +53,31 @@ func (sub *subscription) set(name, v string) error {
 		if v == scopeAttributes {
 			sub.FilterPolicyScope = ""
 		}
+	case attrRedrivePolicy:
+		dlqARN, err := parseRedrivePolicy(v)
+		if err != nil {
+			return err
+		}
+
+		if dlqARN == "" {
+			sub.RedrivePolicy = ""
+		} else {
+			sub.RedrivePolicy = v
+		}
+	case attrDeliveryPolicy:
+		if err := checkSubscriptionDeliveryPolicy(v); err != nil {
+			return err
+		}
+
+		sub.DeliveryPolicy = v
+	case attrSubscriptionRoleArn:
+		if v != "" {
+			if err := checkRoleARN(v); err != nil {
+				return err
+			}
+		}
+
+		sub.SubscriptionRoleArn = v
 	default:
 		return invalid("Attribute %s is not supported", name)
 	}
@@ -62,8 +87,21 @@ func (sub *subscription) set(name, v string) error {
 
 // check validates the combination of a subscription's attributes.
 func (sub *subscription) check() error {
-	if sub.Raw && sub.Protocol != protocolSQS && sub.Protocol != protocolHTTP && sub.Protocol != protocolHTTPS {
+	if sub.Raw && sub.Protocol != protocolSQS && sub.Protocol != protocolHTTP && sub.Protocol != protocolHTTPS &&
+		sub.Protocol != protocolFirehose {
 		return invalid("Delivery protocol [%s] does not support raw message delivery.", sub.Protocol)
+	}
+
+	if sub.DeliveryPolicy != "" && sub.Protocol != protocolHTTP && sub.Protocol != protocolHTTPS {
+		return invalid("Delivery protocol [%s] does not support DeliveryPolicy.", sub.Protocol)
+	}
+
+	if sub.Protocol == protocolFirehose && sub.SubscriptionRoleArn == "" {
+		return invalid("SubscriptionRoleArn is required for firehose subscriptions")
+	}
+
+	if sub.Protocol != protocolFirehose && sub.SubscriptionRoleArn != "" {
+		return invalid("SubscriptionRoleArn is only supported for firehose subscriptions")
 	}
 
 	if sub.FilterPolicy == "" {

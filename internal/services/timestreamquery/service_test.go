@@ -49,7 +49,7 @@ func fixture(t *testing.T) env {
 	store := memory.New(nil, nil)
 	ctx := testContext("http://127.0.0.1:4566")
 	tsWrite := timestreamwrite.New(store)
-	snsSvc := sns.New(store, nil, nil, nil)
+	snsSvc := sns.New(store, nil, nil, nil, nil)
 	iamSvc := iam.New(store)
 	s3Svc := s3.New(store, nil, nil, nil, nil, nil)
 	kmsSvc := kms.New(store)

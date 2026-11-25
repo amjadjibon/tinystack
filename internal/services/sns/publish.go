@@ -114,7 +114,7 @@ func checkAttributes(attributes map[string]api.MessageAttributeValue) error {
 
 // messages selects the text subscribers of each protocol receive. With
 // MessageStructure "json" the message is a JSON object holding a "default"
-// text and optional per-protocol overrides such as "sqs" or "lambda".
+// text and optional per-protocol overrides such as "sqs", "lambda", or "GCM".
 func messages(message, structure string) (func(protocol string) string, error) {
 	switch structure {
 	case "":
@@ -143,11 +143,42 @@ func messages(message, structure string) (func(protocol string) string, error) {
 }
 
 func (s *Service) Publish(ctx context.Context, in *api.PublishInput) (*api.PublishResponse, error) {
+	targets := 0
+	if in.TopicArn != nil {
+		targets++
+	}
+
+	if in.TargetArn != nil {
+		targets++
+	}
+
 	if in.PhoneNumber != nil {
+		targets++
+	}
+
+	switch {
+	case targets == 0:
+		return nil, invalid("TopicArn or TargetArn or PhoneNumber must be specified")
+	case targets > 1:
+		return nil, invalid("TopicArn, TargetArn, and PhoneNumber are mutually exclusive")
+	case in.PhoneNumber != nil:
 		return s.publishSMS(ctx, in)
 	}
 
-	key, _, err := resolve(ctx, in.TopicArn, false)
+	topicRef := in.TopicArn
+	if in.TargetArn != nil {
+		if _, err := parsePlatformEndpointARN(*in.TargetArn); err == nil {
+			return s.publishEndpoint(ctx, in)
+		}
+
+		if _, err := parseARN(in.TargetArn, false); err != nil {
+			return nil, invalid("TargetArn")
+		}
+
+		topicRef = in.TargetArn
+	}
+
+	key, _, err := resolve(ctx, topicRef, false)
 	if err != nil {
 		return nil, err
 	}
@@ -219,10 +250,15 @@ func (s *Service) publish(
 		return "", nil, err
 	}
 
+	if keyErr := s.useKey(ctx, key); keyErr != nil {
+		return "", nil, keyErr
+	}
+
 	id = newID()
 	now := s.now()
 	var subs []subscription
 	var placed *sequenced
+	var topicDeliveryRaw string
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		t, loadErr := load(tx, key)
 		if loadErr != nil {
@@ -230,6 +266,7 @@ func (s *Service) publish(
 		}
 
 		subs = t.Subscriptions
+		topicDeliveryRaw = t.Attributes[attrDeliveryPolicy]
 		var placeErr error
 		if placed, placeErr = t.place(e, id, now); placeErr != nil || placed == nil || placed.Duplicate {
 			return placeErr
@@ -258,6 +295,7 @@ func (s *Service) publish(
 	}
 
 	s.publishMetric(envelope.TopicArn, metricPublished)
+	s.publishSizeMetric(envelope.TopicArn, messageSize(e))
 
 	for name, a := range e.MessageAttributes {
 		if envelope.MessageAttributes == nil {
@@ -279,7 +317,14 @@ func (s *Service) publish(
 		}
 
 		subARN := envelope.TopicArn + ":" + sub.ID
-		envelope.Message = textFor(sub.Protocol)
+		textKey := sub.Protocol
+		if sub.Protocol == protocolApplication {
+			if ref, parseErr := parsePlatformEndpointARN(sub.Endpoint); parseErr == nil {
+				textKey = ref.platform
+			}
+		}
+
+		envelope.Message = textFor(textKey)
 		accepted, filterErr := sub.accepts(e.MessageAttributes, envelope.Message)
 		if filterErr != nil {
 			return "", nil, filterErr
@@ -287,11 +332,12 @@ func (s *Service) publish(
 
 		// A message the filter policy rejects is not delivered, and not logged.
 		if !accepted {
+			s.filteredOut(envelope.TopicArn, sub.FilterPolicyScope != scopeBody && len(e.MessageAttributes) == 0)
 			continue
 		}
 
 		envelope.UnsubscribeURL = m.Endpoint + "/?Action=Unsubscribe&SubscriptionArn=" + url.QueryEscape(subARN)
-		if deliverErr := s.deliver(ctx, sub, subARN, &envelope, e, placed); deliverErr != nil {
+		if deliverErr := s.deliver(ctx, sub, subARN, topicDeliveryRaw, &envelope, e, placed); deliverErr != nil {
 			return "", nil, deliverErr
 		}
 	}
@@ -301,23 +347,36 @@ func (s *Service) publish(
 
 // deliver sends a notification to one subscriber. As in SNS, a failed
 // delivery (such as a deleted queue or function) does not fail Publish; the
-// delivery log records it.
+// delivery log records it, and if configured, RedrivePolicy sends the payload
+// to the subscription's SQS DLQ.
 func (s *Service) deliver(
 	ctx context.Context,
 	sub *subscription,
 	subARN string,
+	topicDeliveryRaw string,
 	envelope *notification,
 	e *api.PublishBatchRequestEntry,
 	placed *sequenced,
 ) error {
 	if confirmable(sub.Protocol) {
-		return s.deliverEndpoint(sub, subARN, envelope)
+		return s.deliverEndpoint(sub, subARN, topicDeliveryRaw, envelope, e, placed)
 	}
 
 	if sub.Protocol == protocolSMS {
-		s.deliveries.Add(delivery.ViaSNS, envelope.TopicArn, sub.Endpoint, []byte(envelope.Message), nil)
+		if s.deliveries != nil {
+			s.deliveries.Add(delivery.ViaSNS, envelope.TopicArn, sub.Endpoint, []byte(envelope.Message), nil)
+		}
+
 		s.notified(envelope.TopicArn, nil)
 		return nil
+	}
+
+	if sub.Protocol == protocolFirehose {
+		return s.deliverFirehose(ctx, sub, envelope, e, placed)
+	}
+
+	if sub.Protocol == protocolApplication {
+		return s.deliverApplication(ctx, sub, envelope, e, placed)
 	}
 
 	if sub.Protocol == protocolLambda {
@@ -336,8 +395,20 @@ func (s *Service) deliver(
 			err = s.functions.InvokeAsync(ctx, sub.Endpoint, event)
 		}
 
-		s.deliveries.Add(delivery.ViaSNS, envelope.TopicArn, sub.Endpoint, event, err)
+		if s.deliveries != nil {
+			s.deliveries.Add(delivery.ViaSNS, envelope.TopicArn, sub.Endpoint, event, err)
+		}
+
 		s.notified(envelope.TopicArn, err)
+		if err != nil {
+			encoded, marshalErr := json.Marshal(envelope)
+			if marshalErr != nil {
+				return marshalErr
+			}
+
+			s.redrive(ctx, envelope.TopicArn, sub, string(encoded), e.MessageAttributes, placed, err)
+		}
+
 		return nil
 	}
 
@@ -365,8 +436,15 @@ func (s *Service) deliver(
 		err = s.queues.Deliver(ctx, sub.Endpoint, entry)
 	}
 
-	s.deliveries.Add(delivery.ViaSNS, envelope.TopicArn, sub.Endpoint, []byte(body), err)
+	if s.deliveries != nil {
+		s.deliveries.Add(delivery.ViaSNS, envelope.TopicArn, sub.Endpoint, []byte(body), err)
+	}
+
 	s.notified(envelope.TopicArn, err)
+	if err != nil {
+		s.redrive(ctx, envelope.TopicArn, sub, body, e.MessageAttributes, placed, err)
+	}
+
 	return nil
 }
 

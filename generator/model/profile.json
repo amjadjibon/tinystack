@@ -23318,13 +23318,37 @@
       "ListTagsForResource",
       "PublishBatch",
       "AddPermission",
-      "RemovePermission"
+      "RemovePermission",
+      "CreatePlatformApplication",
+      "DeletePlatformApplication",
+      "GetPlatformApplicationAttributes",
+      "SetPlatformApplicationAttributes",
+      "ListPlatformApplications",
+      "CreatePlatformEndpoint",
+      "DeleteEndpoint",
+      "GetEndpointAttributes",
+      "SetEndpointAttributes",
+      "ListEndpointsByPlatformApplication",
+      "GetDataProtectionPolicy",
+      "PutDataProtectionPolicy",
+      "SetSMSAttributes",
+      "GetSMSAttributes",
+      "CheckIfPhoneNumberIsOptedOut",
+      "ListPhoneNumbersOptedOut",
+      "OptInPhoneNumber",
+      "CreateSMSSandboxPhoneNumber",
+      "VerifySMSSandboxPhoneNumber",
+      "DeleteSMSSandboxPhoneNumber",
+      "ListSMSSandboxPhoneNumbers",
+      "GetSMSSandboxAccountStatus",
+      "ListOriginationNumbers"
     ],
     "shapes": {
       "CreateTopicInput": [
         "Name",
         "Attributes",
-        "Tags"
+        "Tags",
+        "DataProtectionPolicy"
       ],
       "CreateTopicResponse": [
         "TopicArn"
@@ -23379,6 +23403,7 @@
       ],
       "PublishInput": [
         "TopicArn",
+        "TargetArn",
         "PhoneNumber",
         "Message",
         "Subject",
@@ -23438,7 +23463,8 @@
       ],
       "ConfirmSubscriptionInput": [
         "TopicArn",
-        "Token"
+        "Token",
+        "AuthenticateOnUnsubscribe"
       ],
       "ConfirmSubscriptionResponse": [
         "SubscriptionArn"
@@ -23480,6 +23506,155 @@
       "RemovePermissionInput": [
         "TopicArn",
         "Label"
+      ],
+      "CreatePlatformApplicationInput": [
+        "Name",
+        "Platform",
+        "Attributes"
+      ],
+      "CreatePlatformApplicationResponse": [
+        "PlatformApplicationArn"
+      ],
+      "DeletePlatformApplicationInput": [
+        "PlatformApplicationArn"
+      ],
+      "GetPlatformApplicationAttributesInput": [
+        "PlatformApplicationArn"
+      ],
+      "GetPlatformApplicationAttributesResponse": [
+        "Attributes"
+      ],
+      "SetPlatformApplicationAttributesInput": [
+        "PlatformApplicationArn",
+        "Attributes"
+      ],
+      "ListPlatformApplicationsInput": [
+        "NextToken"
+      ],
+      "ListPlatformApplicationsResponse": [
+        "PlatformApplications",
+        "NextToken"
+      ],
+      "PlatformApplication": [
+        "PlatformApplicationArn",
+        "Attributes"
+      ],
+      "CreatePlatformEndpointInput": [
+        "PlatformApplicationArn",
+        "Token",
+        "CustomUserData",
+        "Attributes"
+      ],
+      "CreateEndpointResponse": [
+        "EndpointArn"
+      ],
+      "DeleteEndpointInput": [
+        "EndpointArn"
+      ],
+      "GetEndpointAttributesInput": [
+        "EndpointArn"
+      ],
+      "GetEndpointAttributesResponse": [
+        "Attributes"
+      ],
+      "SetEndpointAttributesInput": [
+        "EndpointArn",
+        "Attributes"
+      ],
+      "ListEndpointsByPlatformApplicationInput": [
+        "PlatformApplicationArn",
+        "NextToken"
+      ],
+      "ListEndpointsByPlatformApplicationResponse": [
+        "Endpoints",
+        "NextToken"
+      ],
+      "Endpoint": [
+        "EndpointArn",
+        "Attributes"
+      ],
+      "GetDataProtectionPolicyInput": [
+        "ResourceArn"
+      ],
+      "GetDataProtectionPolicyResponse": [
+        "DataProtectionPolicy"
+      ],
+      "PutDataProtectionPolicyInput": [
+        "ResourceArn",
+        "DataProtectionPolicy"
+      ],
+      "SetSMSAttributesInput": [
+        "attributes"
+      ],
+      "SetSMSAttributesResponse": [],
+      "GetSMSAttributesInput": [
+        "attributes"
+      ],
+      "GetSMSAttributesResponse": [
+        "attributes"
+      ],
+      "CheckIfPhoneNumberIsOptedOutInput": [
+        "phoneNumber"
+      ],
+      "CheckIfPhoneNumberIsOptedOutResponse": [
+        "isOptedOut"
+      ],
+      "ListPhoneNumbersOptedOutInput": [
+        "nextToken"
+      ],
+      "ListPhoneNumbersOptedOutResponse": [
+        "phoneNumbers",
+        "nextToken"
+      ],
+      "OptInPhoneNumberInput": [
+        "phoneNumber"
+      ],
+      "OptInPhoneNumberResponse": [],
+      "CreateSMSSandboxPhoneNumberInput": [
+        "PhoneNumber",
+        "LanguageCode"
+      ],
+      "CreateSMSSandboxPhoneNumberResult": [],
+      "VerifySMSSandboxPhoneNumberInput": [
+        "PhoneNumber",
+        "OneTimePassword"
+      ],
+      "VerifySMSSandboxPhoneNumberResult": [],
+      "DeleteSMSSandboxPhoneNumberInput": [
+        "PhoneNumber"
+      ],
+      "DeleteSMSSandboxPhoneNumberResult": [],
+      "ListSMSSandboxPhoneNumbersInput": [
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListSMSSandboxPhoneNumbersResult": [
+        "PhoneNumbers",
+        "NextToken"
+      ],
+      "SMSSandboxPhoneNumber": [
+        "PhoneNumber",
+        "Status"
+      ],
+      "GetSMSSandboxAccountStatusInput": [],
+      "GetSMSSandboxAccountStatusResult": [
+        "IsInSandbox"
+      ],
+      "ListOriginationNumbersRequest": [
+        "NextToken",
+        "MaxResults"
+      ],
+      "ListOriginationNumbersResult": [
+        "NextToken",
+        "PhoneNumbers"
+      ],
+      "PhoneNumberInformation": [
+        "CreatedAt",
+        "PhoneNumber",
+        "Status",
+        "Iso2CountryCode",
+        "RouteType",
+        "NumberCapabilities"
       ]
     }
   },

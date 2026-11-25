@@ -25,6 +25,26 @@ func (s *Service) AuthorizationResources(
 		ref = catalog.InputString(input, "ResourceArn")
 	}
 
+	if ref == "" {
+		if target := catalog.InputString(input, "TargetArn"); target != "" {
+			if _, parseErr := parseARN(&target, false); parseErr == nil {
+				ref = target
+			} else if _, epErr := parsePlatformEndpointARN(target); epErr == nil {
+				return []catalog.AuthorizationResource{{ARN: target}}, nil
+			}
+		}
+	}
+
+	if ref == "" {
+		if app := catalog.InputString(input, "PlatformApplicationArn"); app != "" {
+			return []catalog.AuthorizationResource{{ARN: app}}, nil
+		}
+
+		if ep := catalog.InputString(input, "EndpointArn"); ep != "" {
+			return []catalog.AuthorizationResource{{ARN: ep}}, nil
+		}
+	}
+
 	if ref == "" && operation == "CreateTopic" {
 		ref = "arn:aws:sns:" + m.Region + ":" + m.AccountID + ":" + catalog.InputString(input, "Name")
 	}

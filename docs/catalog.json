@@ -514,24 +514,28 @@
     "sns": {
       "title": "SNS",
       "category": "Application Integration",
-      "summary": "Publish messages to local queues and functions, or confirmed HTTP subscriptions.",
+      "summary": "Publish messages to local queues, functions, Firehose streams, mobile endpoints, or confirmed HTTP subscriptions.",
       "features": [
-        "Topics, tags, subscriptions, filtering and FIFO deduplication",
-        "SQS fan-out and asynchronous Lambda invocation",
-        "HTTP/HTTPS confirmation and outbound delivery",
-        "Email and SMS deliveries are recorded for inspection",
+        "Topics, tags, subscriptions, filtering, FIFO deduplication, and topic KMS encryption (KmsMasterKeyId checked via KMS on Publish and PublishBatch, skipping alias/aws/sns)",
+        "SQS fan-out, asynchronous Lambda invocation, and Firehose delivery stream subscriptions (with SubscriptionRoleArn and RawMessageDelivery)",
+        "Cross-account SQS, Lambda, Firehose, and platform endpoint subscriptions when authorization is enabled, enforced against target resource policies or assumed subscription roles",
+        "Subscription dead-letter queues (RedrivePolicy) with ErrorCode and ErrorMessage attributes, honoring DLQ resource policies when authorization is on",
+        "HTTP/HTTPS confirmation, AuthenticateOnUnsubscribe enforcement, and outbound delivery with validated topic/subscription DeliveryPolicy, EffectiveDeliveryPolicy, and bounded local retries",
+        "Mobile push Platform Applications, Platform Endpoints, TargetArn publishing, and application topic subscriptions with Enabled checks and per-platform JSON payloads recorded in the delivery log",
+        "Topic DataProtectionPolicy validation and storage (CreateTopic, GetDataProtectionPolicy, PutDataProtectionPolicy)",
+        "Email, SMS, and mobile push deliveries are recorded for inspection, along with SMS attribute management, opt-out queries, SMS sandbox OTP verification via the delivery/messages endpoints, and origination number listing",
         "AWS-style console with account/Region-scoped standard and FIFO topic creation, display names, deduplication, policies and tags; subscription lists and details, endpoint selection, confirmation and deletion, raw delivery and attribute/body filters; message publishing and topic-specific delivery inspection",
-        "Topic attributes report confirmed and pending subscription counts separately; inventory exposes pending status and filter configuration without confirmation tokens",
+        "Topic attributes report confirmed and pending subscription counts separately; inventory exposes topics, platform applications, platform endpoints, pending status, and subscription filter/redrive configuration without confirmation tokens",
         "Default topic policies and validated CreateTopic/SetTopicAttributes policies enforced in soft/enforce mode: same-account identity or resource Allow, cross-account both, explicit Deny precedence and owning-root Get/SetTopicAttributes recovery",
-        "With authorization on, S3 notification and EventBridge publications need the topic policy to allow s3.amazonaws.com or events.amazonaws.com, and deliveries to SQS queues and Lambda functions need their policies to allow sns.amazonaws.com with the topic as aws:SourceArn; a denied delivery fails like a missing queue and Publish still succeeds",
-        "AWS/SNS metrics with dimension TopicName: NumberOfMessagesPublished, NumberOfNotificationsDelivered and NumberOfNotificationsFailed, counted once per message and subscriber for SQS, Lambda, HTTP(S), email and SMS subscriptions"
+        "With authorization on, S3 notification and EventBridge publications need the topic policy to allow s3.amazonaws.com or events.amazonaws.com, and deliveries to SQS queues and Lambda functions need their policies to allow sns.amazonaws.com with the topic as aws:SourceArn; a denied delivery fails like a missing queue (redriving to a configured DLQ) and Publish still succeeds",
+        "AWS/SNS metrics with dimension TopicName: NumberOfMessagesPublished, PublishSize, NumberOfNotificationsDelivered, NumberOfNotificationsFailed, NumberOfNotificationsFilteredOut, NumberOfNotificationsFilteredOut-NoMessageAttributes, NumberOfNotificationsRedrivenToDlq, and NumberOfNotificationsFailedToRedriveToDlq"
       ],
       "gaps": [
-        "Email and SMS are recorded, not sent to providers",
-        "No mobile application or Firehose subscriptions, delivery retries or message signatures",
-        "SQS/Lambda subscription endpoints must belong to the subscriber's account",
+        "Email, SMS, and mobile push deliveries are recorded locally, not sent to external providers or push gateways",
+        "DataProtectionPolicy is validated and stored without performing PII scanning or redaction; HTTP/HTTPS deliveries do not attach cryptographic message signatures",
+        "HTTP/HTTPS retry delays are compressed locally to keep tests fast; ListOriginationNumbers always returns an empty list",
         "In verify mode, console management requires an authenticated root console session; without a session topic/subscription inventory and delivery history remain available",
-        "SNS metrics omit PublishSize, SMS metrics, filter policy and redrive metrics, and delivery metrics by protocol or application; confirmation messages are not counted"
+        "SNS metrics omit SMS metrics and delivery metrics broken down by protocol or application; confirmation messages are not counted"
       ],
       "execution": "Local behavior",
       "package": "sns"
