@@ -45,7 +45,7 @@ func (s *Service) cancelRun(executionARN string, cause error) {
 func (s *Service) begin(
 	ctx context.Context,
 	m *request.Metadata,
-	smARN, name, input *string,
+	smARN, name, input, traceHeader *string,
 ) (r *run, def *machine, existing bool, err error) {
 	in := common.Value(input)
 	if input == nil {
@@ -64,6 +64,30 @@ func (s *Service) begin(
 
 	if nameErr := checkName(execName); nameErr != nil {
 		return nil, nil, false, nameErr
+	}
+
+	if s.keys != nil {
+		var enc *api.EncryptionConfiguration
+		var encScope request.Scope
+		if viewErr := s.store.View(ctx, func(tx storage.ReadTx) error {
+			t, loadErr := loadTarget(tx, smARN)
+			if loadErr != nil {
+				return loadErr
+			}
+
+			if scopeErr := inScope(m, t.scope, smARN); scopeErr != nil {
+				return scopeErr
+			}
+
+			enc, encScope = t.machine.Encryption, t.scope
+			return nil
+		}); viewErr != nil {
+			return nil, nil, false, viewErr
+		}
+
+		if keyErr := s.checkEncryptionKey(ctx, encScope, enc); keyErr != nil {
+			return nil, nil, false, keyErr
+		}
 	}
 
 	now := s.now()
@@ -85,6 +109,7 @@ func (s *Service) begin(
 			StateMachineARN: machineARN(scope, sm.Name),
 			Status:          statusRunning,
 			Input:           in,
+			TraceHeader:     common.Value(traceHeader),
 			Endpoint:        m.Endpoint,
 			Start:           common.Unix(now),
 			ARN:             arn(scope, "execution", sm.Name+":"+execName),
@@ -163,7 +188,8 @@ func (s *Service) execute(parent context.Context, r *run, def *machine) {
 	var input any
 	_ = json.Unmarshal([]byte(r.exec.Input), &input)
 	if p := r.exec.Resume; r.redrive && p != nil {
-		name, input, vars = p.State, p.Input, p.Vars
+		name, input, vars, r.resumeMapRun = p.State, p.Input, p.Vars, p.MapRunARN
+		s.reportExecutionRedriven(r)
 		r.event(ctx, "ExecutionRedriven", func(e *api.HistoryEvent) {
 			e.ExecutionRedrivenEventDetails = &api.ExecutionRedrivenEventDetails{RedriveCount: new(r.exec.Redrives)}
 		})
@@ -186,9 +212,14 @@ func (s *Service) execute(parent context.Context, r *run, def *machine) {
 	var at resumePoint
 	out, err := r.runFrom(ctx, def, name, input, nil, vars, func(state string, in any, v map[string]any) {
 		at = resumePoint{State: state, Input: in, Vars: v}
+		r.activeMapRun = ""
 	})
+	if isReset(parent, err) {
+		return
+	}
 	e := r.exec
 	e.Stop = common.Unix(s.now())
+	at.MapRunARN = r.activeMapRun
 	e.Resume = &at
 	if err == nil {
 		e.Resume = nil
@@ -254,12 +285,12 @@ func (s *Service) StartExecution(ctx context.Context, in *api.StartExecutionInpu
 		return nil, err
 	}
 
-	r, def, existing, err := s.begin(ctx, &m, in.StateMachineArn, in.Name, in.Input)
+	r, def, existing, err := s.begin(ctx, &m, in.StateMachineArn, in.Name, in.Input, in.TraceHeader)
 	if err != nil {
 		return nil, err
 	}
 
-	if !existing && !s.bg.Go(func(ctx context.Context) { s.execute(ctx, r, def) }) {
+	if !existing && !s.goExecution(func(ctx context.Context) { s.execute(ctx, r, def) }) {
 		return nil, awserror.New("ServiceException", "The service is shutting down")
 	}
 
@@ -276,7 +307,12 @@ func (s *Service) StartSyncExecution(
 		return nil, err
 	}
 
-	r, def, _, err := s.begin(ctx, &m, in.StateMachineArn, in.Name, in.Input)
+	metaOnly, err := metadataOnly(in.IncludedData)
+	if err != nil {
+		return nil, err
+	}
+
+	r, def, _, err := s.begin(ctx, &m, in.StateMachineArn, in.Name, in.Input, in.TraceHeader)
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +323,7 @@ func (s *Service) StartSyncExecution(
 	}
 
 	done := make(chan struct{})
-	if !s.bg.Go(func(ctx context.Context) {
+	if !s.goExecution(func(ctx context.Context) {
 		defer close(done)
 		s.execute(ctx, r, def)
 	}) {
@@ -298,15 +334,23 @@ func (s *Service) StartSyncExecution(
 	e := r.exec
 	out := &api.StartSyncExecutionOutput{
 		ExecutionArn: new(e.ARN), StateMachineArn: new(e.StateMachineARN), Name: new(e.Name),
-		StartDate: new(e.Start), StopDate: new(e.Stop), Status: new(e.Status), Input: new(e.Input),
-		InputDetails: &api.CloudWatchEventsExecutionDataDetails{Included: new(true)},
+		StartDate: new(e.Start), StopDate: new(e.Stop), Status: new(e.Status),
+		TraceHeader: optional(e.TraceHeader),
 		BillingDetails: &api.BillingDetails{
 			BilledDurationInMilliseconds: new(max(100, int64((e.Stop-e.Start)*1000))),
 			BilledMemoryUsedInMB:         new(int64(64)),
 		},
 	}
+	if !metaOnly {
+		out.Input = new(e.Input)
+		out.InputDetails = &api.CloudWatchEventsExecutionDataDetails{Included: new(true)}
+	}
+
 	if e.Status == statusSucceeded {
-		out.Output, out.OutputDetails = new(e.Output), &api.CloudWatchEventsExecutionDataDetails{Included: new(true)}
+		if !metaOnly {
+			out.Output = new(e.Output)
+			out.OutputDetails = &api.CloudWatchEventsExecutionDataDetails{Included: new(true)}
+		}
 	} else {
 		out.Error, out.Cause = new(e.Error), new(e.Cause)
 	}
@@ -346,6 +390,11 @@ func (s *Service) DescribeExecution(
 		return nil, err
 	}
 
+	metaOnly, err := metadataOnly(in.IncludedData)
+	if err != nil {
+		return nil, err
+	}
+
 	var e *execution
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		var loadErr error
@@ -358,11 +407,15 @@ func (s *Service) DescribeExecution(
 
 	out := &api.DescribeExecutionOutput{
 		ExecutionArn: new(e.ARN), StateMachineArn: new(e.StateMachineARN), Name: new(e.Name), Status: new(e.Status),
-		StartDate: new(e.Start), Input: new(e.Input), MapRunArn: optional(e.MapRunARN),
-		InputDetails:  &api.CloudWatchEventsExecutionDataDetails{Included: new(true)},
+		StartDate: new(e.Start), TraceHeader: optional(e.TraceHeader), MapRunArn: optional(e.MapRunARN),
 		RedriveStatus: new("REDRIVABLE"), StateMachineVersionArn: optional(e.VersionARN),
 		StateMachineAliasArn: optional(e.AliasARN), RedriveCount: new(e.Redrives),
 	}
+	if !metaOnly {
+		out.Input = new(e.Input)
+		out.InputDetails = &api.CloudWatchEventsExecutionDataDetails{Included: new(true)}
+	}
+
 	if e.Redrives > 0 {
 		out.RedriveDate = new(e.RedriveDate)
 	}
@@ -370,11 +423,12 @@ func (s *Service) DescribeExecution(
 	if reason := e.redrivable(s.now()); reason != "" {
 		out.RedriveStatus, out.RedriveStatusReason = new("NOT_REDRIVABLE"), new(reason)
 	}
+
 	if e.Status != statusRunning {
 		out.StopDate = new(e.Stop)
 	}
 
-	if e.Status == statusSucceeded {
+	if e.Status == statusSucceeded && !metaOnly {
 		out.Output, out.OutputDetails = new(e.Output), &api.CloudWatchEventsExecutionDataDetails{Included: new(true)}
 	}
 
@@ -390,6 +444,11 @@ func (s *Service) DescribeStateMachineForExecution(
 	in *api.DescribeStateMachineForExecutionInput,
 ) (*api.DescribeStateMachineForExecutionOutput, error) {
 	m, err := request.Regional(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	metaOnly, err := metadataOnly(in.IncludedData)
 	if err != nil {
 		return nil, err
 	}
@@ -418,6 +477,7 @@ func (s *Service) DescribeStateMachineForExecution(
 				StateMachineArn: new(e.StateMachineARN), Name: new(e.StateMachine),
 				Definition: new(e.Definition), RoleArn: new(sm.RoleArn), UpdateDate: new(e.Start),
 				LoggingConfiguration: sm.Logging, TracingConfiguration: sm.Tracing,
+				EncryptionConfiguration: encryptionOf(sm.Encryption), MapRunArn: new(e.MapRunARN),
 			}
 
 			return nil
@@ -437,7 +497,8 @@ func (s *Service) DescribeStateMachineForExecution(
 		out = &api.DescribeStateMachineForExecutionOutput{
 			StateMachineArn: d.StateMachineArn, Name: d.Name, Definition: d.Definition, RoleArn: d.RoleArn,
 			UpdateDate: d.CreationDate, LoggingConfiguration: d.LoggingConfiguration,
-			TracingConfiguration: d.TracingConfiguration, RevisionId: d.RevisionId,
+			TracingConfiguration: d.TracingConfiguration, EncryptionConfiguration: d.EncryptionConfiguration,
+			RevisionId: d.RevisionId,
 		}
 		return nil
 	})
@@ -445,10 +506,19 @@ func (s *Service) DescribeStateMachineForExecution(
 		return nil, err
 	}
 
+	if metaOnly {
+		out.Definition = nil
+	}
+
 	return out, nil
 }
 
-var statuses = []string{statusRunning, statusSucceeded, statusFailed, statusTimedOut, statusAborted, "PENDING_REDRIVE"}
+var (
+	statuses = []string{
+		statusRunning, statusSucceeded, statusFailed, statusTimedOut, statusAborted, "PENDING_REDRIVE",
+	}
+	redriveFilters = []string{"REDRIVEN", "NOT_REDRIVEN"}
+)
 
 // ListExecutions lists a state machine's or Map Run's Standard executions in storage key order.
 func (s *Service) ListExecutions(ctx context.Context, in *api.ListExecutionsInput) (*api.ListExecutionsOutput, error) {
@@ -459,6 +529,14 @@ func (s *Service) ListExecutions(ctx context.Context, in *api.ListExecutionsInpu
 
 	if in.StatusFilter != nil && !slices.Contains(statuses, *in.StatusFilter) {
 		return nil, awserror.Validation("statusFilter must be one of %s", strings.Join(statuses, ", "))
+	}
+
+	if in.StatusFilter != nil && *in.StatusFilter == "PENDING_REDRIVE" && in.MapRunArn == nil {
+		return nil, awserror.Validation("statusFilter PENDING_REDRIVE requires mapRunArn")
+	}
+
+	if in.RedriveFilter != nil && !slices.Contains(redriveFilters, *in.RedriveFilter) {
+		return nil, awserror.Validation("redriveFilter must be REDRIVEN or NOT_REDRIVEN")
 	}
 
 	out := &api.ListExecutionsOutput{Executions: []api.ExecutionListItem{}}
@@ -513,6 +591,16 @@ func (s *Service) ListExecutions(ctx context.Context, in *api.ListExecutionsInpu
 
 			if in.MapRunArn == nil && e.MapRunARN != "" {
 				continue
+			}
+
+			if in.RedriveFilter != nil {
+				if *in.RedriveFilter == "REDRIVEN" && e.Redrives == 0 {
+					continue
+				}
+
+				if *in.RedriveFilter == "NOT_REDRIVEN" && e.Redrives > 0 {
+					continue
+				}
 			}
 
 			if (in.StatusFilter == nil || e.Status == *in.StatusFilter) &&

@@ -33,16 +33,23 @@ type TracingConfiguration struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
+type EncryptionConfiguration struct {
+	KmsKeyId                     *string `json:"kmsKeyId,omitempty"`
+	KmsDataKeyReusePeriodSeconds *int64  `json:"kmsDataKeyReusePeriodSeconds,omitempty"`
+	Type                         *string `json:"type,omitempty"`
+}
+
 type CreateStateMachineInput struct {
-	Name                 *string               `json:"name,omitempty"`
-	Definition           *string               `json:"definition,omitempty"`
-	RoleArn              *string               `json:"roleArn,omitempty"`
-	Type                 *string               `json:"type,omitempty"`
-	LoggingConfiguration *LoggingConfiguration `json:"loggingConfiguration,omitempty"`
-	Tags                 []Tag                 `json:"tags,omitempty"`
-	TracingConfiguration *TracingConfiguration `json:"tracingConfiguration,omitempty"`
-	Publish              *bool                 `json:"publish,omitempty"`
-	VersionDescription   *string               `json:"versionDescription,omitempty"`
+	Name                    *string                  `json:"name,omitempty"`
+	Definition              *string                  `json:"definition,omitempty"`
+	RoleArn                 *string                  `json:"roleArn,omitempty"`
+	Type                    *string                  `json:"type,omitempty"`
+	LoggingConfiguration    *LoggingConfiguration    `json:"loggingConfiguration,omitempty"`
+	Tags                    []Tag                    `json:"tags,omitempty"`
+	TracingConfiguration    *TracingConfiguration    `json:"tracingConfiguration,omitempty"`
+	Publish                 *bool                    `json:"publish,omitempty"`
+	VersionDescription      *string                  `json:"versionDescription,omitempty"`
+	EncryptionConfiguration *EncryptionConfiguration `json:"encryptionConfiguration,omitempty"`
 }
 
 type CreateStateMachineOutput struct {
@@ -53,12 +60,7 @@ type CreateStateMachineOutput struct {
 
 type DescribeStateMachineInput struct {
 	StateMachineArn *string `json:"stateMachineArn,omitempty"`
-}
-
-type EncryptionConfiguration struct {
-	KmsDataKeyReusePeriodSeconds *int64  `json:"kmsDataKeyReusePeriodSeconds,omitempty"`
-	KmsKeyId                     *string `json:"kmsKeyId,omitempty"`
-	Type                         *string `json:"type,omitempty"`
+	IncludedData    *string `json:"includedData,omitempty"`
 }
 
 type DescribeStateMachineOutput struct {
@@ -96,13 +98,14 @@ type ListStateMachinesOutput struct {
 }
 
 type UpdateStateMachineInput struct {
-	StateMachineArn      *string               `json:"stateMachineArn,omitempty"`
-	Definition           *string               `json:"definition,omitempty"`
-	RoleArn              *string               `json:"roleArn,omitempty"`
-	LoggingConfiguration *LoggingConfiguration `json:"loggingConfiguration,omitempty"`
-	TracingConfiguration *TracingConfiguration `json:"tracingConfiguration,omitempty"`
-	Publish              *bool                 `json:"publish,omitempty"`
-	VersionDescription   *string               `json:"versionDescription,omitempty"`
+	StateMachineArn         *string                  `json:"stateMachineArn,omitempty"`
+	Definition              *string                  `json:"definition,omitempty"`
+	RoleArn                 *string                  `json:"roleArn,omitempty"`
+	LoggingConfiguration    *LoggingConfiguration    `json:"loggingConfiguration,omitempty"`
+	TracingConfiguration    *TracingConfiguration    `json:"tracingConfiguration,omitempty"`
+	Publish                 *bool                    `json:"publish,omitempty"`
+	VersionDescription      *string                  `json:"versionDescription,omitempty"`
+	EncryptionConfiguration *EncryptionConfiguration `json:"encryptionConfiguration,omitempty"`
 }
 
 type UpdateStateMachineOutput struct {
@@ -122,6 +125,7 @@ type StartExecutionInput struct {
 	StateMachineArn *string `json:"stateMachineArn,omitempty"`
 	Name            *string `json:"name,omitempty"`
 	Input           *string `json:"input,omitempty"`
+	TraceHeader     *string `json:"traceHeader,omitempty"`
 }
 
 type StartExecutionOutput struct {
@@ -133,6 +137,8 @@ type StartSyncExecutionInput struct {
 	StateMachineArn *string `json:"stateMachineArn,omitempty"`
 	Name            *string `json:"name,omitempty"`
 	Input           *string `json:"input,omitempty"`
+	TraceHeader     *string `json:"traceHeader,omitempty"`
+	IncludedData    *string `json:"includedData,omitempty"`
 }
 
 type BillingDetails struct {
@@ -163,6 +169,7 @@ type StartSyncExecutionOutput struct {
 
 type DescribeExecutionInput struct {
 	ExecutionArn *string `json:"executionArn,omitempty"`
+	IncludedData *string `json:"includedData,omitempty"`
 }
 
 type DescribeExecutionOutput struct {
@@ -192,6 +199,7 @@ type ListExecutionsInput struct {
 	MapRunArn       *string `json:"mapRunArn,omitempty"`
 	StateMachineArn *string `json:"stateMachineArn,omitempty"`
 	StatusFilter    *string `json:"statusFilter,omitempty"`
+	RedriveFilter   *string `json:"redriveFilter,omitempty"`
 	MaxResults      *int64  `json:"maxResults,omitempty"`
 	NextToken       *string `json:"nextToken,omitempty"`
 }
@@ -495,6 +503,7 @@ type GetExecutionHistoryOutput struct {
 
 type DescribeStateMachineForExecutionInput struct {
 	ExecutionArn *string `json:"executionArn,omitempty"`
+	IncludedData *string `json:"includedData,omitempty"`
 }
 
 type DescribeStateMachineForExecutionOutput struct {
@@ -537,8 +546,9 @@ type SendTaskHeartbeatOutput struct {
 }
 
 type CreateActivityInput struct {
-	Name *string `json:"name,omitempty"`
-	Tags []Tag   `json:"tags,omitempty"`
+	Name                    *string                  `json:"name,omitempty"`
+	Tags                    []Tag                    `json:"tags,omitempty"`
+	EncryptionConfiguration *EncryptionConfiguration `json:"encryptionConfiguration,omitempty"`
 }
 
 type CreateActivityOutput struct {
@@ -739,13 +749,35 @@ type RedriveExecutionOutput struct {
 	RedriveDate *float64 `json:"redriveDate,omitempty"`
 }
 
+type MockErrorOutput struct {
+	Error *string `json:"error,omitempty"`
+	Cause *string `json:"cause,omitempty"`
+}
+
+type MockInput struct {
+	Result              *string          `json:"result,omitempty"`
+	ErrorOutput         *MockErrorOutput `json:"errorOutput,omitempty"`
+	FieldValidationMode *string          `json:"fieldValidationMode,omitempty"`
+}
+
+type TestStateConfiguration struct {
+	RetrierRetryCount        *int64  `json:"retrierRetryCount,omitempty"`
+	ErrorCausedByState       *string `json:"errorCausedByState,omitempty"`
+	MapIterationFailureCount *int64  `json:"mapIterationFailureCount,omitempty"`
+	MapItemReaderData        *string `json:"mapItemReaderData,omitempty"`
+}
+
 type TestStateInput struct {
-	Definition      *string `json:"definition,omitempty"`
-	RoleArn         *string `json:"roleArn,omitempty"`
-	Input           *string `json:"input,omitempty"`
-	InspectionLevel *string `json:"inspectionLevel,omitempty"`
-	Variables       *string `json:"variables,omitempty"`
-	StateName       *string `json:"stateName,omitempty"`
+	Definition         *string                 `json:"definition,omitempty"`
+	RoleArn            *string                 `json:"roleArn,omitempty"`
+	Input              *string                 `json:"input,omitempty"`
+	InspectionLevel    *string                 `json:"inspectionLevel,omitempty"`
+	RevealSecrets      *bool                   `json:"revealSecrets,omitempty"`
+	Variables          *string                 `json:"variables,omitempty"`
+	StateName          *string                 `json:"stateName,omitempty"`
+	Mock               *MockInput              `json:"mock,omitempty"`
+	Context            *string                 `json:"context,omitempty"`
+	StateConfiguration *TestStateConfiguration `json:"stateConfiguration,omitempty"`
 }
 
 type InspectionErrorDetails struct {
@@ -880,15 +912,25 @@ var pattern1 = regexp.MustCompile("^[0-9]+$")
 
 var enum0 = []string{"EXPRESS", "STANDARD"}
 
-var enum1 = []string{"ABORTED", "FAILED", "PENDING_REDRIVE", "RUNNING", "SUCCEEDED", "TIMED_OUT"}
+var enum1 = []string{"ALL_DATA", "METADATA_ONLY"}
 
-var enum2 = []string{"ALL", "ERROR", "FATAL", "OFF"}
+var enum2 = []string{"AWS_OWNED_KEY", "CUSTOMER_MANAGED_KMS_KEY"}
+
+var enum3 = []string{"ABORTED", "FAILED", "PENDING_REDRIVE", "RUNNING", "SUCCEEDED", "TIMED_OUT"}
+
+var enum4 = []string{"NOT_REDRIVEN", "REDRIVEN"}
+
+var enum5 = []string{"ALL", "ERROR", "FATAL", "OFF"}
+
+var enum6 = []string{"NONE", "PRESENT", "STRICT"}
 
 var pattern2 = regexp.MustCompile("^[!-~]+$")
 
-var enum3 = []string{"DEBUG", "INFO", "TRACE"}
+var pattern3 = regexp.MustCompile("^\\p{ASCII}*$")
 
-var enum4 = []string{"ERROR", "WARNING"}
+var enum7 = []string{"DEBUG", "INFO", "TRACE"}
+
+var enum8 = []string{"ERROR", "WARNING"}
 
 func (v *CloudWatchLogsLogGroup) Validate(path string) error {
 	if v.LogGroupArn != nil {
@@ -913,6 +955,11 @@ func (v *CreateActivityInput) Validate(path string) error {
 			if err := e0.Validate(validation.Index(path+"tags", i0) + "."); err != nil {
 				return err
 			}
+		}
+	}
+	if v.EncryptionConfiguration != nil {
+		if err := (*v.EncryptionConfiguration).Validate(path + "encryptionConfiguration" + "."); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -1003,6 +1050,11 @@ func (v *CreateStateMachineInput) Validate(path string) error {
 			return err
 		}
 	}
+	if v.EncryptionConfiguration != nil {
+		if err := (*v.EncryptionConfiguration).Validate(path + "encryptionConfiguration" + "."); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -1075,6 +1127,11 @@ func (v *DescribeExecutionInput) Validate(path string) error {
 			return err
 		}
 	}
+	if v.IncludedData != nil {
+		if err := validation.Enum(path+"includedData", (*v.IncludedData), enum1); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -1111,6 +1168,11 @@ func (v *DescribeStateMachineForExecutionInput) Validate(path string) error {
 			return err
 		}
 	}
+	if v.IncludedData != nil {
+		if err := validation.Enum(path+"includedData", (*v.IncludedData), enum1); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -1120,6 +1182,33 @@ func (v *DescribeStateMachineInput) Validate(path string) error {
 	}
 	if v.StateMachineArn != nil {
 		if err := validation.Length(path+"stateMachineArn", utf8.RuneCountInString((*v.StateMachineArn)), new(int64(1)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if v.IncludedData != nil {
+		if err := validation.Enum(path+"includedData", (*v.IncludedData), enum1); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *EncryptionConfiguration) Validate(path string) error {
+	if v.KmsKeyId != nil {
+		if err := validation.Length(path+"kmsKeyId", utf8.RuneCountInString((*v.KmsKeyId)), new(int64(1)), new(int64(2048))); err != nil {
+			return err
+		}
+	}
+	if v.KmsDataKeyReusePeriodSeconds != nil {
+		if err := validation.Range(path+"kmsDataKeyReusePeriodSeconds", float64((*v.KmsDataKeyReusePeriodSeconds)), new(float64(60)), new(float64(900))); err != nil {
+			return err
+		}
+	}
+	if err := validation.Required(path+"type", v.Type != nil); err != nil {
+		return err
+	}
+	if v.Type != nil {
+		if err := validation.Enum(path+"type", (*v.Type), enum2); err != nil {
 			return err
 		}
 	}
@@ -1191,7 +1280,12 @@ func (v *ListExecutionsInput) Validate(path string) error {
 		}
 	}
 	if v.StatusFilter != nil {
-		if err := validation.Enum(path+"statusFilter", (*v.StatusFilter), enum1); err != nil {
+		if err := validation.Enum(path+"statusFilter", (*v.StatusFilter), enum3); err != nil {
+			return err
+		}
+	}
+	if v.RedriveFilter != nil {
+		if err := validation.Enum(path+"redriveFilter", (*v.RedriveFilter), enum4); err != nil {
 			return err
 		}
 	}
@@ -1318,7 +1412,40 @@ func (v *LoggingConfiguration) Validate(path string) error {
 		}
 	}
 	if v.Level != nil {
-		if err := validation.Enum(path+"level", (*v.Level), enum2); err != nil {
+		if err := validation.Enum(path+"level", (*v.Level), enum5); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *MockErrorOutput) Validate(path string) error {
+	if v.Error != nil {
+		if err := validation.Length(path+"error", utf8.RuneCountInString((*v.Error)), new(int64(0)), new(int64(256))); err != nil {
+			return err
+		}
+	}
+	if v.Cause != nil {
+		if err := validation.Length(path+"cause", utf8.RuneCountInString((*v.Cause)), new(int64(0)), new(int64(32768))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *MockInput) Validate(path string) error {
+	if v.Result != nil {
+		if err := validation.Length(path+"result", utf8.RuneCountInString((*v.Result)), new(int64(0)), new(int64(262144))); err != nil {
+			return err
+		}
+	}
+	if v.ErrorOutput != nil {
+		if err := (*v.ErrorOutput).Validate(path + "errorOutput" + "."); err != nil {
+			return err
+		}
+	}
+	if v.FieldValidationMode != nil {
+		if err := validation.Enum(path+"fieldValidationMode", (*v.FieldValidationMode), enum6); err != nil {
 			return err
 		}
 	}
@@ -1452,6 +1579,14 @@ func (v *StartExecutionInput) Validate(path string) error {
 			return err
 		}
 	}
+	if v.TraceHeader != nil {
+		if err := validation.Length(path+"traceHeader", utf8.RuneCountInString((*v.TraceHeader)), new(int64(0)), new(int64(256))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"traceHeader", (*v.TraceHeader), pattern3, nil, "^\\p{ASCII}*$"); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -1471,6 +1606,19 @@ func (v *StartSyncExecutionInput) Validate(path string) error {
 	}
 	if v.Input != nil {
 		if err := validation.Length(path+"input", utf8.RuneCountInString((*v.Input)), new(int64(0)), new(int64(262144))); err != nil {
+			return err
+		}
+	}
+	if v.TraceHeader != nil {
+		if err := validation.Length(path+"traceHeader", utf8.RuneCountInString((*v.TraceHeader)), new(int64(0)), new(int64(256))); err != nil {
+			return err
+		}
+		if err := validation.Pattern(path+"traceHeader", (*v.TraceHeader), pattern3, nil, "^\\p{ASCII}*$"); err != nil {
+			return err
+		}
+	}
+	if v.IncludedData != nil {
+		if err := validation.Enum(path+"includedData", (*v.IncludedData), enum1); err != nil {
 			return err
 		}
 	}
@@ -1535,6 +1683,30 @@ func (v *TagResourceInput) Validate(path string) error {
 	return nil
 }
 
+func (v *TestStateConfiguration) Validate(path string) error {
+	if v.RetrierRetryCount != nil {
+		if err := validation.Range(path+"retrierRetryCount", float64((*v.RetrierRetryCount)), new(float64(0)), nil); err != nil {
+			return err
+		}
+	}
+	if v.ErrorCausedByState != nil {
+		if err := validation.Length(path+"errorCausedByState", utf8.RuneCountInString((*v.ErrorCausedByState)), new(int64(1)), new(int64(80))); err != nil {
+			return err
+		}
+	}
+	if v.MapIterationFailureCount != nil {
+		if err := validation.Range(path+"mapIterationFailureCount", float64((*v.MapIterationFailureCount)), new(float64(0)), nil); err != nil {
+			return err
+		}
+	}
+	if v.MapItemReaderData != nil {
+		if err := validation.Length(path+"mapItemReaderData", utf8.RuneCountInString((*v.MapItemReaderData)), new(int64(0)), new(int64(262144))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (v *TestStateInput) Validate(path string) error {
 	if err := validation.Required(path+"definition", v.Definition != nil); err != nil {
 		return err
@@ -1555,7 +1727,7 @@ func (v *TestStateInput) Validate(path string) error {
 		}
 	}
 	if v.InspectionLevel != nil {
-		if err := validation.Enum(path+"inspectionLevel", (*v.InspectionLevel), enum3); err != nil {
+		if err := validation.Enum(path+"inspectionLevel", (*v.InspectionLevel), enum7); err != nil {
 			return err
 		}
 	}
@@ -1566,6 +1738,21 @@ func (v *TestStateInput) Validate(path string) error {
 	}
 	if v.StateName != nil {
 		if err := validation.Length(path+"stateName", utf8.RuneCountInString((*v.StateName)), new(int64(1)), new(int64(80))); err != nil {
+			return err
+		}
+	}
+	if v.Mock != nil {
+		if err := (*v.Mock).Validate(path + "mock" + "."); err != nil {
+			return err
+		}
+	}
+	if v.Context != nil {
+		if err := validation.Length(path+"context", utf8.RuneCountInString((*v.Context)), new(int64(0)), new(int64(262144))); err != nil {
+			return err
+		}
+	}
+	if v.StateConfiguration != nil {
+		if err := (*v.StateConfiguration).Validate(path + "stateConfiguration" + "."); err != nil {
 			return err
 		}
 	}
@@ -1686,6 +1873,11 @@ func (v *UpdateStateMachineInput) Validate(path string) error {
 			return err
 		}
 	}
+	if v.EncryptionConfiguration != nil {
+		if err := (*v.EncryptionConfiguration).Validate(path + "encryptionConfiguration" + "."); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -1704,7 +1896,7 @@ func (v *ValidateStateMachineDefinitionInput) Validate(path string) error {
 		}
 	}
 	if v.Severity != nil {
-		if err := validation.Enum(path+"severity", (*v.Severity), enum4); err != nil {
+		if err := validation.Enum(path+"severity", (*v.Severity), enum8); err != nil {
 			return err
 		}
 	}

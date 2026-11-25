@@ -22,14 +22,13 @@ See the [implemented feature catalogue](catalogue.md#step-functions) for this se
 ## Limitations and future work
 
 - No execution retention.
-- Step Functions metrics omit redrives, Map Run children, activity and integration metrics, and usage gauges.
-- Distributed Map does not support Map Run redrive, MANIFEST or Parquet readers, compressed inputs, ItemsPointer or LOAD_AND_FLATTEN; unsupported definition fields fail validation.
-- Distributed Map datasets and result exports are buffered in memory rather than streamed; MaxConcurrencyPath on Inline Map is outside the subset.
-- JSONPath filters and recursive descent are outside the subset.
+- EncryptionConfiguration validates key state against TinyStack KMS, but execution payloads and definitions are stored as metadata without data-plane encryption.
+- Step Functions metrics omit Map Run child execution metrics and usage/concurrency gauges.
+- Distributed Map does not support Parquet readers or PENDING_REDRIVE child status listings; unsupported definition fields fail validation.
+- Distributed Map datasets and result exports are buffered in memory rather than streamed.
 - Running executions and Map Runs abort after restart; stopping a parent aborts its running child workflows; activity queues and task tokens are in memory.
 - Express execution results are not retained; console results last until leaving or reloading the page.
 - Versions, aliases, activities, TestState and redrive remain available through the AWS CLI or SDK; verify-mode console management requires an authenticated root console session.
-- Reset does not stop executions already running.
 - A denied Task fails with the target service's own error name and message (such as SQS.AccessDeniedException) rather than AWS's.
 
 These gaps describe current boundaries and possible follow-up slices. The [roadmap](../roadmap/index.md)
@@ -91,5 +90,5 @@ All operations in this pinned model are selected. Member and behavior limits sti
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/sfn)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/sfn/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/sfn.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
-- SDK integration examples: [sfn_distributed_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_distributed_test.go), [sfn_jsonata_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_jsonata_test.go), [sfn_redrive_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_redrive_test.go), [sfn_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_test.go), [sfn_teststate_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_teststate_test.go), [sfn_variables_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_variables_test.go), [sfn_versions_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_versions_test.go).
+- SDK integration examples: [sfn_distributed_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_distributed_test.go), [sfn_enhancements_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_enhancements_test.go), [sfn_jsonata_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_jsonata_test.go), [sfn_redrive_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_redrive_test.go), [sfn_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_test.go), [sfn_teststate_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_teststate_test.go), [sfn_variables_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_variables_test.go), [sfn_versions_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/sfn_versions_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

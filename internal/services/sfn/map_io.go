@@ -3,6 +3,7 @@ package sfn
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/csv"
 	"encoding/json"
@@ -11,6 +12,7 @@ import (
 	"maps"
 	"math"
 	"slices"
+	"strconv"
 	"strings"
 
 	s3api "github.com/amjadjibon/tinystack/internal/aws/generated/s3"
@@ -108,7 +110,7 @@ func (r *run) readMapItems(ctx context.Context, s *state, input any, e *env) (it
 			return nil, "", err
 		}
 
-		return items, "STATE_DATA", nil
+		return items, sourceStateData, nil
 	}
 
 	defer func() {
@@ -116,16 +118,40 @@ func (r *run) readMapItems(ctx context.Context, s *state, input any, e *env) (it
 			err = &stateError{Name: "States.ItemReaderFailed", Cause: err.Error()}
 		}
 	}()
-	if r.s.s3 == nil {
-		return nil, "", fmt.Errorf("S3 is unavailable")
-	}
-
 	limit := float64(100000000)
 	if c := rd.ReaderConfig; c != nil {
 		limit, err = mapNumber(e, c.MaxItems, c.MaxItemsPath, "MaxItems", input, limit, 1, limit, true)
 		if err != nil {
 			return nil, "", err
 		}
+	}
+
+	if r.test != nil && r.test.hasItemReader {
+		c := rd.ReaderConfig
+		if c != nil && c.InputType != "" && c.InputType != inputManifest {
+			items, err = parseReaderData(r.test.itemReaderRaw, "", "", c, int(limit))
+			return items, sourceStateData, err
+		}
+
+		var v any
+		if decodeErr := json.Unmarshal(r.test.itemReaderRaw, &v); decodeErr != nil {
+			return nil, "", decodeErr
+		}
+
+		items, err = mapInputItems(v)
+		if err != nil {
+			return nil, "", err
+		}
+
+		if len(items) > int(limit) {
+			items = items[:int(limit)]
+		}
+
+		return items, sourceStateData, nil
+	}
+
+	if r.s.s3 == nil {
+		return nil, "", fmt.Errorf("S3 is unavailable")
 	}
 
 	p, err := mapParameters(
@@ -161,6 +187,7 @@ func (r *run) readMapItems(ctx context.Context, s *state, input any, e *env) (it
 
 		prefix, _ := p["Prefix"].(string)
 		owner, _ := p["ExpectedBucketOwner"].(string)
+		loadFlatten := rd.ReaderConfig != nil && rd.ReaderConfig.Transformation == transformLoadAndFlatten
 		var token *string
 		for {
 			listed, listErr := r.s.s3.ListObjectsV2(ctx, &s3api.ListObjectsV2Request{
@@ -174,12 +201,32 @@ func (r *run) readMapItems(ctx context.Context, s *state, input any, e *env) (it
 			}
 
 			for _, o := range listed.Contents {
-				items = append(items, map[string]any{
-					fieldKey: common.Value(o.Key), "Size": common.Value(o.Size), "ETag": common.Value(o.ETag),
-					"LastModified": o.LastModified, "StorageClass": common.Value(o.StorageClass),
-				})
+				if loadFlatten {
+					obj, getErr := r.s.s3.GetObject(ctx, &s3api.GetObjectRequest{
+						Bucket: new(bucket), Key: o.Key, ExpectedBucketOwner: optional(owner),
+					})
+					if getErr != nil {
+						return nil, "", getErr
+					}
+
+					parsed, parseErr := parseReaderData(
+						obj.Body, common.Value(obj.ContentType), common.Value(o.Key),
+						rd.ReaderConfig, int(limit)-len(items),
+					)
+					if parseErr != nil {
+						return nil, "", parseErr
+					}
+
+					items = append(items, parsed...)
+				} else {
+					items = append(items, map[string]any{
+						fieldKey: common.Value(o.Key), "Size": common.Value(o.Size), "ETag": common.Value(o.ETag),
+						"LastModified": o.LastModified, "StorageClass": common.Value(o.StorageClass),
+					})
+				}
+
 				if len(items) >= int(limit) {
-					return items, "S3://" + bucket, nil
+					return items[:int(limit)], "S3://" + bucket, nil
 				}
 			}
 
@@ -188,6 +235,10 @@ func (r *run) readMapItems(ctx context.Context, s *state, input any, e *env) (it
 			}
 
 			token = listed.NextContinuationToken
+		}
+
+		if items == nil {
+			items = []any{}
 		}
 
 		return items, "S3://" + bucket, nil
@@ -212,74 +263,16 @@ func (r *run) readMapItems(ctx context.Context, s *state, input any, e *env) (it
 	}
 
 	c := rd.ReaderConfig
-	switch c.InputType {
-	case inputJSON:
-		var v any
-		if decodeErr := json.Unmarshal(obj.Body, &v); decodeErr != nil {
-			return nil, "", decodeErr
-		}
+	if c.InputType == inputManifest {
+		items, err = r.readManifestItems(
+			ctx, bucket, key, owner, obj.Body, common.Value(obj.ContentType), int(limit),
+		)
+	} else {
+		items, err = parseReaderData(obj.Body, common.Value(obj.ContentType), key, c, int(limit))
+	}
 
-		items, err = mapInputItems(v)
-		if err != nil {
-			return nil, "", err
-		}
-	case inputJSONL:
-		scanner := bufio.NewScanner(bytes.NewReader(obj.Body))
-		scanner.Buffer(nil, max(len(obj.Body), 1))
-		for scanner.Scan() {
-			var item any
-			if decodeErr := json.Unmarshal(scanner.Bytes(), &item); decodeErr != nil {
-				return nil, "", decodeErr
-			}
-
-			items = append(items, item)
-			if len(items) >= int(limit) {
-				break
-			}
-		}
-
-		if scanErr := scanner.Err(); scanErr != nil {
-			return nil, "", scanErr
-		}
-	case inputCSV:
-		reader := csv.NewReader(bytes.NewReader(obj.Body))
-		reader.FieldsPerRecord = -1
-		delimiters := map[string]rune{"": ',', "COMMA": ',', "PIPE": '|', "SEMICOLON": ';', "SPACE": ' ', "TAB": '\t'}
-		reader.Comma = delimiters[c.CSVDelimiter]
-		headers := c.CSVHeaders
-		if c.CSVHeaderLocation == "FIRST_ROW" {
-			headers, err = reader.Read()
-			if err != nil {
-				return nil, "", err
-			}
-		}
-
-		if len(strings.Join(headers, "")) > 10<<10 {
-			return nil, "", fmt.Errorf("CSV headers exceed 10 KiB")
-		}
-
-		for len(items) < int(limit) {
-			row, readErr := reader.Read()
-			if readErr == io.EOF {
-				break
-			}
-
-			if readErr != nil {
-				return nil, "", readErr
-			}
-
-			item := map[string]any{}
-			for i, header := range headers {
-				item[header] = ""
-				if i < len(row) {
-					item[header] = row[i]
-				}
-			}
-
-			items = append(items, item)
-		}
-	default:
-		return nil, "", fmt.Errorf("unsupported InputType %s", c.InputType)
+	if err != nil {
+		return nil, "", err
 	}
 
 	if len(items) > int(limit) {
@@ -291,6 +284,366 @@ func (r *run) readMapItems(ctx context.Context, s *state, input any, e *env) (it
 	}
 
 	return items, "S3://" + bucket + "/" + key, nil
+}
+
+func isGzip(body []byte, contentType, key string) bool {
+	return strings.EqualFold(contentType, "application/gzip") ||
+		strings.EqualFold(contentType, "application/x-gzip") ||
+		strings.HasSuffix(strings.ToLower(key), ".gz") ||
+		(len(body) >= 2 && body[0] == 0x1f && body[1] == 0x8b)
+}
+
+func decompressReaderBody(body []byte, contentType, key string) ([]byte, error) {
+	if !isGzip(body, contentType, key) {
+		return body, nil
+	}
+
+	zr, err := gzip.NewReader(bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("decompressing gzip input: %w", err)
+	}
+
+	defer func() { _ = zr.Close() }()
+	// #nosec G110 -- object bytes come from local S3 storage bounded by s3_max_object_bytes.
+	return io.ReadAll(zr)
+}
+
+func validJSONPointer(pointer string) bool {
+	if pointer == "" {
+		return true
+	}
+
+	if pointer[0] != '/' {
+		return false
+	}
+
+	for i := 1; i < len(pointer); i++ {
+		if pointer[i] == '~' {
+			if i+1 >= len(pointer) || (pointer[i+1] != '0' && pointer[i+1] != '1') {
+				return false
+			}
+
+			i++
+		}
+	}
+
+	return true
+}
+
+func resolveJSONPointer(doc any, pointer string) (any, error) {
+	if pointer == "" {
+		return doc, nil
+	}
+
+	if !validJSONPointer(pointer) {
+		return nil, fmt.Errorf("invalid JSON Pointer %q", pointer)
+	}
+
+	cur := doc
+	for token := range strings.SplitSeq(pointer[1:], "/") {
+		token = strings.ReplaceAll(token, "~1", "/")
+		token = strings.ReplaceAll(token, "~0", "~")
+		switch node := cur.(type) {
+		case map[string]any:
+			v, ok := node[token]
+			if !ok {
+				return nil, fmt.Errorf("JSON Pointer %q not found", pointer)
+			}
+
+			cur = v
+		case []any:
+			if len(token) > 1 && token[0] == '0' {
+				return nil, fmt.Errorf("invalid array index %q in JSON Pointer %q", token, pointer)
+			}
+
+			idx, err := strconv.Atoi(token)
+			if err != nil || idx < 0 || idx >= len(node) {
+				return nil, fmt.Errorf("array index %q out of range in JSON Pointer %q", token, pointer)
+			}
+
+			cur = node[idx]
+		default:
+			return nil, fmt.Errorf("JSON Pointer %q cannot traverse scalar value", pointer)
+		}
+	}
+
+	return cur, nil
+}
+
+func parseReaderData(body []byte, contentEncoding, key string, c *readerConfig, limit int) ([]any, error) {
+	data, err := decompressReaderBody(body, contentEncoding, key)
+	if err != nil {
+		return nil, err
+	}
+
+	var items []any
+	switch c.InputType {
+	case inputJSON:
+		var v any
+		if decodeErr := json.Unmarshal(data, &v); decodeErr != nil {
+			return nil, decodeErr
+		}
+
+		if c.ItemsPointer != "" {
+			v, err = resolveJSONPointer(v, c.ItemsPointer)
+			if err != nil {
+				return nil, err
+			}
+
+			arr, ok := v.([]any)
+			if !ok {
+				return nil, fmt.Errorf("ItemsPointer %q must select a JSON array", c.ItemsPointer)
+			}
+
+			items = arr
+		} else {
+			items, err = mapInputItems(v)
+			if err != nil {
+				return nil, err
+			}
+		}
+	case inputJSONL:
+		scanner := bufio.NewScanner(bytes.NewReader(data))
+		scanner.Buffer(nil, max(len(data), 1))
+		for scanner.Scan() {
+			line := bytes.TrimSpace(scanner.Bytes())
+			if len(line) == 0 {
+				continue
+			}
+
+			var item any
+			if decodeErr := json.Unmarshal(line, &item); decodeErr != nil {
+				return nil, decodeErr
+			}
+
+			items = append(items, item)
+			if len(items) >= limit {
+				break
+			}
+		}
+
+		if scanErr := scanner.Err(); scanErr != nil {
+			return nil, scanErr
+		}
+	case inputCSV:
+		items, err = parseCSVData(data, c.CSVHeaderLocation, c.CSVDelimiter, c.CSVHeaders, limit)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, fmt.Errorf("unsupported InputType %s", c.InputType)
+	}
+
+	if len(items) > limit {
+		items = items[:limit]
+	}
+
+	if items == nil {
+		items = []any{}
+	}
+
+	return items, nil
+}
+
+func parseCSVData(data []byte, headerLocation, delimiter string, givenHeaders []string, limit int) ([]any, error) {
+	reader := csv.NewReader(bytes.NewReader(data))
+	reader.FieldsPerRecord = -1
+	delimiters := map[string]rune{"": ',', "COMMA": ',', "PIPE": '|', "SEMICOLON": ';', "SPACE": ' ', "TAB": '\t'}
+	reader.Comma = delimiters[delimiter]
+	headers := givenHeaders
+	var err error
+	if headerLocation == headerFirstRow {
+		headers, err = reader.Read()
+		if err == io.EOF {
+			return []any{}, nil
+		}
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if len(strings.Join(headers, "")) > 10<<10 {
+		return nil, fmt.Errorf("CSV headers exceed 10 KiB")
+	}
+
+	var items []any
+	for len(items) < limit {
+		row, readErr := reader.Read()
+		if readErr == io.EOF {
+			break
+		}
+
+		if readErr != nil {
+			return nil, readErr
+		}
+
+		item := map[string]any{}
+		for i, header := range headers {
+			item[header] = ""
+			if i < len(row) {
+				item[header] = row[i]
+			}
+		}
+
+		items = append(items, item)
+	}
+
+	return items, nil
+}
+
+type s3InventoryManifest struct {
+	DestinationBucket string `json:"destinationBucket"`
+	FileFormat        string `json:"fileFormat"`
+	FileSchema        string `json:"fileSchema"`
+	Files             []struct {
+		Key string `json:"key"`
+	} `json:"files"`
+}
+
+func (r *run) readManifestItems(
+	ctx context.Context,
+	bucket, key, owner string,
+	body []byte,
+	contentEncoding string,
+	limit int,
+) ([]any, error) {
+	data, err := decompressReaderBody(body, contentEncoding, key)
+	if err != nil {
+		return nil, err
+	}
+
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) == 0 {
+		return []any{}, nil
+	}
+
+	if trimmed[0] != '{' {
+		return parseCSVManifest(trimmed, limit)
+	}
+
+	var manifest s3InventoryManifest
+	if err = json.Unmarshal(trimmed, &manifest); err != nil {
+		return nil, fmt.Errorf("parsing S3 inventory manifest: %w", err)
+	}
+
+	targetBucket := strings.TrimPrefix(manifest.DestinationBucket, "arn:aws:s3:::")
+	if targetBucket == "" {
+		targetBucket = bucket
+	}
+
+	if targetBucket != bucket {
+		if bucketErr := r.checkMapBucket(ctx, targetBucket); bucketErr != nil {
+			return nil, bucketErr
+		}
+	}
+
+	format := strings.ToUpper(strings.TrimSpace(manifest.FileFormat))
+	if format == "" {
+		format = inputCSV
+	}
+
+	if format != inputCSV && format != inputJSON && format != inputJSONL {
+		return nil, fmt.Errorf("unsupported manifest fileFormat %q", manifest.FileFormat)
+	}
+
+	cfg := &readerConfig{InputType: format}
+	if format == inputCSV {
+		if strings.TrimSpace(manifest.FileSchema) != "" {
+			var headers []string
+			for col := range strings.SplitSeq(manifest.FileSchema, ",") {
+				headers = append(headers, strings.TrimSpace(col))
+			}
+
+			cfg.CSVHeaderLocation = headerGiven
+			cfg.CSVHeaders = headers
+		} else {
+			cfg.CSVHeaderLocation = headerFirstRow
+		}
+	}
+
+	var items []any
+	for _, f := range manifest.Files {
+		if len(items) >= limit {
+			break
+		}
+
+		obj, getErr := r.s.s3.GetObject(ctx, &s3api.GetObjectRequest{
+			Bucket: new(targetBucket), Key: new(f.Key), ExpectedBucketOwner: optional(owner),
+		})
+		if getErr != nil {
+			return nil, getErr
+		}
+
+		parsed, parseErr := parseReaderData(
+			obj.Body, common.Value(obj.ContentType), f.Key, cfg, limit-len(items),
+		)
+		if parseErr != nil {
+			return nil, parseErr
+		}
+
+		items = append(items, parsed...)
+	}
+
+	return items, nil
+}
+
+func parseCSVManifest(data []byte, limit int) ([]any, error) {
+	reader := csv.NewReader(bytes.NewReader(data))
+	reader.FieldsPerRecord = -1
+	rows, err := reader.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(rows) == 0 {
+		return []any{}, nil
+	}
+
+	start := 0
+	var headers []string
+	if len(rows[0]) >= 2 &&
+		strings.EqualFold(strings.TrimSpace(rows[0][0]), "bucket") &&
+		strings.EqualFold(strings.TrimSpace(rows[0][1]), "key") {
+		start = 1
+		headers = make([]string, len(rows[0]))
+		for i, h := range rows[0] {
+			headers[i] = strings.TrimSpace(h)
+		}
+	}
+
+	var items []any
+	for _, row := range rows[start:] {
+		if len(items) >= limit {
+			break
+		}
+
+		if headers != nil {
+			item := map[string]any{}
+			for i, h := range headers {
+				item[h] = ""
+				if i < len(row) {
+					item[h] = row[i]
+				}
+			}
+
+			items = append(items, item)
+			continue
+		}
+
+		if len(row) < 2 {
+			return nil, fmt.Errorf("CSV manifest row must contain at least bucket and key")
+		}
+
+		item := map[string]any{"Bucket": row[0], fieldKey: row[1]}
+		if len(row) >= 3 && row[2] != "" {
+			item["VersionId"] = row[2]
+		}
+
+		items = append(items, item)
+	}
+
+	return items, nil
 }
 
 func (r *run) writeMapResults(ctx context.Context, s *state, input any, e *env, mr *mapRun,

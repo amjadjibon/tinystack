@@ -98,7 +98,7 @@ func TestStepFunctionsTestState(t *testing.T) {
 	}
 
 	for _, in := range []*sfn.TestStateInput{
-		{Definition: aws.String(`{"Type": "Pass", "End": true}`), InspectionLevel: sfntypes.InspectionLevelDebug},
+		{Definition: aws.String(`{"Type": "Pass", "End": true}`), InspectionLevel: sfntypes.InspectionLevel("INVALID")},
 		{Definition: aws.String(`{"Type": "Task", "Resource": "arn:aws:lambda:us-east-1:000000000000:function:echo", ` +
 			`"End": true}`)},
 		{

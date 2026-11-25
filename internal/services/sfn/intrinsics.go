@@ -103,8 +103,33 @@ func (p *intrinsicParser) argument() (any, error) {
 		return p.stringLiteral()
 	case c == '$':
 		end := p.pos
+		var quote byte
+		escaped := false
 		for depth := 0; end < len(p.src); end++ {
-			switch p.src[end] {
+			ch := p.src[end]
+			if quote != 0 {
+				if escaped {
+					escaped = false
+					continue
+				}
+
+				if ch == '\\' {
+					escaped = true
+					continue
+				}
+
+				if ch == quote {
+					quote = 0
+				}
+
+				continue
+			}
+
+			switch ch {
+			case '\'', '"':
+				if depth > 0 {
+					quote = ch
+				}
 			case '[':
 				depth++
 			case ']':

@@ -2,6 +2,7 @@ package sfn
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/amjadjibon/tinystack/internal/aws/awserror"
@@ -24,16 +25,15 @@ const (
 
 // resumePoint is the top-level state an execution entered last.
 type resumePoint struct {
-	Input any
-	Vars  map[string]any
-	State string
+	Input     any
+	Vars      map[string]any
+	State     string
+	MapRunARN string `json:",omitempty"`
 }
 
 // redrivable reports why an execution cannot be redriven, or "" when it can.
 func (e *execution) redrivable(now time.Time) string {
 	switch {
-	case e.HasMapRuns || e.MapRunARN != "":
-		return "TinyStack does not support redriving distributed Map executions."
 	case e.Status != statusFailed && e.Status != statusTimedOut && e.Status != statusAborted:
 		return "Execution is " + e.Status + "."
 	case e.Resume == nil || e.Definition == "":
@@ -90,9 +90,29 @@ func (s *Service) RedriveExecution(
 			return awserror.New("ExecutionNotRedrivable", "Execution not redrivable: "+reason)
 		}
 
-		_, sm, machineErr := loadMachine(tx, &e.StateMachineARN)
-		if machineErr != nil {
-			return machineErr
+		var sm *stateMachine
+		if e.MapRunARN != "" {
+			mr, mapErr := loadMapRun(tx, &m, new(e.MapRunARN))
+			if mapErr != nil {
+				return mapErr
+			}
+
+			_, _, rootName, _ := parseARN(mr.StateMachineARN)
+			rootName, _, _ = strings.Cut(rootName, "/")
+			_, rootSM, machineErr := loadMachine(tx, new(machineARN(m.Scope, rootName)))
+			if machineErr != nil {
+				return machineErr
+			}
+
+			cp := *rootSM
+			cp.Name, cp.Type = e.StateMachine, typeStandard
+			sm = &cp
+		} else {
+			var machineErr error
+			_, sm, machineErr = loadMachine(tx, &e.StateMachineARN)
+			if machineErr != nil {
+				return machineErr
+			}
 		}
 
 		ran := *sm
@@ -121,7 +141,7 @@ func (s *Service) RedriveExecution(
 
 	if !again {
 		r.useLogging()
-		if !s.bg.Go(func(ctx context.Context) { s.execute(ctx, r, def) }) {
+		if !s.goExecution(func(ctx context.Context) { s.execute(ctx, r, def) }) {
 			return nil, awserror.New("ServiceException", "The service is shutting down")
 		}
 	}

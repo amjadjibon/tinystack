@@ -480,13 +480,15 @@ Execute a local Amazon States Language subset with service integrations.
 **Execution:** Local workflows and S3 access. Distributed Map requires a Standard parent and runs up to 10,000 concurrent child workflows when MaxConcurrency is zero; updates govern subsequent dispatch and threshold checks. Standard children are retained and can be listed by Map Run ARN; Express children are not retained. Results without S3 export are subject to the 256 KiB state payload limit. **Selected operations:** 37.
 
 - State machines, versions, aliases, activities, executions and history.
-- JSONPath and JSONata evaluation, supported state types, Retry/Catch and callbacks.
+- JSONPath (including recursive descent and filter expressions) and JSONata evaluation, supported state types, Inline Map MaxConcurrencyPath, Retry/Catch and callbacks.
 - In-process AWS SDK integrations can call implemented operations.
-- TestState and redrive support.
-- AWS/States reports top-level Standard and Express executions: ExecutionsStarted (1 at start and 0 on close), ExecutionsSucceeded, ExecutionsFailed, ExecutionsAborted, ExecutionsTimedOut, and ExecutionTime in milliseconds. Metrics are regional and available by StateMachineArn, with Version and Alias series for qualified executions.
-- Distributed Map Runs with Standard or Express child workflows, separate child histories, DescribeMapRun, ListMapRuns and live UpdateMapRun settings.
-- S3 JSON, JSONL and CSV ItemReader datasets, listObjectsV2 readers, ItemSelector, item batching and tolerated failure thresholds.
+- TestState with mock results/errors, custom context overrides, TRACE/DEBUG InspectionData, revealSecrets and stateConfiguration; execution and Distributed Map Run redrive support.
+- StartExecution/StartSyncExecution traceHeader, ListExecutions redriveFilter, METADATA_ONLY includedData on describe/sync APIs, and customer-managed KMS EncryptionConfiguration validated against TinyStack KMS.
+- AWS/States reports top-level Standard and Express executions (ExecutionsStarted, ExecutionsSucceeded, ExecutionsFailed, ExecutionsAborted, ExecutionsTimedOut, ExecutionsRedriven, ExecutionTime), Map Run metrics (MapRunStarted, MapRunSucceeded, MapRunFailed, MapRunAborted, MapRunRedriven, MapRunTime), Activity metrics, Lambda function task metrics, and Service Integration task metrics.
+- Distributed Map Runs with Standard or Express child workflows, separate child histories, DescribeMapRun, ListMapRuns, live UpdateMapRun settings, Map Run redrive preserving succeeded items, and direct Standard child redrive.
+- S3 JSON (including RFC 6901 ItemsPointer), JSONL, CSV and S3 Inventory MANIFEST (JSON and CSV) ItemReader datasets, transparent gzip decompression, listObjectsV2 readers with optional LOAD_AND_FLATTEN, ItemSelector, item batching and tolerated failure thresholds.
 - ResultWriter exports status files and manifests to S3, with JSON or JSONL output and NONE, COMPACT or FLATTEN transformations; WriterConfig-only output previews.
+- Reset cancels running executions and wakes pending activity pollers before clearing state.
 - AWS-style console for scoped state machine creation, ASL validation and editing, execution roles, logging configuration and tags.
 - Console starts and stops Standard executions with paginated execution history, input, output and failure details; Express workflows return synchronous results.
 - With authorization on, Task states assume the state machine's role, whose trust policy must allow states.amazonaws.com for the state machine (aws:SourceArn) and account, and are decided by the role's policies, including child executions and SDK integrations; a denial fails the Task with <Service>.AccessDeniedException and the denial as its cause, so Retry and Catch apply, and soft mode records the check.

@@ -143,10 +143,19 @@ func (s *Service) CreateStateMachine(
 		return nil, checkErr
 	}
 
+	enc, err := normalizeEncryption(in.EncryptionConfiguration)
+	if err != nil {
+		return nil, err
+	}
+
+	if checkErr := s.checkEncryptionKey(ctx, m.Scope, enc); checkErr != nil {
+		return nil, checkErr
+	}
+
 	sm := &stateMachine{
 		Name: name, Definition: *in.Definition, RoleArn: *in.RoleArn, Type: kind, Tags: tags,
-		Logging: in.LoggingConfiguration, Tracing: in.TracingConfiguration, RevisionID: uuid.NewV4().String(),
-		Created: common.Unix(s.now()),
+		Logging: in.LoggingConfiguration, Tracing: in.TracingConfiguration, Encryption: enc,
+		RevisionID: uuid.NewV4().String(), Created: common.Unix(s.now()),
 	}
 	if sm.Logging == nil {
 		sm.Logging = &api.LoggingConfiguration{Level: new("OFF"), IncludeExecutionData: new(false)}
@@ -166,7 +175,8 @@ func (s *Service) CreateStateMachine(
 
 		// Creating the same state machine again returns it.
 		if found {
-			if existing.Definition != sm.Definition || existing.RoleArn != sm.RoleArn || existing.Type != sm.Type {
+			if existing.Definition != sm.Definition || existing.RoleArn != sm.RoleArn || existing.Type != sm.Type ||
+				!encryptionEqual(existing.Encryption, sm.Encryption) {
 				return awserror.New("StateMachineAlreadyExists", "State Machine Already Exists: '"+
 					*out.StateMachineArn+"'")
 			}
@@ -199,7 +209,7 @@ func describeMachine(scope request.Scope, sm *stateMachine) *api.DescribeStateMa
 		StateMachineArn: new(arn(scope, arnStateMachine, sm.Name)), Name: new(sm.Name), Status: new("ACTIVE"),
 		Definition: new(sm.Definition), RoleArn: new(sm.RoleArn), Type: new(sm.Type),
 		CreationDate: new(sm.Created), LoggingConfiguration: sm.Logging, TracingConfiguration: sm.Tracing,
-		RevisionId: new(sm.RevisionID),
+		EncryptionConfiguration: encryptionOf(sm.Encryption), RevisionId: new(sm.RevisionID),
 	}
 }
 
@@ -208,6 +218,11 @@ func (s *Service) DescribeStateMachine(
 	in *api.DescribeStateMachineInput,
 ) (*api.DescribeStateMachineOutput, error) {
 	m, err := request.Regional(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	metaOnly, err := metadataOnly(in.IncludedData)
 	if err != nil {
 		return nil, err
 	}
@@ -252,6 +267,10 @@ func (s *Service) DescribeStateMachine(
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if metaOnly {
+		out.Definition = nil
 	}
 
 	return out, nil
@@ -304,9 +323,10 @@ func (s *Service) UpdateStateMachine(
 	}
 
 	switch {
-	case in.Definition == nil && in.RoleArn == nil && in.LoggingConfiguration == nil && in.TracingConfiguration == nil:
+	case in.Definition == nil && in.RoleArn == nil && in.LoggingConfiguration == nil &&
+		in.TracingConfiguration == nil && in.EncryptionConfiguration == nil:
 		return nil, awserror.New("MissingRequiredParameter", "Either the definition, the roleArn, the "+
-			"loggingConfiguration, or the tracingConfiguration must be specified")
+			"loggingConfiguration, the tracingConfiguration, or the encryptionConfiguration must be specified")
 	case in.RoleArn != nil && !roleARN.MatchString(*in.RoleArn):
 		return nil, invalidARN(*in.RoleArn)
 	case in.VersionDescription != nil && !common.Value(in.Publish):
@@ -321,6 +341,18 @@ func (s *Service) UpdateStateMachine(
 
 	if checkErr := checkLogging(in.LoggingConfiguration); checkErr != nil {
 		return nil, checkErr
+	}
+
+	var enc *api.EncryptionConfiguration
+	if in.EncryptionConfiguration != nil {
+		enc, err = normalizeEncryption(in.EncryptionConfiguration)
+		if err != nil {
+			return nil, err
+		}
+
+		if checkErr := s.checkEncryptionKey(ctx, m.Scope, enc); checkErr != nil {
+			return nil, checkErr
+		}
 	}
 
 	now := common.Unix(s.now())
@@ -358,6 +390,10 @@ func (s *Service) UpdateStateMachine(
 			in.TracingConfiguration,
 			sm.Tracing,
 		)
+		if enc != nil {
+			sm.Encryption = enc
+		}
+
 		sm.RevisionID = uuid.NewV4().String()
 		out.RevisionId = new(sm.RevisionID)
 		if writeErr := storage.Write(tx, machineKey(scope, sm.Name), sm); writeErr != nil || !common.Value(in.Publish) {

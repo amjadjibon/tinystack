@@ -20,6 +20,8 @@ type mapReader struct {
 
 type readerConfig struct {
 	InputType         string
+	ItemsPointer      string
+	Transformation    string
 	CSVHeaderLocation string
 	CSVDelimiter      string
 	MaxItemsPath      string
@@ -73,10 +75,7 @@ func (s *state) validateDistributed(at string, add func(string, ...any)) {
 	}
 
 	if !s.distributed() {
-		if s.MaxConcurrencyPath != "" {
-			bad("TinyStack supports MaxConcurrencyPath only in DISTRIBUTED mode")
-		}
-
+		s.checkMapNumber(s.MaxConcurrency, s.MaxConcurrencyPath, "MaxConcurrency", 0, math.MaxInt64, true, at, add)
 		if s.Label != "" || s.ToleratedFailureCount.set || s.ToleratedFailurePercentage.set ||
 			s.ToleratedFailureCountPath != "" || s.ToleratedFailurePercentagePath != "" {
 			bad("Label and tolerated failure thresholds require DISTRIBUTED mode")
@@ -154,12 +153,30 @@ func (s *state) validateDistributed(at string, add func(string, ...any)) {
 		switch rd.Resource {
 		case "arn:aws:states:::s3:getObject":
 			if rd.ReaderConfig == nil ||
-				!slices.Contains([]string{inputJSON, inputJSONL, inputCSV}, rd.ReaderConfig.InputType) {
-				bad("TinyStack ItemReader supports JSON, JSONL and CSV getObject inputs")
+				!slices.Contains([]string{inputJSON, inputJSONL, inputCSV, inputManifest}, rd.ReaderConfig.InputType) {
+				bad("TinyStack ItemReader supports JSON, JSONL, CSV and MANIFEST getObject inputs")
+			}
+
+			if rd.ReaderConfig != nil && rd.ReaderConfig.Transformation != "" &&
+				rd.ReaderConfig.Transformation != transformNone &&
+				(rd.ReaderConfig.InputType != inputManifest ||
+					rd.ReaderConfig.Transformation != transformLoadAndFlatten) {
+				bad("Unsupported ItemReader Transformation")
 			}
 		case "arn:aws:states:::s3:listObjectsV2":
-			if rd.ReaderConfig != nil && rd.ReaderConfig.InputType != "" {
-				bad("InputType requires getObject")
+			c := rd.ReaderConfig
+			if c != nil && c.Transformation == transformLoadAndFlatten {
+				if !slices.Contains([]string{inputJSON, inputJSONL, inputCSV}, c.InputType) {
+					bad("LOAD_AND_FLATTEN requires JSON, JSONL or CSV InputType")
+				}
+			} else {
+				if c != nil && c.Transformation != "" && c.Transformation != transformNone {
+					bad("Unsupported ItemReader Transformation")
+				}
+
+				if c != nil && c.InputType != "" {
+					bad("InputType requires getObject or LOAD_AND_FLATTEN")
+				}
 			}
 		default:
 			bad("Unsupported ItemReader Resource")
@@ -168,8 +185,16 @@ func (s *state) validateDistributed(at string, add func(string, ...any)) {
 		s.checkMapArguments(rd.Parameters, rd.Arguments, at+"/ItemReader", add)
 		if c := rd.ReaderConfig; c != nil {
 			s.checkMapNumber(c.MaxItems, c.MaxItemsPath, "MaxItems", 1, 100000000, true, at, add)
+			if c.ItemsPointer != "" {
+				if c.InputType != inputJSON {
+					bad("ItemsPointer requires JSON InputType")
+				} else if !validJSONPointer(c.ItemsPointer) {
+					bad("Invalid ItemsPointer")
+				}
+			}
+
 			if c.InputType == inputCSV {
-				if c.CSVHeaderLocation != "FIRST_ROW" && c.CSVHeaderLocation != headerGiven {
+				if c.CSVHeaderLocation != headerFirstRow && c.CSVHeaderLocation != headerGiven {
 					bad("CSV requires CSVHeaderLocation FIRST_ROW or GIVEN")
 				}
 
@@ -274,16 +299,23 @@ func (p *processor) UnmarshalJSON(data []byte) error {
 }
 
 const (
-	fieldItems    = "Items"
-	fieldItem     = "Item"
-	fieldInput    = "Input"
-	errDataLimit  = "States.DataLimitExceeded"
-	transformNone = "NONE"
-	inputCSV      = "CSV"
-	inputJSON     = "JSON"
-	inputJSONL    = "JSONL"
-	headerGiven   = "GIVEN"
-	fieldKey      = "Key"
+	fieldItems              = "Items"
+	fieldItem               = "Item"
+	fieldInput              = "Input"
+	errDataLimit            = "States.DataLimitExceeded"
+	errExceedThreshold      = "States.ExceedToleratedFailureThreshold"
+	causeExceedThreshold    = "Map Run exceeded its tolerated failure threshold"
+	eventMapRunAborted      = "MapRunAborted"
+	transformNone           = "NONE"
+	transformLoadAndFlatten = "LOAD_AND_FLATTEN"
+	inputCSV                = "CSV"
+	inputJSON               = "JSON"
+	inputJSONL              = "JSONL"
+	inputManifest           = "MANIFEST"
+	headerFirstRow          = "FIRST_ROW"
+	headerGiven             = "GIVEN"
+	sourceStateData         = "STATE_DATA"
+	fieldKey                = "Key"
 )
 
 func (m *machine) containsDistributed() bool {

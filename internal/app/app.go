@@ -480,9 +480,11 @@ func build(
 	}
 
 	workflows.UseS3(buckets)
+	workflows.UseKeys(keys)
 
 	// Stop ends running executions.
 	a.onStop(workflows.Stop)
+	a.onReset(workflows.Reset)
 	firehoses := firehose.New(store, streams, deliveries, logger)
 	// Stop ends the flusher, which writes to the store.
 	a.onStop(firehoses.Stop)

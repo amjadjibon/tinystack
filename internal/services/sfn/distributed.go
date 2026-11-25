@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"maps"
 	"math"
+	"strings"
 	"time"
 	"uuid"
 
@@ -14,8 +15,10 @@ import (
 )
 
 type mapJob struct {
-	Input any
-	Count int64
+	Input            any
+	ExistingChildARN string
+	Count            int64
+	IsRedrive        bool
 }
 
 type mapResult struct {
@@ -192,6 +195,7 @@ func (r *run) startMapRun(ctx context.Context, s *state, input any, e *env) (*ma
 		return nil, err
 	}
 
+	r.s.reportMapRunStart(r)
 	r.event(ctx, "MapRunStarted", func(ev *api.HistoryEvent) {
 		ev.MapRunStartedEventDetails = &api.MapRunStartedEventDetails{MapRunArn: new(mr.ARN)}
 	})
@@ -200,6 +204,52 @@ func (r *run) startMapRun(ctx context.Context, s *state, input any, e *env) (*ma
 
 func (r *run) mapChild(ctx context.Context, s *state, mr *mapRun, job mapJob) (*execution, error) {
 	now := r.s.now()
+	definition := s.ItemProcessor.raw
+	isStandard := s.ItemProcessor.ProcessorConfig.ExecutionType == typeStandard
+
+	if job.ExistingChildARN != "" && isStandard {
+		var child *execution
+		err := r.s.store.Update(context.WithoutCancel(ctx), func(tx storage.WriteTx) error {
+			scope, _, name, ok := parseARN(job.ExistingChildARN)
+			if !ok {
+				return nil
+			}
+
+			machine, execName, split := strings.Cut(name, ":")
+			if !split {
+				return nil
+			}
+
+			loaded, found, readErr := storage.Read[execution](tx, executionKey(scope, machine, execName))
+			if readErr != nil || !found || loaded.Status == statusSucceeded || loaded.Resume == nil {
+				return readErr
+			}
+
+			loaded.Status, loaded.Error, loaded.Cause, loaded.Stop = statusRunning, "", "", 0
+			loaded.Redrives++
+			loaded.RedriveDate = common.Unix(now)
+			child = loaded
+			return storage.Write(tx, executionKey(scope, machine, execName), loaded)
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		if child != nil {
+			sm := *r.machine
+			sm.Name, sm.Type = mr.ChildMachine, typeStandard
+			sm.Definition = string(definition)
+			cr := &run{
+				s: r.s, machine: new(sm), exec: child, scope: r.scope,
+				started: time.Unix(0, int64(child.Start*float64(time.Second))),
+				record:  true, lastEvent: child.Events, redrive: true,
+			}
+			cr.useLogging()
+			r.s.execute(ctx, cr, &s.ItemProcessor.machine)
+			return child, nil
+		}
+	}
+
 	input, err := json.Marshal(job.Input)
 	if err != nil {
 		return nil, err
@@ -210,7 +260,6 @@ func (r *run) mapChild(ctx context.Context, s *state, mr *mapRun, job mapJob) (*
 	}
 
 	name := uuid.NewV4().String()
-	definition := s.ItemProcessor.raw
 	child := &execution{
 		ARN:          arn(r.scope, "execution", mr.ChildMachine+":"+name),
 		Name:         name,
@@ -231,9 +280,9 @@ func (r *run) mapChild(ctx context.Context, s *state, mr *mapRun, job mapJob) (*
 	sm := *r.machine
 	sm.Name, sm.Type = mr.ChildMachine, s.ItemProcessor.ProcessorConfig.ExecutionType
 	sm.Definition = string(definition)
-	cr := &run{s: r.s, machine: new(sm), exec: child, scope: r.scope, started: now, record: sm.Type == typeStandard}
+	cr := &run{s: r.s, machine: new(sm), exec: child, scope: r.scope, started: now, record: isStandard}
 	if cr.record {
-		err := r.s.store.Update(context.WithoutCancel(ctx), func(tx storage.WriteTx) error {
+		err = r.s.store.Update(context.WithoutCancel(ctx), func(tx storage.WriteTx) error {
 			return storage.Write(tx, executionKey(r.scope, child.StateMachine, name), child)
 		})
 		if err != nil {
@@ -248,60 +297,254 @@ func (r *run) mapChild(ctx context.Context, s *state, mr *mapRun, job mapJob) (*
 	return child, nil
 }
 
+func (r *run) prepareRedriveMapRun(
+	ctx context.Context,
+	s *state,
+	input any,
+	e *env,
+	mapRunARN string,
+) (mr *mapRun, jobs []mapJob, results []*execution, toRun []int, err error) {
+	mr, err = r.s.currentMapRun(ctx, mapRunARN)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	r.activeMapRun = mr.ARN
+	redriveNow := common.Unix(r.s.now())
+	if len(mr.Jobs) == 0 {
+		mr, err = r.s.changeMapRun(ctx, mr.ARN, func(m *mapRun) {
+			m.Status, m.Stop = statusRunning, 0
+			m.RedriveCount++
+			m.RedriveDate = redriveNow
+		})
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+
+		r.s.reportMapRunRedriven(r)
+		r.event(ctx, "MapRunRedriven", func(ev *api.HistoryEvent) {
+			ev.MapRunRedrivenEventDetails = &api.MapRunRedrivenEventDetails{
+				MapRunArn: new(mr.ARN), RedriveCount: new(mr.RedriveCount),
+			}
+		})
+		jobs, err = r.prepareMapJobs(ctx, s, input, e)
+		if err != nil {
+			return mr, nil, nil, nil, err
+		}
+
+		mr, err = r.initMapRunJobs(ctx, mr.ARN, jobs)
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+
+		results = make([]*execution, len(jobs))
+		toRun = make([]int, len(jobs))
+		for i := range jobs {
+			toRun[i] = i
+		}
+
+		return mr, jobs, results, toRun, nil
+	}
+
+	isStandard := s.ItemProcessor.ProcessorConfig.ExecutionType == typeStandard
+	jobs = make([]mapJob, len(mr.Jobs))
+	results = make([]*execution, len(mr.Jobs))
+	var succeededItems, succeededExecs, pendingItems, pendingExecs, pendingRedriveItems, pendingRedriveExecs int64
+	updatedJobs := append([]mapJobState(nil), mr.Jobs...)
+
+	for i := range updatedJobs {
+		js := &updatedJobs[i]
+		if js.Status == statusSucceeded {
+			jobs[i] = mapJob{Input: js.Input, Count: js.Count}
+			results[i] = js.toExecution(mr.ARN)
+			succeededItems += js.Count
+			succeededExecs++
+			continue
+		}
+
+		// If a Standard child was already redriven directly and succeeded, preserve it.
+		if isStandard && js.ChildARN != "" {
+			if stored := r.loadChildExecution(ctx, js.ChildARN); stored != nil && stored.Status == statusSucceeded {
+				updatedJobs[i] = jobStateFromExec(js.Input, js.Count, stored)
+				jobs[i] = mapJob{Input: js.Input, Count: js.Count}
+				results[i] = stored
+				succeededItems += js.Count
+				succeededExecs++
+				continue
+			}
+		}
+
+		isRedrive := js.ChildARN != ""
+		jobs[i] = mapJob{
+			Input:            js.Input,
+			Count:            js.Count,
+			ExistingChildARN: js.ChildARN,
+			IsRedrive:        isRedrive,
+		}
+		toRun = append(toRun, i)
+		pendingItems += js.Count
+		pendingExecs++
+		if isRedrive {
+			pendingRedriveItems += js.Count
+			pendingRedriveExecs++
+		}
+	}
+
+	mr, err = r.s.changeMapRun(ctx, mr.ARN, func(m *mapRun) {
+		m.Status, m.Stop = statusRunning, 0
+		m.RedriveCount++
+		m.RedriveDate = redriveNow
+		m.Jobs = updatedJobs
+		m.Items = mapCounts{
+			Total:          m.Items.Total,
+			Succeeded:      succeededItems,
+			Pending:        pendingItems,
+			PendingRedrive: pendingRedriveItems,
+		}
+		m.Executions = mapCounts{
+			Total:          m.Executions.Total,
+			Succeeded:      succeededExecs,
+			Pending:        pendingExecs,
+			PendingRedrive: pendingRedriveExecs,
+		}
+	})
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	r.s.reportMapRunRedriven(r)
+	r.event(ctx, "MapRunRedriven", func(ev *api.HistoryEvent) {
+		ev.MapRunRedrivenEventDetails = &api.MapRunRedrivenEventDetails{
+			MapRunArn: new(mr.ARN), RedriveCount: new(mr.RedriveCount),
+		}
+	})
+	return mr, jobs, results, toRun, nil
+}
+
+func (r *run) loadChildExecution(ctx context.Context, childARN string) *execution {
+	scope, _, name, ok := parseARN(childARN)
+	if !ok {
+		return nil
+	}
+
+	machine, execName, split := strings.Cut(name, ":")
+	if !split {
+		return nil
+	}
+
+	var child *execution
+	_ = r.s.store.View(context.WithoutCancel(ctx), func(tx storage.ReadTx) error {
+		loaded, found, err := storage.Read[execution](tx, executionKey(scope, machine, execName))
+		if err == nil && found {
+			child = loaded
+		}
+
+		return err
+	})
+	return child
+}
+
+func (r *run) initMapRunJobs(ctx context.Context, mapRunARN string, jobs []mapJob) (*mapRun, error) {
+	return r.s.changeMapRun(ctx, mapRunARN, func(m *mapRun) {
+		m.Jobs = make([]mapJobState, len(jobs))
+		var totalItems int64
+		for i, job := range jobs {
+			m.Jobs[i] = mapJobState{Input: job.Input, Count: job.Count}
+			totalItems += job.Count
+		}
+
+		m.Items = mapCounts{Total: totalItems, Pending: totalItems}
+		m.Executions = mapCounts{Total: int64(len(jobs)), Pending: int64(len(jobs))}
+	})
+}
+
+func (r *run) failMapRunBeforeDispatch(ctx context.Context, mr *mapRun, err error) (any, error) {
+	if isReset(ctx, err) {
+		return nil, errReset
+	}
+
+	se := asStateError(err)
+	status := statusFailed
+	if ctx.Err() != nil {
+		status = statusAborted
+	}
+
+	mr, writeErr := r.s.changeMapRun(ctx, mr.ARN, func(m *mapRun) {
+		m.Status, m.Stop = status, common.Unix(r.s.now())
+	})
+	if writeErr != nil {
+		return nil, writeErr
+	}
+
+	r.s.reportMapRunEnd(r, mr)
+	if status == statusAborted {
+		r.event(ctx, eventMapRunAborted, nil)
+	} else {
+		r.event(ctx, "MapRunFailed", func(ev *api.HistoryEvent) {
+			ev.MapRunFailedEventDetails = &api.MapRunFailedEventDetails{Error: new(se.Name), Cause: new(se.Cause)}
+		})
+	}
+
+	return nil, err
+}
+
 func (r *run) distributedMap(ctx context.Context, s *state, input any, e *env) (any, error) {
 	if r.machine.Type != typeStandard {
 		return nil, &stateError{Name: errRuntime, Cause: "Distributed Map requires a STANDARD parent workflow"}
 	}
 
-	mr, err := r.startMapRun(ctx, s, input, e)
-	if err != nil {
-		return nil, err
-	}
+	var mr *mapRun
+	var jobs []mapJob
+	var results []*execution
+	var toRun []int
+	var err error
 
-	jobs, err := r.prepareMapJobs(ctx, s, input, e)
-	if err != nil {
-		se := asStateError(err)
-		status := statusFailed
-		if ctx.Err() != nil {
-			status = statusAborted
+	if r.resumeMapRun != "" {
+		resumeARN := r.resumeMapRun
+		r.resumeMapRun = ""
+		mr, jobs, results, toRun, err = r.prepareRedriveMapRun(ctx, s, input, e, resumeARN)
+		if err != nil {
+			if mr != nil {
+				return r.failMapRunBeforeDispatch(ctx, mr, err)
+			}
+
+			return nil, err
+		}
+	} else {
+		mr, err = r.startMapRun(ctx, s, input, e)
+		if err != nil {
+			return nil, err
 		}
 
-		if _, writeErr := r.s.changeMapRun(ctx, mr.ARN, func(m *mapRun) {
-			m.Status, m.Stop = status, common.Unix(r.s.now())
-		}); writeErr != nil {
-			return nil, writeErr
+		r.activeMapRun = mr.ARN
+		jobs, err = r.prepareMapJobs(ctx, s, input, e)
+		if err != nil {
+			return r.failMapRunBeforeDispatch(ctx, mr, err)
 		}
 
-		if status == statusAborted {
-			r.event(ctx, "MapRunAborted", nil)
-		} else {
-			r.event(ctx, "MapRunFailed", func(ev *api.HistoryEvent) {
-				ev.MapRunFailedEventDetails = &api.MapRunFailedEventDetails{Error: new(se.Name), Cause: new(se.Cause)}
-			})
+		mr, err = r.initMapRunJobs(ctx, mr.ARN, jobs)
+		if err != nil {
+			return nil, err
 		}
 
-		return nil, err
-	}
-
-	mr, err = r.s.changeMapRun(ctx, mr.ARN, func(m *mapRun) {
-		for _, job := range jobs {
-			m.Items.Total += job.Count
+		results = make([]*execution, len(jobs))
+		toRun = make([]int, len(jobs))
+		for i := range jobs {
+			toRun[i] = i
 		}
-
-		m.Items.Pending = m.Items.Total
-		m.Executions.Total, m.Executions.Pending = int64(len(jobs)), int64(len(jobs))
-	})
-	if err != nil {
-		return nil, err
 	}
 
 	childrenCtx, cancel := context.WithCancelCause(ctx)
 	defer cancel(nil)
-	done := make(chan mapResult, min(len(jobs), 10000))
-	results := make([]*execution, len(jobs))
+	done := make(chan mapResult, min(max(len(toRun), 1), 10000))
 	next, active := 0, 0
 	abortChildren := func(cause error) {
-		cancel(&stopError{error: "MapRunAborted", cause: cause.Error()})
+		if isReset(ctx, cause) {
+			cancel(errReset)
+		} else {
+			cancel(&stopError{error: eventMapRunAborted, cause: cause.Error()})
+		}
+
 		for range active {
 			<-done
 		}
@@ -310,9 +553,14 @@ func (r *run) distributedMap(ctx context.Context, s *state, input any, e *env) (
 	var failure error
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
-	for next < len(jobs) || active > 0 {
+	for next < len(toRun) || active > 0 {
 		if failure == nil && ctx.Err() != nil {
 			failure = context.Cause(ctx)
+		}
+
+		if isReset(ctx, failure) {
+			abortChildren(errReset)
+			return nil, errReset
 		}
 
 		mr, err = r.s.currentMapRun(ctx, mr.ARN)
@@ -323,13 +571,17 @@ func (r *run) distributedMap(ctx context.Context, s *state, input any, e *env) (
 
 		if failure == nil && mr.exceedsThreshold() {
 			failure = &stateError{
-				Name:  "States.ExceedToleratedFailureThreshold",
-				Cause: "Map Run exceeded its tolerated failure threshold",
+				Name:  errExceedThreshold,
+				Cause: causeExceedThreshold,
 			}
 		}
 
 		if failure != nil {
-			cancel(&stopError{error: "MapRunAborted", cause: failure.Error()})
+			if isReset(ctx, failure) {
+				cancel(errReset)
+			} else {
+				cancel(&stopError{error: eventMapRunAborted, cause: failure.Error()})
+			}
 		}
 
 		limit := int(mr.MaxConcurrency)
@@ -338,14 +590,18 @@ func (r *run) distributedMap(ctx context.Context, s *state, input any, e *env) (
 		}
 
 		// A bounded dispatcher starts no more than AWS's 10,000 concurrent child workflows.
-		for failure == nil && next < len(jobs) && active < limit {
-			index := next
+		for failure == nil && next < len(toRun) && active < limit {
+			index := toRun[next]
 			job := jobs[index]
 			mr, err = r.s.changeMapRun(ctx, mr.ARN, func(m *mapRun) {
 				m.Items.Pending -= job.Count
 				m.Items.Running += job.Count
 				m.Executions.Pending--
 				m.Executions.Running++
+				if job.IsRedrive {
+					m.Items.PendingRedrive = max(0, m.Items.PendingRedrive-job.Count)
+					m.Executions.PendingRedrive = max(0, m.Executions.PendingRedrive-1)
+				}
 			})
 			if err != nil {
 				abortChildren(err)
@@ -379,11 +635,18 @@ func (r *run) distributedMap(ctx context.Context, s *state, input any, e *env) (
 				failure = result.Err
 			}
 
+			if isReset(ctx, failure) {
+				continue
+			}
+
 			mr, err = r.s.changeMapRun(ctx, mr.ARN, func(m *mapRun) {
 				m.Items.Running -= job.Count
 				m.Executions.Running--
 				addMapStatus(&m.Items, status, job.Count)
 				addMapStatus(&m.Executions, status, 1)
+				if result.Index < len(m.Jobs) {
+					m.Jobs[result.Index] = jobStateFromExec(job.Input, job.Count, result.Exec)
+				}
 			})
 			if err != nil {
 				abortChildren(err)
@@ -393,10 +656,14 @@ func (r *run) distributedMap(ctx context.Context, s *state, input any, e *env) (
 		}
 	}
 
+	if isReset(ctx, failure) {
+		return nil, errReset
+	}
+
 	if failure == nil && mr.exceedsThreshold() {
 		failure = &stateError{
-			Name:  "States.ExceedToleratedFailureThreshold",
-			Cause: "Map Run exceeded its tolerated failure threshold",
+			Name:  errExceedThreshold,
+			Cause: causeExceedThreshold,
 		}
 	}
 
@@ -422,16 +689,17 @@ func (r *run) distributedMap(ctx context.Context, s *state, input any, e *env) (
 		}
 	}
 
-	_, err = r.s.changeMapRun(ctx, mr.ARN, func(m *mapRun) { m.Status, m.Stop = status, common.Unix(r.s.now()) })
+	mr, err = r.s.changeMapRun(ctx, mr.ARN, func(m *mapRun) { m.Status, m.Stop = status, common.Unix(r.s.now()) })
 	if err != nil {
 		return nil, err
 	}
 
+	r.s.reportMapRunEnd(r, mr)
 	switch {
 	case failure == nil:
 		r.event(ctx, "MapRunSucceeded", nil)
 	case status == statusAborted:
-		r.event(ctx, "MapRunAborted", nil)
+		r.event(ctx, eventMapRunAborted, nil)
 	default:
 		se := asStateError(failure)
 		r.event(ctx, "MapRunFailed", func(ev *api.HistoryEvent) {

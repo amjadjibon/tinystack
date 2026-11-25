@@ -238,8 +238,12 @@ func TestStepFunctionsDistributedFailuresAndWriter(t *testing.T) {
 			t.Fatal("manifest did not reference failed results")
 		}
 
-		_, err = c.RedriveExecution(ctx, &sfn.RedriveExecutionInput{ExecutionArn: parent})
-		code(t, err, "ExecutionNotRedrivable")
+		if tc.status == sfntypes.ExecutionStatusSucceeded {
+			_, err = c.RedriveExecution(ctx, &sfn.RedriveExecutionInput{ExecutionArn: parent})
+			code(t, err, "ExecutionNotRedrivable")
+		} else if out.RedriveStatus != sfntypes.ExecutionRedriveStatusRedrivable {
+			t.Fatalf("failed distributed map execution should be redrivable: %+v", out)
+		}
 	}
 
 	machine := createMachine(

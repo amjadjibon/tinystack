@@ -33,6 +33,7 @@ import (
 	"github.com/amjadjibon/tinystack/internal/common"
 	"github.com/amjadjibon/tinystack/internal/services/awsmetrics"
 	"github.com/amjadjibon/tinystack/internal/services/background"
+	"github.com/amjadjibon/tinystack/internal/services/kms"
 	"github.com/amjadjibon/tinystack/internal/services/logs"
 	"github.com/amjadjibon/tinystack/internal/services/s3"
 	"github.com/amjadjibon/tinystack/internal/services/tagging"
@@ -77,10 +78,29 @@ const (
 	statusTimedOut  = "TIMED_OUT"
 )
 
-var _ api.API = (*Service)(nil)
+var (
+	_        api.API = (*Service)(nil)
+	errReset         = errors.New("tinystack reset")
+)
+
+type executionGen struct {
+	ctx    context.Context
+	cancel context.CancelCauseFunc
+	wg     sync.WaitGroup
+}
+
+func newExecutionGen(parent context.Context) *executionGen {
+	ctx, cancel := context.WithCancelCause(parent)
+	return &executionGen{ctx: ctx, cancel: cancel}
+}
+
+func isReset(ctx context.Context, err error) bool {
+	return errors.Is(err, errReset) || (ctx != nil && errors.Is(context.Cause(ctx), errReset))
+}
 
 type Service struct {
 	s3      *s3.Service
+	keys    *kms.Service
 	store   storage.Store
 	metrics awsmetrics.Meter
 	logs    *logs.Service
@@ -92,6 +112,8 @@ type Service struct {
 	now        func() time.Time
 	// bg runs executions until Stop.
 	bg *background.Group
+	// gen cancels and tracks executions in the current reset generation.
+	gen *executionGen
 	// running cancels a running execution by ARN, for StopExecution.
 	running map[string]context.CancelCauseFunc
 	// tokens are the task tokens states wait on.
@@ -108,8 +130,10 @@ func New(store storage.Store, logGroups *logs.Service, logger *slog.Logger) (*Se
 		logger = slog.Default()
 	}
 
+	bg := background.New()
 	s := &Service{
-		store: store, logs: logGroups, logger: logger, now: time.Now, bg: background.New(),
+		store: store, logs: logGroups, logger: logger, now: time.Now, bg: bg,
+		gen:     newExecutionGen(bg.Context()),
 		running: map[string]context.CancelCauseFunc{}, tokens: map[string]*waiter{},
 		queues: map[string]chan *activityTask{},
 	}
@@ -132,8 +156,65 @@ func (s *Service) UseServiceAuthorizer(authorizer catalog.ServiceAuthorizer) {
 // UseS3 supplies the object service used by distributed Map readers and writers.
 func (s *Service) UseS3(objects *s3.Service) { s.s3 = objects }
 
+// UseKeys supplies the KMS service used to validate customer-managed encryption keys.
+func (s *Service) UseKeys(keys *kms.Service) { s.keys = keys }
+
 // Stop ends running executions and waits for them.
 func (s *Service) Stop() { s.bg.Stop() }
+
+// Reset cancels every running execution and activity waiter and waits for
+// in-flight execution goroutines to exit before the store is cleared.
+//
+//nolint:contextcheck // The new execution generation derives from the service lifecycle context, not the request.
+func (s *Service) Reset(context.Context) {
+	s.mu.Lock()
+	old := s.gen
+	s.gen = newExecutionGen(s.bg.Context())
+	s.queues = map[string]chan *activityTask{}
+	running := make([]context.CancelCauseFunc, 0, len(s.running))
+	for _, cancel := range s.running {
+		running = append(running, cancel)
+	}
+
+	s.mu.Unlock()
+	old.cancel(errReset)
+	for _, cancel := range running {
+		cancel(errReset)
+	}
+
+	old.wg.Wait()
+	s.mu.Lock()
+	clear(s.tokens)
+	s.mu.Unlock()
+}
+
+func (s *Service) generationContext() context.Context {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.gen.ctx
+}
+
+//nolint:contextcheck // Executions run on the current reset-generation context derived from bg.Context().
+func (s *Service) goExecution(fn func(ctx context.Context)) bool {
+	s.mu.Lock()
+	if s.bg.Context().Err() != nil {
+		s.mu.Unlock()
+		return false
+	}
+
+	g := s.gen
+	g.wg.Add(1)
+	s.mu.Unlock()
+	if !s.bg.Go(func(context.Context) {
+		defer g.wg.Done()
+		fn(g.ctx)
+	}) {
+		g.wg.Done()
+		return false
+	}
+
+	return true
+}
 
 // abortOrphans aborts the executions an earlier process left running.
 func (s *Service) abortOrphans() error {
@@ -188,6 +269,7 @@ type stateMachine struct {
 	Tags       map[string]string
 	Logging    *api.LoggingConfiguration
 	Tracing    *api.TracingConfiguration
+	Encryption *api.EncryptionConfiguration `json:",omitempty"`
 	Name       string
 	Definition string
 	RoleArn    string
@@ -222,6 +304,7 @@ type execution struct {
 	StateMachine    string
 	Input           string
 	Output          string  `json:",omitempty"`
+	TraceHeader     string  `json:",omitempty"`
 	RedriveDate     float64 `json:",omitempty"`
 	Redrives        int64   `json:",omitempty"`
 	Start           float64
@@ -233,9 +316,10 @@ type execution struct {
 
 // activity is an activity's record.
 type activity struct {
-	Tags    map[string]string
-	Name    string
-	Created float64
+	Tags       map[string]string
+	Encryption *api.EncryptionConfiguration `json:",omitempty"`
+	Name       string
+	Created    float64
 }
 
 func machineKey(scope request.Scope, name string) string {

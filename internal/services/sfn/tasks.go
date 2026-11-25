@@ -168,10 +168,16 @@ func (r *run) task(ctx context.Context, s *state, input any, e *env) (any, error
 		return nil, err
 	}
 
+	r.recordArgs(s, params)
+
 	switch {
 	case functionARN.MatchString(resource):
 		return r.function(ctx, resource, params)
 	case activity:
+		scheduledAt := r.s.now()
+		var startedAt time.Time
+		hasStarted := false
+		r.s.reportActivityScheduled(r, resource)
 		r.event(ctx, "ActivityScheduled", func(e *api.HistoryEvent) {
 			e.ActivityScheduledEventDetails = &api.ActivityScheduledEventDetails{
 				Resource: new(resource), Input: text(params), TimeoutInSeconds: seconds(timeout),
@@ -181,25 +187,34 @@ func (r *run) task(ctx context.Context, s *state, input any, e *env) (any, error
 		select {
 		case r.s.queue(resource) <- &activityTask{token: token, input: *text(params)}:
 		default:
-			return nil, &stateError{Name: errRuntime, Cause: "The activity's task queue is full"}
+			queueErr := &stateError{Name: errRuntime, Cause: "The activity's task queue is full"}
+			r.s.reportActivityEnd(r, resource, scheduledAt, startedAt, hasStarted, queueErr)
+			return nil, queueErr
 		}
 
 		out, waitErr := r.await(ctx, w, heartbeat, func(worker string) {
+			startedAt = r.s.now()
+			hasStarted = true
+			r.s.reportActivityStarted(r, resource, startedAt.Sub(scheduledAt))
 			r.event(ctx, "ActivityStarted", func(e *api.HistoryEvent) {
 				e.ActivityStartedEventDetails = &api.ActivityStartedEventDetails{WorkerName: new(worker)}
 			})
 		})
+		r.s.reportActivityEnd(r, resource, scheduledAt, startedAt, hasStarted, waitErr)
 		r.taskEnd(ctx, eventActivity, "", "", out, waitErr)
 		return out, waitErr
 	}
 
+	scheduledAt := r.s.now()
 	resourceType, action, suffix := splitResource(resource)
+	r.s.reportServiceIntegrationStart(r, resource)
 	r.event(ctx, "TaskScheduled", func(e *api.HistoryEvent) {
 		e.TaskScheduledEventDetails = &api.TaskScheduledEventDetails{
 			Resource: new(action), ResourceType: new(resourceType), Region: new(r.scope.Region),
 			Parameters: text(params), TimeoutInSeconds: seconds(timeout), HeartbeatInSeconds: seconds(heartbeat),
 		}
 	})
+	startedAt := r.s.now()
 	r.event(ctx, "TaskStarted", nil)
 	out, err := r.integrate(ctx, resourceType, action, suffix, params)
 	if err == nil && w != nil {
@@ -211,6 +226,7 @@ func (r *run) task(ctx context.Context, s *state, input any, e *env) (any, error
 		out, err = r.await(ctx, w, heartbeat, nil)
 	}
 
+	r.s.reportServiceIntegrationEnd(r, resource, scheduledAt, startedAt, err)
 	r.taskEnd(ctx, stateTask, resourceType, action, out, err)
 	return out, err
 }
@@ -313,20 +329,33 @@ func (r *run) await(ctx context.Context, w *waiter, heartbeat time.Duration, sta
 // function invokes a Lambda function named by its ARN, whose result is its
 // JSON payload.
 func (r *run) function(ctx context.Context, resource string, params any) (any, error) {
+	scheduledAt := r.s.now()
+	r.s.reportLambdaStart(r, resource)
 	r.event(ctx, "LambdaFunctionScheduled", func(e *api.HistoryEvent) {
 		e.LambdaFunctionScheduledEventDetails = &api.LambdaFunctionScheduledEventDetails{
 			Resource: new(resource), Input: text(params),
 		}
 	})
+	startedAt := r.s.now()
 	r.event(ctx, "LambdaFunctionStarted", nil)
 	out, err := r.invoke(ctx, map[string]any{"FunctionName": resource, "Payload": params})
+	r.s.reportLambdaEnd(r, resource, scheduledAt, startedAt, err)
 	if err != nil {
 		se := asStateError(err)
-		r.event(ctx, "LambdaFunctionFailed", func(e *api.HistoryEvent) {
-			e.LambdaFunctionFailedEventDetails = &api.LambdaFunctionFailedEventDetails{
-				Error: new(se.Name), Cause: new(se.Cause),
-			}
-		})
+		if se.Name == errTimeout || se.Name == errHeartbeat {
+			r.event(ctx, "LambdaFunctionTimedOut", func(e *api.HistoryEvent) {
+				e.LambdaFunctionTimedOutEventDetails = &api.LambdaFunctionTimedOutEventDetails{
+					Error: new(se.Name), Cause: new(se.Cause),
+				}
+			})
+		} else {
+			r.event(ctx, "LambdaFunctionFailed", func(e *api.HistoryEvent) {
+				e.LambdaFunctionFailedEventDetails = &api.LambdaFunctionFailedEventDetails{
+					Error: new(se.Name), Cause: new(se.Cause),
+				}
+			})
+		}
+
 		return nil, se
 	}
 

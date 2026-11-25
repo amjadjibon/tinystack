@@ -23776,7 +23776,8 @@
         "tags",
         "tracingConfiguration",
         "publish",
-        "versionDescription"
+        "versionDescription",
+        "encryptionConfiguration"
       ],
       "UpdateStateMachineInput": [
         "stateMachineArn",
@@ -23785,37 +23786,51 @@
         "loggingConfiguration",
         "tracingConfiguration",
         "publish",
-        "versionDescription"
+        "versionDescription",
+        "encryptionConfiguration"
+      ],
+      "EncryptionConfiguration": [
+        "kmsKeyId",
+        "kmsDataKeyReusePeriodSeconds",
+        "type"
       ],
       "DescribeStateMachineInput": [
-        "stateMachineArn"
+        "stateMachineArn",
+        "includedData"
       ],
       "DescribeExecutionInput": [
-        "executionArn"
+        "executionArn",
+        "includedData"
       ],
       "DescribeStateMachineForExecutionInput": [
-        "executionArn"
+        "executionArn",
+        "includedData"
       ],
       "StartExecutionInput": [
         "stateMachineArn",
         "name",
-        "input"
+        "input",
+        "traceHeader"
       ],
       "StartSyncExecutionInput": [
         "stateMachineArn",
         "name",
-        "input"
+        "input",
+        "traceHeader",
+        "includedData"
       ],
       "ListExecutionsInput": [
         "mapRunArn",
         "stateMachineArn",
         "statusFilter",
+        "redriveFilter",
         "maxResults",
         "nextToken"
       ],
       "CreateActivityInput": [
         "name",
-        "tags"
+        "tags",
+        "encryptionConfiguration"
       ],
       "ListStateMachineVersionsInput": [
         "stateMachineArn",
@@ -23864,8 +23879,27 @@
         "roleArn",
         "input",
         "inspectionLevel",
+        "revealSecrets",
         "variables",
-        "stateName"
+        "stateName",
+        "mock",
+        "context",
+        "stateConfiguration"
+      ],
+      "MockInput": [
+        "result",
+        "errorOutput",
+        "fieldValidationMode"
+      ],
+      "MockErrorOutput": [
+        "error",
+        "cause"
+      ],
+      "TestStateConfiguration": [
+        "retrierRetryCount",
+        "errorCausedByState",
+        "mapIterationFailureCount",
+        "mapItemReaderData"
       ]
     }
   },

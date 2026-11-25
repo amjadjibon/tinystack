@@ -14,14 +14,64 @@ import (
 const kindMapRun = "maprun"
 
 type mapCounts struct {
-	Pending        int64
-	Running        int64
-	Succeeded      int64
-	Failed         int64
-	TimedOut       int64
-	Aborted        int64
-	Total          int64
-	ResultsWritten int64
+	Pending               int64
+	Running               int64
+	Succeeded             int64
+	Failed                int64
+	TimedOut              int64
+	Aborted               int64
+	Total                 int64
+	ResultsWritten        int64
+	FailuresNotRedrivable int64
+	PendingRedrive        int64
+}
+
+type mapJobState struct {
+	Input           any     `json:",omitempty"`
+	ChildARN        string  `json:",omitempty"`
+	StateMachineARN string  `json:",omitempty"`
+	Name            string  `json:",omitempty"`
+	Status          string  `json:",omitempty"`
+	Output          string  `json:",omitempty"`
+	Error           string  `json:",omitempty"`
+	Cause           string  `json:",omitempty"`
+	Start           float64 `json:",omitempty"`
+	Stop            float64 `json:",omitempty"`
+	Count           int64   `json:",omitempty"`
+}
+
+func (j *mapJobState) toExecution(mapRunARN string) *execution {
+	return &execution{
+		ARN:             j.ChildARN,
+		StateMachineARN: j.StateMachineARN,
+		Name:            j.Name,
+		MapRunARN:       mapRunARN,
+		Status:          j.Status,
+		Input:           *text(j.Input),
+		Output:          j.Output,
+		Error:           j.Error,
+		Cause:           j.Cause,
+		Start:           j.Start,
+		Stop:            j.Stop,
+		ItemCount:       j.Count,
+	}
+}
+
+func jobStateFromExec(input any, count int64, child *execution) mapJobState {
+	js := mapJobState{Input: input, Count: count}
+	if child != nil {
+		js.ChildARN = child.ARN
+		js.StateMachineARN = child.StateMachineARN
+		js.Name = child.Name
+		js.Status = child.Status
+		js.Output = child.Output
+		js.Error = child.Error
+		js.Cause = child.Cause
+		js.Start = child.Start
+		js.Stop = child.Stop
+	}
+
+	return js
 }
 
 type mapRun struct {
@@ -30,16 +80,19 @@ type mapRun struct {
 	StateMachineARN            string
 	ChildMachine               string
 	Status                     string
+	Jobs                       []mapJobState `json:",omitempty"`
 	Start                      float64
 	Stop                       float64
+	RedriveDate                float64 `json:",omitempty"`
 	MaxConcurrency             int64
 	ToleratedFailureCount      int64
 	ToleratedFailurePercentage float64
+	RedriveCount               int64 `json:",omitempty"`
+	Items                      mapCounts
+	Executions                 mapCounts
 	// A threshold defaults to zero only when neither threshold was specified.
 	CountThreshold      bool
 	PercentageThreshold bool
-	Items               mapCounts
-	Executions          mapCounts
 }
 
 func loadMapRun(tx storage.ReadTx, m *request.Metadata, value *string) (*mapRun, error) {
@@ -91,7 +144,7 @@ func (s *Service) DescribeMapRun(ctx context.Context, in *api.DescribeMapRunInpu
 		MapRunArn: new(mr.ARN), ExecutionArn: new(mr.ExecutionARN), Status: new(mr.Status),
 		StartDate: new(mr.Start), MaxConcurrency: new(mr.MaxConcurrency),
 		ToleratedFailureCount:      new(mr.ToleratedFailureCount),
-		ToleratedFailurePercentage: new(mr.ToleratedFailurePercentage), RedriveCount: new(int64(0)),
+		ToleratedFailurePercentage: new(mr.ToleratedFailurePercentage), RedriveCount: new(mr.RedriveCount),
 		ItemCounts: &api.MapRunItemCounts{
 			Pending:   new(i.Pending),
 			Running:   new(i.Running),
@@ -103,8 +156,8 @@ func (s *Service) DescribeMapRun(ctx context.Context, in *api.DescribeMapRunInpu
 			Aborted:               new(i.Aborted),
 			Total:                 new(i.Total),
 			ResultsWritten:        new(i.ResultsWritten),
-			FailuresNotRedrivable: new(int64(0)),
-			PendingRedrive:        new(int64(0)),
+			FailuresNotRedrivable: new(i.FailuresNotRedrivable),
+			PendingRedrive:        new(i.PendingRedrive),
 		},
 		ExecutionCounts: &api.MapRunExecutionCounts{
 			Pending:   new(x.Pending),
@@ -117,9 +170,12 @@ func (s *Service) DescribeMapRun(ctx context.Context, in *api.DescribeMapRunInpu
 			Aborted:               new(x.Aborted),
 			Total:                 new(x.Total),
 			ResultsWritten:        new(x.ResultsWritten),
-			FailuresNotRedrivable: new(int64(0)),
-			PendingRedrive:        new(int64(0)),
+			FailuresNotRedrivable: new(x.FailuresNotRedrivable),
+			PendingRedrive:        new(x.PendingRedrive),
 		},
+	}
+	if mr.RedriveCount > 0 {
+		out.RedriveDate = new(mr.RedriveDate)
 	}
 
 	if mr.Status != statusRunning {

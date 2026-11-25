@@ -54,11 +54,27 @@ func (s *Service) CreateActivity(ctx context.Context, in *api.CreateActivityInpu
 		return nil, checkErr
 	}
 
-	a := &activity{Name: name, Tags: tags, Created: common.Unix(s.now())}
+	enc, err := normalizeEncryption(in.EncryptionConfiguration)
+	if err != nil {
+		return nil, err
+	}
+
+	if checkErr := s.checkEncryptionKey(ctx, m.Scope, enc); checkErr != nil {
+		return nil, checkErr
+	}
+
+	a := &activity{Name: name, Tags: tags, Encryption: enc, Created: common.Unix(s.now())}
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		existing, found, readErr := storage.Read[activity](tx, activityKey(m.Scope, name))
 		if readErr != nil || found {
 			if found {
+				if in.EncryptionConfiguration != nil && !encryptionEqual(existing.Encryption, enc) {
+					return awserror.New(
+						"ActivityAlreadyExists",
+						"Activity Already Exists: '"+arn(m.Scope, kindActivity, name)+"'",
+					)
+				}
+
 				a = existing
 			}
 
@@ -97,9 +113,10 @@ func (s *Service) DescribeActivity(
 	}
 
 	return &api.DescribeActivityOutput{
-		ActivityArn:  in.ActivityArn,
-		Name:         new(a.Name),
-		CreationDate: new(a.Created),
+		ActivityArn:             in.ActivityArn,
+		Name:                    new(a.Name),
+		CreationDate:            new(a.Created),
+		EncryptionConfiguration: encryptionOf(a.Encryption),
 	}, nil
 }
 
@@ -176,6 +193,7 @@ func (s *Service) GetActivityTask(
 		return nil, err
 	}
 
+	genCtx := s.generationContext()
 	timer := time.NewTimer(pollWait)
 	defer timer.Stop()
 	for {
@@ -198,6 +216,8 @@ func (s *Service) GetActivityTask(
 			return &api.GetActivityTaskOutput{}, nil
 		case <-ctx.Done():
 			return nil, ctx.Err()
+		case <-genCtx.Done():
+			return &api.GetActivityTaskOutput{}, nil
 		case <-s.bg.Context().Done():
 			return &api.GetActivityTaskOutput{}, nil
 		}

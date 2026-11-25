@@ -20,13 +20,16 @@ import (
 
 // run is one execution as it runs.
 type run struct {
-	s        *Service
-	machine  *stateMachine
-	exec     *execution
-	scope    request.Scope
-	started  time.Time
-	logGroup string
-	logScope request.Scope
+	s            *Service
+	machine      *stateMachine
+	exec         *execution
+	test         *testHooks
+	scope        request.Scope
+	started      time.Time
+	logGroup     string
+	logScope     request.Scope
+	activeMapRun string
+	resumeMapRun string
 	// record keeps the history: standard executions have one, express ones
 	// do not.
 	record bool
@@ -39,6 +42,10 @@ type run struct {
 // event records a history event whose details set fills in, and writes it
 // to the state machine's log group when its logging level includes it.
 func (r *run) event(ctx context.Context, kind string, set func(*api.HistoryEvent)) {
+	if isReset(ctx, nil) {
+		return
+	}
+
 	r.mu.Lock()
 	r.lastEvent++
 	e := api.HistoryEvent{Id: new(r.lastEvent), Type: new(kind), Timestamp: new(common.Unix(r.s.now()))}
@@ -358,6 +365,10 @@ func (r *run) execState(
 			return nil, "", err
 		}
 
+		if insp := r.test.data(); insp != nil {
+			insp.AfterInputPath = text(eff)
+		}
+
 		out, err := outputOf(s, eff)
 		return out, "", err
 	case stateFail:
@@ -385,15 +396,27 @@ func (r *run) execState(
 			return nil, "", err
 		}
 
+		if insp := r.test.data(); insp != nil {
+			insp.AfterInputPath = text(eff)
+		}
+
 		result := eff
 		if s.Parameters != nil {
 			if result, err = template(s.Parameters, eff, e); err != nil {
 				return nil, "", err
 			}
+
+			if insp := r.test.data(); insp != nil {
+				insp.AfterParameters = text(result)
+			}
 		}
 
 		if s.Result != nil {
 			result = s.Result
+		}
+
+		if insp := r.test.data(); insp != nil {
+			insp.Result = text(result)
 		}
 
 		if assignErr := e.assign(s.Assign, result); assignErr != nil {
@@ -405,12 +428,20 @@ func (r *run) execState(
 			return nil, "", err
 		}
 
+		if insp := r.test.data(); insp != nil {
+			insp.AfterResultPath = text(out)
+		}
+
 		out, err = outputOf(s, out)
 		return out, s.next(), err
 	case stateChoice:
 		eff, err := inputOf(s, input)
 		if err != nil {
 			return nil, "", err
+		}
+
+		if insp := r.test.data(); insp != nil {
+			insp.AfterInputPath = text(eff)
 		}
 
 		rule, next, err := choose(s, eff, e)
@@ -433,6 +464,10 @@ func (r *run) execState(
 		eff, err := inputOf(s, input)
 		if err != nil {
 			return nil, "", err
+		}
+
+		if insp := r.test.data(); insp != nil {
+			insp.AfterInputPath = text(eff)
 		}
 
 		if assignErr := e.assign(s.Assign, eff); assignErr != nil {
@@ -649,6 +684,10 @@ func (c *catcher) catch(s *state, input any, se *stateError, e *env) (any, error
 // finish applies a result's ResultSelector, Assign, ResultPath, and
 // OutputPath.
 func (r *run) finish(s *state, input, result any, e *env) (any, error) {
+	if insp := r.test.data(); insp != nil {
+		insp.Result = text(result)
+	}
+
 	if s.jsonata {
 		return e.settle(s.Output, s.Assign, result, map[string]any{keyInput: input, "result": result})
 	}
@@ -657,6 +696,10 @@ func (r *run) finish(s *state, input, result any, e *env) (any, error) {
 	if s.ResultSelector != nil {
 		if result, err = template(s.ResultSelector, result, e); err != nil {
 			return nil, err
+		}
+
+		if insp := r.test.data(); insp != nil {
+			insp.AfterResultSelector = text(result)
 		}
 	}
 
@@ -669,7 +712,110 @@ func (r *run) finish(s *state, input, result any, e *env) (any, error) {
 		return nil, err
 	}
 
+	if insp := r.test.data(); insp != nil {
+		insp.AfterResultPath = text(out)
+	}
+
 	return outputOf(s, out)
+}
+
+func (r *run) recordArgs(s *state, args any) {
+	insp := r.test.data()
+	if insp == nil {
+		return
+	}
+
+	if s.jsonata && s.Arguments != nil {
+		insp.AfterArguments = text(args)
+	} else if !s.jsonata && s.Parameters != nil {
+		insp.AfterParameters = text(args)
+	}
+}
+
+func (r *run) runMock(ctx context.Context, s *state, eff any, e *env) (any, error) {
+	switch s.Type {
+	case stateTask, stateParallel:
+		args, err := arguments(s, eff, e)
+		if err != nil {
+			return nil, err
+		}
+
+		r.recordArgs(s, args)
+	case stateMap:
+		maxLimit := float64(math.MaxInt64)
+		if s.distributed() {
+			maxLimit = 10000
+		}
+
+		concurrency, err := mapNumber(
+			e, s.MaxConcurrency, s.MaxConcurrencyPath, "MaxConcurrency", eff, 0, 0, maxLimit, true,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if insp := r.test.data(); insp != nil {
+			insp.MaxConcurrency = new(int64(concurrency))
+		}
+
+		if s.ItemReader == nil {
+			v, itemsErr := r.items(s, eff, e)
+			if itemsErr != nil {
+				return nil, itemsErr
+			}
+
+			if insp := r.test.data(); insp != nil {
+				insp.AfterItemsPath = text(v)
+			}
+		} else if r.test.hasItemReader {
+			items, _, readErr := r.readMapItems(ctx, s, eff, e)
+			if readErr != nil {
+				return nil, readErr
+			}
+
+			if insp := r.test.data(); insp != nil && s.ItemReader.ReaderConfig != nil &&
+				s.ItemReader.ReaderConfig.ItemsPointer != "" {
+				insp.AfterItemsPointer = text(items)
+			}
+		}
+
+		if s.distributed() {
+			count, countErr := mapNumber(e, s.ToleratedFailureCount, s.ToleratedFailureCountPath,
+				"ToleratedFailureCount", eff, 0, 0, math.MaxInt64, true)
+			if countErr != nil {
+				return nil, countErr
+			}
+
+			pct, pctErr := mapNumber(e, s.ToleratedFailurePercentage, s.ToleratedFailurePercentagePath,
+				"ToleratedFailurePercentage", eff, 0, 0, 100, false)
+			if pctErr != nil {
+				return nil, pctErr
+			}
+
+			if insp := r.test.data(); insp != nil {
+				insp.ToleratedFailureCount = new(int64(count))
+				insp.ToleratedFailurePercentage = new(pct)
+			}
+
+			if r.test.mockErr == nil && r.test.mapFailures != nil {
+				failed := *r.test.mapFailures
+				hasCount := s.ToleratedFailureCount.set || s.ToleratedFailureCountPath != ""
+				hasPct := s.ToleratedFailurePercentage.set || s.ToleratedFailurePercentagePath != ""
+				if (!hasCount && !hasPct && failed > 0) || (hasCount && failed > int64(count)) {
+					return nil, &stateError{
+						Name:  errExceedThreshold,
+						Cause: causeExceedThreshold,
+					}
+				}
+			}
+		}
+	}
+
+	if r.test.mockErr != nil {
+		return nil, r.test.mockErr
+	}
+
+	return r.test.mockResult, nil
 }
 
 // work runs a Task, Parallel, or Map state once and returns its result.
@@ -680,6 +826,14 @@ func (r *run) work(ctx context.Context, s *state, input any, e *env) (any, error
 		if eff, err = inputOf(s, input); err != nil {
 			return nil, err
 		}
+
+		if insp := r.test.data(); insp != nil {
+			insp.AfterInputPath = text(eff)
+		}
+	}
+
+	if r.test != nil && r.test.hasMock {
+		return r.runMock(ctx, s, eff, e)
 	}
 
 	switch s.Type {
@@ -697,6 +851,8 @@ func (r *run) parallel(ctx context.Context, s *state, input any, e *env) (any, e
 	if err != nil {
 		return nil, err
 	}
+
+	r.recordArgs(s, input)
 
 	r.event(ctx, "ParallelStateStarted", nil)
 	ctx, cancel := context.WithCancelCause(ctx)
@@ -753,6 +909,10 @@ func (r *run) mapItems(ctx context.Context, s *state, input any, e *env) (any, e
 		return nil, err
 	}
 
+	if insp := r.test.data(); insp != nil {
+		insp.AfterItemsPath = text(v)
+	}
+
 	items, ok := v.([]any)
 	if !ok {
 		return nil, &stateError{Name: errRuntime, Cause: "The Map state's items must be an array"}
@@ -772,12 +932,18 @@ func (r *run) mapItems(ctx context.Context, s *state, input any, e *env) (any, e
 		e.MapStateStartedEventDetails = &api.MapStateStartedEventDetails{Length: new(int64(len(items)))}
 	})
 
-	limit := len(items)
-	concurrency, err := e.number(s.MaxConcurrency, "MaxConcurrency", input)
+	concurrency, err := mapNumber(
+		e, s.MaxConcurrency, s.MaxConcurrencyPath, "MaxConcurrency", input, 0, 0, math.MaxInt64, true,
+	)
 	if err != nil {
 		return nil, err
 	}
 
+	if insp := r.test.data(); insp != nil {
+		insp.MaxConcurrency = new(int64(concurrency))
+	}
+
+	limit := len(items)
 	if concurrency > 0 {
 		limit = int(concurrency)
 	}
