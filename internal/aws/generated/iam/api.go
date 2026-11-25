@@ -27,6 +27,11 @@ type AttachedPermissionsBoundary struct {
 	PermissionsBoundaryArn  *string `json:"PermissionsBoundaryArn,omitempty" query:"PermissionsBoundaryArn"`
 }
 
+type RoleLastUsed struct {
+	LastUsedDate *time.Time `json:"LastUsedDate,omitempty" query:"LastUsedDate"`
+	Region       *string    `json:"Region,omitempty" query:"Region"`
+}
+
 type Role struct {
 	Path                     *string                      `json:"Path,omitempty" query:"Path"`
 	RoleName                 *string                      `json:"RoleName,omitempty" query:"RoleName"`
@@ -38,6 +43,7 @@ type Role struct {
 	MaxSessionDuration       *int64                       `json:"MaxSessionDuration,omitempty" query:"MaxSessionDuration"`
 	Tags                     []Tag                        `json:"Tags,omitempty" query:"Tags"`
 	PermissionsBoundary      *AttachedPermissionsBoundary `json:"PermissionsBoundary,omitempty" query:"PermissionsBoundary"`
+	RoleLastUsed             *RoleLastUsed                `json:"RoleLastUsed,omitempty" query:"RoleLastUsed"`
 }
 
 type CreateRoleResponse struct {
@@ -331,11 +337,12 @@ type DeletePolicyRequest struct {
 }
 
 type ListPoliciesRequest struct {
-	Scope        *string `json:"Scope,omitempty" query:"Scope"`
-	OnlyAttached *bool   `json:"OnlyAttached,omitempty" query:"OnlyAttached"`
-	PathPrefix   *string `json:"PathPrefix,omitempty" query:"PathPrefix"`
-	Marker       *string `json:"Marker,omitempty" query:"Marker"`
-	MaxItems     *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+	Scope             *string `json:"Scope,omitempty" query:"Scope"`
+	OnlyAttached      *bool   `json:"OnlyAttached,omitempty" query:"OnlyAttached"`
+	PathPrefix        *string `json:"PathPrefix,omitempty" query:"PathPrefix"`
+	PolicyUsageFilter *string `json:"PolicyUsageFilter,omitempty" query:"PolicyUsageFilter"`
+	Marker            *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems          *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
 }
 
 type ListPoliciesResponse struct {
@@ -960,6 +967,675 @@ type GetServiceLinkedRoleDeletionStatusResponse struct {
 	Status *string `json:"Status,omitempty" query:"Status"`
 }
 
+type CreateAccountAliasOutput struct{}
+
+type CreateAccountAliasRequest struct {
+	AccountAlias *string `json:"AccountAlias,omitempty" query:"AccountAlias"`
+}
+
+type DeleteAccountAliasOutput struct{}
+
+type DeleteAccountAliasRequest struct {
+	AccountAlias *string `json:"AccountAlias,omitempty" query:"AccountAlias"`
+}
+
+type ListAccountAliasesRequest struct {
+	Marker   *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type ListAccountAliasesResponse struct {
+	AccountAliases []string `json:"AccountAliases,omitempty" query:"AccountAliases"`
+	IsTruncated    *bool    `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker         *string  `json:"Marker,omitempty" query:"Marker"`
+}
+
+type UpdateAccountPasswordPolicyOutput struct{}
+
+type UpdateAccountPasswordPolicyRequest struct {
+	MinimumPasswordLength      *int64 `json:"MinimumPasswordLength,omitempty" query:"MinimumPasswordLength"`
+	RequireSymbols             *bool  `json:"RequireSymbols,omitempty" query:"RequireSymbols"`
+	RequireNumbers             *bool  `json:"RequireNumbers,omitempty" query:"RequireNumbers"`
+	RequireUppercaseCharacters *bool  `json:"RequireUppercaseCharacters,omitempty" query:"RequireUppercaseCharacters"`
+	RequireLowercaseCharacters *bool  `json:"RequireLowercaseCharacters,omitempty" query:"RequireLowercaseCharacters"`
+	AllowUsersToChangePassword *bool  `json:"AllowUsersToChangePassword,omitempty" query:"AllowUsersToChangePassword"`
+	MaxPasswordAge             *int64 `json:"MaxPasswordAge,omitempty" query:"MaxPasswordAge"`
+	PasswordReusePrevention    *int64 `json:"PasswordReusePrevention,omitempty" query:"PasswordReusePrevention"`
+	HardExpiry                 *bool  `json:"HardExpiry,omitempty" query:"HardExpiry"`
+}
+
+type GetAccountPasswordPolicyInput struct{}
+
+type PasswordPolicy struct {
+	MinimumPasswordLength      *int64 `json:"MinimumPasswordLength,omitempty" query:"MinimumPasswordLength"`
+	RequireSymbols             *bool  `json:"RequireSymbols,omitempty" query:"RequireSymbols"`
+	RequireNumbers             *bool  `json:"RequireNumbers,omitempty" query:"RequireNumbers"`
+	RequireUppercaseCharacters *bool  `json:"RequireUppercaseCharacters,omitempty" query:"RequireUppercaseCharacters"`
+	RequireLowercaseCharacters *bool  `json:"RequireLowercaseCharacters,omitempty" query:"RequireLowercaseCharacters"`
+	AllowUsersToChangePassword *bool  `json:"AllowUsersToChangePassword,omitempty" query:"AllowUsersToChangePassword"`
+	ExpirePasswords            *bool  `json:"ExpirePasswords,omitempty" query:"ExpirePasswords"`
+	MaxPasswordAge             *int64 `json:"MaxPasswordAge,omitempty" query:"MaxPasswordAge"`
+	PasswordReusePrevention    *int64 `json:"PasswordReusePrevention,omitempty" query:"PasswordReusePrevention"`
+	HardExpiry                 *bool  `json:"HardExpiry,omitempty" query:"HardExpiry"`
+}
+
+type GetAccountPasswordPolicyResponse struct {
+	PasswordPolicy *PasswordPolicy `json:"PasswordPolicy,omitempty" query:"PasswordPolicy"`
+}
+
+type DeleteAccountPasswordPolicyInput struct{}
+
+type DeleteAccountPasswordPolicyOutput struct{}
+
+type GetAccountSummaryInput struct{}
+
+type GetAccountSummaryResponse struct {
+	SummaryMap map[string]int64 `json:"SummaryMap,omitempty" query:"SummaryMap"`
+}
+
+type GetAccountAuthorizationDetailsRequest struct {
+	Filter   []string `json:"Filter,omitempty" query:"Filter"`
+	MaxItems *int64   `json:"MaxItems,omitempty" query:"MaxItems"`
+	Marker   *string  `json:"Marker,omitempty" query:"Marker"`
+}
+
+type PolicyDetail struct {
+	PolicyName     *string `json:"PolicyName,omitempty" query:"PolicyName"`
+	PolicyDocument *string `json:"PolicyDocument,omitempty" query:"PolicyDocument"`
+}
+
+type UserDetail struct {
+	Path                    *string                      `json:"Path,omitempty" query:"Path"`
+	UserName                *string                      `json:"UserName,omitempty" query:"UserName"`
+	UserId                  *string                      `json:"UserId,omitempty" query:"UserId"`
+	Arn                     *string                      `json:"Arn,omitempty" query:"Arn"`
+	CreateDate              *time.Time                   `json:"CreateDate,omitempty" query:"CreateDate"`
+	UserPolicyList          []PolicyDetail               `json:"UserPolicyList,omitempty" query:"UserPolicyList"`
+	GroupList               []string                     `json:"GroupList,omitempty" query:"GroupList"`
+	AttachedManagedPolicies []AttachedPolicy             `json:"AttachedManagedPolicies,omitempty" query:"AttachedManagedPolicies"`
+	PermissionsBoundary     *AttachedPermissionsBoundary `json:"PermissionsBoundary,omitempty" query:"PermissionsBoundary"`
+	Tags                    []Tag                        `json:"Tags,omitempty" query:"Tags"`
+}
+
+type GroupDetail struct {
+	Path                    *string          `json:"Path,omitempty" query:"Path"`
+	GroupName               *string          `json:"GroupName,omitempty" query:"GroupName"`
+	GroupId                 *string          `json:"GroupId,omitempty" query:"GroupId"`
+	Arn                     *string          `json:"Arn,omitempty" query:"Arn"`
+	CreateDate              *time.Time       `json:"CreateDate,omitempty" query:"CreateDate"`
+	GroupPolicyList         []PolicyDetail   `json:"GroupPolicyList,omitempty" query:"GroupPolicyList"`
+	AttachedManagedPolicies []AttachedPolicy `json:"AttachedManagedPolicies,omitempty" query:"AttachedManagedPolicies"`
+}
+
+type RoleDetail struct {
+	Path                     *string                      `json:"Path,omitempty" query:"Path"`
+	RoleName                 *string                      `json:"RoleName,omitempty" query:"RoleName"`
+	RoleId                   *string                      `json:"RoleId,omitempty" query:"RoleId"`
+	Arn                      *string                      `json:"Arn,omitempty" query:"Arn"`
+	CreateDate               *time.Time                   `json:"CreateDate,omitempty" query:"CreateDate"`
+	AssumeRolePolicyDocument *string                      `json:"AssumeRolePolicyDocument,omitempty" query:"AssumeRolePolicyDocument"`
+	InstanceProfileList      []InstanceProfile            `json:"InstanceProfileList,omitempty" query:"InstanceProfileList"`
+	RolePolicyList           []PolicyDetail               `json:"RolePolicyList,omitempty" query:"RolePolicyList"`
+	AttachedManagedPolicies  []AttachedPolicy             `json:"AttachedManagedPolicies,omitempty" query:"AttachedManagedPolicies"`
+	PermissionsBoundary      *AttachedPermissionsBoundary `json:"PermissionsBoundary,omitempty" query:"PermissionsBoundary"`
+	Tags                     []Tag                        `json:"Tags,omitempty" query:"Tags"`
+	RoleLastUsed             *RoleLastUsed                `json:"RoleLastUsed,omitempty" query:"RoleLastUsed"`
+}
+
+type ManagedPolicyDetail struct {
+	PolicyName                    *string         `json:"PolicyName,omitempty" query:"PolicyName"`
+	PolicyId                      *string         `json:"PolicyId,omitempty" query:"PolicyId"`
+	Arn                           *string         `json:"Arn,omitempty" query:"Arn"`
+	Path                          *string         `json:"Path,omitempty" query:"Path"`
+	DefaultVersionId              *string         `json:"DefaultVersionId,omitempty" query:"DefaultVersionId"`
+	AttachmentCount               *int64          `json:"AttachmentCount,omitempty" query:"AttachmentCount"`
+	PermissionsBoundaryUsageCount *int64          `json:"PermissionsBoundaryUsageCount,omitempty" query:"PermissionsBoundaryUsageCount"`
+	IsAttachable                  *bool           `json:"IsAttachable,omitempty" query:"IsAttachable"`
+	Description                   *string         `json:"Description,omitempty" query:"Description"`
+	CreateDate                    *time.Time      `json:"CreateDate,omitempty" query:"CreateDate"`
+	UpdateDate                    *time.Time      `json:"UpdateDate,omitempty" query:"UpdateDate"`
+	PolicyVersionList             []PolicyVersion `json:"PolicyVersionList,omitempty" query:"PolicyVersionList"`
+}
+
+type GetAccountAuthorizationDetailsResponse struct {
+	UserDetailList  []UserDetail          `json:"UserDetailList,omitempty" query:"UserDetailList"`
+	GroupDetailList []GroupDetail         `json:"GroupDetailList,omitempty" query:"GroupDetailList"`
+	RoleDetailList  []RoleDetail          `json:"RoleDetailList,omitempty" query:"RoleDetailList"`
+	Policies        []ManagedPolicyDetail `json:"Policies,omitempty" query:"Policies"`
+	IsTruncated     *bool                 `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker          *string               `json:"Marker,omitempty" query:"Marker"`
+}
+
+type ListEntitiesForPolicyRequest struct {
+	PolicyArn         *string `json:"PolicyArn,omitempty" query:"PolicyArn"`
+	EntityFilter      *string `json:"EntityFilter,omitempty" query:"EntityFilter"`
+	PathPrefix        *string `json:"PathPrefix,omitempty" query:"PathPrefix"`
+	PolicyUsageFilter *string `json:"PolicyUsageFilter,omitempty" query:"PolicyUsageFilter"`
+	Marker            *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems          *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type PolicyGroup struct {
+	GroupName *string `json:"GroupName,omitempty" query:"GroupName"`
+	GroupId   *string `json:"GroupId,omitempty" query:"GroupId"`
+}
+
+type PolicyUser struct {
+	UserName *string `json:"UserName,omitempty" query:"UserName"`
+	UserId   *string `json:"UserId,omitempty" query:"UserId"`
+}
+
+type PolicyRole struct {
+	RoleName *string `json:"RoleName,omitempty" query:"RoleName"`
+	RoleId   *string `json:"RoleId,omitempty" query:"RoleId"`
+}
+
+type ListEntitiesForPolicyResponse struct {
+	PolicyGroups []PolicyGroup `json:"PolicyGroups,omitempty" query:"PolicyGroups"`
+	PolicyUsers  []PolicyUser  `json:"PolicyUsers,omitempty" query:"PolicyUsers"`
+	PolicyRoles  []PolicyRole  `json:"PolicyRoles,omitempty" query:"PolicyRoles"`
+	IsTruncated  *bool         `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker       *string       `json:"Marker,omitempty" query:"Marker"`
+}
+
+type GetContextKeysForPrincipalPolicyRequest struct {
+	PolicySourceArn *string  `json:"PolicySourceArn,omitempty" query:"PolicySourceArn"`
+	PolicyInputList []string `json:"PolicyInputList,omitempty" query:"PolicyInputList"`
+}
+
+type GetContextKeysForPolicyResponse struct {
+	ContextKeyNames []string `json:"ContextKeyNames,omitempty" query:"ContextKeyNames"`
+}
+
+type GetContextKeysForCustomPolicyRequest struct {
+	PolicyInputList []string `json:"PolicyInputList,omitempty" query:"PolicyInputList"`
+}
+
+type CreateLoginProfileRequest struct {
+	UserName              *string `json:"UserName,omitempty" query:"UserName"`
+	Password              *string `json:"Password,omitempty" query:"Password"`
+	PasswordResetRequired *bool   `json:"PasswordResetRequired,omitempty" query:"PasswordResetRequired"`
+}
+
+type LoginProfile struct {
+	UserName              *string    `json:"UserName,omitempty" query:"UserName"`
+	CreateDate            *time.Time `json:"CreateDate,omitempty" query:"CreateDate"`
+	PasswordResetRequired *bool      `json:"PasswordResetRequired,omitempty" query:"PasswordResetRequired"`
+}
+
+type CreateLoginProfileResponse struct {
+	LoginProfile *LoginProfile `json:"LoginProfile,omitempty" query:"LoginProfile"`
+}
+
+type GetLoginProfileRequest struct {
+	UserName *string `json:"UserName,omitempty" query:"UserName"`
+}
+
+type GetLoginProfileResponse struct {
+	LoginProfile *LoginProfile `json:"LoginProfile,omitempty" query:"LoginProfile"`
+}
+
+type UpdateLoginProfileOutput struct{}
+
+type UpdateLoginProfileRequest struct {
+	UserName              *string `json:"UserName,omitempty" query:"UserName"`
+	Password              *string `json:"Password,omitempty" query:"Password"`
+	PasswordResetRequired *bool   `json:"PasswordResetRequired,omitempty" query:"PasswordResetRequired"`
+}
+
+type DeleteLoginProfileOutput struct{}
+
+type DeleteLoginProfileRequest struct {
+	UserName *string `json:"UserName,omitempty" query:"UserName"`
+}
+
+type ChangePasswordOutput struct{}
+
+type ChangePasswordRequest struct {
+	OldPassword *string `json:"OldPassword,omitempty" query:"OldPassword"`
+	NewPassword *string `json:"NewPassword,omitempty" query:"NewPassword"`
+}
+
+type CreateSAMLProviderRequest struct {
+	SAMLMetadataDocument *string `json:"SAMLMetadataDocument,omitempty" query:"SAMLMetadataDocument"`
+	Name                 *string `json:"Name,omitempty" query:"Name"`
+	Tags                 []Tag   `json:"Tags,omitempty" query:"Tags"`
+}
+
+type CreateSAMLProviderResponse struct {
+	SAMLProviderArn *string `json:"SAMLProviderArn,omitempty" query:"SAMLProviderArn"`
+	Tags            []Tag   `json:"Tags,omitempty" query:"Tags"`
+}
+
+type GetSAMLProviderRequest struct {
+	SAMLProviderArn *string `json:"SAMLProviderArn,omitempty" query:"SAMLProviderArn"`
+}
+
+type GetSAMLProviderResponse struct {
+	SAMLProviderUUID     *string    `json:"SAMLProviderUUID,omitempty" query:"SAMLProviderUUID"`
+	SAMLMetadataDocument *string    `json:"SAMLMetadataDocument,omitempty" query:"SAMLMetadataDocument"`
+	CreateDate           *time.Time `json:"CreateDate,omitempty" query:"CreateDate"`
+	ValidUntil           *time.Time `json:"ValidUntil,omitempty" query:"ValidUntil"`
+	Tags                 []Tag      `json:"Tags,omitempty" query:"Tags"`
+}
+
+type UpdateSAMLProviderRequest struct {
+	SAMLMetadataDocument *string `json:"SAMLMetadataDocument,omitempty" query:"SAMLMetadataDocument"`
+	SAMLProviderArn      *string `json:"SAMLProviderArn,omitempty" query:"SAMLProviderArn"`
+}
+
+type UpdateSAMLProviderResponse struct {
+	SAMLProviderArn *string `json:"SAMLProviderArn,omitempty" query:"SAMLProviderArn"`
+}
+
+type DeleteSAMLProviderOutput struct{}
+
+type DeleteSAMLProviderRequest struct {
+	SAMLProviderArn *string `json:"SAMLProviderArn,omitempty" query:"SAMLProviderArn"`
+}
+
+type ListSAMLProvidersRequest struct {
+}
+
+type SAMLProviderListEntry struct {
+	Arn        *string    `json:"Arn,omitempty" query:"Arn"`
+	ValidUntil *time.Time `json:"ValidUntil,omitempty" query:"ValidUntil"`
+	CreateDate *time.Time `json:"CreateDate,omitempty" query:"CreateDate"`
+}
+
+type ListSAMLProvidersResponse struct {
+	SAMLProviderList []SAMLProviderListEntry `json:"SAMLProviderList,omitempty" query:"SAMLProviderList"`
+}
+
+type TagSAMLProviderOutput struct{}
+
+type TagSAMLProviderRequest struct {
+	SAMLProviderArn *string `json:"SAMLProviderArn,omitempty" query:"SAMLProviderArn"`
+	Tags            []Tag   `json:"Tags,omitempty" query:"Tags"`
+}
+
+type UntagSAMLProviderOutput struct{}
+
+type UntagSAMLProviderRequest struct {
+	SAMLProviderArn *string  `json:"SAMLProviderArn,omitempty" query:"SAMLProviderArn"`
+	TagKeys         []string `json:"TagKeys,omitempty" query:"TagKeys"`
+}
+
+type ListSAMLProviderTagsRequest struct {
+	SAMLProviderArn *string `json:"SAMLProviderArn,omitempty" query:"SAMLProviderArn"`
+	Marker          *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems        *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type ListSAMLProviderTagsResponse struct {
+	Tags        []Tag   `json:"Tags,omitempty" query:"Tags"`
+	IsTruncated *bool   `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker      *string `json:"Marker,omitempty" query:"Marker"`
+}
+
+type TagOpenIDConnectProviderOutput struct{}
+
+type TagOpenIDConnectProviderRequest struct {
+	OpenIDConnectProviderArn *string `json:"OpenIDConnectProviderArn,omitempty" query:"OpenIDConnectProviderArn"`
+	Tags                     []Tag   `json:"Tags,omitempty" query:"Tags"`
+}
+
+type UntagOpenIDConnectProviderOutput struct{}
+
+type UntagOpenIDConnectProviderRequest struct {
+	OpenIDConnectProviderArn *string  `json:"OpenIDConnectProviderArn,omitempty" query:"OpenIDConnectProviderArn"`
+	TagKeys                  []string `json:"TagKeys,omitempty" query:"TagKeys"`
+}
+
+type ListOpenIDConnectProviderTagsRequest struct {
+	OpenIDConnectProviderArn *string `json:"OpenIDConnectProviderArn,omitempty" query:"OpenIDConnectProviderArn"`
+	Marker                   *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems                 *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type ListOpenIDConnectProviderTagsResponse struct {
+	Tags        []Tag   `json:"Tags,omitempty" query:"Tags"`
+	IsTruncated *bool   `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker      *string `json:"Marker,omitempty" query:"Marker"`
+}
+
+type CreateVirtualMFADeviceRequest struct {
+	Path                 *string `json:"Path,omitempty" query:"Path"`
+	VirtualMFADeviceName *string `json:"VirtualMFADeviceName,omitempty" query:"VirtualMFADeviceName"`
+	Tags                 []Tag   `json:"Tags,omitempty" query:"Tags"`
+}
+
+type VirtualMFADevice struct {
+	SerialNumber     *string    `json:"SerialNumber,omitempty" query:"SerialNumber"`
+	Base32StringSeed []byte     `json:"Base32StringSeed,omitempty" query:"Base32StringSeed"`
+	User             *User      `json:"User,omitempty" query:"User"`
+	EnableDate       *time.Time `json:"EnableDate,omitempty" query:"EnableDate"`
+	Tags             []Tag      `json:"Tags,omitempty" query:"Tags"`
+}
+
+type CreateVirtualMFADeviceResponse struct {
+	VirtualMFADevice *VirtualMFADevice `json:"VirtualMFADevice,omitempty" query:"VirtualMFADevice"`
+}
+
+type DeleteVirtualMFADeviceOutput struct{}
+
+type DeleteVirtualMFADeviceRequest struct {
+	SerialNumber *string `json:"SerialNumber,omitempty" query:"SerialNumber"`
+}
+
+type EnableMFADeviceOutput struct{}
+
+type EnableMFADeviceRequest struct {
+	UserName            *string `json:"UserName,omitempty" query:"UserName"`
+	SerialNumber        *string `json:"SerialNumber,omitempty" query:"SerialNumber"`
+	AuthenticationCode1 *string `json:"AuthenticationCode1,omitempty" query:"AuthenticationCode1"`
+	AuthenticationCode2 *string `json:"AuthenticationCode2,omitempty" query:"AuthenticationCode2"`
+}
+
+type DeactivateMFADeviceOutput struct{}
+
+type DeactivateMFADeviceRequest struct {
+	UserName     *string `json:"UserName,omitempty" query:"UserName"`
+	SerialNumber *string `json:"SerialNumber,omitempty" query:"SerialNumber"`
+}
+
+type ListMFADevicesRequest struct {
+	UserName *string `json:"UserName,omitempty" query:"UserName"`
+	Marker   *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type MFADevice struct {
+	UserName     *string    `json:"UserName,omitempty" query:"UserName"`
+	SerialNumber *string    `json:"SerialNumber,omitempty" query:"SerialNumber"`
+	EnableDate   *time.Time `json:"EnableDate,omitempty" query:"EnableDate"`
+}
+
+type ListMFADevicesResponse struct {
+	MFADevices  []MFADevice `json:"MFADevices,omitempty" query:"MFADevices"`
+	IsTruncated *bool       `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker      *string     `json:"Marker,omitempty" query:"Marker"`
+}
+
+type ListVirtualMFADevicesRequest struct {
+	AssignmentStatus *string `json:"AssignmentStatus,omitempty" query:"AssignmentStatus"`
+	Marker           *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems         *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type ListVirtualMFADevicesResponse struct {
+	VirtualMFADevices []VirtualMFADevice `json:"VirtualMFADevices,omitempty" query:"VirtualMFADevices"`
+	IsTruncated       *bool              `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker            *string            `json:"Marker,omitempty" query:"Marker"`
+}
+
+type GetMFADeviceRequest struct {
+	SerialNumber *string `json:"SerialNumber,omitempty" query:"SerialNumber"`
+	UserName     *string `json:"UserName,omitempty" query:"UserName"`
+}
+
+type GetMFADeviceResponse struct {
+	UserName     *string    `json:"UserName,omitempty" query:"UserName"`
+	SerialNumber *string    `json:"SerialNumber,omitempty" query:"SerialNumber"`
+	EnableDate   *time.Time `json:"EnableDate,omitempty" query:"EnableDate"`
+}
+
+type ResyncMFADeviceOutput struct{}
+
+type ResyncMFADeviceRequest struct {
+	UserName            *string `json:"UserName,omitempty" query:"UserName"`
+	SerialNumber        *string `json:"SerialNumber,omitempty" query:"SerialNumber"`
+	AuthenticationCode1 *string `json:"AuthenticationCode1,omitempty" query:"AuthenticationCode1"`
+	AuthenticationCode2 *string `json:"AuthenticationCode2,omitempty" query:"AuthenticationCode2"`
+}
+
+type TagMFADeviceOutput struct{}
+
+type TagMFADeviceRequest struct {
+	SerialNumber *string `json:"SerialNumber,omitempty" query:"SerialNumber"`
+	Tags         []Tag   `json:"Tags,omitempty" query:"Tags"`
+}
+
+type UntagMFADeviceOutput struct{}
+
+type UntagMFADeviceRequest struct {
+	SerialNumber *string  `json:"SerialNumber,omitempty" query:"SerialNumber"`
+	TagKeys      []string `json:"TagKeys,omitempty" query:"TagKeys"`
+}
+
+type ListMFADeviceTagsRequest struct {
+	SerialNumber *string `json:"SerialNumber,omitempty" query:"SerialNumber"`
+	Marker       *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems     *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type ListMFADeviceTagsResponse struct {
+	Tags        []Tag   `json:"Tags,omitempty" query:"Tags"`
+	IsTruncated *bool   `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker      *string `json:"Marker,omitempty" query:"Marker"`
+}
+
+type UploadServerCertificateRequest struct {
+	Path                  *string `json:"Path,omitempty" query:"Path"`
+	ServerCertificateName *string `json:"ServerCertificateName,omitempty" query:"ServerCertificateName"`
+	CertificateBody       *string `json:"CertificateBody,omitempty" query:"CertificateBody"`
+	PrivateKey            *string `json:"PrivateKey,omitempty" query:"PrivateKey"`
+	CertificateChain      *string `json:"CertificateChain,omitempty" query:"CertificateChain"`
+	Tags                  []Tag   `json:"Tags,omitempty" query:"Tags"`
+}
+
+type ServerCertificateMetadata struct {
+	Path                  *string    `json:"Path,omitempty" query:"Path"`
+	ServerCertificateName *string    `json:"ServerCertificateName,omitempty" query:"ServerCertificateName"`
+	ServerCertificateId   *string    `json:"ServerCertificateId,omitempty" query:"ServerCertificateId"`
+	Arn                   *string    `json:"Arn,omitempty" query:"Arn"`
+	UploadDate            *time.Time `json:"UploadDate,omitempty" query:"UploadDate"`
+	Expiration            *time.Time `json:"Expiration,omitempty" query:"Expiration"`
+}
+
+type UploadServerCertificateResponse struct {
+	ServerCertificateMetadata *ServerCertificateMetadata `json:"ServerCertificateMetadata,omitempty" query:"ServerCertificateMetadata"`
+	Tags                      []Tag                      `json:"Tags,omitempty" query:"Tags"`
+}
+
+type GetServerCertificateRequest struct {
+	ServerCertificateName *string `json:"ServerCertificateName,omitempty" query:"ServerCertificateName"`
+}
+
+type ServerCertificate struct {
+	ServerCertificateMetadata *ServerCertificateMetadata `json:"ServerCertificateMetadata,omitempty" query:"ServerCertificateMetadata"`
+	CertificateBody           *string                    `json:"CertificateBody,omitempty" query:"CertificateBody"`
+	CertificateChain          *string                    `json:"CertificateChain,omitempty" query:"CertificateChain"`
+	Tags                      []Tag                      `json:"Tags,omitempty" query:"Tags"`
+}
+
+type GetServerCertificateResponse struct {
+	ServerCertificate *ServerCertificate `json:"ServerCertificate,omitempty" query:"ServerCertificate"`
+}
+
+type UpdateServerCertificateOutput struct{}
+
+type UpdateServerCertificateRequest struct {
+	ServerCertificateName    *string `json:"ServerCertificateName,omitempty" query:"ServerCertificateName"`
+	NewPath                  *string `json:"NewPath,omitempty" query:"NewPath"`
+	NewServerCertificateName *string `json:"NewServerCertificateName,omitempty" query:"NewServerCertificateName"`
+}
+
+type DeleteServerCertificateOutput struct{}
+
+type DeleteServerCertificateRequest struct {
+	ServerCertificateName *string `json:"ServerCertificateName,omitempty" query:"ServerCertificateName"`
+}
+
+type ListServerCertificatesRequest struct {
+	PathPrefix *string `json:"PathPrefix,omitempty" query:"PathPrefix"`
+	Marker     *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems   *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type ListServerCertificatesResponse struct {
+	ServerCertificateMetadataList []ServerCertificateMetadata `json:"ServerCertificateMetadataList,omitempty" query:"ServerCertificateMetadataList"`
+	IsTruncated                   *bool                       `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker                        *string                     `json:"Marker,omitempty" query:"Marker"`
+}
+
+type TagServerCertificateOutput struct{}
+
+type TagServerCertificateRequest struct {
+	ServerCertificateName *string `json:"ServerCertificateName,omitempty" query:"ServerCertificateName"`
+	Tags                  []Tag   `json:"Tags,omitempty" query:"Tags"`
+}
+
+type UntagServerCertificateOutput struct{}
+
+type UntagServerCertificateRequest struct {
+	ServerCertificateName *string  `json:"ServerCertificateName,omitempty" query:"ServerCertificateName"`
+	TagKeys               []string `json:"TagKeys,omitempty" query:"TagKeys"`
+}
+
+type ListServerCertificateTagsRequest struct {
+	ServerCertificateName *string `json:"ServerCertificateName,omitempty" query:"ServerCertificateName"`
+	Marker                *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems              *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type ListServerCertificateTagsResponse struct {
+	Tags        []Tag   `json:"Tags,omitempty" query:"Tags"`
+	IsTruncated *bool   `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker      *string `json:"Marker,omitempty" query:"Marker"`
+}
+
+type UploadSSHPublicKeyRequest struct {
+	UserName         *string `json:"UserName,omitempty" query:"UserName"`
+	SSHPublicKeyBody *string `json:"SSHPublicKeyBody,omitempty" query:"SSHPublicKeyBody"`
+}
+
+type SSHPublicKey struct {
+	UserName         *string    `json:"UserName,omitempty" query:"UserName"`
+	SSHPublicKeyId   *string    `json:"SSHPublicKeyId,omitempty" query:"SSHPublicKeyId"`
+	Fingerprint      *string    `json:"Fingerprint,omitempty" query:"Fingerprint"`
+	SSHPublicKeyBody *string    `json:"SSHPublicKeyBody,omitempty" query:"SSHPublicKeyBody"`
+	Status           *string    `json:"Status,omitempty" query:"Status"`
+	UploadDate       *time.Time `json:"UploadDate,omitempty" query:"UploadDate"`
+}
+
+type UploadSSHPublicKeyResponse struct {
+	SSHPublicKey *SSHPublicKey `json:"SSHPublicKey,omitempty" query:"SSHPublicKey"`
+}
+
+type GetSSHPublicKeyRequest struct {
+	UserName       *string `json:"UserName,omitempty" query:"UserName"`
+	SSHPublicKeyId *string `json:"SSHPublicKeyId,omitempty" query:"SSHPublicKeyId"`
+	Encoding       *string `json:"Encoding,omitempty" query:"Encoding"`
+}
+
+type GetSSHPublicKeyResponse struct {
+	SSHPublicKey *SSHPublicKey `json:"SSHPublicKey,omitempty" query:"SSHPublicKey"`
+}
+
+type UpdateSSHPublicKeyOutput struct{}
+
+type UpdateSSHPublicKeyRequest struct {
+	UserName       *string `json:"UserName,omitempty" query:"UserName"`
+	SSHPublicKeyId *string `json:"SSHPublicKeyId,omitempty" query:"SSHPublicKeyId"`
+	Status         *string `json:"Status,omitempty" query:"Status"`
+}
+
+type DeleteSSHPublicKeyOutput struct{}
+
+type DeleteSSHPublicKeyRequest struct {
+	UserName       *string `json:"UserName,omitempty" query:"UserName"`
+	SSHPublicKeyId *string `json:"SSHPublicKeyId,omitempty" query:"SSHPublicKeyId"`
+}
+
+type ListSSHPublicKeysRequest struct {
+	UserName *string `json:"UserName,omitempty" query:"UserName"`
+	Marker   *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type SSHPublicKeyMetadata struct {
+	UserName       *string    `json:"UserName,omitempty" query:"UserName"`
+	SSHPublicKeyId *string    `json:"SSHPublicKeyId,omitempty" query:"SSHPublicKeyId"`
+	Status         *string    `json:"Status,omitempty" query:"Status"`
+	UploadDate     *time.Time `json:"UploadDate,omitempty" query:"UploadDate"`
+}
+
+type ListSSHPublicKeysResponse struct {
+	SSHPublicKeys []SSHPublicKeyMetadata `json:"SSHPublicKeys,omitempty" query:"SSHPublicKeys"`
+	IsTruncated   *bool                  `json:"IsTruncated,omitempty" query:"IsTruncated"`
+	Marker        *string                `json:"Marker,omitempty" query:"Marker"`
+}
+
+type CreateServiceSpecificCredentialRequest struct {
+	UserName          *string `json:"UserName,omitempty" query:"UserName"`
+	ServiceName       *string `json:"ServiceName,omitempty" query:"ServiceName"`
+	CredentialAgeDays *int64  `json:"CredentialAgeDays,omitempty" query:"CredentialAgeDays"`
+}
+
+type ServiceSpecificCredential struct {
+	CreateDate                  *time.Time `json:"CreateDate,omitempty" query:"CreateDate"`
+	ExpirationDate              *time.Time `json:"ExpirationDate,omitempty" query:"ExpirationDate"`
+	ServiceName                 *string    `json:"ServiceName,omitempty" query:"ServiceName"`
+	ServiceUserName             *string    `json:"ServiceUserName,omitempty" query:"ServiceUserName"`
+	ServicePassword             *string    `json:"ServicePassword,omitempty" query:"ServicePassword"`
+	ServiceSpecificCredentialId *string    `json:"ServiceSpecificCredentialId,omitempty" query:"ServiceSpecificCredentialId"`
+	UserName                    *string    `json:"UserName,omitempty" query:"UserName"`
+	Status                      *string    `json:"Status,omitempty" query:"Status"`
+}
+
+type CreateServiceSpecificCredentialResponse struct {
+	ServiceSpecificCredential *ServiceSpecificCredential `json:"ServiceSpecificCredential,omitempty" query:"ServiceSpecificCredential"`
+}
+
+type ListServiceSpecificCredentialsRequest struct {
+	UserName    *string `json:"UserName,omitempty" query:"UserName"`
+	ServiceName *string `json:"ServiceName,omitempty" query:"ServiceName"`
+	AllUsers    *bool   `json:"AllUsers,omitempty" query:"AllUsers"`
+	Marker      *string `json:"Marker,omitempty" query:"Marker"`
+	MaxItems    *int64  `json:"MaxItems,omitempty" query:"MaxItems"`
+}
+
+type ServiceSpecificCredentialMetadata struct {
+	UserName                    *string    `json:"UserName,omitempty" query:"UserName"`
+	Status                      *string    `json:"Status,omitempty" query:"Status"`
+	ServiceUserName             *string    `json:"ServiceUserName,omitempty" query:"ServiceUserName"`
+	CreateDate                  *time.Time `json:"CreateDate,omitempty" query:"CreateDate"`
+	ExpirationDate              *time.Time `json:"ExpirationDate,omitempty" query:"ExpirationDate"`
+	ServiceSpecificCredentialId *string    `json:"ServiceSpecificCredentialId,omitempty" query:"ServiceSpecificCredentialId"`
+	ServiceName                 *string    `json:"ServiceName,omitempty" query:"ServiceName"`
+}
+
+type ListServiceSpecificCredentialsResponse struct {
+	ServiceSpecificCredentials []ServiceSpecificCredentialMetadata `json:"ServiceSpecificCredentials,omitempty" query:"ServiceSpecificCredentials"`
+	Marker                     *string                             `json:"Marker,omitempty" query:"Marker"`
+	IsTruncated                *bool                               `json:"IsTruncated,omitempty" query:"IsTruncated"`
+}
+
+type UpdateServiceSpecificCredentialOutput struct{}
+
+type UpdateServiceSpecificCredentialRequest struct {
+	UserName                    *string `json:"UserName,omitempty" query:"UserName"`
+	ServiceSpecificCredentialId *string `json:"ServiceSpecificCredentialId,omitempty" query:"ServiceSpecificCredentialId"`
+	Status                      *string `json:"Status,omitempty" query:"Status"`
+}
+
+type ResetServiceSpecificCredentialRequest struct {
+	UserName                    *string `json:"UserName,omitempty" query:"UserName"`
+	ServiceSpecificCredentialId *string `json:"ServiceSpecificCredentialId,omitempty" query:"ServiceSpecificCredentialId"`
+}
+
+type ResetServiceSpecificCredentialResponse struct {
+	ServiceSpecificCredential *ServiceSpecificCredential `json:"ServiceSpecificCredential,omitempty" query:"ServiceSpecificCredential"`
+}
+
+type DeleteServiceSpecificCredentialOutput struct{}
+
+type DeleteServiceSpecificCredentialRequest struct {
+	UserName                    *string `json:"UserName,omitempty" query:"UserName"`
+	ServiceSpecificCredentialId *string `json:"ServiceSpecificCredentialId,omitempty" query:"ServiceSpecificCredentialId"`
+}
+
 type API interface {
 	CreateRole(context.Context, *CreateRoleRequest) (*CreateRoleResponse, error)
 	GetRole(context.Context, *GetRoleRequest) (*GetRoleResponse, error)
@@ -1051,10 +1727,66 @@ type API interface {
 	CreateServiceLinkedRole(context.Context, *CreateServiceLinkedRoleRequest) (*CreateServiceLinkedRoleResponse, error)
 	DeleteServiceLinkedRole(context.Context, *DeleteServiceLinkedRoleRequest) (*DeleteServiceLinkedRoleResponse, error)
 	GetServiceLinkedRoleDeletionStatus(context.Context, *GetServiceLinkedRoleDeletionStatusRequest) (*GetServiceLinkedRoleDeletionStatusResponse, error)
+	CreateAccountAlias(context.Context, *CreateAccountAliasRequest) (*CreateAccountAliasOutput, error)
+	DeleteAccountAlias(context.Context, *DeleteAccountAliasRequest) (*DeleteAccountAliasOutput, error)
+	ListAccountAliases(context.Context, *ListAccountAliasesRequest) (*ListAccountAliasesResponse, error)
+	UpdateAccountPasswordPolicy(context.Context, *UpdateAccountPasswordPolicyRequest) (*UpdateAccountPasswordPolicyOutput, error)
+	GetAccountPasswordPolicy(context.Context, *GetAccountPasswordPolicyInput) (*GetAccountPasswordPolicyResponse, error)
+	DeleteAccountPasswordPolicy(context.Context, *DeleteAccountPasswordPolicyInput) (*DeleteAccountPasswordPolicyOutput, error)
+	GetAccountSummary(context.Context, *GetAccountSummaryInput) (*GetAccountSummaryResponse, error)
+	GetAccountAuthorizationDetails(context.Context, *GetAccountAuthorizationDetailsRequest) (*GetAccountAuthorizationDetailsResponse, error)
+	ListEntitiesForPolicy(context.Context, *ListEntitiesForPolicyRequest) (*ListEntitiesForPolicyResponse, error)
+	GetContextKeysForPrincipalPolicy(context.Context, *GetContextKeysForPrincipalPolicyRequest) (*GetContextKeysForPolicyResponse, error)
+	GetContextKeysForCustomPolicy(context.Context, *GetContextKeysForCustomPolicyRequest) (*GetContextKeysForPolicyResponse, error)
+	CreateLoginProfile(context.Context, *CreateLoginProfileRequest) (*CreateLoginProfileResponse, error)
+	GetLoginProfile(context.Context, *GetLoginProfileRequest) (*GetLoginProfileResponse, error)
+	UpdateLoginProfile(context.Context, *UpdateLoginProfileRequest) (*UpdateLoginProfileOutput, error)
+	DeleteLoginProfile(context.Context, *DeleteLoginProfileRequest) (*DeleteLoginProfileOutput, error)
+	ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordOutput, error)
+	CreateSAMLProvider(context.Context, *CreateSAMLProviderRequest) (*CreateSAMLProviderResponse, error)
+	GetSAMLProvider(context.Context, *GetSAMLProviderRequest) (*GetSAMLProviderResponse, error)
+	UpdateSAMLProvider(context.Context, *UpdateSAMLProviderRequest) (*UpdateSAMLProviderResponse, error)
+	DeleteSAMLProvider(context.Context, *DeleteSAMLProviderRequest) (*DeleteSAMLProviderOutput, error)
+	ListSAMLProviders(context.Context, *ListSAMLProvidersRequest) (*ListSAMLProvidersResponse, error)
+	TagSAMLProvider(context.Context, *TagSAMLProviderRequest) (*TagSAMLProviderOutput, error)
+	UntagSAMLProvider(context.Context, *UntagSAMLProviderRequest) (*UntagSAMLProviderOutput, error)
+	ListSAMLProviderTags(context.Context, *ListSAMLProviderTagsRequest) (*ListSAMLProviderTagsResponse, error)
+	TagOpenIDConnectProvider(context.Context, *TagOpenIDConnectProviderRequest) (*TagOpenIDConnectProviderOutput, error)
+	UntagOpenIDConnectProvider(context.Context, *UntagOpenIDConnectProviderRequest) (*UntagOpenIDConnectProviderOutput, error)
+	ListOpenIDConnectProviderTags(context.Context, *ListOpenIDConnectProviderTagsRequest) (*ListOpenIDConnectProviderTagsResponse, error)
+	CreateVirtualMFADevice(context.Context, *CreateVirtualMFADeviceRequest) (*CreateVirtualMFADeviceResponse, error)
+	DeleteVirtualMFADevice(context.Context, *DeleteVirtualMFADeviceRequest) (*DeleteVirtualMFADeviceOutput, error)
+	EnableMFADevice(context.Context, *EnableMFADeviceRequest) (*EnableMFADeviceOutput, error)
+	DeactivateMFADevice(context.Context, *DeactivateMFADeviceRequest) (*DeactivateMFADeviceOutput, error)
+	ListMFADevices(context.Context, *ListMFADevicesRequest) (*ListMFADevicesResponse, error)
+	ListVirtualMFADevices(context.Context, *ListVirtualMFADevicesRequest) (*ListVirtualMFADevicesResponse, error)
+	GetMFADevice(context.Context, *GetMFADeviceRequest) (*GetMFADeviceResponse, error)
+	ResyncMFADevice(context.Context, *ResyncMFADeviceRequest) (*ResyncMFADeviceOutput, error)
+	TagMFADevice(context.Context, *TagMFADeviceRequest) (*TagMFADeviceOutput, error)
+	UntagMFADevice(context.Context, *UntagMFADeviceRequest) (*UntagMFADeviceOutput, error)
+	ListMFADeviceTags(context.Context, *ListMFADeviceTagsRequest) (*ListMFADeviceTagsResponse, error)
+	UploadServerCertificate(context.Context, *UploadServerCertificateRequest) (*UploadServerCertificateResponse, error)
+	GetServerCertificate(context.Context, *GetServerCertificateRequest) (*GetServerCertificateResponse, error)
+	UpdateServerCertificate(context.Context, *UpdateServerCertificateRequest) (*UpdateServerCertificateOutput, error)
+	DeleteServerCertificate(context.Context, *DeleteServerCertificateRequest) (*DeleteServerCertificateOutput, error)
+	ListServerCertificates(context.Context, *ListServerCertificatesRequest) (*ListServerCertificatesResponse, error)
+	TagServerCertificate(context.Context, *TagServerCertificateRequest) (*TagServerCertificateOutput, error)
+	UntagServerCertificate(context.Context, *UntagServerCertificateRequest) (*UntagServerCertificateOutput, error)
+	ListServerCertificateTags(context.Context, *ListServerCertificateTagsRequest) (*ListServerCertificateTagsResponse, error)
+	UploadSSHPublicKey(context.Context, *UploadSSHPublicKeyRequest) (*UploadSSHPublicKeyResponse, error)
+	GetSSHPublicKey(context.Context, *GetSSHPublicKeyRequest) (*GetSSHPublicKeyResponse, error)
+	UpdateSSHPublicKey(context.Context, *UpdateSSHPublicKeyRequest) (*UpdateSSHPublicKeyOutput, error)
+	DeleteSSHPublicKey(context.Context, *DeleteSSHPublicKeyRequest) (*DeleteSSHPublicKeyOutput, error)
+	ListSSHPublicKeys(context.Context, *ListSSHPublicKeysRequest) (*ListSSHPublicKeysResponse, error)
+	CreateServiceSpecificCredential(context.Context, *CreateServiceSpecificCredentialRequest) (*CreateServiceSpecificCredentialResponse, error)
+	ListServiceSpecificCredentials(context.Context, *ListServiceSpecificCredentialsRequest) (*ListServiceSpecificCredentialsResponse, error)
+	UpdateServiceSpecificCredential(context.Context, *UpdateServiceSpecificCredentialRequest) (*UpdateServiceSpecificCredentialOutput, error)
+	ResetServiceSpecificCredential(context.Context, *ResetServiceSpecificCredentialRequest) (*ResetServiceSpecificCredentialResponse, error)
+	DeleteServiceSpecificCredential(context.Context, *DeleteServiceSpecificCredentialRequest) (*DeleteServiceSpecificCredentialOutput, error)
 }
 
 func Descriptor(api API) catalog.Service {
-	return catalog.Service{Name: "iam", SigningName: "iam", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "iam", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "https://iam.amazonaws.com/doc/2010-05-08/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{"ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "ConcurrentModification", MessageMember: "", StatusCode: 409}, "DeleteConflictException": catalog.ErrorBinding{QueryCode: "DeleteConflict", MessageMember: "", StatusCode: 409}, "EntityAlreadyExistsException": catalog.ErrorBinding{QueryCode: "EntityAlreadyExists", MessageMember: "", StatusCode: 409}, "EntityTemporarilyUnmodifiableException": catalog.ErrorBinding{QueryCode: "EntityTemporarilyUnmodifiable", MessageMember: "", StatusCode: 409}, "InvalidInputException": catalog.ErrorBinding{QueryCode: "InvalidInput", MessageMember: "", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "LimitExceeded", MessageMember: "", StatusCode: 409}, "MalformedPolicyDocumentException": catalog.ErrorBinding{QueryCode: "MalformedPolicyDocument", MessageMember: "", StatusCode: 400}, "NoSuchEntityException": catalog.ErrorBinding{QueryCode: "NoSuchEntity", MessageMember: "", StatusCode: 404}, "OpenIdIdpCommunicationErrorException": catalog.ErrorBinding{QueryCode: "OpenIdIdpCommunicationError", MessageMember: "", StatusCode: 400}, "PolicyEvaluationException": catalog.ErrorBinding{QueryCode: "PolicyEvaluation", MessageMember: "", StatusCode: 500}, "PolicyNotAttachableException": catalog.ErrorBinding{QueryCode: "PolicyNotAttachable", MessageMember: "", StatusCode: 400}, "ServiceFailureException": catalog.ErrorBinding{QueryCode: "ServiceFailure", MessageMember: "", StatusCode: 500}, "UnmodifiableEntityException": catalog.ErrorBinding{QueryCode: "UnmodifiableEntity", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
+	return catalog.Service{Name: "iam", SigningName: "iam", Inventory: catalog.InventoryOf(api), Authorizer: catalog.AuthorizerOf(api), IAMPrefix: "iam", TargetPrefix: "", QueryCompatible: false, XMLNamespace: "https://iam.amazonaws.com/doc/2010-05-08/", Protocols: []string{"awsQuery"}, Errors: map[string]catalog.ErrorBinding{"ConcurrentModificationException": catalog.ErrorBinding{QueryCode: "ConcurrentModification", MessageMember: "", StatusCode: 409}, "DeleteConflictException": catalog.ErrorBinding{QueryCode: "DeleteConflict", MessageMember: "", StatusCode: 409}, "DuplicateSSHPublicKeyException": catalog.ErrorBinding{QueryCode: "DuplicateSSHPublicKey", MessageMember: "", StatusCode: 400}, "EntityAlreadyExistsException": catalog.ErrorBinding{QueryCode: "EntityAlreadyExists", MessageMember: "", StatusCode: 409}, "EntityTemporarilyUnmodifiableException": catalog.ErrorBinding{QueryCode: "EntityTemporarilyUnmodifiable", MessageMember: "", StatusCode: 409}, "InvalidAuthenticationCodeException": catalog.ErrorBinding{QueryCode: "InvalidAuthenticationCode", MessageMember: "", StatusCode: 403}, "InvalidInputException": catalog.ErrorBinding{QueryCode: "InvalidInput", MessageMember: "", StatusCode: 400}, "InvalidPublicKeyException": catalog.ErrorBinding{QueryCode: "InvalidPublicKey", MessageMember: "", StatusCode: 400}, "InvalidUserTypeException": catalog.ErrorBinding{QueryCode: "InvalidUserType", MessageMember: "", StatusCode: 400}, "KeyPairMismatchException": catalog.ErrorBinding{QueryCode: "KeyPairMismatch", MessageMember: "", StatusCode: 400}, "LimitExceededException": catalog.ErrorBinding{QueryCode: "LimitExceeded", MessageMember: "", StatusCode: 409}, "MalformedCertificateException": catalog.ErrorBinding{QueryCode: "MalformedCertificate", MessageMember: "", StatusCode: 400}, "MalformedPolicyDocumentException": catalog.ErrorBinding{QueryCode: "MalformedPolicyDocument", MessageMember: "", StatusCode: 400}, "NoSuchEntityException": catalog.ErrorBinding{QueryCode: "NoSuchEntity", MessageMember: "", StatusCode: 404}, "OpenIdIdpCommunicationErrorException": catalog.ErrorBinding{QueryCode: "OpenIdIdpCommunicationError", MessageMember: "", StatusCode: 400}, "PasswordPolicyViolationException": catalog.ErrorBinding{QueryCode: "PasswordPolicyViolation", MessageMember: "", StatusCode: 400}, "PolicyEvaluationException": catalog.ErrorBinding{QueryCode: "PolicyEvaluation", MessageMember: "", StatusCode: 500}, "PolicyNotAttachableException": catalog.ErrorBinding{QueryCode: "PolicyNotAttachable", MessageMember: "", StatusCode: 400}, "ServiceFailureException": catalog.ErrorBinding{QueryCode: "ServiceFailure", MessageMember: "", StatusCode: 500}, "ServiceNotSupportedException": catalog.ErrorBinding{QueryCode: "NotSupportedService", MessageMember: "", StatusCode: 404}, "UnmodifiableEntityException": catalog.ErrorBinding{QueryCode: "UnmodifiableEntity", MessageMember: "", StatusCode: 400}, "UnrecognizedPublicKeyEncodingException": catalog.ErrorBinding{QueryCode: "UnrecognizedPublicKeyEncoding", MessageMember: "", StatusCode: 400}}, Operations: map[string]catalog.Operation{
 		"CreateRole": {Name: "CreateRole", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:CreateRole", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateRole", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateRoleRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.CreateRole(ctx, input.(*CreateRoleRequest))
 		}},
@@ -1314,6 +2046,174 @@ func Descriptor(api API) catalog.Service {
 		}},
 		"GetServiceLinkedRoleDeletionStatus": {Name: "GetServiceLinkedRoleDeletionStatus", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:GetServiceLinkedRoleDeletionStatus", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetServiceLinkedRoleDeletionStatus", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetServiceLinkedRoleDeletionStatusRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
 			return api.GetServiceLinkedRoleDeletionStatus(ctx, input.(*GetServiceLinkedRoleDeletionStatusRequest))
+		}},
+		"CreateAccountAlias": {Name: "CreateAccountAlias", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:CreateAccountAlias", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateAccountAlias", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateAccountAliasRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateAccountAlias(ctx, input.(*CreateAccountAliasRequest))
+		}},
+		"DeleteAccountAlias": {Name: "DeleteAccountAlias", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:DeleteAccountAlias", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteAccountAlias", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteAccountAliasRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteAccountAlias(ctx, input.(*DeleteAccountAliasRequest))
+		}},
+		"ListAccountAliases": {Name: "ListAccountAliases", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:ListAccountAliases", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListAccountAliases", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListAccountAliasesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListAccountAliases(ctx, input.(*ListAccountAliasesRequest))
+		}},
+		"UpdateAccountPasswordPolicy": {Name: "UpdateAccountPasswordPolicy", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:UpdateAccountPasswordPolicy", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UpdateAccountPasswordPolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UpdateAccountPasswordPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateAccountPasswordPolicy(ctx, input.(*UpdateAccountPasswordPolicyRequest))
+		}},
+		"GetAccountPasswordPolicy": {Name: "GetAccountPasswordPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:GetAccountPasswordPolicy", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetAccountPasswordPolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetAccountPasswordPolicyInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetAccountPasswordPolicy(ctx, input.(*GetAccountPasswordPolicyInput))
+		}},
+		"DeleteAccountPasswordPolicy": {Name: "DeleteAccountPasswordPolicy", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:DeleteAccountPasswordPolicy", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteAccountPasswordPolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteAccountPasswordPolicyInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteAccountPasswordPolicy(ctx, input.(*DeleteAccountPasswordPolicyInput))
+		}},
+		"GetAccountSummary": {Name: "GetAccountSummary", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:GetAccountSummary", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetAccountSummary", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetAccountSummaryInput{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetAccountSummary(ctx, input.(*GetAccountSummaryInput))
+		}},
+		"GetAccountAuthorizationDetails": {Name: "GetAccountAuthorizationDetails", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:GetAccountAuthorizationDetails", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetAccountAuthorizationDetails", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetAccountAuthorizationDetailsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetAccountAuthorizationDetails(ctx, input.(*GetAccountAuthorizationDetailsRequest))
+		}},
+		"ListEntitiesForPolicy": {Name: "ListEntitiesForPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:ListEntitiesForPolicy", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListEntitiesForPolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListEntitiesForPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListEntitiesForPolicy(ctx, input.(*ListEntitiesForPolicyRequest))
+		}},
+		"GetContextKeysForPrincipalPolicy": {Name: "GetContextKeysForPrincipalPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:GetContextKeysForPrincipalPolicy", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetContextKeysForPrincipalPolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetContextKeysForPrincipalPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetContextKeysForPrincipalPolicy(ctx, input.(*GetContextKeysForPrincipalPolicyRequest))
+		}},
+		"GetContextKeysForCustomPolicy": {Name: "GetContextKeysForCustomPolicy", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:GetContextKeysForCustomPolicy", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetContextKeysForCustomPolicy", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetContextKeysForCustomPolicyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetContextKeysForCustomPolicy(ctx, input.(*GetContextKeysForCustomPolicyRequest))
+		}},
+		"CreateLoginProfile": {Name: "CreateLoginProfile", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "iam:CreateLoginProfile", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateLoginProfile", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateLoginProfileRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateLoginProfile(ctx, input.(*CreateLoginProfileRequest))
+		}},
+		"GetLoginProfile": {Name: "GetLoginProfile", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:GetLoginProfile", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetLoginProfile", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetLoginProfileRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetLoginProfile(ctx, input.(*GetLoginProfileRequest))
+		}},
+		"UpdateLoginProfile": {Name: "UpdateLoginProfile", UnitOutput: true, Sensitive: true, Anonymous: false, IAMAction: "iam:UpdateLoginProfile", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UpdateLoginProfile", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UpdateLoginProfileRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateLoginProfile(ctx, input.(*UpdateLoginProfileRequest))
+		}},
+		"DeleteLoginProfile": {Name: "DeleteLoginProfile", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:DeleteLoginProfile", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteLoginProfile", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteLoginProfileRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteLoginProfile(ctx, input.(*DeleteLoginProfileRequest))
+		}},
+		"ChangePassword": {Name: "ChangePassword", UnitOutput: true, Sensitive: true, Anonymous: false, IAMAction: "iam:ChangePassword", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ChangePassword", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ChangePasswordRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ChangePassword(ctx, input.(*ChangePasswordRequest))
+		}},
+		"CreateSAMLProvider": {Name: "CreateSAMLProvider", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:CreateSAMLProvider", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateSAMLProvider", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateSAMLProviderRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateSAMLProvider(ctx, input.(*CreateSAMLProviderRequest))
+		}},
+		"GetSAMLProvider": {Name: "GetSAMLProvider", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:GetSAMLProvider", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetSAMLProvider", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetSAMLProviderRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetSAMLProvider(ctx, input.(*GetSAMLProviderRequest))
+		}},
+		"UpdateSAMLProvider": {Name: "UpdateSAMLProvider", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:UpdateSAMLProvider", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UpdateSAMLProvider", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UpdateSAMLProviderRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateSAMLProvider(ctx, input.(*UpdateSAMLProviderRequest))
+		}},
+		"DeleteSAMLProvider": {Name: "DeleteSAMLProvider", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:DeleteSAMLProvider", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteSAMLProvider", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteSAMLProviderRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteSAMLProvider(ctx, input.(*DeleteSAMLProviderRequest))
+		}},
+		"ListSAMLProviders": {Name: "ListSAMLProviders", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:ListSAMLProviders", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListSAMLProviders", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListSAMLProvidersRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListSAMLProviders(ctx, input.(*ListSAMLProvidersRequest))
+		}},
+		"TagSAMLProvider": {Name: "TagSAMLProvider", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:TagSAMLProvider", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TagSAMLProvider", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &TagSAMLProviderRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.TagSAMLProvider(ctx, input.(*TagSAMLProviderRequest))
+		}},
+		"UntagSAMLProvider": {Name: "UntagSAMLProvider", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:UntagSAMLProvider", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UntagSAMLProvider", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UntagSAMLProviderRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UntagSAMLProvider(ctx, input.(*UntagSAMLProviderRequest))
+		}},
+		"ListSAMLProviderTags": {Name: "ListSAMLProviderTags", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:ListSAMLProviderTags", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListSAMLProviderTags", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListSAMLProviderTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListSAMLProviderTags(ctx, input.(*ListSAMLProviderTagsRequest))
+		}},
+		"TagOpenIDConnectProvider": {Name: "TagOpenIDConnectProvider", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:TagOpenIDConnectProvider", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TagOpenIDConnectProvider", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &TagOpenIDConnectProviderRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.TagOpenIDConnectProvider(ctx, input.(*TagOpenIDConnectProviderRequest))
+		}},
+		"UntagOpenIDConnectProvider": {Name: "UntagOpenIDConnectProvider", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:UntagOpenIDConnectProvider", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UntagOpenIDConnectProvider", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UntagOpenIDConnectProviderRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UntagOpenIDConnectProvider(ctx, input.(*UntagOpenIDConnectProviderRequest))
+		}},
+		"ListOpenIDConnectProviderTags": {Name: "ListOpenIDConnectProviderTags", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:ListOpenIDConnectProviderTags", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListOpenIDConnectProviderTags", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListOpenIDConnectProviderTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListOpenIDConnectProviderTags(ctx, input.(*ListOpenIDConnectProviderTagsRequest))
+		}},
+		"CreateVirtualMFADevice": {Name: "CreateVirtualMFADevice", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "iam:CreateVirtualMFADevice", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateVirtualMFADevice", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateVirtualMFADeviceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateVirtualMFADevice(ctx, input.(*CreateVirtualMFADeviceRequest))
+		}},
+		"DeleteVirtualMFADevice": {Name: "DeleteVirtualMFADevice", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:DeleteVirtualMFADevice", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteVirtualMFADevice", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteVirtualMFADeviceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteVirtualMFADevice(ctx, input.(*DeleteVirtualMFADeviceRequest))
+		}},
+		"EnableMFADevice": {Name: "EnableMFADevice", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:EnableMFADevice", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "EnableMFADevice", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &EnableMFADeviceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.EnableMFADevice(ctx, input.(*EnableMFADeviceRequest))
+		}},
+		"DeactivateMFADevice": {Name: "DeactivateMFADevice", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:DeactivateMFADevice", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeactivateMFADevice", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeactivateMFADeviceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeactivateMFADevice(ctx, input.(*DeactivateMFADeviceRequest))
+		}},
+		"ListMFADevices": {Name: "ListMFADevices", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:ListMFADevices", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListMFADevices", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListMFADevicesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListMFADevices(ctx, input.(*ListMFADevicesRequest))
+		}},
+		"ListVirtualMFADevices": {Name: "ListVirtualMFADevices", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "iam:ListVirtualMFADevices", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListVirtualMFADevices", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListVirtualMFADevicesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListVirtualMFADevices(ctx, input.(*ListVirtualMFADevicesRequest))
+		}},
+		"GetMFADevice": {Name: "GetMFADevice", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:GetMFADevice", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetMFADevice", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetMFADeviceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetMFADevice(ctx, input.(*GetMFADeviceRequest))
+		}},
+		"ResyncMFADevice": {Name: "ResyncMFADevice", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:ResyncMFADevice", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ResyncMFADevice", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ResyncMFADeviceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ResyncMFADevice(ctx, input.(*ResyncMFADeviceRequest))
+		}},
+		"TagMFADevice": {Name: "TagMFADevice", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:TagMFADevice", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TagMFADevice", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &TagMFADeviceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.TagMFADevice(ctx, input.(*TagMFADeviceRequest))
+		}},
+		"UntagMFADevice": {Name: "UntagMFADevice", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:UntagMFADevice", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UntagMFADevice", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UntagMFADeviceRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UntagMFADevice(ctx, input.(*UntagMFADeviceRequest))
+		}},
+		"ListMFADeviceTags": {Name: "ListMFADeviceTags", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:ListMFADeviceTags", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListMFADeviceTags", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListMFADeviceTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListMFADeviceTags(ctx, input.(*ListMFADeviceTagsRequest))
+		}},
+		"UploadServerCertificate": {Name: "UploadServerCertificate", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "iam:UploadServerCertificate", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UploadServerCertificate", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UploadServerCertificateRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UploadServerCertificate(ctx, input.(*UploadServerCertificateRequest))
+		}},
+		"GetServerCertificate": {Name: "GetServerCertificate", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:GetServerCertificate", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetServerCertificate", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetServerCertificateRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetServerCertificate(ctx, input.(*GetServerCertificateRequest))
+		}},
+		"UpdateServerCertificate": {Name: "UpdateServerCertificate", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:UpdateServerCertificate", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UpdateServerCertificate", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UpdateServerCertificateRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateServerCertificate(ctx, input.(*UpdateServerCertificateRequest))
+		}},
+		"DeleteServerCertificate": {Name: "DeleteServerCertificate", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:DeleteServerCertificate", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteServerCertificate", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteServerCertificateRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteServerCertificate(ctx, input.(*DeleteServerCertificateRequest))
+		}},
+		"ListServerCertificates": {Name: "ListServerCertificates", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:ListServerCertificates", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListServerCertificates", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListServerCertificatesRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListServerCertificates(ctx, input.(*ListServerCertificatesRequest))
+		}},
+		"TagServerCertificate": {Name: "TagServerCertificate", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:TagServerCertificate", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "TagServerCertificate", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &TagServerCertificateRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.TagServerCertificate(ctx, input.(*TagServerCertificateRequest))
+		}},
+		"UntagServerCertificate": {Name: "UntagServerCertificate", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:UntagServerCertificate", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UntagServerCertificate", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UntagServerCertificateRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UntagServerCertificate(ctx, input.(*UntagServerCertificateRequest))
+		}},
+		"ListServerCertificateTags": {Name: "ListServerCertificateTags", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:ListServerCertificateTags", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListServerCertificateTags", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListServerCertificateTagsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListServerCertificateTags(ctx, input.(*ListServerCertificateTagsRequest))
+		}},
+		"UploadSSHPublicKey": {Name: "UploadSSHPublicKey", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:UploadSSHPublicKey", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UploadSSHPublicKey", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UploadSSHPublicKeyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UploadSSHPublicKey(ctx, input.(*UploadSSHPublicKeyRequest))
+		}},
+		"GetSSHPublicKey": {Name: "GetSSHPublicKey", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:GetSSHPublicKey", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "GetSSHPublicKey", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &GetSSHPublicKeyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.GetSSHPublicKey(ctx, input.(*GetSSHPublicKeyRequest))
+		}},
+		"UpdateSSHPublicKey": {Name: "UpdateSSHPublicKey", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:UpdateSSHPublicKey", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UpdateSSHPublicKey", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UpdateSSHPublicKeyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateSSHPublicKey(ctx, input.(*UpdateSSHPublicKeyRequest))
+		}},
+		"DeleteSSHPublicKey": {Name: "DeleteSSHPublicKey", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:DeleteSSHPublicKey", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteSSHPublicKey", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteSSHPublicKeyRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteSSHPublicKey(ctx, input.(*DeleteSSHPublicKeyRequest))
+		}},
+		"ListSSHPublicKeys": {Name: "ListSSHPublicKeys", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:ListSSHPublicKeys", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListSSHPublicKeys", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListSSHPublicKeysRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListSSHPublicKeys(ctx, input.(*ListSSHPublicKeysRequest))
+		}},
+		"CreateServiceSpecificCredential": {Name: "CreateServiceSpecificCredential", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "iam:CreateServiceSpecificCredential", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "CreateServiceSpecificCredential", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &CreateServiceSpecificCredentialRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.CreateServiceSpecificCredential(ctx, input.(*CreateServiceSpecificCredentialRequest))
+		}},
+		"ListServiceSpecificCredentials": {Name: "ListServiceSpecificCredentials", UnitOutput: false, Sensitive: false, Anonymous: false, IAMAction: "iam:ListServiceSpecificCredentials", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ListServiceSpecificCredentials", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ListServiceSpecificCredentialsRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ListServiceSpecificCredentials(ctx, input.(*ListServiceSpecificCredentialsRequest))
+		}},
+		"UpdateServiceSpecificCredential": {Name: "UpdateServiceSpecificCredential", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:UpdateServiceSpecificCredential", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "UpdateServiceSpecificCredential", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &UpdateServiceSpecificCredentialRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.UpdateServiceSpecificCredential(ctx, input.(*UpdateServiceSpecificCredentialRequest))
+		}},
+		"ResetServiceSpecificCredential": {Name: "ResetServiceSpecificCredential", UnitOutput: false, Sensitive: true, Anonymous: false, IAMAction: "iam:ResetServiceSpecificCredential", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "ResetServiceSpecificCredential", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &ResetServiceSpecificCredentialRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.ResetServiceSpecificCredential(ctx, input.(*ResetServiceSpecificCredentialRequest))
+		}},
+		"DeleteServiceSpecificCredential": {Name: "DeleteServiceSpecificCredential", UnitOutput: true, Sensitive: false, Anonymous: false, IAMAction: "iam:DeleteServiceSpecificCredential", Bindings: map[string]catalog.Binding{"awsQuery": catalog.Binding{Input: map[string]catalog.MemberBinding(nil), Output: map[string]catalog.MemberBinding(nil), Method: "POST", URI: "/", Target: "DeleteServiceSpecificCredential", Version: "2010-05-08", ContentType: "application/x-www-form-urlencoded", StatusCode: 200}}, NewInput: func() any { return &DeleteServiceSpecificCredentialRequest{} }, Invoke: func(ctx context.Context, input any) (any, error) {
+			return api.DeleteServiceSpecificCredential(ctx, input.(*DeleteServiceSpecificCredentialRequest))
 		}},
 	}}
 }

@@ -970,6 +970,7 @@ func build(
 
 	handler.UseManagementEvents(trails.Record)
 	handler.UseCredentials(tokens.Credentials)
+	handler.UseAccessKeyUsage(roles.RecordAccessKeyUsed)
 	configureShell(handler, tokens)
 	handler.UseAuthorization(roles.Authorization)
 	// Deliveries from one service to another need the target's resource policy to allow the service.

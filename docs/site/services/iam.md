@@ -13,7 +13,7 @@ Store account-wide identities and optionally evaluate their permission policies.
 | API version | `2010-05-08` |
 | Scope | Account-wide |
 | Execution | Local behavior |
-| Selected operations | 90 of 181 in the pinned model |
+| Selected operations | 146 of 181 in the pinned model |
 
 ## Implemented behavior
 
@@ -24,10 +24,10 @@ Lambda function, Secrets Manager secret and EventBridge bus policies follow the 
 ## Limitations and future work
 
 - No resource-policy enforcement outside S3/SQS/SNS/KMS/Lambda/Secrets Manager/EventBridge; no SCPs/RCPs; non-core services use wildcard resource evaluation.
-- AWS-managed policy catalogue is limited to AdministratorAccess, AmazonS3FullAccess and AmazonSQSFullAccess; no root access keys or login profiles.
-- No access-key usage tracking.
+- AWS-managed policy catalog covers 36 common policies rather than the full AWS catalog; unknown AWS-managed policies remain attachable as references but unavailable for policy inspection or evaluation; no root access keys.
+- Login profiles, virtual MFA devices, SAML providers, SSH public keys and service-specific credentials manage IAM state and validation without interactive console password/MFA sign-in or STS AssumeRoleWithSAML/MFA condition evaluation.
 - In verify mode, IAM console forms require an authenticated root console session; user/role credentials must use AWS APIs to exercise IAM permissions.
-- OIDC providers use the AWS API; console passwords, MFA, permissions boundaries and AWS-managed policy provisioning are not available in the console.
+- OIDC/SAML providers, login profiles, virtual MFA, server certificates, SSH keys, service-specific credentials, permissions boundaries and AWS-managed policy provisioning use the AWS API rather than console forms.
 - PassRole does not infer roles inherited from stored task definitions, launch templates or other stored service configuration; iam:AssociatedResourceArn and role resource tags are not supplied.
 - Policy simulation rejects unsupported policy constructs with InvalidInput; no statement source positions, Organizations policies, role/group resource-policy callers, resource handling scenarios or policy exclusions.
 - Service-linked roles support a fixed set of service principals; service resource usage is not checked before immediate deletion.
@@ -50,54 +50,85 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `AttachGroupPolicy` | `POST /` |
 | `AttachRolePolicy` | `POST /` |
 | `AttachUserPolicy` | `POST /` |
+| `ChangePassword` | `POST /` |
 | `CreateAccessKey` | `POST /` |
+| `CreateAccountAlias` | `POST /` |
 | `CreateGroup` | `POST /` |
 | `CreateInstanceProfile` | `POST /` |
+| `CreateLoginProfile` | `POST /` |
 | `CreateOpenIDConnectProvider` | `POST /` |
 | `CreatePolicy` | `POST /` |
 | `CreatePolicyVersion` | `POST /` |
 | `CreateRole` | `POST /` |
+| `CreateSAMLProvider` | `POST /` |
 | `CreateServiceLinkedRole` | `POST /` |
+| `CreateServiceSpecificCredential` | `POST /` |
 | `CreateUser` | `POST /` |
+| `CreateVirtualMFADevice` | `POST /` |
+| `DeactivateMFADevice` | `POST /` |
 | `DeleteAccessKey` | `POST /` |
+| `DeleteAccountAlias` | `POST /` |
+| `DeleteAccountPasswordPolicy` | `POST /` |
 | `DeleteGroup` | `POST /` |
 | `DeleteGroupPolicy` | `POST /` |
 | `DeleteInstanceProfile` | `POST /` |
+| `DeleteLoginProfile` | `POST /` |
 | `DeleteOpenIDConnectProvider` | `POST /` |
 | `DeletePolicy` | `POST /` |
 | `DeletePolicyVersion` | `POST /` |
 | `DeleteRole` | `POST /` |
 | `DeleteRolePermissionsBoundary` | `POST /` |
 | `DeleteRolePolicy` | `POST /` |
+| `DeleteSAMLProvider` | `POST /` |
+| `DeleteSSHPublicKey` | `POST /` |
+| `DeleteServerCertificate` | `POST /` |
 | `DeleteServiceLinkedRole` | `POST /` |
+| `DeleteServiceSpecificCredential` | `POST /` |
 | `DeleteUser` | `POST /` |
 | `DeleteUserPermissionsBoundary` | `POST /` |
 | `DeleteUserPolicy` | `POST /` |
+| `DeleteVirtualMFADevice` | `POST /` |
 | `DetachGroupPolicy` | `POST /` |
 | `DetachRolePolicy` | `POST /` |
 | `DetachUserPolicy` | `POST /` |
+| `EnableMFADevice` | `POST /` |
 | `GetAccessKeyLastUsed` | `POST /` |
+| `GetAccountAuthorizationDetails` | `POST /` |
+| `GetAccountPasswordPolicy` | `POST /` |
+| `GetAccountSummary` | `POST /` |
+| `GetContextKeysForCustomPolicy` | `POST /` |
+| `GetContextKeysForPrincipalPolicy` | `POST /` |
 | `GetGroup` | `POST /` |
 | `GetGroupPolicy` | `POST /` |
 | `GetInstanceProfile` | `POST /` |
+| `GetLoginProfile` | `POST /` |
+| `GetMFADevice` | `POST /` |
 | `GetOpenIDConnectProvider` | `POST /` |
 | `GetPolicy` | `POST /` |
 | `GetPolicyVersion` | `POST /` |
 | `GetRole` | `POST /` |
 | `GetRolePolicy` | `POST /` |
+| `GetSAMLProvider` | `POST /` |
+| `GetSSHPublicKey` | `POST /` |
+| `GetServerCertificate` | `POST /` |
 | `GetServiceLinkedRoleDeletionStatus` | `POST /` |
 | `GetUser` | `POST /` |
 | `GetUserPolicy` | `POST /` |
 | `ListAccessKeys` | `POST /` |
+| `ListAccountAliases` | `POST /` |
 | `ListAttachedGroupPolicies` | `POST /` |
 | `ListAttachedRolePolicies` | `POST /` |
 | `ListAttachedUserPolicies` | `POST /` |
+| `ListEntitiesForPolicy` | `POST /` |
 | `ListGroupPolicies` | `POST /` |
 | `ListGroups` | `POST /` |
 | `ListGroupsForUser` | `POST /` |
 | `ListInstanceProfileTags` | `POST /` |
 | `ListInstanceProfiles` | `POST /` |
 | `ListInstanceProfilesForRole` | `POST /` |
+| `ListMFADeviceTags` | `POST /` |
+| `ListMFADevices` | `POST /` |
+| `ListOpenIDConnectProviderTags` | `POST /` |
 | `ListOpenIDConnectProviders` | `POST /` |
 | `ListPolicies` | `POST /` |
 | `ListPolicyTags` | `POST /` |
@@ -105,9 +136,16 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `ListRolePolicies` | `POST /` |
 | `ListRoleTags` | `POST /` |
 | `ListRoles` | `POST /` |
+| `ListSAMLProviderTags` | `POST /` |
+| `ListSAMLProviders` | `POST /` |
+| `ListSSHPublicKeys` | `POST /` |
+| `ListServerCertificateTags` | `POST /` |
+| `ListServerCertificates` | `POST /` |
+| `ListServiceSpecificCredentials` | `POST /` |
 | `ListUserPolicies` | `POST /` |
 | `ListUserTags` | `POST /` |
 | `ListUsers` | `POST /` |
+| `ListVirtualMFADevices` | `POST /` |
 | `PutGroupPolicy` | `POST /` |
 | `PutRolePermissionsBoundary` | `POST /` |
 | `PutRolePolicy` | `POST /` |
@@ -116,121 +154,83 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 | `RemoveClientIDFromOpenIDConnectProvider` | `POST /` |
 | `RemoveRoleFromInstanceProfile` | `POST /` |
 | `RemoveUserFromGroup` | `POST /` |
+| `ResetServiceSpecificCredential` | `POST /` |
+| `ResyncMFADevice` | `POST /` |
 | `SetDefaultPolicyVersion` | `POST /` |
 | `SimulateCustomPolicy` | `POST /` |
 | `SimulatePrincipalPolicy` | `POST /` |
 | `TagInstanceProfile` | `POST /` |
+| `TagMFADevice` | `POST /` |
+| `TagOpenIDConnectProvider` | `POST /` |
 | `TagPolicy` | `POST /` |
 | `TagRole` | `POST /` |
+| `TagSAMLProvider` | `POST /` |
+| `TagServerCertificate` | `POST /` |
 | `TagUser` | `POST /` |
 | `UntagInstanceProfile` | `POST /` |
+| `UntagMFADevice` | `POST /` |
+| `UntagOpenIDConnectProvider` | `POST /` |
 | `UntagPolicy` | `POST /` |
 | `UntagRole` | `POST /` |
+| `UntagSAMLProvider` | `POST /` |
+| `UntagServerCertificate` | `POST /` |
 | `UntagUser` | `POST /` |
 | `UpdateAccessKey` | `POST /` |
+| `UpdateAccountPasswordPolicy` | `POST /` |
 | `UpdateAssumeRolePolicy` | `POST /` |
 | `UpdateGroup` | `POST /` |
+| `UpdateLoginProfile` | `POST /` |
 | `UpdateOpenIDConnectProviderThumbprint` | `POST /` |
 | `UpdateRole` | `POST /` |
 | `UpdateRoleDescription` | `POST /` |
+| `UpdateSAMLProvider` | `POST /` |
+| `UpdateSSHPublicKey` | `POST /` |
+| `UpdateServerCertificate` | `POST /` |
+| `UpdateServiceSpecificCredential` | `POST /` |
 | `UpdateUser` | `POST /` |
+| `UploadSSHPublicKey` | `POST /` |
+| `UploadServerCertificate` | `POST /` |
 
 ## Operations not implemented
 
-??? info "91 modeled operations outside the implementation"
+??? info "35 modeled operations outside the implementation"
 
     These operations are absent from the profile. This is a coverage inventory, not a delivery commitment.
 
     - `AcceptDelegationRequest`
     - `AcquireRole`
     - `AssociateDelegationRequest`
-    - `ChangePassword`
-    - `CreateAccountAlias`
     - `CreateDelegationRequest`
-    - `CreateLoginProfile`
-    - `CreateSAMLProvider`
-    - `CreateServiceSpecificCredential`
-    - `CreateVirtualMFADevice`
-    - `DeactivateMFADevice`
-    - `DeleteAccountAlias`
-    - `DeleteAccountPasswordPolicy`
-    - `DeleteLoginProfile`
-    - `DeleteSAMLProvider`
-    - `DeleteSSHPublicKey`
-    - `DeleteServerCertificate`
-    - `DeleteServiceSpecificCredential`
     - `DeleteSigningCertificate`
-    - `DeleteVirtualMFADevice`
     - `DisableOrganizationsRootCredentialsManagement`
     - `DisableOrganizationsRootSessions`
     - `DisableOutboundWebIdentityFederation`
-    - `EnableMFADevice`
     - `EnableOrganizationsRootCredentialsManagement`
     - `EnableOrganizationsRootSessions`
     - `EnableOutboundWebIdentityFederation`
     - `GenerateCredentialReport`
     - `GenerateOrganizationsAccessReport`
     - `GenerateServiceLastAccessedDetails`
-    - `GetAccountAuthorizationDetails`
-    - `GetAccountPasswordPolicy`
     - `GetAccountProperties`
-    - `GetAccountSummary`
-    - `GetContextKeysForCustomPolicy`
-    - `GetContextKeysForPrincipalPolicy`
     - `GetCredentialReport`
     - `GetDelegationRequest`
     - `GetHumanReadableSummary`
-    - `GetLoginProfile`
-    - `GetMFADevice`
     - `GetOrganizationsAccessReport`
     - `GetOutboundWebIdentityFederationInfo`
     - `GetRoleTemplateVersion`
-    - `GetSAMLProvider`
-    - `GetSSHPublicKey`
-    - `GetServerCertificate`
     - `GetServiceLastAccessedDetails`
     - `GetServiceLastAccessedDetailsWithEntities`
-    - `ListAccountAliases`
     - `ListDelegationRequests`
-    - `ListEntitiesForPolicy`
-    - `ListMFADeviceTags`
-    - `ListMFADevices`
-    - `ListOpenIDConnectProviderTags`
     - `ListOrganizationsFeatures`
     - `ListPoliciesGrantingServiceAccess`
-    - `ListSAMLProviderTags`
-    - `ListSAMLProviders`
-    - `ListSSHPublicKeys`
-    - `ListServerCertificateTags`
-    - `ListServerCertificates`
-    - `ListServiceSpecificCredentials`
     - `ListSigningCertificates`
-    - `ListVirtualMFADevices`
     - `PutAccountProperties`
     - `RejectDelegationRequest`
-    - `ResetServiceSpecificCredential`
-    - `ResyncMFADevice`
     - `SendDelegationToken`
     - `SetSecurityTokenServicePreferences`
-    - `TagMFADevice`
-    - `TagOpenIDConnectProvider`
-    - `TagSAMLProvider`
-    - `TagServerCertificate`
-    - `UntagMFADevice`
-    - `UntagOpenIDConnectProvider`
-    - `UntagSAMLProvider`
-    - `UntagServerCertificate`
-    - `UpdateAccountPasswordPolicy`
     - `UpdateDelegationRequest`
-    - `UpdateLoginProfile`
     - `UpdateOpenIDConnectProvider`
-    - `UpdateSAMLProvider`
-    - `UpdateSSHPublicKey`
-    - `UpdateServerCertificate`
-    - `UpdateServiceSpecificCredential`
     - `UpdateSigningCertificate`
-    - `UploadSSHPublicKey`
-    - `UploadServerCertificate`
     - `UploadSigningCertificate`
 
 ## Source and examples
@@ -238,5 +238,5 @@ JSON/Query endpoint. RPC v2 CBOR uses its service/operation route, as described 
 - [Service implementation](https://github.com/amjadjibon/tinystack/tree/main/internal/services/iam)
 - [Generated API interface and descriptor](https://github.com/amjadjibon/tinystack/blob/main/internal/aws/generated/iam/api.go)
 - [Pinned upstream model](https://github.com/amjadjibon/tinystack/blob/main/generator/model/iam.json) at `b260587e158655c930bbe98087f7386e3c3f4331`.
-- SDK integration examples: [iam_authorization_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_authorization_test.go), [iam_boundaries_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_boundaries_test.go), [iam_groups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_groups_test.go), [iam_oidc_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_oidc_test.go), [iam_passrole_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_passrole_test.go), [iam_review_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_review_test.go), [iam_service_linked_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_service_linked_test.go), [iam_simulate_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_simulate_test.go), [iam_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_test.go), [iam_users_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_users_test.go).
+- SDK integration examples: [iam_authorization_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_authorization_test.go), [iam_boundaries_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_boundaries_test.go), [iam_gaps_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_gaps_test.go), [iam_groups_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_groups_test.go), [iam_oidc_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_oidc_test.go), [iam_passrole_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_passrole_test.go), [iam_review_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_review_test.go), [iam_service_linked_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_service_linked_test.go), [iam_simulate_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_simulate_test.go), [iam_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_test.go), [iam_users_test.go](https://github.com/amjadjibon/tinystack/blob/main/tests/integration/iam_users_test.go).
 - [Connect a client](../getting-started/clients.md) and [inspect requests](../guides/diagnostics.md).

@@ -16158,7 +16158,63 @@
       "SimulateCustomPolicy",
       "CreateServiceLinkedRole",
       "DeleteServiceLinkedRole",
-      "GetServiceLinkedRoleDeletionStatus"
+      "GetServiceLinkedRoleDeletionStatus",
+      "CreateAccountAlias",
+      "DeleteAccountAlias",
+      "ListAccountAliases",
+      "UpdateAccountPasswordPolicy",
+      "GetAccountPasswordPolicy",
+      "DeleteAccountPasswordPolicy",
+      "GetAccountSummary",
+      "GetAccountAuthorizationDetails",
+      "ListEntitiesForPolicy",
+      "GetContextKeysForPrincipalPolicy",
+      "GetContextKeysForCustomPolicy",
+      "CreateLoginProfile",
+      "GetLoginProfile",
+      "UpdateLoginProfile",
+      "DeleteLoginProfile",
+      "ChangePassword",
+      "CreateSAMLProvider",
+      "GetSAMLProvider",
+      "UpdateSAMLProvider",
+      "DeleteSAMLProvider",
+      "ListSAMLProviders",
+      "TagSAMLProvider",
+      "UntagSAMLProvider",
+      "ListSAMLProviderTags",
+      "TagOpenIDConnectProvider",
+      "UntagOpenIDConnectProvider",
+      "ListOpenIDConnectProviderTags",
+      "CreateVirtualMFADevice",
+      "DeleteVirtualMFADevice",
+      "EnableMFADevice",
+      "DeactivateMFADevice",
+      "ListMFADevices",
+      "ListVirtualMFADevices",
+      "GetMFADevice",
+      "ResyncMFADevice",
+      "TagMFADevice",
+      "UntagMFADevice",
+      "ListMFADeviceTags",
+      "UploadServerCertificate",
+      "GetServerCertificate",
+      "UpdateServerCertificate",
+      "DeleteServerCertificate",
+      "ListServerCertificates",
+      "TagServerCertificate",
+      "UntagServerCertificate",
+      "ListServerCertificateTags",
+      "UploadSSHPublicKey",
+      "GetSSHPublicKey",
+      "UpdateSSHPublicKey",
+      "DeleteSSHPublicKey",
+      "ListSSHPublicKeys",
+      "CreateServiceSpecificCredential",
+      "ListServiceSpecificCredentials",
+      "UpdateServiceSpecificCredential",
+      "ResetServiceSpecificCredential",
+      "DeleteServiceSpecificCredential"
     ],
     "shapes": {
       "CreateRoleRequest": [
@@ -16300,6 +16356,7 @@
         "Scope",
         "OnlyAttached",
         "PathPrefix",
+        "PolicyUsageFilter",
         "Marker",
         "MaxItems"
       ],
@@ -16369,7 +16426,12 @@
         "Description",
         "MaxSessionDuration",
         "Tags",
-        "PermissionsBoundary"
+        "PermissionsBoundary",
+        "RoleLastUsed"
+      ],
+      "RoleLastUsed": [
+        "LastUsedDate",
+        "Region"
       ],
       "Policy": [
         "PolicyName",
@@ -16870,6 +16932,515 @@
       ],
       "GetServiceLinkedRoleDeletionStatusResponse": [
         "Status"
+      ],
+      "CreateAccountAliasRequest": [
+        "AccountAlias"
+      ],
+      "DeleteAccountAliasRequest": [
+        "AccountAlias"
+      ],
+      "ListAccountAliasesRequest": [
+        "Marker",
+        "MaxItems"
+      ],
+      "ListAccountAliasesResponse": [
+        "AccountAliases",
+        "IsTruncated",
+        "Marker"
+      ],
+      "UpdateAccountPasswordPolicyRequest": [
+        "MinimumPasswordLength",
+        "RequireSymbols",
+        "RequireNumbers",
+        "RequireUppercaseCharacters",
+        "RequireLowercaseCharacters",
+        "AllowUsersToChangePassword",
+        "MaxPasswordAge",
+        "PasswordReusePrevention",
+        "HardExpiry"
+      ],
+      "GetAccountPasswordPolicyResponse": [
+        "PasswordPolicy"
+      ],
+      "PasswordPolicy": [
+        "MinimumPasswordLength",
+        "RequireSymbols",
+        "RequireNumbers",
+        "RequireUppercaseCharacters",
+        "RequireLowercaseCharacters",
+        "AllowUsersToChangePassword",
+        "ExpirePasswords",
+        "MaxPasswordAge",
+        "PasswordReusePrevention",
+        "HardExpiry"
+      ],
+      "GetAccountSummaryResponse": [
+        "SummaryMap"
+      ],
+      "GetAccountAuthorizationDetailsRequest": [
+        "Filter",
+        "MaxItems",
+        "Marker"
+      ],
+      "GetAccountAuthorizationDetailsResponse": [
+        "UserDetailList",
+        "GroupDetailList",
+        "RoleDetailList",
+        "Policies",
+        "IsTruncated",
+        "Marker"
+      ],
+      "UserDetail": [
+        "Path",
+        "UserName",
+        "UserId",
+        "Arn",
+        "CreateDate",
+        "UserPolicyList",
+        "GroupList",
+        "AttachedManagedPolicies",
+        "PermissionsBoundary",
+        "Tags"
+      ],
+      "GroupDetail": [
+        "Path",
+        "GroupName",
+        "GroupId",
+        "Arn",
+        "CreateDate",
+        "GroupPolicyList",
+        "AttachedManagedPolicies"
+      ],
+      "RoleDetail": [
+        "Path",
+        "RoleName",
+        "RoleId",
+        "Arn",
+        "CreateDate",
+        "AssumeRolePolicyDocument",
+        "InstanceProfileList",
+        "RolePolicyList",
+        "AttachedManagedPolicies",
+        "PermissionsBoundary",
+        "Tags",
+        "RoleLastUsed"
+      ],
+      "PolicyDetail": [
+        "PolicyName",
+        "PolicyDocument"
+      ],
+      "ManagedPolicyDetail": [
+        "PolicyName",
+        "PolicyId",
+        "Arn",
+        "Path",
+        "DefaultVersionId",
+        "AttachmentCount",
+        "PermissionsBoundaryUsageCount",
+        "IsAttachable",
+        "Description",
+        "CreateDate",
+        "UpdateDate",
+        "PolicyVersionList"
+      ],
+      "ListEntitiesForPolicyRequest": [
+        "PolicyArn",
+        "EntityFilter",
+        "PathPrefix",
+        "PolicyUsageFilter",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListEntitiesForPolicyResponse": [
+        "PolicyGroups",
+        "PolicyUsers",
+        "PolicyRoles",
+        "IsTruncated",
+        "Marker"
+      ],
+      "PolicyGroup": [
+        "GroupName",
+        "GroupId"
+      ],
+      "PolicyUser": [
+        "UserName",
+        "UserId"
+      ],
+      "PolicyRole": [
+        "RoleName",
+        "RoleId"
+      ],
+      "GetContextKeysForPrincipalPolicyRequest": [
+        "PolicySourceArn",
+        "PolicyInputList"
+      ],
+      "GetContextKeysForCustomPolicyRequest": [
+        "PolicyInputList"
+      ],
+      "GetContextKeysForPolicyResponse": [
+        "ContextKeyNames"
+      ],
+      "CreateLoginProfileRequest": [
+        "UserName",
+        "Password",
+        "PasswordResetRequired"
+      ],
+      "CreateLoginProfileResponse": [
+        "LoginProfile"
+      ],
+      "GetLoginProfileRequest": [
+        "UserName"
+      ],
+      "GetLoginProfileResponse": [
+        "LoginProfile"
+      ],
+      "UpdateLoginProfileRequest": [
+        "UserName",
+        "Password",
+        "PasswordResetRequired"
+      ],
+      "DeleteLoginProfileRequest": [
+        "UserName"
+      ],
+      "ChangePasswordRequest": [
+        "OldPassword",
+        "NewPassword"
+      ],
+      "LoginProfile": [
+        "UserName",
+        "CreateDate",
+        "PasswordResetRequired"
+      ],
+      "CreateSAMLProviderRequest": [
+        "SAMLMetadataDocument",
+        "Name",
+        "Tags"
+      ],
+      "CreateSAMLProviderResponse": [
+        "SAMLProviderArn",
+        "Tags"
+      ],
+      "GetSAMLProviderRequest": [
+        "SAMLProviderArn"
+      ],
+      "GetSAMLProviderResponse": [
+        "SAMLProviderUUID",
+        "SAMLMetadataDocument",
+        "CreateDate",
+        "ValidUntil",
+        "Tags"
+      ],
+      "UpdateSAMLProviderRequest": [
+        "SAMLMetadataDocument",
+        "SAMLProviderArn"
+      ],
+      "UpdateSAMLProviderResponse": [
+        "SAMLProviderArn"
+      ],
+      "DeleteSAMLProviderRequest": [
+        "SAMLProviderArn"
+      ],
+      "ListSAMLProvidersRequest": [],
+      "ListSAMLProvidersResponse": [
+        "SAMLProviderList"
+      ],
+      "SAMLProviderListEntry": [
+        "Arn",
+        "ValidUntil",
+        "CreateDate"
+      ],
+      "TagSAMLProviderRequest": [
+        "SAMLProviderArn",
+        "Tags"
+      ],
+      "UntagSAMLProviderRequest": [
+        "SAMLProviderArn",
+        "TagKeys"
+      ],
+      "ListSAMLProviderTagsRequest": [
+        "SAMLProviderArn",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListSAMLProviderTagsResponse": [
+        "Tags",
+        "IsTruncated",
+        "Marker"
+      ],
+      "TagOpenIDConnectProviderRequest": [
+        "OpenIDConnectProviderArn",
+        "Tags"
+      ],
+      "UntagOpenIDConnectProviderRequest": [
+        "OpenIDConnectProviderArn",
+        "TagKeys"
+      ],
+      "ListOpenIDConnectProviderTagsRequest": [
+        "OpenIDConnectProviderArn",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListOpenIDConnectProviderTagsResponse": [
+        "Tags",
+        "IsTruncated",
+        "Marker"
+      ],
+      "CreateVirtualMFADeviceRequest": [
+        "Path",
+        "VirtualMFADeviceName",
+        "Tags"
+      ],
+      "CreateVirtualMFADeviceResponse": [
+        "VirtualMFADevice"
+      ],
+      "VirtualMFADevice": [
+        "SerialNumber",
+        "Base32StringSeed",
+        "User",
+        "EnableDate",
+        "Tags"
+      ],
+      "DeleteVirtualMFADeviceRequest": [
+        "SerialNumber"
+      ],
+      "EnableMFADeviceRequest": [
+        "UserName",
+        "SerialNumber",
+        "AuthenticationCode1",
+        "AuthenticationCode2"
+      ],
+      "DeactivateMFADeviceRequest": [
+        "UserName",
+        "SerialNumber"
+      ],
+      "ListMFADevicesRequest": [
+        "UserName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListMFADevicesResponse": [
+        "MFADevices",
+        "IsTruncated",
+        "Marker"
+      ],
+      "MFADevice": [
+        "UserName",
+        "SerialNumber",
+        "EnableDate"
+      ],
+      "ListVirtualMFADevicesRequest": [
+        "AssignmentStatus",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListVirtualMFADevicesResponse": [
+        "VirtualMFADevices",
+        "IsTruncated",
+        "Marker"
+      ],
+      "GetMFADeviceRequest": [
+        "SerialNumber",
+        "UserName"
+      ],
+      "GetMFADeviceResponse": [
+        "UserName",
+        "SerialNumber",
+        "EnableDate"
+      ],
+      "ResyncMFADeviceRequest": [
+        "UserName",
+        "SerialNumber",
+        "AuthenticationCode1",
+        "AuthenticationCode2"
+      ],
+      "TagMFADeviceRequest": [
+        "SerialNumber",
+        "Tags"
+      ],
+      "UntagMFADeviceRequest": [
+        "SerialNumber",
+        "TagKeys"
+      ],
+      "ListMFADeviceTagsRequest": [
+        "SerialNumber",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListMFADeviceTagsResponse": [
+        "Tags",
+        "IsTruncated",
+        "Marker"
+      ],
+      "UploadServerCertificateRequest": [
+        "Path",
+        "ServerCertificateName",
+        "CertificateBody",
+        "PrivateKey",
+        "CertificateChain",
+        "Tags"
+      ],
+      "UploadServerCertificateResponse": [
+        "ServerCertificateMetadata",
+        "Tags"
+      ],
+      "ServerCertificateMetadata": [
+        "Path",
+        "ServerCertificateName",
+        "ServerCertificateId",
+        "Arn",
+        "UploadDate",
+        "Expiration"
+      ],
+      "GetServerCertificateRequest": [
+        "ServerCertificateName"
+      ],
+      "GetServerCertificateResponse": [
+        "ServerCertificate"
+      ],
+      "ServerCertificate": [
+        "ServerCertificateMetadata",
+        "CertificateBody",
+        "CertificateChain",
+        "Tags"
+      ],
+      "UpdateServerCertificateRequest": [
+        "ServerCertificateName",
+        "NewPath",
+        "NewServerCertificateName"
+      ],
+      "DeleteServerCertificateRequest": [
+        "ServerCertificateName"
+      ],
+      "ListServerCertificatesRequest": [
+        "PathPrefix",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListServerCertificatesResponse": [
+        "ServerCertificateMetadataList",
+        "IsTruncated",
+        "Marker"
+      ],
+      "TagServerCertificateRequest": [
+        "ServerCertificateName",
+        "Tags"
+      ],
+      "UntagServerCertificateRequest": [
+        "ServerCertificateName",
+        "TagKeys"
+      ],
+      "ListServerCertificateTagsRequest": [
+        "ServerCertificateName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListServerCertificateTagsResponse": [
+        "Tags",
+        "IsTruncated",
+        "Marker"
+      ],
+      "UploadSSHPublicKeyRequest": [
+        "UserName",
+        "SSHPublicKeyBody"
+      ],
+      "UploadSSHPublicKeyResponse": [
+        "SSHPublicKey"
+      ],
+      "SSHPublicKey": [
+        "UserName",
+        "SSHPublicKeyId",
+        "Fingerprint",
+        "SSHPublicKeyBody",
+        "Status",
+        "UploadDate"
+      ],
+      "GetSSHPublicKeyRequest": [
+        "UserName",
+        "SSHPublicKeyId",
+        "Encoding"
+      ],
+      "GetSSHPublicKeyResponse": [
+        "SSHPublicKey"
+      ],
+      "UpdateSSHPublicKeyRequest": [
+        "UserName",
+        "SSHPublicKeyId",
+        "Status"
+      ],
+      "DeleteSSHPublicKeyRequest": [
+        "UserName",
+        "SSHPublicKeyId"
+      ],
+      "ListSSHPublicKeysRequest": [
+        "UserName",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListSSHPublicKeysResponse": [
+        "SSHPublicKeys",
+        "IsTruncated",
+        "Marker"
+      ],
+      "SSHPublicKeyMetadata": [
+        "UserName",
+        "SSHPublicKeyId",
+        "Status",
+        "UploadDate"
+      ],
+      "CreateServiceSpecificCredentialRequest": [
+        "UserName",
+        "ServiceName",
+        "CredentialAgeDays"
+      ],
+      "CreateServiceSpecificCredentialResponse": [
+        "ServiceSpecificCredential"
+      ],
+      "ServiceSpecificCredential": [
+        "CreateDate",
+        "ExpirationDate",
+        "ServiceName",
+        "ServiceUserName",
+        "ServicePassword",
+        "ServiceSpecificCredentialId",
+        "UserName",
+        "Status"
+      ],
+      "ListServiceSpecificCredentialsRequest": [
+        "UserName",
+        "ServiceName",
+        "AllUsers",
+        "Marker",
+        "MaxItems"
+      ],
+      "ListServiceSpecificCredentialsResponse": [
+        "ServiceSpecificCredentials",
+        "Marker",
+        "IsTruncated"
+      ],
+      "ServiceSpecificCredentialMetadata": [
+        "UserName",
+        "Status",
+        "ServiceUserName",
+        "CreateDate",
+        "ExpirationDate",
+        "ServiceSpecificCredentialId",
+        "ServiceName"
+      ],
+      "UpdateServiceSpecificCredentialRequest": [
+        "UserName",
+        "ServiceSpecificCredentialId",
+        "Status"
+      ],
+      "ResetServiceSpecificCredentialRequest": [
+        "UserName",
+        "ServiceSpecificCredentialId"
+      ],
+      "ResetServiceSpecificCredentialResponse": [
+        "ServiceSpecificCredential"
+      ],
+      "DeleteServiceSpecificCredentialRequest": [
+        "UserName",
+        "ServiceSpecificCredentialId"
       ]
     }
   },

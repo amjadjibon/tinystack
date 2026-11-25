@@ -24,9 +24,12 @@ import (
 )
 
 const (
-	awsPartition = "aws"
-	kindRole     = "role"
-	kindPolicy   = "policy"
+	awsPartition   = "aws"
+	kindRole       = "role"
+	kindPolicy     = "policy"
+	kindSAML       = "saml-provider"
+	kindMFA        = "mfa"
+	kindServerCert = "server-certificate"
 
 	defaultPageSize    = 100
 	maxPageSize        = 1000
@@ -49,6 +52,13 @@ func New(store storage.Store) *Service {
 	return &Service{store: store, now: time.Now}
 }
 
+// UseClock sets the clock used for timestamps and TOTP validation.
+func (s *Service) UseClock(now func() time.Time) {
+	if now != nil {
+		s.now = now
+	}
+}
+
 type role struct {
 	ServicePrincipal string            `json:",omitempty"`
 	Boundary         string            `json:",omitempty"`
@@ -58,9 +68,11 @@ type role struct {
 	Path             string
 	AssumeRolePolicy string
 	Description      string `json:",omitempty"`
+	LastUsedRegion   string `json:",omitempty"`
 	permissions
 	MaxSessionDuration int64
 	CreatedAt          int64
+	LastUsedAt         int64 `json:",omitempty"`
 }
 
 type policy struct {

@@ -14,8 +14,9 @@ import (
 const kindUser = "user"
 
 type user struct {
-	Boundary string            `json:",omitempty"`
-	Tags     map[string]string `json:",omitempty"`
+	LoginProfile *loginProfile     `json:",omitempty"`
+	Boundary     string            `json:",omitempty"`
+	Tags         map[string]string `json:",omitempty"`
 	permissions
 	Name      string
 	ID        string
@@ -282,6 +283,18 @@ func (s *Service) UpdateUser(ctx context.Context, in *api.UpdateUserRequest) (*a
 				return renameErr
 			}
 
+			if renameErr := renameMFADevices(tx, m.AccountID, u.Name, *in.NewUserName); renameErr != nil {
+				return renameErr
+			}
+
+			if renameErr := renameSSHKeys(tx, m.AccountID, u.Name, *in.NewUserName); renameErr != nil {
+				return renameErr
+			}
+
+			if renameErr := renameServiceCreds(tx, m.AccountID, u.Name, *in.NewUserName); renameErr != nil {
+				return renameErr
+			}
+
 			tx.Delete(uk)
 			u.Name, uk = *in.NewUserName, target
 		}
@@ -310,6 +323,37 @@ func (s *Service) DeleteUser(ctx context.Context, in *api.DeleteUserRequest) (*a
 
 		if len(u.Keys) > 0 {
 			return deleteConflict("Cannot delete entity, must delete access keys first.")
+		}
+
+		if u.LoginProfile != nil {
+			return deleteConflict("Cannot delete entity, must delete login profile first.")
+		}
+
+		mfas, mfaErr := mfaDevicesOf(tx, m.AccountID, u.Name)
+		if mfaErr != nil {
+			return mfaErr
+		}
+
+		if len(mfas) > 0 {
+			return deleteConflict("Cannot delete entity, must deactivate MFA devices first.")
+		}
+
+		sshKeys, sshErr := sshKeysOf(tx, m.AccountID, u.Name)
+		if sshErr != nil {
+			return sshErr
+		}
+
+		if len(sshKeys) > 0 {
+			return deleteConflict("Cannot delete entity, must delete SSH public keys first.")
+		}
+
+		serviceCreds, credErr := serviceCredsOf(tx, m.AccountID, u.Name)
+		if credErr != nil {
+			return credErr
+		}
+
+		if len(serviceCreds) > 0 {
+			return deleteConflict("Cannot delete entity, must delete service-specific credentials first.")
 		}
 
 		if conflict := u.deleteConflict(); conflict != nil {

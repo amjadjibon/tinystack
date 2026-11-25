@@ -64,6 +64,7 @@ type Server struct {
 	// console serves endpoints on the console's listener only; see HandleConsole.
 	console          map[string]http.Handler
 	credentials      CredentialLookup
+	accessKeyUsage   func(context.Context, string, string, string) error
 	policies         PolicyLookup
 	deliveryTargets  map[string]DeliveryTarget
 	serviceSession   ServiceSession
@@ -250,6 +251,38 @@ func (s *Server) UseManagementEvents(record func(context.Context, *catalog.Manag
 // before serving requests.
 func (s *Server) UseCredentials(lookup CredentialLookup) {
 	s.credentials = lookup
+}
+
+// UseAccessKeyUsage records when an IAM user's access key authenticates a
+// request, with the target service name and region. Call it before serving
+// requests.
+func (s *Server) UseAccessKeyUsage(record func(ctx context.Context, accessKey, serviceName, region string) error) {
+	s.accessKeyUsage = record
+}
+
+func (s *Server) recordAccessKeyUsed(ctx context.Context, c *call) {
+	if s.accessKeyUsage == nil || c.credentials == nil || c.credentials.Token != "" ||
+		c.credentials.Principal.Kind != request.PrincipalUser || c.meta.AccessKey == "" {
+		return
+	}
+
+	serviceName := c.meta.Service
+	if c.service != nil && c.service.Name != "" {
+		serviceName = c.service.Name
+	}
+
+	if serviceName == "" {
+		serviceName = "N/A"
+	}
+
+	region := c.meta.Region
+	if region == "" {
+		region = "N/A"
+	}
+
+	if err := s.accessKeyUsage(context.WithoutCancel(ctx), c.meta.AccessKey, serviceName, region); err != nil {
+		s.logger.Error("record access key usage", "error", err)
+	}
 }
 
 // UseDocuments serves GET /<issuer>/.well-known/<name> through documents.
@@ -1068,6 +1101,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, c, err)
 		return
 	}
+
+	s.recordAccessKeyUsed(r.Context(), c)
 
 	if c.meta.Operation == opPostObject {
 		s.serveS3PostUpload(w, r, c)

@@ -77,7 +77,7 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 
 				out = append(out, catalog.Resource{
 					Type: kindProfile, Account: account, Name: p.Name, ARN: profileARN(account, p), Tags: p.Tags,
-					Details: map[string]any{detailPath: p.Path, "InstanceProfileId": p.ID, "Role": p.Role},
+					Details: map[string]any{detailPath: p.Path, "InstanceProfileId": p.ID, entityRole: p.Role},
 				})
 			case kindGroup:
 				g, _, err := storage.Read[group](tx, k)
@@ -88,6 +88,46 @@ func (s *Service) Resources(ctx context.Context) ([]catalog.Resource, error) {
 				out = append(out, catalog.Resource{
 					Type: kindGroup, Account: account, Name: g.Name, ARN: groupARN(account, g),
 					Details: g.details(map[string]any{detailPath: g.Path, "GroupId": g.ID, "Users": g.Users}),
+				})
+			case kindOIDC:
+				p, _, err := storage.Read[oidcProvider](tx, k)
+				if err != nil {
+					return err
+				}
+
+				out = append(out, catalog.Resource{
+					Type: kindOIDC, Account: account, Name: p.URL, ARN: arn(account, kindOIDC+"/"+p.URL), Tags: p.Tags,
+					Details: map[string]any{"Url": p.URL, "ClientIDList": p.ClientIDs},
+				})
+			case kindSAML:
+				p, _, err := storage.Read[samlProvider](tx, k)
+				if err != nil {
+					return err
+				}
+
+				out = append(out, catalog.Resource{
+					Type: kindSAML, Account: account, Name: p.Name, ARN: samlProviderARN(account, p.Name), Tags: p.Tags,
+					Details: map[string]any{"SAMLProviderUUID": p.UUID},
+				})
+			case kindMFA:
+				d, _, err := storage.Read[virtualMFA](tx, k)
+				if err != nil {
+					return err
+				}
+
+				out = append(out, catalog.Resource{
+					Type: kindMFA, Account: account, Name: d.Name, ARN: mfaARN(account, d.Path, d.Name), Tags: d.Tags,
+					Details: map[string]any{detailPath: d.Path, "UserName": d.UserName},
+				})
+			case kindServerCert:
+				c, _, err := storage.Read[serverCertificate](tx, k)
+				if err != nil {
+					return err
+				}
+
+				out = append(out, catalog.Resource{
+					Type: kindServerCert, Account: account, Name: c.Name, ARN: serverCertARN(account, c), Tags: c.Tags,
+					Details: map[string]any{detailPath: c.Path, "ServerCertificateId": c.ID},
 				})
 			}
 		}

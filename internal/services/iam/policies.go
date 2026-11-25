@@ -85,8 +85,41 @@ func countAttachment(tx storage.WriteTx, account string, ref policyRef, delta in
 	return policyARN(account, p), storage.Write(tx, pk, p)
 }
 
-// viewPolicy runs fn on the managed policy policyArn names.
-func (s *Service) viewPolicy(ctx context.Context, policyArn *string, fn func(account string, p *policy) error) error {
+// loadReadablePolicy returns either a customer-managed policy or a cataloged
+// AWS-managed policy (with live usage counts in account), along with its owner
+// account ("aws" for AWS-managed policies).
+func loadReadablePolicy(tx storage.ReadTx, account string, ref policyRef) (*policy, string, error) {
+	if ref.awsManaged() {
+		entry, ok := lookupAWSManaged(ref)
+		if !ok {
+			return nil, "", noSuchEntity("Policy %s was not found.", ref.arn())
+		}
+
+		attachments, boundaries, err := policyUsageCounts(tx, account)
+		if err != nil {
+			return nil, "", err
+		}
+
+		k := strings.ToLower(entry.arn())
+		return entry.asPolicy(attachments[k], boundaries[k]), awsPartition, nil
+	}
+
+	p, _, err := loadPolicy(tx, account, ref)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return p, account, nil
+}
+
+// viewPolicy runs fn on the managed policy policyArn names (including cataloged
+// AWS-managed policies when allowAWS is true).
+func (s *Service) viewPolicy(
+	ctx context.Context,
+	policyArn *string,
+	allowAWS bool,
+	fn func(owner string, p *policy) error,
+) error {
 	m, err := request.Global(ctx)
 	if err != nil {
 		return err
@@ -98,6 +131,15 @@ func (s *Service) viewPolicy(ctx context.Context, policyArn *string, fn func(acc
 	}
 
 	return s.store.View(ctx, func(tx storage.ReadTx) error {
+		if allowAWS {
+			p, owner, loadErr := loadReadablePolicy(tx, m.AccountID, ref)
+			if loadErr != nil {
+				return loadErr
+			}
+
+			return fn(owner, p)
+		}
+
 		p, _, loadErr := loadPolicy(tx, m.AccountID, ref)
 		if loadErr != nil {
 			return loadErr
@@ -259,8 +301,8 @@ func (s *Service) CreatePolicy(ctx context.Context, in *api.CreatePolicyRequest)
 
 func (s *Service) GetPolicy(ctx context.Context, in *api.GetPolicyRequest) (*api.GetPolicyResponse, error) {
 	out := &api.GetPolicyResponse{}
-	err := s.viewPolicy(ctx, in.PolicyArn, func(account string, p *policy) error {
-		out.Policy = policyOutput(account, p, true)
+	err := s.viewPolicy(ctx, in.PolicyArn, true, func(owner string, p *policy) error {
+		out.Policy = policyOutput(owner, p, true)
 		return nil
 	})
 	if err != nil {
@@ -305,8 +347,29 @@ func (s *Service) DeletePolicy(ctx context.Context, in *api.DeletePolicyRequest)
 	return &api.DeletePolicyOutput{}, nil
 }
 
-// ListPolicies lists the caller's managed policies. AWS managed policies are not
-// modeled, so the AWS scope is always empty.
+const (
+	usagePermissionsPolicy   = "PermissionsPolicy"
+	usagePermissionsBoundary = "PermissionsBoundary"
+)
+
+type listedPolicy struct {
+	policy *policy
+	owner  string
+	arn    string
+}
+
+func checkPolicyUsageFilter(filter *string) (string, error) {
+	usage := common.Value(filter)
+	if usage != "" && usage != usagePermissionsPolicy && usage != usagePermissionsBoundary {
+		return "", validation("PolicyUsageFilter must be PermissionsPolicy or PermissionsBoundary")
+	}
+
+	return usage, nil
+}
+
+// ListPolicies lists the caller's customer-managed policies and TinyStack's
+// local AWS-managed policy catalog according to Scope, PathPrefix, OnlyAttached,
+// and PolicyUsageFilter.
 func (s *Service) ListPolicies(ctx context.Context, in *api.ListPoliciesRequest) (*api.ListPoliciesResponse, error) {
 	m, err := request.Global(ctx)
 	if err != nil {
@@ -318,36 +381,82 @@ func (s *Service) ListPolicies(ctx context.Context, in *api.ListPoliciesRequest)
 		return nil, validation("Scope must be All, AWS, or Local")
 	}
 
+	usage, err := checkPolicyUsageFilter(in.PolicyUsageFilter)
+	if err != nil {
+		return nil, err
+	}
+
 	prefix, err := checkPath(in.PathPrefix, policyPath)
 	if err != nil {
 		return nil, err
 	}
 
-	var policies []*policy
+	onlyAttached := common.Value(in.OnlyAttached)
+	matches := func(p *policy) bool {
+		if !strings.HasPrefix(p.Path, prefix) {
+			return false
+		}
+
+		switch usage {
+		case usagePermissionsBoundary:
+			return p.BoundaryUses > 0
+		case usagePermissionsPolicy:
+			return !onlyAttached || p.Attachments > 0
+		default:
+			return !onlyAttached || p.Attachments > 0 || p.BoundaryUses > 0
+		}
+	}
+
+	var policies []listedPolicy
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
-		all, listErr := list[policy](tx, m.AccountID, kindPolicy)
-		for _, p := range all {
-			if scope != "AWS" && strings.HasPrefix(p.Path, prefix) &&
-				(!common.Value(in.OnlyAttached) || p.Attachments > 0) {
-				policies = append(policies, p)
+		if scope != "AWS" {
+			all, listErr := list[policy](tx, m.AccountID, kindPolicy)
+			if listErr != nil {
+				return listErr
+			}
+
+			for _, p := range all {
+				if matches(p) {
+					policies = append(
+						policies,
+						listedPolicy{policy: p, owner: m.AccountID, arn: policyARN(m.AccountID, p)},
+					)
+				}
 			}
 		}
 
-		return listErr
+		if scope != "Local" {
+			awsPolicies, listErr := awsManagedPolicies(tx, m.AccountID)
+			if listErr != nil {
+				return listErr
+			}
+
+			for _, p := range awsPolicies {
+				if matches(p) {
+					policies = append(
+						policies,
+						listedPolicy{policy: p, owner: awsPartition, arn: policyARN(awsPartition, p)},
+					)
+				}
+			}
+		}
+
+		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	selected, truncated, next, err := page(policies, func(p *policy) string { return strings.ToLower(p.Name) },
-		in.Marker, in.MaxItems)
+	sortKey := func(p listedPolicy) string { return strings.ToLower(p.policy.Name) + "\x00" + strings.ToLower(p.arn) }
+	slices.SortFunc(policies, func(a, b listedPolicy) int { return strings.Compare(sortKey(a), sortKey(b)) })
+	selected, truncated, next, err := page(policies, sortKey, in.Marker, in.MaxItems)
 	if err != nil {
 		return nil, err
 	}
 
 	out := &api.ListPoliciesResponse{Policies: []api.Policy{}, IsTruncated: truncated, Marker: next}
 	for _, p := range selected {
-		out.Policies = append(out.Policies, *policyOutput(m.AccountID, p, false))
+		out.Policies = append(out.Policies, *policyOutput(p.owner, p.policy, false))
 	}
 
 	return out, nil
@@ -395,8 +504,8 @@ func (s *Service) GetPolicyVersion(
 	}
 
 	out := &api.GetPolicyVersionResponse{}
-	err := s.viewPolicy(ctx, in.PolicyArn, func(account string, p *policy) error {
-		i, err := p.version(account, *in.VersionId)
+	err := s.viewPolicy(ctx, in.PolicyArn, true, func(owner string, p *policy) error {
+		i, err := p.version(owner, *in.VersionId)
 		if err != nil {
 			return err
 		}
@@ -449,7 +558,7 @@ func (s *Service) ListPolicyVersions(
 	in *api.ListPolicyVersionsRequest,
 ) (*api.ListPolicyVersionsResponse, error) {
 	out := &api.ListPolicyVersionsResponse{Versions: []api.PolicyVersion{}}
-	err := s.viewPolicy(ctx, in.PolicyArn, func(_ string, p *policy) error {
+	err := s.viewPolicy(ctx, in.PolicyArn, true, func(_ string, p *policy) error {
 		// Versions are kept in creation order; the zero-padded number orders pages.
 		number := func(v policyVersion) string {
 			n, _ := strconv.ParseInt(strings.TrimPrefix(v.ID, "v"), 10, 64)
@@ -543,7 +652,7 @@ func (s *Service) ListPolicyTags(
 	in *api.ListPolicyTagsRequest,
 ) (*api.ListPolicyTagsResponse, error) {
 	out := &api.ListPolicyTagsResponse{}
-	err := s.viewPolicy(ctx, in.PolicyArn, func(_ string, p *policy) error {
+	err := s.viewPolicy(ctx, in.PolicyArn, false, func(_ string, p *policy) error {
 		var err error
 		out.Tags, out.IsTruncated, out.Marker, err = page(
 			tagList(p.Tags), func(t api.Tag) string { return *t.Key }, in.Marker, in.MaxItems)

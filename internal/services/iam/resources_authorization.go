@@ -22,7 +22,11 @@ func (s *Service) AuthorizationResources(
 
 	kind, name := "", ""
 	for _, candidate := range []struct{ kind, field string }{
-		{kindUser, "UserName"}, {kindRole, "RoleName"}, {kindGroup, "GroupName"},
+		{kindUser, "UserName"},
+		{kindRole, "RoleName"},
+		{kindGroup, "GroupName"},
+		{kindProfile, "InstanceProfileName"},
+		{kindServerCert, "ServerCertificateName"},
 	} {
 		if value := catalog.InputString(input, candidate.field); value != "" {
 			kind, name = candidate.kind, value
@@ -38,28 +42,26 @@ func (s *Service) AuthorizationResources(
 		kind, name = kindPolicy, catalog.InputString(input, "PolicyName")
 	}
 
+	if operation == "CreateSAMLProvider" {
+		kind, name = kindSAML, catalog.InputString(input, "Name")
+	}
+
+	if operation == "CreateVirtualMFADevice" {
+		kind, name = kindMFA, catalog.InputString(input, "VirtualMFADeviceName")
+	}
+
 	if kind == "" && m.Principal != nil && m.Principal.Kind == request.PrincipalUser &&
-		(operation == "GetUser" || strings.Contains(operation, "AccessKey")) {
+		(operation == "GetUser" || operation == "ChangePassword" ||
+			strings.Contains(operation, "AccessKey") ||
+			strings.Contains(operation, "MFADevice") ||
+			strings.Contains(operation, "SSHPublicKey") ||
+			strings.Contains(operation, "ServiceSpecificCredential")) {
 		kind, name = kindUser, m.Principal.Name
 	}
 
 	if kind == "" {
-		if policyARN := catalog.InputString(input, "PolicyArn"); policyARN != "" {
-			target := catalog.AuthorizationResource{ARN: policyARN, TagsKnown: true}
-			ref, parseErr := parsePolicyARN(policyARN)
-			if parseErr != nil {
-				return nil, parseErr
-			}
-
-			readErr := s.store.View(ctx, func(tx storage.ReadTx) error {
-				stored, _, readErr := storage.Read[policy](tx, key(m.AccountID, kindPolicy, ref.name))
-				if stored != nil {
-					target.Tags = common.CloneTags(stored.Tags)
-				}
-
-				return readErr
-			})
-			return []catalog.AuthorizationResource{target}, readErr
+		if res, ok, authErr := s.authorizationByARN(ctx, m.AccountID, input); ok || authErr != nil {
+			return res, authErr
 		}
 
 		return nil, nil
@@ -90,7 +92,29 @@ func (s *Service) AuthorizationResources(
 			}
 
 			target.TagsKnown = true
-		case kindPolicy:
+		case kindPolicy, kindSAML, kindMFA:
+			target.TagsKnown = true
+		case kindProfile:
+			p, _, readErr := storage.Read[profile](tx, key(m.AccountID, kind, name))
+			if readErr != nil {
+				return readErr
+			}
+
+			if p != nil {
+				target.ARN, target.Tags = profileARN(m.AccountID, p), common.CloneTags(p.Tags)
+			}
+
+			target.TagsKnown = true
+		case kindServerCert:
+			c, _, readErr := storage.Read[serverCertificate](tx, key(m.AccountID, kind, name))
+			if readErr != nil {
+				return readErr
+			}
+
+			if c != nil {
+				target.ARN, target.Tags = serverCertARN(m.AccountID, c), common.CloneTags(c.Tags)
+			}
+
 			target.TagsKnown = true
 		case kindGroup:
 			g, _, readErr := storage.Read[group](tx, key(m.AccountID, kind, name))
@@ -105,11 +129,73 @@ func (s *Service) AuthorizationResources(
 
 		return nil
 	})
-	if strings.HasPrefix(operation, "Create") {
+	if strings.HasPrefix(operation, "Create") || operation == "UploadServerCertificate" {
 		if path := catalog.InputString(input, "Path"); path != "" {
 			target.ARN = arn(m.AccountID, kind+path+name)
 		}
 	}
 
 	return []catalog.AuthorizationResource{target}, err
+}
+
+func (s *Service) authorizationByARN(
+	ctx context.Context,
+	account string,
+	input any,
+) ([]catalog.AuthorizationResource, bool, error) {
+	if policyARN := catalog.InputString(input, "PolicyArn"); policyARN != "" {
+		target := catalog.AuthorizationResource{ARN: policyARN, TagsKnown: true}
+		ref, parseErr := parsePolicyARN(policyARN)
+		if parseErr != nil {
+			return nil, true, parseErr
+		}
+
+		readErr := s.store.View(ctx, func(tx storage.ReadTx) error {
+			stored, _, readErr := storage.Read[policy](tx, key(account, kindPolicy, ref.name))
+			if stored != nil {
+				target.Tags = common.CloneTags(stored.Tags)
+			}
+
+			return readErr
+		})
+		return []catalog.AuthorizationResource{target}, true, readErr
+	}
+
+	if samlARN := catalog.InputString(input, "SAMLProviderArn"); samlARN != "" {
+		target := catalog.AuthorizationResource{ARN: samlARN, TagsKnown: true}
+		readErr := s.store.View(ctx, func(tx storage.ReadTx) error {
+			if p, _, loadErr := loadSAMLProvider(tx, account, &samlARN); loadErr == nil && p != nil {
+				target.Tags = common.CloneTags(p.Tags)
+			}
+
+			return nil
+		})
+		return []catalog.AuthorizationResource{target}, true, readErr
+	}
+
+	if oidcARN := catalog.InputString(input, "OpenIDConnectProviderArn"); oidcARN != "" {
+		target := catalog.AuthorizationResource{ARN: oidcARN, TagsKnown: true}
+		readErr := s.store.View(ctx, func(tx storage.ReadTx) error {
+			if p, _, loadErr := loadProvider(tx, account, &oidcARN); loadErr == nil && p != nil {
+				target.Tags = common.CloneTags(p.Tags)
+			}
+
+			return nil
+		})
+		return []catalog.AuthorizationResource{target}, true, readErr
+	}
+
+	if serial := catalog.InputString(input, "SerialNumber"); serial != "" {
+		target := catalog.AuthorizationResource{ARN: serial, TagsKnown: true}
+		readErr := s.store.View(ctx, func(tx storage.ReadTx) error {
+			if d, _, loadErr := loadVirtualMFA(tx, account, &serial); loadErr == nil && d != nil {
+				target.Tags = common.CloneTags(d.Tags)
+			}
+
+			return nil
+		})
+		return []catalog.AuthorizationResource{target}, true, readErr
+	}
+
+	return nil, false, nil
 }

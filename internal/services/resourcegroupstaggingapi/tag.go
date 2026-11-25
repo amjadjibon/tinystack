@@ -184,6 +184,14 @@ var iamTaggers = map[string]tagger{
 	"policy": operations("iam", "TagPolicy", "UntagPolicy", byARN("PolicyArn"), "Tags", pairs, "TagKeys", names),
 	"instance-profile": operations("iam", "TagInstanceProfile", "UntagInstanceProfile",
 		byName("InstanceProfileName", nil), "Tags", pairs, "TagKeys", names),
+	"oidc-provider": operations("iam", "TagOpenIDConnectProvider", "UntagOpenIDConnectProvider",
+		byARN("OpenIDConnectProviderArn"), "Tags", pairs, "TagKeys", names),
+	"saml-provider": operations("iam", "TagSAMLProvider", "UntagSAMLProvider",
+		byARN("SAMLProviderArn"), "Tags", pairs, "TagKeys", names),
+	"mfa": operations("iam", "TagMFADevice", "UntagMFADevice",
+		byARN("SerialNumber"), "Tags", pairs, "TagKeys", names),
+	"server-certificate": operations("iam", "TagServerCertificate", "UntagServerCertificate",
+		byName("ServerCertificateName", nil), "Tags", pairs, "TagKeys", names),
 }
 
 // errUntaggable reports a resource whose service TinyStack cannot tag through this API.

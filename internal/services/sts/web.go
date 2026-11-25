@@ -218,6 +218,10 @@ func (s *Service) AssumeRoleWithWebIdentity(
 		return nil
 	})
 
+	if err == nil {
+		_ = s.roles.RecordRoleUsed(ctx, role.Account, role.Name, role.ID, roleUsageRegion(ctx, ""))
+	}
+
 	return out, err
 }
 

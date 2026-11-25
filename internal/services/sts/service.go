@@ -345,6 +345,9 @@ func (s *Service) AssumeRole(ctx context.Context, in *api.AssumeRoleRequest) (*a
 
 		return nil
 	})
+	if err == nil {
+		_ = s.roles.RecordRoleUsed(ctx, role.Account, role.Name, role.ID, roleUsageRegion(ctx, m.Region))
+	}
 
 	return out, err
 }
@@ -384,6 +387,9 @@ func (s *Service) AssumeRoleForService(
 		expires = *credentials.Expiration
 		return nil
 	})
+	if err == nil {
+		_ = s.roles.RecordRoleUsed(ctx, role.Account, role.Name, role.ID, roleUsageRegion(ctx, ""))
+	}
 
 	return accessKey, secret, token, expires, err
 }
@@ -428,6 +434,7 @@ func (s *Service) ServiceSession(
 	issued := &session{
 		AccountID: role.Account, RoleARN: role.ARN, RoleName: role.Name, RoleID: role.ID, Name: fitSessionName(name),
 	}
+	_ = s.roles.RecordRoleUsed(ctx, role.Account, role.Name, role.ID, roleUsageRegion(ctx, ""))
 	return issued.principal(), nil
 }
 
@@ -521,8 +528,23 @@ func (s *Service) assumeForPerson(
 
 		return nil
 	})
+	if err == nil {
+		_ = s.roles.RecordRoleUsed(ctx, role.Account, role.Name, role.ID, roleUsageRegion(ctx, ""))
+	}
 
 	return out, err
+}
+
+func roleUsageRegion(ctx context.Context, fallback string) string {
+	if fallback != "" {
+		return fallback
+	}
+
+	if m, err := request.Global(ctx); err == nil && m.Region != "" {
+		return m.Region
+	}
+
+	return "us-east-1"
 }
 
 // GetSessionToken issues temporary credentials that act as the caller: an

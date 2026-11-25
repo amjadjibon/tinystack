@@ -367,6 +367,8 @@ func (s *Server) caller(w http.ResponseWriter, r *http.Request) *execute.Caller 
 		return nil
 	}
 
+	s.recordAccessKeyUsed(r.Context(), c)
+
 	caller := &execute.Caller{AccountID: c.meta.AccountID, Region: c.meta.Region, AccessKey: c.meta.AccessKey}
 	if c.credentials != nil {
 		caller.CognitoIdentity = c.credentials.CognitoIdentity

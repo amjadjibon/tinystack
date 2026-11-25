@@ -318,6 +318,73 @@ func (s *Service) UpdateOpenIDConnectProviderThumbprint(
 	return &api.UpdateOpenIDConnectProviderThumbprintOutput{}, nil
 }
 
+func (s *Service) TagOpenIDConnectProvider(
+	ctx context.Context,
+	in *api.TagOpenIDConnectProviderRequest,
+) (*api.TagOpenIDConnectProviderOutput, error) {
+	add, err := tagMap(in.Tags)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.updateProvider(ctx, in.OpenIDConnectProviderArn, func(p *oidcProvider) error {
+		merged, mergeErr := tagging.Merge(p.Tags, add)
+		if mergeErr != nil {
+			return tagError(mergeErr)
+		}
+
+		p.Tags = merged
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.TagOpenIDConnectProviderOutput{}, nil
+}
+
+func (s *Service) UntagOpenIDConnectProvider(
+	ctx context.Context,
+	in *api.UntagOpenIDConnectProviderRequest,
+) (*api.UntagOpenIDConnectProviderOutput, error) {
+	err := s.updateProvider(ctx, in.OpenIDConnectProviderArn, func(p *oidcProvider) error {
+		p.Tags = tagging.Remove(p.Tags, in.TagKeys)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.UntagOpenIDConnectProviderOutput{}, nil
+}
+
+func (s *Service) ListOpenIDConnectProviderTags(
+	ctx context.Context,
+	in *api.ListOpenIDConnectProviderTagsRequest,
+) (*api.ListOpenIDConnectProviderTagsResponse, error) {
+	m, err := request.Global(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := &api.ListOpenIDConnectProviderTagsResponse{}
+	err = s.store.View(ctx, func(tx storage.ReadTx) error {
+		p, _, loadErr := loadProvider(tx, m.AccountID, in.OpenIDConnectProviderArn)
+		if loadErr != nil {
+			return loadErr
+		}
+
+		out.Tags, out.IsTruncated, out.Marker, loadErr = page(
+			tagList(p.Tags), func(t api.Tag) string { return *t.Key }, in.Marker, in.MaxItems)
+		return loadErr
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
 // Provider is what STS needs to know to accept a web identity token.
 type Provider struct {
 	ARN       string

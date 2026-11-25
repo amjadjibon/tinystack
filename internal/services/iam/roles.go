@@ -75,6 +75,40 @@ func (s *Service) updateRole(
 	})
 }
 
+func roleLastUsedOutput(r *role) *api.RoleLastUsed {
+	if r.LastUsedAt == 0 {
+		return nil
+	}
+
+	out := &api.RoleLastUsed{LastUsedDate: millis(r.LastUsedAt)}
+	if r.LastUsedRegion != "" {
+		out.Region = new(r.LastUsedRegion)
+	}
+
+	return out
+}
+
+// RecordRoleUsed records the latest assumption time and region for a role.
+// Called by STS after issuing credentials, outside any storage transaction.
+func (s *Service) RecordRoleUsed(ctx context.Context, account, name, roleID, region string) error {
+	if account == "" || name == "" {
+		return nil
+	}
+
+	now := s.now().UnixMilli()
+	return s.store.Update(ctx, func(tx storage.WriteTx) error {
+		rk := key(account, kindRole, name)
+		r, ok, err := storage.Read[role](tx, rk)
+		if err != nil || !ok || (roleID != "" && r.ID != roleID) {
+			return err
+		}
+
+		r.LastUsedAt = now
+		r.LastUsedRegion = region
+		return storage.Write(tx, rk, r)
+	})
+}
+
 // roleOutput describes a role. Tags are only in single-role responses, as in AWS.
 func roleOutput(account string, r *role, tags bool) *api.Role {
 	out := &api.Role{
@@ -86,6 +120,7 @@ func roleOutput(account string, r *role, tags bool) *api.Role {
 		CreateDate:               millis(r.CreatedAt),
 		AssumeRolePolicyDocument: encodeDocument(r.AssumeRolePolicy),
 		MaxSessionDuration:       new(r.MaxSessionDuration),
+		RoleLastUsed:             roleLastUsedOutput(r),
 	}
 	if r.Description != "" {
 		out.Description = new(r.Description)

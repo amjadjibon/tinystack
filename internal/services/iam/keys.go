@@ -24,11 +24,14 @@ const (
 
 // accessKey is a user's long-term credential.
 type accessKey struct {
-	Account   string
-	UserName  string
-	Secret    string
-	Status    string
-	CreatedAt int64
+	Account         string
+	UserName        string
+	Secret          string
+	Status          string
+	LastUsedService string `json:",omitempty"`
+	LastUsedRegion  string `json:",omitempty"`
+	CreatedAt       int64
+	LastUsedAt      int64 `json:",omitempty"`
 }
 
 func noSuchKey(id string) error {
@@ -256,8 +259,30 @@ func (s *Service) DeleteAccessKey(
 	return &api.DeleteAccessKeyOutput{}, nil
 }
 
-// GetAccessKeyLastUsed names the key's user. TinyStack does not record when a
-// key is used, so it reports the key as never used, as IAM does for a new key.
+// RecordAccessKeyUsed records the latest authenticated request made with an
+// IAM user access key. Safe to call concurrently from the gateway outside any
+// storage transaction.
+func (s *Service) RecordAccessKeyUsed(ctx context.Context, accessKeyID, serviceName, region string) error {
+	if accessKeyID == "" {
+		return nil
+	}
+
+	now := s.now().UnixMilli()
+	return s.store.Update(ctx, func(tx storage.WriteTx) error {
+		k, ok, err := storage.Read[accessKey](tx, accessKeyPrefix+accessKeyID)
+		if err != nil || !ok {
+			return err
+		}
+
+		k.LastUsedAt = now
+		k.LastUsedService = serviceName
+		k.LastUsedRegion = region
+		return storage.Write(tx, accessKeyPrefix+accessKeyID, k)
+	})
+}
+
+// GetAccessKeyLastUsed returns the key's owner and last recorded usage (or
+// "N/A" with nil LastUsedDate when never used).
 func (s *Service) GetAccessKeyLastUsed(
 	ctx context.Context,
 	in *api.GetAccessKeyLastUsedRequest,
@@ -271,7 +296,7 @@ func (s *Service) GetAccessKeyLastUsed(
 		return nil, guardErr
 	}
 
-	var name string
+	var stored *accessKey
 	err = s.store.View(ctx, func(tx storage.ReadTx) error {
 		k, ok, readErr := storage.Read[accessKey](tx, accessKeyPrefix+*in.AccessKeyId)
 		if readErr != nil {
@@ -282,15 +307,27 @@ func (s *Service) GetAccessKeyLastUsed(
 			return noSuchKey(*in.AccessKeyId)
 		}
 
-		name = k.UserName
+		stored = k
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	lastUsed := &api.AccessKeyLastUsed{ServiceName: new("N/A"), Region: new("N/A")}
+	if stored.LastUsedAt > 0 {
+		lastUsed.LastUsedDate = millis(stored.LastUsedAt)
+		if stored.LastUsedService != "" {
+			lastUsed.ServiceName = new(stored.LastUsedService)
+		}
+
+		if stored.LastUsedRegion != "" {
+			lastUsed.Region = new(stored.LastUsedRegion)
+		}
+	}
+
 	return &api.GetAccessKeyLastUsedResponse{
-		UserName:          &name,
-		AccessKeyLastUsed: &api.AccessKeyLastUsed{ServiceName: new("N/A"), Region: new("N/A")},
+		UserName:          new(stored.UserName),
+		AccessKeyLastUsed: lastUsed,
 	}, nil
 }
