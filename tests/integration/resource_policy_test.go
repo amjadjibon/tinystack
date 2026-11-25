@@ -289,3 +289,116 @@ func TestResourcePolicyQueueRootRecovery(t *testing.T) {
 	_, err = root.SendMessage(ctx, &sqs.SendMessageInput{QueueUrl: queue.QueueUrl, MessageBody: new("allowed")})
 	mustAuthorize(t, err)
 }
+
+func TestSQSCrossAccountGetQueueUrl(t *testing.T) {
+	t.Run("enforce", func(t *testing.T) {
+		cfg := testConfig()
+		cfg.Identity.Accounts["test"] = cfg.Defaults.Account
+		cfg.Identity.Accounts["other"] = "222222222222"
+		cfg.Identity.Authorization = config.AuthorizationEnforce
+		s := serverConfig(t, cfg, &fakeRuntime{})
+		ctx := context.Background()
+		key := authorizationUser(t, s)
+		owner := sqsClient(s, "other")
+		q, err := owner.CreateQueue(ctx, &sqs.CreateQueueInput{QueueName: new("shared-queue")})
+		mustAuthorize(t, err)
+		arn := "arn:aws:sqs:us-east-1:222222222222:shared-queue"
+		alice := sqsClient(s, aws.ToString(key.AccessKeyId))
+
+		getURL := func() (*sqs.GetQueueUrlOutput, error) {
+			return alice.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+				QueueName:              new("shared-queue"),
+				QueueOwnerAWSAccountId: new("222222222222"),
+			})
+		}
+
+		// Denied without identity and resource policy.
+		_, err = getURL()
+		wantCode(t, err, "AccessDeniedException")
+
+		// Identity policy alone is insufficient cross-account.
+		identity := fmt.Sprintf(`{"Statement":{"Effect":"Allow","Action":"sqs:GetQueueUrl","Resource":%q}}`, arn)
+		authorizationPolicy(t, s, identity)
+		_, err = getURL()
+		wantCode(t, err, "AccessDeniedException")
+
+		// Queue policy granting alice GetQueueUrl allows the cross-account lookup.
+		policy := fmt.Sprintf(
+			`{"Statement":{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::%s:user/apps/alice"},`+
+				`"Action":"sqs:GetQueueUrl","Resource":%q}}`,
+			cfg.Defaults.Account,
+			arn,
+		)
+		_, err = owner.SetQueueAttributes(ctx, &sqs.SetQueueAttributesInput{
+			QueueUrl:   q.QueueUrl,
+			Attributes: map[string]string{"Policy": policy},
+		})
+		mustAuthorize(t, err)
+
+		got, err := getURL()
+		mustAuthorize(t, err)
+		if aws.ToString(got.QueueUrl) != aws.ToString(q.QueueUrl) {
+			t.Fatalf("QueueUrl = %q, want %q", aws.ToString(got.QueueUrl), aws.ToString(q.QueueUrl))
+		}
+
+		// Explicit deny on queue policy blocks cross-account GetQueueUrl.
+		denyPolicy := fmt.Sprintf(
+			`{"Statement":{"Effect":"Deny","Principal":"*","Action":"sqs:GetQueueUrl","Resource":%q}}`,
+			arn,
+		)
+		_, err = owner.SetQueueAttributes(ctx, &sqs.SetQueueAttributesInput{
+			QueueUrl:   q.QueueUrl,
+			Attributes: map[string]string{"Policy": denyPolicy},
+		})
+		mustAuthorize(t, err)
+		_, err = getURL()
+		wantCode(t, err, "AccessDeniedException")
+	})
+
+	t.Run("soft", func(t *testing.T) {
+		cfg := testConfig()
+		cfg.Identity.Accounts["test"] = cfg.Defaults.Account
+		cfg.Identity.Accounts["other"] = "222222222222"
+		cfg.Identity.Authorization = config.AuthorizationSoft
+		s := serverConfig(t, cfg, &fakeRuntime{})
+		ctx := context.Background()
+		owner := sqsClient(s, "other")
+		q, err := owner.CreateQueue(ctx, &sqs.CreateQueueInput{QueueName: new("soft-shared")})
+		mustAuthorize(t, err)
+
+		got, err := sqsClient(s, "test").GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName:              new("soft-shared"),
+			QueueOwnerAWSAccountId: new("222222222222"),
+		})
+		mustAuthorize(t, err)
+		if aws.ToString(got.QueueUrl) != aws.ToString(q.QueueUrl) {
+			t.Fatalf("QueueUrl = %q, want %q", aws.ToString(got.QueueUrl), aws.ToString(q.QueueUrl))
+		}
+
+		response, err := http.Get(s.URL + "/_tinystack/requests")
+		mustAuthorize(t, err)
+		defer response.Body.Close()
+		var records struct {
+			Requests []gateway.Record `json:"requests"`
+		}
+
+		mustAuthorize(t, json.NewDecoder(response.Body).Decode(&records))
+		found := false
+		for _, record := range records.Requests {
+			if record.Operation != "GetQueueUrl" {
+				continue
+			}
+
+			found = true
+			if record.Authorization == nil || record.Authorization.Allowed || len(record.Authorization.Checks) == 0 ||
+				!record.Authorization.Checks[0].CrossAccount ||
+				record.Authorization.Checks[0].Resource != "arn:aws:sqs:us-east-1:222222222222:soft-shared" {
+				t.Fatalf("unexpected soft authorization record: %+v", record.Authorization)
+			}
+		}
+
+		if !found {
+			t.Fatal("missing GetQueueUrl request record")
+		}
+	})
+}

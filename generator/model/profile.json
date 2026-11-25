@@ -23527,23 +23527,31 @@
         "MaxResults"
       ],
       "GetQueueUrlRequest": [
-        "QueueName"
+        "QueueName",
+        "QueueOwnerAWSAccountId"
       ],
       "SendMessageRequest": [
         "QueueUrl",
         "MessageBody",
         "DelaySeconds",
         "MessageAttributes",
+        "MessageSystemAttributes",
         "MessageDeduplicationId",
         "MessageGroupId"
       ],
       "SendMessageResult": [
         "MD5OfMessageBody",
         "MD5OfMessageAttributes",
+        "MD5OfMessageSystemAttributes",
         "MessageId",
         "SequenceNumber"
       ],
       "MessageAttributeValue": [
+        "StringValue",
+        "BinaryValue",
+        "DataType"
+      ],
+      "MessageSystemAttributeValue": [
         "StringValue",
         "BinaryValue",
         "DataType"
@@ -23585,6 +23593,7 @@
         "MessageBody",
         "DelaySeconds",
         "MessageAttributes",
+        "MessageSystemAttributes",
         "MessageDeduplicationId",
         "MessageGroupId"
       ],
@@ -23597,6 +23606,7 @@
         "MessageId",
         "MD5OfMessageBody",
         "MD5OfMessageAttributes",
+        "MD5OfMessageSystemAttributes",
         "SequenceNumber"
       ],
       "BatchResultErrorEntry": [

@@ -109,8 +109,8 @@ func movable(t *moveTask, msg *message, now int64) bool {
 }
 
 // StartMessageMoveTask starts moving the visible messages of a dead-letter
-// queue to a destination queue, or back to the queues they came from. Only
-// standard queues are supported, and a source has one running task at a time.
+// queue to a destination queue of the same type, or back to the queues they
+// came from. A source has one running task at a time.
 func (s *Service) StartMessageMoveTask(
 	ctx context.Context,
 	in *api.StartMessageMoveTaskRequest,
@@ -152,10 +152,6 @@ func (s *Service) StartMessageMoveTask(
 			return resourceNotFound("The resource that you specified for the SourceArn parameter doesn't exist.")
 		}
 
-		if q.Settings.FifoQueue {
-			return unsupported("TinyStack supports message move tasks only for standard queues.")
-		}
-
 		sources, sourcesErr := deadLetterSources(tx, source)
 		if sourcesErr != nil {
 			return sourcesErr
@@ -172,8 +168,8 @@ func (s *Service) StartMessageMoveTask(
 					"doesn't exist.")
 			}
 
-			if target.Settings.FifoQueue {
-				return unsupported("TinyStack supports message move tasks only for standard queues.")
+			if target.Settings.FifoQueue != q.Settings.FifoQueue {
+				return invalid("The source and destination queues must be of the same type.")
 			}
 		}
 
@@ -198,8 +194,22 @@ func (s *Service) StartMessageMoveTask(
 		}
 
 		q.purge(now)
+		var blocked map[string]bool
+		if q.Settings.FifoQueue {
+			blocked = q.inFlightGroups(now)
+		}
+
 		for i := range q.Messages {
-			if movable(t, &q.Messages[i], now) {
+			msg := &q.Messages[i]
+			if q.Settings.FifoQueue && msg.VisibleAt > now {
+				if msg.GroupID != "" {
+					blocked[msg.GroupID] = true
+				}
+
+				continue
+			}
+
+			if !blocked[msg.GroupID] && movable(t, msg, now) {
 				t.ToMove++
 			}
 		}
@@ -371,10 +381,19 @@ func (s *Service) move(ctx context.Context, key string) error {
 		budget := 1 + rate*(now-t.StartedAt)/1000 - t.Moved
 		targets := map[string]*queue{}
 		q.purge(now)
+		var blocked map[string]bool
+		if q.Settings.FifoQueue {
+			blocked = q.inFlightGroups(now)
+		}
+
 		kept := q.Messages[:0]
 		for i := range q.Messages {
 			msg := q.Messages[i]
-			if budget <= 0 || t.Moved >= t.ToMove || !movable(t, &msg, now) {
+			if budget <= 0 || t.Moved >= t.ToMove || !movable(t, &msg, now) || blocked[msg.GroupID] {
+				if q.Settings.FifoQueue && msg.VisibleAt > now && msg.GroupID != "" {
+					blocked[msg.GroupID] = true
+				}
+
 				kept = append(kept, msg)
 				continue
 			}
@@ -394,13 +413,22 @@ func (s *Service) move(ctx context.Context, key string) error {
 				return storage.Write(tx, key, t)
 			}
 
-			if !exists {
+			if !exists || target.Settings.FifoQueue != q.Settings.FifoQueue {
+				if q.Settings.FifoQueue && msg.GroupID != "" {
+					blocked[msg.GroupID] = true
+				}
+
 				kept = append(kept, msg)
 				continue
 			}
 
 			msg.SourceArn, msg.Receipt = "", ""
 			msg.ReceiveCount, msg.FirstReceivedAt, msg.VisibleAt = 0, 0, now
+			if target.Settings.FifoQueue {
+				target.Sequence++
+				msg.Sequence = fmt.Sprintf("%020d", target.Sequence)
+			}
+
 			target.Messages = append(target.Messages, msg)
 			t.Moved++
 			budget--
@@ -468,8 +496,22 @@ func moveTarget(tx storage.ReadTx, targets map[string]*queue, arn string) (*queu
 }
 
 func anyMovable(t *moveTask, q *queue, now int64) bool {
+	var blocked map[string]bool
+	if q.Settings.FifoQueue {
+		blocked = q.inFlightGroups(now)
+	}
+
 	for i := range q.Messages {
-		if movable(t, &q.Messages[i], now) {
+		msg := &q.Messages[i]
+		if q.Settings.FifoQueue && msg.VisibleAt > now {
+			if msg.GroupID != "" {
+				blocked[msg.GroupID] = true
+			}
+
+			continue
+		}
+
+		if !blocked[msg.GroupID] && movable(t, msg, now) {
 			return true
 		}
 	}

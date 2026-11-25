@@ -103,6 +103,12 @@ func (s *Service) SendMessageBatch(
 				len(name) + len(common.Value(a.DataType)) + len(common.Value(a.StringValue)) + len(a.BinaryValue),
 			)
 		}
+
+		for name, a := range in.Entries[i].MessageSystemAttributes {
+			total += int64(
+				len(name) + len(common.Value(a.DataType)) + len(common.Value(a.StringValue)) + len(a.BinaryValue),
+			)
+		}
 	}
 
 	if guardErr := checkBatch(ids); guardErr != nil {
@@ -123,12 +129,14 @@ func (s *Service) SendMessageBatch(
 	out := &api.SendMessageBatchResult{}
 	var sizes []awsmetrics.Datum
 	err = s.batch(ctx, key, func(q *queue, now int64) {
+		out.Successful, out.Failed = nil, nil
 		sizes = sizes[:0]
 		for i := range in.Entries {
 			entry := &in.Entries[i]
 			o, prepareErr := s.prepare(ctx, entry)
+			var duplicate bool
 			if prepareErr == nil {
-				prepareErr = q.enqueue(o, now)
+				duplicate, prepareErr = q.enqueue(o, now)
 			}
 
 			if prepareErr != nil {
@@ -136,13 +144,17 @@ func (s *Service) SendMessageBatch(
 				continue
 			}
 
-			sizes = append(sizes, messageSize(o.size))
+			if !duplicate {
+				sizes = append(sizes, messageSize(o.size))
+			}
+
 			out.Successful = append(out.Successful, api.SendMessageBatchResultEntry{
-				Id:                     entry.Id,
-				MessageId:              new(o.msg.ID),
-				MD5OfMessageBody:       new(o.msg.BodyMD5),
-				MD5OfMessageAttributes: o.md5OfAttributes(),
-				SequenceNumber:         o.sequenceNumber(),
+				Id:                           entry.Id,
+				MessageId:                    new(o.msg.ID),
+				MD5OfMessageBody:             new(o.msg.BodyMD5),
+				MD5OfMessageAttributes:       o.md5OfAttributes(),
+				MD5OfMessageSystemAttributes: o.md5OfSystemAttributes(),
+				SequenceNumber:               o.sequenceNumber(),
 			})
 		}
 	})

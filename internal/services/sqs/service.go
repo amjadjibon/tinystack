@@ -470,6 +470,22 @@ func (s *Service) GetQueueUrl(ctx context.Context, in *api.GetQueueUrlRequest) (
 		return nil, missing("QueueName")
 	}
 
+	if in.QueueOwnerAWSAccountId != nil {
+		owner := *in.QueueOwnerAWSAccountId
+		if !accountID.MatchString(owner) {
+			return nil, invalid(
+				"Value %s for parameter QueueOwnerAWSAccountId is invalid. Reason: Must be a 12-digit AWS account ID.",
+				owner,
+			)
+		}
+
+		if owner != m.AccountID && !m.ResourceAuthorization {
+			return nil, notFound()
+		}
+
+		m.AccountID = owner
+	}
+
 	name := *in.QueueName
 	if !queueName.MatchString(name) {
 		return nil, notFound()

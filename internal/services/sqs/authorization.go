@@ -28,6 +28,22 @@ func (s *Service) AuthorizationResources(
 			return nil, err
 		}
 	} else if name != "" {
+		if owner := catalog.InputString(input, "QueueOwnerAWSAccountId"); owner != "" {
+			if !accountID.MatchString(owner) {
+				return nil, invalid(
+					"Value %s for parameter QueueOwnerAWSAccountId is invalid. "+
+						"Reason: Must be a 12-digit AWS account ID.",
+					owner,
+				)
+			}
+
+			if owner != m.AccountID && !m.ResourceAuthorization {
+				return nil, notFound()
+			}
+
+			m.AccountID = owner
+		}
+
 		key = queueKey(m, name)
 	}
 

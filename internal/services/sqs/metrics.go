@@ -14,15 +14,16 @@ import (
 const (
 	metricNamespace = "AWS/SQS"
 
-	metricSent       = "NumberOfMessagesSent"
-	metricReceived   = "NumberOfMessagesReceived"
-	metricDeleted    = "NumberOfMessagesDeleted"
-	metricEmpty      = "NumberOfEmptyReceives"
-	metricSentSize   = "SentMessageSize"
-	metricVisible    = "ApproximateNumberOfMessagesVisible"
-	metricNotVisible = "ApproximateNumberOfMessagesNotVisible"
-	metricDelayed    = "ApproximateNumberOfMessagesDelayed"
-	metricOldestAge  = "ApproximateAgeOfOldestMessage"
+	metricSent           = "NumberOfMessagesSent"
+	metricReceived       = "NumberOfMessagesReceived"
+	metricDeleted        = "NumberOfMessagesDeleted"
+	metricEmpty          = "NumberOfEmptyReceives"
+	metricSentSize       = "SentMessageSize"
+	metricVisible        = "ApproximateNumberOfMessagesVisible"
+	metricNotVisible     = "ApproximateNumberOfMessagesNotVisible"
+	metricDelayed        = "ApproximateNumberOfMessagesDelayed"
+	metricOldestAge      = "ApproximateAgeOfOldestMessage"
+	metricInflightGroups = "ApproximateNumberOfGroupsWithInflightMessages"
 )
 
 // sampleInterval is how often the approximate gauges are sampled, as AWS does once a minute.
@@ -116,12 +117,20 @@ func (s *Service) reportGauges(key string, q *queue, now int64) {
 
 	scope, name := keyScope(key)
 	dims := []awsmetrics.Dimension{{Name: "QueueName", Value: name}}
-	s.metrics.Publish(scope, metricNamespace,
-		awsmetrics.Datum{Name: metricVisible, Unit: awsmetrics.Count, Dimensions: dims, Value: float64(visible)},
-		awsmetrics.Datum{Name: metricNotVisible, Unit: awsmetrics.Count, Dimensions: dims, Value: float64(inFlight)},
-		awsmetrics.Datum{Name: metricDelayed, Unit: awsmetrics.Count, Dimensions: dims, Value: float64(delayed)},
-		awsmetrics.Datum{Name: metricOldestAge, Unit: awsmetrics.Seconds, Dimensions: dims, Value: age},
-	)
+	data := []awsmetrics.Datum{
+		{Name: metricVisible, Unit: awsmetrics.Count, Dimensions: dims, Value: float64(visible)},
+		{Name: metricNotVisible, Unit: awsmetrics.Count, Dimensions: dims, Value: float64(inFlight)},
+		{Name: metricDelayed, Unit: awsmetrics.Count, Dimensions: dims, Value: float64(delayed)},
+		{Name: metricOldestAge, Unit: awsmetrics.Seconds, Dimensions: dims, Value: age},
+	}
+	if q.Settings.FifoQueue {
+		data = append(data, awsmetrics.Datum{
+			Name: metricInflightGroups, Unit: awsmetrics.Count, Dimensions: dims,
+			Value: float64(len(q.inFlightGroups(now))),
+		})
+	}
+
+	s.metrics.Publish(scope, metricNamespace, data...)
 }
 
 // counts splits the queue's messages into those a receive can return, those in flight, and those still delayed.

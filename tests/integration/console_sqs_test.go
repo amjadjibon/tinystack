@@ -136,14 +136,28 @@ func TestConsoleSQSLifecycle(t *testing.T) {
 		t.Fatalf("tasks = %+v", tasks)
 	}
 
-	// Create a FIFO queue through the same bridge and check SDK-visible state.
+	// Create a FIFO queue and DLQ through the same bridge and check SDK-visible state and move tasks.
+	fifoDLQ := write("CreateQueue", map[string]any{"QueueName": "console-dlq.fifo", "Attributes": map[string]any{
+		"FifoQueue": "true",
+	}})["QueueUrl"].(string)
+	fifoDLQArn := write("GetQueueAttributes", map[string]any{
+		"QueueUrl": fifoDLQ, "AttributeNames": []any{"QueueArn"},
+	})["Attributes"].(map[string]any)["QueueArn"].(string)
 	fifoURL := write("CreateQueue", map[string]any{"QueueName": "console.fifo", "Attributes": map[string]any{
 		"FifoQueue": "true", "ContentBasedDeduplication": "true",
+		"RedrivePolicy": `{"deadLetterTargetArn":"` + fifoDLQArn + `","maxReceiveCount":1}`,
 	}})["QueueUrl"].(string)
 	one := write("SendMessage", map[string]any{"QueueUrl": fifoURL, "MessageBody": "fifo", "MessageGroupId": "group"})
 	two := write("SendMessage", map[string]any{"QueueUrl": fifoURL, "MessageBody": "fifo", "MessageGroupId": "group"})
 	if one["MessageId"] != two["MessageId"] || one["SequenceNumber"] == "" {
 		t.Fatalf("FIFO deduplication: %+v, %+v", one, two)
+	}
+
+	fifoTask := write("StartMessageMoveTask", map[string]any{
+		"SourceArn": fifoDLQArn, "MaxNumberOfMessagesPerSecond": 1,
+	})
+	if fifoTask["TaskHandle"] == "" {
+		t.Fatalf("FIFO move task = %+v", fifoTask)
 	}
 
 	options := sqsClient(s, "test").Options()
@@ -167,6 +181,7 @@ func TestConsoleSQSLifecycle(t *testing.T) {
 	}
 
 	write("DeleteQueue", map[string]any{"QueueUrl": fifoURL})
+	write("DeleteQueue", map[string]any{"QueueUrl": fifoDLQ})
 	write("DeleteQueue", map[string]any{"QueueUrl": url})
 	write("DeleteQueue", map[string]any{"QueueUrl": dlq})
 }

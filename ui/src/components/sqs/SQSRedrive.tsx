@@ -62,7 +62,7 @@ export function SQSRedrive({
 	const [selected, setSelected] = useState<MoveTask[]>([]);
 	const target = selected[0];
 	const destinations = queues
-		.filter((q) => q.arn !== arn && q.details?.FifoQueue !== "true")
+		.filter((q) => q.arn !== arn && (q.details?.FifoQueue === "true") === fifo)
 		.map((q) => ({ label: q.name, value: q.arn }));
 	return (
 		<SpaceBetween size="l">
@@ -88,12 +88,6 @@ export function SQSRedrive({
 					)}
 				</SpaceBetween>
 			</Container>
-			{fifo && (
-				<Alert type="info">
-					TinyStack supports message redrive tasks for standard queues. FIFO
-					queues still support dead-letter delivery.
-				</Alert>
-			)}
 			{!!tasks.error && (
 				<Alert type="error" header="Cannot load redrive tasks">
 					{tasks.error}
@@ -136,7 +130,6 @@ export function SQSRedrive({
 									variant="primary"
 									disabled={
 										!enabled ||
-										fifo ||
 										sources.length === 0 ||
 										(tasks.data ?? []).some((t) => t.Status === "RUNNING")
 									}

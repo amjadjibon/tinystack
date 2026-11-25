@@ -252,3 +252,202 @@ func TestSQSRedriveAllowPolicy(t *testing.T) {
 		code(t, set(bad), "InvalidAttributeValue")
 	}
 }
+
+func TestSQSFIFORedrive(t *testing.T) {
+	s := server(t)
+	c := sqsClient(s, "test")
+	ctx := context.Background()
+
+	dlqURL := createQueue(t, c, "orders-dlq.fifo", map[string]string{
+		"FifoQueue":         "true",
+		"VisibilityTimeout": "0",
+	})
+	dlqARN := "arn:aws:sqs:us-east-1:000000000000:orders-dlq.fifo"
+	ordersURL := createQueue(t, c, "orders.fifo", map[string]string{
+		"FifoQueue":         "true",
+		"VisibilityTimeout": "0",
+		"RedrivePolicy":     `{"deadLetterTargetArn":"` + dlqARN + `","maxReceiveCount":1}`,
+	})
+	archiveURL := createQueue(t, c, "archive.fifo", map[string]string{
+		"FifoQueue":         "true",
+		"VisibilityTimeout": "0",
+	})
+	archiveARN := "arn:aws:sqs:us-east-1:000000000000:archive.fifo"
+
+	// Standard pair to test queue-type mismatch rejection in both directions.
+	_, plainDLQARN := queueARN(t, c, "plain-dlq")
+	createQueue(t, c, "plain", map[string]string{
+		"RedrivePolicy": `{"deadLetterTargetArn":"` + plainDLQARN + `","maxReceiveCount":1}`,
+	})
+	plainARN := "arn:aws:sqs:us-east-1:000000000000:plain"
+
+	_, err := c.StartMessageMoveTask(ctx, &sqs.StartMessageMoveTaskInput{
+		SourceArn: aws.String(dlqARN), DestinationArn: aws.String(plainARN),
+	})
+	code(t, err, "InvalidParameterValue")
+
+	_, err = c.StartMessageMoveTask(ctx, &sqs.StartMessageMoveTaskInput{
+		SourceArn: aws.String(plainDLQARN), DestinationArn: aws.String(archiveARN),
+	})
+	code(t, err, "InvalidParameterValue")
+
+	// Send messages across groups with attributes and AWSTraceHeader.
+	type spec struct{ body, group, dedup, trace string }
+	specs := []spec{
+		{"g1-1", "g1", "d1", "Root=1-5759e988-bd862e3fe1be46a994272793;Sampled=1"},
+		{"g1-2", "g1", "d2", "Root=1-5759e988-bd862e3fe1be46a994272794;Sampled=1"},
+		{"g2-1", "g2", "d3", "Root=1-5759e988-bd862e3fe1be46a994272795;Sampled=1"},
+		{"g1-3", "g1", "d4", "Root=1-5759e988-bd862e3fe1be46a994272796;Sampled=1"},
+	}
+
+	var maxOriginalSeq string
+	for _, sp := range specs {
+		sent, sendErr := c.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl:               aws.String(ordersURL),
+			MessageBody:            aws.String(sp.body),
+			MessageGroupId:         aws.String(sp.group),
+			MessageDeduplicationId: aws.String(sp.dedup),
+			MessageAttributes: map[string]sqstypes.MessageAttributeValue{
+				"tag": {DataType: aws.String("String"), StringValue: aws.String(sp.body)},
+			},
+			MessageSystemAttributes: map[string]sqstypes.MessageSystemAttributeValue{
+				"AWSTraceHeader": {DataType: aws.String("String"), StringValue: aws.String(sp.trace)},
+			},
+		})
+		if sendErr != nil {
+			t.Fatal(sendErr)
+		}
+
+		maxOriginalSeq = aws.ToString(sent.SequenceNumber)
+	}
+
+	// Dead-letter all 4 messages into orders-dlq.fifo.
+	for range 2 {
+		if _, err = c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+			QueueUrl: aws.String(ordersURL), MaxNumberOfMessages: 10,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if n := visible(t, c, dlqURL); n != "4" {
+		t.Fatalf("%s messages in FIFO DLQ, want 4", n)
+	}
+
+	// Redrive back to the original FIFO source queue inside the 5-minute dedup window.
+	if _, err = c.StartMessageMoveTask(ctx, &sqs.StartMessageMoveTaskInput{
+		SourceArn: aws.String(dlqARN),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	task := finished(t, c, dlqARN)
+	if aws.ToString(task.Status) != "COMPLETED" || task.ApproximateNumberOfMessagesMoved != 4 ||
+		aws.ToInt64(task.ApproximateNumberOfMessagesToMove) != 4 {
+		t.Fatalf("got %+v", task)
+	}
+
+	if n := visible(t, c, dlqURL); n != "0" {
+		t.Fatalf("%s messages left in FIFO DLQ", n)
+	}
+
+	got, err := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+		QueueUrl:                    aws.String(ordersURL),
+		MaxNumberOfMessages:         10,
+		MessageAttributeNames:       []string{"All"},
+		MessageSystemAttributeNames: []sqstypes.MessageSystemAttributeName{sqstypes.MessageSystemAttributeNameAll},
+	})
+	if err != nil || len(got.Messages) != 4 {
+		t.Fatalf("redriven messages = %+v, %v", got, err)
+	}
+
+	var g1Order []string
+	prevSeq := maxOriginalSeq
+	byBody := map[string]spec{}
+	for _, sp := range specs {
+		byBody[sp.body] = sp
+	}
+
+	for _, msg := range got.Messages {
+		body := aws.ToString(msg.Body)
+		sp := byBody[body]
+		seq := msg.Attributes["SequenceNumber"]
+		if seq <= prevSeq {
+			t.Fatalf("non-increasing sequence %s <= %s for %s", seq, prevSeq, body)
+		}
+
+		prevSeq = seq
+		if msg.Attributes["MessageGroupId"] != sp.group ||
+			msg.Attributes["MessageDeduplicationId"] != sp.dedup ||
+			msg.Attributes["AWSTraceHeader"] != sp.trace ||
+			aws.ToString(msg.MessageAttributes["tag"].StringValue) != sp.body {
+			t.Fatalf("message %s lost metadata: attrs=%v msgAttrs=%v", body, msg.Attributes, msg.MessageAttributes)
+		}
+
+		if sp.group == "g1" {
+			g1Order = append(g1Order, body)
+		}
+	}
+
+	if len(g1Order) != 3 || g1Order[0] != "g1-1" || g1Order[1] != "g1-2" || g1Order[2] != "g1-3" {
+		t.Fatalf("g1 order = %v, want [g1-1 g1-2 g1-3]", g1Order)
+	}
+
+	// Dead-letter again and move to an explicit FIFO destination queue.
+	if _, err = c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+		QueueUrl: aws.String(ordersURL), MaxNumberOfMessages: 10,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if n := visible(t, c, dlqURL); n != "4" {
+		t.Fatalf("%s messages in FIFO DLQ on second pass", n)
+	}
+
+	if _, err = c.StartMessageMoveTask(ctx, &sqs.StartMessageMoveTaskInput{
+		SourceArn: aws.String(dlqARN), DestinationArn: aws.String(archiveARN),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	task = finished(t, c, dlqARN)
+	if aws.ToString(task.Status) != "COMPLETED" || task.ApproximateNumberOfMessagesMoved != 4 {
+		t.Fatalf("explicit destination task = %+v", task)
+	}
+
+	archived, err := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+		QueueUrl:                    aws.String(archiveURL),
+		MaxNumberOfMessages:         10,
+		MessageAttributeNames:       []string{"All"},
+		MessageSystemAttributeNames: []sqstypes.MessageSystemAttributeName{sqstypes.MessageSystemAttributeNameAll},
+	})
+	if err != nil || len(archived.Messages) != 4 {
+		t.Fatalf("archived messages = %+v, %v", archived, err)
+	}
+
+	var archivedG1 []string
+	prevSeq = ""
+	for _, msg := range archived.Messages {
+		body := aws.ToString(msg.Body)
+		sp := byBody[body]
+		seq := msg.Attributes["SequenceNumber"]
+		if seq == "" || seq <= prevSeq {
+			t.Fatalf("archive sequence %q <= %q", seq, prevSeq)
+		}
+
+		prevSeq = seq
+		if msg.Attributes["MessageGroupId"] != sp.group ||
+			msg.Attributes["MessageDeduplicationId"] != sp.dedup ||
+			msg.Attributes["AWSTraceHeader"] != sp.trace {
+			t.Fatalf("archived %s metadata = %v", body, msg.Attributes)
+		}
+
+		if sp.group == "g1" {
+			archivedG1 = append(archivedG1, body)
+		}
+	}
+
+	if len(archivedG1) != 3 || archivedG1[0] != "g1-1" || archivedG1[1] != "g1-2" || archivedG1[2] != "g1-3" {
+		t.Fatalf("archived g1 order = %v, want [g1-1 g1-2 g1-3]", archivedG1)
+	}
+}

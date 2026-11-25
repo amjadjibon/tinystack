@@ -1114,3 +1114,431 @@ func TestSQSJSONQueryCompatibleErrors(t *testing.T) {
 		t.Fatalf("contradictory request: %d", resp.StatusCode)
 	}
 }
+
+func TestSQSMessageSystemAttributes(t *testing.T) {
+	s := server(t)
+	c := sqsClient(s, "test")
+	ctx := context.Background()
+	dlqURL := createQueue(t, c, "trace-dlq", map[string]string{"VisibilityTimeout": "0"})
+	dlqARN := "arn:aws:sqs:us-east-1:000000000000:trace-dlq"
+	queueURL := createQueue(t, c, "trace", map[string]string{
+		"MaximumMessageSize": "1024",
+		"VisibilityTimeout":  "0",
+		"RedrivePolicy":      `{"deadLetterTargetArn":"` + dlqARN + `","maxReceiveCount":1}`,
+	})
+
+	const trace = "Root=1-5759e988-bd862e3fe1be46a994272793;Parent=53995c3f42cd8ad8;Sampled=1"
+	sent, err := c.SendMessage(ctx, &sqs.SendMessageInput{
+		QueueUrl:    &queueURL,
+		MessageBody: aws.String("traced"),
+		MessageSystemAttributes: map[string]types.MessageSystemAttributeValue{
+			"AWSTraceHeader": {DataType: aws.String("String"), StringValue: aws.String(trace)},
+		},
+	})
+	if err != nil || aws.ToString(sent.MD5OfMessageSystemAttributes) == "" {
+		t.Fatalf("SendMessage = %+v, %v", sent, err)
+	}
+
+	// Receive with All, AWSTraceHeader, and legacy AttributeNames.
+	for _, tc := range []struct {
+		name string
+		in   *sqs.ReceiveMessageInput
+		want string
+	}{
+		{
+			name: "MessageSystemAttributeNames All",
+			in: &sqs.ReceiveMessageInput{
+				QueueUrl: &queueURL,
+				MessageSystemAttributeNames: []types.MessageSystemAttributeName{
+					types.MessageSystemAttributeNameAll,
+				},
+			},
+			want: trace,
+		},
+	} {
+		got, receiveErr := c.ReceiveMessage(ctx, tc.in)
+		if receiveErr != nil || len(got.Messages) != 1 || got.Messages[0].Attributes["AWSTraceHeader"] != tc.want {
+			t.Fatalf("%s: got %+v, %v", tc.name, got, receiveErr)
+		}
+	}
+
+	// Second receive moves the message to the DLQ while preserving AWSTraceHeader.
+	empty, err := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: &queueURL})
+	if err != nil || len(empty.Messages) != 0 {
+		t.Fatalf("expected DLQ move: %+v, %v", empty, err)
+	}
+
+	dlqGot, err := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+		QueueUrl: &dlqURL,
+		MessageSystemAttributeNames: []types.MessageSystemAttributeName{
+			types.MessageSystemAttributeNameAWSTraceHeader,
+		},
+	})
+	if err != nil || len(dlqGot.Messages) != 1 || dlqGot.Messages[0].Attributes["AWSTraceHeader"] != trace {
+		t.Fatalf("DLQ AWSTraceHeader = %+v, %v", dlqGot, err)
+	}
+
+	// Redrive back to the source queue via StartMessageMoveTask preserves AWSTraceHeader.
+	if _, err = c.StartMessageMoveTask(ctx, &sqs.StartMessageMoveTaskInput{
+		SourceArn: aws.String(dlqARN),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	task := finished(t, c, dlqARN)
+	if aws.ToString(task.Status) != "COMPLETED" || task.ApproximateNumberOfMessagesMoved != 1 {
+		t.Fatalf("move task = %+v", task)
+	}
+
+	redriven, err := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+		QueueUrl: &queueURL,
+		//nolint:staticcheck // Legacy AttributeNames must also return AWSTraceHeader.
+		AttributeNames: []types.QueueAttributeName{"AWSTraceHeader"},
+	})
+	if err != nil || len(redriven.Messages) != 1 || redriven.Messages[0].Attributes["AWSTraceHeader"] != trace {
+		t.Fatalf("redriven AWSTraceHeader = %+v, %v", redriven, err)
+	}
+
+	// Batch send returns MD5OfMessageSystemAttributes and preserves custom String.* DataType.
+	plainURL := createQueue(t, c, "trace-batch", map[string]string{"MaximumMessageSize": "1024"})
+	batchOut, err := c.SendMessageBatch(ctx, &sqs.SendMessageBatchInput{
+		QueueUrl: &plainURL,
+		Entries: []types.SendMessageBatchRequestEntry{
+			{
+				Id:          aws.String("b1"),
+				MessageBody: aws.String("one"),
+				MessageSystemAttributes: map[string]types.MessageSystemAttributeValue{
+					"AWSTraceHeader": {DataType: aws.String("String.xray"), StringValue: aws.String(trace)},
+				},
+			},
+			{
+				Id:          aws.String("b2"),
+				MessageBody: aws.String("two"),
+			},
+		},
+	})
+	if err != nil || len(batchOut.Successful) != 2 || len(batchOut.Failed) != 0 ||
+		aws.ToString(batchOut.Successful[0].MD5OfMessageSystemAttributes) == "" ||
+		batchOut.Successful[1].MD5OfMessageSystemAttributes != nil {
+		t.Fatalf("batchOut = %+v, %v", batchOut, err)
+	}
+
+	// Validation errors and size accounting.
+	for name, attrs := range map[string]map[string]types.MessageSystemAttributeValue{
+		"unknown key": {
+			"SenderId": {DataType: aws.String("String"), StringValue: aws.String("x")},
+		},
+		"binary type": {
+			"AWSTraceHeader": {DataType: aws.String("Binary"), BinaryValue: []byte{1}},
+		},
+		"number type": {
+			"AWSTraceHeader": {DataType: aws.String("Number"), StringValue: aws.String("1")},
+		},
+		"empty value": {
+			"AWSTraceHeader": {DataType: aws.String("String"), StringValue: aws.String("")},
+		},
+		"binary value on string": {
+			"AWSTraceHeader": {DataType: aws.String("String"), StringValue: aws.String("ok"), BinaryValue: []byte{1}},
+		},
+		"invalid unicode": {
+			"AWSTraceHeader": {DataType: aws.String("String"), StringValue: aws.String("bad\x00")},
+		},
+	} {
+		if _, err = c.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl: &plainURL, MessageBody: aws.String("x"), MessageSystemAttributes: attrs,
+		}); err == nil {
+			t.Fatalf("%s: accepted", name)
+		}
+	}
+
+	// System attribute bytes count toward MaximumMessageSize.
+	_, err = c.SendMessage(ctx, &sqs.SendMessageInput{
+		QueueUrl:    &plainURL,
+		MessageBody: aws.String(strings.Repeat("a", 1000)),
+		MessageSystemAttributes: map[string]types.MessageSystemAttributeValue{
+			"AWSTraceHeader": {DataType: aws.String("String"), StringValue: aws.String(strings.Repeat("b", 30))},
+		},
+	})
+	wantCode(t, err, "InvalidParameterValue")
+
+	// System attribute bytes also count toward SendMessageBatch maxBatchBytes.
+	largeURL := createQueue(t, c, "trace-large", map[string]string{"MaximumMessageSize": "1048576"})
+	var bigEntries []types.SendMessageBatchRequestEntry
+	for i := range 5 {
+		bigEntries = append(bigEntries, types.SendMessageBatchRequestEntry{
+			Id:          aws.String(fmt.Sprint("e", i)),
+			MessageBody: aws.String(strings.Repeat("a", 200000)),
+			MessageSystemAttributes: map[string]types.MessageSystemAttributeValue{
+				"AWSTraceHeader": {DataType: aws.String("String"), StringValue: aws.String(strings.Repeat("t", 15000))},
+			},
+		})
+	}
+
+	_, err = c.SendMessageBatch(ctx, &sqs.SendMessageBatchInput{QueueUrl: &largeURL, Entries: bigEntries})
+	var tooLong *types.BatchRequestTooLong
+	if !errors.As(err, &tooLong) {
+		t.Fatalf("expected BatchRequestTooLong, got %v", err)
+	}
+
+	// Query wire protocol supports MessageSystemAttribute and MD5OfMessageSystemAttributes.
+	status, _, body := queryCall(t, s, "/", url.Values{
+		"Action":                        {"SendMessage"},
+		"QueueUrl":                      {plainURL},
+		"MessageBody":                   {"query-trace"},
+		"MessageSystemAttribute.1.Name": {"AWSTraceHeader"},
+		"MessageSystemAttribute.1.Value.DataType": {"String"},
+		"MessageSystemAttribute.1.Value.StringValue": {
+			trace,
+		},
+	}, nil)
+	var sentXML struct {
+		SysMD5 string `xml:"SendMessageResult>MD5OfMessageSystemAttributes"`
+	}
+
+	if status != http.StatusOK || xml.Unmarshal(body, &sentXML) != nil ||
+		sentXML.SysMD5 != aws.ToString(sent.MD5OfMessageSystemAttributes) {
+		t.Fatalf("query send = %d %s (want MD5 %s)", status, body, aws.ToString(sent.MD5OfMessageSystemAttributes))
+	}
+}
+
+func TestSQSGetQueueUrlOwnerValidation(t *testing.T) {
+	s := server(t)
+	c := sqsClient(s, "test")
+	team := sqsClient(s, "team-b")
+	ctx := context.Background()
+
+	ownURL := createQueue(t, c, "owned", nil)
+	createQueue(t, team, "other-only", nil)
+
+	// Passing the caller's own account ID succeeds.
+	got, err := c.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+		QueueName:              aws.String("owned"),
+		QueueOwnerAWSAccountId: aws.String("000000000000"),
+	})
+	if err != nil || aws.ToString(got.QueueUrl) != ownURL {
+		t.Fatalf("own account GetQueueUrl = %+v, %v", got, err)
+	}
+
+	// Invalid account IDs fail with InvalidParameterValue.
+	for _, bad := range []string{"", "12345", "12345678901a"} {
+		_, err = c.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+			QueueName:              aws.String("owned"),
+			QueueOwnerAWSAccountId: aws.String(bad),
+		})
+		wantCode(t, err, "InvalidParameterValue")
+	}
+
+	// With authorization off, another account's queue stays isolated (QueueDoesNotExist).
+	_, err = c.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+		QueueName:              aws.String("other-only"),
+		QueueOwnerAWSAccountId: aws.String("111111111111"),
+	})
+	var gone *types.QueueDoesNotExist
+	if !errors.As(err, &gone) {
+		t.Fatalf("expected QueueDoesNotExist, got %v", err)
+	}
+}
+
+func TestSQSStandardMessageGroupId(t *testing.T) {
+	s := server(t)
+	c := sqsClient(s, "test")
+	ctx := context.Background()
+
+	dlqURL := createQueue(t, c, "fair-dlq", map[string]string{"VisibilityTimeout": "0"})
+	dlqARN := "arn:aws:sqs:us-east-1:000000000000:fair-dlq"
+	queueURL := createQueue(t, c, "fair", map[string]string{
+		"VisibilityTimeout": "30",
+		"RedrivePolicy":     `{"deadLetterTargetArn":"` + dlqARN + `","maxReceiveCount":1}`,
+	})
+
+	// MessageDeduplicationId is still rejected on standard queues (with or without MessageGroupId).
+	for _, group := range []*string{nil, aws.String("g1")} {
+		_, err := c.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl:               &queueURL,
+			MessageBody:            aws.String("x"),
+			MessageGroupId:         group,
+			MessageDeduplicationId: aws.String("d1"),
+		})
+		wantCode(t, err, "InvalidParameterValue")
+	}
+
+	// Invalid MessageGroupId is rejected.
+	_, err := c.SendMessage(ctx, &sqs.SendMessageInput{
+		QueueUrl: &queueURL, MessageBody: aws.String("x"), MessageGroupId: aws.String("bad group"),
+	})
+	wantCode(t, err, "InvalidParameterValue")
+
+	// Standard-queue MessageGroupId allows concurrent in-flight delivery within the same group
+	// and does not emit empty MessageDeduplicationId/SequenceNumber attributes.
+	for i := range 3 {
+		if _, err = c.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl:       &queueURL,
+			MessageBody:    aws.String(fmt.Sprintf("same-%d", i)),
+			MessageGroupId: aws.String("same-group"),
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var receipts []*string
+	for range 3 {
+		out, receiveErr := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+			QueueUrl:                    &queueURL,
+			MaxNumberOfMessages:         1,
+			MessageSystemAttributeNames: []types.MessageSystemAttributeName{types.MessageSystemAttributeNameAll},
+		})
+		if receiveErr != nil || len(out.Messages) != 1 {
+			t.Fatalf("concurrent same-group receive = %+v, %v", out, receiveErr)
+		}
+
+		attrs := out.Messages[0].Attributes
+		if attrs["MessageGroupId"] != "same-group" {
+			t.Fatalf("MessageGroupId = %q", attrs["MessageGroupId"])
+		}
+
+		if _, ok := attrs["MessageDeduplicationId"]; ok {
+			t.Fatalf("unexpected MessageDeduplicationId in standard queue message: %v", attrs)
+		}
+
+		if _, ok := attrs["SequenceNumber"]; ok {
+			t.Fatalf("unexpected SequenceNumber in standard queue message: %v", attrs)
+		}
+
+		receipts = append(receipts, out.Messages[0].ReceiptHandle)
+	}
+
+	for _, rh := range receipts {
+		if _, err = c.DeleteMessage(ctx, &sqs.DeleteMessageInput{QueueUrl: &queueURL, ReceiptHandle: rh}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Noisy-neighbor fairness: quiet group messages are prioritized over a noisy group with in-flight messages.
+	fairURL := createQueue(t, c, "fair-noisy", map[string]string{"VisibilityTimeout": "30"})
+	batchEntries := make([]types.SendMessageBatchRequestEntry, 0, 6)
+	for i := range 6 {
+		batchEntries = append(batchEntries, types.SendMessageBatchRequestEntry{
+			Id:             aws.String(fmt.Sprintf("n%d", i)),
+			MessageBody:    aws.String(fmt.Sprintf("noisy-%d", i)),
+			MessageGroupId: aws.String("noisy"),
+		})
+	}
+
+	batchOut, err := c.SendMessageBatch(ctx, &sqs.SendMessageBatchInput{QueueUrl: &fairURL, Entries: batchEntries})
+	if err != nil || len(batchOut.Successful) != 6 {
+		t.Fatalf("batch = %+v, %v", batchOut, err)
+	}
+
+	// Claim 3 noisy messages so noisy has 3 in flight, then enqueue 2 quiet messages.
+	for range 3 {
+		out, receiveErr := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: &fairURL, MaxNumberOfMessages: 1})
+		if receiveErr != nil || len(out.Messages) != 1 {
+			t.Fatalf("priming noisy = %+v, %v", out, receiveErr)
+		}
+	}
+
+	for i := range 2 {
+		if _, err = c.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl:       &fairURL,
+			MessageBody:    aws.String(fmt.Sprintf("quiet-%d", i)),
+			MessageGroupId: aws.String("quiet"),
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Next two receives must serve both quiet messages before the remaining noisy ones.
+	for range 2 {
+		out, receiveErr := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+			QueueUrl:                    &fairURL,
+			MaxNumberOfMessages:         1,
+			MessageSystemAttributeNames: []types.MessageSystemAttributeName{types.MessageSystemAttributeNameAll},
+		})
+		if receiveErr != nil || len(out.Messages) != 1 || out.Messages[0].Attributes["MessageGroupId"] != "quiet" {
+			t.Fatalf("expected quiet group first, got %+v, %v", out, receiveErr)
+		}
+	}
+
+	// Single-batch round-robin fairness when a noisy flood precedes a quieter group.
+	rrURL := createQueue(t, c, "fair-rr", map[string]string{"VisibilityTimeout": "30"})
+	for i := range 5 {
+		if _, err = c.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl: &rrURL, MessageBody: aws.String(fmt.Sprintf("n-%d", i)), MessageGroupId: aws.String("noisy"),
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	for i := range 2 {
+		if _, err = c.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl: &rrURL, MessageBody: aws.String(fmt.Sprintf("q-%d", i)), MessageGroupId: aws.String("quiet"),
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	rr, err := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+		QueueUrl:                    &rrURL,
+		MaxNumberOfMessages:         4,
+		MessageSystemAttributeNames: []types.MessageSystemAttributeName{types.MessageSystemAttributeNameAll},
+	})
+	if err != nil || len(rr.Messages) != 4 {
+		t.Fatalf("rr = %+v, %v", rr, err)
+	}
+
+	gotGroups := []string{
+		rr.Messages[0].Attributes["MessageGroupId"],
+		rr.Messages[1].Attributes["MessageGroupId"],
+		rr.Messages[2].Attributes["MessageGroupId"],
+		rr.Messages[3].Attributes["MessageGroupId"],
+	}
+	if strings.Join(gotGroups, ",") != "noisy,quiet,noisy,quiet" {
+		t.Fatalf("round-robin groups = %v, want [noisy quiet noisy quiet]", gotGroups)
+	}
+
+	// MessageGroupId is preserved across DLQ redrive and StartMessageMoveTask.
+	if _, err = c.SetQueueAttributes(ctx, &sqs.SetQueueAttributesInput{
+		QueueUrl: &queueURL, Attributes: map[string]string{"VisibilityTimeout": "0"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = c.SendMessage(ctx, &sqs.SendMessageInput{
+		QueueUrl: &queueURL, MessageBody: aws.String("preserve"), MessageGroupId: aws.String("tenant-a"),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	for range 2 {
+		if _, err = c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{QueueUrl: &queueURL}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	dlqGot, err := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+		QueueUrl:                    &dlqURL,
+		MessageSystemAttributeNames: []types.MessageSystemAttributeName{types.MessageSystemAttributeNameAll},
+	})
+	if err != nil || len(dlqGot.Messages) != 1 || dlqGot.Messages[0].Attributes["MessageGroupId"] != "tenant-a" {
+		t.Fatalf("DLQ message = %+v, %v", dlqGot, err)
+	}
+
+	if _, err = c.StartMessageMoveTask(ctx, &sqs.StartMessageMoveTaskInput{
+		SourceArn: aws.String(dlqARN),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	task := finished(t, c, dlqARN)
+	if aws.ToString(task.Status) != "COMPLETED" || task.ApproximateNumberOfMessagesMoved != 1 {
+		t.Fatalf("move task = %+v", task)
+	}
+
+	moved, err := c.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+		QueueUrl:                    &queueURL,
+		MessageSystemAttributeNames: []types.MessageSystemAttributeName{types.MessageSystemAttributeNameAll},
+	})
+	if err != nil || len(moved.Messages) != 1 || moved.Messages[0].Attributes["MessageGroupId"] != "tenant-a" {
+		t.Fatalf("moved message = %+v, %v", moved, err)
+	}
+}

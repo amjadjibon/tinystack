@@ -40,7 +40,8 @@ type ListQueuesResult struct {
 }
 
 type GetQueueUrlRequest struct {
-	QueueName *string `json:"QueueName,omitempty" query:"QueueName"`
+	QueueName              *string `json:"QueueName,omitempty" query:"QueueName"`
+	QueueOwnerAWSAccountId *string `json:"QueueOwnerAWSAccountId,omitempty" query:"QueueOwnerAWSAccountId"`
 }
 
 type GetQueueUrlResult struct {
@@ -53,20 +54,28 @@ type MessageAttributeValue struct {
 	DataType    *string `json:"DataType,omitempty" query:"DataType"`
 }
 
+type MessageSystemAttributeValue struct {
+	StringValue *string `json:"StringValue,omitempty" query:"StringValue"`
+	BinaryValue []byte  `json:"BinaryValue,omitempty" query:"BinaryValue"`
+	DataType    *string `json:"DataType,omitempty" query:"DataType"`
+}
+
 type SendMessageRequest struct {
-	QueueUrl               *string                          `json:"QueueUrl,omitempty" query:"QueueUrl"`
-	MessageBody            *string                          `json:"MessageBody,omitempty" query:"MessageBody"`
-	DelaySeconds           *int64                           `json:"DelaySeconds,omitempty" query:"DelaySeconds"`
-	MessageAttributes      map[string]MessageAttributeValue `json:"MessageAttributes,omitempty" query:"MessageAttribute,flat,key=Name,value=Value"`
-	MessageDeduplicationId *string                          `json:"MessageDeduplicationId,omitempty" query:"MessageDeduplicationId"`
-	MessageGroupId         *string                          `json:"MessageGroupId,omitempty" query:"MessageGroupId"`
+	QueueUrl                *string                                `json:"QueueUrl,omitempty" query:"QueueUrl"`
+	MessageBody             *string                                `json:"MessageBody,omitempty" query:"MessageBody"`
+	DelaySeconds            *int64                                 `json:"DelaySeconds,omitempty" query:"DelaySeconds"`
+	MessageAttributes       map[string]MessageAttributeValue       `json:"MessageAttributes,omitempty" query:"MessageAttribute,flat,key=Name,value=Value"`
+	MessageSystemAttributes map[string]MessageSystemAttributeValue `json:"MessageSystemAttributes,omitempty" query:"MessageSystemAttribute,flat,key=Name,value=Value"`
+	MessageDeduplicationId  *string                                `json:"MessageDeduplicationId,omitempty" query:"MessageDeduplicationId"`
+	MessageGroupId          *string                                `json:"MessageGroupId,omitempty" query:"MessageGroupId"`
 }
 
 type SendMessageResult struct {
-	MD5OfMessageBody       *string `json:"MD5OfMessageBody,omitempty" query:"MD5OfMessageBody"`
-	MD5OfMessageAttributes *string `json:"MD5OfMessageAttributes,omitempty" query:"MD5OfMessageAttributes"`
-	MessageId              *string `json:"MessageId,omitempty" query:"MessageId"`
-	SequenceNumber         *string `json:"SequenceNumber,omitempty" query:"SequenceNumber"`
+	MD5OfMessageBody             *string `json:"MD5OfMessageBody,omitempty" query:"MD5OfMessageBody"`
+	MD5OfMessageAttributes       *string `json:"MD5OfMessageAttributes,omitempty" query:"MD5OfMessageAttributes"`
+	MD5OfMessageSystemAttributes *string `json:"MD5OfMessageSystemAttributes,omitempty" query:"MD5OfMessageSystemAttributes"`
+	MessageId                    *string `json:"MessageId,omitempty" query:"MessageId"`
+	SequenceNumber               *string `json:"SequenceNumber,omitempty" query:"SequenceNumber"`
 }
 
 type ReceiveMessageRequest struct {
@@ -110,12 +119,13 @@ type ChangeMessageVisibilityRequest struct {
 }
 
 type SendMessageBatchRequestEntry struct {
-	Id                     *string                          `json:"Id,omitempty" query:"Id"`
-	MessageBody            *string                          `json:"MessageBody,omitempty" query:"MessageBody"`
-	DelaySeconds           *int64                           `json:"DelaySeconds,omitempty" query:"DelaySeconds"`
-	MessageAttributes      map[string]MessageAttributeValue `json:"MessageAttributes,omitempty" query:"MessageAttribute,flat,key=Name,value=Value"`
-	MessageDeduplicationId *string                          `json:"MessageDeduplicationId,omitempty" query:"MessageDeduplicationId"`
-	MessageGroupId         *string                          `json:"MessageGroupId,omitempty" query:"MessageGroupId"`
+	Id                      *string                                `json:"Id,omitempty" query:"Id"`
+	MessageBody             *string                                `json:"MessageBody,omitempty" query:"MessageBody"`
+	DelaySeconds            *int64                                 `json:"DelaySeconds,omitempty" query:"DelaySeconds"`
+	MessageAttributes       map[string]MessageAttributeValue       `json:"MessageAttributes,omitempty" query:"MessageAttribute,flat,key=Name,value=Value"`
+	MessageSystemAttributes map[string]MessageSystemAttributeValue `json:"MessageSystemAttributes,omitempty" query:"MessageSystemAttribute,flat,key=Name,value=Value"`
+	MessageDeduplicationId  *string                                `json:"MessageDeduplicationId,omitempty" query:"MessageDeduplicationId"`
+	MessageGroupId          *string                                `json:"MessageGroupId,omitempty" query:"MessageGroupId"`
 }
 
 type SendMessageBatchRequest struct {
@@ -124,11 +134,12 @@ type SendMessageBatchRequest struct {
 }
 
 type SendMessageBatchResultEntry struct {
-	Id                     *string `json:"Id,omitempty" query:"Id"`
-	MessageId              *string `json:"MessageId,omitempty" query:"MessageId"`
-	MD5OfMessageBody       *string `json:"MD5OfMessageBody,omitempty" query:"MD5OfMessageBody"`
-	MD5OfMessageAttributes *string `json:"MD5OfMessageAttributes,omitempty" query:"MD5OfMessageAttributes"`
-	SequenceNumber         *string `json:"SequenceNumber,omitempty" query:"SequenceNumber"`
+	Id                           *string `json:"Id,omitempty" query:"Id"`
+	MessageId                    *string `json:"MessageId,omitempty" query:"MessageId"`
+	MD5OfMessageBody             *string `json:"MD5OfMessageBody,omitempty" query:"MD5OfMessageBody"`
+	MD5OfMessageAttributes       *string `json:"MD5OfMessageAttributes,omitempty" query:"MD5OfMessageAttributes"`
+	MD5OfMessageSystemAttributes *string `json:"MD5OfMessageSystemAttributes,omitempty" query:"MD5OfMessageSystemAttributes"`
+	SequenceNumber               *string `json:"SequenceNumber,omitempty" query:"SequenceNumber"`
 }
 
 type BatchResultErrorEntry struct {

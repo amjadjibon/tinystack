@@ -390,6 +390,37 @@ func TestBuiltinSQSMetrics(t *testing.T) {
 	if sizes.count != 4 {
 		t.Fatalf("%+v", sizes)
 	}
+
+	// FIFO duplicates must not inflate NumberOfMessagesSent or SentMessageSize.
+	fifoURL := createQueue(t, q, "dedup.fifo", map[string]string{
+		"FifoQueue":                 "true",
+		"ContentBasedDeduplication": "true",
+	})
+	for range 2 {
+		if _, err = q.SendMessage(ctx, &sqs.SendMessageInput{
+			QueueUrl: &fifoURL, MessageBody: new("hello"), MessageGroupId: new("g1"),
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if _, err = q.SendMessageBatch(ctx, &sqs.SendMessageBatchInput{
+		QueueUrl: &fifoURL,
+		Entries: []sqstypes.SendMessageBatchRequestEntry{
+			{Id: new("d1"), MessageBody: new("hello"), MessageGroupId: new("g1")},
+			{Id: new("n1"), MessageBody: new("world"), MessageGroupId: new("g1")},
+			{Id: new("d2"), MessageBody: new("world"), MessageGroupId: new("g1")},
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	fifoDims := dimensions("QueueName", "dedup.fifo")
+	expectBuiltin(t, c, "AWS/SQS", "NumberOfMessagesSent", "Count", fifoDims, 2)
+	fifoSizes := expectBuiltin(t, c, "AWS/SQS", "SentMessageSize", "Bytes", fifoDims, 10)
+	if fifoSizes.count != 2 {
+		t.Fatalf("fifo sizes = %+v", fifoSizes)
+	}
 }
 
 func TestBuiltinDynamoDBMetrics(t *testing.T) {

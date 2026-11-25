@@ -491,23 +491,22 @@
       "summary": "Use queues with visibility timeouts, long polling, FIFO ordering, and dead-letter workflows.",
       "features": [
         "Queue lifecycle, attributes and tags",
-        "Send, receive, delete, visibility updates and batch operations",
+        "Send, receive, delete, visibility updates and batch operations, including AWSTraceHeader message system attributes and MD5OfMessageSystemAttributes",
         "Long polling waits outside transactions",
-        "FIFO deduplication and group ordering",
-        "Dead-letter queues and message move tasks",
-        "AWS-style console with account/Region-scoped standard and FIFO queue creation and editing, message send/receive/details/delete/visibility controls, typed purge/delete confirmations, tags, access and redrive allow policies, and standard-queue DLQ redrive task management",
+        "FIFO deduplication and group ordering, plus standard-queue MessageGroupId fair receive prioritization",
+        "Standard and FIFO dead-letter queues and message move tasks",
+        "AWS-style console with account/Region-scoped standard and FIFO queue creation and editing, message send/receive/details/delete/visibility controls, typed purge/delete confirmations, tags, access and redrive allow policies, and standard and FIFO DLQ redrive task management",
         "PurgeQueue clears available, delayed and in-flight messages while preserving settings and enforcing a 60-second repeat-purge guard",
-        "Queue Policy attributes and AddPermission grants participate in gateway soft/enforce authorization, including cross-account SendMessage and owning-root queue-policy recovery",
+        "Queue Policy attributes and AddPermission grants participate in gateway soft/enforce authorization, including cross-account SendMessage, cross-account GetQueueUrl via QueueOwnerAWSAccountId, and owning-root queue-policy recovery",
         "With authorization on, SNS, S3 notification and EventBridge deliveries (including target dead-letter queues) need the queue policy to allow the service principal, matching aws:SourceArn and aws:SourceAccount; enforce mode drops a denied delivery and soft mode records it in the request inspector",
-        "AWS/SQS metrics with dimension QueueName: NumberOfMessagesSent and SentMessageSize (Bytes) for SendMessage, batches, SNS and EventBridge deliveries, NumberOfMessagesReceived, NumberOfEmptyReceives and NumberOfMessagesDeleted, and, sampled once a minute while the queue is in use, ApproximateNumberOfMessagesVisible, ApproximateNumberOfMessagesNotVisible, ApproximateNumberOfMessagesDelayed and ApproximateAgeOfOldestMessage (Seconds)"
+        "AWS/SQS metrics with dimension QueueName: NumberOfMessagesSent and SentMessageSize (Bytes) for non-deduplicated SendMessage, batches, SNS and EventBridge deliveries, NumberOfMessagesReceived, NumberOfEmptyReceives and NumberOfMessagesDeleted, and, sampled once a minute while the queue is in use, ApproximateNumberOfMessagesVisible, ApproximateNumberOfMessagesNotVisible, ApproximateNumberOfMessagesDelayed, ApproximateAgeOfOldestMessage (Seconds) and, for FIFO queues, ApproximateNumberOfGroupsWithInflightMessages"
       ],
       "gaps": [
         "No throughput enforcement",
-        "No message groups on standard queues or FIFO message move tasks",
         "DeleteQueue does not enforce the AWS name-reuse delay",
         "Purge completes immediately instead of an asynchronous deletion window; FIFO deduplication history is retained",
         "In verify mode, console management requires an authenticated root console session; without a session only queue inventory is available",
-        "SQS metrics omit ApproximateNumberOfGroupsWithInflightMessages and the other FIFO metrics; a queue reports its approximate gauges only after a request since the process started and stops after six hours without requests, and a FIFO duplicate still counts as sent"
+        "SQS metrics omit the remaining FIFO-specific metrics beyond ApproximateNumberOfGroupsWithInflightMessages (such as NumberOfDeduplicatedSentMessages); a queue reports its approximate gauges only after a request since the process started and stops after six hours without requests"
       ],
       "execution": "Local behavior",
       "package": "sqs"

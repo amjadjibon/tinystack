@@ -29,17 +29,21 @@ const (
 	maxVisibility = 43200
 	maxWait       = 20
 	maxReceive    = 10
+
+	attrTraceHeader = "AWSTraceHeader"
 )
 
-// message times are Unix milliseconds. GroupID, DedupID, and Sequence are set
-// only for FIFO queues, and SourceArn only for messages a redrive policy moved
-// to a dead-letter queue.
+// message times are Unix milliseconds. DedupID and Sequence are set only for
+// FIFO queues, GroupID is set for FIFO queues or standard fair queues,
+// SourceArn only for messages a redrive policy moved to a dead-letter queue,
+// and TraceHeader when AWSTraceHeader was supplied on send.
 type message struct {
 	Attributes      map[string]api.MessageAttributeValue `json:",omitempty"`
 	GroupID         string                               `json:",omitempty"`
 	DedupID         string                               `json:",omitempty"`
 	Sequence        string                               `json:",omitempty"`
 	SourceArn       string                               `json:",omitempty"`
+	TraceHeader     string                               `json:",omitempty"`
 	ID              string
 	Body            string
 	BodyMD5         string
@@ -145,6 +149,35 @@ func checkAttributes(attributes map[string]api.MessageAttributeValue) (int64, er
 	return size, nil
 }
 
+// checkSystemAttributes validates message system attributes on send and returns
+// their size in bytes. SQS supports only AWSTraceHeader on send.
+func checkSystemAttributes(attributes map[string]api.MessageSystemAttributeValue) (int64, error) {
+	var size int64
+	for name, a := range attributes {
+		if name != attrTraceHeader {
+			return 0, invalid("Message system attribute name '%s' is invalid.", name)
+		}
+
+		dataType := common.Value(a.DataType)
+		base, _, _ := strings.Cut(dataType, ".")
+		if len(dataType) > 256 || !validText(dataType) || base != "String" {
+			return 0, invalid("The type of message system attribute '%s' is invalid.", name)
+		}
+
+		if common.Value(a.StringValue) == "" || a.BinaryValue != nil {
+			return 0, invalid("Message system attribute '%s' must contain a non-empty string value.", name)
+		}
+
+		if !validText(*a.StringValue) {
+			return 0, invalidContents()
+		}
+
+		size += int64(len(name) + len(dataType) + len(*a.StringValue))
+	}
+
+	return size, nil
+}
+
 func md5Hex(b []byte) string {
 	sum := md5.Sum(b) // #nosec G401 -- SQS protocol checksum.
 	return hex.EncodeToString(sum[:])
@@ -232,9 +265,10 @@ func (q *queue) purge(now int64) {
 // outgoing is a validated message that the queue's settings have not yet been
 // applied to.
 type outgoing struct {
-	delay *int64
-	msg   message
-	size  int64
+	delay            *int64
+	systemAttributes map[string]api.MessageSystemAttributeValue
+	msg              message
+	size             int64
 }
 
 // prepare validates a message independently of its queue. SendMessage passes
@@ -272,40 +306,56 @@ func (s *Service) prepare(ctx context.Context, in *api.SendMessageBatchRequestEn
 		return nil, err
 	}
 
+	sysSize, err := checkSystemAttributes(in.MessageSystemAttributes)
+	if err != nil {
+		return nil, err
+	}
+
+	var traceHeader string
+	if trace, ok := in.MessageSystemAttributes[attrTraceHeader]; ok {
+		traceHeader = common.Value(trace.StringValue)
+	}
+
 	sender := m.AccessKey
 	if sender == "" {
 		sender = m.AccountID
 	}
 
 	return &outgoing{
-		delay: in.DelaySeconds,
-		size:  int64(len(*body)) + size,
+		delay:            in.DelaySeconds,
+		systemAttributes: in.MessageSystemAttributes,
+		size:             int64(len(*body)) + size + sysSize,
 		msg: message{
-			ID:         messageID(),
-			Body:       *body,
-			BodyMD5:    md5Hex([]byte(*body)),
-			SenderID:   sender,
-			Attributes: in.MessageAttributes,
-			GroupID:    common.Value(in.MessageGroupId),
-			DedupID:    common.Value(in.MessageDeduplicationId),
+			ID:          messageID(),
+			Body:        *body,
+			BodyMD5:     md5Hex([]byte(*body)),
+			SenderID:    sender,
+			Attributes:  in.MessageAttributes,
+			GroupID:     common.Value(in.MessageGroupId),
+			DedupID:     common.Value(in.MessageDeduplicationId),
+			TraceHeader: traceHeader,
 		},
 	}, nil
 }
 
 // enqueue applies the queue's size limit, type rules, and default delay, then
-// appends the message. A per-message delay overrides the queue's default delay.
-func (q *queue) enqueue(o *outgoing, now int64) error {
+// appends the message. It reports whether a FIFO send was deduplicated and not
+// enqueued. A per-message delay overrides the queue's default delay.
+func (q *queue) enqueue(o *outgoing, now int64) (bool, error) {
 	if limit := q.Settings.MaximumMessageSize; o.size > limit {
-		return invalid("One or more parameters are invalid. Reason: Message must be shorter than %d bytes.", limit)
+		return false, invalid(
+			"One or more parameters are invalid. Reason: Message must be shorter than %d bytes.",
+			limit,
+		)
 	}
 
 	if q.Settings.FifoQueue {
 		duplicate, err := q.sequence(o, now)
 		if err != nil || duplicate {
-			return err
+			return duplicate, err
 		}
-	} else if o.msg.GroupID != "" || o.msg.DedupID != "" {
-		return invalid("MessageGroupId and MessageDeduplicationId are only supported for FIFO queues.")
+	} else if o.msg.DedupID != "" {
+		return false, invalid("MessageDeduplicationId is only supported for FIFO queues.")
 	}
 
 	delay := q.Settings.DelaySeconds
@@ -316,7 +366,7 @@ func (q *queue) enqueue(o *outgoing, now int64) error {
 	o.msg.SentAt = now
 	o.msg.VisibleAt = now + delay*1000
 	q.Messages = append(q.Messages, o.msg)
-	return nil
+	return false, nil
 }
 
 func (o *outgoing) md5OfAttributes() *string {
@@ -325,6 +375,19 @@ func (o *outgoing) md5OfAttributes() *string {
 	}
 
 	return new(attributesMD5(o.msg.Attributes))
+}
+
+func (o *outgoing) md5OfSystemAttributes() *string {
+	if len(o.systemAttributes) == 0 {
+		return nil
+	}
+
+	converted := make(map[string]api.MessageAttributeValue, len(o.systemAttributes))
+	for name, a := range o.systemAttributes {
+		converted[name] = api.MessageAttributeValue(a)
+	}
+
+	return new(attributesMD5(converted))
 }
 
 // send validates one message and enqueues it on the queue stored under key.
@@ -339,6 +402,7 @@ func (s *Service) send(ctx context.Context, key string, entry *api.SendMessageBa
 	}
 
 	now := s.now().UnixMilli()
+	var duplicate bool
 	err = s.store.Update(ctx, func(tx storage.WriteTx) error {
 		q, loadErr := load(tx, key)
 		if loadErr != nil {
@@ -346,7 +410,9 @@ func (s *Service) send(ctx context.Context, key string, entry *api.SendMessageBa
 		}
 
 		q.purge(now)
-		if guardErr := q.enqueue(o, now); guardErr != nil {
+		var guardErr error
+		duplicate, guardErr = q.enqueue(o, now)
+		if guardErr != nil {
 			return guardErr
 		}
 
@@ -356,8 +422,11 @@ func (s *Service) send(ctx context.Context, key string, entry *api.SendMessageBa
 		return nil, err
 	}
 
-	s.notify(key)
-	s.publish(key, counter(metricSent, 1), messageSize(o.size))
+	if !duplicate {
+		s.notify(key)
+		s.publish(key, counter(metricSent, 1), messageSize(o.size))
+	}
+
 	return o, nil
 }
 
@@ -381,21 +450,23 @@ func (s *Service) SendMessage(ctx context.Context, in *api.SendMessageRequest) (
 	}
 
 	o, err := s.send(ctx, key, &api.SendMessageBatchRequestEntry{
-		MessageBody:            in.MessageBody,
-		DelaySeconds:           in.DelaySeconds,
-		MessageAttributes:      in.MessageAttributes,
-		MessageGroupId:         in.MessageGroupId,
-		MessageDeduplicationId: in.MessageDeduplicationId,
+		MessageBody:             in.MessageBody,
+		DelaySeconds:            in.DelaySeconds,
+		MessageAttributes:       in.MessageAttributes,
+		MessageSystemAttributes: in.MessageSystemAttributes,
+		MessageGroupId:          in.MessageGroupId,
+		MessageDeduplicationId:  in.MessageDeduplicationId,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return &api.SendMessageResult{
-		MessageId:              new(o.msg.ID),
-		MD5OfMessageBody:       new(o.msg.BodyMD5),
-		MD5OfMessageAttributes: o.md5OfAttributes(),
-		SequenceNumber:         o.sequenceNumber(),
+		MessageId:                    new(o.msg.ID),
+		MD5OfMessageBody:             new(o.msg.BodyMD5),
+		MD5OfMessageAttributes:       o.md5OfAttributes(),
+		MD5OfMessageSystemAttributes: o.md5OfSystemAttributes(),
+		SequenceNumber:               o.sequenceNumber(),
 	}, nil
 }
 
@@ -447,12 +518,22 @@ func render(msg *message, opts *receiveOptions) api.Message {
 
 	if msg.GroupID != "" {
 		system["MessageGroupId"] = msg.GroupID
+	}
+
+	if msg.DedupID != "" {
 		system["MessageDeduplicationId"] = msg.DedupID
+	}
+
+	if msg.Sequence != "" {
 		system["SequenceNumber"] = msg.Sequence
 	}
 
 	if msg.SourceArn != "" {
 		system["DeadLetterQueueSourceArn"] = msg.SourceArn
+	}
+
+	if msg.TraceHeader != "" {
+		system[attrTraceHeader] = msg.TraceHeader
 	}
 
 	for name, v := range system {
@@ -519,6 +600,182 @@ func (d *deadLetter) accept(tx storage.WriteTx, st *settings, msg *message, now 
 	return true, nil
 }
 
+func (m *message) markClaimed(now, visibility int64) {
+	m.ReceiveCount++
+	if m.FirstReceivedAt == 0 {
+		m.FirstReceivedAt = now
+	}
+
+	m.VisibleAt = now + visibility*1000
+	m.Receipt = rand.Text()
+}
+
+// claimFIFO claims up to opts.limit visible messages from a FIFO queue while
+// enforcing strict per-group head-of-line ordering.
+func (q *queue) claimFIFO(
+	tx storage.WriteTx,
+	dlq *deadLetter,
+	opts *receiveOptions,
+	attempt string,
+	now, visibility int64,
+) (messages []api.Message, next int64, err error) {
+	blocked := q.inFlightGroups(now)
+	var receipts []string
+	kept := q.Messages[:0]
+	for i := range q.Messages {
+		msg := q.Messages[i]
+		if msg.VisibleAt > now || len(messages) == opts.limit || blocked[msg.GroupID] {
+			if msg.VisibleAt > now && (next == 0 || msg.VisibleAt < next) {
+				next = msg.VisibleAt
+			}
+			// Later messages in a FIFO group wait for the earlier ones.
+			if msg.GroupID != "" {
+				blocked[msg.GroupID] = true
+			}
+
+			kept = append(kept, msg)
+			continue
+		}
+
+		moved, moveErr := dlq.accept(tx, &q.Settings, &msg, now)
+		if moveErr != nil {
+			return nil, 0, moveErr
+		}
+
+		if moved {
+			continue
+		}
+
+		msg.markClaimed(now, visibility)
+		receipts = append(receipts, msg.Receipt)
+		messages = append(messages, render(&msg, opts))
+		kept = append(kept, msg)
+	}
+
+	q.Messages = kept
+	if attempt != "" && len(receipts) > 0 {
+		q.remember(attempt, receipts, now)
+	}
+
+	return messages, next, nil
+}
+
+// claimStandard claims up to opts.limit visible messages from a standard queue.
+// When visible messages carry a MessageGroupId, groups with fewer currently
+// in-flight messages are preferred so a busy group does not starve quieter ones,
+// while still allowing concurrent in-flight delivery within any group.
+func (q *queue) claimStandard(
+	tx storage.WriteTx,
+	dlq *deadLetter,
+	opts *receiveOptions,
+	now, visibility int64,
+) (messages []api.Message, next int64, err error) {
+	inFlight := map[string]int{}
+	hasGroups := false
+	for i := range q.Messages {
+		msg := &q.Messages[i]
+		if msg.VisibleAt > now {
+			if next == 0 || msg.VisibleAt < next {
+				next = msg.VisibleAt
+			}
+
+			if msg.GroupID != "" && msg.ReceiveCount > 0 {
+				inFlight[msg.GroupID]++
+			}
+
+			continue
+		}
+
+		if msg.GroupID != "" {
+			hasGroups = true
+		}
+	}
+
+	if !hasGroups {
+		kept := q.Messages[:0]
+		for i := range q.Messages {
+			msg := q.Messages[i]
+			if msg.VisibleAt > now || len(messages) == opts.limit {
+				kept = append(kept, msg)
+				continue
+			}
+
+			moved, moveErr := dlq.accept(tx, &q.Settings, &msg, now)
+			if moveErr != nil {
+				return nil, 0, moveErr
+			}
+
+			if moved {
+				continue
+			}
+
+			msg.markClaimed(now, visibility)
+			messages = append(messages, render(&msg, opts))
+			kept = append(kept, msg)
+		}
+
+		q.Messages = kept
+		return messages, next, nil
+	}
+
+	done := make([]bool, len(q.Messages))
+	removed := make([]bool, len(q.Messages))
+	for len(messages) < opts.limit {
+		best := -1
+		bestCount := 0
+		for i := range q.Messages {
+			if done[i] || q.Messages[i].VisibleAt > now {
+				continue
+			}
+
+			count := 0
+			if g := q.Messages[i].GroupID; g != "" {
+				count = inFlight[g]
+			}
+
+			if best < 0 || count < bestCount {
+				best, bestCount = i, count
+				if count == 0 {
+					break
+				}
+			}
+		}
+
+		if best < 0 {
+			break
+		}
+
+		done[best] = true
+		msg := &q.Messages[best]
+		moved, moveErr := dlq.accept(tx, &q.Settings, msg, now)
+		if moveErr != nil {
+			return nil, 0, moveErr
+		}
+
+		if moved {
+			removed[best] = true
+			continue
+		}
+
+		msg.markClaimed(now, visibility)
+		if msg.GroupID != "" {
+			inFlight[msg.GroupID]++
+		}
+
+		messages = append(messages, render(msg, opts))
+	}
+
+	kept := q.Messages[:0]
+	for i := range q.Messages {
+		if !removed[i] {
+			kept = append(kept, q.Messages[i])
+		}
+	}
+
+	q.Messages = kept
+	return messages, next, nil
+}
+
 // claim atomically makes up to opts.limit visible messages in flight, first
 // moving messages past the redrive policy's maxReceiveCount to the dead-letter queue.
 func (s *Service) claim(ctx context.Context, key string, opts *receiveOptions) (claimed, error) {
@@ -552,48 +809,14 @@ func (s *Service) claim(ctx context.Context, key string, opts *receiveOptions) (
 		}
 
 		dlq := deadLetter{source: keyARN(key)}
-		blocked := q.inFlightGroups(now)
-		var receipts []string
-		kept := q.Messages[:0]
-		for i := range q.Messages {
-			msg := q.Messages[i]
-			if msg.VisibleAt > now || len(c.messages) == opts.limit || blocked[msg.GroupID] {
-				if msg.VisibleAt > now && (c.next == 0 || msg.VisibleAt < c.next) {
-					c.next = msg.VisibleAt
-				}
-				// Later messages in a FIFO group wait for the earlier ones.
-				if msg.GroupID != "" {
-					blocked[msg.GroupID] = true
-				}
-
-				kept = append(kept, msg)
-				continue
-			}
-
-			moved, moveErr := dlq.accept(tx, &q.Settings, &msg, now)
-			if moveErr != nil {
-				return moveErr
-			}
-
-			if moved {
-				continue
-			}
-
-			msg.ReceiveCount++
-			if msg.FirstReceivedAt == 0 {
-				msg.FirstReceivedAt = now
-			}
-
-			msg.VisibleAt = now + visibility*1000
-			msg.Receipt = rand.Text()
-			receipts = append(receipts, msg.Receipt)
-			c.messages = append(c.messages, render(&msg, opts))
-			kept = append(kept, msg)
+		if q.Settings.FifoQueue {
+			c.messages, c.next, err = q.claimFIFO(tx, &dlq, opts, attempt, now, visibility)
+		} else {
+			c.messages, c.next, err = q.claimStandard(tx, &dlq, opts, now, visibility)
 		}
 
-		q.Messages = kept
-		if attempt != "" && len(receipts) > 0 {
-			q.remember(attempt, receipts, now)
+		if err != nil {
+			return err
 		}
 
 		if dlq.queue != nil {
